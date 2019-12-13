@@ -29,6 +29,7 @@
 #include "../include/solver_structure.hpp"
 #include "../include/variables/CFEABoundVariable.hpp"
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../Common/include/omp_structure.hpp"
 #include <algorithm>
 
 CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
@@ -184,7 +185,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   Residual = new su2double[nVar];          for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
   Residual_RMS = new su2double[nVar];      for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
   Residual_Max = new su2double[nVar];      for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-  Point_Max = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
+  Point_Max = new unsigned long[nVar];     for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
   Point_Max_Coord = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
     Point_Max_Coord[iVar] = new su2double[nDim];
@@ -351,6 +352,22 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
   LinSysReact.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+#ifdef HAVE_OMP
+  /*--- Get the element coloring. ---*/
+
+  const auto& coloring = geometry->GetElementColoring();
+
+  auto nColor = coloring.getOuterSize();
+  ElemColoring.resize(nColor);
+
+  for(auto iColor = 0ul; iColor < nColor; ++iColor) {
+    ElemColoring[iColor].size = coloring.getNumNonZeros(iColor);
+    ElemColoring[iColor].indices = coloring.innerIdx(iColor);
+  }
+
+  ColorGroupSize = 1; /// TODO: This needs to come from geometry or config
+#endif
 
   /*--- Initialize the auxiliary vector and matrix for the computation of the nodal Reactions ---*/
 
@@ -628,11 +645,8 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
     if (iElem_Global_Local < nElement) { sbuf_NotMatching = 1; }
 
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
+
     if (rbuf_NotMatching != 0) {
       SU2_MPI::Error(string("The properties file ") + filename + string(" doesn't match with the mesh file!\n")  +
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
@@ -646,9 +660,7 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
     delete [] Global2Local;
 
-
   }
-
 
 }
 
@@ -729,11 +741,8 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
   if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
 
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
+
   if (rbuf_NotMatching != 0) {
       SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
@@ -743,6 +752,7 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
   prestretch_file.close();
 
+#ifdef HAVE_MPI
   /*--- We need to communicate here the prestretched geometry for the halo nodes. ---*/
   /*--- We avoid creating a new function as this may be reformatted.              ---*/
 
@@ -750,10 +760,7 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
   unsigned long iVertex, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 
-#ifdef HAVE_MPI
   int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
@@ -762,10 +769,8 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
       MarkerS = iMarker;  MarkerR = iMarker+1;
 
-#ifdef HAVE_MPI
       send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
       receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
 
       nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
       nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
@@ -781,21 +786,9 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
           Buffer_Send_U[iVar*nVertexS+iVertex] = nodes->GetPrestretch(iPoint,iVar);
       }
 
-#ifdef HAVE_MPI
-
       /*--- Send/Receive information using Sendrecv ---*/
       SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
-      }
-
-#endif
+                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
 
       /*--- Deallocate send buffer ---*/
       delete [] Buffer_Send_U;
@@ -822,7 +815,7 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
     }
 
   }
-
+#endif
 
 }
 
@@ -914,11 +907,7 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
 
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
 
   if (rbuf_NotMatching != 0) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n")  +
@@ -1129,76 +1118,97 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
   su2double simp_exponent = config->GetSIMP_Exponent();
   su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
-  /*--- Loops over all the elements ---*/
+  /*--- Start OpenMP parallel region. ---*/
 
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+  SU2_OMP_PARALLEL
+  {
+#ifdef HAVE_OMP
+    /*--- Loop over element colors. ---*/
+    for (auto color : ElemColoring) {
 
-    switch(geometry->elem[iElem]->GetVTK_Type()) {
-      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
-      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
-      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
-      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
-      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
-    }
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
 
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+      SU2_OMP_FOR_DYN(chunkSize)
+      for(auto k = 0ul; k < color.size; ++k) {
 
-    for (iNode = 0; iNode < nNodes; iNode++) {
+        auto iElem = color.indices[k];
+#else
+    /*--- Natural coloring. ---*/
+    {
+      for (auto iElem = 0ul; iElem < nElement; iElem++) {
+#endif
+        
+        
+        switch(geometry->elem[iElem]->GetVTK_Type()) {
+          case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
+          case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
+          case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
+          case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
+          case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
+          case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
+        }
 
-      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+        /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
 
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
-        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(iNode, iDim, val_Sol);
-      }
-    }
+        for (iNode = 0; iNode < nNodes; iNode++) {
 
-    /*--- In topology mode determine the penalty to apply to the stiffness ---*/
-    su2double simp_penalty = 1.0;
-    if (topology_mode) {
-      simp_penalty = simp_minstiff+(1.0-simp_minstiff)*pow(element_properties[iElem]->GetPhysicalDensity(),simp_exponent);
-    }
+          indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
 
-    /*--- Set the properties of the element ---*/
-    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
-
-    /*--- Compute the components of the jacobian and the stress term ---*/
-    if (element_based){
-      numerics[element_properties[iElem]->GetMat_Mod()]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
-    }
-    else{
-      numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
-    }
-
-    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
-
-    for (iNode = 0; iNode < NelNodes; iNode++) {
-
-      Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
-      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = simp_penalty*Ta[iVar];
-
-      LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
-
-      for (jNode = 0; jNode < NelNodes; jNode++) {
-
-        Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
-
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_ij[iVar][jVar] = simp_penalty*Kab[iVar*nVar+jVar];
+          for (iDim = 0; iDim < nDim; iDim++) {
+            val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+            val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
+            element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
+            element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(iNode, iDim, val_Sol);
           }
         }
 
-        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
-      }
+        /*--- In topology mode determine the penalty to apply to the stiffness ---*/
+        su2double simp_penalty = 1.0;
+        if (topology_mode) {
+          simp_penalty = simp_minstiff+(1.0-simp_minstiff)*pow(element_properties[iElem]->GetPhysicalDensity(),simp_exponent);
+        }
 
-    }
+        /*--- Set the properties of the element ---*/
+        element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
-  }
+        /*--- Compute the components of the jacobian and the stress term ---*/
+        if (element_based){
+          numerics[element_properties[iElem]->GetMat_Mod()]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
+        }
+        else{
+          numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
+        }
 
+        NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+
+        for (iNode = 0; iNode < NelNodes; iNode++) {
+
+          Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
+          for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = simp_penalty*Ta[iVar];
+
+          LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
+
+          for (jNode = 0; jNode < NelNodes; jNode++) {
+
+            Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
+
+            for (iVar = 0; iVar < nVar; iVar++) {
+              for (jVar = 0; jVar < nVar; jVar++) {
+                Jacobian_ij[iVar][jVar] = simp_penalty*Kab[iVar*nVar+jVar];
+              }
+            }
+
+            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+          }
+
+        }
+
+      } // end iElem loop
+
+    } // end color loop
+
+  } // end SU2_OMP_PARALLEL
 
 }
 
