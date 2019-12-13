@@ -8195,7 +8195,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
             pointOnAxis = false;
             distToAxis = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
-			   distToAxis = (rotCoord[iDim] - Coord_i[iDim])*(rotCoord[iDim] - Coord_i[iDim]);
+               distToAxis = (rotCoord[iDim] - Coord_i[iDim])*(rotCoord[iDim] - Coord_i[iDim]);
             distToAxis = sqrt(distToAxis);
 
             if (distToAxis < epsilon) pointOnAxis = true;
