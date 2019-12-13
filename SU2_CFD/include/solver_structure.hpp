@@ -11550,7 +11550,8 @@ public:
  */
 class CFEASolver : public CSolver {
 private:
-  
+  enum : size_t {OMP_MIN_SIZE = 64};
+
   su2double  Total_CFEA;        /*!< \brief Total FEA coefficient for all the boundaries. */
   /*!< We maintain the name to avoid defining a new function... */
   
@@ -11611,6 +11612,13 @@ private:
   su2double ForceCoeff;             /*!< \brief Load transfer coefficient . */
   su2double RelaxCoeff;             /*!< \brief Relaxation coefficient . */
   su2double FSI_Residual;           /*!< \brief FSI residual. */
+
+  struct ElemColor {
+    unsigned long size;             /*!< \brief Number of elements with a given color. */
+    const unsigned long* indices;   /*!< \brief The index of the elements in a color. */
+  };
+  vector<ElemColor> ElemColoring;   /*!< \brief Element colors. */
+  unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size must be a multiple of this. */
 
 protected:
 
