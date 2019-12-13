@@ -297,11 +297,11 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design and solution for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        // solver[ADJFLOW_SOL]->LoadSolution();
+        solver[ADJFLOW_SOL]->LoadSolution();
 
       }
 
-      solver[ADJFLOW_SOL]->LoadSaveSolution();
+      // solver[ADJFLOW_SOL]->LoadSaveSolution();
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
@@ -357,8 +357,8 @@ void COneShotFluidDriver::RunOneShot(){
       }
 
       /*--- Update constraint multiplier ---*/
-      // LoadOldLambda();
-      // UpdateLambda(stepsize);
+      LoadOldLambda();
+      UpdateLambda(stepsize);
       // UpdateLambda(1.0);
 
       // /*--- Load multipliers from first line search ---*/
@@ -389,32 +389,32 @@ void COneShotFluidDriver::RunOneShot(){
   // // /*--- Load multipliers from first line search ---*/
   // // // LoadLambdaStore();
   if(OneShotIter > config->GetOneShotStart() && 
-     OneShotIter < config->GetOneShotStop()) {
-    solver[ADJFLOW_SOL]->LoadSolution();
+  //    OneShotIter < config->GetOneShotStop()) {
+  //   solver[ADJFLOW_SOL]->LoadSolution();
 
-    /*--- Evaluate the objective at the old solution, new design ---*/
+  //   /*--- Evaluate the objective at the old solution, new design ---*/
       
-    solver[FLOW_SOL]->Pressure_Forces(geometry, config);
-    solver[FLOW_SOL]->Momentum_Forces(geometry, config);
-    solver[FLOW_SOL]->Friction_Forces(geometry, config);
+  //   solver[FLOW_SOL]->Pressure_Forces(geometry, config);
+  //   solver[FLOW_SOL]->Momentum_Forces(geometry, config);
+  //   solver[FLOW_SOL]->Friction_Forces(geometry, config);
               
-    if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-      solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
-    }
+  //   if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+  //     solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
+  //   }
 
-    SetObjFunction(false);
-    StoreObjFunction();
-    SetConstrFunction(false);
-    StoreConstrFunction();
+  //   SetObjFunction(false);
+  //   StoreObjFunction();
+  //   SetConstrFunction(false);
+  //   StoreConstrFunction();
 
-    // UpdateLambda(stepsize);
-    UpdateLambda(1.0);
+  //   // UpdateLambda(stepsize);
+  //   UpdateLambda(1.0);
 
-     /*--- Do a primal and adjoint update ---*/
-    PrimalDualStep();
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-    // LoadLambdaStore();
-  }
+  //    /*--- Do a primal and adjoint update ---*/
+  //   PrimalDualStep();
+  //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+  //   // LoadLambdaStore();
+  // }
 
   // if(OneShotIter > config->GetOneShotStart() && 
   //    OneShotIter < config->GetOneShotStop()) {
@@ -875,9 +875,9 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
   if(design_update) {
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-      admissible_step += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
+      // admissible_step += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
       /*--- AugLagGrad is the gradient at the old iterate. ---*/
-      // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+      admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
   else {
@@ -910,9 +910,9 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
   if(design_update) {
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-      GradDotDir += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
+      // GradDotDir += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
       /*--- AugLagGrad is the gradient at the old iterate. ---*/
-      // GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+      GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
   else {
