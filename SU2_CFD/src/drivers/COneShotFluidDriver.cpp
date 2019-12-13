@@ -232,7 +232,7 @@ void COneShotFluidDriver::RunOneShot(){
   unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
 
   /*--- Store the old solution and the old design for line search ---*/
-  // solver[ADJFLOW_SOL]->SetOldStoreSolution();
+  solver[ADJFLOW_SOL]->SetOldStoreSolution();
   solver[ADJFLOW_SOL]->SetStoreSolution();
   solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
@@ -255,11 +255,11 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design and solution for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        solver[ADJFLOW_SOL]->LoadSolution();
+        // solver[ADJFLOW_SOL]->LoadSolution();
 
       }
 
-      // solver[ADJFLOW_SOL]->LoadSaveSolution();
+      solver[ADJFLOW_SOL]->LoadSaveSolution();
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
@@ -274,11 +274,6 @@ void COneShotFluidDriver::RunOneShot(){
         StoreObjFunction();
         SetConstrFunction(false);
         StoreConstrFunction();
-
-        // /*--- Update constraint multiplier ---*/
-        // LoadOldLambda();
-        // UpdateLambda(1.0);
-        // UpdateLambda(stepsize);
       }
       else {
         stepsize = 0.0;
@@ -291,22 +286,7 @@ void COneShotFluidDriver::RunOneShot(){
         StoreObjFunction();
         SetConstrFunction(false);
         StoreConstrFunction();
-
-        /*--- Update constraint multiplier ---*/
-        // LoadOldLambda();
-        // UpdateLambda(1.0);
-
-        /*--- Load multipliers from first line search ---*/
-        // LoadLambdaStore();
       }
-
-      /*--- Update constraint multiplier ---*/
-      LoadOldLambda();
-      // UpdateLambda(stepsize);
-      UpdateLambda(1.0);
-
-      // /*--- Load multipliers from first line search ---*/
-      // LoadLambdaStore();
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
@@ -330,29 +310,26 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
-  // /*--- Load multipliers from first line search ---*/
-  // // LoadLambdaStore();
-  // if(OneShotIter > config->GetOneShotStart() && 
-  //    OneShotIter < config->GetOneShotStop()) {
-  //   solver[ADJFLOW_SOL]->LoadSolution();
+  if(OneShotIter > config->GetOneShotStart() && 
+     OneShotIter < config->GetOneShotStop()) {
+    solver[ADJFLOW_SOL]->LoadSolution();
 
-  //   /*--- Evaluate the objective at the old solution, new design ---*/
+    /*--- Evaluate the objective at the current solution, new design ---*/
       
-  //   ComputeFunctionals();
+    ComputeFunctionals();
 
-  //   SetObjFunction(false);
-  //   StoreObjFunction();
-  //   SetConstrFunction(false);
-  //   StoreConstrFunction();
+    SetObjFunction(false);
+    StoreObjFunction();
+    SetConstrFunction(false);
+    StoreConstrFunction();
 
-  //   // UpdateLambda(stepsize);
-  //   UpdateLambda(1.0);
+    UpdateLambda(stepsize);
+    // UpdateLambda(1.0);
 
-  //    /*--- Do a primal and adjoint update ---*/
-  //   PrimalDualStep();
-  //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-  //   // LoadLambdaStore();
-  // }
+     /*--- Do a primal and adjoint update ---*/
+    PrimalDualStep();
+    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+  }
 
   // if(OneShotIter > config->GetOneShotStart() && 
   //    OneShotIter < config->GetOneShotStop()) {
