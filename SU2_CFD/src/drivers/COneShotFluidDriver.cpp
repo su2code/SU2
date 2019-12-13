@@ -356,9 +356,9 @@ void COneShotFluidDriver::RunOneShot(){
         // LoadLambdaStore();
       }
 
-      /*--- Update constraint multiplier ---*/
-      LoadOldLambda();
-      UpdateLambda(stepsize);
+      // /*--- Update constraint multiplier ---*/
+      // LoadOldLambda();
+      // UpdateLambda(stepsize);
       // UpdateLambda(1.0);
 
       // /*--- Load multipliers from first line search ---*/
@@ -394,8 +394,10 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSolution();
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-  //   // LoadLambdaStore();
-    // UpdateLambda(stepsize);
+    // LoadLambdaStore();
+    UpdateLambda(stepsize);
+    StoreObjFunction();
+    StoreConstrFunction();
   }
 
   // if(OneShotIter > config->GetOneShotStart() && 
@@ -448,7 +450,7 @@ void COneShotFluidDriver::RunOneShot(){
   //   SetAugLagGrad(TOTAL_AUGMENTED_OLD);
 
   // }
-  
+
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
   CalculateLagrangian();
   StoreOldLambda();
