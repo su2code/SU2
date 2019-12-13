@@ -388,7 +388,7 @@ void COneShotFluidDriver::RunOneShot(){
 
   // // /*--- Load multipliers from first line search ---*/
   // // // LoadLambdaStore();
-  if(OneShotIter > config->GetOneShotStart() && 
+  // if(OneShotIter > config->GetOneShotStart() && 
   //    OneShotIter < config->GetOneShotStop()) {
   //   solver[ADJFLOW_SOL]->LoadSolution();
 
