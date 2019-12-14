@@ -7857,12 +7857,12 @@ void CEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
 
       VelMagnitude2_i = 0.0; ProjVelocity_i = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
+        Velocity_i[iDim] = nodes->GetVelocity(iPoint, iDim);
         ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
         VelMagnitude2_i += Velocity_i[iDim]*Velocity_i[iDim];
       }
-      Density_i = node[iPoint]->GetDensity();
-      Energy_i = node[iPoint]->GetEnergy();
+      Density_i = nodes->GetDensity(iPoint);
+      Energy_i = nodes->GetEnergy(iPoint);
 
       /*--- Compute the boundary state b ---*/
 
@@ -7883,7 +7883,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
       /*--- Compute the residual ---*/
 
       turb_ke = 0.0;
-      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
 
       Density_b = Density_i;
       StaticEnergy_b = Energy_i - 0.5 * VelMagnitude2_i - turb_ke;
@@ -7895,7 +7895,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
       Pressure_b = FluidModel->GetPressure();
       Enthalpy_b = Energy_b + Pressure_b/Density_b;
 
-      numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, NormalArea, Residual);
+      conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, NormalArea, Residual);
 
       /*--- Grid velocity correction to the energy term ---*/
       if (dynamic_grid) {
@@ -7946,7 +7946,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
 
         /*--- Compute flux Jacobian in state b ---*/
 
-        numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, NormalArea, 1, Jacobian_b);
+        conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, NormalArea, 1, Jacobian_b);
 
         // Check for grid movement, should be already considered since Jacobian b is computed from u_b
         // if (grid_movement) {
