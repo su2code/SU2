@@ -258,6 +258,9 @@ void COneShotFluidDriver::RunOneShot(){
         solver[ADJFLOW_SOL]->LoadSolution();
 
       }
+      else{
+        UpdateLambda(1.0);
+      }
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
@@ -273,8 +276,8 @@ void COneShotFluidDriver::RunOneShot(){
         SetConstrFunction(false);
         StoreConstrFunction();
 
-        LoadOldLambda();
-        UpdateLambda(stepsize);
+        // LoadOldLambda();
+        // UpdateLambda(stepsize);
       }
       else {
         stepsize = 0.0;
@@ -288,8 +291,8 @@ void COneShotFluidDriver::RunOneShot(){
         SetConstrFunction(false);
         StoreConstrFunction();
 
-        LoadOldLambda();
-        UpdateLambda(1.0);
+        // LoadOldLambda();
+        // UpdateLambda(1.0);
       }
 
       // LoadOldLambda();
