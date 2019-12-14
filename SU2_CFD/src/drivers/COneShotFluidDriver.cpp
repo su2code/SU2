@@ -296,8 +296,8 @@ void COneShotFluidDriver::RunOneShot(){
         // UpdateLambda(1.0);
       }
 
-      // LoadOldLambda();
-      // UpdateLambda(stepsize);
+      LoadOldLambda();
+      UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
@@ -321,15 +321,13 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
-  if(OneShotIter > config->GetOneShotStart() && 
-     OneShotIter < config->GetOneShotStop()) {
-    solver[ADJFLOW_SOL]->LoadSolution();
-    PrimalDualStep();
-    StoreObjFunction();
-    StoreConstrFunction();
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-    UpdateLambda(stepsize);
-  }
+  // if(OneShotIter > config->GetOneShotStart() && 
+  //    OneShotIter < config->GetOneShotStop()) {
+  //   solver[ADJFLOW_SOL]->LoadSolution();
+  //   PrimalDualStep();
+  //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+  //   UpdateLambda(stepsize);
+  // }
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
@@ -1423,7 +1421,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     const su2double dh = ConstrFunc[iConstr]-ConstrFunc_Old[iConstr];
     const su2double hdh = ConstrFunc[iConstr]*dh;
     // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc_Store[iConstr] > 0.);
+    const bool active = (ConstrFunc_Old[iConstr] > 0.);
     // const bool active = (Lambda_Tilde_Old[iConstr] > 0.);
 
     // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
@@ -1453,7 +1451,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     // if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
 
     for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-      helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
+      helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
     }
 
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
