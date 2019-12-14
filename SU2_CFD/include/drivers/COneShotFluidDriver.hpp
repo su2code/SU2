@@ -307,7 +307,7 @@ public:
   /*!
    * \brief Check the sign of active constraint multipliers.
    */
-  void CheckLambda(su2double stepsize);
+  void CheckLambda();
 
   /*!
    * \brief Store the gradient of the augmented Lagrangian wrt the constraint multiplier.
