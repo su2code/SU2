@@ -1507,9 +1507,11 @@ void COneShotFluidDriver::CheckLambda() {
     // const bool active = (Lambda_Tilde_Old[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (active)) {
       // if(Lambda[iConstr] < 0.0) {
-        // InitializeLambdaTilde(iConstr);
-        Lambda[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
+        // // InitializeLambdaTilde(iConstr);
+        // Lambda[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
       // }
+
+      Lambda[iConstr] = max(Lambda[iConstr], 0.0);
     }
   }
 }
