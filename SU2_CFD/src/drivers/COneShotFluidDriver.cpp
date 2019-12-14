@@ -1517,6 +1517,7 @@ void COneShotFluidDriver::CheckLambda() {
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (active)) {
       Lambda[iConstr] = max(Lambda[iConstr], 0.0);
     }
+  }
 }
 
 void COneShotFluidDriver::StoreLambdaGrad() {
