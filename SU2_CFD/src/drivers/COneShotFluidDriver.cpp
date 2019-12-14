@@ -294,11 +294,11 @@ void COneShotFluidDriver::RunOneShot(){
         StoreConstrFunction();
 
         // LoadOldLambda();
-        // UpdateLambda(1.0);
+        UpdateLambda(1.0);
       }
 
-      LoadOldLambda();
-      UpdateLambda(stepsize);
+      // LoadOldLambda();
+      // UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
@@ -420,16 +420,16 @@ void COneShotFluidDriver::RunOneShot(){
     StoreLagrangianInformation();
   }
 
-  if(OneShotIter == config->GetOneShotStart()) {
-    for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-      InitializeLambdaTilde(iConstr);
-      if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && ConstrFunc_Store[iConstr] < 0.) {
-        Lambda[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
-      }
-    }
-    StoreLambda();
-    StoreOldLambda();
-  }
+  // if(OneShotIter == config->GetOneShotStart()) {
+  //   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
+  //     InitializeLambdaTilde(iConstr);
+  //     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && ConstrFunc_Store[iConstr] < 0.) {
+  //       Lambda[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
+  //     }
+  //   }
+  //   StoreLambda();
+  //   StoreOldLambda();
+  // }
 
 }
 
@@ -1506,10 +1506,10 @@ void COneShotFluidDriver::CheckLambda() {
     const bool active = (ConstrFunc_Store[iConstr] > 0.);
     // const bool active = (Lambda_Tilde_Old[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (active)) {
-      if(Lambda[iConstr] < 0.0) {
-        InitializeLambdaTilde(iConstr);
+      // if(Lambda[iConstr] < 0.0) {
+        // InitializeLambdaTilde(iConstr);
         Lambda[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
-      }
+      // }
     }
   }
 }
