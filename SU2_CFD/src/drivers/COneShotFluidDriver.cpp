@@ -379,8 +379,6 @@ void COneShotFluidDriver::RunOneShot(){
   CalculateLagrangian();
   StoreOldLambda();
   StoreOldConstrFunction();
-  StoreObjFunction();
-  StoreConstrFunction();
 
   /*--- Store Deltay and DeltaBary ---*/
   solver[ADJFLOW_SOL]->SetStoreSolutionDelta();
