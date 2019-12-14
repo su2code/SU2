@@ -258,9 +258,9 @@ void COneShotFluidDriver::RunOneShot(){
         solver[ADJFLOW_SOL]->LoadSolution();
 
       }
-      else{
-        UpdateLambda(1.0);
-      }
+      // else{
+      //   UpdateLambda(1.0);
+      // }
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
@@ -295,8 +295,8 @@ void COneShotFluidDriver::RunOneShot(){
         // UpdateLambda(1.0);
       }
 
-      // LoadOldLambda();
-      // UpdateLambda(stepsize);
+      LoadOldLambda();
+      UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
