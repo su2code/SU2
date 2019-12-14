@@ -305,6 +305,11 @@ public:
   void UpdateLambda(su2double stepsize);
 
   /*!
+   * \brief Check the sign of active constraint multipliers.
+   */
+  void CheckLambda(su2double stepsize);
+
+  /*!
    * \brief Store the gradient of the augmented Lagrangian wrt the constraint multiplier.
    */
   void StoreLambdaGrad();
