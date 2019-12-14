@@ -1541,7 +1541,7 @@ void COneShotFluidDriver::StoreLambdaGrad() {
         AugLagLamGrad[iConstr] += ConstrFunc_Old[iConstr];
       }
       else {
-        AugLagLamGrad[iConstr] = 0.0;
+        AugLagLamGrad[iConstr] = -Lambda_Old[iConstr]/gamma;
       }
     }
   }
