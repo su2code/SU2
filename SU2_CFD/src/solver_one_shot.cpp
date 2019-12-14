@@ -277,8 +277,8 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
 
   // rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.9*rho_old), 1.0-1.0E-8); // Upper bound 1-(1E-6)
   // theta = max(max(sqrt(fabs(helper)/normDelta*theta_old), 0.9 *theta_old), 1.0E-8); // Lower bound 1E-6
-  rho   = min(sqrt(normDeltaNew)/sqrt(normDelta), 1.0-1.0E-8); // Upper bound 1-(1E-6)
-  theta = max(sqrt(fabs(helper)/normDelta*theta_old), 1.0E-8); // Lower bound 1E-6
+  rho   = min(sqrt(normDeltaNew)/sqrt(normDelta), 1.0-1.0E-6); // Upper bound 1-(1E-6)
+  theta = max(sqrt(fabs(helper)/normDelta*theta_old), 1.0E-6); // Lower bound 1E-6
 
   /* --- Store rho and theta values for this iteration --- */
   rho_old   = rho;
@@ -298,8 +298,8 @@ void COneShotSolver::CalculateAlphaBeta(CConfig *config){
 
   // if(config->GetInnerIter() == config->GetOneShotStart()) {
 
-  alpha = max(min(alpha, 1.0E8), 1.0E-8);
-  beta = max(min(beta, 1.0E8), 1.0E-8);
+  alpha = max(min(alpha, 1.0E6), 1.0E-6);
+  beta = max(min(beta, 1.0E6), 1.0E-6);
   config->SetOneShotAlpha(alpha);
   config->SetOneShotBeta(beta);
   // }
@@ -327,11 +327,11 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, 
     //    (val_constr_func[iConstr] + val_lambda[iConstr]/config->GetOneShotGamma(iConstr) > 0.0)) {
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && 
        // (val_constr_func[iConstr] < 0.0)){
-       gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
+       // gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
     // }
       // gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
     // if(config->GetInnerIter() == config->GetOneShotStart()) {
-      gamma = max(min(gamma, config->GetOneShotGammaMax()), 1.0E-8);
+      gamma = max(min(gamma, config->GetOneShotGammaMax()), 1.0E-6);
       config->SetOneShotGamma(gamma, iConstr);
     // }
     // else {
