@@ -258,6 +258,14 @@ void COneShotFluidDriver::RunOneShot(){
         solver[ADJFLOW_SOL]->LoadSolution();
 
       }
+      else{
+        UpdateMultiplier(1.0);
+        StoreGradDotDir(true);
+        if(GradDotDir >= 0) {
+          PrimalDualStep();
+          solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+        }
+      }
       // else{
       //   UpdateLambda(1.0);
       // }
@@ -297,11 +305,11 @@ void COneShotFluidDriver::RunOneShot(){
         // UpdateLambda(1.0);
       }
 
-      LoadOldLambda();
-      UpdateLambda(1.0);
+      // LoadOldLambda();
+      // UpdateLambda(1.0);
 
       /*--- Compute and store GradL dot p ---*/
-      StoreLambdaGrad();
+      // StoreLambdaGrad();
       StoreGradDotDir(true);
 
     }
@@ -782,9 +790,9 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
   if(design_update) {
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-      admissible_step += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
+      // admissible_step += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
       /*--- AugLagGrad is the gradient at the old iterate. ---*/
-      // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+      admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
   else {
@@ -818,9 +826,9 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
   if(design_update) {
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-      GradDotDir += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
+      // GradDotDir += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
       /*--- AugLagGrad is the gradient at the old iterate. ---*/
-      // GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+      GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
   else {
