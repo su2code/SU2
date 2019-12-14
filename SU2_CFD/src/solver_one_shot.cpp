@@ -276,9 +276,9 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
 #endif
 
   // rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.9*rho_old), 1.0-1.0E-8); // Upper bound 1-(1E-6)
-  // theta = max(max(sqrt(fabs(helper)/normDelta*theta_old), 0.9 *theta_old), 1.0E-8); // Lower bound 1E-6
+  // theta = max(max(sqrt(fabs(helper)/normDelta), 0.9 *theta_old), 1.0E-8); // Lower bound 1E-6
   rho   = min(sqrt(normDeltaNew)/sqrt(normDelta), 1.0-1.0E-8); // Upper bound 1-(1E-6)
-  theta = max(sqrt(fabs(helper)/normDelta*theta_old), 1.0E-8); // Lower bound 1E-6
+  theta = max(sqrt(fabs(helper)/normDelta), 1.0E-8); // Lower bound 1E-6
 
   /* --- Store rho and theta values for this iteration --- */
   rho_old   = rho;
@@ -289,10 +289,10 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
 void COneShotSolver::CalculateAlphaBeta(CConfig *config){
 
   /* --- Estimate alpha and beta --- */
-  su2double alpha = 2./((1.-rho)*(1.-rho));
-  su2double beta  = 2.;
-  // su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
-  // su2double beta  = 2./theta;
+  // su2double alpha = 2./((1.-rho)*(1.-rho));
+  // su2double beta  = 2.;
+  su2double alpha = 2.*theta/((1.-rho)*(1.-rho));
+  su2double beta  = 2./theta;
   // su2double alpha = 6.*theta/((1.-rho)*(1.-rho));
   // su2double beta  = 6./theta;
 
