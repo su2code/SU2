@@ -322,13 +322,13 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
-  // if(OneShotIter > config->GetOneShotStart() && 
-  //    OneShotIter < config->GetOneShotStop()) {
-  //   solver[ADJFLOW_SOL]->LoadSolution();
-  //   PrimalDualStep();
-  //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+  if(OneShotIter > config->GetOneShotStart() && 
+     OneShotIter < config->GetOneShotStop()) {
+    solver[ADJFLOW_SOL]->LoadSolution();
+    PrimalDualStep();
+    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
   //   UpdateLambda(stepsize);
-  // }
+  }
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
