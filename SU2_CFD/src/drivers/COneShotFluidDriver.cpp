@@ -420,14 +420,16 @@ void COneShotFluidDriver::RunOneShot(){
     StoreLagrangianInformation();
   }
 
-  // if(OneShotIter == config->GetOneShotStart()) {
-  //   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-  //     InitializeLambdaTilde(iConstr);
-  //     Lambda[iConstr] = Lambda_Tilde[iConstr];
-  //   }
-  //   StoreLambda();
-  //   StoreOldLambda();
-  // }
+  if(OneShotIter == config->GetOneShotStart()) {
+    for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
+      InitializeLambdaTilde(iConstr);
+      if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && ConstrFunc_Store[iConstr] < 0.) {
+        Lambda[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
+      }
+    }
+    StoreLambda();
+    StoreOldLambda();
+  }
 
 }
 
@@ -1013,7 +1015,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
     // const bool active = (ConstrFunc[iConstr] + Lambda[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc[iConstr] > 0.);
+    const bool active = (ConstrFunc_Store[iConstr] > 0.);
     // const bool active = (Lambda_Tilde[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
       seeding[iConstr] = ConstrFunc[iConstr];
@@ -1099,7 +1101,7 @@ void COneShotFluidDriver::ComputeBetaTerm(){
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
     // const bool active = (ConstrFunc[iConstr] + Lambda[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc[iConstr] > 0.);
+    const bool active = (ConstrFunc_Store[iConstr] > 0.);
     // const bool active = (Lambda_Tilde[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
       seeding[iConstr] = Lambda[iConstr];
@@ -1188,7 +1190,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
   if (nConstr == 1){
       const su2double gamma = config->GetOneShotGamma(0);
       // const bool active = (ConstrFunc[0] + Lambda[0]/gamma > 0.);
-      const bool active = (ConstrFunc[0] > 0.);
+      const bool active = (ConstrFunc_Store[0] > 0.);
       // const bool active = (Lambda_Tilde[0] > 0.);
       if(active) {
         BCheck_Norm = BCheck[0][0] - 1./gamma;
@@ -1504,7 +1506,10 @@ void COneShotFluidDriver::CheckLambda() {
     const bool active = (ConstrFunc_Store[iConstr] > 0.);
     // const bool active = (Lambda_Tilde_Old[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (active)) {
-      Lambda[iConstr] = max(Lambda[iConstr], 0.0);
+      if(Lambda[iConstr] < 0.0) {
+        InitializeLambdaTilde(iConstr);
+        Lambda[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
+      }
     }
   }
 }
