@@ -311,27 +311,6 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
-  // if(OneShotIter > config->GetOneShotStart() && 
-  //    OneShotIter < config->GetOneShotStop()) {
-  //   solver[ADJFLOW_SOL]->LoadSolution();
-
-  //   /*--- Evaluate the objective at the current solution, new design ---*/
-      
-  //   ComputeFunctionals();
-
-  //   SetObjFunction(false);
-  //   StoreObjFunction();
-  //   SetConstrFunction(false);
-  //   StoreConstrFunction();
-
-  //   // UpdateLambda(stepsize);
-  //   UpdateLambda(1.0);
-
-  //    /*--- Do a primal and adjoint update ---*/
-  //   PrimalDualStep();
-  //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-  // }
-
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
        (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
@@ -361,16 +340,6 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Recalculate Lagrangian and gradient with new Alpha, Beta, Gamma, and Lambda ---*/
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
   }
-
-  // if (OneShotIter > config->GetOneShotStart() && 
-  //     OneShotIter < config->GetOneShotStop()) {
-  //   // solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-  //   solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
-  //   /*--- Recalculate Lagrangian and gradient with new Alpha, Beta, Gamma, and Lambda ---*/
-  //   CalculateLagrangian();
-  //   SetAugLagGrad(TOTAL_AUGMENTED_OLD);
-
-  // }
 
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
   CheckLambda();
