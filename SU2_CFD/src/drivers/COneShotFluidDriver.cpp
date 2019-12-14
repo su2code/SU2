@@ -258,9 +258,9 @@ void COneShotFluidDriver::RunOneShot(){
         // solver[ADJFLOW_SOL]->LoadSolution();
 
       }
-      else{
-        UpdateLambda(1.0);
-      }
+      // else{
+      //   UpdateLambda(1.0);
+      // }
 
       solver[ADJFLOW_SOL]->LoadSaveSolution();
 
@@ -297,8 +297,8 @@ void COneShotFluidDriver::RunOneShot(){
         // UpdateLambda(1.0);
       }
 
-      // LoadOldLambda();
-      // UpdateLambda(stepsize);
+      LoadOldLambda();
+      UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
