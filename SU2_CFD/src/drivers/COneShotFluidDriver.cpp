@@ -378,7 +378,7 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
   StoreObjFunction();
   StoreConstrFunction();
-  // CheckLambda();
+  CheckLambda();
   CalculateLagrangian();
   StoreOldLambda();
   StoreOldConstrFunction();
@@ -1516,7 +1516,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     // }
     Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
-    if((config->GetKind_ConstrFuncType(iConstr)) != EQ_CONSTR && (active)) Lambda[iConstr] = max(Lambda[iConstr], 0.0);
+    // if((config->GetKind_ConstrFuncType(iConstr)) != EQ_CONSTR && (active)) Lambda[iConstr] = max(Lambda[iConstr], 0.0);
 
     // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
     //   helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
