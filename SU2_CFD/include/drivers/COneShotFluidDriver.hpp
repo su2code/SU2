@@ -200,6 +200,11 @@ public:
   void StoreGradDotDir(bool design_update);
 
   /*!
+   * \brief Store gradient dotted with search direction used in previous iteration.
+   */
+  void StoreOldGradDotDir();
+
+  /*!
    * \brief Perform parabolic backtracking.
    */
   su2double UpdateStepSizeQuadratic(void);
