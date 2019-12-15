@@ -369,6 +369,9 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- Recalculate Lagrangian and gradient with new Alpha, Beta, Gamma, and Lambda ---*/
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+
+    /*--- Reset stepsize ---*/
+    stepsize0 = 1.0;
   }
 
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
@@ -783,7 +786,6 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
     }
 
   }else{
-    stepsize0 = 1.0;
     if(config->GetBoolBFGSReset()){
       for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
         for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
