@@ -129,6 +129,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
   lb=-config->GetBound()*config->GetDesignScale();
   ub=config->GetBound()*config->GetDesignScale();
   epsilon=(ub-lb)/2.0;
+  stepsize0 = 1.0;
 
   /*---- calculate line search parameter ----*/
   CWolfeOne= 1E-4*config->GetDesignScale();
@@ -226,7 +227,7 @@ void COneShotFluidDriver::Run(){
 
 void COneShotFluidDriver::RunOneShot(){
 
-  su2double stepsize = 1.0, tol = config->GetOneShotSearchTol();
+  su2double stepsize = stepsize0, tol = config->GetOneShotSearchTol();
   unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShotSearchIter();
   bool bool_tol = false;
   unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
@@ -237,9 +238,6 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
   /*--- Perform line search on the design ---*/
-  stepsize = 1.0;
-  ArmijoIter = 0;
-  bool_tol = false;
   do {
 
     if(OneShotIter > config->GetOneShotStart() && OneShotIter < config->GetOneShotStop()){      
@@ -443,6 +441,16 @@ void COneShotFluidDriver::RunOneShot(){
   //   StoreLambda();
   //   StoreOldLambda();
   // }
+
+  /*--- Modifiy initial line search guess based on success of line search ---*/
+  if(OneShotIter > config->GetOneShotStart()) {
+    if(!bool_tol && stepsize < stepsize0) {
+      stepsize0 = stepsize0/2.0;
+    }
+    else if(!bool_tol) {
+      stepsize0 = min(1.0, stepsize0*2.0);
+    }
+  }
 
 }
 
