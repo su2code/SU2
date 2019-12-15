@@ -783,7 +783,7 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
     }
 
   }else{
-    /*--- Calculate new alpha, beta, gamma, and reset BFGS update if needed ---*/
+    stepsize0 = 1.0;
     if(config->GetBoolBFGSReset()){
       for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
         for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
