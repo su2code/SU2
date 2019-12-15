@@ -371,7 +371,7 @@ void COneShotFluidDriver::RunOneShot(){
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
 
     /*--- Reset stepsize ---*/
-    stepsize0 = 1.0;
+    // stepsize0 = 1.0;
   }
 
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
