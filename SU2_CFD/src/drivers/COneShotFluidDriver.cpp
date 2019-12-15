@@ -453,13 +453,13 @@ void COneShotFluidDriver::RunOneShot(){
   //   else if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
   //     stepsize0 = min(1.0, stepsize0*2.0);
   //   }
-  // }
     if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
       StoreOldGradDotDir();
       ComputeDesignVarUpdate(1.0);
       StoreGradDotDir(true);
       stepsize0 = max(10.0*tol, min(1.0, GradDotDirOld/GradDotDir));
     }
+  }
 
 }
 
