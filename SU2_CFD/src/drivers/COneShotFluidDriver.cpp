@@ -263,6 +263,8 @@ void COneShotFluidDriver::RunOneShot(){
         ComputeDesignVarUpdate(1.0);
         StoreGradDotDir(true);
         if(GradDotDir >= 0) {
+          stepsize = 0.0;
+          ComputeDesignVarUpdate(0.0);
           PrimalDualStep();
           solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
           break;
@@ -736,7 +738,7 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
     normsk += sk[iDV]*sk[iDV];
   }
 
-  if (vk > 1.0E-16){
+  if (vk > 0 && GradDotDir < 0){
     su2double** MatA = new su2double*[nDV_Total];
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       MatA[iDV] = new su2double[nDV_Total];
