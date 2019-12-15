@@ -258,7 +258,7 @@ void COneShotFluidDriver::RunOneShot(){
       }
       else{
         UpdateLambda(1.0);
-        ComputeDesignVarUpdate(1.0);
+        ComputeDesignVarUpdate(stepsize);
         StoreGradDotDir(true);
         if(GradDotDir >= 0) {
           stepsize = 0.0;
