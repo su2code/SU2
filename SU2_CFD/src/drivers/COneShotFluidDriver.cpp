@@ -260,6 +260,7 @@ void COneShotFluidDriver::RunOneShot(){
       }
       else{
         UpdateLambda(1.0);
+        ComputeDesignVarUpdate(1.0);
         StoreGradDotDir(true);
         if(GradDotDir >= 0) {
           PrimalDualStep();
