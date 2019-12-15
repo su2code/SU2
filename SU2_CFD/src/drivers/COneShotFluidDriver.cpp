@@ -458,7 +458,7 @@ void COneShotFluidDriver::RunOneShot(){
       StoreOldGradDotDir();
       ComputeDesignVarUpdate(1.0);
       StoreGradDotDir(true);
-      stepsize0 = max(10.0*tol, min(1.0, GradDotDirOld/GradDotDir));
+      stepsize0 = max(10.0*tol, min(1.0, 10.0*GradDotDirOld/GradDotDir));
     }
   }
 
