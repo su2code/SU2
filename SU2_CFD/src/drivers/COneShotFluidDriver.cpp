@@ -490,8 +490,8 @@ void COneShotFluidDriver::PrimalDualStep(){
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
-    // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc_Old[iConstr] > 0.);
+    const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+    // const bool active = (ConstrFunc_Old[iConstr] > 0.);
     // const bool active = (Lambda_Tilde_Old[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
       seeding[iConstr] = Lambda[iConstr];
@@ -867,8 +867,8 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
         const su2double gamma = config->GetOneShotGamma(iConstr);
         const su2double dh = ConstrFunc_Store[iConstr]-ConstrFunc_Old[iConstr];
         const su2double hdh = ConstrFunc_Old[iConstr]*dh;
-        // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-        const bool active = (ConstrFunc_Old[iConstr] > 0.);
+        const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+        // const bool active = (ConstrFunc_Old[iConstr] > 0.);
         // const bool active = (Lambda_Tilde_Old[iConstr] > 0.);
         // if(((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) && (hdh <= 0.)) || 
            // ((active) && (dh <= 0.))) {
@@ -936,8 +936,8 @@ void COneShotFluidDriver::CalculateLagrangian(){
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
     const su2double helper = ConstrFunc_Store[iConstr] + Lambda[iConstr]/gamma;
-    // const bool active = (ConstrFunc_Store[iConstr] + Lambda[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc_Store[iConstr] > 0.);
+    const bool active = (ConstrFunc_Store[iConstr] + Lambda[iConstr]/gamma > 0.);
+    // const bool active = (ConstrFunc_Store[iConstr] > 0.);
     // const bool active = (Lambda_Tilde[iConstr] > 0.);
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
@@ -1056,8 +1056,8 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
-    // const bool active = (ConstrFunc[iConstr] + Lambda[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc_Store[iConstr] > 0.);
+    const bool active = (ConstrFunc_Store[iConstr] + Lambda[iConstr]/gamma > 0.);
+    // const bool active = (ConstrFunc_Store[iConstr] > 0.);
     // const bool active = (Lambda_Tilde[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
       seeding[iConstr] = ConstrFunc[iConstr];
@@ -1142,8 +1142,8 @@ void COneShotFluidDriver::ComputeBetaTerm(){
   su2double* seeding = new su2double[nConstr];
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const su2double gamma = config->GetOneShotGamma(iConstr);
-    // const bool active = (ConstrFunc[iConstr] + Lambda[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc_Store[iConstr] > 0.);
+    const bool active = (ConstrFunc_Store[iConstr] + Lambda[iConstr]/gamma > 0.);
+    // const bool active = (ConstrFunc_Store[iConstr] > 0.);
     // const bool active = (Lambda_Tilde[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
       seeding[iConstr] = Lambda[iConstr];
@@ -1231,8 +1231,8 @@ void COneShotFluidDriver::ComputePreconditioner(){
   }
   if (nConstr == 1){
       const su2double gamma = config->GetOneShotGamma(0);
-      // const bool active = (ConstrFunc[0] + Lambda[0]/gamma > 0.);
-      const bool active = (ConstrFunc_Store[0] > 0.);
+      const bool active = (ConstrFunc_Store[0] + Lambda[0]/gamma > 0.);
+      // const bool active = (ConstrFunc_Store[0] > 0.);
       // const bool active = (Lambda_Tilde[0] > 0.);
       if(active) {
         BCheck_Norm = BCheck[0][0] - 1./gamma;
@@ -1465,8 +1465,8 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     const su2double gamma = config->GetOneShotGamma(iConstr);
     const su2double dh = ConstrFunc[iConstr]-ConstrFunc_Old[iConstr];
     const su2double hdh = ConstrFunc[iConstr]*dh;
-    // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc_Old[iConstr] > 0.);
+    const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+    // const bool active = (ConstrFunc_Old[iConstr] > 0.);
     // const bool active = (Lambda_Tilde_Old[iConstr] > 0.);
 
     // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
@@ -1546,8 +1546,8 @@ void COneShotFluidDriver::CheckLambda() {
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     su2double helper = 0.0;
     const su2double gamma = config->GetOneShotGamma(iConstr);
-    // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc_Store[iConstr] > 0.);
+    const bool active = (ConstrFunc_Store[iConstr] + Lambda[iConstr]/gamma > 0.);
+    // const bool active = (ConstrFunc_Store[iConstr] > 0.);
     // const bool active = (Lambda_Tilde_Old[iConstr] > 0.);
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (active)) {
       // if(Lambda[iConstr] < 0.0) {
@@ -1567,8 +1567,8 @@ void COneShotFluidDriver::StoreLambdaGrad() {
     const su2double beta = config->GetOneShotBeta();
     for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
       const su2double gamma = config->GetOneShotGamma(iConstr);
-      // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-      const bool active = (ConstrFunc_Old[iConstr] > 0.);
+      const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
+      // const bool active = (ConstrFunc_Old[iConstr] > 0.);
       su2double my_Gradient = 0.;
       if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
