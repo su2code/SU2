@@ -264,6 +264,7 @@ void COneShotFluidDriver::RunOneShot(){
         StoreGradDotDir(true);
         if(GradDotDir >= 0) {
           stepsize = 0.0;
+          bool_tol = true;
           ComputeDesignVarUpdate(0.0);
           PrimalDualStep();
           solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
