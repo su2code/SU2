@@ -374,9 +374,9 @@ void COneShotFluidDriver::RunOneShot(){
   }
 
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
-  CheckLambda();
   StoreObjFunction();
   StoreConstrFunction();
+  CheckLambda();
   CalculateLagrangian();
   StoreOldLambda();
   StoreOldConstrFunction();
