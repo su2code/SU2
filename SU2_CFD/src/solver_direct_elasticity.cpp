@@ -52,7 +52,7 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   unsigned short iTerm;
   element_container = new CElement** [MAX_TERMS]();
   for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
-    element_container[iTerm] = new CElement* [MAX_FE_KINDS]();
+    element_container[iTerm] = new CElement* [MAX_FE_KINDS*omp_get_max_threads()]();
 
   nodes = nullptr;
 
@@ -61,11 +61,6 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
 
   GradN_X = NULL;
   GradN_x = NULL;
-
-  Jacobian_c_ij = NULL;
-  Jacobian_s_ij = NULL;
-
-  MassMatrix_ij = NULL;
 
   mZeros_Aux = NULL;
   mId_Aux = NULL;
@@ -98,11 +93,10 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   unsigned long iPoint;
-  unsigned short iVar, jVar, iDim, jDim;
+  unsigned short iVar, iDim, jDim;
   unsigned short iTerm;
 
   bool dynamic = (config->GetTime_Domain());
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
   /*--- Generalized alpha method requires residual at previous time step. ---*/
   bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
   /*--- Test whether we consider dielectric elastomers ---*/
@@ -123,42 +117,47 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- Number of different terms for FEA ---*/
   nFEA_Terms = 1;
-  if (de_effects) nFEA_Terms++;       // The DE term is DE_TERM = 1
+  if (de_effects) nFEA_Terms++; // The DE term is DE_TERM = 1
 
   /*--- Here is where we assign the kind of each element ---*/
 
   /*--- First level: different possible terms of the equations ---*/
   element_container = new CElement** [MAX_TERMS]();
   for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
-    element_container[iTerm] = new CElement* [MAX_FE_KINDS]();
-
+    element_container[iTerm] = new CElement* [MAX_FE_KINDS*omp_get_max_threads()]();
 
   if (nDim == 2) {
+    for(int thread = 0; thread < omp_get_max_threads(); ++thread) {
 
-    /*--- Basic terms ---*/
-    element_container[FEA_TERM][EL_TRIA] = new CTRIA1();
-    element_container[FEA_TERM][EL_QUAD] = new CQUAD4();
+      const int offset = thread*MAX_FE_KINDS;
 
-    if (de_effects){
-      element_container[DE_TERM][EL_TRIA] = new CTRIA1();
-      element_container[DE_TERM][EL_QUAD] = new CQUAD4();
+      /*--- Basic terms ---*/
+      element_container[FEA_TERM][EL_TRIA+offset] = new CTRIA1();
+      element_container[FEA_TERM][EL_QUAD+offset] = new CQUAD4();
+
+      if (de_effects){
+        element_container[DE_TERM][EL_TRIA+offset] = new CTRIA1();
+        element_container[DE_TERM][EL_QUAD+offset] = new CQUAD4();
+      }
     }
-
   }
   else {
+    for(int thread = 0; thread < omp_get_max_threads(); ++thread) {
 
-    element_container[FEA_TERM][EL_TETRA] = new CTETRA1();
-    element_container[FEA_TERM][EL_HEXA]  = new CHEXA8 ();
-    element_container[FEA_TERM][EL_PYRAM] = new CPYRAM5();
-    element_container[FEA_TERM][EL_PRISM] = new CPRISM6();
+      const int offset = thread*MAX_FE_KINDS;
 
-    if (de_effects){
-      element_container[DE_TERM][EL_TETRA] = new CTETRA1();
-      element_container[DE_TERM][EL_HEXA]  = new CHEXA8 ();
-      element_container[DE_TERM][EL_PYRAM] = new CPYRAM5();
-      element_container[DE_TERM][EL_PRISM] = new CPRISM6();
+      element_container[FEA_TERM][EL_TETRA+offset] = new CTETRA1();
+      element_container[FEA_TERM][EL_HEXA +offset] = new CHEXA8 ();
+      element_container[FEA_TERM][EL_PYRAM+offset] = new CPYRAM5();
+      element_container[FEA_TERM][EL_PRISM+offset] = new CPRISM6();
+
+      if (de_effects){
+        element_container[DE_TERM][EL_TETRA+offset] = new CTETRA1();
+        element_container[DE_TERM][EL_HEXA +offset] = new CHEXA8 ();
+        element_container[DE_TERM][EL_PYRAM+offset] = new CPYRAM5();
+        element_container[DE_TERM][EL_PRISM+offset] = new CPRISM6();
+      }
     }
-
   }
 
   /*--- Set element properties ---*/
@@ -245,54 +244,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   bool prestretch_fem = config->GetPrestretch();
   if (prestretch_fem) Set_Prestretch(geometry, config);
-
-  /*--- Term ij of the Jacobian ---*/
-
-  Jacobian_ij = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_ij[iVar] = new su2double [nVar];
-    for (jVar = 0; jVar < nVar; jVar++) {
-      Jacobian_ij[iVar][jVar] = 0.0;
-    }
-  }
-
-  /*--- Term ij of the Mass Matrix (only if dynamic analysis) ---*/
-  MassMatrix_ij = NULL;
-  if (dynamic) {
-    MassMatrix_ij = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      MassMatrix_ij[iVar] = new su2double [nVar];
-      for (jVar = 0; jVar < nVar; jVar++) {
-        MassMatrix_ij[iVar][jVar] = 0.0;
-      }
-    }
-  }
-
-  Jacobian_c_ij = NULL;
-  Jacobian_s_ij = NULL;
-  if (nonlinear_analysis) {
-
-    /*--- Term ij of the Jacobian (constitutive contribution) ---*/
-
-    Jacobian_c_ij = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_c_ij[iVar] = new su2double [nVar];
-      for (jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_c_ij[iVar][jVar] = 0.0;
-      }
-    }
-
-    /*--- Term ij of the Jacobian (stress contribution) ---*/
-
-    Jacobian_s_ij = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_s_ij[iVar] = new su2double [nVar];
-      for (jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_s_ij[iVar][jVar] = 0.0;
-      }
-    }
-
-  }
 
   /*--- Stress contribution to the node i ---*/
   Res_Stress_i = new su2double[nVar];
@@ -479,7 +430,7 @@ CFEASolver::~CFEASolver(void) {
 
   if (element_container != NULL) {
     for (iVar = 0; iVar < MAX_TERMS; iVar++) {
-      for (jVar = 0; jVar < MAX_FE_KINDS; jVar++) {
+      for (jVar = 0; jVar < MAX_FE_KINDS*omp_get_max_threads(); jVar++) {
         if (element_container[iVar][jVar] != NULL) delete element_container[iVar][jVar];
       }
       delete [] element_container[iVar];
@@ -494,15 +445,11 @@ CFEASolver::~CFEASolver(void) {
   }
 
   for (iVar = 0; iVar < nVar; iVar++) {
-    if (Jacobian_s_ij!= NULL) delete [] Jacobian_s_ij[iVar];
-    if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij[iVar];
     if (mZeros_Aux != NULL) delete [] mZeros_Aux[iVar];
     if (mId_Aux != NULL) delete [] mId_Aux[iVar];
     if (stressTensor!= NULL) delete [] stressTensor[iVar];
   }
 
-  if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij;
-  if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij;
   delete [] Res_Stress_i;
   delete [] Res_Ext_Surf;
   if (Res_Time_Cont != NULL) delete[] Res_Time_Cont;
@@ -1104,31 +1051,21 @@ void CFEASolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
 void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
-  unsigned long iElem, iVar, jVar;
-  unsigned short iNode, iDim, nNodes = 0;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord, val_Sol;
-  int EL_KIND = 0;
-
-  const su2double *Kab = NULL;
-  const su2double *Ta  = NULL;
-  unsigned short NelNodes, jNode;
-
-  bool topology_mode = config->GetTopology_Optimization();
-  su2double simp_exponent = config->GetSIMP_Exponent();
-  su2double simp_minstiff = config->GetSIMP_MinStiffness();
+  const bool topology_mode = config->GetTopology_Optimization();
+  const su2double simp_exponent = config->GetSIMP_Exponent();
+  const su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
   /*--- Start OpenMP parallel region. ---*/
 
   SU2_OMP_PARALLEL
   {
 #ifdef HAVE_OMP
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+
     /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring) {
-
-      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
-
+    for (auto color : ElemColoring)
+    {
       SU2_OMP_FOR_DYN(chunkSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
@@ -1138,70 +1075,59 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
     {
       for (auto iElem = 0ul; iElem < nElement; iElem++) {
 #endif
-        
-        
-        switch(geometry->elem[iElem]->GetVTK_Type()) {
-          case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
-          case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
-          case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
-          case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
-          case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-          case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
-        }
+        unsigned short iNode, jNode, iDim, iVar;
 
-        /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+        int thread = omp_get_thread_num();
+
+        /*--- Convert VTK type to index in the element container. ---*/
+        int EL_KIND;
+        unsigned short nNodes;
+        GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
+
+        /*--- Each thread needs a dedicated element. ---*/
+        CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
+
+        /*--- For the number of nodes, get the coordinates and cache the point indices. ---*/
+        unsigned long indexNode[MAXNNODE];
 
         for (iNode = 0; iNode < nNodes; iNode++) {
 
           indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
 
           for (iDim = 0; iDim < nDim; iDim++) {
-            val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-            val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
-            element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
-            element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(iNode, iDim, val_Sol);
+            su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+            su2double val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
+            element->SetRef_Coord(iNode, iDim, val_Coord);
+            element->SetCurr_Coord(iNode, iDim, val_Sol);
           }
         }
 
-        /*--- In topology mode determine the penalty to apply to the stiffness ---*/
+        /*--- In topology mode determine the penalty to apply to the stiffness. ---*/
         su2double simp_penalty = 1.0;
         if (topology_mode) {
-          simp_penalty = simp_minstiff+(1.0-simp_minstiff)*pow(element_properties[iElem]->GetPhysicalDensity(),simp_exponent);
+          su2double density = element_properties[iElem]->GetPhysicalDensity();
+          simp_penalty = simp_minstiff+(1.0-simp_minstiff)*pow(density,simp_exponent);
         }
 
         /*--- Set the properties of the element ---*/
-        element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
+        element->Set_ElProperties(element_properties[iElem]);
 
-        /*--- Compute the components of the jacobian and the stress term ---*/
-        if (element_based){
-          numerics[element_properties[iElem]->GetMat_Mod()]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
-        }
-        else{
-          numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
-        }
+        /*--- Compute the components of the jacobian and the stress term, one numerics per thread. ---*/
+        int NUM_TERM = thread*MAX_TERMS + element_based? element_properties[iElem]->GetMat_Mod() : FEA_TERM;
 
-        NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+        numerics[NUM_TERM]->Compute_Tangent_Matrix(element, config);
 
-        for (iNode = 0; iNode < NelNodes; iNode++) {
+        /*--- Update residual and stiffness matrix with contributions from the element. ---*/
+        for (iNode = 0; iNode < nNodes; iNode++) {
 
-          Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
-          for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = simp_penalty*Ta[iVar];
+          auto Ta = element->Get_Kt_a(iNode);
+          for (iVar = 0; iVar < nVar; iVar++)
+            LinSysRes.GetBlock(indexNode[iNode])[iVar] -= simp_penalty*Ta[iVar];
 
-          LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
-
-          for (jNode = 0; jNode < NelNodes; jNode++) {
-
-            Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
-
-            for (iVar = 0; iVar < nVar; iVar++) {
-              for (jVar = 0; jVar < nVar; jVar++) {
-                Jacobian_ij[iVar][jVar] = simp_penalty*Kab[iVar*nVar+jVar];
-              }
-            }
-
-            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+          for (jNode = 0; jNode < nNodes; jNode++) {
+            auto Kab = element->Get_Kab(iNode, jNode);
+            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], simp_penalty, Kab);
           }
-
         }
 
       } // end iElem loop
@@ -1214,533 +1140,560 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
 
 void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
-  unsigned long iElem, iVar, jVar;
-  unsigned short iNode, iDim, nNodes = 0;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord, val_Sol, val_Ref = 0.0;
-  int EL_KIND = 0;
+  const bool prestretch_fem = config->GetPrestretch();
+  const bool de_effects = config->GetDE_Effects();
 
-  bool prestretch_fem = config->GetPrestretch();
+  const bool topology_mode = config->GetTopology_Optimization();
+  const su2double simp_exponent = config->GetSIMP_Exponent();
+  const su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
-  su2double Ks_ab;
-  const su2double *Kab = NULL;
-  const su2double *Ta = NULL;
+  /*--- Start OpenMP parallel region. ---*/
 
-  const su2double *Ta_DE = NULL;
-  su2double Ks_ab_DE = 0.0;
+  SU2_OMP_PARALLEL
+  {
+#ifdef HAVE_OMP
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
 
-  unsigned short NelNodes, jNode;
+    /*--- Loop over element colors. ---*/
+    for (auto color : ElemColoring)
+    {
+      SU2_OMP_FOR_DYN(chunkSize)
+      for(auto k = 0ul; k < color.size; ++k) {
 
-  bool de_effects = config->GetDE_Effects();
+        auto iElem = color.indices[k];
+#else
+    /*--- Natural coloring. ---*/
+    {
+      for (auto iElem = 0ul; iElem < nElement; iElem++) {
+#endif
+        unsigned short iNode, jNode, iDim, iVar;
 
-  bool topology_mode = config->GetTopology_Optimization();
-  su2double simp_exponent = config->GetSIMP_Exponent();
-  su2double simp_minstiff = config->GetSIMP_MinStiffness();
+        int thread = omp_get_thread_num();
 
-  /*--- Loops over all the elements ---*/
+        /*--- Convert VTK type to index in the element container. ---*/
+        int EL_KIND;
+        unsigned short nNodes;
+        GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+        /*--- Each thread needs a dedicated element. ---*/
+        CElement* fea_elem = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
+        CElement* de_elem = element_container[DE_TERM][EL_KIND+thread*MAX_FE_KINDS];
 
-    switch(geometry->elem[iElem]->GetVTK_Type()) {
-      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
-      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
-      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
-      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
-      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
-    }
+        /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+        unsigned long indexNode[MAXNNODE];
 
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+        for (iNode = 0; iNode < nNodes; iNode++) {
 
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
+          indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
 
-        /*--- Set current coordinate ---*/
-        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(iNode, iDim, val_Sol);
-        if (de_effects) element_container[DE_TERM][EL_KIND]->SetCurr_Coord(iNode, iDim, val_Sol);
+          for (iDim = 0; iDim < nDim; iDim++) {
+            /*--- Compute current coordinate. ---*/
+            su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+            su2double val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
 
-        /*--- Set reference coordinate ---*/
-        if (prestretch_fem) {
-          val_Ref = nodes->GetPrestretch(indexNode[iNode],iDim);
-          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Ref);
-          if (de_effects) element_container[DE_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Ref);
-        }
-        else {
-          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
-          if (de_effects) element_container[DE_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
-        }
-      }
-    }
+            /*--- If pre-stretched the reference coordinate is stored in the nodes. ---*/
+            if (prestretch_fem)
+              val_Coord = nodes->GetPrestretch(indexNode[iNode],iDim);
 
-    /*--- In topology mode determine the penalty to apply to the stiffness ---*/
-    su2double simp_penalty = 1.0;
-    if (topology_mode) {
-      simp_penalty = simp_minstiff+(1.0-simp_minstiff)*pow(element_properties[iElem]->GetPhysicalDensity(),simp_exponent);
-    }
+            /*--- Set coordinates. ---*/
+            fea_elem->SetCurr_Coord(iNode, iDim, val_Sol);
+            fea_elem->SetRef_Coord(iNode, iDim, val_Coord);
 
-    /*--- Set the properties of the element ---*/
-    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
-    if (de_effects) element_container[DE_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
-
-    /*--- Compute the components of the Jacobian and the stress term for the material ---*/
-    if (element_based){
-      numerics[element_properties[iElem]->GetMat_Mod()]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
-    }
-    else{
-      numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
-    }
-
-    /*--- Compute the electric component of the Jacobian and the stress term ---*/
-    if (de_effects) numerics[DE_TERM]->Compute_Tangent_Matrix(element_container[DE_TERM][EL_KIND], config);
-
-    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
-
-    for (iNode = 0; iNode < NelNodes; iNode++) {
-
-      Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
-      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = simp_penalty*Ta[iVar];
-
-      /*--- Check if this is my node or not ---*/
-      LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
-
-      /*--- Retrieve the electric contribution to the Residual ---*/
-      if (de_effects){
-        Ta_DE = element_container[DE_TERM][EL_KIND]->Get_Kt_a(iNode);
-        for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = simp_penalty*Ta_DE[iVar];
-        LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
-
-      }
-
-      for (jNode = 0; jNode < NelNodes; jNode++) {
-
-        /*--- Retrieve the values of the FEA term ---*/
-        Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
-        Ks_ab = element_container[FEA_TERM][EL_KIND]->Get_Ks_ab(iNode,jNode);
-
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Jacobian_s_ij[iVar][iVar] = simp_penalty*Ks_ab;
-          for (jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_c_ij[iVar][jVar] = simp_penalty*Kab[iVar*nVar+jVar];
+            if (de_effects) {
+              de_elem->SetCurr_Coord(iNode, iDim, val_Sol);
+              de_elem->SetRef_Coord(iNode, iDim, val_Coord);
+            }
           }
         }
 
-        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_c_ij);
-        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
-
-        /*--- Retrieve the electric contribution to the Jacobian ---*/
-        if (de_effects){
-          //          Kab_DE = element_container[DE_TERM][EL_KIND]->Get_Kab(iNode, jNode);
-          Ks_ab_DE = element_container[DE_TERM][EL_KIND]->Get_Ks_ab(iNode,jNode);
-
-          for (iVar = 0; iVar < nVar; iVar++){
-            Jacobian_s_ij[iVar][iVar] = simp_penalty*Ks_ab_DE;
-          }
-
-          Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
+        /*--- In topology mode determine the penalty to apply to the stiffness. ---*/
+        su2double simp_penalty = 1.0;
+        if (topology_mode) {
+          su2double density = element_properties[iElem]->GetPhysicalDensity();
+          simp_penalty = simp_minstiff+(1.0-simp_minstiff)*pow(density,simp_exponent);
         }
 
-      }
+        /*--- Set the properties of the element. ---*/
+        fea_elem->Set_ElProperties(element_properties[iElem]);
+        if (de_effects)
+          de_elem->Set_ElProperties(element_properties[iElem]);
 
-    }
+        /*--- Compute the components of the Jacobian and the stress term for the material. ---*/
+        int NUM_TERM = thread*MAX_TERMS + element_based? element_properties[iElem]->GetMat_Mod() : FEA_TERM;
 
-  }
+        numerics[NUM_TERM]->Compute_Tangent_Matrix(fea_elem, config);
+
+        /*--- Compute the electric component of the Jacobian and the stress term. ---*/
+        if (de_effects)
+          numerics[DE_TERM + thread*MAX_TERMS]->Compute_Tangent_Matrix(de_elem, config);
+
+        /*--- Update residual and stiffness matrix with contributions from the element. ---*/
+        for (iNode = 0; iNode < nNodes; iNode++) {
+
+          auto Ta = fea_elem->Get_Kt_a(iNode);
+          for (iVar = 0; iVar < nVar; iVar++)
+            LinSysRes.GetBlock(indexNode[iNode])[iVar] -= simp_penalty*Ta[iVar];
+
+          /*--- Retrieve the electric contribution to the residual. ---*/
+          if (de_effects) {
+            auto Ta_DE = de_elem->Get_Kt_a(iNode);
+            for (iVar = 0; iVar < nVar; iVar++)
+              LinSysRes.GetBlock(indexNode[iNode])[iVar] -= simp_penalty*Ta_DE[iVar];
+          }
+
+          for (jNode = 0; jNode < nNodes; jNode++) {
+
+            /*--- Get a pointer to the matrix block to perform the update. ---*/
+            auto Kij = Jacobian.GetBlock(indexNode[iNode], indexNode[jNode]);
+
+            /*--- Retrieve the values of the FEA term. ---*/
+            auto Kab = fea_elem->Get_Kab(iNode, jNode);
+            su2double Ks_ab = fea_elem->Get_Ks_ab(iNode, jNode);
+
+            /*--- Full block. ---*/
+            for (iVar = 0; iVar < nVar*nVar; iVar++)
+              Kij[iVar] += simp_penalty*Kab[iVar];
+
+            /*--- Only the block's diagonal. ---*/
+            for (iVar = 0; iVar < nVar; iVar++)
+              Kij[iVar*(nVar+1)] += simp_penalty*Ks_ab;
+
+            /*--- Retrieve the electric contribution to the Jacobian ---*/
+            if (de_effects) {
+              //auto Kab_DE = de_elem->Get_Kab(iNode, jNode);
+              su2double Ks_ab_DE = de_elem->Get_Ks_ab(iNode, jNode);
+
+              for (iVar = 0; iVar < nVar; iVar++)
+                Kij[iVar*(nVar+1)] += simp_penalty*Ks_ab_DE;
+            }
+          }
+        }
+
+      } // end iElem loop
+
+    } // end color loop
+
+  } // end SU2_OMP_PARALLEL
 
 }
 
 void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
-  unsigned long iElem, iVar;
-  unsigned short iNode, iDim, nNodes = 0;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord;
-  int EL_KIND = 0;
+  const bool topology_mode = config->GetTopology_Optimization();
+  const su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
-  su2double Mab;
-  unsigned short NelNodes, jNode;
+  /*--- Start OpenMP parallel region. ---*/
 
-  bool topology_mode = config->GetTopology_Optimization();
-  su2double simp_minstiff = config->GetSIMP_MinStiffness();
+  SU2_OMP_PARALLEL
+  {
+#ifdef HAVE_OMP
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
 
-  /*--- Loops over all the elements ---*/
+    /*--- Loop over element colors. ---*/
+    for (auto color : ElemColoring)
+    {
+      SU2_OMP_FOR_DYN(chunkSize)
+      for(auto k = 0ul; k < color.size; ++k) {
 
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+        auto iElem = color.indices[k];
+#else
+    /*--- Natural coloring. ---*/
+    {
+      for (auto iElem = 0ul; iElem < nElement; iElem++) {
+#endif
+        unsigned short iNode, jNode, iDim, iVar;
 
-    switch(geometry->elem[iElem]->GetVTK_Type()) {
-      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
-      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
-      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
-      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
-      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
-    }
+        int thread = omp_get_thread_num();
 
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+        /*--- Convert VTK type to index in the element container. ---*/
+        int EL_KIND;
+        unsigned short nNodes;
+        GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
-      }
-    }
+        /*--- Each thread needs a dedicated element. ---*/
+        CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
 
-    /*--- In topology mode determine the penalty to apply to the mass, linear function of the physical density ---*/
-    su2double simp_penalty = 1.0;
-    if (topology_mode) {
-      simp_penalty = simp_minstiff+(1.0-simp_minstiff)*element_properties[iElem]->GetPhysicalDensity();
-    }
+        /*--- For the number of nodes, get the coordinates and cache the point indices. ---*/
+        unsigned long indexNode[MAXNNODE];
 
-    /*--- Set the properties of the element ---*/
-    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
-
-    numerics[FEA_TERM]->Compute_Mass_Matrix(element_container[FEA_TERM][EL_KIND], config);
-
-    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
-
-    for (iNode = 0; iNode < NelNodes; iNode++) {
-
-      for (jNode = 0; jNode < NelNodes; jNode++) {
-
-        Mab = element_container[FEA_TERM][EL_KIND]->Get_Mab(iNode, jNode);
-
-        for (iVar = 0; iVar < nVar; iVar++) {
-          MassMatrix_ij[iVar][iVar] = simp_penalty*Mab;
+        for (iNode = 0; iNode < nNodes; iNode++) {
+          indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+          for (iDim = 0; iDim < nDim; iDim++) {
+            su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+            element->SetRef_Coord(iNode, iDim, val_Coord);
+          }
         }
 
-        MassMatrix.AddBlock(indexNode[iNode], indexNode[jNode], MassMatrix_ij);
+        /*--- In topology mode determine the penalty to apply to the mass,
+         *    linear function of the physical density. ---*/
+        su2double simp_penalty = 1.0;
+        if (topology_mode) {
+          simp_penalty = simp_minstiff+(1.0-simp_minstiff)*element_properties[iElem]->GetPhysicalDensity();
+        }
 
-      }
+        /*--- Set the properties of the element and compute its mass matrix. ---*/
+        element->Set_ElProperties(element_properties[iElem]);
 
-    }
+        numerics[FEA_TERM + thread*MAX_TERMS]->Compute_Mass_Matrix(element, config);
 
-  }
+        /*--- Add contributions of this element to the mass matrix. ---*/
+        for (iNode = 0; iNode < nNodes; iNode++) {
+
+          for (jNode = 0; jNode < nNodes; jNode++) {
+
+            auto Mij = MassMatrix.GetBlock(indexNode[iNode], indexNode[jNode]);
+            su2double Mab = element->Get_Mab(iNode, jNode);
+
+            for (iVar = 0; iVar < nVar; iVar++)
+              Mij[iVar*(nVar+1)] += simp_penalty*Mab;
+          }
+        }
+
+      } // end iElem loop
+
+    } // end color loop
+
+  } // end SU2_OMP_PARALLEL
 
 }
 
 void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
-  unsigned long iElem, iVar, iPoint;
-  unsigned short iNode, iDim, nNodes = 0;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord;
-  int EL_KIND = 0;
+  const bool topology_mode = config->GetTopology_Optimization();
+  const su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
-  su2double Mab;
-  unsigned short NelNodes, jNode;
+  /*--- Start OpenMP parallel region. ---*/
 
-  bool topology_mode = config->GetTopology_Optimization();
-  su2double simp_minstiff = config->GetSIMP_MinStiffness();
+  SU2_OMP_PARALLEL
+  {
+    TimeRes.SetValZero();
+    SU2_OMP_BARRIER
 
-  /*--- Set vector entries to zero ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-    TimeRes.SetBlock_Zero(iPoint);
-  }
+#ifdef HAVE_OMP
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
 
-  /*--- Loops over all the elements ---*/
+    /*--- Loop over element colors. ---*/
+    for (auto color : ElemColoring)
+    {
+      SU2_OMP_FOR_DYN(chunkSize)
+      for(auto k = 0ul; k < color.size; ++k) {
 
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+        auto iElem = color.indices[k];
+#else
+    /*--- Natural coloring. ---*/
+    {
+      for (auto iElem = 0ul; iElem < nElement; iElem++) {
+#endif
+        unsigned short iNode, jNode, iDim, iVar;
 
-    switch(geometry->elem[iElem]->GetVTK_Type()) {
-      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
-      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
-      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
-      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
-      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
-    }
+        int thread = omp_get_thread_num();
 
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+        /*--- Convert VTK type to index in the element container. ---*/
+        int EL_KIND;
+        unsigned short nNodes;
+        GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
-      }
-    }
+        /*--- Each thread needs a dedicated element. ---*/
+        CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
 
-    /*--- In topology mode determine the penalty to apply to the mass, linear function of the physical density ---*/
-    su2double simp_penalty = 1.0;
-    if (topology_mode) {
-      simp_penalty = simp_minstiff+(1.0-simp_minstiff)*element_properties[iElem]->GetPhysicalDensity();
-    }
+        /*--- For the number of nodes, get the coordinates and cache the point indices. ---*/
+        unsigned long indexNode[MAXNNODE];
 
-    /*--- Set the properties of the element ---*/
-    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
-
-    numerics[FEA_TERM]->Compute_Mass_Matrix(element_container[FEA_TERM][EL_KIND], config);
-
-    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
-
-    for (iNode = 0; iNode < NelNodes; iNode++) {
-
-      for (jNode = 0; jNode < NelNodes; jNode++) {
-
-        Mab = element_container[FEA_TERM][EL_KIND]->Get_Mab(iNode, jNode);
-
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Residual_i[iVar] = simp_penalty * Mab * TimeRes_Aux.GetBlock(indexNode[iNode],iVar);
-          Residual_j[iVar] = simp_penalty * Mab * TimeRes_Aux.GetBlock(indexNode[jNode],iVar);
+        for (iNode = 0; iNode < nNodes; iNode++) {
+          indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+          for (iDim = 0; iDim < nDim; iDim++) {
+            su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+            element->SetRef_Coord(iNode, iDim, val_Coord);
+          }
         }
 
-        TimeRes.AddBlock(indexNode[iNode],Residual_i);
-        TimeRes.AddBlock(indexNode[jNode],Residual_j);
+        /*--- In topology mode determine the penalty to apply to the mass,
+         *    linear function of the physical density. ---*/
+        su2double simp_penalty = 1.0;
+        if (topology_mode) {
+          simp_penalty = simp_minstiff+(1.0-simp_minstiff)*element_properties[iElem]->GetPhysicalDensity();
+        }
 
-      }
+        /*--- Set the properties of the element and compute its mass matrix. ---*/
+        element->Set_ElProperties(element_properties[iElem]);
 
-    }
+        numerics[FEA_TERM + thread*MAX_TERMS]->Compute_Mass_Matrix(element, config);
 
-  }
+        /*--- Add contributions of this element to the mass matrix. ---*/
+        for (iNode = 0; iNode < nNodes; iNode++) {
+          for (jNode = 0; jNode < nNodes; jNode++) {
+
+            su2double Mab = simp_penalty * element->Get_Mab(iNode, jNode);
+
+            for (iVar = 0; iVar < nVar; iVar++) {
+              TimeRes.GetBlock(indexNode[iNode])[iVar] += Mab * TimeRes_Aux.GetBlock(indexNode[iNode],iVar);
+              TimeRes.GetBlock(indexNode[jNode])[iVar] += Mab * TimeRes_Aux.GetBlock(indexNode[jNode],iVar);
+            }
+          }
+        }
+
+      } // end iElem loop
+
+    } // end color loop
+
+  } // end SU2_OMP_PARALLEL
 
 }
 
 void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
+  const bool prestretch_fem = config->GetPrestretch();
 
-  unsigned long iElem, iVar;
-  unsigned short iNode, iDim, nNodes = 0;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord, val_Sol, val_Ref = 0.0;
-  int EL_KIND = 0;
+  const bool topology_mode = config->GetTopology_Optimization();
+  const su2double simp_exponent = config->GetSIMP_Exponent();
+  const su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
-  bool prestretch_fem = config->GetPrestretch();
+  /*--- Start OpenMP parallel region. ---*/
 
-  const su2double *Ta = NULL;
-  unsigned short NelNodes;
+  SU2_OMP_PARALLEL
+  {
+#ifdef HAVE_OMP
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
 
-  bool topology_mode = config->GetTopology_Optimization();
-  su2double simp_exponent = config->GetSIMP_Exponent();
-  su2double simp_minstiff = config->GetSIMP_MinStiffness();
+    /*--- Loop over element colors. ---*/
+    for (auto color : ElemColoring)
+    {
+      SU2_OMP_FOR_DYN(chunkSize)
+      for(auto k = 0ul; k < color.size; ++k) {
 
-  /*--- Loops over all the elements ---*/
+        auto iElem = color.indices[k];
+#else
+    /*--- Natural coloring. ---*/
+    {
+      for (auto iElem = 0ul; iElem < nElement; iElem++) {
+#endif
+        unsigned short iNode, iDim, iVar;
 
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+        int thread = omp_get_thread_num();
 
-    switch(geometry->elem[iElem]->GetVTK_Type()) {
-      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
-      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
-      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
-      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
-      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
-    }
+        /*--- Convert VTK type to index in the element container. ---*/
+        int EL_KIND;
+        unsigned short nNodes;
+        GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+        /*--- Each thread needs a dedicated element. ---*/
+        CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
 
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
-        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(iNode, iDim, val_Sol);
-        if (prestretch_fem) {
-          val_Ref = nodes->GetPrestretch(indexNode[iNode],iDim);
-          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Ref);
+        /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+        unsigned long indexNode[MAXNNODE];
+
+        for (iNode = 0; iNode < nNodes; iNode++) {
+
+          indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            /*--- Compute current coordinate. ---*/
+            su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+            su2double val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
+
+            /*--- If pre-stretched the reference coordinate is stored in the nodes. ---*/
+            if (prestretch_fem)
+              val_Coord = nodes->GetPrestretch(indexNode[iNode],iDim);
+
+            /*--- Set coordinates. ---*/
+            element->SetCurr_Coord(iNode, iDim, val_Sol);
+            element->SetRef_Coord(iNode, iDim, val_Coord);
+          }
         }
-        else {
-          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
+
+        /*--- In topology mode determine the penalty to apply to the stiffness ---*/
+        su2double simp_penalty = 1.0;
+        if (topology_mode) {
+          su2double density = element_properties[iElem]->GetPhysicalDensity();
+          simp_penalty = simp_minstiff+(1.0-simp_minstiff)*pow(density,simp_exponent);
         }
-      }
-    }
 
-    /*--- In topology mode determine the penalty to apply to the stiffness ---*/
-    su2double simp_penalty = 1.0;
-    if (topology_mode) {
-      simp_penalty = simp_minstiff+(1.0-simp_minstiff)*pow(element_properties[iElem]->GetPhysicalDensity(),simp_exponent);
-    }
+        /*--- Set the properties of the element. ---*/
+        element->Set_ElProperties(element_properties[iElem]);
 
-    /*--- Set the properties of the element ---*/
-    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
+        /*--- Compute the components of the Jacobian and the stress term for the material. ---*/
+        int NUM_TERM = thread*MAX_TERMS + element_based? element_properties[iElem]->GetMat_Mod() : FEA_TERM;
 
-    /*--- Compute the components of the jacobian and the stress term ---*/
-    if (element_based){
-      numerics[element_properties[iElem]->GetMat_Mod()]->Compute_NodalStress_Term(element_container[FEA_TERM][EL_KIND], config);
-    }
-    else{
-      numerics[FEA_TERM]->Compute_NodalStress_Term(element_container[FEA_TERM][EL_KIND], config);
-    }
+        numerics[NUM_TERM]->Compute_NodalStress_Term(element, config);
 
-    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+        for (iNode = 0; iNode < nNodes; iNode++) {
+          auto Ta = element->Get_Kt_a(iNode);
+          for (iVar = 0; iVar < nVar; iVar++)
+            LinSysRes.GetBlock(indexNode[iNode])[iVar] -= simp_penalty*Ta[iVar];
+        }
 
-    for (iNode = 0; iNode < NelNodes; iNode++) {
+      } // end iElem loop
 
-      Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
-      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = simp_penalty*Ta[iVar];
+    } // end color loop
 
-      LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
-
-    }
-
-  }
+  } // end SU2_OMP_PARALLEL
 
 }
 
 void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
-  unsigned long iPoint, iElem, iVar;
-  unsigned short iNode, iDim, iStress;
-  unsigned short nNodes = 0, nStress;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord, val_Sol, val_Ref = 0.0;
-  int EL_KIND = 0;
+  const bool prestretch_fem = config->GetPrestretch();
 
-  bool prestretch_fem = config->GetPrestretch();
+  const bool topology_mode = config->GetTopology_Optimization();
+  const su2double simp_exponent = config->GetSIMP_Exponent();
 
-  bool dynamic = (config->GetTime_Domain());
+  const unsigned short nStress = (nDim == 2) ? 3 : 6;
 
-  bool topology_mode = config->GetTopology_Optimization();
-  su2double simp_exponent = config->GetSIMP_Exponent();
+  /*--- Reduction variable to compute the maximum von Misses stress,
+   *    each thread uses the first element of each row, the rest of
+   *    the row is padding to prevent false sharing. ---*/
+  su2activematrix auxMaxVonMisses(omp_get_max_threads(), 64/sizeof(su2double));
+  auxMaxVonMisses.setConstant(0.0);
 
-  nStress = (nDim == 2) ? 3 : 6;
+  /*--- Start OpenMP parallel region. ---*/
 
-  const su2double *Ta = NULL;
-
-  unsigned short NelNodes;
-
-  /*--- Restart stress to avoid adding results from previous time steps ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    for (iStress = 0; iStress < nStress; iStress++) {
-      nodes->SetStress_FEM(iPoint,iStress, 0.0);
-    }
-  }
-
-  /*--- Loops over all the elements ---*/
-
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-
-    switch(geometry->elem[iElem]->GetVTK_Type()) {
-      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
-      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
-      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
-      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
-      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
-    }
-
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
-
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-      //      for (iDim = 0; iDim < nDim; iDim++) {
-      //        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-      //        val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
-      //        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-      //        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
-      //      }
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
-        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(iNode, iDim, val_Sol);
-        if (prestretch_fem) {
-          val_Ref = nodes->GetPrestretch(indexNode[iNode],iDim);
-          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Ref);
-        }
-        else {
-          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
-        }
+  SU2_OMP_PARALLEL
+  {
+    /*--- Restart stress to avoid adding over results from previous time steps. ---*/
+    SU2_OMP_FOR_STAT(256)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (unsigned short iStress = 0; iStress < nStress; iStress++) {
+        nodes->SetStress_FEM(iPoint,iStress, 0.0);
       }
     }
 
-    /*--- Correct the stresses and reactions for topology optimization densities. ---*/
-    su2double simp_penalty = 1.0;
-    if (topology_mode) {
-      simp_penalty = pow(element_properties[iElem]->GetPhysicalDensity(),simp_exponent);
-    }
+#ifdef HAVE_OMP
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
 
-    /*--- Set the properties of the element ---*/
-    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
+    /*--- Loop over element colors. ---*/
+    for (auto color : ElemColoring)
+    {
+      SU2_OMP_FOR_DYN(chunkSize)
+      for(auto k = 0ul; k < color.size; ++k) {
 
-    /*--- Compute the components of the jacobian and the stress term ---*/
-    if (element_based){
-      numerics[element_properties[iElem]->GetMat_Mod()]->Compute_Averaged_NodalStress(element_container[FEA_TERM][EL_KIND], config);
-    }
-    else{
-      numerics[FEA_TERM]->Compute_Averaged_NodalStress(element_container[FEA_TERM][EL_KIND], config);
-    }
-
-    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
-
-    for (iNode = 0; iNode < NelNodes; iNode++) {
-
-      /*--- This only works if the problem is nonlinear ---*/
-      Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
-      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = simp_penalty*Ta[iVar];
-
-      LinSysReact.AddBlock(indexNode[iNode], Res_Stress_i);
-
-      for (iStress = 0; iStress < nStress; iStress++) {
-        nodes->AddStress_FEM(indexNode[iNode],iStress, simp_penalty *
-                                              (element_container[FEA_TERM][EL_KIND]->Get_NodalStress(iNode, iStress) /
-                                               geometry->node[indexNode[iNode]]->GetnElem()) );
-      }
-
-    }
-
-  }
-
-  su2double *Stress;
-  su2double VonMises_Stress, MaxVonMises_Stress = 0.0;
-  su2double Sxx,Syy,Szz,Sxy,Sxz,Syz,S1,S2;
-
-  /*--- For the number of nodes in the mesh ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    /*--- Get the stresses, added up from all the elements that connect to the node ---*/
-
-    Stress  = nodes->GetStress_FEM(iPoint);
-
-    /*--- Compute the stress averaged from all the elements connecting to the node and the Von Mises stress ---*/
-
-    if (nDim == 2) {
-
-      Sxx=Stress[0];
-      Syy=Stress[1];
-      Sxy=Stress[2];
-
-      S1=(Sxx+Syy)/2+sqrt(((Sxx-Syy)/2)*((Sxx-Syy)/2)+Sxy*Sxy);
-      S2=(Sxx+Syy)/2-sqrt(((Sxx-Syy)/2)*((Sxx-Syy)/2)+Sxy*Sxy);
-
-      VonMises_Stress = sqrt(S1*S1+S2*S2-2*S1*S2);
-
-    }
-    else {
-
-      Sxx = Stress[0];
-      Syy = Stress[1];
-      Szz = Stress[3];
-
-      Sxy = Stress[2];
-      Sxz = Stress[4];
-      Syz = Stress[5];
-
-      VonMises_Stress = sqrt(0.5*(  pow(Sxx - Syy, 2.0)
-                                  + pow(Syy - Szz, 2.0)
-                                  + pow(Szz - Sxx, 2.0)
-                                  + 6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)
-                                  ));
-
-    }
-
-    nodes->SetVonMises_Stress(iPoint,VonMises_Stress);
-
-    /*--- Compute the maximum value of the Von Mises Stress ---*/
-
-    MaxVonMises_Stress = max(MaxVonMises_Stress, VonMises_Stress);
-
-  }
-
-#ifdef HAVE_MPI
-
-  /*--- Compute MaxVonMises_Stress using all the nodes ---*/
-
-  su2double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
-  SU2_MPI::Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-
+        auto iElem = color.indices[k];
+#else
+    /*--- Natural coloring. ---*/
+    {
+      for (auto iElem = 0ul; iElem < nElement; iElem++) {
 #endif
+        unsigned short iNode, iDim, iVar, iStress;
+
+        int thread = omp_get_thread_num();
+
+        /*--- Convert VTK type to index in the element container. ---*/
+        int EL_KIND;
+        unsigned short nNodes;
+        GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
+
+        /*--- Each thread needs a dedicated element. ---*/
+        CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
+
+        /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+        unsigned long indexNode[MAXNNODE];
+
+        for (iNode = 0; iNode < nNodes; iNode++) {
+
+          indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            /*--- Compute current coordinate. ---*/
+            su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+            su2double val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
+
+            /*--- If pre-stretched the reference coordinate is stored in the nodes. ---*/
+            if (prestretch_fem)
+              val_Coord = nodes->GetPrestretch(indexNode[iNode],iDim);
+
+            /*--- Set coordinates. ---*/
+            element->SetCurr_Coord(iNode, iDim, val_Sol);
+            element->SetRef_Coord(iNode, iDim, val_Coord);
+          }
+        }
+
+        /*--- In topology mode determine the penalty to apply to the stiffness ---*/
+        su2double simp_penalty = 1.0;
+        if (topology_mode) {
+          simp_penalty = pow(element_properties[iElem]->GetPhysicalDensity(), simp_exponent);
+        }
+
+        /*--- Set the properties of the element. ---*/
+        element->Set_ElProperties(element_properties[iElem]);
+
+        /*--- Compute the averaged nodal stresses. ---*/
+        int NUM_TERM = thread*MAX_TERMS + element_based? element_properties[iElem]->GetMat_Mod() : FEA_TERM;
+
+        numerics[NUM_TERM]->Compute_Averaged_NodalStress(element, config);
+
+        for (iNode = 0; iNode < nNodes; iNode++) {
+
+          auto iPoint = indexNode[iNode];
+
+          auto Ta = element->Get_Kt_a(iNode);
+          for (iVar = 0; iVar < nVar; iVar++)
+            LinSysReact.GetBlock(iPoint)[iVar] += simp_penalty*Ta[iVar];
+
+          /*--- Divide the nodal stress by the number of elements that will contribute to this point. ---*/
+          su2double weight = simp_penalty / geometry->node[iPoint]->GetnElem();
+
+          for (iStress = 0; iStress < nStress; iStress++)
+            nodes->AddStress_FEM(iPoint,iStress, weight*element->Get_NodalStress(iNode,iStress));
+        }
+
+      } // end iElem loop
+
+    } // end color loop
+
+
+    /*--- Compute the von Misses stress at each point, and the maximum for the domain. ---*/
+    SU2_OMP_FOR_STAT(chunkSize)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+
+      int thread = omp_get_thread_num();
+
+      /*--- Get the stresses, added up from all the elements that connect to the node. ---*/
+
+      auto Stress = nodes->GetStress_FEM(iPoint);
+      su2double VonMises_Stress;
+
+      if (nDim == 2) {
+
+        su2double Sxx = Stress[0], Syy = Stress[1], Sxy = Stress[2];
+
+        su2double S1, S2; S1 = S2 = (Sxx+Syy)/2;
+        su2double tauMax = sqrt(pow((Sxx-Syy)/2, 2) + pow(Sxy,2));
+        S1 += tauMax;
+        S2 -= tauMax;
+
+        VonMises_Stress = sqrt(S1*S1+S2*S2-2*S1*S2);
+      }
+      else {
+
+        su2double Sxx = Stress[0], Syy = Stress[1], Szz = Stress[3];
+        su2double Sxy = Stress[2], Sxz = Stress[4], Syz = Stress[5];
+
+        VonMises_Stress = sqrt(0.5*(pow(Sxx - Syy, 2) +
+                                    pow(Syy - Szz, 2) +
+                                    pow(Szz - Sxx, 2) +
+                                    6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)));
+      }
+
+      nodes->SetVonMises_Stress(iPoint,VonMises_Stress);
+
+      /*--- Update the maximum value of the Von Mises Stress ---*/
+
+      auxMaxVonMisses(thread,0) = max(auxMaxVonMisses(thread,0), VonMises_Stress);
+    }
+
+  } // end SU2_OMP_PARALLEL
+
+  /*--- Compute MaxVonMises_Stress across all threads and ranks. ---*/
+
+  for(auto thread = 1ul; thread < auxMaxVonMisses.rows(); ++thread)
+    auxMaxVonMisses(0,0) = max(auxMaxVonMisses(0,0), auxMaxVonMisses(thread,0));
+
+  su2double MaxVonMises_Stress;
+  SU2_MPI::Allreduce(auxMaxVonMisses.data(), &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
   /*--- Set the value of the MaxVonMises_Stress as the CFEA coeffient ---*/
 
@@ -1751,12 +1704,14 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
   if (outputReactions) {
 
+    bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+
     ofstream myfile;
     myfile.open ("Reactions.txt");
 
-    unsigned short iMarker;
-    unsigned long iVertex;
-    su2double val_Reaction;
+    unsigned short iMarker, iDim, iVar;
+    unsigned long iPoint, iVertex;
+    su2double val_Reaction, val_Coord;
 
     if (!dynamic) {
       /*--- Loop over all the markers  ---*/
@@ -1821,7 +1776,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
           for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
             switch (config->GetMarker_All_KindBC(iMarker)) {
 
-                /*--- If it corresponds to a clamped boundary  ---*/
+              /*--- If it corresponds to a clamped boundary  ---*/
 
               case CLAMPED_BOUNDARY:
 
@@ -1872,60 +1827,75 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
 void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
-  unsigned long iElem, iVar;
-  unsigned short iNode, iDim, nNodes = 0;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord;
-  int EL_KIND = 0;
+  /*--- Start OpenMP parallel region. ---*/
 
-  const su2double *Dead_Load = NULL;
-  unsigned short NelNodes;
+  SU2_OMP_PARALLEL
+  {
+#ifdef HAVE_OMP
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
 
-  /*--- Loops over all the elements ---*/
+    /*--- Loop over element colors. ---*/
+    for (auto color : ElemColoring)
+    {
+      SU2_OMP_FOR_DYN(chunkSize)
+      for(auto k = 0ul; k < color.size; ++k) {
 
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+        auto iElem = color.indices[k];
+#else
+    /*--- Natural coloring. ---*/
+    {
+      for (auto iElem = 0ul; iElem < nElement; iElem++) {
+#endif
+        unsigned short iNode, iDim, iVar;
 
-    switch(geometry->elem[iElem]->GetVTK_Type()) {
-      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA; break;
-      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD; break;
-      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
-      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
-      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA; break;
-    }
+        int thread = omp_get_thread_num();
 
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+        /*--- Convert VTK type to index in the element container. ---*/
+        int EL_KIND;
+        unsigned short nNodes;
+        GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
-      }
-    }
+        /*--- Each thread needs a dedicated element. ---*/
+        CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
 
-    /*--- Penalize the dead load, do it by default to avoid unecessary "ifs", since it
-          goes to the RHS there is no need to have a minimum value for stability ---*/
-    su2double simp_penalty = element_properties[iElem]->GetPhysicalDensity();
+        /*--- For the number of nodes, get the coordinates and cache the point indices. ---*/
+        unsigned long indexNode[MAXNNODE];
 
-    /*--- Set the properties of the element ---*/
-    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
+        for (iNode = 0; iNode < nNodes; iNode++) {
+          indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+          for (iDim = 0; iDim < nDim; iDim++) {
+            su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+            element->SetRef_Coord(iNode, iDim, val_Coord);
+          }
+        }
 
-    numerics[FEA_TERM]->Compute_Dead_Load(element_container[FEA_TERM][EL_KIND], config);
+        /*--- Penalize the dead load, do it by default to avoid unecessary "ifs", since it
+         *    goes to the RHS there is no need to have a minimum value for stability ---*/
+        su2double simp_penalty = element_properties[iElem]->GetPhysicalDensity();
 
-    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+        /*--- Set the properties of the element and compute its mass matrix. ---*/
+        element->Set_ElProperties(element_properties[iElem]);
 
-    for (iNode = 0; iNode < NelNodes; iNode++) {
+        numerics[FEA_TERM + thread*MAX_TERMS]->Compute_Dead_Load(element, config);
 
-      Dead_Load = element_container[FEA_TERM][EL_KIND]->Get_FDL_a(iNode);
-      for (iVar = 0; iVar < nVar; iVar++) Res_Dead_Load[iVar] = simp_penalty*Dead_Load[iVar];
+        /*--- Add contributions of this element to the mass matrix. ---*/
+        for (iNode = 0; iNode < nNodes; iNode++) {
 
-      nodes->Add_BodyForces_Res(indexNode[iNode],Res_Dead_Load);
+          auto Dead_Load = element->Get_FDL_a(iNode);
 
-    }
+          su2double Aux_Dead_Load[MAXNVAR];
+          for (iVar = 0; iVar < nVar; iVar++)
+            Aux_Dead_Load[iVar] = simp_penalty*Dead_Load[iVar];
 
-  }
+          nodes->Add_BodyForces_Res(indexNode[iNode], Aux_Dead_Load);
+        }
 
+      } // end iElem loop
+
+    } // end color loop
+
+  } // end SU2_OMP_PARALLEL
 
 }
 
@@ -2390,17 +2360,14 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfi
         if (linear_analysis) {
           Residual[0] = (1.0/2.0) * TotalLoad * Length_Elem_ref * normal_ref_unit[0];
           Residual[1] = (1.0/2.0) * TotalLoad * Length_Elem_ref * normal_ref_unit[1];
-
-          nodes->Add_SurfaceLoad_Res(indexNode[0],Residual);
-          nodes->Add_SurfaceLoad_Res(indexNode[1],Residual);
         }
         else if (nonlinear_analysis) {
           Residual[0] = (1.0/2.0) * TotalLoad * Length_Elem_curr * normal_curr_unit[0];
           Residual[1] = (1.0/2.0) * TotalLoad * Length_Elem_curr * normal_curr_unit[1];
-
-          nodes->Add_SurfaceLoad_Res(indexNode[0],Residual);
-          nodes->Add_SurfaceLoad_Res(indexNode[1],Residual);
         }
+
+        nodes->Add_SurfaceLoad_Res(indexNode[0],Residual);
+        nodes->Add_SurfaceLoad_Res(indexNode[1],Residual);
 
       }
 
@@ -2460,20 +2427,16 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfi
             Residual[0] = (1.0/3.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[0];
             Residual[1] = (1.0/3.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[1];
             Residual[2] = (1.0/3.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[2];
-
-            nodes->Add_SurfaceLoad_Res(indexNode[0],Residual);
-            nodes->Add_SurfaceLoad_Res(indexNode[1],Residual);
-            nodes->Add_SurfaceLoad_Res(indexNode[2],Residual);
           }
           else if (nonlinear_analysis) {
             Residual[0] = (1.0/3.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[0];
             Residual[1] = (1.0/3.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[1];
             Residual[2] = (1.0/3.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[2];
-
-            nodes->Add_SurfaceLoad_Res(indexNode[0],Residual);
-            nodes->Add_SurfaceLoad_Res(indexNode[1],Residual);
-            nodes->Add_SurfaceLoad_Res(indexNode[2],Residual);
           }
+
+          nodes->Add_SurfaceLoad_Res(indexNode[0],Residual);
+          nodes->Add_SurfaceLoad_Res(indexNode[1],Residual);
+          nodes->Add_SurfaceLoad_Res(indexNode[2],Residual);
 
         }
 
@@ -2531,22 +2494,17 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfi
             Residual[0] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[0];
             Residual[1] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[1];
             Residual[2] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[2];
-
-            nodes->Add_SurfaceLoad_Res(indexNode[0],Residual);
-            nodes->Add_SurfaceLoad_Res(indexNode[1],Residual);
-            nodes->Add_SurfaceLoad_Res(indexNode[2],Residual);
-            nodes->Add_SurfaceLoad_Res(indexNode[3],Residual);
           }
           else if (nonlinear_analysis) {
             Residual[0] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[0];
             Residual[1] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[1];
             Residual[2] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[2];
-
-            nodes->Add_SurfaceLoad_Res(indexNode[0],Residual);
-            nodes->Add_SurfaceLoad_Res(indexNode[1],Residual);
-            nodes->Add_SurfaceLoad_Res(indexNode[2],Residual);
-            nodes->Add_SurfaceLoad_Res(indexNode[3],Residual);
           }
+
+          nodes->Add_SurfaceLoad_Res(indexNode[0],Residual);
+          nodes->Add_SurfaceLoad_Res(indexNode[1],Residual);
+          nodes->Add_SurfaceLoad_Res(indexNode[2],Residual);
+          nodes->Add_SurfaceLoad_Res(indexNode[3],Residual);
 
         }
 
@@ -2583,10 +2541,10 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *
   TotalLoad = ModAmpl * LoadDirVal * LoadDirMult;
 
   /*--- Compute the norm of the vector that was passed in the config file ---*/
-  su2double Norm = 1.0;
-  if (nDim==2) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]);
-  if (nDim==3) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]+Load_Dir_Local[2]*Load_Dir_Local[2]);
-
+  su2double Norm = pow(Load_Dir_Local[0],2) + pow(Load_Dir_Local[1],2);
+  if (nDim==3) Norm += pow(Load_Dir_Local[2],2);
+  Norm = sqrt(Norm);
+  
   for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
     Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);     Coord_0 = geometry->node[Point_0]->GetCoord();
@@ -4440,7 +4398,7 @@ void CFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config)
     string filename = config->GetTopology_Optim_FileName();
     ofstream file;
     file.open(filename.c_str());
-    for(iElem=0; iElem<nElemDomain; ++iElem) file << rec_buf[iElem] << endl;
+    for(iElem=0; iElem<nElemDomain; ++iElem) file << rec_buf[iElem] << "\n";
     file.close();
   }
 

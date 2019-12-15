@@ -11550,6 +11550,8 @@ public:
  */
 class CFEASolver : public CSolver {
 private:
+  enum : size_t {MAXNNODE = 8};
+  enum : size_t {MAXNVAR = 3};
   enum : size_t {OMP_MIN_SIZE = 64};
 
   su2double  Total_CFEA;        /*!< \brief Total FEA coefficient for all the boundaries. */
@@ -11560,10 +11562,6 @@ private:
 
   su2double *GradN_X,
   *GradN_x;
-  
-  su2double **Jacobian_c_ij;      /*!< \brief Submatrix to store the constitutive term for node ij. */
-  su2double **Jacobian_s_ij;      /*!< \brief Submatrix to store the stress contribution of node ij (diagonal). */
-  su2double **MassMatrix_ij;      /*!< \brief Submatrix to store the term ij of the mass matrix. */
 
   su2double *Res_Ext_Surf;      /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
   su2double *Res_Time_Cont;     /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
@@ -11619,6 +11617,24 @@ private:
   };
   vector<ElemColor> ElemColoring;   /*!< \brief Element colors. */
   unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size must be a multiple of this. */
+
+  /*!
+   * \brief Get the element container index and number of nodes of a given VTK type.
+   * \param[in] VTK_Type - Type of element.
+   * \param[out] EL_KIND - Element container index.
+   * \param[out] nNodes - Number of nodes.
+   */
+  static void GetElemKindAndNumNodes(unsigned short VTK_Type, int& EL_KIND, unsigned short& nNodes) {
+    switch(VTK_Type) {
+      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA;  break;
+      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD;  break;
+      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
+      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
+      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
+      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA;  break;
+      default: assert(false); nNodes = 0; EL_KIND = -(1<<30); break;
+    }
+  }
 
 protected:
 
