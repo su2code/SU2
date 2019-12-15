@@ -70,6 +70,7 @@ protected:
   su2double* AugLagLamGrad;             /*!< \brief Gradient of doubly augmented Lagrangian wrt constraint multiplier.*/
   su2double Lagrangian, Lagrangian_Old; /*!< \brief Value of doubly augmented Lagrangian.*/
   su2double GradDotDir;                 /*!< \brief Gradient dotted with search direction at first Armijo search step (stepsize = 1.0).*/
+  su2double GradDotDirOld;              /*!< \brief Gradient dotted with search direction for previous iteration.*/
   su2double ObjFunc_Store;              /*!< \brief Objective function at old flow, new design.*/
   
   su2double lb, ub;    /*!< \brief Lower and upper bounds of design variables.*/

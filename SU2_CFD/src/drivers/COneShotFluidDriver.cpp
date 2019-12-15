@@ -447,13 +447,19 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Modifiy initial line search guess based on success of line search ---*/
   if(OneShotIter > config->GetOneShotStart()) {
-    if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0)) {
-      stepsize0 = max(2.0*tol, stepsize0/2.0);
+  //   if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0)) {
+  //     stepsize0 = max(2.0*tol, stepsize0/2.0);
+  //   }
+  //   else if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
+  //     stepsize0 = min(1.0, stepsize0*2.0);
+  //   }
+  // }
+    if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
+      StoreOldGradDotDir();
+      ComputeDesignVarUpdate(1.0);
+      StoreGradDotDir(true);
+      stepsize0 = max(10.0*tol, min(1.0, GradDotDirOld/GradDotDir));
     }
-    else if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
-      stepsize0 = min(1.0, stepsize0*2.0);
-    }
-  }
 
 }
 
@@ -867,6 +873,10 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
       }
     }
   }
+}
+
+void COneShotFluidDriver::StoreOldGradDotDir(){
+  GradDotDirOld = GradDotDir;
 }
 
 su2double COneShotFluidDriver::UpdateStepSizeQuadratic(){
