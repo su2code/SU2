@@ -305,8 +305,8 @@ void COneShotFluidDriver::RunOneShot(){
         // UpdateLambda(1.0);
       }
 
-      LoadOldLambda();
-      UpdateLambda(1.0);
+      // LoadOldLambda();
+      // UpdateLambda(1.0);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
