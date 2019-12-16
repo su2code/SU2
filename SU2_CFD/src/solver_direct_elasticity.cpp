@@ -57,33 +57,10 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   nodes = nullptr;
 
   element_properties = NULL;
-  elProperties = NULL;
-
-  GradN_X = NULL;
-  GradN_x = NULL;
-
-  mZeros_Aux = NULL;
-  mId_Aux = NULL;
-
-  Res_Stress_i = NULL;
-  Res_Ext_Surf = NULL;
-  Res_Time_Cont = NULL;
-  Res_FSI_Cont = NULL;
-
-  Res_Dead_Load = NULL;
-
-  nodeReactions = NULL;
-
-  solutionPredictor = NULL;
 
   SolRest = NULL;
 
-  normalVertex = NULL;
-  stressTensor = NULL;
-
-  Solution_Interm = NULL;
-
-  iElem_iDe   = NULL;
+  iElem_iDe = NULL;
 
   topol_filter_applied = false;
 
@@ -93,15 +70,13 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   unsigned long iPoint;
-  unsigned short iVar, iDim, jDim;
+  unsigned short iVar;
   unsigned short iTerm;
 
   bool dynamic = (config->GetTime_Domain());
-  /*--- Generalized alpha method requires residual at previous time step. ---*/
-  bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
+
   /*--- Test whether we consider dielectric elastomers ---*/
   bool de_effects = config->GetDE_Effects();
-  bool body_forces = config->GetDeadLoad();
 
   /*--- A priori we don't have an element-based input file (most of the applications will be like this) ---*/
   element_based = false;
@@ -161,13 +136,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   }
 
   /*--- Set element properties ---*/
-  elProperties = new unsigned long[4];
-  for (iVar = 0; iVar < 4; iVar++)
-    elProperties[iVar] = 0;
   Set_ElementProperties(geometry, config);
-
-  GradN_X = new su2double [nDim];
-  GradN_x = new su2double [nDim];
 
   Total_CFEA        = 0.0;
   WAitken_Dyn       = 0.0;
@@ -181,33 +150,18 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- Define some auxiliary vectors related to the residual ---*/
 
-  Residual = new su2double[nVar];          for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
-  Residual_RMS = new su2double[nVar];      for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-  Residual_Max = new su2double[nVar];      for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-  Point_Max = new unsigned long[nVar];     for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
+  Residual = new su2double[nVar]();
+  Residual_RMS = new su2double[nVar]();
+  Residual_Max = new su2double[nVar]();
+  Point_Max = new unsigned long[nVar]();
   Point_Max_Coord = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
-
-  /*--- Residual i and residual j for the Matrix-Vector Product for the Mass Residual ---*/
-  if (dynamic){
-    Residual_i = new su2double[nVar];        for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
-    Residual_j = new su2double[nVar];        for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
+    Point_Max_Coord[iVar] = new su2double[nDim]();
   }
 
   /*--- Define some auxiliary vectors related to the solution ---*/
 
-  Solution   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-
-  Solution_Interm = NULL;
-  if (gen_alpha) {
-    Solution_Interm = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Solution_Interm[iVar] = 0.0;
-  }
-
-  nodeReactions = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) nodeReactions[iVar]   = 0.0;
+  Solution = new su2double[nVar]();
 
   /*--- The length of the solution vector depends on whether the problem is static or dynamic ---*/
 
@@ -218,8 +172,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   if (dynamic) nSolVar = 3 * nVar;
   else nSolVar = nVar;
 
-  SolRest = new su2double[nSolVar];
-  for (iVar = 0; iVar < nSolVar; iVar++) SolRest[iVar] = 0.0;
+  SolRest = new su2double[nSolVar]();
 
   /*--- Initialize from zero everywhere ---*/
 
@@ -244,46 +197,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   bool prestretch_fem = config->GetPrestretch();
   if (prestretch_fem) Set_Prestretch(geometry, config);
-
-  /*--- Stress contribution to the node i ---*/
-  Res_Stress_i = new su2double[nVar];
-
-  /*--- Contribution of the external surface forces to the residual (auxiliary vector) ---*/
-  Res_Ext_Surf = new su2double[nVar];
-
-  /*--- Contribution of the body forces to the residual (auxiliary vector) ---*/
-  Res_Dead_Load = NULL;
-  if (body_forces) {
-    Res_Dead_Load = new su2double[nVar];
-  }
-
-  /*--- Contribution of the fluid tractions to the residual (auxiliary vector) ---*/
-  Res_FSI_Cont = new su2double[nVar];
-
-  /*--- Time integration contribution to the residual ---*/
-  Res_Time_Cont = NULL;
-  if (dynamic) {
-    Res_Time_Cont = new su2double [nVar];
-  }
-
-  /*--- Matrices to impose clamped boundary conditions ---*/
-
-  mZeros_Aux = new su2double *[nDim];
-  for(iDim = 0; iDim < nDim; iDim++)
-    mZeros_Aux[iDim] = new su2double[nDim];
-
-  mId_Aux = new su2double *[nDim];
-  for(iDim = 0; iDim < nDim; iDim++)
-    mId_Aux[iDim] = new su2double[nDim];
-
-  for(iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0; jDim < nDim; jDim++) {
-      mZeros_Aux[iDim][jDim] = 0.0;
-      mId_Aux[iDim][jDim] = 0.0;
-    }
-    mId_Aux[iDim][iDim] = 1.0;
-  }
-
 
   /*--- Initialization of matrix structures ---*/
   if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Non-Linear Elasticity)." << endl;
@@ -318,68 +231,57 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   }
 
   ColorGroupSize = 1; /// TODO: This needs to come from geometry or config
+
+  omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
 #endif
-
-  /*--- Initialize the auxiliary vector and matrix for the computation of the nodal Reactions ---*/
-
-  normalVertex = new su2double [nDim];
-
-  stressTensor = new su2double* [nDim];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    stressTensor[iVar] = new su2double [nDim];
-  }
-
-  /*---- Initialize the auxiliary vector for the solution predictor ---*/
-
-  solutionPredictor = new su2double [nVar];
 
   iElem_iDe = NULL;
 
   /*--- Initialize the value of the total objective function ---*/
-   Total_OFRefGeom = 0.0;
-   Total_OFRefNode = 0.0;
-   Total_OFVolFrac = 0.0;
+  Total_OFRefGeom = 0.0;
+  Total_OFRefNode = 0.0;
+  Total_OFVolFrac = 0.0;
 
-   /*--- Initialize the value of the global objective function ---*/
-   Global_OFRefGeom = 0.0;
-   Global_OFRefNode = 0.0;
+  /*--- Initialize the value of the global objective function ---*/
+  Global_OFRefGeom = 0.0;
+  Global_OFRefNode = 0.0;
 
-   /*--- Initialize the value of the total gradient for the forward mode ---*/
-   Total_ForwardGradient = 0.0;
+  /*--- Initialize the value of the total gradient for the forward mode ---*/
+  Total_ForwardGradient = 0.0;
 
-   if (config->GetDirectDiff() == D_YOUNG ||
-       config->GetDirectDiff() == D_POISSON ||
-       config->GetDirectDiff() == D_RHO ||
-       config->GetDirectDiff() == D_RHO_DL ||
-       config->GetDirectDiff() == D_EFIELD ||
-       config->GetDirectDiff() == D_MACH ||
-       config->GetDirectDiff() == D_PRESSURE){
+  if (config->GetDirectDiff() == D_YOUNG ||
+      config->GetDirectDiff() == D_POISSON ||
+      config->GetDirectDiff() == D_RHO ||
+      config->GetDirectDiff() == D_RHO_DL ||
+      config->GetDirectDiff() == D_EFIELD ||
+      config->GetDirectDiff() == D_MACH ||
+      config->GetDirectDiff() == D_PRESSURE){
 
-     /*--- Header of the temporary output file ---*/
-     ofstream myfile_res;
+    /*--- Header of the temporary output file ---*/
+    ofstream myfile_res;
 
-     if (config->GetDirectDiff() == D_YOUNG) myfile_res.open ("Output_Direct_Diff_E.txt");
-     if (config->GetDirectDiff() == D_POISSON) myfile_res.open ("Output_Direct_Diff_Nu.txt");
-     if (config->GetDirectDiff() == D_RHO) myfile_res.open ("Output_Direct_Diff_Rho.txt");
-     if (config->GetDirectDiff() == D_RHO_DL) myfile_res.open ("Output_Direct_Diff_Rho_DL.txt");
-     if (config->GetDirectDiff() == D_EFIELD) myfile_res.open ("Output_Direct_Diff_EField.txt");
+    if (config->GetDirectDiff() == D_YOUNG) myfile_res.open ("Output_Direct_Diff_E.txt");
+    if (config->GetDirectDiff() == D_POISSON) myfile_res.open ("Output_Direct_Diff_Nu.txt");
+    if (config->GetDirectDiff() == D_RHO) myfile_res.open ("Output_Direct_Diff_Rho.txt");
+    if (config->GetDirectDiff() == D_RHO_DL) myfile_res.open ("Output_Direct_Diff_Rho_DL.txt");
+    if (config->GetDirectDiff() == D_EFIELD) myfile_res.open ("Output_Direct_Diff_EField.txt");
 
-     if (config->GetDirectDiff() == D_MACH) myfile_res.open ("Output_Direct_Diff_Mach.txt");
-     if (config->GetDirectDiff() == D_PRESSURE) myfile_res.open ("Output_Direct_Diff_Pressure.txt");
+    if (config->GetDirectDiff() == D_MACH) myfile_res.open ("Output_Direct_Diff_Mach.txt");
+    if (config->GetDirectDiff() == D_PRESSURE) myfile_res.open ("Output_Direct_Diff_Pressure.txt");
 
-     myfile_res << "Objective Function " << "\t";
+    myfile_res << "Objective Function " << "\t";
 
-     if (dynamic) myfile_res << "O. Function Averaged " << "\t";
+    if (dynamic) myfile_res << "O. Function Averaged " << "\t";
 
-     myfile_res << "Sensitivity Local" << "\t";
+    myfile_res << "Sensitivity Local" << "\t";
 
-     myfile_res << "Sensitivity Averaged" << "\t";
+    myfile_res << "Sensitivity Averaged" << "\t";
 
-     myfile_res << endl;
+    myfile_res << endl;
 
-     myfile_res.close();
+    myfile_res.close();
 
-   }
+  }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
   if (config->GetMultizone_Residual()){
@@ -388,20 +290,19 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
     RelaxCoeff        = 1.0;
     ForceCoeff        = 1.0;
 
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 1.0;
-    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
+    Residual_BGS      = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 1.0;
+    Residual_Max_BGS  = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
 
     /*--- Define some structures for locating max residuals ---*/
 
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+    Point_Max_BGS       = new unsigned long[nVar]();
     Point_Max_Coord_BGS = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
     }
   }
   else{
-    ForceCoeff        = 1.0;
+    ForceCoeff = 1.0;
   }
 
   /*--- Penalty value - to maintain constant the stiffness in optimization problems - TODO: this has to be improved ---*/
@@ -444,35 +345,9 @@ CFEASolver::~CFEASolver(void) {
     delete [] element_properties;
   }
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    if (mZeros_Aux != NULL) delete [] mZeros_Aux[iVar];
-    if (mId_Aux != NULL) delete [] mId_Aux[iVar];
-    if (stressTensor!= NULL) delete [] stressTensor[iVar];
-  }
-
-  delete [] Res_Stress_i;
-  delete [] Res_Ext_Surf;
-  if (Res_Time_Cont != NULL) delete[] Res_Time_Cont;
-  if (Res_Dead_Load != NULL) delete[] Res_Dead_Load;
   delete [] SolRest;
-  delete [] GradN_X;
-  delete [] GradN_x;
-
-  if (mZeros_Aux != NULL) delete [] mZeros_Aux;
-  if (mId_Aux != NULL) delete [] mId_Aux;
-
-  delete [] nodeReactions;
-
-  delete [] normalVertex;
-  if (stressTensor != NULL) delete [] stressTensor;
-
-  if (solutionPredictor != NULL) delete [] solutionPredictor;
 
   if (iElem_iDe != NULL) delete [] iElem_iDe;
-
-  delete [] elProperties;
-
-  if (Res_FSI_Cont != NULL) delete [] Res_FSI_Cont;
 
   if (nodes != nullptr) delete nodes;
 }
@@ -481,6 +356,7 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
   unsigned long iElem;
   unsigned long index;
+  unsigned long elProperties[4];
 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
@@ -1122,7 +998,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
 
           auto Ta = element->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
-            LinSysRes.GetBlock(indexNode[iNode])[iVar] -= simp_penalty*Ta[iVar];
+            LinSysRes[indexNode[iNode]*nVar+iVar] -= simp_penalty*Ta[iVar];
 
           for (jNode = 0; jNode < nNodes; jNode++) {
             auto Kab = element->Get_Kab(iNode, jNode);
@@ -1233,13 +1109,13 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
 
           auto Ta = fea_elem->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
-            LinSysRes.GetBlock(indexNode[iNode])[iVar] -= simp_penalty*Ta[iVar];
+            LinSysRes[indexNode[iNode]*nVar+iVar] -= simp_penalty*Ta[iVar];
 
           /*--- Retrieve the electric contribution to the residual. ---*/
           if (de_effects) {
             auto Ta_DE = de_elem->Get_Kt_a(iNode);
             for (iVar = 0; iVar < nVar; iVar++)
-              LinSysRes.GetBlock(indexNode[iNode])[iVar] -= simp_penalty*Ta_DE[iVar];
+              LinSysRes[indexNode[iNode]*nVar+iVar] -= simp_penalty*Ta_DE[iVar];
           }
 
           for (jNode = 0; jNode < nNodes; jNode++) {
@@ -1429,8 +1305,8 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CCon
             su2double Mab = simp_penalty * element->Get_Mab(iNode, jNode);
 
             for (iVar = 0; iVar < nVar; iVar++) {
-              TimeRes.GetBlock(indexNode[iNode])[iVar] += Mab * TimeRes_Aux.GetBlock(indexNode[iNode],iVar);
-              TimeRes.GetBlock(indexNode[jNode])[iVar] += Mab * TimeRes_Aux.GetBlock(indexNode[jNode],iVar);
+              TimeRes[indexNode[iNode]*nVar+iVar] += Mab * TimeRes_Aux.GetBlock(indexNode[iNode],iVar);
+              TimeRes[indexNode[jNode]*nVar+iVar] += Mab * TimeRes_Aux.GetBlock(indexNode[jNode],iVar);
             }
           }
         }
@@ -1523,7 +1399,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
         for (iNode = 0; iNode < nNodes; iNode++) {
           auto Ta = element->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
-            LinSysRes.GetBlock(indexNode[iNode])[iVar] -= simp_penalty*Ta[iVar];
+            LinSysRes[indexNode[iNode]*nVar+iVar] -= simp_penalty*Ta[iVar];
         }
 
       } // end iElem loop
@@ -1554,7 +1430,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
   SU2_OMP_PARALLEL
   {
     /*--- Restart stress to avoid adding over results from previous time steps. ---*/
-    SU2_OMP_FOR_STAT(256)
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (unsigned short iStress = 0; iStress < nStress; iStress++) {
         nodes->SetStress_FEM(iPoint,iStress, 0.0);
@@ -1631,7 +1507,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
           auto Ta = element->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
-            LinSysReact.GetBlock(iPoint)[iVar] += simp_penalty*Ta[iVar];
+            LinSysReact[iPoint*nVar+iVar] += simp_penalty*Ta[iVar];
 
           /*--- Divide the nodal stress by the number of elements that will contribute to this point. ---*/
           su2double weight = simp_penalty / geometry->node[iPoint]->GetnElem();
@@ -1646,7 +1522,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
 
     /*--- Compute the von Misses stress at each point, and the maximum for the domain. ---*/
-    SU2_OMP_FOR_STAT(chunkSize)
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       int thread = omp_get_thread_num();
@@ -1797,10 +1673,8 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
                   }
 
                   for (iVar = 0; iVar < nVar; iVar++) {
-                    /*--- Retrieve the time contribution ---*/
-                    Res_Time_Cont[iVar] = TimeRes.GetBlock(iPoint, iVar);
-                    /*--- Retrieve reaction ---*/
-                    val_Reaction = LinSysReact.GetBlock(iPoint, iVar) + Res_Time_Cont[iVar];
+                    /*--- Retrieve the time contribution and reaction. ---*/
+                    val_Reaction = LinSysReact.GetBlock(iPoint, iVar) + TimeRes.GetBlock(iPoint, iVar);
                     myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
                   }
 
@@ -2156,7 +2030,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
         for (iVar = 0; iVar < nVar; iVar++) {
           total_index = iPoint*nVar+iVar;
           AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
-          AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+          AddRes_Max(iVar, fabs(LinSysAux[total_index]),
+                     geometry->node[iPoint]->GetGlobalIndex(),
+                     geometry->node[iPoint]->GetCoord());
         }
       }
 
@@ -2212,7 +2088,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
         for (iVar = 0; iVar < nVar; iVar++) {
           total_index = iPoint*nVar+iVar;
           AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
-          AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+          AddRes_Max(iVar, fabs(LinSysAux[total_index]),
+                     geometry->node[iPoint]->GetGlobalIndex(),
+                     geometry->node[iPoint]->GetCoord());
         }
       }
 
@@ -2510,7 +2388,6 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfi
 
       }
 
-
     }
 
   }
@@ -2696,7 +2573,6 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *co
 
   }
 
-
 }
 
 void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker){
@@ -2760,11 +2636,10 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, CConfig *config) {
       /*--- Compute the area ---*/
       su2double area = 0.0;
 
-      if (nDim == 2)
-        area = (coords[0][0]-coords[1][0])*(coords[0][0]-coords[1][0])+
-               (coords[0][1]-coords[1][1])*(coords[0][1]-coords[1][1]);
-
-      if (nDim == 3) {
+      if (nDim == 2) {
+        area = pow(coords[0][0]-coords[1][0],2) + pow(coords[0][1]-coords[1][1],2);
+      }
+      else {
         su2double a[3], b[3], Ni, Nj, Nk;
 
         if (!quad) { // sides of the triangle
@@ -2992,219 +2867,143 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
 
 void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned long iPoint;
-  unsigned short iVar;
+  const bool first_iter = (config->GetInnerIter() == 0);
+  const bool dynamic = (config->GetTime_Domain());
+  const bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);
+  const bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
+  const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);
+  const bool body_forces = config->GetDeadLoad();
 
-  bool first_iter = (config->GetInnerIter() == 0);
-  bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
-  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-  bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
-  bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
+  /*--- For simplicity, no incremental loading is handled with increment of 1. ---*/
+  const su2double loadIncr = config->GetIncrementalLoad()? loadIncrement : su2double(1.0);
 
-  bool incremental_load = config->GetIncrementalLoad();
+  SU2_OMP_PARALLEL
+  {
+    unsigned long iPoint;
+    unsigned short iVar;
 
-  if (!dynamic) {
-
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      /*--- Add the external contribution to the residual    ---*/
-      /*--- (the terms that are constant over the time step) ---*/
-      if (incremental_load) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Res_Ext_Surf[iVar] = loadIncrement * nodes->Get_SurfaceLoad_Res(iPoint,iVar);
-        }
-      }
-      else {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Res_Ext_Surf[iVar] = nodes->Get_SurfaceLoad_Res(iPoint,iVar);
-        }
-      }
-      LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
-
-      /*--- Add the contribution to the residual due to body forces ---*/
-
-      if (body_forces) {
-        if (incremental_load) {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Res_Dead_Load[iVar] = loadIncrement * nodes->Get_BodyForces_Res(iPoint,iVar);
-          }
-        }
-        else {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Res_Dead_Load[iVar] = nodes->Get_BodyForces_Res(iPoint,iVar);
-          }
-        }
-        LinSysRes.AddBlock(iPoint, Res_Dead_Load);
-      }
-
-      /*---  Add the contribution to the residual due to flow loads (FSI contribution) ---*/
-
-      if (incremental_load) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Res_FSI_Cont[iVar] = loadIncrement * nodes->Get_FlowTraction(iPoint,iVar);
-      }
-      else {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Res_FSI_Cont[iVar] = nodes->Get_FlowTraction(iPoint,iVar);
-      }
-      LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
-
-    }
-
-  }
-
-  if (dynamic) {
-
-    /*--- Add the mass matrix contribution to the Jacobian ---*/
-
-    /*
-     * If the problem is nonlinear, we need to add the Mass Matrix contribution to the Jacobian at the beginning
-     * of each time step. If the solution method is Newton Rapshon, we repeat this step at the beginning of each
-     * iteration, as the Jacobian is recomputed
-     *
-     * If the problem is linear, we add the Mass Matrix contribution to the Jacobian everytime because for
-     * correct differentiation the Jacobian is recomputed every time step.
-     *
-     */
-    if ((nonlinear_analysis && (newton_raphson || first_iter)) || linear_analysis) {
-      Jacobian.MatrixMatrixAddition(a_dt[0], MassMatrix);
-    }
-
-
-    /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Residual[iVar] =   a_dt[0]*nodes->GetSolution_time_n(iPoint,iVar)        //a0*U(t)
-        - a_dt[0]*nodes->GetSolution(iPoint,iVar)           //a0*U(t+dt)(k-1)
-        + a_dt[2]*nodes->GetSolution_Vel_time_n(iPoint,iVar)    //a2*U'(t)
-        + a_dt[3]*nodes->GetSolution_Accel_time_n(iPoint,iVar);  //a3*U''(t)
-      }
-      TimeRes_Aux.SetBlock(iPoint, Residual);
-    }
-
-    /*--- Once computed, compute M*TimeRes_Aux ---*/
-    MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
-    /*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
+    /*--- Loads common to static and dynamic problems. ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-      /*--- Dynamic contribution ---*/
+      /*--- External surface load contribution. ---*/
+
       for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Time_Cont[iVar] = TimeRes.GetBlock(iPoint, iVar);
+        LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_SurfaceLoad_Res(iPoint,iVar);
       }
-      //Res_Time_Cont = TimeRes.GetBlock(iPoint);
-      LinSysRes.AddBlock(iPoint, Res_Time_Cont);
 
-      /*--- External surface load contribution ---*/
-      if (incremental_load) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Res_Ext_Surf[iVar] = loadIncrement * nodes->Get_SurfaceLoad_Res(iPoint,iVar);
-        }
-      }
-      else {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Res_Ext_Surf[iVar] = nodes->Get_SurfaceLoad_Res(iPoint,iVar);
-        }
-        //Res_Ext_Surf = nodes->Get_SurfaceLoad_Res(iPoint);
-      }
-      LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
-
-
-      /*--- Body forces contribution (dead load) ---*/
+      /*--- Body forces contribution (dead load). ---*/
 
       if (body_forces) {
-        if (incremental_load) {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Res_Dead_Load[iVar] = loadIncrement * nodes->Get_BodyForces_Res(iPoint,iVar);
-          }
-        }
-        else {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Res_Dead_Load[iVar] = nodes->Get_BodyForces_Res(iPoint,iVar);
-          }
-        }
-        LinSysRes.AddBlock(iPoint, Res_Dead_Load);
-      }
-
-
-      /*--- FSI contribution (flow loads) ---*/
-
-      if (incremental_load) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          Res_FSI_Cont[iVar] = loadIncrement * nodes->Get_FlowTraction(iPoint,iVar);
+          LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
         }
       }
-      else {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Res_FSI_Cont[iVar] = nodes->Get_FlowTraction(iPoint,iVar);
-        }
+
+      /*--- FSI contribution (flow loads). ---*/
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_FlowTraction(iPoint,iVar);
       }
-      LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
 
     }
 
-  }
+    /*--- Dynamic contribution. ---*/
+
+    if (dynamic) {
+
+      /*--- Add the mass matrix contribution to the Jacobian. ---*/
+
+      /*
+       * If the problem is nonlinear, we need to add the Mass Matrix contribution to the Jacobian at the beginning
+       * of each time step. If the solution method is Newton Rapshon, we repeat this step at the beginning of each
+       * iteration, as the Jacobian is recomputed.
+       *
+       * If the problem is linear, we add the Mass Matrix contribution to the Jacobian everytime because for
+       * correct differentiation the Jacobian is recomputed every time step.
+       *
+       */
+      if ((nonlinear_analysis && (newton_raphson || first_iter)) || linear_analysis) {
+        Jacobian.MatrixMatrixAddition(a_dt[0], MassMatrix);
+      }
+
+      /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          TimeRes_Aux[iPoint*nVar+iVar] =
+            a_dt[0]*nodes->GetSolution_time_n(iPoint,iVar) -      // a0*U(t)
+            a_dt[0]*nodes->GetSolution(iPoint,iVar) +             // a0*U(t+dt)(k-1)
+            a_dt[2]*nodes->GetSolution_Vel_time_n(iPoint,iVar) +  // a2*U'(t)
+            a_dt[3]*nodes->GetSolution_Accel_time_n(iPoint,iVar); // a3*U''(t)
+        }
+      }
+
+      /*--- Add M*TimeRes_Aux to the residual. ---*/
+
+      MassMatrix.MatrixVectorProduct(TimeRes_Aux, TimeRes, geometry, config);
+      LinSysRes += TimeRes;
+    }
+
+  } // end SU2_OMP_PARALLEL
 
 }
 
 void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned short iVar;
-  unsigned long iPoint;
+  const bool dynamic = (config->GetTime_Domain());
 
-  bool dynamic = (config->GetTime_Domain());          // Dynamic simulations.
-
-  /*--- Update solution ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-
-      /*--- Displacements component of the solution ---*/
-
-      nodes->Add_DeltaSolution(iPoint,iVar, LinSysSol[iPoint*nVar+iVar]);
-
-    }
-
-  }
-
-  if (dynamic) {
-
+  SU2_OMP_PARALLEL
+  {
+    unsigned long iPoint;
+    unsigned short iVar;
+  
+    /*--- Update solution. ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       for (iVar = 0; iVar < nVar; iVar++) {
 
-        /*--- Acceleration component of the solution ---*/
-        /*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
+        /*--- Displacements component of the solution. ---*/
 
-        Solution[iVar]=a_dt[0]*(nodes->GetSolution(iPoint,iVar) -
-                                nodes->GetSolution_time_n(iPoint,iVar)) -
-        a_dt[2]* nodes->GetSolution_Vel_time_n(iPoint,iVar) -
-        a_dt[3]* nodes->GetSolution_Accel_time_n(iPoint,iVar);
-      }
-
-      /*--- Set the acceleration in the node structure ---*/
-
-      nodes->SetSolution_Accel(iPoint,Solution);
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-
-        /*--- Velocity component of the solution ---*/
-        /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
-
-        Solution[iVar]=nodes->GetSolution_Vel_time_n(iPoint,iVar)+
-        a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
-        a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
+        nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
 
       }
-
-      /*--- Set the velocity in the node structure ---*/
-
-      nodes->SetSolution_Vel(iPoint,Solution);
 
     }
 
-  }
+    if (dynamic) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+
+          /*--- Acceleration component of the solution ---*/
+          /*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
+
+          su2double sol = a_dt[0]*(nodes->GetSolution(iPoint,iVar) -
+                                   nodes->GetSolution_time_n(iPoint,iVar)) -
+                          a_dt[2]* nodes->GetSolution_Vel_time_n(iPoint,iVar) -
+                          a_dt[3]* nodes->GetSolution_Accel_time_n(iPoint,iVar);
+
+          nodes->SetSolution_Accel(iPoint, iVar, sol);
+        }
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+
+          /*--- Velocity component of the solution ---*/
+          /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
+
+          su2double sol = nodes->GetSolution_Vel_time_n(iPoint,iVar)+
+                          a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
+                          a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
+
+          nodes->SetSolution_Vel(iPoint, iVar, sol);
+        }
+      }
+    }
+
+  } // end SU2_OMP_PARALLEL
 
   /*--- Perform the MPI communication of the solution ---*/
 
@@ -3215,249 +3014,190 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
 
 void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned short iVar;
-  unsigned long iPoint;
-  su2double *valSolutionPred;
-  bool dynamic = (config->GetTime_Domain());
+  const bool dynamic = (config->GetTime_Domain());
 
-  /*--- Update solution and set it to be the solution after applying relaxation---*/
+  SU2_OMP_PARALLEL
+  {
+    unsigned long iPoint;
+    unsigned short iVar;
 
-  for (iPoint=0; iPoint < nPointDomain; iPoint++) {
-
-    valSolutionPred = nodes->GetSolution_Pred(iPoint);
-
-    nodes->SetSolution(iPoint,valSolutionPred);
-  }
-
-  if (dynamic){
-
-    /*--- Compute velocities and accelerations ---*/
-
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-
-        /*--- Acceleration component of the solution ---*/
-        /*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
-
-        Solution[iVar]=a_dt[0]*(nodes->GetSolution(iPoint,iVar) -
-            nodes->GetSolution_time_n(iPoint,iVar)) -
-            a_dt[2]* nodes->GetSolution_Vel_time_n(iPoint,iVar) -
-            a_dt[3]* nodes->GetSolution_Accel_time_n(iPoint,iVar);
-      }
-
-      /*--- Set the acceleration in the node structure ---*/
-
-      nodes->SetSolution_Accel(iPoint,Solution);
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-
-        /*--- Velocity component of the solution ---*/
-        /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
-
-        Solution[iVar]=nodes->GetSolution_Vel_time_n(iPoint,iVar)+
-            a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
-            a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
-
-      }
-
-      /*--- Set the velocity in the node structure ---*/
-
-      nodes->SetSolution_Vel(iPoint,Solution);
-
+    /*--- Update solution and set it to be the solution after applying relaxation. ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+      nodes->SetSolution(iPoint, nodes->GetSolution_Pred(iPoint));
     }
 
-  }
+    if (dynamic) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-  /*--- Perform the MPI communication of the solution ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
 
-  InitiateComms(geometry, config, SOLUTION_FEA);
-  CompleteComms(geometry, config, SOLUTION_FEA);
+          /*--- Acceleration component of the solution ---*/
+          /*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
 
-  /*--- After the solution has been communicated, set the 'old' predicted solution as the solution ---*/
-  /*--- Loop over n points (as we have already communicated everything ---*/
+          su2double sol = a_dt[0]*(nodes->GetSolution(iPoint,iVar) -
+                                   nodes->GetSolution_time_n(iPoint,iVar)) -
+                          a_dt[2]* nodes->GetSolution_Vel_time_n(iPoint,iVar) -
+                          a_dt[3]* nodes->GetSolution_Accel_time_n(iPoint,iVar);
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      nodes->SetSolution_Pred_Old(iPoint,iVar,nodes->GetSolution(iPoint,iVar));
+          nodes->SetSolution_Accel(iPoint, iVar, sol);
+        }
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+
+          /*--- Velocity component of the solution ---*/
+          /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
+
+          su2double sol = nodes->GetSolution_Vel_time_n(iPoint,iVar)+
+                          a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
+                          a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
+
+          nodes->SetSolution_Vel(iPoint, iVar, sol);
+        }
+      }
     }
-  }
 
+    /*--- Perform the MPI communication of the solution ---*/
+    SU2_OMP_MASTER
+    {
+      InitiateComms(geometry, config, SOLUTION_FEA);
+      CompleteComms(geometry, config, SOLUTION_FEA);
+    }
+    SU2_OMP_BARRIER
+
+    /*--- After the solution has been communicated, set the 'old' predicted solution as the solution. ---*/
+    /*--- Loop over n points (as we have already communicated everything. ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        nodes->SetSolution_Pred_Old(iPoint,iVar,nodes->GetSolution(iPoint,iVar));
+      }
+    }
+
+  } // end SU2_OMP_PARALLEL
 
 }
 
 
 void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned long iPoint;
-  unsigned short iVar;
+  const bool first_iter = (config->GetInnerIter() == 0);
+  const bool dynamic = (config->GetTime_Domain());
+  const bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);
+  const bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
+  const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);
+  const bool body_forces = config->GetDeadLoad();
 
-  bool first_iter = (config->GetInnerIter() == 0);
-  bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
-  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-  bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
-  bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
+  /*--- Blend between previous and current timestep. ---*/
+  const su2double alpha_f = config->Get_Int_Coeffs(2);
 
-  su2double alpha_f = config->Get_Int_Coeffs(2);
+  /*--- For simplicity, no incremental loading is handled with increment of 1. ---*/
+  const su2double loadIncr = config->GetIncrementalLoad()? loadIncrement : su2double(1.0);
 
-  bool incremental_load = config->GetIncrementalLoad();
+  SU2_OMP_PARALLEL
+  {
+    unsigned long iPoint;
+    unsigned short iVar;
 
-  if (!dynamic) {
+    /*--- Loads for static problems. ---*/
+    if(!dynamic) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      /*--- Add the external contribution to the residual    ---*/
-      /*--- (the terms that are constant over the time step) ---*/
-      if (incremental_load) {
+        /*--- External surface load contribution. ---*/
+
         for (iVar = 0; iVar < nVar; iVar++) {
-          Res_Ext_Surf[iVar] = loadIncrement * nodes->Get_SurfaceLoad_Res(iPoint,iVar);
+          LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_SurfaceLoad_Res(iPoint,iVar);
         }
-      }
-      else {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Res_Ext_Surf[iVar] = nodes->Get_SurfaceLoad_Res(iPoint,iVar);
-        }
-        //Res_Ext_Surf = nodes->Get_SurfaceLoad_Res(iPoint);
-      }
 
-      LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+        /*--- Body forces contribution (dead load). ---*/
 
-      /*--- Add the contribution to the residual due to body forces ---*/
-
-      if (body_forces) {
-        if (incremental_load) {
+        if (body_forces) {
           for (iVar = 0; iVar < nVar; iVar++) {
-            Res_Dead_Load[iVar] = loadIncrement * nodes->Get_BodyForces_Res(iPoint,iVar);
-          }
-        }
-        else {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Res_Dead_Load[iVar] = nodes->Get_BodyForces_Res(iPoint,iVar);
+            LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
           }
         }
 
-        LinSysRes.AddBlock(iPoint, Res_Dead_Load);
-      }
+        /*--- FSI contribution (flow loads). ---*/
 
-    }
-
-  }
-
-  if (dynamic) {
-
-    /*--- Add the mass matrix contribution to the Jacobian ---*/
-
-    /*
-     * If the problem is nonlinear, we need to add the Mass Matrix contribution to the Jacobian at the beginning
-     * of each time step. If the solution method is Newton Rapshon, we repeat this step at the beginning of each
-     * iteration, as the Jacobian is recomputed
-     *
-     * If the problem is linear, we add the Mass Matrix contribution to the Jacobian everytime because for
-     * correct differentiation the Jacobian is recomputed every time step.
-     *
-     */
-    if ((nonlinear_analysis && (newton_raphson || first_iter)) || linear_analysis) {
-      Jacobian.MatrixMatrixAddition(a_dt[0], MassMatrix);
-    }
-
-
-    /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Residual[iVar] =   a_dt[0]*nodes->GetSolution_time_n(iPoint,iVar)        //a0*U(t)
-        - a_dt[0]*nodes->GetSolution(iPoint,iVar)           //a0*U(t+dt)(k-1)
-        + a_dt[2]*nodes->GetSolution_Vel_time_n(iPoint,iVar)    //a2*U'(t)
-        + a_dt[3]*nodes->GetSolution_Accel_time_n(iPoint,iVar);  //a3*U''(t)
-      }
-      TimeRes_Aux.SetBlock(iPoint, Residual);
-    }
-
-    /*--- Once computed, compute M*TimeRes_Aux ---*/
-    MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
-    /*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      /*--- Dynamic contribution ---*/
-      //Res_Time_Cont = TimeRes.GetBlock(iPoint);
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Time_Cont[iVar] = TimeRes.GetBlock(iPoint, iVar);
-      }
-      LinSysRes.AddBlock(iPoint, Res_Time_Cont);
-      /*--- External surface load contribution ---*/
-      if (incremental_load) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          Res_Ext_Surf[iVar] = loadIncrement * ( (1 - alpha_f) * nodes->Get_SurfaceLoad_Res(iPoint,iVar) +
-                                                alpha_f  * nodes->Get_SurfaceLoad_Res_n(iPoint,iVar) );
+          LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_FlowTraction(iPoint,iVar);
         }
+
       }
-      else {
+    }
+
+    /*--- Loads for dynamic problems. ---*/
+
+    if (dynamic) {
+
+      /*--- Add the mass matrix contribution to the Jacobian. ---*/
+
+      /*--- See notes on logic in ImplicitNewmark_Iteration(). ---*/
+      if ((nonlinear_analysis && (newton_raphson || first_iter)) || linear_analysis) {
+        Jacobian.MatrixMatrixAddition(a_dt[0], MassMatrix);
+      }
+
+      /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          Res_Ext_Surf[iVar] = (1 - alpha_f) * nodes->Get_SurfaceLoad_Res(iPoint,iVar) +
-          alpha_f  * nodes->Get_SurfaceLoad_Res_n(iPoint,iVar);
+          TimeRes_Aux[iPoint*nVar+iVar] =
+            a_dt[0]*nodes->GetSolution_time_n(iPoint,iVar) -      // a0*U(t)
+            a_dt[0]*nodes->GetSolution(iPoint,iVar) +             // a0*U(t+dt)(k-1)
+            a_dt[2]*nodes->GetSolution_Vel_time_n(iPoint,iVar) +  // a2*U'(t)
+            a_dt[3]*nodes->GetSolution_Accel_time_n(iPoint,iVar); // a3*U''(t)
         }
       }
-      LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
 
-      /*--- Add the contribution to the residual due to body forces.
-       *--- It is constant over time, so it's not necessary to distribute it. ---*/
+      /*--- Add M*TimeRes_Aux to the residual. ---*/
 
-      if (body_forces) {
-        if (incremental_load) {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Res_Dead_Load[iVar] = loadIncrement * nodes->Get_BodyForces_Res(iPoint,iVar);
-          }
+      MassMatrix.MatrixVectorProduct(TimeRes_Aux, TimeRes, geometry, config);
+      LinSysRes += TimeRes;
+
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      
+        /*--- External surface load contribution ---*/
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+          LinSysRes[iPoint*nVar+iVar] += loadIncr * ( (1-alpha_f) * nodes->Get_SurfaceLoad_Res(iPoint,iVar) +
+                                                       alpha_f  * nodes->Get_SurfaceLoad_Res_n(iPoint,iVar) );
         }
-        else {
+
+        /*--- Add the contribution to the residual due to body forces.
+         *--- It is constant over time, so it's not necessary to distribute it. ---*/
+
+        if (body_forces) {
           for (iVar = 0; iVar < nVar; iVar++) {
-            Res_Dead_Load[iVar] = nodes->Get_BodyForces_Res(iPoint,iVar);
+            LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
           }
         }
 
-        LinSysRes.AddBlock(iPoint, Res_Dead_Load);
-      }
+        /*--- Add FSI contribution. ---*/
 
-      /*--- Add FSI contribution ---*/
-
-      if (incremental_load) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          Res_FSI_Cont[iVar] = loadIncrement * ( (1 - alpha_f) * nodes->Get_FlowTraction(iPoint,iVar) +
-                                                alpha_f  * nodes->Get_FlowTraction_n(iPoint,iVar) );
+          LinSysRes[iPoint*nVar+iVar] += loadIncr * ( (1-alpha_f) * nodes->Get_FlowTraction(iPoint,iVar) +
+                                                       alpha_f  * nodes->Get_FlowTraction_n(iPoint,iVar) );
         }
       }
-      else {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Res_FSI_Cont[iVar] = (1 - alpha_f) * nodes->Get_FlowTraction(iPoint,iVar) +
-          alpha_f  * nodes->Get_FlowTraction_n(iPoint,iVar);
-        }
-      }
-      LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
-
     }
 
-  }
+  } // end SU2_OMP_PARALLEL
 
 }
 
 void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned short iVar;
-  unsigned long iPoint;
+  /*--- Update displacement components of the solution. ---*/
 
-  /*--- Update solution ---*/
+  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-
-      /*--- Displacements component of the solution ---*/
-
-      nodes->Add_DeltaSolution(iPoint,iVar, LinSysSol[iPoint*nVar+iVar]);
-
-    }
-
-  }
-
-  /*--- Perform the MPI communication of the solution, displacements only ---*/
+  /*--- Perform the MPI communication of the solution, displacements only. ---*/
 
   InitiateComms(geometry, config, SOLUTION_DISPONLY);
   CompleteComms(geometry, config, SOLUTION_DISPONLY);
@@ -3466,64 +3206,56 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solv
 
 void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned short iVar;
-  unsigned long iPoint;
-
-  su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
+  const su2double alpha_f = config->Get_Int_Coeffs(2);
+  const su2double alpha_m = config->Get_Int_Coeffs(3);
 
   /*--- Compute solution at t_n+1, and update velocities and accelerations ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    unsigned short iVar;
 
     for (iVar = 0; iVar < nVar; iVar++) {
 
       /*--- Compute the solution from the previous time step and the solution computed at t+1-alpha_f ---*/
       /*--- U(t+dt) = 1/alpha_f*(U(t+1-alpha_f)-alpha_f*U(t)) ---*/
 
-      Solution[iVar]=(1 / (1 - alpha_f))*(nodes->GetSolution(iPoint,iVar) -
-                                          alpha_f * nodes->GetSolution_time_n(iPoint,iVar));
+      su2double sol = (1/(1-alpha_f)) * (nodes->GetSolution(iPoint,iVar) -
+                                         alpha_f * nodes->GetSolution_time_n(iPoint,iVar));
 
-
+      nodes->SetSolution(iPoint, iVar, sol);
     }
-
-    /*--- Set the solution in the node structure ---*/
-
-    nodes->SetSolution(iPoint,Solution);
 
     for (iVar = 0; iVar < nVar; iVar++) {
 
       /*--- Acceleration component of the solution ---*/
       /*--- U''(t+dt-alpha_m) = a8*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
 
-      Solution_Interm[iVar]=a_dt[8]*( nodes->GetSolution(iPoint,iVar) -
-                                     nodes->GetSolution_time_n(iPoint,iVar)) -
-      a_dt[2]* nodes->GetSolution_Vel_time_n(iPoint,iVar) -
-      a_dt[3]* nodes->GetSolution_Accel_time_n(iPoint,iVar);
+      su2double tmp = a_dt[8]*(nodes->GetSolution(iPoint,iVar) -
+                               nodes->GetSolution_time_n(iPoint,iVar)) -
+                      a_dt[2]* nodes->GetSolution_Vel_time_n(iPoint,iVar) -
+                      a_dt[3]* nodes->GetSolution_Accel_time_n(iPoint,iVar);
 
       /*--- Compute the solution from the previous time step and the solution computed at t+1-alpha_f ---*/
       /*--- U''(t+dt) = 1/alpha_m*(U''(t+1-alpha_m)-alpha_m*U''(t)) ---*/
 
-      Solution[iVar]=(1 / (1 - alpha_m))*(Solution_Interm[iVar] - alpha_m * nodes->GetSolution_Accel_time_n(iPoint,iVar));
+      su2double sol = (1/(1-alpha_m)) * (tmp - alpha_m*nodes->GetSolution_Accel_time_n(iPoint,iVar));
+
+      nodes->SetSolution_Accel(iPoint, iVar, sol);
     }
-
-    /*--- Set the acceleration in the node structure ---*/
-
-    nodes->SetSolution_Accel(iPoint,Solution);
 
     for (iVar = 0; iVar < nVar; iVar++) {
 
       /*--- Velocity component of the solution ---*/
       /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
 
-      Solution[iVar]=nodes->GetSolution_Vel_time_n(iPoint,iVar)+
-      a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
-      a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
+      su2double sol = nodes->GetSolution_Vel_time_n(iPoint,iVar)+
+                      a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
+                      a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
 
+      nodes->SetSolution_Vel(iPoint, iVar, sol);
     }
-
-    /*--- Set the velocity in the node structure ---*/
-
-    nodes->SetSolution_Vel(iPoint,Solution);
 
   }
 
@@ -3544,19 +3276,11 @@ void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **sol
 
 void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
-  unsigned long iPoint, total_index;
-  unsigned short iVar;
-
   /*--- Initialize residual and solution at the ghost points ---*/
 
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
-    }
-
+  for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    LinSysRes.SetBlock_Zero(iPoint);
+    LinSysSol.SetBlock_Zero(iPoint);
   }
 
   IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
@@ -3576,41 +3300,47 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry,
                                             CConfig *fea_config,
                                             CSolver ***fea_solution) {
 
-  unsigned short predOrder = fea_config->GetPredictorOrder();
-  su2double Delta_t = fea_config->GetDelta_DynTime();
-  unsigned long iPoint, iDim;
-  su2double *solDisp, *solVel, *solVel_tn, *valPred;
+  const unsigned short predOrder = fea_config->GetPredictorOrder();
+  const su2double Delta_t = fea_config->GetDelta_DynTime();
 
-  //To nPointDomain: we need to communicate the predicted solution after setting it
-  for (iPoint=0; iPoint < nPointDomain; iPoint++) {
-    if (predOrder==0) fea_solution[MESH_0][FEA_SOL]->GetNodes()->SetSolution_Pred(iPoint);
-    else if (predOrder==1) {
+  auto fea_nodes = fea_solution[MESH_0][FEA_SOL]->GetNodes();
 
-      solDisp = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution(iPoint);
-      solVel = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Vel(iPoint);
-      valPred = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred(iPoint);
+  if(predOrder > 2 && rank == MASTER_NODE)
+    cout << "Higher order predictor not implemented. Solving with order 0." << endl;
 
-      for (iDim=0; iDim < nDim; iDim++) {
-        valPred[iDim] = solDisp[iDim] + Delta_t*solVel[iDim];
-      }
+  /*--- To nPointDomain: we need to communicate the predicted solution after setting it. ---*/
+  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
 
+    unsigned short iDim;
+
+    switch (predOrder) {
+      case 1: {
+        const su2double* solDisp = fea_nodes->GetSolution(iPoint);
+        const su2double* solVel = fea_nodes->GetSolution_Vel(iPoint);
+        su2double* valPred = fea_nodes->GetSolution_Pred(iPoint);
+
+        for (iDim=0; iDim < nDim; iDim++) {
+          valPred[iDim] = solDisp[iDim] + Delta_t*solVel[iDim];
+        }
+      } break;
+
+      case 2: {
+        const su2double* solDisp = fea_nodes->GetSolution(iPoint);
+        const su2double* solVel = fea_nodes->GetSolution_Vel(iPoint);
+        const su2double* solVel_tn = fea_nodes->GetSolution_Vel_time_n(iPoint);
+        su2double* valPred = fea_nodes->GetSolution_Pred(iPoint);
+
+        for (iDim=0; iDim < nDim; iDim++) {
+          valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*solVel[iDim]-solVel_tn[iDim]);
+        }
+      } break;
+
+      default: {
+        fea_nodes->SetSolution_Pred(iPoint);
+      } break;
     }
-    else if (predOrder==2) {
 
-      solDisp = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution(iPoint);
-      solVel = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Vel(iPoint);
-      solVel_tn = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Vel_time_n(iPoint);
-      valPred = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred(iPoint);
-
-      for (iDim=0; iDim < nDim; iDim++) {
-        valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*solVel[iDim]-solVel_tn[iDim]);
-      }
-
-    }
-    else {
-      cout<< "Higher order predictor not implemented. Solving with order 0." << endl;
-      fea_solution[MESH_0][FEA_SOL]->GetNodes()->SetSolution_Pred(iPoint);
-    }
   }
 
 }
@@ -3708,65 +3438,43 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
 }
 
 void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry,
-                                                 CConfig *fea_config, CSolver ***fea_solution) {
+                                      CConfig *fea_config,
+                                      CSolver ***fea_solution) {
 
-  unsigned long iPoint, iDim;
-  unsigned short RelaxMethod_FSI;
-  su2double *dispPred, *dispCalc;
-  su2double WAitken;
+  su2double WAitken = GetWAitken_Dyn();
 
-  RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
+  // To nPointDomain; we need to communicate the solutions (predicted, old and old predicted) after this routine
+  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
 
-  /*--- Only when there is movement it makes sense to update the solutions... ---*/
+    /*--- Retrieve pointers to the predicted and calculated solutions ---*/
+    su2double* dispPred = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred(iPoint);
+    const su2double* dispCalc = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution(iPoint);
 
-    if (RelaxMethod_FSI == NO_RELAXATION) {
-      WAitken = 1.0;
+    /*--- Set predicted solution as the old predicted solution ---*/
+    fea_solution[MESH_0][FEA_SOL]->GetNodes()->SetSolution_Pred_Old(iPoint);
+
+    /*--- Set calculated solution as the old solution (needed for dynamic Aitken relaxation) ---*/
+    fea_solution[MESH_0][FEA_SOL]->GetNodes()->SetSolution_Old(iPoint, dispCalc);
+
+    /*--- Apply the Aitken relaxation ---*/
+    for (unsigned short iDim=0; iDim < nDim; iDim++) {
+      dispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
     }
-    else if (RelaxMethod_FSI == FIXED_PARAMETER) {
-      WAitken = fea_config->GetAitkenStatRelax();
-    }
-    else if (RelaxMethod_FSI == AITKEN_DYNAMIC) {
-      WAitken = GetWAitken_Dyn();
-    }
-    else {
-      WAitken = 1.0;
-    }
-
-    // To nPointDomain; we need to communicate the solutions (predicted, old and old predicted) after this routine
-    for (iPoint=0; iPoint < nPointDomain; iPoint++) {
-
-      /*--- Retrieve pointers to the predicted and calculated solutions ---*/
-      dispPred = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred(iPoint);
-      dispCalc = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution(iPoint);
-
-      /*--- Set predicted solution as the old predicted solution ---*/
-      fea_solution[MESH_0][FEA_SOL]->GetNodes()->SetSolution_Pred_Old(iPoint);
-
-      /*--- Set calculated solution as the old solution (needed for dynamic Aitken relaxation) ---*/
-      fea_solution[MESH_0][FEA_SOL]->GetNodes()->SetSolution_Old(iPoint, dispCalc);
-
-      /*--- Apply the Aitken relaxation ---*/
-      for (iDim=0; iDim < nDim; iDim++) {
-        dispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
-      }
-
-    }
-
+  }
 
 }
 
 void CFEASolver::Update_StructSolution(CGeometry **fea_geometry,
-                                                  CConfig *fea_config, CSolver ***fea_solution) {
+                                       CConfig *fea_config,
+                                       CSolver ***fea_solution) {
 
-  unsigned long iPoint;
-  su2double *valSolutionPred;
+  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
 
-  for (iPoint=0; iPoint < nPointDomain; iPoint++) {
-
-    valSolutionPred = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred(iPoint);
+    auto valSolutionPred = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred(iPoint);
 
     fea_solution[MESH_0][FEA_SOL]->GetNodes()->SetSolution(iPoint, valSolutionPred);
-
   }
 
   /*--- Perform the MPI communication of the solution, displacements only ---*/
@@ -4104,7 +3812,7 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
 {
   unsigned long iPoint;
   unsigned short iVar;
-  su2double nodalForce[3];
+  su2double nodalForce[MAXNVAR];
 
   /*--- Types of loads to consider ---*/
   bool body_forces = config->GetDeadLoad();
@@ -4199,7 +3907,7 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
     // Avoid double-counting elements:
     // Only add the value if the first node is in the domain
-    if (geometry->node[indexNode[0]]->GetDomain()){
+    if (geometry->node[indexNode[0]]->GetDomain()) {
 
       // Compute the area/volume of the element
       if (nDim == 2)
@@ -4315,11 +4023,9 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   /*--- Detect a wrong solution file ---*/
 
   if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
+
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
+
   if (rbuf_NotMatching != 0) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
@@ -4377,7 +4083,7 @@ void CFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config)
   /*--- Allocate and initialize an array onto which the derivatives of every partition
   will be reduced, this is to output results in the correct order, it is not a very
   memory efficient solution... single precision is enough for output. ---*/
-  float *send_buf = new float[nElemDomain], *rec_buf = NULL;
+  float *send_buf = new float[nElemDomain], *rec_buf = nullptr;
   for(iElem=0; iElem<nElemDomain; ++iElem) send_buf[iElem] = 0.0;
 
   for(iElem=0; iElem<nElem; ++iElem) {

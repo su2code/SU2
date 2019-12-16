@@ -274,13 +274,13 @@ public:
    * \brief indexing operator with assignment permitted
    * \param[in] i = local index to access
    */
-  inline ScalarType & operator[](const unsigned long & i) { return vec_val[i]; }
+  inline ScalarType & operator[](unsigned long i) { return vec_val[i]; }
 
   /*!
    * \brief indexing operator with assignment not permitted
    * \param[in] i = local index to access
    */
-  inline const ScalarType & operator[](const unsigned long & i) const { return vec_val[i]; }
+  inline const ScalarType & operator[](unsigned long i) const { return vec_val[i]; }
 
   /*!
    * \brief copies the contents of the calling CSysVector into an array

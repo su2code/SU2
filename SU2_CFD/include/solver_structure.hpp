@@ -11549,38 +11549,20 @@ public:
  *  \date July 10, 2015.
  */
 class CFEASolver : public CSolver {
-private:
+protected:
   enum : size_t {MAXNNODE = 8};
   enum : size_t {MAXNVAR = 3};
   enum : size_t {OMP_MIN_SIZE = 64};
+  enum : size_t {OMP_MAX_SIZE = 512};
+
+  unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
   su2double  Total_CFEA;        /*!< \brief Total FEA coefficient for all the boundaries. */
-  /*!< We maintain the name to avoid defining a new function... */
-  
+
   int nFEA_Terms; 
   bool topol_filter_applied;    /*!< \brief True if density filtering has been performed. */
-
-  su2double *GradN_X,
-  *GradN_x;
-
-  su2double *Res_Ext_Surf;      /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
-  su2double *Res_Time_Cont;     /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
-  su2double *Res_FSI_Cont;      /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
-  
-  su2double *Res_Dead_Load;     /*!< \brief Auxiliary vector to store the body load contribution to the residual */
-  
-  su2double *solutionPredictor;  /*!< \brief Auxiliary vector to store the solution predictor */
-  
-  su2double *Solution_Interm;    /*!< \brief Auxiliary vector to store the intermediate solution */
   
   su2double *SolRest;      /*!< \brief Auxiliary vector to restart the solution */
-  
-  su2double *nodeReactions;      /*!< \brief Auxiliary vector to store the reactions */
-  
-  su2double *normalVertex;       /*!< \brief Auxiliary vector to store the normals to a certain vertex */
-  su2double **stressTensor;      /*!< \brief Auxiliary matrix to rebuild the stress tensor and compute reactions */
-  
-  unsigned long *elProperties;   /*!< \brief Auxiliary vector to read the element properties from file */
 
   unsigned short *iElem_iDe;	 /*!< \brief For DE cases, ID of the region considered for each iElem. */
   
@@ -11618,6 +11600,18 @@ private:
   vector<ElemColor> ElemColoring;   /*!< \brief Element colors. */
   unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size must be a multiple of this. */
 
+  bool element_based;            /*!< \brief Bool to determine if an element-based file is used. */
+
+  unsigned long nElement;       /*!< \brief Number of elements. */
+  unsigned long IterLinSol;     /*!< \brief Number of iterations of the linear solver. */
+
+  CVariable* nodes = nullptr;   /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
   /*!
    * \brief Get the element container index and number of nodes of a given VTK type.
    * \param[in] VTK_Type - Type of element.
@@ -11635,25 +11629,6 @@ private:
       default: assert(false); nNodes = 0; EL_KIND = -(1<<30); break;
     }
   }
-
-protected:
-
-  bool element_based;            /*!< \brief Bool to determine if an element-based file is used. */
-
-  unsigned long nElement;       /*!< \brief Number of elements. */
-  unsigned long IterLinSol;     /*!< \brief Number of iterations of the linear solver. */
-
-  su2double **mZeros_Aux;       /*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
-  su2double **mId_Aux;          /*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
-
-  su2double *Res_Stress_i;      /*!< \brief Submatrix to store the nodal stress contribution of node i. */
-
-  CVariable* nodes = nullptr;   /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
-
-  /*!
-   * \brief Return nodes to allow CSolver::base_nodes to be set.
-   */
-  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
   
