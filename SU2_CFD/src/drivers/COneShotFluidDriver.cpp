@@ -1425,34 +1425,28 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     // }
     // if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
 
-    if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
-      Lambda[iConstr] = 0.0;
-      // Lambda[iConstr] -= stepsize*Lambda_Old[iConstr];
-    }
-    // else if ((active && dh < 0.) || (config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR && hdh < 0.)){
-    else {
-      for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-        helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
-      }
-      Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-    }
-    Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
+    //   Lambda[iConstr] = 0.0;
+    //   // Lambda[iConstr] -= stepsize*Lambda_Old[iConstr];
+    // }
+    // // else if ((active && dh < 0.) || (config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR && hdh < 0.)){
+    // else {
+    //   for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
+    //     helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
+    //   }
+    //   Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
+    // }
+    // Lambda_Tilde[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
 
     // if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
 
-    // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-    //   helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
-    // }
+    for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
+      helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
+    }
 
-    // Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
-
-    // if((config->GetKind_ConstrFuncType(iConstr)) != EQ_CONSTR && (active)) Lambda[iConstr] = max(Lambda[iConstr], 0.0);
-
-    // for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-    //   helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
-    // }
+    Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
     // Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
 
