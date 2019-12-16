@@ -27,6 +27,7 @@
 
 
 #include "../../../Common/include/adt_structure.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 #include "../../include/solvers/CMeshSolver.hpp"
 #include "../../include/variables/CMeshBoundVariable.hpp"
 #include "../../include/variables/CMeshElement.hpp"
@@ -52,7 +53,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   /*--- Initialize the number of spatial dimensions, length of the state
    vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
 
-  unsigned short iDim, jDim;
+  unsigned short iDim;
   unsigned long iPoint, iElem;
 
   nDim         = geometry->GetnDim();
@@ -99,14 +100,29 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   Residual = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Residual[iDim] = 0.0;
   Solution = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Solution[iDim] = 0.0;
 
-  /*--- Stress contribution to the node i ---*/
-  Res_Stress_i = new su2double[nVar];
-
   /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
 
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+
+#ifdef HAVE_OMP
+  /*--- Get the element coloring. ---*/
+
+  const auto& coloring = geometry->GetElementColoring();
+
+  auto nColor = coloring.getOuterSize();
+  ElemColoring.resize(nColor);
+
+  for(auto iColor = 0ul; iColor < nColor; ++iColor) {
+    ElemColoring[iColor].size = coloring.getNumNonZeros(iColor);
+    ElemColoring[iColor].indices = coloring.innerIdx(iColor);
+  }
+
+  ColorGroupSize = 1; /// TODO: This needs to come from geometry or config
+
+  omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
+#endif
 
   /*--- Structural parameters ---*/
 
@@ -119,40 +135,21 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   /*--- Element container structure ---*/
 
   if (nDim == 2) {
-    element_container[FEA_TERM][EL_TRIA] = new CTRIA1();
-    element_container[FEA_TERM][EL_QUAD] = new CQUAD4();
+    for(int thread = 0; thread < omp_get_max_threads(); ++thread) {
+
+      const int offset = thread*MAX_FE_KINDS;
+      element_container[FEA_TERM][EL_TRIA+offset] = new CTRIA1();
+      element_container[FEA_TERM][EL_QUAD+offset] = new CQUAD4();
+    }
   }
   else {
-    element_container[FEA_TERM][EL_TETRA] = new CTETRA1();
-    element_container[FEA_TERM][EL_HEXA]  = new CHEXA8();
-    element_container[FEA_TERM][EL_PYRAM] = new CPYRAM5();
-    element_container[FEA_TERM][EL_PRISM] = new CPRISM6();
-  }
+    for(int thread = 0; thread < omp_get_max_threads(); ++thread) {
 
-  /*--- Matrices to impose boundary conditions ---*/
-
-  mZeros_Aux = new su2double *[nDim];
-  mId_Aux    = new su2double *[nDim];
-  for(iDim = 0; iDim < nDim; iDim++){
-    mZeros_Aux[iDim] = new su2double[nDim];
-    mId_Aux[iDim]    = new su2double[nDim];
-  }
-
-  for(iDim = 0; iDim < nDim; iDim++){
-    for (jDim = 0; jDim < nDim; jDim++){
-      mZeros_Aux[iDim][jDim] = 0.0;
-      mId_Aux[iDim][jDim]    = 0.0;
-    }
-    mId_Aux[iDim][iDim] = 1.0;
-  }
-
-  /*--- Term ij of the Jacobian ---*/
-
-  Jacobian_ij = new su2double*[nDim];
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Jacobian_ij[iDim] = new su2double [nDim];
-    for (jDim = 0; jDim < nDim; jDim++) {
-      Jacobian_ij[iDim][jDim] = 0.0;
+      const int offset = thread*MAX_FE_KINDS;
+      element_container[FEA_TERM][EL_TETRA+offset] = new CTETRA1();
+      element_container[FEA_TERM][EL_HEXA +offset] = new CHEXA8 ();
+      element_container[FEA_TERM][EL_PYRAM+offset] = new CPYRAM5();
+      element_container[FEA_TERM][EL_PRISM+offset] = new CPRISM6();
     }
   }
 
