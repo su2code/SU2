@@ -49,9 +49,9 @@ COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config)  : CDiscAdj
 COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CDiscAdjSolver(geometry, config, direct_solver, Kind_Solver, iMesh) {
 
   rho       = 0.0;
-  rho_old   = 1.0;
+  rho_old   = 0.0;
   theta     = 1.0;
-  theta_old = 1.0;
+  theta_old = 0.0;
   nConstr   = config->GetnConstr();
   nActiveDV = 0;
   grad_norm = 0.0;
@@ -275,10 +275,10 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
   helper       = myHelper;
 #endif
 
-  // rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.9*rho_old), 1.0-1.0E-8); // Upper bound 1-(1E-6)
-  // theta = max(max(sqrt(fabs(helper)/normDelta), 0.9 *theta_old), 1.0E-8); // Lower bound 1E-6
-  rho   = min(sqrt(normDeltaNew)/sqrt(normDelta), 1.0-1.0E-8); // Upper bound 1-(1E-6)
-  theta = max(sqrt(fabs(helper)/normDelta), 1.0E-8); // Lower bound 1E-6
+  rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.1*rho_old), 1.0-1.0E-8); // Upper bound 1-(1E-6)
+  theta = max(max(sqrt(fabs(helper)/normDelta), 0.1*theta_old), 1.0E-8); // Lower bound 1E-6
+  // rho   = min(sqrt(normDeltaNew)/sqrt(normDelta), 1.0-1.0E-8); // Upper bound 1-(1E-6)
+  // theta = max(sqrt(fabs(helper)/normDelta), 1.0E-8); // Lower bound 1E-6
 
   /* --- Store rho and theta values for this iteration --- */
   rho_old   = rho;
@@ -327,7 +327,7 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, 
     //    (val_constr_func[iConstr] + val_lambda[iConstr]/config->GetOneShotGamma(iConstr) > 0.0)) {
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && 
        // (val_constr_func[iConstr] < 0.0)){
-       gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
+       // gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
     // }
       // gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
     // if(config->GetInnerIter() == config->GetOneShotStart()) {
