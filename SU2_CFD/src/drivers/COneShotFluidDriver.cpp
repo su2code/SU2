@@ -366,27 +366,22 @@ void COneShotFluidDriver::RunOneShot(){
   else if(OneShotIter > config->GetOneShotStart() && 
           OneShotIter < config->GetOneShotStop()  && 
           ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
-  // else if(OneShotIter > config->GetOneShotStart() && 
-          // OneShotIter < config->GetOneShotStop()){
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
 
     /*--- Recalculate Lagrangian and gradient with new Alpha, Beta, Gamma, and Lambda ---*/
     SetAugLagGrad(TOTAL_AUGMENTED_OLD);
-
-    /*--- Reset stepsize ---*/
-    // stepsize0 = 1.0;
   }
-  else if(OneShotIter > config->GetOneShotStart() && 
-          OneShotIter < config->GetOneShotStop()){
-    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
+  // else if(OneShotIter > config->GetOneShotStart() && 
+  //         OneShotIter < config->GetOneShotStop()){
+  //   solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
 
-    /*--- Recalculate Lagrangian and gradient with new Gamma ---*/
-    SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+  //   /*--- Recalculate Lagrangian and gradient with new Gamma ---*/
+  //   SetAugLagGrad(TOTAL_AUGMENTED_OLD);
 
-    /*--- Reset stepsize ---*/
-    // stepsize0 = 1.0;
-  }
+  //   /*--- Reset stepsize ---*/
+  //   // stepsize0 = 1.0;
+  // }
 
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
   StoreObjFunction();
