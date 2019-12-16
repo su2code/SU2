@@ -364,6 +364,16 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Reset stepsize ---*/
     // stepsize0 = 1.0;
   }
+  else if(OneShotIter > config->GetOneShotStart() && 
+          OneShotIter < config->GetOneShotStop()){
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
+
+    /*--- Recalculate Lagrangian and gradient with new Gamma ---*/
+    SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+
+    /*--- Reset stepsize ---*/
+    // stepsize0 = 1.0;
+  }
 
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
   StoreObjFunction();
