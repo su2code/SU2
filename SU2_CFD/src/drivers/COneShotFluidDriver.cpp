@@ -305,8 +305,8 @@ void COneShotFluidDriver::RunOneShot(){
         // UpdateLambda(1.0);
       }
 
-      // LoadOldLambda();
-      // UpdateLambda(stepsize);
+      LoadOldLambda();
+      UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
@@ -1416,7 +1416,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     const su2double dh = ConstrFunc[iConstr]-ConstrFunc_Old[iConstr];
     const su2double hdh = ConstrFunc[iConstr]*dh;
     // const bool active = (ConstrFunc_Old[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc_Old[iConstr] > 0.);
+    const bool active = (ConstrFunc_Store[iConstr] > 0.);
     // const bool active = (Lambda_Tilde_Old[iConstr] > 0.);
 
     // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
@@ -1429,10 +1429,10 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
       Lambda[iConstr] = 0.0;
       // Lambda[iConstr] -= stepsize*Lambda_Old[iConstr];
     }
-    else if ((active && dh < 0.) || (config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR && hdh < 0.)){
-    // else {
+    // else if ((active && dh < 0.) || (config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR && hdh < 0.)){
+    else {
       for(unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
-        helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Old[jConstr];
+        helper += BCheck_Inv[iConstr][jConstr]*ConstrFunc_Store[jConstr];
       }
       Lambda[iConstr] += helper*stepsize*config->GetMultiplierScale(iConstr);
     }
