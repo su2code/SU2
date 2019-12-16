@@ -258,7 +258,7 @@ void COneShotFluidDriver::RunOneShot(){
       }
       else{
         // UpdateLambda(stepsize);
-        UpdateLambda(stepsize);
+        UpdateLambda(1.0);
         ComputeDesignVarUpdate(stepsize);
         StoreGradDotDir(true);
         if(GradDotDir >= 0) {
@@ -379,7 +379,7 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
   StoreObjFunction();
   StoreConstrFunction();
-  // CheckLambda();
+  CheckLambda();
   CalculateLagrangian();
   StoreOldLambda();
   StoreOldConstrFunction();
