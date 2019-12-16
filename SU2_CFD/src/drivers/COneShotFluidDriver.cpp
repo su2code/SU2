@@ -350,7 +350,8 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSolution();
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-    UpdateLambda(1.0);
+    // UpdateLambda(1.0);
+    UpdateLambda(stepsize);
   }
 
   /*--- Store FFD info in file ---*/
