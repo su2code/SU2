@@ -425,17 +425,6 @@ void COneShotFluidDriver::RunOneShot(){
     StoreLagrangianInformation();
   }
 
-  // if(OneShotIter == config->GetOneShotStart()) {
-  //   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-  //     InitializeLambdaTilde(iConstr);
-  //     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && ConstrFunc_Store[iConstr] < 0.) {
-  //       Lambda[iConstr] = max(Lambda_Tilde[iConstr], 0.0);
-  //     }
-  //   }
-  //   StoreLambda();
-  //   StoreOldLambda();
-  // }
-
   /*--- Modifiy initial line search guess based on success of line search ---*/
   if(OneShotIter > config->GetOneShotStart()) {
   //   if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0)) {
