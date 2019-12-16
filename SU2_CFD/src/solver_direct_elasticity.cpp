@@ -1129,11 +1129,11 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
 
             /*--- Full block. ---*/
             for (iVar = 0; iVar < nVar*nVar; iVar++)
-              Kij[iVar] += simp_penalty*Kab[iVar];
+              Kij[iVar] += SU2_TYPE::GetValue(simp_penalty*Kab[iVar]);
 
             /*--- Only the block's diagonal. ---*/
             for (iVar = 0; iVar < nVar; iVar++)
-              Kij[iVar*(nVar+1)] += simp_penalty*Ks_ab;
+              Kij[iVar*(nVar+1)] += SU2_TYPE::GetValue(simp_penalty*Ks_ab);
 
             /*--- Retrieve the electric contribution to the Jacobian ---*/
             if (de_effects) {
@@ -1141,7 +1141,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
               su2double Ks_ab_DE = de_elem->Get_Ks_ab(iNode, jNode);
 
               for (iVar = 0; iVar < nVar; iVar++)
-                Kij[iVar*(nVar+1)] += simp_penalty*Ks_ab_DE;
+                Kij[iVar*(nVar+1)] += SU2_TYPE::GetValue(simp_penalty*Ks_ab_DE);
             }
           }
         }
