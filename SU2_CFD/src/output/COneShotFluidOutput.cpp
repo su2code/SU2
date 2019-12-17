@@ -126,8 +126,8 @@ void COneShotFluidOutput::SetHistoryOutputFields(CConfig *config){
     std::stringstream ss;
     ss << "LAMBDA_" << iConstr;
     std::string LambdaString = ss.str();
-    ss.str(std::string());
     ss.clear();
+    ss.str(std::string());
     ss << "LAMBDA[" << iConstr << "]";
     std::string LambdaHeader = ss.str();
     /// DESCRIPTION: Lagrange multiplier.
@@ -708,7 +708,7 @@ void COneShotFluidOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, 
     std::stringstream ss;
     ss << "LAMBDA_" << iConstr;
     std::string LambdaString = ss.str();
-    SetHistoryOutputValue(LambdaString, adjflow_solver>GetLambdaValue(iConstr));
+    SetHistoryOutputValue(LambdaString, adjflow_solver->GetLambdaValue(iConstr));
   }
   
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
