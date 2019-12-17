@@ -94,6 +94,8 @@ public:
                    const su2double val_t,
                    su2double       *val_solution);
 
+  bool ExactSolutionKnown(void);
+  
   /*!
    * \brief Get the boundary conditions state for an exact solution.
    * \param[in] val_coords   - Cartesian coordinates of the current position.

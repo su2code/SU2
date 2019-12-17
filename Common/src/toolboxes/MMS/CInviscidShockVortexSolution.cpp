@@ -70,25 +70,30 @@ CInviscidShockVortexSolution::CInviscidShockVortexSolution(unsigned short val_nD
   b = 0.175;
   
   /*--- Vortex Strength ---*/
-  M_v = 0.9;
+  M_v = 1.1;
   v_m = M_v * sqrt(Gamma);
-        
+  
+  /*--- Shock conditions. ---*/
+  M_s   = 1.1;
+
   /*--- Shock Initialization. ---*/
   /*--- Upstream conditions. ---*/
   rho_u = 1.0;
-  u_u   = 1.5 * sqrt(Gamma);
+  u_u   = M_s * sqrt(Gamma);
   v_u   = 1e-20;
   p_u   = 1.0;
   t_u = p_u / (rho_u * RGas);
   
-  /*--- Shock conditions. ---*/
-  M_s   = 1.5;
-
   /*--- Downstream conditions. ---*/
-  rho_d = rho_u * (Gamma + 1.0) * M_s * M_s / (2.0 + (Gamma - 1.0) * M_s * M_s);
-  u_d   = u_u * (2.0 + (Gamma - 1.0) * M_s * M_s) / ((Gamma + 1.0) * M_s * M_s);
-  v_d   = 1e-20;
-  p_d   = p_u * (1.0 + (2.0 * Gamma / (Gamma + 1.0)) * (M_s * M_s - 1.0));
+//  rho_d = rho_u * (Gamma + 1.0) * M_s * M_s / (2.0 + (Gamma - 1.0) * M_s * M_s);
+//  u_d   = u_u * (2.0 + (Gamma - 1.0) * M_s * M_s) / ((Gamma + 1.0) * M_s * M_s);
+//  v_d   = 1e-20;
+//  p_d   = p_u * (1.0 + (2.0 * Gamma / (Gamma + 1.0)) * (M_s * M_s - 1.0));
+
+  rho_d = rho_u*((Gamma+1)*M_s*M_s)/((Gamma-1)*M_s*M_s+2);
+  u_d = (rho_u*u_u)/rho_d; // Conservation of mass
+  v_d = 0.0;
+  p_d = p_u*(2*Gamma*M_s*M_s-(Gamma-1))/(Gamma+1);
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
   if((config->GetUnsteady_Simulation() != TIME_STEPPING) &&
@@ -132,59 +137,102 @@ void CInviscidShockVortexSolution::GetBCState(const su2double *val_coords,
   GetSolution(val_coords, val_t, val_solution);
 }
 
+bool CInviscidShockVortexSolution::ExactSolutionKnown(void) {return false;}
+
+//void CInviscidShockVortexSolution::GetSolution(const su2double *val_coords,
+//                                          const su2double val_t,
+//                                          su2double       *val_solution) {
+//  su2double p, t, u, v, rho;
+//
+//  /*--- Shock conditions ---*/
+//  if (val_coords[0] <= 0.5){
+//    rho = rho_u;
+//    p = p_u;
+//    t = t_u;
+//    u = u_u;
+//    v = v_u;
+//  }
+//  else{
+//    rho = rho_d;
+//    p = p_d;
+//    t = p_d / (rho_d * RGas);
+//    u = u_d;
+//    v = v_d;
+//  }
+//
+//  /*--- Distance from Vortex ---*/
+//  su2double dx = (val_coords[0] - x_c);
+//  su2double dy = (val_coords[1] - y_c);
+//  su2double r  = sqrt(dx * dx + dy * dy);
+//
+//  /*--- SUPERIMPOSE VORTEX ---*/
+//  if (r <= b){
+//    su2double sin_theta = dy / r;
+//    su2double cos_theta = dx / r;
+//
+//    if (r <= a){
+//      su2double mag = v_m * r / a;
+//      u = u - mag * sin_theta;
+//      v = v + mag * cos_theta;
+//
+//      //# TEMPERATURE AT a, from below
+//      su2double radial_term = -2.0 * b * b * log(b) - (0.5 * a * a) + (2.0 * b * b * log(a)) + (0.5 * b * b * b * b / (a * a));
+//      su2double t_a = t_u - Gm1 * pow(v_m * a / (a * a - b * b),2) * radial_term / (RGas * Gamma);
+//      radial_term = 0.5 * (1.0 - r * r / (a * a));
+//      t = t_a - Gm1 * v_m * v_m * radial_term / (RGas * Gamma);
+//    }
+//    else{
+//      su2double mag = v_m * a * (r - b * b / r) / (a * a - b * b);
+//      u = u - mag * sin_theta;
+//      v = v + mag * cos_theta;
+//
+//      //# TEMPERATURE RADIAL TERM
+//      su2double radial_term = -2.0 * b * b * log(b) - (0.5 * r * r) + (2.0 * b * b * log(r)) + (0.5 * b * b * b * b / (r * r));
+//      t = t_u - Gm1 * pow(v_m * a / (a * a - b * b),2) * radial_term / (RGas * Gamma);
+//    }
+//    p = p_u * pow(t / t_u, Gamma / Gm1);
+//
+//  }
+//
+//  /* Compute the conservative variables. Note that both 2D and 3D
+//     cases are treated correctly. */
+//  val_solution[0]      = rho;
+//  val_solution[1]      = rho*u;
+//  val_solution[2]      = rho*v;
+//  val_solution[3]      = 0.0;
+//  val_solution[nVar-1] = ovGm1*p + 0.5*rho*(u*u + v*v);
+//
+//}
+
 void CInviscidShockVortexSolution::GetSolution(const su2double *val_coords,
                                           const su2double val_t,
                                           su2double       *val_solution) {
-  su2double p, t, u, v, rho;
-  
-  /*--- Shock conditions ---*/
-  if (val_coords[0] <= 0.5){
-    rho = rho_u;
-    p = p_u;
-    t = t_u;
-    u = u_u;
-    v = v_u;
-  }
-  else{
-    rho = rho_d;
-    p = p_d;
-    t = p_d / (rho_d * RGas);
-    u = u_d;
-    v = v_d;
-  }
-  
+  su2double p, u, v, rho;
+  su2double epsilon = 0.3;
+  su2double rc = 0.05;
+  su2double alph = 0.204;
+
   /*--- Distance from Vortex ---*/
   su2double dx = (val_coords[0] - x_c);
   su2double dy = (val_coords[1] - y_c);
   su2double r  = sqrt(dx * dx + dy * dy);
+  su2double tau = r/rc;
+  su2double theta = atan2(dy, dx);
   
-  /*--- SUPERIMPOSE VORTEX ---*/
-  if (r <= b){
-    su2double sin_theta = dy / r;
-    su2double cos_theta = dx / r;
-
-    if (r <= a){
-      su2double mag = v_m * r / a;
-      u = u - mag * sin_theta;
-      v = v + mag * cos_theta;
-
-      //# TEMPERATURE AT a, from below
-      su2double radial_term = -2.0 * b * b * log(b) - (0.5 * a * a) + (2.0 * b * b * log(a)) + (0.5 * b * b * b * b / (a * a));
-      su2double t_a = t_u - Gm1 * pow(v_m * a / (a * a - b * b),2) * radial_term / (RGas * Gamma);
-      radial_term = 0.5 * (1.0 - r * r / (a * a));
-      t = t_a - Gm1 * v_m * v_m * radial_term / (RGas * Gamma);
-    }
-    else{
-      su2double mag = v_m * a * (r - b * b / r) / (a * a - b * b);
-      u = u - mag * sin_theta;
-      v = v + mag * cos_theta;
-
-      //# TEMPERATURE RADIAL TERM
-      su2double radial_term = -2.0 * b * b * log(b) - (0.5 * r * r) + (2.0 * b * b * log(r)) + (0.5 * b * b * b * b / (r * r));
-      t = t_u - Gm1 * pow(v_m * a / (a * a - b * b),2) * radial_term / (RGas * Gamma);
-    }
-    p = p_u * pow(t / t_u, Gamma / Gm1);
+  /*--- Shock conditions ---*/
+  if (val_coords[0] <= 0.5){
     
+    /*--- SUPERIMPOSE VORTEX ---*/
+    rho = pow(1-(Gamma-1)*epsilon*epsilon*exp(2*alph*(1-tau*tau))/(4*alph*Gamma),(1/(Gamma-1)));
+    p = pow(rho,Gamma);
+    u = u_u + epsilon*tau*exp(alph*(1.-tau*tau))*sin(theta);
+    v = v_u - epsilon*tau*exp(alph*(1.-tau*tau))*cos(theta);
+  }
+  else{
+    rho = rho_d;
+    p = p_d;
+    u = u_d;
+    v = v_d;
   }
   
   /* Compute the conservative variables. Note that both 2D and 3D
