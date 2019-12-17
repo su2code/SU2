@@ -2868,9 +2868,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Buffet monitoring incompatible with Euler Solver", CURRENT_FUNCTION);
   }
   
-  if ((Kind_Solver == EULER) && (Kind_RoeLowDiss != NO_ROELOWDISS) && (Unsteady_Simulation == DT_STEPPING_2ND)){
-    SU2_MPI::Error("Low dissipation convective schemes are only available for Unsteady Dual Time-Step NS or RANS simulations.", CURRENT_FUNCTION);
-  }
+//  if ((Kind_Solver == EULER) && ((Kind_RoeLowDiss != NO_ROELOWDISS) ) && (Unsteady_Simulation == DT_STEPPING_2ND)){
+//    SU2_MPI::Error("Low dissipation convective schemes are only available for Unsteady Dual Time-Step NS or RANS simulations.", CURRENT_FUNCTION);
+//  }
   
   /*--- Check for Fluid model consistency ---*/
 
@@ -5650,7 +5650,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;
             case FD: cout << "Roe with DDES's FD low-dissipation function."<< endl; break;
             case NTS_DUCROS: cout << "Roe with NTS low-dissipation function + Ducros shock sensor."<< endl; break;
-            case FD_DUCROS: cout << "Roe with DDES's FD low-dissipation function + Ducros shock sensor."<< endl; break;
+            case DUCROS: cout << "Roe with Ducros shock sensor."<< endl; break;
           }
         }
         

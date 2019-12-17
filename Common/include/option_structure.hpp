@@ -902,15 +902,17 @@ enum ENUM_ROELOWDISS {
     NO_ROELOWDISS = 0, /*!< \brief No Roe Low Dissipation model. */
     FD            = 1, /*!< \brief Numerical Blending based on DDES's F_d function */
     NTS           = 2, /*!< \brief Numerical Blending of Travin and Shur. */
-    NTS_DUCROS    = 3,  /*!< \brief Numerical Blending of Travin and Shur + Ducros' Shock Sensor. */
-    FD_DUCROS     = 4 /*!< \brief Numerical Blending based on DDES's F_d function + Ducros' Shock Sensor */
+    NTS_DUCROS    = 3, /*!< \brief Numerical Blending of Travin and Shur + Ducros' Shock Sensor. */
+    FD_DUCROS     = 4, /*!< \brief Numerical Blending based on DDES's F_d function + Ducros' Shock Sensor */
+    DUCROS        = 5  /*!< \brief Ducros' Shock Sensor */
 };
 static const map<string, ENUM_ROELOWDISS> RoeLowDiss_Map = CCreateMap<string, ENUM_ROELOWDISS>
 ("NONE", NO_ROELOWDISS)
 ("FD", FD)
 ("NTS", NTS)
 ("NTS_DUCROS", NTS_DUCROS)
-("FD_DUCROS", FD_DUCROS);
+("FD_DUCROS", FD_DUCROS)
+("DUCROS", DUCROS);
 
 /*!
  * \brief types of wall functions.

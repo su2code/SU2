@@ -3516,7 +3516,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   if (roe_low_dissipation){
     SetRoe_Dissipation(geometry, config);
-    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
+    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS || kind_row_dissipation == DUCROS){
       SetUpwind_Ducros_Sensor(geometry, config);
     }
   }
@@ -3814,7 +3814,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short iMesh) {
   
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
-  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Non_Physical = 1.0, Sensor_i, Sensor_j, Dissipation_i, Dissipation_j, *Coord_i, *Coord_j;
+  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Non_Physical = 1.0, Sensor_i = 1.0, Sensor_j = 1.0, Dissipation_i = 1.0, Dissipation_j = 1.0, *Coord_i, *Coord_j;
   
   su2double z, velocity2_i, velocity2_j, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
   
@@ -4012,7 +4012,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       Dissipation_j = node[jPoint]->GetRoe_Dissipation();
       numerics->SetDissipation(Dissipation_i, Dissipation_j);
             
-      if (kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS){
+      if (kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS || kind_dissipation == DUCROS){
         Sensor_i = node[iPoint]->GetSensor();
         Sensor_j = node[jPoint]->GetSensor();
         numerics->SetSensor(Sensor_i, Sensor_j);
@@ -4030,7 +4030,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- SLAU2 Kinetic Energy Preserving ---*/
     if (slau2_kep){
-      
 
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
@@ -4061,7 +4060,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Pressure, density, enthalpy and velocity at points i and j ---*/
 
-      su2double MeanTemperature = 0.5 * (Primitive_i[0]      + Primitive_j[0]);
+//      su2double MeanTemperature = 0.5 * (Primitive_i[0]      + Primitive_j[0]);
       su2double MeanPressure    = 0.5 * (Primitive_i[nDim+1] + Primitive_j[nDim+1]);
       su2double MeanDensity     = 0.5 * (Primitive_i[nDim+2] + Primitive_j[nDim+2]);
       su2double MeanEnthalpy    = 0.5 * (Primitive_i[nDim+3] + Primitive_j[nDim+3]);
@@ -4073,9 +4072,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       for (iDim = 0; iDim < nDim; iDim++) {
         MeanVelocity[iDim] = 0.5 * (Primitive_i[iDim+1] + Primitive_j[iDim+1]);
       }
-      su2double BetaInc2 = pow(config->GetModVel_FreeStreamND(),2.);
-      su2double Cp = (Gamma * config->GetGas_ConstantND()) / Gamma_Minus_One;
-      su2double MeandRhodT = -MeanDensity/MeanTemperature;
+//      su2double BetaInc2 = pow(config->GetModVel_FreeStreamND(),2.);
+//      su2double Cp = (Gamma * config->GetGas_ConstantND()) / Gamma_Minus_One;
+//      su2double MeandRhodT = -MeanDensity/MeanTemperature;
       
       /*--- Get projected flux tensor ---*/
       numerics->GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
@@ -4203,8 +4202,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       //End Incompressible
       //
-//      if (kind_dissipation != NO_ROELOWDISS)
-//        numerics->SetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
+      if (kind_dissipation != NO_ROELOWDISS)
+        numerics->SetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
+      else Dissipation_ij = 0.0;
       
       for (iVar = 0; iVar < nVar; iVar++)
         Res_Conv[iVar] = (1.- Dissipation_ij)*ProjFlux[iVar] + Dissipation_ij*Res_Conv[iVar];
@@ -4825,7 +4825,7 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
   unsigned long iPoint, jPoint;
   unsigned short iNeigh, iDim;
   
-  su2double *Vorticity;
+  su2double Vorticity[3] = {0.0,0.0,0.0};
   
   su2double uixi = 0.0, Ducros_i = 0.0, Ducros_j = 0.0, Omega = 0.0;
   
@@ -4840,9 +4840,16 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
     
     /*--- Compute norm of vorticity ---*/
     
-    Vorticity = node[iPoint]->GetVorticity();    
+    Vorticity[2] = node[iPoint]->GetGradient_Primitive(2,0)-node[iPoint]->GetGradient_Primitive(1,1);
+    Vorticity[0] = 0.0; Vorticity[1] = 0.0;
+    
+    if (nDim == 3) {
+      Vorticity[0] = node[iPoint]->GetGradient_Primitive(3,1)-node[iPoint]->GetGradient_Primitive(2,2);
+      Vorticity[1] = -(node[iPoint]->GetGradient_Primitive(3,0)-node[iPoint]->GetGradient_Primitive(1,2));
+    }
+
     Omega = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++){
+    for (iDim = 0; iDim < 3; iDim++){
       Omega += Vorticity[iDim]*Vorticity[iDim];
     }
     Omega = sqrt(Omega);
@@ -4851,15 +4858,21 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
     
     if (config->GetKind_RoeLowDiss() == FD_DUCROS){
       Ducros_i = -uixi / (fabs(uixi) + Omega + 1e-20);
-    } else if (config->GetKind_RoeLowDiss() == NTS_DUCROS){
+    } else if (config->GetKind_RoeLowDiss() == NTS_DUCROS ||
+               config->GetKind_RoeLowDiss() == DUCROS){
       Ducros_i = pow(uixi,2.0) /(pow(uixi,2.0)+ pow(Omega,2.0) + 1e-20);
     }
     
-    node[iPoint]->SetSensor(Ducros_i);
+    su2double MaxLength  = geometry->node[iPoint]->GetMaxLength();
+    su2double SpeedSound = node[iPoint]->GetSoundSpeed();
+    //su2double Switch     = 0.5 * (1. - tanh(2.5 + 10.* (MaxLength/SpeedSound) * uixi));
+    su2double Switch     = fabs(tanh(10. * (MaxLength/SpeedSound) * uixi));
+    
+    node[iPoint]->SetSensor(Ducros_i * Switch);
     
     /*---- Ducros sensor for neighbor points of iPoint to avoid lower the dissipation in regions near the shock ---*/
     
-    for (iNeigh = 0; iNeigh > geometry->node[iPoint]->GetnNeighbor(); iNeigh++){
+    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnNeighbor(); iNeigh++){
       
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       
@@ -4868,24 +4881,31 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
       uixi=0.0;
       for(iDim = 0; iDim < nDim; iDim++){
         uixi += node[jPoint]->GetGradient_Primitive(iDim+1, iDim);
-      } 
+      }
       
       /*--- Compute norm of vorticity ---*/
       
-      Vorticity = node[jPoint]->GetVorticity();      
+      Vorticity[2] = node[jPoint]->GetGradient_Primitive(2,0)-node[jPoint]->GetGradient_Primitive(1,1);
+      Vorticity[0] = 0.0; Vorticity[1] = 0.0;
+      
+      if (nDim == 3) {
+        Vorticity[0] = node[jPoint]->GetGradient_Primitive(3,1)-node[jPoint]->GetGradient_Primitive(2,2);
+        Vorticity[1] = -(node[jPoint]->GetGradient_Primitive(3,0)-node[jPoint]->GetGradient_Primitive(1,2));
+      }
+
       Omega = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < 3; iDim++){
         Omega += Vorticity[iDim]*Vorticity[iDim];
       }
       Omega = sqrt(Omega);
       
-      if (config->GetKind_RoeLowDiss() == FD_DUCROS){
+      if (config->GetKind_RoeLowDiss() == FD_DUCROS ||
+          config->GetKind_RoeLowDiss() == DUCROS){
         Ducros_j = -uixi / (fabs(uixi) + Omega + 1e-20);
       } else if (config->GetKind_RoeLowDiss() == NTS_DUCROS){
         Ducros_j = pow(uixi,2.0) /(pow(uixi,2.0)+ pow(Omega,2.0) + 1e-20);
       }      
-      node[iPoint]->SetSensor(max(node[iPoint]->GetSensor(), Ducros_j));
-
+      //node[iPoint]->SetSensor(max(node[iPoint]->GetSensor(), Ducros_j));
     }
   }
   
@@ -16458,7 +16478,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   if (roe_low_dissipation){
     SetRoe_Dissipation(geometry, config);
-    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
+    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS || kind_row_dissipation == DUCROS){
       SetUpwind_Ducros_Sensor(geometry, config);
     }
   }

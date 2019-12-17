@@ -13245,7 +13245,12 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         }
         
         if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetRoe_Dissipation(); iVar++;
+          if(config->GetKind_RoeLowDiss() == DUCROS){
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSensor(); iVar++;
+          }
+          else{
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetRoe_Dissipation(); iVar++;
+          }
         }
         
         if (calculate_average){
