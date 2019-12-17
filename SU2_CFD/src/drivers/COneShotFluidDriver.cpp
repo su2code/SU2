@@ -825,7 +825,7 @@ bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
     }
   }
 
-  return (Lagrangian <= Lagrangian_Old + CWolfeOne*admissible_step) && (Lagrangian >= Lagrangian_Old + (1.0-CWolfeOne)*admissible_step);
+  return (Lagrangian <= Lagrangian_Old + CWolfeOne*admissible_step) && (Lagrangian >= Lagrangian_Old + 0.1*admissible_step);
 }
 
 void COneShotFluidDriver::StoreGradDotDir(bool design_update){
