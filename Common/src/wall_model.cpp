@@ -435,7 +435,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange,
      */
     const su2double y_plus = u_tau*h_wm/nu_wall;
     const su2double lhs = - ((tExchange - TWall) * rho_wall * Cp * u_tau);
-    const su2double Gamma = - (0.01 * (Pr_lam * pow(y_plus,4.0))/(1.0 + 5.0*y_plus*pow(Pr_lam,3.0)));
+    const su2double Gamma = - (0.01 * (pow(Pr_lam * y_plus,4.0))/(1.0 + 5.0*y_plus*pow(Pr_lam,3.0)));
     const su2double rhs_1 = Pr_lam * y_plus * exp(Gamma);
     const su2double rhs_2 = (2.12*log(1.0+y_plus) + pow((3.85*pow(Pr_lam,(1.0/3.0)) - 1.3),2.0) + 2.12*log(Pr_lam)) * exp(1./Gamma);
     qWall = lhs/(rhs_1 + rhs_2);
