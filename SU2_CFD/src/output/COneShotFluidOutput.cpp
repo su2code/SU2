@@ -123,7 +123,7 @@ void COneShotFluidOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Norm of the shifted Lagrangian gradient.
   AddHistoryOutput("GRAD_NORM",      "||N_x||",     ScreenOutputFormat::SCIENTIFIC, "ONE_SHOT", "Norm of the shifted Lagrangian gradient."); 
   for(unsigned short iConstr = 0; iConstr < config->GetnConstr(); iConstr++) {
-    stringstream ss;
+    std::stringstream ss;
     ss << "LAMBDA_" << iConstr;
     std::string LambdaString = ss.str();
     std::stringstream.swap(ss);
