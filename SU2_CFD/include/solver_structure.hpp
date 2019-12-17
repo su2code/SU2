@@ -4760,6 +4760,10 @@ public:
   virtual void SetShiftedLagGradNorm(su2double val_norm);
 
   virtual su2double GetShiftedLagGradNorm(void);
+
+  virtual void SetLambdaValue(unsigned short iConstr, su2double val_constr);
+
+  virtual su2double GetLambdaValue(unsigned short iConstr);
   
   /*!
    * \brief Compute the gradient using a L2 Projection method,
@@ -15851,7 +15855,7 @@ private:
  */
 class COneShotSolver : public CDiscAdjSolver {
 private:
-  su2double theta, theta_old, rho, rho_old, grad_norm;
+  su2double theta, theta_old, rho, rho_old, grad_norm, *lambda;
   unsigned short nConstr, ArmijoIter, nActiveDV;
   su2double ConFunc_Value;
   su2double *** DConsVec;
@@ -16062,6 +16066,10 @@ public:
   void SetShiftedLagGradNorm(su2double val_norm);
 
   su2double GetShiftedLagGradNorm(void);
+
+  void SetLambdaValue(unsigned short iConstr, su2double val_constr);
+
+  su2double GetLambdaValue(unsigned short iConstr);
 
 };
 

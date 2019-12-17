@@ -1406,6 +1406,7 @@ void COneShotFluidDriver::StoreOldLambda(){
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     Lambda_Old[iConstr] = Lambda[iConstr];
     Lambda_Tilde_Old[iConstr] = Lambda_Tilde[iConstr];
+    solver[ADJFLOW_SOL]->SetLambdaValue(iConstr, Lambda[iConstr]);
   }
 }
 

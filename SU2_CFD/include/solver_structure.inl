@@ -2586,6 +2586,10 @@ inline void CSolver::SetShiftedLagGradNorm(su2double val_norm) { }
 
 inline su2double CSolver::GetShiftedLagGradNorm(void) { return 0.; }
 
+inline void CSolver::SetLambdaValue(unsigned short iConstr, su2double val_constr) { };
+
+inline su2double CSolver::GetLambdaValue(unsigned short iConstr) { return 0.; }
+
 inline void CDiscAdjSolver::SetObjFunc_Value(su2double val_ObjFunc) { ObjFunc_Value = val_ObjFunc; }
 
 inline su2double CDiscAdjSolver::GetObjFunc_Value(void) { return ObjFunc_Value; }
@@ -2613,3 +2617,7 @@ inline su2double COneShotSolver::GetOneShotTheta(void) { return theta; }
 inline void COneShotSolver::SetShiftedLagGradNorm(su2double val_norm) { grad_norm = val_norm; }
 
 inline su2double COneShotSolver::GetShiftedLagGradNorm(void) { return grad_norm; }
+
+inline void COneShotSolver::SetLambdaValue(unsigned short iConstr, su2double val_constr) {lambda[iConstr] = val_constr; }
+
+inline su2double COneShotSolver::GetLambdaValue(unsigned short iConstr) { return lambda[iConstr]; }

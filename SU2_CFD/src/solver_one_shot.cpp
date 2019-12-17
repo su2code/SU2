@@ -55,6 +55,10 @@ COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *di
   nConstr   = config->GetnConstr();
   nActiveDV = 0;
   grad_norm = 0.0;
+  lambda    = new su2double[nConstr];
+  for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
+    lambda[iConstr] = 0.0;
+  }
 
   DConsVec = new su2double** [nConstr];
   for (unsigned short iConstr=0; iConstr<nConstr;iConstr++){
