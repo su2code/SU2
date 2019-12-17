@@ -91,27 +91,12 @@ void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
   /*--- This is a method and not the overload of an operator to make sure who
    calls it knows the consequence to the derivative information (lost) ---*/
 
-  /*--- Assert that this method is only called by one thread. ---*/
-  assert(omp_get_thread_num()==0 && "Only the master thread is allowed to initialize the vector.");
-
   /*--- check if self-assignment, otherwise perform deep copy ---*/
   if ((const void*)this == (const void*)&other) return;
 
-  /*--- determine if (re-)allocation is needed ---*/
-  if (nElm != other.GetLocSize() && vec_val != nullptr) {
-    MemoryAllocation::aligned_free(vec_val);
-    vec_val = nullptr;
-  }
-
-  /*--- copy ---*/
-  nElm = other.GetLocSize();
-  nElmDomain = other.GetNElmDomain();
-  nVar = other.GetNVar();
-
-  omp_chunk_size = computeStaticChunkSize(nElm, omp_get_max_threads(), OMP_MAX_SIZE);
-
-  if (vec_val == nullptr)
-    vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm*sizeof(ScalarType));
+  SU2_OMP_MASTER
+  Initialize(other.GetNBlk(), other.GetNBlkDomain(), other.GetNVar(), nullptr, true);
+  SU2_OMP_BARRIER
 
   PARALLEL_FOR
   for(auto i=0ul; i<nElm; i++)
