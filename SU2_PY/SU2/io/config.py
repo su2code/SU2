@@ -105,7 +105,7 @@ class Config(ordered_bunch):
             constrFuncFields = self.get("OPT_CONSTRAINT")
 
             #OPT_OBJECTIVES
-            if objFuncsFields.isempty() == False:
+            if bool (objFuncsFields):
                 for key in objFuncsFields:
                     tavg_keyGroup = "TAVG_" + historyOutFields[key]["GROUP"]
                     if  not tavg_keyGroup in histFields:
@@ -116,7 +116,7 @@ class Config(ordered_bunch):
                         histFields.append(dtavg_keyGroup)
 
             #OPT_CONSTRAINTS
-            if constrFuncFields.isempty() == False:
+            if bool (constrFuncFields):
                 for key in constrFuncFields:
                     eqIneqConstrFunc = constrFuncFields.get(key)
                     for key_inner in eqIneqConstrFunc:
