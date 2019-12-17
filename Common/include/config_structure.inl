@@ -1461,7 +1461,7 @@ inline unsigned short CConfig::GetTabular_FileFormat(void) { return Tab_FileForm
 
 inline unsigned long CConfig::GetStartWindowIteration(void) const{return StartWindowIteration; }
 
-inline WINDOW_FUNCTION CConfig::GetKindWindow(void){return static_cast<WINDOW_FUNCTION>(Kind_WindowFct); }
+ inline WINDOW_FUNCTION  CConfig::GetKindWindow(void) const{return static_cast<WINDOW_FUNCTION>(Kind_WindowFct); }
 
 inline unsigned short CConfig::GetActDisk_Jump(void) { return ActDisk_Jump; }
 

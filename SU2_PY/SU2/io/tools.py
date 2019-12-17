@@ -328,29 +328,6 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
                 Func_Values[this_objfun] = history_data[this_objfun] 
     
     # for unsteady cases, average time-accurate objective function values
-    # Currently only supported for AERO_COEFF
-
-    # use old functionality for default case: SQUARE WINDOW
-    '''if(wnd_fct == 'SQUARE'):
-        if 'TIME_MARCHING' in special_cases and not final_avg:
-            for key, value in Func_Values.items():
-                Func_Values[key] = sum(value) / len(value)
-
-        # average the final iterations.
-        elif final_avg:
-            for key, value in Func_Values.iteritems():
-                # only the last few iterations
-                i_fin = min([final_avg, len(value)])
-                value = value[-i_fin:]
-                Func_Values[key] = sum(value) / len(value)
-
-            # otherwise, keep only last value
-        else:
-            for key, value in Func_Values.iteritems():
-                Func_Values[key] = value[-1]
-
-    # Windowed Averages
-    else: '''
     for key, value in Func_Values.items():
         if historyOutFields[key]['TYPE'] == 'COEFFICIENT':
             if not history_data.get('TAVG_'+ key):

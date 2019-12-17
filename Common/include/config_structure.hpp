@@ -5445,7 +5445,7 @@ public:
    * \brief Get Index of the window function used as weight in the cost functional
    * \return
    */
-  WINDOW_FUNCTION GetKindWindow(void);
+  WINDOW_FUNCTION GetKindWindow(void) const;
 
   /*!
    * \brief Get the name of the file with the forces breakdown of the problem.
