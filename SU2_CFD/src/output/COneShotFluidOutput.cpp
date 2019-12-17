@@ -128,7 +128,7 @@ void COneShotFluidOutput::SetHistoryOutputFields(CConfig *config){
     std::string LambdaString = ss.str();
     ss.clear();
     ss.str(std::string());
-    ss << "LAMBDA[" << iConstr << "]";
+    ss << "Lambda[" << iConstr << "]";
     std::string LambdaHeader = ss.str();
     /// DESCRIPTION: Lagrange multiplier.
     AddHistoryOutput(LambdaString, LambdaHeader, ScreenOutputFormat::SCIENTIFIC, "ONE_SHOT", "Lagrange multiplier value.");
