@@ -99,6 +99,12 @@ public:
   virtual bool Monitor(unsigned long TimeIter);
 
   /*!
+   * \brief gets Convergence on physical time scale
+   * \param none
+   */
+  virtual bool GetTimeConvergence();
+
+  /*!
    * \brief Runtime_Parsing
    */
   virtual void Runtime_Options();

@@ -1492,6 +1492,17 @@ void CConfig::SetConfig_Options() {
   /*!\brief CONV_FIELD\n DESCRIPTION: Output field to monitor \n Default: depends on solver \ingroup Config*/
   addStringListOption("CONV_FIELD", nConvField, ConvField);
 
+  /*!\brief WND_CONV_STARTITER\n DESCRIPTION: Iteration number after START_ITER_WND  to begin convergence monitoring\n DEFAULT: 15 \ingroup Config*/
+  addUnsignedLongOption("WND_CONV_STARTITER", Wnd_StartConv_Iter, 15);
+  /*!\brief WND_CONV_CAUCHY_ELEMS\n DESCRIPTION: Number of elements to apply the criteria. \n DEFAULT 100 \ingroup Config*/
+  addUnsignedShortOption("WND_CONV_CAUCHY_ELEMS", Wnd_Cauchy_Elems, 100);
+  /*!\brief WND_CONV_CAUCHY_EPS\n DESCRIPTION: Epsilon to control the series convergence \n DEFAULT: 1e-3 \ingroup Config*/
+  addDoubleOption("WND_CONV_CAUCHY_EPS", Wnd_Cauchy_Eps, 1E-3);
+  /*!\brief WND_CAUCHY_CRIT\n DESCRIPTION: Determines, if the cauchy convergence criterion should be used for windowed time averaged objective functions*/
+  addBoolOption("WND_CAUCHY_CRIT",Wnd_Cauchy_Crit, false);
+   /*!\brief WND_CONV_FIELD
+    * \n DESCRIPTION: Output fields  for the Cauchy criterium for the TIME iteration. The criterium is applied to the windowed time average of the chosen funcion. */
+  addStringListOption("WND_CONV_FIELD",nWndConvField, WndConvField);
   /*!\par CONFIG_CATEGORY: Multi-grid \ingroup Config*/
   /*--- Options related to Multi-grid ---*/
 
@@ -2418,7 +2429,7 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("START_ITER_WND", StartWindowIteration, 0);
 
   /* DESCRIPTION: Window (weight) function for the cost-functional in the reverse sweep */
-  addEnumOption("WINDOW_FUNCTION", Type_WindowFct,Window_Map, SQUARE);
+  addEnumOption("WINDOW_FUNCTION", Kind_WindowFct,Window_Map, SQUARE);
 
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
@@ -6307,6 +6318,19 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Residual minimum value: 1e" << MinLogResidual << "." << endl;
     cout << "Cauchy series min. value: " << Cauchy_Eps << "." << endl;
     cout << "Number of Cauchy elements: " << Cauchy_Elems << "." << endl;
+    if(Cauchy_Elems <1){
+        SU2_MPI::Error(to_string(Cauchy_Elems) + string(" Cauchy elements are no viable input. Please check your configuration file."), CURRENT_FUNCTION);
+    }
+    cout << "Begin windowed time average at iteration " << Wnd_StartConv_Iter << "." << endl;
+
+    if(Wnd_Cauchy_Crit){
+        cout << "Begin time convergence monitoring at iteration " << Wnd_StartConv_Iter + StartWindowIteration << "." << endl;
+        cout << "Time cauchy series min. value: " << Wnd_Cauchy_Eps << "." << endl;
+        cout << "Number of Cauchy elements: " << Wnd_Cauchy_Elems << "." << endl;
+        if(Wnd_Cauchy_Elems <1){
+            SU2_MPI::Error(to_string(Wnd_Cauchy_Elems) +string(" Cauchy elements are no viable input. Please check your configuration file."), CURRENT_FUNCTION);
+        }
+    }
   }
 
   if (val_software == SU2_MSH) {
