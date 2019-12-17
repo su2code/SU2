@@ -11555,29 +11555,27 @@ protected:
   enum : size_t {OMP_MIN_SIZE = 64};
   enum : size_t {OMP_MAX_SIZE = 512};
 
-  unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
+  unsigned long omp_chunk_size;     /*!< \brief Chunk size used in light point loops. */
 
-  su2double  Total_CFEA;        /*!< \brief Total FEA coefficient for all the boundaries. */
+  su2double Total_CFEA;             /*!< \brief Total FEA coefficient for all the boundaries. */
 
   int nFEA_Terms; 
-  bool topol_filter_applied;    /*!< \brief True if density filtering has been performed. */
-  
-  su2double *SolRest;      /*!< \brief Auxiliary vector to restart the solution */
+  bool topol_filter_applied;        /*!< \brief True if density filtering has been performed. */
 
-  unsigned short *iElem_iDe;	 /*!< \brief For DE cases, ID of the region considered for each iElem. */
-  
-  su2double a_dt[9];             /*!< \brief Integration constants. */
-  
-  su2double Conv_Ref[3];        /*!< \brief Reference values for convergence check: DTOL, RTOL, ETOL */
-  su2double Conv_Check[3];      /*!< \brief Current values for convergence check: DTOL, RTOL, ETOL */
-  su2double FSI_Conv[2];        /*!< \brief Values to check the convergence of the FSI problem. */
-  
-  su2double loadIncrement;      /*!< \brief Coefficient that determines the amount of load which is applied */
-  
-  su2double WAitken_Dyn;        /*!< \brief Aitken's dynamic coefficient */
-  su2double WAitken_Dyn_tn1;    /*!< \brief Aitken's dynamic coefficient in the previous iteration */
-  
-  su2double PenaltyValue;       /*!< \brief Penalty value to maintain total stiffness constant */
+  unsigned short *iElem_iDe;	      /*!< \brief For DE cases, ID of the region considered for each iElem. */
+
+  su2double a_dt[9];                /*!< \brief Integration constants. */
+
+  su2double Conv_Ref[3];            /*!< \brief Reference values for convergence check: DTOL, RTOL, ETOL */
+  su2double Conv_Check[3];          /*!< \brief Current values for convergence check: DTOL, RTOL, ETOL */
+  su2double FSI_Conv[2];            /*!< \brief Values to check the convergence of the FSI problem. */
+
+  su2double loadIncrement;          /*!< \brief Coefficient that determines the amount of load which is applied */
+
+  su2double WAitken_Dyn;            /*!< \brief Aitken's dynamic coefficient */
+  su2double WAitken_Dyn_tn1;        /*!< \brief Aitken's dynamic coefficient in the previous iteration */
+
+  su2double PenaltyValue;           /*!< \brief Penalty value to maintain total stiffness constant */
 
   su2double Total_OFRefGeom;        /*!< \brief Total Objective Function: Reference Geometry. */
   su2double Total_OFRefNode;        /*!< \brief Total Objective Function: Reference Node. */
@@ -11588,7 +11586,7 @@ protected:
   su2double Global_OFRefNode;       /*!< \brief Global Objective Function (added over time steps): Reference Node. */
 
   su2double Total_ForwardGradient;  /*!< \brief Vector of the total forward gradient. */
-  
+
   su2double ForceCoeff;             /*!< \brief Load transfer coefficient . */
   su2double RelaxCoeff;             /*!< \brief Relaxation coefficient . */
   su2double FSI_Residual;           /*!< \brief FSI residual. */
@@ -11600,35 +11598,17 @@ protected:
   vector<ElemColor> ElemColoring;   /*!< \brief Element colors. */
   unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size must be a multiple of this. */
 
-  bool element_based;            /*!< \brief Bool to determine if an element-based file is used. */
+  bool element_based;               /*!< \brief Bool to determine if an element-based file is used. */
 
-  unsigned long nElement;       /*!< \brief Number of elements. */
-  unsigned long IterLinSol;     /*!< \brief Number of iterations of the linear solver. */
+  unsigned long nElement;           /*!< \brief Number of elements. */
+  unsigned long IterLinSol;         /*!< \brief Number of iterations of the linear solver. */
 
-  CVariable* nodes = nullptr;   /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  CVariable* nodes = nullptr;       /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
-
-  /*!
-   * \brief Get the element container index and number of nodes of a given VTK type.
-   * \param[in] VTK_Type - Type of element.
-   * \param[out] EL_KIND - Element container index.
-   * \param[out] nNodes - Number of nodes.
-   */
-  static void GetElemKindAndNumNodes(unsigned short VTK_Type, int& EL_KIND, unsigned short& nNodes) {
-    switch(VTK_Type) {
-      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA;  break;
-      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD;  break;
-      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
-      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
-      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA;  break;
-      default: assert(false); nNodes = 0; EL_KIND = -(1<<30); break;
-    }
-  }
 
 public:
   
@@ -11644,7 +11624,6 @@ public:
   CElement*** element_container;   /*!< \brief Vector which the define the finite element structure for each problem. */
   CProperty** element_properties;  /*!< \brief Vector which stores the properties of each element */
 
-  
   /*!
    * \brief Constructor of the class.
    */
@@ -11728,7 +11707,8 @@ public:
   void Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
-   * \brief Compute the stiffness matrix of the problem and the nodal stress terms at the same time (more efficient if full Newton Raphson).
+   * \brief Compute the stiffness matrix of the problem and the nodal stress terms at the same time.
+   * \note This is more efficient for full Newton Raphson.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.

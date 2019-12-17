@@ -33,14 +33,12 @@
 class CMeshSolver : public CFEASolver {
 protected:
 
-  bool time_domain;        /*!< \brief Number of dimensions. */
+  bool time_domain;
   bool multizone;
 
   bool stiffness_set;          /*!< \brief Element-based stiffness is set. */
 
-  su2double *Coordinate;       /*!< \brief Auxiliary nDim vector. */
-
-  su2double MinVolume_Ref,     /*!< \brief Minimum volume in  to make zeros and impose boundary conditions. */
+  su2double MinVolume_Ref,     /*!< \brief Minimum volume in reference and current (deformed) configuration. */
             MinVolume_Curr;
 
   su2double MaxVolume_Ref,
