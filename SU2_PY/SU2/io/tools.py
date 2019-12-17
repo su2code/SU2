@@ -329,34 +329,38 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
     
     # for unsteady cases, average time-accurate objective function values
     # Currently only supported for AERO_COEFF
-    for key, value in Func_Values.items():
-        if historyOutFields[key]['GROUP'] == 'AERO_COEFF' or historyOutFields[key]['GROUP'] == 'D_AERO_COEFF':
-            if not history_data.get('WND_'+ key):
-                raise KeyError('Key' + historyOutFields['WND_'+ key] + 'was not found in history output. Check your configuration file if the history output groups TAVG_AERO_COEFF and D_TAVG_AERO_COEFF is set')
-            Func_Values[key] = history_data['WND_'+ key][-1]
-    '''
-    else:
+
+    # use old functionality for default case: SQUARE WINDOW
+    '''if(wnd_fct == 'SQUARE'):
         if 'TIME_MARCHING' in special_cases and not final_avg:
-            for key,value in Func_Values.items():
-                    test = value
-                    Func_Values[key] = sum(value)/len(value)
+            for key, value in Func_Values.items():
+                Func_Values[key] = sum(value) / len(value)
 
         # average the final iterations.
         elif final_avg:
-            for key,value in Func_Values.iteritems():
+            for key, value in Func_Values.iteritems():
                 # only the last few iterations
-                if key.startswith('WND'):
-                    Func_Values[key] = value[-1]
-                else:
-                    i_fin = min([final_avg,len(value)])
-                    value = value[-i_fin:]
-                    Func_Values[key] = sum(value) / len(value)
+                i_fin = min([final_avg, len(value)])
+                value = value[-i_fin:]
+                Func_Values[key] = sum(value) / len(value)
 
-        # otherwise, keep only last value
+            # otherwise, keep only last value
         else:
-            for key,value in Func_Values.iteritems():
+            for key, value in Func_Values.iteritems():
                 Func_Values[key] = value[-1]
-    '''
+
+    # Windowed Averages
+    else: '''
+    for key, value in Func_Values.items():
+        if historyOutFields[key]['TYPE'] == 'COEFFICIENT':
+            if not history_data.get('TAVG_'+ key):
+                raise KeyError('Key ' + historyOutFields['TAVG_'+ key]['HEADER'] + ' was not found in history output.')
+            Func_Values[key] = history_data['TAVG_'+ key][-1]
+        elif historyOutFields[key]['TYPE'] == 'D_COEFFICIENT':
+            if not history_data.get('TAVG_' + key):
+                raise KeyError('Key ' + historyOutFields['TAVG_' + key]['HEADER'] + ' was not found in history output.')
+            Func_Values[key] = history_data['TAVG_' + key][-1]
+
     return Func_Values
 
 #: def read_aerodynamics()
@@ -976,34 +980,34 @@ def make_link(src,dst):
         Windows links currently unsupported, will copy file instead
     """
     
-    assert os.path.exists(src) , 'source file does not exist \n%s' % src
-    
-    if os.name == 'nt':
-        # can't make a link in windows, need to look for other options
-        if os.path.exists(dst): os.remove(dst)
-        shutil.copy(src,dst)
-    
-    else:
-        # find real file, incase source itself is a link
-        src = os.path.realpath(src) 
-        
-        # normalize paths
-        src = os.path.normpath(src)
-        dst = os.path.normpath(dst)        
-        
-        # check for self referencing
-        if src == dst: return        
-        
-        # find relative folder path
-        srcfolder = os.path.join( os.path.split(src)[0] ) + '/'
-        dstfolder = os.path.join( os.path.split(dst)[0] ) + '/'
-        srcfolder = os.path.relpath(srcfolder,dstfolder)
-        src = os.path.join( srcfolder, os.path.split(src)[1] )
-        
-        # make unix link
-        if os.path.exists(dst): os.remove(dst)
-        os.symlink(src,dst)
-    
+    if os.path.exists(src): # , 'source file does not exist \n%s' % src
+
+        if os.name == 'nt':
+            # can't make a link in windows, need to look for other options
+            if os.path.exists(dst): os.remove(dst)
+            shutil.copy(src,dst)
+
+        else:
+            # find real file, incase source itself is a link
+            src = os.path.realpath(src)
+
+            # normalize paths
+            src = os.path.normpath(src)
+            dst = os.path.normpath(dst)
+
+            # check for self referencing
+            if src == dst: return
+
+            # find relative folder path
+            srcfolder = os.path.join( os.path.split(src)[0] ) + '/'
+            dstfolder = os.path.join( os.path.split(dst)[0] ) + '/'
+            srcfolder = os.path.relpath(srcfolder,dstfolder)
+            src = os.path.join( srcfolder, os.path.split(src)[1] )
+
+            # make unix link
+            if os.path.exists(dst): os.remove(dst)
+            os.symlink(src,dst)
+
 def restart2solution(config,state={}):
     """ restart2solution(config,state={})
         moves restart file to solution file, 
@@ -1035,7 +1039,8 @@ def restart2solution(config,state={}):
 
         # move
         for res,sol in zip(restarts,solutions):
-            shutil.move( res , sol )
+            if os.path.exists('res'):
+                shutil.move( res , sol )
         # update state
         if state: 
             state.FILES.DIRECT = solution

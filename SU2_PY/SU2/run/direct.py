@@ -83,8 +83,7 @@ def direct ( config ):
     konfig['SOLUTION_FILENAME'] = konfig['RESTART_FILENAME']
     if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
         konfig['SOLUTION_FILENAME'] = konfig['RESTART_FILENAME']
-    su2merge(konfig)
-    
+
     # filenames
     plot_format      = konfig.get('TABULAR_FORMAT', 'CSV')
     plot_extension   = su2io.get_extension(plot_format)
@@ -124,5 +123,7 @@ def direct ( config ):
 
         info['WND_CAUCHY_DATA'] = {'TIME_ITER': konfig['TIME_ITER'], 'UNST_ADJOINT_ITER': konfig['UNST_ADJOINT_ITER'],
                                    'ITER_AVERAGE_OBJ': konfig['ITER_AVERAGE_OBJ']}
+
+    su2merge(konfig)
 
     return info

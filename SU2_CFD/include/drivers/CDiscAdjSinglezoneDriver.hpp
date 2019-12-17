@@ -127,4 +127,10 @@ public:
    */
   void SecondaryRecording(void);
 
+  /*!
+   * \brief gets Convergence on physical time scale, (deaktivated in adjoint case)
+   * \param none
+   */
+  virtual bool GetTimeConvergence();
+
 };

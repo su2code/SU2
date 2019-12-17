@@ -30,6 +30,7 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
+from .historyMap import history_header_map as historyOutFields
 import numpy as np
 from ..util import ordered_bunch, switch
 from .tools import *
@@ -95,8 +96,43 @@ class Config(ordered_bunch):
             except:
                 print('Unexpected error: ', sys.exc_info()[0])
                 raise
-        
         self._filename = filename
+
+        if self.get("TIME_DOMAIN") == "YES":
+            objFuncsFields = self.get("OPT_OBJECTIVE")
+            histFields = self.get("HISTORY_OUTPUT")
+            diff_objective = self.get("OBJECTIVE_FUNCTION")
+            constrFuncFields = self.get("OPT_CONSTRAINT")
+
+            #OPT_OBJECTIVES
+            for key in objFuncsFields:
+                tavg_keyGroup = "TAVG_" + historyOutFields[key]["GROUP"]
+                if  not tavg_keyGroup in histFields:
+                    histFields.append(tavg_keyGroup)
+
+                dtavg_keyGroup = "D_TAVG_" + historyOutFields[key]["GROUP"]
+                if not dtavg_keyGroup in histFields:
+                    histFields.append(dtavg_keyGroup)
+
+            #OPT_CONSTRAINTS
+            for key in constrFuncFields:
+                eqIneqConstrFunc = constrFuncFields.get(key)
+                for key_inner in eqIneqConstrFunc:
+                    tavg_keyGroup = "TAVG_" + historyOutFields[key_inner]["GROUP"]
+                    if  not tavg_keyGroup in histFields:
+                        histFields.append(tavg_keyGroup)
+
+            #DIRECT_DIFF Field
+            tavg_keyGroup = "TAVG_" + historyOutFields[diff_objective]["GROUP"]
+            if  not tavg_keyGroup in histFields:
+                histFields.append(tavg_keyGroup)
+
+            dtavg_keyGroup = "D_TAVG_" + historyOutFields[diff_objective]["GROUP"]
+            if not dtavg_keyGroup in histFields:
+                histFields.append(dtavg_keyGroup)
+
+            self["HISTORY_OUTPUT"]= histFields
+
     
     def read(self,filename):
         """ reads from a config file """
