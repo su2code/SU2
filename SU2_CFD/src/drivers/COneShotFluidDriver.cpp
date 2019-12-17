@@ -257,7 +257,7 @@ void COneShotFluidDriver::RunOneShot(){
 
       }
       else{
-        UpdateLambda(1.0);
+        // UpdateLambda(1.0);
         // UpdateLambda(stepsize);
         ComputeDesignVarUpdate(stepsize);
         StoreGradDotDir(true);
@@ -267,6 +267,7 @@ void COneShotFluidDriver::RunOneShot(){
           ComputeDesignVarUpdate(0.0);
           PrimalDualStep();
           solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+          UpdateLambda(1.0);
           ArmijoIter = 1;
           break;
         }
@@ -301,13 +302,13 @@ void COneShotFluidDriver::RunOneShot(){
         SetConstrFunction(false);
         StoreConstrFunction();
 
-        // LoadOldLambda();
-        // UpdateLambda(1.0);
+        LoadOldLambda();
+        UpdateLambda(1.0);
       }
 
-      // LoadOldLambda();
+      LoadOldLambda();
       // // UpdateLambda(1.0);
-      // UpdateLambda(stepsize);
+      UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
@@ -1435,8 +1436,8 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     // if(active) Lambda[iConstr] = Lambda_Tilde[iConstr];
 
     if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (!active)) {
-      Lambda[iConstr] = 0.0;
-      // Lambda[iConstr] -= stepsize*Lambda_Old[iConstr];
+      // Lambda[iConstr] = 0.0;
+      Lambda[iConstr] -= stepsize*Lambda_Old[iConstr];
     }
     // else if ((active && dh < 0.) || (config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR && hdh < 0.)){
     else {
