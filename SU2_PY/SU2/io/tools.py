@@ -341,6 +341,8 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
     else:
         # in steady cases take only last value.
         for key, value in Func_Values.iteritems():
+            if not history_data.get(key):
+                raise KeyError('Key ' + historyOutFields[key]['HEADER'] + ' was not found in history output.')
             Func_Values[key] = value[-1]
 
     return Func_Values
