@@ -326,17 +326,22 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
         if this_objfun in history_data:
             if historyOutFields[this_objfun]['TYPE'] == 'COEFFICIENT' or historyOutFields[this_objfun]['TYPE'] == 'D_COEFFICIENT':
                 Func_Values[this_objfun] = history_data[this_objfun] 
-    
-    # for unsteady cases, average time-accurate objective function values
-    for key, value in Func_Values.items():
-        if historyOutFields[key]['TYPE'] == 'COEFFICIENT':
-            if not history_data.get('TAVG_'+ key):
-                raise KeyError('Key ' + historyOutFields['TAVG_'+ key]['HEADER'] + ' was not found in history output.')
-            Func_Values[key] = history_data['TAVG_'+ key][-1]
-        elif historyOutFields[key]['TYPE'] == 'D_COEFFICIENT':
-            if not history_data.get('TAVG_' + key):
-                raise KeyError('Key ' + historyOutFields['TAVG_' + key]['HEADER'] + ' was not found in history output.')
-            Func_Values[key] = history_data['TAVG_' + key][-1]
+
+    if 'TIME_MARCHING' in special_cases:
+        # for unsteady cases, average time-accurate objective function values
+        for key, value in Func_Values.items():
+            if historyOutFields[key]['TYPE'] == 'COEFFICIENT':
+                if not history_data.get('TAVG_'+ key):
+                    raise KeyError('Key ' + historyOutFields['TAVG_'+ key]['HEADER'] + ' was not found in history output.')
+                Func_Values[key] = history_data['TAVG_'+ key][-1]
+            elif historyOutFields[key]['TYPE'] == 'D_COEFFICIENT':
+                if not history_data.get('TAVG_' + key):
+                    raise KeyError('Key ' + historyOutFields['TAVG_' + key]['HEADER'] + ' was not found in history output.')
+                Func_Values[key] = history_data['TAVG_' + key][-1]
+    else:
+        # in steady cases take only last value.
+        for key, value in Func_Values.iteritems():
+            Func_Values[key] = value[-1]
 
     return Func_Values
 
