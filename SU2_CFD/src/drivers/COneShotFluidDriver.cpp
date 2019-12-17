@@ -471,11 +471,11 @@ void COneShotFluidDriver::RunOneShot(){
         stepsize0 = max(10.0*tol, min(1.0, 1.01*GradDotDirOld/GradDotDir));
       }
       else{
-        stepsize0 = 10.0*stepsize0;
+        stepsize0 = min(1.0, 2.0*stepsize0);
       }
     }
     else{
-      stepsize0 = 10.0*stepsize0;
+      stepsize0 = min(1.0, 2.0*stepsize0);
     }
   }
 
