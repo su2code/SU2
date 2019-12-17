@@ -130,7 +130,7 @@ void COneShotFluidOutput::SetHistoryOutputFields(CConfig *config){
     ss.clear();
     ss << "LAMBDA[" << iConstr << "]";
     std::string LambdaHeader = ss.str();
-    AddHistoryOutput(LambdaString, LambdaHeader, ScreenOutputFormat::SCIENTIFIC, "ONE_SHOT", "Lagrange multiplier value.")
+    AddHistoryOutput(LambdaString, LambdaHeader, ScreenOutputFormat::SCIENTIFIC, "ONE_SHOT", "Lagrange multiplier value.");
   }
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
