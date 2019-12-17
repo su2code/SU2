@@ -132,7 +132,8 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
   stepsize0 = 1.0;
 
   /*---- calculate line search parameter ----*/
-  CWolfeOne= 1E-4*config->GetDesignScale();
+  CWolfeOne= 1E-4;
+  CWolfeTwo= 1E-1;
 
   grid_movement[ZONE_0][INST_0] = new CVolumetricMovement(geometry, config);
   surface_movement[ZONE_0]      = new CSurfaceMovement();
@@ -229,6 +230,7 @@ void COneShotFluidDriver::RunOneShot(){
 
   su2double stepsize = stepsize0, tol = config->GetOneShotSearchTol();
   unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShotSearchIter();
+  unsigned short ArmijoFlag = 1;
   bool bool_tol = false;
   unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
 
@@ -245,7 +247,12 @@ void COneShotFluidDriver::RunOneShot(){
       if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
         su2double stepsize_tmp = UpdateStepSizeQuadratic();
-        stepsize     = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+        if(ArmijoFlag == 1) {
+          stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+        }
+        else if(ArmijoFlag == 2) {
+          stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize*2., 1.0);
+        }
         if(stepsize < tol*stepsize0) {
           stepsize = tol;
           bool_tol = true;
@@ -321,13 +328,16 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-    if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) CalculateLagrangian();
+    if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
+      CalculateLagrangian();
+      ArmijoFlag = CheckArmijo();
+    }
 
     ArmijoIter++;
 
   } while((OneShotIter > config->GetOneShotStart()) && 
           (OneShotIter < config->GetOneShotStop())  &&
-          (!CheckFirstWolfe(true)) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+          (ArmijoFlag != 0) && (ArmijoIter < nArmijoIter) && (!bool_tol));
 
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
@@ -349,7 +359,7 @@ void COneShotFluidDriver::RunOneShot(){
        (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
        OneShotIter > config->GetOneShotStart()                   && 
        OneShotIter < config->GetOneShotStop()                    &&
-       (!config->GetZeroStep() || CheckFirstWolfe(true))) {
+       ((!config->GetZeroStep()) || (ArmijoFlag == 0))) {
     surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container[ZONE_0][INST_0], config_container, false);
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
@@ -366,7 +376,7 @@ void COneShotFluidDriver::RunOneShot(){
   }
   else if(OneShotIter > config->GetOneShotStart() && 
           OneShotIter < config->GetOneShotStop()  && 
-          ((!CheckFirstWolfe(true)) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
+          ((ArmijoFlag != 0) || (ArmijoIter > nArmijoIter-1) || (bool_tol))){
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheck_Norm, ConstrFunc, Lambda);
 
@@ -813,19 +823,26 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
   delete [] sk;
 }
 
-bool COneShotFluidDriver::CheckFirstWolfe(bool design_update){
+unsigned short COneShotFluidDriver::CheckArmijo(){
   su2double admissible_step = 0.0;
 
-  if(design_update) {
-    for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
-      /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-      // admissible_step += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
-      /*--- AugLagGrad is the gradient at the old iterate. ---*/
-      admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
-    }
+  for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
+    /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
+    // admissible_step += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
+    /*--- AugLagGrad is the gradient at the old iterate. ---*/
+    admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
   }
-
-  return (Lagrangian <= Lagrangian_Old + CWolfeOne*admissible_step) && (Lagrangian >= Lagrangian_Old + 0.1*admissible_step);
+  
+  /*--- Return 0 if satisfied, 1 if 1st condition not satisfied, 2 if 2nd condition not satisfied ---*/
+  if (!(Lagrangian <= Lagrangian_Old + CWolfeOne*admissible_step)) {
+    return 1;
+  }
+  else if (!(Lagrangian >= Lagrangian_Old + CWolfeTwo*admissible_step)) {
+    return 2;
+  }
+  else {
+    return 0;
+  }
 }
 
 void COneShotFluidDriver::StoreGradDotDir(bool design_update){

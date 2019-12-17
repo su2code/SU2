@@ -77,6 +77,7 @@ protected:
   su2double epsilon;   /*!< \brief Estimator for the active set.*/
   su2double stepsize0; /*!< \brief Initial guess for the stepsize.*/
   su2double CWolfeOne; /*!< \brief First Wolfe line search parameter.*/
+  su2double CWolfeTwo; /*!< \brief Second Wolfe line search parameter.*/
   bool* ActiveSetDV;   /*!< \brief Flag for indices belonging to the active set (lower and upper design bounds are reached).*/
 
   su2double* ConstrFunc;         /*!< \brief Constraint function values.*/
@@ -189,9 +190,8 @@ public:
 
   /*!
    * \brief Check if the first Wolfe descent condition is fulfilled (line search condition).
-   * \param[in] design_update - whether a design update is being performed.
    */
-  bool CheckFirstWolfe(bool design_update);
+  unsigned short CheckArmijo();
 
   /*!
    * \brief Store gradient dotted with search direction for first Armijo search iteration.
