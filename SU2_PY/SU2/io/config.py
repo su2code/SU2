@@ -105,31 +105,34 @@ class Config(ordered_bunch):
             constrFuncFields = self.get("OPT_CONSTRAINT")
 
             #OPT_OBJECTIVES
-            for key in objFuncsFields:
-                tavg_keyGroup = "TAVG_" + historyOutFields[key]["GROUP"]
-                if  not tavg_keyGroup in histFields:
-                    histFields.append(tavg_keyGroup)
-
-                dtavg_keyGroup = "D_TAVG_" + historyOutFields[key]["GROUP"]
-                if not dtavg_keyGroup in histFields:
-                    histFields.append(dtavg_keyGroup)
-
-            #OPT_CONSTRAINTS
-            for key in constrFuncFields:
-                eqIneqConstrFunc = constrFuncFields.get(key)
-                for key_inner in eqIneqConstrFunc:
-                    tavg_keyGroup = "TAVG_" + historyOutFields[key_inner]["GROUP"]
+            if objFuncsFields.isempty() == False:
+                for key in objFuncsFields:
+                    tavg_keyGroup = "TAVG_" + historyOutFields[key]["GROUP"]
                     if  not tavg_keyGroup in histFields:
                         histFields.append(tavg_keyGroup)
 
-            #DIRECT_DIFF Field
-            tavg_keyGroup = "TAVG_" + historyOutFields[diff_objective]["GROUP"]
-            if  not tavg_keyGroup in histFields:
-                histFields.append(tavg_keyGroup)
+                    dtavg_keyGroup = "D_TAVG_" + historyOutFields[key]["GROUP"]
+                    if not dtavg_keyGroup in histFields:
+                        histFields.append(dtavg_keyGroup)
 
-            dtavg_keyGroup = "D_TAVG_" + historyOutFields[diff_objective]["GROUP"]
-            if not dtavg_keyGroup in histFields:
-                histFields.append(dtavg_keyGroup)
+            #OPT_CONSTRAINTS
+            if constrFuncFields.isempty() == False:
+                for key in constrFuncFields:
+                    eqIneqConstrFunc = constrFuncFields.get(key)
+                    for key_inner in eqIneqConstrFunc:
+                        tavg_keyGroup = "TAVG_" + historyOutFields[key_inner]["GROUP"]
+                        if  not tavg_keyGroup in histFields:
+                            histFields.append(tavg_keyGroup)
+
+            #DIRECT_DIFF Field
+            if diff_objective in historyOutFields:
+                tavg_keyGroup = "TAVG_" + historyOutFields[diff_objective]["GROUP"]
+                if  not tavg_keyGroup in histFields:
+                    histFields.append(tavg_keyGroup)
+
+                dtavg_keyGroup = "D_TAVG_" + historyOutFields[diff_objective]["GROUP"]
+                if not dtavg_keyGroup in histFields:
+                    histFields.append(dtavg_keyGroup)
 
             self["HISTORY_OUTPUT"]= histFields
 
