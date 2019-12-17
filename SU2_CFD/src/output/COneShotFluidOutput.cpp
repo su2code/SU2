@@ -122,6 +122,15 @@ void COneShotFluidOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("ONE_SHOT_THETA", "Theta_N_uu",  ScreenOutputFormat::SCIENTIFIC, "ONE_SHOT", "Adjoint contraction ratio."); 
   /// DESCRIPTION: Norm of the shifted Lagrangian gradient.
   AddHistoryOutput("GRAD_NORM",      "||N_x||",     ScreenOutputFormat::SCIENTIFIC, "ONE_SHOT", "Norm of the shifted Lagrangian gradient."); 
+  for(unsigned short iConstr = 0; iConstr < config->GetnConstr(); iConstr++) {
+    stringstream ss;
+    ss << "LAMBDA_" << iConstr;
+    std::string LambdaString = ss.str();
+    std::stringstream.swap(ss);
+    ss << "LAMBDA[" << iConstr << "]";
+    std::stringstream LambdaHeader = ss.str();
+    AddHistoryOutput(LambdaString, LambdaHeader, ScreenOutputFormat::SCIENTIFIC, "ONE_SHOT", "Lagrange multiplier value.")
+  }
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the density.
