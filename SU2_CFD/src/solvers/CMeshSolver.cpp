@@ -70,7 +70,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
   /*--- Initialize the node structure ---*/
 
-  Coordinate = new su2double[nDim];
   nodes = new CMeshBoundVariable(nPoint, nDim, config);
   SetBaseClassPointerToNodes();
 
@@ -91,14 +90,11 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   }
   static_cast<CMeshBoundVariable*>(nodes)->AllocateBoundaryVariables(config);
 
-
   /*--- Initialize the element structure ---*/
+
   element = new CMeshElement[nElement];
   for (iElem = 0; iElem < nElement; iElem++)
     element[iElem] = CMeshElement();
-
-  Residual = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Residual[iDim] = 0.0;
-  Solution = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Solution[iDim] = 0.0;
 
   /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
 
@@ -158,16 +154,15 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   /*--- Initialize the BGS residuals in multizone problems. ---*/
   if (config->GetMultizone_Residual()){
 
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
-    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+    Residual_BGS      = new su2double[nVar]();
+    Residual_Max_BGS  = new su2double[nVar]();
 
     /*--- Define some structures for locating max residuals ---*/
 
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+    Point_Max_BGS       = new unsigned long[nVar]();
     Point_Max_Coord_BGS = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
     }
   }
 
@@ -188,8 +183,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
 CMeshSolver::~CMeshSolver(void) {
 
-  if (Coordinate != NULL) delete [] Coordinate;
-  if (element    != NULL) delete [] element;
+  if (element != nullptr) delete [] element;
 }
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
