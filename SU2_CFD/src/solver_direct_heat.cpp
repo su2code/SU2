@@ -2,24 +2,14 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #include "../include/solver_structure.hpp"
 #include "../include/variables/CHeatFVMVariable.hpp"
@@ -146,11 +137,15 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Computation of gradients by least squares ---*/
 
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetLeastSquaresRequired()) {
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
     Smatrix = new su2double* [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
       Smatrix[iDim] = new su2double [nDim];
+    /*--- c vector := transpose(WA)*(Wb) ---*/
+    Cvector = new su2double* [nVar+1];
+    for (iVar = 0; iVar < nVar+1; iVar++)
+      Cvector[iVar] = new su2double [nDim];
   }
 
   HeatFlux_per_Marker = new su2double[nMarker];
@@ -295,6 +290,14 @@ void CHeatSolverFVM::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   Jacobian.SetValZero();
 
+  if (config->GetReconstructionGradientRequired()) {
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+      SetSolution_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
+  }
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 }
@@ -555,7 +558,7 @@ void CHeatSolverFVM::Centered_Residual(CGeometry *geometry, CSolver **solver_con
 void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 
   su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
-          **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad, Non_Physical = 1.0;
+            **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad;
   unsigned short iDim, iVar;
   unsigned long iEdge, iPoint, jPoint;
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
@@ -594,10 +597,10 @@ void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
               Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
             }
 
-            Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
-            Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(jPoint);
-            Temp_i_Grad = nodes->GetGradient(iPoint);
-            Temp_j_Grad = nodes->GetGradient(jPoint);
+            Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(iPoint);
+            Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(jPoint);
+            Temp_i_Grad = nodes->GetGradient_Reconstruction(iPoint);
+            Temp_j_Grad = nodes->GetGradient_Reconstruction(jPoint);
 
             /*Loop to correct the flow variables*/
             for (iVar = 0; iVar < nVarFlow; iVar++) {
@@ -605,8 +608,8 @@ void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
               /*Apply the Gradient to get the right temperature value on the edge */
               Project_Grad_i = 0.0; Project_Grad_j = 0.0;
               for (iDim = 0; iDim < nDim; iDim++) {
-                  Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*Non_Physical;
-                  Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
+                  Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+                  Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
               }
 
               Primitive_Flow_i[iVar] = V_i[iVar] + Project_Grad_i;
@@ -616,8 +619,8 @@ void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
             /* Correct the temperature variables */
             Project_Temp_i_Grad = 0.0; Project_Temp_j_Grad = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
-                Project_Temp_i_Grad += Vector_i[iDim]*Temp_i_Grad[0][iDim]*Non_Physical;
-                Project_Temp_j_Grad += Vector_j[iDim]*Temp_j_Grad[0][iDim]*Non_Physical;
+                Project_Temp_i_Grad += Vector_i[iDim]*Temp_i_Grad[0][iDim];
+                Project_Temp_j_Grad += Vector_j[iDim]*Temp_j_Grad[0][iDim];
             }
 
             Temp_i_Corrected = Temp_i + Project_Temp_i_Grad;
@@ -1360,7 +1363,7 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Compute spectral radius based on thermal conductivity ---*/
 
-  Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+  Min_Delta_Time = 1.E30; Max_Delta_Time = 0.0;
   CFL_Reduction = config->GetCFLRedCoeff_Turb();
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {

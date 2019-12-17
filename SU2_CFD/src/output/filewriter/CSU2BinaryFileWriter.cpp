@@ -1,49 +1,76 @@
+/*!
+ * \file CSU2BinaryFileWriter.cpp
+ * \brief Filewriter class SU2 native binary format.
+ * \author T. Albring
+ * \version 7.0.0 "Blackbird"
+ *
+ * SU2 Project Website: https://su2code.github.io
+ *
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
+ *
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "../../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 
 const string CSU2BinaryFileWriter::fileExt = ".dat";
 
-CSU2BinaryFileWriter::CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim, 
-                                           string fileName, CParallelDataSorter *dataSorter)  : 
+CSU2BinaryFileWriter::CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim,
+                                           string fileName, CParallelDataSorter *dataSorter)  :
   CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
 
 
 CSU2BinaryFileWriter::~CSU2BinaryFileWriter(){
-  
+
 }
 
 void CSU2BinaryFileWriter::Write_Data(){
-    
+
   /*--- Local variables ---*/
 
   unsigned short iVar;
-  
+
   unsigned short GlobalField_Counter = fieldnames.size();
   unsigned long nParallel_Poin = dataSorter->GetnPoints();
-  
+
   ofstream restart_file;
   char str_buf[CGNS_STRING_SIZE], fname[100];
 
   file_size = 0.0;
-  
+
   strcpy(fname, fileName.c_str());
 
   /*--- Prepare the first ints containing the counts. The first is a
    magic number that we can use to check for binary files (it is the hex
    representation for "SU2"). The second two values are number of variables
-   and number of points (DoFs). The last two values are for metadata: 
+   and number of points (DoFs). The last two values are for metadata:
    one int for ExtIter and 8 su2doubles. ---*/
 
   int var_buf_size = 5;
   int var_buf[5] = {535532, GlobalField_Counter, (int)dataSorter->GetnPointsGlobal(), 0, 0};
 
   /*--- Set a timer for the binary file writing. ---*/
-  
+
 #ifndef HAVE_MPI
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
   StartTime = MPI_Wtime();
 #endif
-  
+
 #ifndef HAVE_MPI
 
   FILE* fhw;
@@ -59,9 +86,9 @@ void CSU2BinaryFileWriter::Write_Data(){
 
   fwrite(var_buf, var_buf_size, sizeof(int), fhw);
   file_size += (su2double)var_buf_size*sizeof(int);
-  
+
   /*--- Write the variable names to the file. Note that we are adopting a
-   fixed length of 33 for the string length to match with CGNS. This is 
+   fixed length of 33 for the string length to match with CGNS. This is
    needed for when we read the strings later. ---*/
 
   for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
@@ -123,7 +150,7 @@ void CSU2BinaryFileWriter::Write_Data(){
   }
 
   /*--- First, write the number of variables and points (i.e., cols and rows),
-   which we will need in order to read the file later. Also, write the 
+   which we will need in order to read the file later. Also, write the
    variable string names here. Only the master rank writes the header. ---*/
 
   if (rank == MASTER_NODE) {
@@ -174,24 +201,24 @@ void CSU2BinaryFileWriter::Write_Data(){
 #endif
 
   /*--- Compute and store the write time. ---*/
-  
+
 #ifndef HAVE_MPI
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
   StopTime = MPI_Wtime();
 #endif
   UsedTime = StopTime-StartTime;
-  
+
   /*--- Communicate the total file size for the restart ---*/
-  
+
 #ifdef HAVE_MPI
   su2double my_file_size = file_size;
   SU2_MPI::Allreduce(&my_file_size, &file_size, 1,
                      MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
+
   /*--- Compute and store the bandwidth ---*/
-  
+
   Bandwidth = file_size/(1.0e6)/UsedTime;
 
 }

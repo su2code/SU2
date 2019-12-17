@@ -3,30 +3,20 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 6.2.0 "Falcon"
+# \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -80,10 +70,14 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics_direct_mean_inc.cpp \
   ../src/numerics_direct_transition.cpp \
   ../src/numerics_direct_turbulent.cpp \
-  ../src/numerics_direct_elasticity_nonlinear.cpp \
-  ../src/numerics_direct_elasticity_linear.cpp \
-  ../src/numerics_direct_elasticity.cpp \
-  ../src/numerics/CFEAMeshElasticity.cpp \
+  ../src/numerics/elasticity/CFEAElasticity.cpp \
+  ../src/numerics/elasticity/CFEALinearElasticity.cpp \
+  ../src/numerics/elasticity/CFEAMeshElasticity.cpp \
+  ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
+  ../src/numerics/elasticity/CFEM_NeoHookean_Comp.cpp \
+  ../src/numerics/elasticity/CFEM_Knowles_NearInc.cpp \
+  ../src/numerics/elasticity/CFEM_IdealDE.cpp \
+  ../src/numerics/elasticity/CFEM_DielectricElastomer.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \
@@ -132,6 +126,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CMeshSolver.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
+  ../src/CMarkerProfileReaderFVM.cpp \
   ../src/interfaces/CInterface.cpp \
   ../src/interfaces/cfd/CConservativeVarsInterface.cpp \
   ../src/interfaces/cfd/CMixingPlaneInterface.cpp \

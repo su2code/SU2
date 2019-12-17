@@ -1,0 +1,68 @@
+name: Release Management
+
+on:
+  push:
+    # branches to consider in the event; optional, defaults to all
+    branches:
+      - develop
+
+jobs:
+  build_and_upload:
+    name: Build SU2
+    strategy:
+      fail-fast: false
+      matrix:
+        os_bin: [macos64, macos64-mpi, linux64, linux64-mpi, win64, win64-mpi]
+        include:
+          - os_bin: win64
+            flags: '-Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_windows'
+          - os_bin: win64-mpi
+            flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_windows_mpi'
+          - os_bin: macos64
+            flags: '-Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_darwin'
+          - os_bin: macos64-mpi
+            flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_darwin_mpi'
+          - os_bin: linux64
+            flags: '-Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_linux'
+          - os_bin: linux64-mpi
+            flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_linux_mpi'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cache Object Files
+        uses: actions/cache@v1
+        with:
+          path: ccache
+          key: ${{ matrix.os_bin }}-${{ github.sha }}
+          restore-keys: ${{ matrix.os_bin }}
+      - name: Build
+        uses: docker://su2code/build-su2-cross:latest
+        with:
+          args: -b ${{ github.sha }} -f "${{matrix.flags}}"
+      - name: Create Archive
+        run: |
+          cd install
+          zip -r ../${{matrix.os_bin}}.zip bin/*
+        # Uploads binaries as artifacts (just as a backup)
+      - name: Upload Binaries
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{matrix.os_bin}}
+          path: ${{matrix.os_bin}}.zip
+        # Update the release notes of latest draft release
+      - uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-11
+        name: Update Release
+        id: update_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Upload binaries as assets to draft release
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.update_release.outputs.uploadurl }}
+          asset_path: ${{matrix.os_bin}}.zip
+          asset_name: SU2-${{ steps.update_release.outputs.tagname }}-${{matrix.os_bin}}.zip
+          asset_content_type: application/zip
+          

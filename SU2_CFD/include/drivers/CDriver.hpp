@@ -1,26 +1,16 @@
-/*!
+﻿/*!
  * \file driver_structure.hpp
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,10 +45,9 @@
 #include "../interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
 #include "../interfaces/fsi/CDisplacementsInterfaceLegacy.hpp"
 #include "../interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.hpp"
-#include "../numerics/CFEAMeshElasticity.hpp"
 #include "../solvers/CDiscAdjMeshSolver.hpp"
 #include "../solvers/CMeshSolver.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/grid_movement_structure.hpp"
 #include "../../../Common/include/config_structure.hpp"
 #include "../../../Common/include/interpolation_structure.hpp"
@@ -79,15 +68,15 @@
 
 using namespace std;
 
-/*! 
+/*!
  * \class CDriver
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
  */
 class CDriver {
 protected:
-  int rank, 	/*!< \brief MPI Rank. */
-  size;       	/*!< \brief MPI Size. */
+  int rank,   /*!< \brief MPI Rank. */
+  size;         /*!< \brief MPI Size. */
   char* config_file_name;                       /*!< \brief Configuration file name of the problem.*/
   char runtime_file_name[MAX_STRING_SIZE];
   su2double StartTime,                          /*!< \brief Start point of the timer for performance benchmarking.*/
@@ -100,12 +89,12 @@ protected:
   unsigned long IterCount,                      /*!< \brief Iteration count stored for performance benchmarking.*/
   OutputCount;                                  /*!< \brief Output count stored for performance benchmarking.*/
   unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
-  su2double Mpoints;                              /*!< \brief Total number of grid points in millions in the calculation (including ghost points).*/
-  su2double MpointsDomain;                        /*!< \brief Total number of grid points in millions in the calculation (excluding ghost points).*/
+  su2double Mpoints;                            /*!< \brief Total number of grid points in millions in the calculation (including ghost points).*/
+  su2double MpointsDomain;                      /*!< \brief Total number of grid points in millions in the calculation (excluding ghost points).*/
   su2double MDOFs;                              /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
   su2double MDOFsDomain;                        /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
-  unsigned long TimeIter;                        /*!< \brief External iteration.*/
-  ofstream **ConvHist_file;                       /*!< \brief Convergence history file.*/
+  unsigned long TimeIter;                       /*!< \brief External iteration.*/
+  ofstream **ConvHist_file;                     /*!< \brief Convergence history file.*/
   ofstream FSIHist_file;                        /*!< \brief FSI convergence history file.*/
   unsigned short iMesh,                         /*!< \brief Iterator on mesh levels.*/
                 iZone,                          /*!< \brief Iterator on zones.*/
@@ -113,22 +102,22 @@ protected:
                 nDim,                           /*!< \brief Number of dimensions.*/
                 iInst,                          /*!< \brief Iterator on instance levels.*/
                 *nInst,                         /*!< \brief Total number of instances in the problem (per zone). */
-                **interface_types;               /*!< \brief Type of coupling between the distinct (physical) zones.*/
+                **interface_types;              /*!< \brief Type of coupling between the distinct (physical) zones.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
        mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
        fsi,                                     /*!< \brief FSI simulation flag.*/
        fem_solver;                              /*!< \brief FEM fluid solver simulation flag. */
-  CIteration ***iteration_container;             /*!< \brief Container vector with all the iteration methods. */
-  COutput **output_container;                              /*!< \brief Pointer to the COutput class. */
-  CIntegration ****integration_container;        /*!< \brief Container vector with all the integration methods. */
-  CGeometry ****geometry_container;              /*!< \brief Geometrical definition of the problem. */
-  CSolver *****solver_container;                 /*!< \brief Container vector with all the solutions. */
-  CNumerics ******numerics_container;            /*!< \brief Description of the numerical method (the way in which the equations are solved). */
+  CIteration ***iteration_container;            /*!< \brief Container vector with all the iteration methods. */
+  COutput **output_container;                   /*!< \brief Pointer to the COutput class. */
+  CIntegration ****integration_container;       /*!< \brief Container vector with all the integration methods. */
+  CGeometry ****geometry_container;             /*!< \brief Geometrical definition of the problem. */
+  CSolver *****solver_container;                /*!< \brief Container vector with all the solutions. */
+  CNumerics ******numerics_container;           /*!< \brief Description of the numerical method (the way in which the equations are solved). */
   CConfig **config_container;                   /*!< \brief Definition of the particular problem. */
   CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
-  COutput *driver_output;                 /*!< \brief Definition of the driver output. */
+  COutput *driver_output;                       /*!< \brief Definition of the driver output. */
   CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
-  CVolumetricMovement ***grid_movement;          /*!< \brief Volume grid movement classes of the problem. */
+  CVolumetricMovement ***grid_movement;         /*!< \brief Volume grid movement classes of the problem. */
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   CInterpolator ***interpolator_container;      /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
   CInterface ***interface_container;            /*!< \brief Definition of the interface of information and physics. */
@@ -137,10 +126,10 @@ protected:
             PyWrapNodalForceDensity[3],         /*!< \brief This is used to store the force density at each vertex. */
             PyWrapNodalHeatFlux[3];             /*!< \brief This is used to store the heat flux at each vertex. */
   bool dummy_geometry;
-  
+
 public:
 
-  /*! 
+  /*!
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
@@ -158,16 +147,16 @@ public:
 
   /*!
    * \brief A virtual member.
-   */  
+   */
   virtual void Run() { };
 
 protected:
-  
+
   /*!
    * \brief Init_Containers
    */
   void SetContainers_Null();
-  
+
   /*!
    * \brief Read in the config and mesh files.
    */
@@ -177,7 +166,7 @@ protected:
    * \brief Construction of the edge-based data structure and the multigrid structure.
    */
   void Geometrical_Preprocessing(CConfig *config, CGeometry **&geometry, bool dummy);
-  
+
   /*!
    * \brief Do the geometrical preprocessing for the DG FEM solver.
    */
@@ -187,7 +176,7 @@ protected:
    * \brief Geometrical_Preprocessing_FVM
    */
   void Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geometry);
-  
+
   /*!
    * \brief Definition of the physics iteration class or within a single zone.
    * \param[in] iteration_container - Pointer to the iteration container to be instantiated.
@@ -293,7 +282,7 @@ protected:
   void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                     CInterface*** interface);
 
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be predicted.
@@ -337,7 +326,7 @@ protected:
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
   virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
-  
+
   /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
    */
@@ -347,23 +336,23 @@ protected:
    * \brief A virtual member to run a Block-Jacobi iteration in multizone problems.
    */
   virtual void Run_Jacobi(){}
-  
+
   /*!
    * \brief A virtual member.
    */
   virtual void Update() {}
-  
+
 public:
 
   /*!
    * \brief Launch the computation for all zones and all physics.
    */
   virtual void StartSolver() {}
-  
+
   /*!
    * \brief Deallocation routine
    */
-  void Postprocessing();  
+  void Postprocessing();
 
   /*!
    * \brief A virtual member.
@@ -875,7 +864,7 @@ protected:
    unsigned long Max_Iter;
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
@@ -891,7 +880,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CFluidDriver(void);
-  
+
   /*!
    * \brief Launch the computation for all zones and all physics.
    */
@@ -906,21 +895,21 @@ public:
    * \brief Update the dual-time solution within multiple zones.
    */
   void Update();
-  
+
   /*!
    * \brief Output the solution in solution file.
    */
   void Output(unsigned long InnerIter);
-  
+
   /*!
    * \brief Monitor the computation.
    */
   bool Monitor(unsigned long ExtIter);
-  
+
   /*!
    * \brief Perform some pre-processing before an iteration of the physics.
    */
-  void Preprocess(unsigned long Iter);  
+  void Preprocess(unsigned long Iter);
 
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
@@ -992,7 +981,7 @@ public:
 class CTurbomachineryDriver : public CFluidDriver {
 private:
   COutputLegacy* output_legacy;
-  
+
 public:
 
   /*!
@@ -1078,7 +1067,7 @@ public:
    * \param[in] iZone - Current zone number.
    */
   void SetHarmonicBalance(unsigned short iZone);
-	
+
   /*!
    * \brief Precondition Harmonic Balance source term for stability
    * \author J. Howison
@@ -1106,12 +1095,12 @@ public:
  * \class CDiscAdjFSIDriver
  * \brief Overload: Class for driving a discrete adjoint FSI iteration.
  * \author R. Sanchez.
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CDiscAdjFSIDriver : public CDriver {
-  
+
   COutputLegacy* output_legacy;
-  
+
   CIteration** direct_iteration;
   unsigned short RecordingState;
   unsigned short CurrentRecording;          /*!< \brief Stores the current status of the recording. */

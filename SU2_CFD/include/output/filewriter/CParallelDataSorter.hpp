@@ -2,24 +2,14 @@
  * \file CParallelDataSorter.hpp
  * \brief Headers fo the data sorter class.
  * \author T. Albring, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,17 +36,17 @@ class CConfig;
 
 class CParallelDataSorter{
 protected:
-  
+
   /*!
    * \brief The MPI rank
    */
   int rank;
-  
+
   /*!
    * \brief The MPI size, aka the number of processors.
    */
   int size;
-  
+
   unsigned long nGlobal_Poin_Par;  //!< Global number of points without halos before sorting
   unsigned long nGlobal_Elem_Par;  //!< Global number of elems without halos before sorting
   unsigned long nParallel_Poin;    //!< Local number of points after sorting on this proc
@@ -74,51 +64,51 @@ protected:
   int *Conn_Hexa_Par;              //!< Local connectivity of hexahedral elements after sorting on this proc
   int *Conn_Pris_Par;              //!< Local connectivity of prism elements after sorting on this proc
   int *Conn_Pyra_Par;              //!< Local connectivity of pyramid elements after sorting on this proc
-  
-  unsigned long nGlobalPoint_Sort; //!< Global number of points without halos after sorting 
+
+  unsigned long nGlobalPoint_Sort; //!< Global number of points without halos after sorting
   unsigned long nLocalPoint_Sort;  //!< Local number of points without halos after sorting on this proc
 
-  
+
   CLinearPartitioner* linearPartitioner;  //!< Linear partitioner based on the global number of points.
-  
+
   unsigned short GlobalField_Counter;  //!< Number of output fields
-  
+
   bool connectivity_sorted;            //!< Boolean to store information on whether the connectivity is sorted
-  
+
   int *nPoint_Send;                    //!< Number of points this processor has to send to other processors
   int *nPoint_Recv;                    //!< Number of points this processor receives from other processors
   unsigned long *Index;                //!< Index each point has in the send buffer
   su2double *connSend;                 //!< Send buffer holding the data that will be send to other processors
-  passivedouble *passiveDoubleBuffer;  //!< Buffer holding the sorted, partitioned data as passivedouble types 
-  su2double     *doubleBuffer;         //!< Buffer holding the sorted, partitioned data as su2double types 
+  passivedouble *passiveDoubleBuffer;  //!< Buffer holding the sorted, partitioned data as passivedouble types
+  su2double     *doubleBuffer;         //!< Buffer holding the sorted, partitioned data as su2double types
   /// Pointer used to allocate the memory used for ::passiveDoubleBuffer and ::doubleBuffer.
-  char *dataBuffer;                    
+  char *dataBuffer;
   unsigned long *idSend;               //!< Send buffer holding global indices that will be send to other processors
   int nSends,                          //!< Number of sends
   nRecvs;                              //!< Number of receives
-  
+
   /*!
-   * \brief Prepare the send buffers by filling them with the global indices. 
+   * \brief Prepare the send buffers by filling them with the global indices.
    * After calling this function, the data buffer for sending can be filled with the
    * ::SetUnsorted_Data() routine.
    * \param[in] globalID - Vector containing the global indices of the points
    */
-  void PrepareSendBuffers(std::vector<unsigned long>& globalID);  
+  void PrepareSendBuffers(std::vector<unsigned long>& globalID);
 
 public:
-  
+
   /*!
    * \brief Constructor
    * \param[in] config - Pointer to the current config structure
    * \param[in] nFields - Number of output fields
    */
   CParallelDataSorter(CConfig *config, unsigned short nFields);
-  
+
   /*!
    * \brief Destructor
    */
   virtual ~CParallelDataSorter();
-  
+
   /*!
    * \brief Sort the output data for each grid node into a linear partitioning across all processors.
    */
@@ -131,38 +121,38 @@ public:
    * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
   virtual void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort = true){}
- 
+
   /*!
    * \brief Get the number of points the local rank owns.
    * \return local number of points.
    */
   unsigned long GetnPoints(){return nParallel_Poin;}
-  
+
   /*!
    * \brief Get the number of points to sort.
    * \return local number of points.
    */
   unsigned long GetnLocalPointSort(){return nLocalPoint_Sort;}
-  
+
   /*!
    * \brief Get the global number of points (accumulated from all ranks)
    * \return Global number of points.
    */
   unsigned long GetnPointsGlobal(){return nGlobal_Poin_Par;}
-  
+
   /*!
    * \brief Get the global of elements (accumulated from all ranks and element types)
    * \return Global number elements.
    */
   unsigned long GetnElem(){return nGlobal_Elem_Par;}
-   
+
   /*!
    * \brief Get the local number of elements of a specific type that the current rank owns
    * \input type - The type of element, ref GEO_TYPE
    * \return Local number of elements of a specific type.
    */
   unsigned long GetnElem(GEO_TYPE type);
-    
+
   /*!
    * \brief Get the connectivity of specific element.
    * \input type - The type of element, ref GEO_TYPE
@@ -171,21 +161,21 @@ public:
    * \return the connected node.
    */
   unsigned long GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode);
-  
+
   /*!
    * \brief Beginning node ID of the linear partition owned by a specific processor.
    * \input rank - the processor rank.
    * \return The beginning node ID.
    */
   unsigned long GetNodeBegin(unsigned short rank){return linearPartitioner->GetFirstIndexOnRank(rank);}
-  
+
   /*!
    * \brief Ending node ID of the linear partition owned by a specific processor.
    * \input rank - the processor rank.
    * \return The ending node ID.
    */
   unsigned long GetNodeEnd(unsigned short rank){return linearPartitioner->GetLastIndexOnRank(rank);}
-  
+
   /*!
    * \brief Get the value of the linear partitioned data.
    * \input iField - the output field ID.
@@ -193,44 +183,44 @@ public:
    * \return the value of the data field at a point.
    */
   passivedouble GetData(unsigned short iField, unsigned long iPoint) {return passiveDoubleBuffer[iPoint*GlobalField_Counter + iField];}
-  
+
   /*!
    * \brief Get the pointer to the sorted linear partitioned data.
    * \return Pointer to the sorted data.
    */
   const passivedouble *GetData() {return passiveDoubleBuffer;}
-  
+
   /*!
    * \brief Get the global index of a point.
    * \input iPoint - the point ID.
    * \return Global index of a specific point.
    */
   virtual unsigned long GetGlobalIndex(unsigned long iPoint){return 0;}
-  
+
   /*!
    * \brief Get the cumulated number of points
    * \input rank - the processor rank.
    * \return The cumulated number of points up to certain processor rank.
    */
   unsigned long GetnPointCumulative(unsigned short rank){return linearPartitioner->GetCumulativeSizeBeforeRank(rank);}
-  
+
   /*!
    * \brief Get the linear number of points
    * \input rank - the processor rank.
    * \return The linear number of points up to certain processor rank.
    */
-  unsigned long GetnPointLinear(unsigned short rank){return linearPartitioner->GetSizeOnRank(rank);}  
-  
+  unsigned long GetnPointLinear(unsigned short rank){return linearPartitioner->GetSizeOnRank(rank);}
+
   /*!
    * \brief Check whether the current connectivity is sorted (i.e. if SortConnectivity has been called)
    * \return <TRUE> if the connectivity is sorted.
-   */  
+   */
   bool GetConnectivitySorted(){return connectivity_sorted;}
-  
+
   /*!
    * \brief Set the value of a specific field at a point.
    * ::PrepareSendBuffers must be called before using this function.
-   * 
+   *
    * \param[in] iPoint - ID of the point
    * \param[in] iField - Index of the field
    * \param[in] data - Value of the field
@@ -238,7 +228,7 @@ public:
   void SetUnsorted_Data(unsigned long iPoint, unsigned short iField, su2double data){
     connSend[Index[iPoint] + iField] = data;
   }
-  
+
   su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField){
     return connSend[Index[iPoint] + iField];
   }
