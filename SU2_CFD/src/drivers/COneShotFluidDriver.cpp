@@ -59,7 +59,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
   AugLagGrad = new su2double[nDV_Total];
   AugLagGradAlpha = new su2double[nDV_Total];
   AugLagGradBeta = new su2double[nDV_Total];
-  AugLagGradGamma = new su2double*[nDV_Total];
+  AugLagGradGamma = new su2double[nDV_Total];
   AugLagGrad_Old = new su2double[nDV_Total];
 
   DesignVarUpdate = new su2double[nDV_Total];
@@ -92,8 +92,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     AugLagGrad[iDV] = 0.0;
     AugLagGradAlpha[iDV] = 0.0;
     AugLagGradBeta[iDV] = 0.0;
-    AugLagGradGamma[iDV] = new su2double[nConstr];
-    for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) AugLagGradGamma[iDV][iConstr] = 0.0;
+    AugLagGradGamma[iDV] = 0.0;
     AugLagGrad_Old[iDV] = 0.0;
     DesignVarUpdate[iDV] = 0.0;
     DesignVar[iDV] = 0.0;
@@ -156,9 +155,6 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
   delete [] AugLagGrad;
   delete [] AugLagGradAlpha;
   delete [] AugLagGradBeta;
-  for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
-    delete [] AugLagGradGamma[iDV];
-  }
   delete [] AugLagGradGamma;
   delete [] AugLagGrad_Old;
 
@@ -999,25 +995,19 @@ void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
       AugLagGradBeta[iDV] = Gradient[iDV];
     }
     else if(kind == GAMMA_TERM) {
-      for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-        AugLagGradGamma[iDV][iConstr] = Gradient[iDV];
-      }
+      AugLagGradGamma[iDV] = Gradient[iDV];
     }
     else if(kind == TOTAL_AUGMENTED) {
       AugLagGrad[iDV] = ShiftLagGrad[iDV]
                       + AugLagGradAlpha[iDV]*config->GetOneShotAlpha()
                       + AugLagGradBeta[iDV]*config->GetOneShotBeta();
-      for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-        AugLagGrad[iDV] += AugLagGradGamma[iDV][iConstr]*config->GetOneShotGamma(iConstr);
-      }
+                      + AugLagGradGamma[iDV]*config->GetOneShotGamma(0);
     }   
     else if(kind == TOTAL_AUGMENTED_OLD) {
       AugLagGrad_Old[iDV] = ShiftLagGrad[iDV]
                           + AugLagGradAlpha[iDV]*config->GetOneShotAlpha()
                           + AugLagGradBeta[iDV]*config->GetOneShotBeta();
-      for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
-        AugLagGrad_Old[iDV] += AugLagGradGamma[iDV][iConstr]*config->GetOneShotGamma(iConstr);
-      }
+                          + AugLagGradGamma[iDV]*config->GetOneShotGamma(0);
     }   
   }
 }
