@@ -138,6 +138,8 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
   grid_movement[ZONE_0][INST_0] = new CVolumetricMovement(geometry, config);
   surface_movement[ZONE_0]      = new CSurfaceMovement();
 
+  Lagrangian_Old = 0.0;
+
 }
 
 COneShotFluidDriver::~COneShotFluidDriver(void){
@@ -328,7 +330,9 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-    if (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
+    if ((OneShotIter > config->GetOneShotStart()) && 
+        (OneShotIter < config->GetOneShotStop())  &&
+        ((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
       CalculateLagrangian();
       ArmijoFlag = CheckArmijo();
     }
