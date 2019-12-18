@@ -28,8 +28,26 @@
 #pragma once
 
 #include "CFileWriter.hpp"
+#include <set>
+
 
 class CSTLFileWriter final : public CFileWriter{
+
+  std::set<unsigned long> halo_nodes;
+  vector<unsigned long> sorted_halo_nodes;
+  
+  vector<passivedouble> data_to_send;
+  vector<passivedouble> halo_var_data;
+  vector<int> num_values_to_send;
+  vector<int> values_to_send_displacements;
+  vector<int> values_to_receive_displacements;
+  vector<unsigned long> nodes_to_send;
+  vector<int> num_values_to_receive;
+  vector<int> nodes_to_send_displacements;
+  vector<int> nodes_to_receive_displacements;
+  vector<int> num_nodes_to_send;
+  size_t num_halo_nodes;
+  vector<int> num_nodes_to_receive;
 
 public:
 
@@ -59,6 +77,8 @@ public:
    * \brief Write sorted data to file in STL file format
    */
   void Write_Data() override;
+
+  double GetHaloNodeValue(unsigned long global_node_number, unsigned short iVar);
 
 };
 

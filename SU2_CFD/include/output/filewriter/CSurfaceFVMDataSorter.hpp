@@ -71,9 +71,43 @@ public:
    * \return Global index of a specific point.
    */
   unsigned long GetGlobalIndex(unsigned long iPoint)  override{
+    if (iPoint > nParallel_Poin){
+      cout << "nParallel_Poin: " << nParallel_Poin << " iPoint loc_ren_surf " << iPoint << endl;
+      SU2_MPI::Error("HAHA", CURRENT_FUNCTION);
+    }
     return Renumber2Global[iPoint];
   }
 
+  /*!
+   * \brief Beginning node ID of the linear partition owned by a specific processor.
+   * \input rank - the processor rank.
+   * \return The beginning node ID.
+   */
+  unsigned long GetNodeBegin(unsigned short rank) override {
+    return nPoint_Recv[rank];
+  } 
+
+  unsigned short FindProcessor(unsigned long iPoint) override {
+
+    for (unsigned short iRank = 1; iRank < size; iRank++){
+      if (nPoint_Recv[iRank] > iPoint){
+        return iRank - 1;
+      }
+    }
+    return size-1;
+  }
+
+  /*!
+   * \brief Ending node ID of the linear partition owned by a specific processor.
+   * \input rank - the processor rank.
+   * \return The ending node ID.
+   */
+  unsigned long GetNodeEnd(unsigned short rank) override {
+    for (unsigned short iRank = 0; iRank < size-1; iRank++){
+      return nPoint_Recv[iRank+1]-1;
+    }
+    return nPoint_Recv[size];
+  }
 
 private:
 
