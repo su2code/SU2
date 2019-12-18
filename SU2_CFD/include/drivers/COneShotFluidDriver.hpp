@@ -65,7 +65,7 @@ protected:
   su2double* AugLagGrad;                /*!< \brief Gradient of doubly augmented Lagrangian.*/
   su2double* AugLagGradAlpha;           /*!< \brief Alpha term of gradient of doubly augmented Lagrangian.*/
   su2double* AugLagGradBeta;            /*!< \brief Beta term of gradient of doubly augmented Lagrangian.*/
-  su2double** AugLagGradGamma;          /*!< \brief Gamma term of gradient of doubly augmented Lagrangian.*/
+  su2double* AugLagGradGamma;           /*!< \brief Gamma term of gradient of doubly augmented Lagrangian.*/
   su2double* AugLagGrad_Old;            /*!< \brief Gradient of doubly augmented Lagrangian (old value).*/
   su2double* AugLagLamGrad;             /*!< \brief Gradient of doubly augmented Lagrangian wrt constraint multiplier.*/
   su2double Lagrangian, Lagrangian_Old; /*!< \brief Value of doubly augmented Lagrangian.*/
