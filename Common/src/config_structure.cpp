@@ -2394,6 +2394,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Correct mass flow for LES channel flow cases */
   addBoolOption("CORRECT_MASSFLOW", Using_MassFlowCorrection, false);
+  
+  /* DESCRIPTION: Specify Hybrid RANS/LES model */
+  addEnumOption("CONVECTIVE_FLUXES", Kind_ConvectiveFlux, ConvectiveFlux_Map, CENTRAL_FLUX);
+
 
   /* END_CONFIG_OPTIONS */
 

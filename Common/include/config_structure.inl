@@ -1992,6 +1992,8 @@ inline unsigned short CConfig::GetKind_HybridRANSLES(void) {return Kind_HybridRA
 
 inline unsigned short CConfig::GetKind_SyntheticTurbulence(void) {return Kind_SyntheticTurbulence; }
 
+inline unsigned short CConfig::GetKind_ConvectiveFlux(void) {return Kind_ConvectiveFlux; }
+
 inline unsigned short CConfig::GetKind_RoeLowDiss(void) {return Kind_RoeLowDiss; }
 
 inline su2double CConfig::GetConst_DES(void) {return Const_DES; }

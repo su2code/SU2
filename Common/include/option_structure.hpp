@@ -896,6 +896,17 @@ static const map<string, ENUM_SYNTHETICTURBULENCE> SyntheticTurbulence_Map = CCr
 ("VOLUME_STG", VOLUME_STG);
 
 /*!
+ * \brief types of convective fluxes
+ */
+enum ENUM_CONVECTIVEFLUX {
+  CENTRAL_FLUX = 0, /*!< \brief Original central flux. */
+  CENTRAL_KEP  = 1 /*!< \brief Energy preserving central flux. */
+};
+static const map<string, ENUM_CONVECTIVEFLUX> ConvectiveFlux_Map = CCreateMap<string, ENUM_CONVECTIVEFLUX>
+("CENTRAL_FLUX", CENTRAL_FLUX)
+("CENTRAL_KEP", CENTRAL_KEP);
+
+/*!
  * \brief types of Roe Low Dissipation Schemes
  */
 enum ENUM_ROELOWDISS {

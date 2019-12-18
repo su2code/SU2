@@ -1009,6 +1009,7 @@ private:
   su2double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_SyntheticTurbulence; /*!< \brief Kind of Synthetic Turbulence. */
+  unsigned short Kind_ConvectiveFlux; /*!< \brief Kind of Convective Flux. */
   su2double MinLowDissipation;   /*!< \brief Min low dissipation constant for DDES simulations. */
   unsigned short Kind_RoeLowDiss;    /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   bool QCR;                   /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
@@ -8976,6 +8977,12 @@ public:
    * \return Value of the STG approach.
    */
   unsigned short GetKind_SyntheticTurbulence(void);
+  
+  /*!
+   * \brief Get the Kind of Convective Flux
+   * \return Value of the desired flux.
+   */
+  unsigned short GetKind_ConvectiveFlux(void);
 
   /*!
    * \brief Get the Kind of Roe Low Dissipation Scheme for Unsteady flows.
