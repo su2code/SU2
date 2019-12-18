@@ -98,7 +98,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     BFGS_Inv[iDV] = new su2double[nDV_Total];
     for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
       BFGS_Inv[iDV][jDV] = 0.0;
-      if (iDV==jDV) BFGS_Inv[iDV][jDV] = BFGS_Init;
+      if (iDV==jDV) BFGS_Inv[iDV][jDV] = 1.0;
     }
   }
 
@@ -818,7 +818,7 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
       for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
         for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
           BFGS_Inv[iDV][jDV] = 0.0;
-          if(iDV==jDV){ BFGS_Inv[iDV][jDV] = ProjectionSet(iDV,BFGS_Init,false); }
+          if(iDV==jDV){ BFGS_Inv[iDV][jDV] = 1.0; }
         }
       }
     }
