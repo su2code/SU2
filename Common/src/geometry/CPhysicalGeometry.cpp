@@ -2520,28 +2520,28 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
     kElem = it->first;
     iElem = it->second;
 
-      /*--- Transform the stored connectivity for this element from global
-       to local values on this rank. ---*/
+    /*--- Transform the stored connectivity for this element from global
+     to local values on this rank. ---*/
 
-      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-        iGlobal_Index      = Conn_Tria[iElem*NODES_PER_ELEMENT+iNode];
-        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
-      }
-
-      /*--- Create the element object. ---*/
-
-      elem[jElem] = new CTriangle(Local_Nodes[0],
-                                  Local_Nodes[1],
-                                  Local_Nodes[2], 2);
-
-      elem[jElem]->SetGlobalIndex(kElem);
-
-      /*--- Increment our local counters. ---*/
-
-      jElem++; iElemTria++;
-
+    NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
+    for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+      iGlobal_Index      = Conn_Tria[iElem*NODES_PER_ELEMENT+iNode];
+      Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
     }
+
+    /*--- Create the element object. ---*/
+
+    elem[jElem] = new CTriangle(Local_Nodes[0],
+                                Local_Nodes[1],
+                                Local_Nodes[2], 2);
+
+    elem[jElem]->SetGlobalIndex(kElem);
+
+    /*--- Increment our local counters. ---*/
+
+    jElem++; iElemTria++;
+
+  }
 
   /*--- Free memory as we go. ---*/
 
@@ -2552,29 +2552,29 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
     kElem = it->first;
     iElem = it->second;
 
-      /*--- Transform the stored connectivity for this element from global
-       to local values on this rank. ---*/
+    /*--- Transform the stored connectivity for this element from global
+     to local values on this rank. ---*/
 
-      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-        iGlobal_Index      = Conn_Quad[iElem*NODES_PER_ELEMENT+iNode];
-        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
-      }
-
-      /*--- Create the element object. ---*/
-
-      elem[jElem] = new CQuadrilateral(Local_Nodes[0],
-                                       Local_Nodes[1],
-                                       Local_Nodes[2],
-                                       Local_Nodes[3], 2);
-
-      elem[jElem]->SetGlobalIndex(kElem);
-
-      /*--- Increment our local counters. ---*/
-
-      jElem++; iElemQuad++;
-
+    NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
+    for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+      iGlobal_Index      = Conn_Quad[iElem*NODES_PER_ELEMENT+iNode];
+      Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
     }
+
+    /*--- Create the element object. ---*/
+
+    elem[jElem] = new CQuadrilateral(Local_Nodes[0],
+                                     Local_Nodes[1],
+                                     Local_Nodes[2],
+                                     Local_Nodes[3], 2);
+
+    elem[jElem]->SetGlobalIndex(kElem);
+
+    /*--- Increment our local counters. ---*/
+
+    jElem++; iElemQuad++;
+
+  }
 
   /*--- Free memory as we go. ---*/
 
@@ -2585,29 +2585,29 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
     kElem = it->first;
     iElem = it->second;
 
-      /*--- Transform the stored connectivity for this element from global
-       to local values on this rank. ---*/
+    /*--- Transform the stored connectivity for this element from global
+     to local values on this rank. ---*/
 
-      NODES_PER_ELEMENT = N_POINTS_TETRAHEDRON;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-        iGlobal_Index      = Conn_Tetr[iElem*NODES_PER_ELEMENT+iNode];
-        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
-      }
-
-      /*--- Create the element object. ---*/
-
-      elem[jElem] = new CTetrahedron(Local_Nodes[0],
-                                     Local_Nodes[1],
-                                     Local_Nodes[2],
-                                     Local_Nodes[3]);
-
-      elem[jElem]->SetGlobalIndex(kElem);
-
-      /*--- Increment our local counters. ---*/
-
-      jElem++; iElemTetr++;
-
+    NODES_PER_ELEMENT = N_POINTS_TETRAHEDRON;
+    for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+      iGlobal_Index      = Conn_Tetr[iElem*NODES_PER_ELEMENT+iNode];
+      Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
     }
+
+    /*--- Create the element object. ---*/
+
+    elem[jElem] = new CTetrahedron(Local_Nodes[0],
+                                   Local_Nodes[1],
+                                   Local_Nodes[2],
+                                   Local_Nodes[3]);
+
+    elem[jElem]->SetGlobalIndex(kElem);
+
+    /*--- Increment our local counters. ---*/
+
+    jElem++; iElemTetr++;
+
+  }
 
   /*--- Free memory as we go. ---*/
 
@@ -2618,33 +2618,33 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
     kElem = it->first;
     iElem = it->second;
 
-      /*--- Transform the stored connectivity for this element from global
-       to local values on this rank. ---*/
+    /*--- Transform the stored connectivity for this element from global
+     to local values on this rank. ---*/
 
-      NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-        iGlobal_Index      = Conn_Hexa[iElem*NODES_PER_ELEMENT+iNode];
-        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
-      }
-
-      /*--- Create the element object. ---*/
-
-      elem[jElem] = new CHexahedron(Local_Nodes[0],
-                                    Local_Nodes[1],
-                                    Local_Nodes[2],
-                                    Local_Nodes[3],
-                                    Local_Nodes[4],
-                                    Local_Nodes[5],
-                                    Local_Nodes[6],
-                                    Local_Nodes[7]);
-
-      elem[jElem]->SetGlobalIndex(kElem);
-
-      /*--- Increment our local counters. ---*/
-
-      jElem++; iElemHexa++;
-
+    NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
+    for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+      iGlobal_Index      = Conn_Hexa[iElem*NODES_PER_ELEMENT+iNode];
+      Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
     }
+
+    /*--- Create the element object. ---*/
+
+    elem[jElem] = new CHexahedron(Local_Nodes[0],
+                                  Local_Nodes[1],
+                                  Local_Nodes[2],
+                                  Local_Nodes[3],
+                                  Local_Nodes[4],
+                                  Local_Nodes[5],
+                                  Local_Nodes[6],
+                                  Local_Nodes[7]);
+
+    elem[jElem]->SetGlobalIndex(kElem);
+
+    /*--- Increment our local counters. ---*/
+
+    jElem++; iElemHexa++;
+
+  }
 
   /*--- Free memory as we go. ---*/
 
@@ -2655,31 +2655,31 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
     kElem = it->first;
     iElem = it->second;
 
-      /*--- Transform the stored connectivity for this element from global
-       to local values on this rank. ---*/
+    /*--- Transform the stored connectivity for this element from global
+     to local values on this rank. ---*/
 
-      NODES_PER_ELEMENT = N_POINTS_PRISM;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-        iGlobal_Index      = Conn_Pris[iElem*NODES_PER_ELEMENT+iNode];
-        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
-      }
-
-      /*--- Create the element object. ---*/
-
-      elem[jElem] = new CPrism(Local_Nodes[0],
-                               Local_Nodes[1],
-                               Local_Nodes[2],
-                               Local_Nodes[3],
-                               Local_Nodes[4],
-                               Local_Nodes[5]);
-
-      elem[jElem]->SetGlobalIndex(kElem);
-
-      /*--- Increment our local counters. ---*/
-
-      jElem++; iElemPris++;
-
+    NODES_PER_ELEMENT = N_POINTS_PRISM;
+    for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+      iGlobal_Index      = Conn_Pris[iElem*NODES_PER_ELEMENT+iNode];
+      Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
     }
+
+    /*--- Create the element object. ---*/
+
+    elem[jElem] = new CPrism(Local_Nodes[0],
+                             Local_Nodes[1],
+                             Local_Nodes[2],
+                             Local_Nodes[3],
+                             Local_Nodes[4],
+                             Local_Nodes[5]);
+
+    elem[jElem]->SetGlobalIndex(kElem);
+
+    /*--- Increment our local counters. ---*/
+
+    jElem++; iElemPris++;
+
+  }
 
   /*--- Free memory as we go. ---*/
 
@@ -2690,30 +2690,30 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
     kElem = it->first;
     iElem = it->second;
 
-      /*--- Transform the stored connectivity for this element from global
-       to local values on this rank. ---*/
+    /*--- Transform the stored connectivity for this element from global
+     to local values on this rank. ---*/
 
-      NODES_PER_ELEMENT = N_POINTS_PYRAMID;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-        iGlobal_Index      = Conn_Pyra[iElem*NODES_PER_ELEMENT+iNode];
-        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
-      }
-
-      /*--- Create the element object. ---*/
-
-      elem[jElem] = new CPyramid(Local_Nodes[0],
-                                 Local_Nodes[1],
-                                 Local_Nodes[2],
-                                 Local_Nodes[3],
-                                 Local_Nodes[4]);
-
-      elem[jElem]->SetGlobalIndex(kElem);
-
-      /*--- Increment our local counters. ---*/
-
-      jElem++; iElemPyra++;
-
+    NODES_PER_ELEMENT = N_POINTS_PYRAMID;
+    for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+      iGlobal_Index      = Conn_Pyra[iElem*NODES_PER_ELEMENT+iNode];
+      Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
     }
+
+    /*--- Create the element object. ---*/
+
+    elem[jElem] = new CPyramid(Local_Nodes[0],
+                               Local_Nodes[1],
+                               Local_Nodes[2],
+                               Local_Nodes[3],
+                               Local_Nodes[4]);
+
+    elem[jElem]->SetGlobalIndex(kElem);
+
+    /*--- Increment our local counters. ---*/
+
+    jElem++; iElemPyra++;
+
+  }
 
   /*--- Free memory as we go. ---*/
 

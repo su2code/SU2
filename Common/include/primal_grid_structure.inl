@@ -192,6 +192,7 @@ inline unsigned short CTriangle::GetnNeighbor_Elements(void) { return nNeighbor_
 inline void CTriangle::SetDomainElement(unsigned long val_domainelement) { DomainElement = val_domainelement; }
 
 inline unsigned long CTriangle::GetDomainElement(void) { return DomainElement; }
+
 inline unsigned short CQuadrilateral::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 
 inline unsigned short CQuadrilateral::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return Neighbor_Nodes[val_node][val_index]; }
