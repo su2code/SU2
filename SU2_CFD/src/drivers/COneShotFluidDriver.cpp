@@ -262,6 +262,9 @@ void COneShotFluidDriver::RunOneShot(){
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
         solver[ADJFLOW_SOL]->LoadSolution();
 
+        /*--- Preprocess to recompute primitive variables ---*/
+        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+
       }
       else{
         // UpdateLambda(1.0);
@@ -465,7 +468,7 @@ void COneShotFluidDriver::RunOneShot(){
     else if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
       stepsize0 = min(1.0, stepsize0*2.0);
     }
-    
+
   //   if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
   //     StoreOldGradDotDir();
   //     ComputeDesignVarUpdate(1.0);
