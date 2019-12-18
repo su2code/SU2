@@ -31,6 +31,7 @@
 #include "../../../../Common/include/option_structure.hpp"
 #include "../../../../Common/include/toolboxes/CLinearPartitioner.hpp"
 
+
 class CGeometry;
 class CConfig;
 
@@ -167,14 +168,14 @@ public:
    * \input rank - the processor rank.
    * \return The beginning node ID.
    */
-  unsigned long GetNodeBegin(unsigned short rank){return linearPartitioner->GetFirstIndexOnRank(rank);}
+  virtual unsigned long GetNodeBegin(unsigned short rank){return linearPartitioner->GetFirstIndexOnRank(rank);}
 
   /*!
    * \brief Ending node ID of the linear partition owned by a specific processor.
    * \input rank - the processor rank.
    * \return The ending node ID.
    */
-  unsigned long GetNodeEnd(unsigned short rank){return linearPartitioner->GetLastIndexOnRank(rank);}
+  virtual unsigned long GetNodeEnd(unsigned short rank){return linearPartitioner->GetLastIndexOnRank(rank);}
 
   /*!
    * \brief Get the value of the linear partitioned data.
@@ -232,4 +233,7 @@ public:
   su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField){
     return connSend[Index[iPoint] + iField];
   }
+
+  virtual unsigned short FindProcessor(unsigned long iPoint){return linearPartitioner->GetRankContainingIndex(iPoint);}
+
 };
