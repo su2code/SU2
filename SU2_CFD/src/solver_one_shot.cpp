@@ -103,6 +103,10 @@ void COneShotSolver::SetRecording(CGeometry* geometry, CConfig *config){
       AD::ResetInput(direct_solver->GetNodes()->GetSolution_Store(iPoint)[iVar]);
       AD::ResetInput(direct_solver->GetNodes()->GetSolution_Save(iPoint)[iVar]);
     }
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      AD::ResetInput(geometry->node[iPoint]->GetCoord()[iDim]);
+      AD::ResetInput(geometry->node[iPoint]->GetCoord_Old()[iDim]);
+    }
   }
 
   // if (time_n_needed) {
