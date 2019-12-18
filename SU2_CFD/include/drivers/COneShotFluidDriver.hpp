@@ -59,18 +59,18 @@ protected:
   su2double* ShiftLagGrad;              /*!< \brief Saved gradient N_u of the shifted Lagrangian .*/
   su2double* DesignVarUpdate;           /*!< \brief Update of the design variable Delta u = u_{k+1} - u_k .*/
   su2double* SearchDirection;           /*!< \brief Search direction for optimization.*/
-  su2double** BFGS_Inv;                 /*!< \brief Inverse matrix for BFGS update.*/
+  su2double** BFGSInv;                 /*!< \brief Inverse matrix for BFGS update.*/
   su2double* DesignVar;                 /*!< \brief Current design variable value.*/
   su2double* AugLagGrad;                /*!< \brief Gradient of doubly augmented Lagrangian.*/
   su2double* AugLagGradAlpha;           /*!< \brief Alpha term of gradient of doubly augmented Lagrangian.*/
   su2double* AugLagGradBeta;            /*!< \brief Beta term of gradient of doubly augmented Lagrangian.*/
   su2double* AugLagGradGamma;           /*!< \brief Gamma term of gradient of doubly augmented Lagrangian.*/
-  su2double* AugLagGrad_Old;            /*!< \brief Gradient of doubly augmented Lagrangian (old value).*/
+  su2double* AugLagGradOld;            /*!< \brief Gradient of doubly augmented Lagrangian (old value).*/
   su2double* AugLagLamGrad;             /*!< \brief Gradient of doubly augmented Lagrangian wrt constraint multiplier.*/
-  su2double Lagrangian, Lagrangian_Old; /*!< \brief Value of doubly augmented Lagrangian.*/
+  su2double Lagrangian, LagrangianOld; /*!< \brief Value of doubly augmented Lagrangian.*/
   su2double GradDotDir;                 /*!< \brief Gradient dotted with search direction at first Armijo search step (stepsize = 1.0).*/
   su2double GradDotDirOld;              /*!< \brief Gradient dotted with search direction for previous iteration.*/
-  su2double ObjFunc_Store;              /*!< \brief Objective function at old flow, new design.*/
+  su2double ObjFuncStore;              /*!< \brief Objective function at old flow, new design.*/
   
   su2double lb, ub;    /*!< \brief Lower and upper bounds of design variables.*/
   su2double epsilon;   /*!< \brief Estimator for the active set.*/
@@ -80,18 +80,16 @@ protected:
   bool* ActiveSetDV;   /*!< \brief Flag for indices belonging to the active set (lower and upper design bounds are reached).*/
 
   su2double* ConstrFunc;         /*!< \brief Constraint function values.*/
-  su2double* ConstrFunc_Store;   /*!< \brief Constraint function values (stored for line search).*/
-  su2double* ConstrFunc_Old;     /*!< \brief Old constraint function values.*/
+  su2double* ConstrFuncStore;   /*!< \brief Constraint function values (stored for line search).*/
+  su2double* ConstrFuncOld;     /*!< \brief Old constraint function values.*/
   su2double* Lambda;             /*!< \brief Lagrange multipliers for constraint functions.*/
-  su2double* Lambda_Old;         /*!< \brief Old Lagrange multipliers for constraint functions.*/
-  su2double* Lambda_Store;       /*!< \brief Old Lagrange multipliers for constraint functions.*/
-  su2double* Lambda_Tilde;       /*!< \brief Stored Lagrange multipliers for update.*/
-  su2double* Lambda_Tilde_Old;   /*!< \brief Old stored Lagrange multipliers for update.*/
-  su2double* Lambda_Tilde_Store; /*!< \brief Old stored Lagrange multipliers for update.*/
-  su2double** BCheck_Inv;        /*!< \brief Inverse matrix for multiplier update.*/
-  su2double  BCheck_Norm;        /*!< \brief Norm of the matrix for multiplier update.*/
-
-  su2double BFGS_Init;
+  su2double* LambdaOld;         /*!< \brief Old Lagrange multipliers for constraint functions.*/
+  su2double* LambdaStore;       /*!< \brief Old Lagrange multipliers for constraint functions.*/
+  su2double* LambdaTilde;       /*!< \brief Stored Lagrange multipliers for update.*/
+  su2double* LambdaTildeOld;   /*!< \brief Old stored Lagrange multipliers for update.*/
+  su2double* LambdaTildeStore; /*!< \brief Old stored Lagrange multipliers for update.*/
+  su2double** BCheckInv;        /*!< \brief Inverse matrix for multiplier update.*/
+  su2double  BCheckNorm;        /*!< \brief Norm of the matrix for multiplier update.*/
 
 public:
 
@@ -194,9 +192,8 @@ public:
 
   /*!
    * \brief Store gradient dotted with search direction for first Armijo search iteration.
-   * \param[in] design_update - whether a design update is being performed.
    */
-  void StoreGradDotDir(bool design_update);
+  void StoreGradDotDir();
 
   /*!
    * \brief Store gradient dotted with search direction used in previous iteration.
