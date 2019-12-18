@@ -1000,13 +1000,13 @@ void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
     else if(kind == TOTAL_AUGMENTED) {
       AugLagGrad[iDV] = ShiftLagGrad[iDV]
                       + AugLagGradAlpha[iDV]*config->GetOneShotAlpha()
-                      + AugLagGradBeta[iDV]*config->GetOneShotBeta();
+                      + AugLagGradBeta[iDV]*config->GetOneShotBeta()
                       + AugLagGradGamma[iDV]*config->GetOneShotGamma(0);
     }   
     else if(kind == TOTAL_AUGMENTED_OLD) {
       AugLagGrad_Old[iDV] = ShiftLagGrad[iDV]
                           + AugLagGradAlpha[iDV]*config->GetOneShotAlpha()
-                          + AugLagGradBeta[iDV]*config->GetOneShotBeta();
+                          + AugLagGradBeta[iDV]*config->GetOneShotBeta()
                           + AugLagGradGamma[iDV]*config->GetOneShotGamma(0);
     }   
   }
