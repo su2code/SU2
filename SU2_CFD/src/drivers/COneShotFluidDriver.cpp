@@ -268,7 +268,7 @@ void COneShotFluidDriver::RunOneShot(){
         // UpdateLambda(1.0);
         // UpdateLambda(stepsize);
         ComputeDesignVarUpdate(stepsize);
-        StoreGradDotDir(true);
+        StoreGradDotDir();
         if(GradDotDir >= 0) {
           stepsize = 0.0;
           bool_tol = true;
@@ -320,7 +320,7 @@ void COneShotFluidDriver::RunOneShot(){
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
-      StoreGradDotDir(true);
+      StoreGradDotDir();
 
     }
 
@@ -449,7 +449,7 @@ void COneShotFluidDriver::RunOneShot(){
   //   if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
   //     StoreOldGradDotDir();
   //     ComputeDesignVarUpdate(1.0);
-  //     StoreGradDotDir(true);
+  //     StoreGradDotDir();
   //     if(GradDotDirOld < 0 && GradDotDir < 0) {
   //       stepsize0 = max(10.0*tol, min(1.0, 1.01*GradDotDirOld/GradDotDir));
   //     }
