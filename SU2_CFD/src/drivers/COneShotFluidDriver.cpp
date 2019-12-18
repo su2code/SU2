@@ -413,7 +413,6 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->LoadSolution();
 
     /*--- Beta*DeltaBary^T*N_yu ---*/
-    solver[ADJFLOW_SOL]->UpdateStateVariable(config);
     ComputeBetaTerm();
     solver[ADJFLOW_SOL]->SetFiniteDifferenceSens(geometry, config);
     solver[ADJFLOW_SOL]->SetSensitivityLagrangian(geometry, BETA_TERM);
@@ -470,6 +469,8 @@ void COneShotFluidDriver::PrimalDualStep(){
 
   /*--- Note: Unsteady cases not applicable to the one-shot method yet! ---*/
 
+  SetRecording(NONE);
+  solver[ADJFLOW_SOL]->LoadSolution();
   SetRecording(COMBINED);
 
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
@@ -1079,6 +1080,8 @@ void COneShotFluidDriver::ComputeBetaTerm(){
 
   /*--- Store the computational graph of one direct iteration with the conservative variables and the mesh coordinates as input. ---*/
 
+  SetRecording(NONE);
+  solver[ADJFLOW_SOL]->UpdateStateVariable(config);
   SetRecording(COMBINED);
 
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
