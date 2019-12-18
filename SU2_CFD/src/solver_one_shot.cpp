@@ -99,6 +99,7 @@ void COneShotSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      AD::ResetInput(direct_solver->GetNodes()->GetSolution(iPoint)[iVar]);
       AD::ResetInput(direct_solver->GetNodes()->GetSolution_Store(iPoint)[iVar]);
       AD::ResetInput(direct_solver->GetNodes()->GetSolution_Save(iPoint)[iVar]);
     }
