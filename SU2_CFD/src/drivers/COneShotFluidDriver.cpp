@@ -251,7 +251,7 @@ void COneShotFluidDriver::RunOneShot(){
           stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
         }
         else if(ArmijoFlag == 2) {
-          stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize*1.8, 1.0);
+          stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.8, stepsize*9.0), 1.0);
         }
         if(stepsize < tol*stepsize0) {
           stepsize = tol;
