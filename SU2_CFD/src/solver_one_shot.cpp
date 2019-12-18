@@ -324,22 +324,22 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, 
   for(iConstr = 0; iConstr < nConstr; iConstr++) {
     su2double gamma = 1.01/val_bcheck_norm;
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (val_constr_func[iConstr] <= 0.0)) {
-      // gamma = max(min(max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr)), config->GetOneShotGammaMax()), 1.0E-6);
+      // gamma = max(min(max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma()), config->GetOneShotGammaMax()), 1.0E-6);
     // }
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && 
     //    (val_constr_func[iConstr] < 0.0) &&
-    //    (val_constr_func[iConstr] + val_lambda[iConstr]/config->GetOneShotGamma(iConstr) > 0.0)) {
+    //    (val_constr_func[iConstr] + val_lambda[iConstr]/config->GetOneShotGamma() > 0.0)) {
     // // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && 
     //    // (val_constr_func[iConstr] < 0.0)){
-    //    gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
+    //    gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma());
     // }
-      // gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma(iConstr));
+      // gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma());
     // if(config->GetInnerIter() == config->GetOneShotStart()) {
       gamma = max(min(gamma, 1.0E5), 1.0E-5);
       config->SetOneShotGamma(gamma, iConstr);
     // }
     // else {
-    //   gamma = min(max(gamma, 0.5*config->GetOneShotGamma(iConstr)), 2.0*config->GetOneShotGamma(iConstr));
+    //   gamma = min(max(gamma, 0.5*config->GetOneShotGamma()), 2.0*config->GetOneShotGamma());
     //   gamma = max(min(gamma, config->GetOneShotGammaMax()), 1.0E-8);
     //   config->SetOneShotGamma(gamma, iConstr);
     // }

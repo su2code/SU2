@@ -797,7 +797,6 @@ void CConfig::SetPointersNull(void) {
   Mesh_Box_Size = NULL;
 
   /*--- Constraint vars for one-shot ---*/
-  One_Shot_Gamma  = NULL;
   Multiplier_Start  = NULL;
   Multiplier_Factor = NULL;
   Multiplier_Scale  = NULL;
@@ -2507,7 +2506,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("ONE_SHOT_BETA", One_Shot_Beta, 2.0);
 
   /*!\brief ONE_SHOT_SIGMA \n DESCRIPTION: Factor for third additional term in augmented Lagrangian \ingroup Config*/
-  addDoubleListOption("ONE_SHOT_GAMMA", nConstrHelp, One_Shot_Gamma);
+  addDoubleOption("ONE_SHOT_GAMMA", One_Shot_Gamma, 2.0);
 
   /*!\brief ONE_SHOT_SIGMA \n DESCRIPTION: Factor for minimum rate of increase of gamma penalty coefficient \ingroup Config*/
   addDoubleOption("ONE_SHOT_GAMMA_RATE", One_Shot_Gamma_Rate, 1.1);
@@ -3258,12 +3257,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if(One_Shot_Start < 1) One_Shot_Start = 1;
 
   /*--- Allocate constraint arrays if running one-shot optimization ---*/
-  if(nConstr!=0 && One_Shot_Gamma == NULL){
-    One_Shot_Gamma = new su2double[nConstr];
-    for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
-      One_Shot_Gamma[iConstr] = 1.0E-8;
-    }
-  }
   if(nConstr!=0 && Kind_ConstrFuncType == NULL){
     Kind_ConstrFuncType = new unsigned short[nConstr];
     for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
