@@ -520,10 +520,6 @@ void COneShotFluidDriver::PrimalDualStep(){
 void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
   unsigned long InnerIter = config->GetInnerIter();
 
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   AD::Reset();
 
   /*--- Prepare for recording by resetting the solution to the initial converged solution---*/
@@ -1232,12 +1228,6 @@ void COneShotFluidDriver::ProjectMeshSensitivities(){
 
 void COneShotFluidDriver::SetAdj_ConstrFunction(su2double *seeding){
 
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     if (rank == MASTER_NODE){
       SU2_TYPE::SetDerivative(ConstrFunc[iConstr], SU2_TYPE::GetValue(seeding[iConstr]));
@@ -1348,10 +1338,6 @@ void COneShotFluidDriver::SetObjFunction(bool registering){
 
 void COneShotFluidDriver::SetConstrFunction(bool registering){
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   su2double FunctionValue = 0.0;
 
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
