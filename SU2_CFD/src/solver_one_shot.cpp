@@ -97,11 +97,10 @@ void COneShotSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
   /*--- For the one-shot solver the solution is not reset in each iteration step to the initial solution ---*/
 
-  if (time_n1_needed) {
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        AD::ResetInput(direct_solver->GetNodes()->GetSolution_Store(iPoint)[iVar]);
-      }
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      AD::ResetInput(direct_solver->GetNodes()->GetSolution_Store(iPoint)[iVar]);
+      AD::ResetInput(direct_solver->GetNodes()->GetSolution_Save(iPoint)[iVar]);
     }
   }
 
