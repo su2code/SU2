@@ -3,24 +3,14 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -84,8 +74,7 @@ void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolv
 
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
-  for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++)
-    struct_solution->node[iPoint]->Clear_FlowTraction();
+  struct_solution->GetNodes()->Clear_FlowTraction();
 
   Preprocess(flow_config);
 
@@ -100,9 +89,9 @@ void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolv
   ModAmpl = struct_solution->Compute_LoadCoefficient(CurrentTime, Ramp_Time, struct_config);
 
   Physical_Constants[1] = ModAmpl;
-  
+
   /*--- For static FSI, we cannot apply the ramp like this ---*/
-  if ((flow_config->GetUnsteady_Simulation() == STEADY) && (struct_config->GetDynamic_Analysis() == STATIC)){
+  if ((!flow_config->GetTime_Domain())){
     Physical_Constants[1] = 1.0;
     if (Ramp_Load){
       CurrentTime = static_cast<su2double>(struct_config->GetOuterIter());
@@ -155,7 +144,7 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
   Point_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNode();
   // Get the normal at the vertex: this normal goes inside the fluid domain.
   Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
-  
+
   if (consistent_interpolation)
     for (iVar = 0; iVar < nVar; ++iVar) area += Normal_Flow[iVar]*Normal_Flow[iVar];
   else
@@ -164,7 +153,7 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
   // Retrieve the values of pressure
 
-  Pn = flow_solution->node[Point_Flow]->GetPressure();
+  Pn = flow_solution->GetNodes()->GetPressure(Point_Flow);
 
   // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
   for (iVar = 0; iVar < nVar; iVar++)
@@ -174,11 +163,11 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
   if ((incompressible || compressible) && viscous_flow) {
 
-    Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
+    Viscosity = flow_solution->GetNodes()->GetLaminarViscosity(Point_Flow);
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0 ; jVar < nVar; jVar++) {
-        Grad_Vel[iVar][jVar] = flow_solution->node[Point_Flow]->GetGradient_Primitive(iVar+1, jVar);
+        Grad_Vel[iVar][jVar] = flow_solution->GetNodes()->GetGradient_Primitive(Point_Flow, iVar+1, jVar);
       }
     }
 
@@ -212,6 +201,6 @@ void CFlowTractionInterface::SetTarget_Variable(CSolver *fea_solution, CGeometry
 
   /*--- Add to the Flow traction. If nonconservative interpolation is in use,
         this is a stress and is integrated by the structural solver later on. ---*/
-  fea_solution->node[Point_Struct]->Add_FlowTraction(Target_Variable);
+  fea_solution->GetNodes()->Add_FlowTraction(Point_Struct,Target_Variable);
 
 }

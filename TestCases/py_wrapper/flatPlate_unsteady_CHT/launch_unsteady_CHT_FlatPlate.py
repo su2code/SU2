@@ -3,7 +3,7 @@
 ## \file launch_unsteady_CHT_FlatPlate.py
 #  \brief Python script to launch SU2_CFD with customized unsteady boundary conditions using the Python wrapper.
 #  \author David Thomas
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.0 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -104,7 +104,7 @@ def main():
     elif (options.nZone == 2) and (options.fsi):
       SU2Driver = pysu2.CFSIDriver(options.filename, options.nZone, comm);
     else:
-      SU2Driver = pysu2.CFluidDriver(options.filename, options.nZone, comm);
+      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
     if options.with_MPI == True:
@@ -139,8 +139,8 @@ def main():
 
   # Retrieve some control parameters from the driver
   deltaT = SU2Driver.GetUnsteady_TimeStep()
-  TimeIter = SU2Driver.GetExtIter()
-  nTimeIter = SU2Driver.GetnExtIter()
+  TimeIter = SU2Driver.GetTime_Iter()
+  nTimeIter = SU2Driver.GetnTimeIter()
   time = TimeIter*deltaT
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
@@ -152,7 +152,7 @@ def main():
 
   while (TimeIter < nTimeIter):
     # Time iteration preprocessing
-    SU2Driver.PreprocessExtIter(TimeIter)
+    SU2Driver.Preprocess(TimeIter)
     # Define the homogeneous unsteady wall temperature on the structure (user defined)
     WallTemp = 293.0 + 57.0*sin(2*pi*time)
     # Set this temperature to all the vertices on the specified CHT marker

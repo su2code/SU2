@@ -2,24 +2,14 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #include "../include/SU2_GEO.hpp"
 using namespace std;
@@ -61,7 +52,6 @@ int main(int argc, char *argv[]) {
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   vector<su2double> Xcoord_Fan, Ycoord_Fan, Zcoord_Fan;
   char config_file_name[MAX_STRING_SIZE];
- 	char *cstr;
   bool Local_MoveSurface, MoveSurface = false;
   ofstream Gradient_file, ObjFunc_file;
   int rank, size;
@@ -120,7 +110,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_GEO, nZone, true);
+    config_container[iZone] = new CConfig(config_file_name, SU2_GEO, true);
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
     
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
@@ -152,6 +142,8 @@ int main(int argc, char *argv[]) {
     geometry_container[iZone]->SetBoundaries(config_container[iZone]);
     
   }
+  
+  bool tabTecplot = config_container[ZONE_0]->GetTabular_FileFormat() == TAB_TECPLOT;
   
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
   
@@ -507,18 +499,21 @@ int main(int argc, char *argv[]) {
     }
     
     /*--- Write the objective function in a external file ---*/
-    
-    cstr = new char [config_container[ZONE_0]->GetObjFunc_Value_FileName().size()+1];
-    strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Value_FileName().c_str());
-    ObjFunc_file.open(cstr, ios::out);
-    ObjFunc_file << "TITLE = \"SU2_GEO Evaluation\"" << endl;
+    string filename = config_container[ZONE_0]->GetObjFunc_Value_FileName();
+    unsigned short lastindex = filename.find_last_of(".");
+    filename = filename.substr(0, lastindex);
+    if (tabTecplot) filename += ".dat";
+    else filename += ".csv";
+    ObjFunc_file.open(filename.c_str(), ios::out);
+    if (tabTecplot) ObjFunc_file << "TITLE = \"SU2_GEO Evaluation\"" << endl;
     
     if (geometry_container[ZONE_0]->GetnDim() == 2) {
-      ObjFunc_file << "VARIABLES = \"AIRFOIL_AREA\",\"AIRFOIL_THICKNESS\",\"AIRFOIL_CHORD\",\"AIRFOIL_LE_RADIUS\",\"AIRFOIL_TOC\",\"AIRFOIL_ALPHA\"";
+      if (tabTecplot) ObjFunc_file << "VARIABLES =//" << endl;
+      ObjFunc_file << "\"AIRFOIL_AREA\",\"AIRFOIL_THICKNESS\",\"AIRFOIL_CHORD\",\"AIRFOIL_LE_RADIUS\",\"AIRFOIL_TOC\",\"AIRFOIL_ALPHA\"";
     }
     else if (geometry_container[ZONE_0]->GetnDim() == 3) {
       
-      ObjFunc_file << "VARIABLES = ";
+      if (tabTecplot) ObjFunc_file << "VARIABLES = //" << endl;
       
       if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
        	ObjFunc_file << "\"FUSELAGE_VOLUME\",\"FUSELAGE_WETTED_AREA\",\"FUSELAGE_MIN_WIDTH\",\"FUSELAGE_MAX_WIDTH\",\"FUSELAGE_MIN_WATERLINE_WIDTH\",\"FUSELAGE_MAX_WATERLINE_WIDTH\",\"FUSELAGE_MIN_HEIGHT\",\"FUSELAGE_MAX_HEIGHT\",\"FUSELAGE_MAX_CURVATURE\",";
@@ -558,7 +553,8 @@ int main(int argc, char *argv[]) {
       
     }
     
-    ObjFunc_file << "\nZONE T= \"Geometrical variables (value)\"" << endl;
+    if (tabTecplot) ObjFunc_file << "\nZONE T= \"Geometrical variables (value)\"" << endl;
+    else ObjFunc_file << endl;
     
     if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
       if (geometry_container[ZONE_0]->GetnDim() == 3) {
@@ -609,9 +605,12 @@ int main(int argc, char *argv[]) {
     
     /*--- Write the gradient in a external file ---*/
     if (rank == MASTER_NODE) {
-      cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
-      strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
-      Gradient_file.open(cstr, ios::out);
+      string filename = config_container[ZONE_0]->GetObjFunc_Grad_FileName();
+      unsigned short lastindex = filename.find_last_of(".");
+      filename = filename.substr(0, lastindex);
+      if (tabTecplot) filename += ".dat";
+      else filename += ".csv";
+      Gradient_file.open(filename.c_str(), ios::out);
     }
     
     for (iDV = 0; iDV < config_container[ZONE_0]->GetnDV(); iDV++) {
@@ -1133,15 +1132,16 @@ int main(int argc, char *argv[]) {
         
         
         if (iDV == 0) {
-          Gradient_file << "TITLE = \"SU2_GEO Gradient\"" << endl;
+          if (tabTecplot) Gradient_file << "TITLE = \"SU2_GEO Gradient\"" << endl;
+          if (tabTecplot) Gradient_file << "VARIABLES = //" << endl;
           
           if (geometry_container[ZONE_0]->GetnDim() == 2) {
-            Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",\"AIRFOIL_AREA\",\"AIRFOIL_THICKNESS\",\"AIRFOIL_CHORD\",\"AIRFOIL_LE_RADIUS\",\"AIRFOIL_TOC\",\"AIRFOIL_ALPHA\"";
+            Gradient_file << "\"DESIGN_VARIABLE\",\"AIRFOIL_AREA\",\"AIRFOIL_THICKNESS\",\"AIRFOIL_CHORD\",\"AIRFOIL_LE_RADIUS\",\"AIRFOIL_TOC\",\"AIRFOIL_ALPHA\"";
           }
           else if (geometry_container[ZONE_0]->GetnDim() == 3) {
             
             if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
-              Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
+              Gradient_file << "\"DESIGN_VARIABLE\",";
               Gradient_file << "\"FUSELAGE_VOLUME\",\"FUSELAGE_WETTED_AREA\",\"FUSELAGE_MIN_WIDTH\",\"FUSELAGE_MAX_WIDTH\",\"FUSELAGE_MIN_WATERLINE_WIDTH\",\"FUSELAGE_MAX_WATERLINE_WIDTH\",\"FUSELAGE_MIN_HEIGHT\",\"FUSELAGE_MAX_HEIGHT\",\"FUSELAGE_MAX_CURVATURE\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_LENGTH\",";
@@ -1153,7 +1153,7 @@ int main(int argc, char *argv[]) {
               }
             }
             else if (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
-              Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
+              Gradient_file << "\"DESIGN_VARIABLE\",";
               Gradient_file << "\"NACELLE_VOLUME\",\"NACELLE_MIN_THICKNESS\",\"NACELLE_MAX_THICKNESS\",\"NACELLE_MIN_CHORD\",\"NACELLE_MAX_CHORD\",\"NACELLE_MIN_LE_RADIUS\",\"NACELLE_MAX_LE_RADIUS\",\"NACELLE_MIN_TOC\",\"NACELLE_MAX_TOC\",\"NACELLE_OBJFUN_MIN_TOC\",\"NACELLE_MAX_TWIST\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_THICKNESS\",";
@@ -1166,7 +1166,7 @@ int main(int argc, char *argv[]) {
               }
             }
             else {
-              Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
+              Gradient_file << "\"DESIGN_VARIABLE\",";
               Gradient_file << "\"WING_VOLUME\",\"WING_MIN_THICKNESS\",\"WING_MAX_THICKNESS\",\"WING_MIN_CHORD\",\"WING_MAX_CHORD\",\"WING_MIN_LE_RADIUS\",\"WING_MAX_LE_RADIUS\",\"WING_MIN_TOC\",\"WING_MAX_TOC\",\"WING_OBJFUN_MIN_TOC\",\"WING_MAX_TWIST\",\"WING_MAX_CURVATURE\",\"WING_MAX_DIHEDRAL\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_THICKNESS\",";
@@ -1181,8 +1181,8 @@ int main(int argc, char *argv[]) {
             
           }
           
-          Gradient_file << "\nZONE T= \"Geometrical variables (gradient)\"" << endl;
-          
+          if (tabTecplot) Gradient_file << "\nZONE T= \"Geometrical variables (gradient)\"" << endl;
+          else Gradient_file << endl;
         }
         
         Gradient_file << (iDV) <<",";

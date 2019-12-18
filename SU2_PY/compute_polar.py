@@ -3,30 +3,20 @@
 ## \file Compute_polar.py
 #  \brief Python script for performing polar sweep.
 #  \author E Arad (based on T. Lukaczyk and  F. Palacios script)
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -50,7 +40,7 @@
 from __future__ import print_function
 
 # imports
-import os, sys
+import os, sys, shutil
 from optparse import OptionParser
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
@@ -68,10 +58,10 @@ def main():
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-i", "--iterations", dest="iterations", default=-1,
                       help="number of ITERATIONS", metavar="ITERATIONS")
-    parser.add_option("-d", "--dimmension", dest="geomDim", default=2,
+    parser.add_option("-d", "--dimension", dest="geomDim", default=2,
                       help="Geometry dimension (2 or 3)", metavar="geomDim")
     parser.add_option("-w", "--Wind", action="store_true", dest="Wind", default=False,
-                      help=" Wind system (default is body system")
+                      help=" Wind system (default is body system)")
     parser.add_option("-v", "--Verbose", action="store_true", dest="verbose", default=False,
                       help=" Verbose printout (if activated)")
 
@@ -164,7 +154,7 @@ def main():
     # prepare config
     config.NUMBER_PART = options.partitions
     if options.iterations > 0:
-        config.EXT_ITER = options.iterations
+        config.ITER = options.iterations
     config.NZONES = 1
 
     # find solution files if they exist
@@ -396,10 +386,10 @@ def main():
                 # if caseName exists copy the restart file from it for run continuation
                 # Continue from previous sweep point if this is not he first
                 if os.path.isdir(caseName):
-                    command = 'cp '+caseName+'/'+config.SOLUTION_FLOW_FILENAME+' .'
+                    command = 'cp '+caseName+'/'+config.SOLUTION_FILENAME+' .'
                     if options.verbose:
                         print(command)
-                    os.system(command)
+                    shutil.copy2(caseName+'/'+config.SOLUTION_FILENAME, os.getcwd())
                     konfig.RESTART_SOL = 'YES'
                 else:
                     konfig.RESTART_SOL = 'NO'
@@ -407,7 +397,7 @@ def main():
             else:
                 konfig.RESTART_SOL = 'YES'
             if  konfig.RESTART_SOL == 'YES':
-                ztate.FILES.DIRECT = config.SOLUTION_FLOW_FILENAME
+                ztate.FILES.DIRECT = config.SOLUTION_FILENAME
             # run su2
             if options.Wind:
                 drag = SU2.eval.func('DRAG', konfig, ztate)
@@ -463,8 +453,8 @@ def main():
             f.write(output)
             # save data
             SU2.io.save_data('results.pkl', results)
-            os.system('cp results.pkl  DIRECT/.')
-            os.system('cp '+config.SOLUTION_FLOW_FILENAME+' DIRECT/.')
+            shutil.copy2('results.pkl', 'DIRECT')
+            shutil.copy2(config.SOLUTION_FILENAME, 'DIRECT')
 
             if os.path.isdir(caseName):
                 command = 'cat '+caseName+\
@@ -473,21 +463,21 @@ def main():
                 if options.verbose:
                     print(command)
                 os.system(command)
-                os.system('rm -R '+caseName)
+                shutil.rmtree(caseName)
 
             command = 'cp -p -R DIRECT '+caseName
             if options.verbose:
                 print(command)
-            os.system(command)
+            shutil.copytree('DIRECT', caseName)
 
     # Close open file
     f.close()
     if os.path.isdir('DIRECT'):
-        os.system('rm -R DIRECT')
-    if os.path.isfile(config.SOLUTION_FLOW_FILENAME):
-        os.system('rm '+config.SOLUTION_FLOW_FILENAME)
+        shutil.rmtree('DIRECT')
+    if os.path.isfile(config.SOLUTION_FILENAME):
+        os.remove(config.SOLUTION_FILENAME)
     if os.path.isfile('results.pkl'):
-        os.system('rm results.pkl')
+        os.remove('results.pkl')
     print('Post sweep cleanup completed')
 
     #         sys.exit(0)

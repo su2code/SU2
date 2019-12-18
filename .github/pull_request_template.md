@@ -15,3 +15,4 @@
 - [ ] My contribution generates no new compiler warnings (try with the '-Wall -Wextra -Wno-unused-parameter -Wno-empty-body' compiler flags).
 - [ ] My contribution is commented and consistent with SU2 style.
 - [ ] I have added a test case that demonstrates my contribution, if necessary.
+- [ ] I have updated appropriate documentation (Tutorials, Docs Page, config_template.cpp) , if necessary.

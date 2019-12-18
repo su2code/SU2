@@ -3,24 +3,14 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,7 +34,7 @@
  * \class CMultizoneDriver
  * \brief Class for driving zone-specific iterations.
  * \author R. Sanchez, O. Burghardt
- * \version 6.0.1 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CMultizoneDriver : public CDriver {
 protected:
@@ -126,17 +116,19 @@ public:
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
    */
-  void DynamicMeshUpdate(unsigned long ExtIter);
+  void DynamicMeshUpdate(unsigned long TimeIter);
 
   /*!
    * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multigrid structure.
    */
-  void DynamicMeshUpdate(unsigned short val_iZone, unsigned long ExtIter);
+  void DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter);
 
   /*!
    * \brief Routine to provide all the desired physical transfers between the different zones during one iteration.
    * \return Boolean that determines whether the mesh needs to be updated for this particular transfer
    */
   bool Transfer_Data(unsigned short donorZone, unsigned short targetZone);
+
+  bool Monitor(unsigned long TimeIter);
 
 };

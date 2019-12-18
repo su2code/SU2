@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 Python framework
 # \author M. Colonno, T. Economon, F. Palacios, T. Lukaczyk
-# \version 6.2.0 "Falcon"
+# \version 7.0.0 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -45,7 +45,6 @@ bin_SCRIPTS = \
     parallel_computation.py \
     parallel_computation_fsi.py \
     package_tests.py \
-    patient_designspace.py \
     shape_optimization.py \
     merge_solution.py \
     set_ffd_design_var.py \
@@ -71,13 +70,13 @@ nobase_dist_mypkg_DATA= \
     SU2/io/redirect.py \
     SU2/io/state.py \
     SU2/io/tools.py \
+    SU2/io/historyMap.py \
     SU2/io/__init__.py \
     SU2/mesh/adapt.py \
     SU2/mesh/tools.py \
     SU2/mesh/__init__.py \
     SU2/opt/project.py \
     SU2/opt/scipy_tools.py \
-    SU2/opt/server.py \
     SU2/opt/__init__.py \
     SU2/run/adaptation.py \
     SU2/run/adjoint.py \
@@ -97,7 +96,6 @@ nobase_dist_mypkg_DATA= \
     SU2/util/ordered_dict.py \
     SU2/util/plot.py \
     SU2/util/polarSweepLib.py \
-    SU2/util/pyCppTap.py \
     SU2/util/switch.py \
     SU2/util/which.py \
     SU2/util/__init__.py \

@@ -1,12 +1,17 @@
-check_dir = run_command('test', '-d', 'boost')
+check_dir = run_command(python, 
+                        script_path / 'check_dir.py',
+                        'boost')
 if check_dir.returncode() != 0
   message('Extracting boost ...')
-  extract_boost = run_command('tar', '-xzf', 'boost.tar.gz', '-C', './')
+  extract_boost = run_command(python, 
+                              script_path / 'extract_file.py',
+                              'boost.tar.gz', 
+                              meson.current_source_dir(), check: true)
 else
   message('Boost sources found.')
 endif
 
-if mpi_dep[0].found() and mpi_dep[1].found()
+if mpi
   subdir('teciompisrc')
   su2_deps += teciompi_dep
   su2_cpp_args += ['-DHAVE_TECIO', '-DTECIOMPI']

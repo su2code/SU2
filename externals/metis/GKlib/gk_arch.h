@@ -51,7 +51,7 @@
 /*************************************************************************
 * Architecture-specific modifications
 **************************************************************************/
-#ifdef WIN32
+#if defined WIN32 || defined(_MSC_VER)
 typedef ptrdiff_t ssize_t;
 #endif
 
@@ -60,7 +60,11 @@ typedef ptrdiff_t ssize_t;
 #define PTRDIFF_MAX  INT64_MAX
 #endif
 
-#ifdef __MSC__
+#if (__STDC_VERSION__ >= 199901L)
+#define C99
+#endif
+
+#if defined __MSC__ && defined C99
 /* MSC does not have rint() function */
 #define rint(x) ((int)((x)+0.5))
 

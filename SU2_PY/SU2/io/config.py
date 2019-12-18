@@ -3,30 +3,20 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -407,14 +397,25 @@ def read_config(filename):
             # int parameters
             if case("NUMBER_PART")            or\
                case("AVAILABLE_PROC")         or\
-               case("EXT_ITER")               or\
+               case("ITER")               or\
                case("TIME_INSTANCES")         or\
                case("UNST_ADJOINT_ITER")      or\
                case("ITER_AVERAGE_OBJ")       or\
+               case("INNER_ITER")             or\
+               case("OUTER_ITER")             or\
+               case("TIME_ITER")             or\
                case("ADAPT_CYCLES")           :
                 data_dict[this_param] = int(this_value)
                 break                
             
+            if case("OUTPUT_FILES"):
+                data_dict[this_param] = this_value.strip("()").split(",")
+                data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
+                break
+            if case("HISTORY_OUTPUT"):
+                data_dict[this_param] = this_value.strip("()").split(",")
+                data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
+                break
             
             # unitary design variable definition
             if case("DEFINITION_DV"):
@@ -720,7 +721,18 @@ def read_config(filename):
         Outlet_Value_List +=  str(Outlet_Value)
       Outlet_Value_List += ")"
       data_dict['MULTIPOINT_OUTLET_VALUE'] = Outlet_Value_List
-      
+
+    if 'MULTIPOINT_MESH_FILENAME' not in data_dict:
+      Mesh_Filename = data_dict['MESH_FILENAME']
+      Mesh_List = "("
+      for i in range(multipoints):
+        if i != 0: Mesh_List +=  ", "
+        Mesh_List +=  str(Mesh_Filename)
+      Mesh_List += ")"
+      data_dict['MULTIPOINT_MESH_FILENAME'] = Mesh_List  
+
+    if 'HISTORY_OUTPUT' not in data_dict:
+        data_dict['HISTORY_OUTPUT'] = ['ITER', 'RMS_RES']
 
     #
     # Default values for optimization parameters (needed for some eval functions
@@ -831,7 +843,24 @@ def write_config(filename,param_dict):
                         output_file.write(", ")
                 output_file.write(" )") 
                 break                
+            if case("OUTPUT_FILES"):
+                n_lists = len(new_value)
+                output_file.write("(")
+                for i_value in range(n_lists):
+                    output_file.write(new_value[i_value])
+                    if i_value+1 < n_lists:
+                        output_file.write(", ")
+                output_file.write(")")
+                break
             
+            if case("HISTORY_OUTPUT"):
+                n_lists = len(new_value)
+                for i_value in range(n_lists):
+                    output_file.write(new_value[i_value])
+                    if i_value+1 < n_lists:
+                        output_file.write(", ")
+                break
+
             # semicolon delimited lists of comma delimited lists
             if case("DV_PARAM") :
 
@@ -868,7 +897,10 @@ def write_config(filename,param_dict):
             if case("TIME_INSTANCES")         : pass
             if case("AVAILABLE_PROC")         : pass
             if case("UNST_ADJOINT_ITER")      : pass
-            if case("EXT_ITER")               :
+            if case("ITER")              or\
+               case("TIME_ITER")         or\
+               case("INNER_ITER")        or\
+               case("OUTER_ITER"): 
                 output_file.write("%i" % new_value)
                 break
                         

@@ -3,24 +3,14 @@
  * \brief Declaration and inlines of the class to compute the deformation of
  *        the volumetric numerical grid using the linear elasticity solver.
  * \author Ruben Sanchez, based on CVolumetricMovement developments (F. Palacios, A. Bueno, T. Economon, S. Padron)
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -116,7 +106,7 @@ public:
    * \param[in] iDim - Dimension required.
    */
   inline su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {
-    return node[indexNode]->GetMesh_Coord(iDim);
+    return nodes->GetMesh_Coord(indexNode,iDim);
   }
 
   /*!
@@ -155,12 +145,6 @@ public:
   void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config);
 
   /*!
-   * \brief Set the value of the max residual and BGS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Move the mesh in time.
    */
   void SetDualTime_Mesh(void);
@@ -182,11 +166,15 @@ public:
   void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Store the old displacement before a new deformation is done.
+   * \brief Get minimun volume in the mesh
+   * \return
    */
-  inline void SetSolution_Old(void){
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint]->Set_OldSolution();
-  }
+  su2double GetMinimum_Volume(){return MinVolume_Curr;}
+
+  /*!
+   * \brief Get maximum volume in the mesh
+   * \return
+   */
+  su2double GetMaximum_Volume(){return MaxVolume_Curr;}
 
 };

@@ -2,24 +2,14 @@
  * \file CMeshVariable.cpp
  * \brief Definition of the variables for mesh motion using a pseudo-elastic approach.
  * \author Ruben Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,56 +25,38 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "../../include/variables/CMeshVariable.hpp"
 
-CMeshVariable::CMeshVariable(const su2double *val_coor, unsigned short val_nDim, CConfig *config) : CVariable(val_nDim, config) {
-
-  unsigned short iDim;
-
-  /*--- Initialize pointers to NULL ---*/
-  Mesh_Coord       = nullptr;
-
-  Solution_Old     = nullptr;
-
-  Solution_time_n  = nullptr;
-  Solution_time_n1 = nullptr;
+CMeshVariable::CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
+  CVariable(npoint, ndim, config) {
 
   /*--- Booleans that determine the kind of problems ---*/
   bool time_domain = config->GetTime_Domain();
-  bool multizone = config->GetMultizone_Problem();
 
   /*--- Store the dimensionality of the problem ---*/
-  nDim = val_nDim;
+  nDim = ndim;
 
   /*--- Initalize the variables that will always be there in a problem with moving mesh ---*/
-  Mesh_Coord    = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++){
-    Mesh_Coord[iDim]    = val_coor[iDim];
-  }
-
-  /*--- Initialize the variables necessary when the problem is multizone ---*/
-  if (multizone){
-    Solution_Old    = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++){
-      Solution_Old[iDim]    = 0.0;
-    }
-  }
+  Mesh_Coord.resize(nPoint,nDim) = su2double(0.0);
+  WallDistance.resize(nPoint) = su2double(1e-9);
 
   /*--- Initialize the variables necessary when the problem is time domain ---*/
-  if (time_domain){
-    Solution_time_n    = new su2double [nDim];
-    Solution_time_n1   = new su2double [nDim];
-
-    for (iDim = 0; iDim < nDim; iDim++){
-      Solution_time_n[iDim]    = 0.0;
-      Solution_time_n1[iDim]   = 0.0;
-    }
+  if (time_domain) {
+    Solution_time_n.resize(nPoint,nDim) = su2double(0.0);
+    Solution_time_n1.resize(nPoint,nDim) = su2double(0.0);
   }
-
 }
 
-CMeshVariable::~CMeshVariable(void) {
-
-  if (Mesh_Coord != nullptr) delete [] Mesh_Coord;
-
+void CMeshVariable::Register_MeshCoord(bool input) {
+  if (input) {
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned long iDim = 0; iDim < nDim; iDim++)
+        AD::RegisterInput(Mesh_Coord(iPoint,iDim));
+  }
+  else {
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned long iDim = 0; iDim < nDim; iDim++)
+        AD::RegisterOutput(Mesh_Coord(iPoint,iDim));
+  }
 }
