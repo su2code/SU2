@@ -56,7 +56,6 @@ protected:
   unsigned long OneShotIter; /*!< \brief Iterations of One-Shot solver, after PrimalDual. */
 
   su2double* Gradient;                  /*!< \brief Vector to store gradient obtained from projection .*/
-  su2double* Gradient_Old;              /*!< \brief Vector to store gradient obtained from projection (old value) .*/
   su2double* ShiftLagGrad;              /*!< \brief Saved gradient N_u of the shifted Lagrangian .*/
   su2double* DesignVarUpdate;           /*!< \brief Update of the design variable Delta u = u_{k+1} - u_k .*/
   su2double* SearchDirection;           /*!< \brief Search direction for optimization.*/

@@ -52,8 +52,6 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
   nConstr = config->GetnConstr();
 
   Gradient = new su2double[nDV_Total];
-  Gradient_Old = new su2double[nDV_Total];
-
   ShiftLagGrad = new su2double[nDV_Total];
 
   AugLagGrad = new su2double[nDV_Total];
@@ -87,7 +85,6 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
 
   for (unsigned short iDV = 0; iDV  < nDV_Total; iDV++){
     Gradient[iDV] = 0.0;
-    Gradient_Old[iDV] = 0.0;
     ShiftLagGrad[iDV] = 0.0;
     AugLagGrad[iDV] = 0.0;
     AugLagGradAlpha[iDV] = 0.0;
@@ -149,7 +146,6 @@ COneShotFluidDriver::~COneShotFluidDriver(void){
   }
   delete [] BFGS_Inv;
   delete [] Gradient;
-  delete [] Gradient_Old;
   delete [] ShiftLagGrad;
 
   delete [] AugLagGrad;
