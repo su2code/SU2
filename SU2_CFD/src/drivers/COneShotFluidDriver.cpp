@@ -107,9 +107,9 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
   }
 
   for (unsigned short iConstr = 0; iConstr  < nConstr; iConstr++){
-    ConstrFunc[iConstr] = 0.0;
-    ConstrFunc_Store[iConstr] = 0.0;
-    ConstrFunc_Old[iConstr] = 0.0;
+    ConstrFunc[iConstr] = -1.0E-16;
+    ConstrFunc_Store[iConstr] = -1.0E-16;
+    ConstrFunc_Old[iConstr] = -1.0E-16;
     Lambda[iConstr] = 0.0;
     Lambda_Old[iConstr] = 0.0;
     Lambda_Store[iConstr] = 0.0;
