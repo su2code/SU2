@@ -856,7 +856,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool design_update){
       /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
       GradDotDir += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
       /*--- AugLagGrad is the gradient at the old iterate. ---*/
-      // GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+      // GradDotDir += DesignVarUpdate[siDV]*AugLagGrad[iDV];
     }
   }
 }
@@ -1444,7 +1444,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
     const su2double dh = ConstrFunc[iConstr]-ConstrFunc_Old[iConstr];
     const su2double hdh = ConstrFunc[iConstr]*dh;
     // const bool active = (ConstrFunc_Store[iConstr] + Lambda_Old[iConstr]/gamma > 0.);
-    const bool active = (ConstrFunc_Old[iConstr] > 0.);
+    const bool active = (ConstrFunc_Store[iConstr] > 0.);
     // const bool active = (Lambda_Tilde_Old[iConstr] > 0.);
 
     // /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
