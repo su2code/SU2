@@ -2071,16 +2071,10 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
           iPoint = bound[iMarker][iElem]->GetNode(iNode);
           jPoint = bound[iMarker][iElem]->GetNode(jNode);
 
-          for (jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
-            jPoint = bound[iMarker][iElem]->GetNode(jNode);
-            /*--- CrossProduct concept is delicated because it allows triangles where only one side is divided by a plane.
-             that is going against the concept that all the triangles are divided twice  and causes probelms because
-             Xcoord_Index0.size() > Xcoord_Index1.size()! ---*/
-
-            if ((jPoint > iPoint) && (CrossProduct >= 0.0)
-                && ((AveXCoord > MinXCoord) && (AveXCoord < MaxXCoord))
-                && ((AveYCoord > MinYCoord) && (AveYCoord < MaxYCoord))
-                && ((AveZCoord > MinZCoord) && (AveZCoord < MaxZCoord))) {
+          if ((CrossProduct >= 0.0)
+              && ((AveXCoord > MinXCoord) && (AveXCoord < MaxXCoord))
+              && ((AveYCoord > MinYCoord) && (AveYCoord < MaxYCoord))
+              && ((AveZCoord > MinZCoord) && (AveZCoord < MaxZCoord))) {
 
             Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;  Variable_P0 = 0.0;
             Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;  Variable_P1 = 0.0;
