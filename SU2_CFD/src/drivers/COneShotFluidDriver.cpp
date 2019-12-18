@@ -133,7 +133,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
 
   /*---- calculate line search parameter ----*/
   CWolfeOne= 1E-4;
-  CWolfeTwo= 1E-1;
+  CWolfeTwo= 1.0-CWolfeOne;
 
   grid_movement[ZONE_0][INST_0] = new CVolumetricMovement(geometry, config);
   surface_movement[ZONE_0]      = new CSurfaceMovement();
