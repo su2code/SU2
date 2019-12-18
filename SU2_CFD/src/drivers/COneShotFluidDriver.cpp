@@ -332,7 +332,7 @@ void COneShotFluidDriver::RunOneShot(){
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     if ((OneShotIter > config->GetOneShotStart()) && 
         (OneShotIter < config->GetOneShotStop())  &&
-        ((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep())) {
+        (((ArmijoIter != nArmijoIter-1) && (!bool_tol)) || (!config->GetZeroStep()))) {
       CalculateLagrangian();
       ArmijoFlag = CheckArmijo();
     }
