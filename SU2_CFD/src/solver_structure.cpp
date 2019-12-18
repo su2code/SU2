@@ -5099,7 +5099,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
           /*--- Get data for this profile. ---*/
           
-          vector<su2double> Inlet_Data = profileReader.GetDataForProfile(jMarker);
+          vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
           
           unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
 
