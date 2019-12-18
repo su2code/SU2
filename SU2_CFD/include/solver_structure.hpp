@@ -3632,35 +3632,22 @@ public:
                         unsigned short val_kind_solver,
                         unsigned short val_kind_marker);
 
-  /*!
-   * \brief Load a spanwise inlet profile data from file into a particular solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iter - Current external iteration number.
-   * \param[in] val_kind_solver - Solver container position.
-   * \param[in] val_kind_marker - Kind of marker to apply the profiles.
-   */
-  void LoadSpanwiseInletProfile(CGeometry **geometry,
-                                CSolver ***solver,
-                                CConfig *config,
-                                int val_iter,
-                                unsigned short val_kind_solver,
-                                unsigned short val_kind_marker);
+  su2double ONEDLINEAR_SPANWISE(vector<su2double> Inlet_Data, su2double Interp_Radius, unsigned long iRow,unsigned short index,unsigned long nColumns);
+  su2double ONEDAKIMA_SPANWISE(vector<su2double> Inlet_Data, su2double Interp_Radius, unsigned long iRow,unsigned short index,unsigned short nColumns, unsigned long nRow);
 
   /*!
    * \brief Get Pi (as (f(x+1)-f(x))/delta_x) for Akima interpolation for inlet file
    * \param[in] iRow - Current matching row in inlet file for interpolation to Vertex
    * \param[in] index - Current interpolating column in inlet file
    */
-  inline passivedouble Get_Pi(unsigned long iRow, unsigned short index);
+  su2double Get_Pi(vector<su2double> Inlet_Data, unsigned long iRow, unsigned short index, unsigned short nColumns);
 
     /*!
    * \brief Get the weights Wi for Akima interpolation for inlet file 
    * \param[in] iRow - Current matching row in inlet file for interpolation to Vertex
    * \param[in] index - Current interpolating column in inlet file
    */
-  inline passivedouble Get_Wi(unsigned long iRow,unsigned short index);
+  su2double Get_Wi(vector<su2double> Inlet_Data,unsigned long iRow,unsigned short index);
 
     /*!
    * \brief Get the weighed slope of the interval being interpolated by Akima.
@@ -3668,7 +3655,7 @@ public:
    * \param[in] index - Current interpolating column in inlet file
    * \param[in] jMarker - Current Marker to retrive the number of Rows for that Marker
    */
-  inline passivedouble Get_Ai_dash(unsigned long iRow, unsigned short index,unsigned long jMarker);
+  su2double Get_Ai_dash(vector<su2double> Inlet_Data, unsigned long iRow, unsigned short index,unsigned short nColumns, unsigned long nRow);
 
   /*!
    * \brief Prints the interpolated Inlet_Values to a file.

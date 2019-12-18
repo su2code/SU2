@@ -42,6 +42,7 @@
 #include "../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../include/CMarkerProfileReaderFVM.hpp"
+#include "../include/inlet_interpolation_functions.hpp"
 
 
 CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
@@ -5098,7 +5099,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
           /*--- Get data for this profile. ---*/
           
-          vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
+          vector<su2double> Inlet_Data = profileReader.GetDataForProfile(jMarker);
           
           unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
 
@@ -5172,6 +5173,13 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
                 case(ONED_LINEAR_SPANWISE || ONED_AKIMASPLINE_SPANWISE):
 
+                /*---Checking if only one inlet specified*/
+                if(profileReader.GetNumberOfProfiles()>1){
+                  cout<<"No support for multiple inlet interpolations yet"<<endl;
+                  local_failure++;
+                  break;
+                }
+
                 /*--- Finding radius and theta for the specific vertex. ---*/ 
                 Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
                 Theta = atan2(Coord[1],Coord[0]);
@@ -5188,9 +5196,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                   for (index=1; index<nColumns; index++){
                   Point_Match = true;
                   if (ONED_LINEAR_SPANWISE)
-                      Interpolated_Value = ONED_LINEAR_SPANWISE(Inlet_Data, Interp_Radius, iRow, index,nColumns);
+                      Interpolated_Value = ONEDLINEAR_SPANWISE(Inlet_Data, Interp_Radius, iRow, index,nColumns);
                   else if (ONED_AKIMASPLINE_SPANWISE)
-                      Interpolated_Value = ONED_AKIMASPLINE_SPANWISE(Inlet_Data, Interp_Radius, iRow, index, nColumns, jMarker);
+                      Interpolated_Value = ONEDAKIMA_SPANWISE(Inlet_Data, Interp_Radius, iRow, index, nColumns, profileReader.GetNumberOfRowsInProfile(jMarker));
       
                   /*--- If interpolating turbulence variables, shift them one index ahead ---*/
                   if (index > nDim+1)

@@ -1049,31 +1049,6 @@ inline void CSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_contain
 
 inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) { nodes->SetSolution_New(); }
 
-inline passivedouble CSolver::Get_Pi(unsigned long iRow, unsigned short index) {
-return (Inlet_Data[maxCol_InletFile*(iRow+1)+index] - Inlet_Data[maxCol_InletFile*iRow+index])/(Inlet_Data[maxCol_InletFile*(iRow+1)] - Inlet_Data[maxCol_InletFile*iRow]);}
-
-inline passivedouble CSolver::Get_Wi(unsigned long iRow,unsigned short index) {return fabs(Get_Pi(iRow,index) - Get_Pi(iRow-1,index));}
-
-inline passivedouble CSolver::Get_Ai_dash(unsigned long iRow, unsigned short index, unsigned long jMarker){
-    double nRow=0;
-    if(jMarker+1 > 1)
-      nRow = nRowCum_InletFile[jMarker+1] - nRowCum_InletFile[jMarker];
-    else
-      nRow = nRowCum_InletFile[jMarker+1];
-    //for Boundary conditions (two first and two last points require special definition, can vary for different codes)
-    if(iRow == 0) {return Get_Pi(iRow,index);}
-    else if (iRow == 1) {return (Get_Pi(iRow-1,index)+Get_Pi(iRow,index))/2;}
-    else if (iRow == nRow-2) {return (Get_Pi(nRow-2,index)+Get_Pi(nRow-3,index))/2;}
-    else if (iRow == nRow-1) {return Get_Pi(nRow-2,index);}
-    else{
-    if((Get_Wi(iRow+1,index)+Get_Wi(iRow-1,index)) != 0)
-      return (Get_Wi(iRow+1,index)*Get_Pi(iRow-1,index) + Get_Wi(iRow-1,index)*Get_Pi(iRow,index))/(Get_Wi(iRow+1,index) + Get_Wi(iRow-1,index));
-    else
-      return ((Get_Pi(iRow-1,index)-Get_Pi(iRow,index))/2);
-    }
-}
-
-
 inline void CSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
