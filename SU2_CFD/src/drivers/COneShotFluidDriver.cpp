@@ -138,7 +138,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
   grid_movement[ZONE_0][INST_0] = new CVolumetricMovement(geometry, config);
   surface_movement[ZONE_0]      = new CSurfaceMovement();
 
-  Lagrangian_Old = 0.0;
+  Lagrangian_Old = -1.0E6;
 
 }
 
