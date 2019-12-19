@@ -1989,12 +1989,10 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   /*--- Definition of the Class for the numerical method: numerics_container[INSTANCE_LEVEL][MESH_LEVEL][EQUATION][EQ_TERM] ---*/
 
-  auto nTerms = (fem? MAX_TERMS_FEA : MAX_TERMS) * omp_get_max_threads();
-
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     numerics[iMGlevel] = new CNumerics** [MAX_SOLS];
     for (iSol = 0; iSol < MAX_SOLS; iSol++)
-      numerics[iMGlevel][iSol] = new CNumerics* [nTerms]();
+      numerics[iMGlevel][iSol] = new CNumerics* [MAX_TERMS]();
   }
 
   /*--- Solver definition for the template problem ---*/
@@ -2634,97 +2632,118 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   }
 
-  /*--- Solver definition for the FEM problem ---*/
-  if (fem) {
+  /*--- Numerics definition for FEM-like problems. Instantiate one numerics per thread. ---*/
 
-    /*--- Initialize the container for FEA_TERM. This will be the only one for most of the cases ---*/
-    switch (config->GetGeometricConditions()) {
-      case SMALL_DEFORMATIONS :
-        switch (config->GetMaterialModel()) {
-          case LINEAR_ELASTIC: numerics[MESH_0][FEA_SOL][FEA_TERM] = new CFEALinearElasticity(nDim, nVar_FEM, config); break;
-          case NEO_HOOKEAN : SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION); break;
-          default: SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
+  SU2_OMP_PARALLEL
+  {
+    int thread = omp_get_thread_num();
+    int offset = thread * MAX_TERMS;
+    int fea_term = FEA_TERM + offset;
+
+    if (fem) {
+      /*--- Initialize the container for FEA_TERM. This will be the only one for most of the cases ---*/
+      switch (config->GetGeometricConditions()) {
+        case SMALL_DEFORMATIONS:
+          switch (config->GetMaterialModel()) {
+            case LINEAR_ELASTIC:
+              numerics[MESH_0][FEA_SOL][fea_term] = new CFEALinearElasticity(nDim, nVar_FEM, config);
+              break;
+            case NEO_HOOKEAN:
+              SU2_OMP_MASTER
+              SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION);
+              break;
+            default:
+              SU2_OMP_MASTER
+              SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
+              break;
+          }
+          break;
+        case LARGE_DEFORMATIONS :
+          switch (config->GetMaterialModel()) {
+            case LINEAR_ELASTIC:
+              SU2_OMP_MASTER
+              SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION);
+              break;
+            case NEO_HOOKEAN:
+              if (config->GetMaterialCompressibility() == COMPRESSIBLE_MAT) {
+                numerics[MESH_0][FEA_SOL][fea_term] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config);
+              } else {
+                SU2_OMP_MASTER
+                SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
+              }
+              break;
+            case KNOWLES:
+              if (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT) {
+                numerics[MESH_0][FEA_SOL][fea_term] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config);
+              } else {
+                SU2_OMP_MASTER
+                SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
+              }
+              break;
+            case IDEAL_DE:
+              if (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT) {
+                numerics[MESH_0][FEA_SOL][fea_term] = new CFEM_IdealDE(nDim, nVar_FEM, config);
+              } else {
+                SU2_OMP_MASTER
+                SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
+              }
+              break;
+            default:
+              SU2_OMP_MASTER
+              SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
+              break;
+          }
+          break;
+        default:
+          SU2_OMP_MASTER
+          SU2_MPI::Error("Solver not implemented.", CURRENT_FUNCTION);
+          break;
+      }
+
+      /*--- The following definitions only make sense if we have a non-linear solution. ---*/
+      if (config->GetGeometricConditions() == LARGE_DEFORMATIONS) {
+
+        /*--- This allocates a container for electromechanical effects. ---*/
+
+        bool de_effects = config->GetDE_Effects();
+        if (de_effects)
+          numerics[MESH_0][FEA_SOL][DE_TERM+offset] = new CFEM_DielectricElastomer(nDim, nVar_FEM, config);
+
+        string filename;
+        ifstream properties_file;
+
+        filename = config->GetFEA_FileName();
+        if (nZone > 1)
+          filename = config->GetMultizone_FileName(filename, iZone, ".dat");
+
+        properties_file.open(filename.data(), ios::in);
+
+        /*--- In case there is a properties file, containers are allocated for a number of material models. ---*/
+
+        if (!(properties_file.fail())) {
+          numerics[MESH_0][FEA_SOL][MAT_NHCOMP+offset]  = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config);
+          numerics[MESH_0][FEA_SOL][MAT_IDEALDE+offset] = new CFEM_IdealDE(nDim, nVar_FEM, config);
+          numerics[MESH_0][FEA_SOL][MAT_KNOWLES+offset] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config);
         }
-        break;
-      case LARGE_DEFORMATIONS :
-        switch (config->GetMaterialModel()) {
-          case LINEAR_ELASTIC: SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION); break;
-          case NEO_HOOKEAN :
-            switch (config->GetMaterialCompressibility()) {
-              case COMPRESSIBLE_MAT : numerics[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
-              default: SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
-            }
-            break;
-          case KNOWLES:
-            switch (config->GetMaterialCompressibility()) {
-              case NEARLY_INCOMPRESSIBLE_MAT : numerics[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config); break;
-              default:  SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
-            }
-            break;
-          case IDEAL_DE:
-            switch (config->GetMaterialCompressibility()) {
-              case NEARLY_INCOMPRESSIBLE_MAT : numerics[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_IdealDE(nDim, nVar_FEM, config); break;
-              default:  SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
-            }
-            break;
-          default:  SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
-        }
-        break;
-      default:  SU2_MPI::Error("Solver not implemented.", CURRENT_FUNCTION);  break;
-    }
-
-    /*--- The following definitions only make sense if we have a non-linear solution ---*/
-    if (config->GetGeometricConditions() == LARGE_DEFORMATIONS) {
-
-      /*--- This allocates a container for electromechanical effects ---*/
-
-      bool de_effects = config->GetDE_Effects();
-      if (de_effects) numerics[MESH_0][FEA_SOL][DE_TERM] = new CFEM_DielectricElastomer(nDim, nVar_FEM, config);
-
-      string filename;
-      ifstream properties_file;
-
-      filename = config->GetFEA_FileName();
-      if (nZone > 1)
-        filename = config->GetMultizone_FileName(filename, iZone, ".dat");
-
-      properties_file.open(filename.data(), ios::in);
-
-      /*--- In case there is a properties file, containers are allocated for a number of material models ---*/
-
-      if (!(properties_file.fail())) {
-
-          numerics[MESH_0][FEA_SOL][MAT_NHCOMP]  = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config);
-          numerics[MESH_0][FEA_SOL][MAT_IDEALDE] = new CFEM_IdealDE(nDim, nVar_FEM, config);
-          numerics[MESH_0][FEA_SOL][MAT_KNOWLES] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config);
-
-          properties_file.close();
       }
     }
 
-  }
+    /*--- Instantiate the numerics for the mesh solver. ---*/
+    if (config->GetDeform_Mesh())
+      numerics[MESH_0][MESH_SOL][fea_term] = new CFEAMeshElasticity(nDim, nDim, geometry[MESH_0]->GetnElem(), config);
 
-
-  /*--- We initialize the numerics for the mesh solver ---*/
-  if (config->GetDeform_Mesh())
-    numerics[MESH_0][MESH_SOL][FEA_TERM] = new CFEAMeshElasticity(nDim, nDim, geometry[MESH_0]->GetnElem(), config);
+  } // end SU2_OMP_PARALLEL
 
 }
 
-void CDriver::Numerics_Postprocessing(CNumerics *****numerics,
-                                      CSolver ***solver, CGeometry **geometry,
+void CDriver::Numerics_Postprocessing(CNumerics *****numerics, CSolver***, CGeometry**,
                                       CConfig *config, unsigned short val_iInst) {
-
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY) ||
-             (config->GetKind_Solver() == DISC_ADJ_FEM);
-
-  int nTerms = (fem? MAX_TERMS_FEA : MAX_TERMS) * omp_get_max_threads();
 
   for (unsigned short iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
     for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++) {
 
-      for (int iTerm = 0; iTerm < nTerms; iTerm++) {
+      for (unsigned int iTerm = 0; iTerm < MAX_TERMS; iTerm++) {
 
         delete numerics[val_iInst][iMGlevel][iSol][iTerm];
       }

@@ -108,7 +108,6 @@ const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of doma
 const unsigned int MAX_NUMBER_FFD = 15;	      /*!< \brief Maximum number of FFDBoxes for the FFD. */
 const unsigned int MAX_SOLS = 10;		      /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		      /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
-const unsigned int MAX_TERMS_FEA = 10;        /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;		      /*!< \brief No Runge-Kutta iteration. */

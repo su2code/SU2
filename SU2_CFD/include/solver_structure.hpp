@@ -11559,9 +11559,6 @@ protected:
 
   su2double Total_CFEA;             /*!< \brief Total FEA coefficient for all the boundaries. */
 
-  int nFEA_Terms; 
-  bool topol_filter_applied;        /*!< \brief True if density filtering has been performed. */
-
   unsigned short *iElem_iDe;	      /*!< \brief For DE cases, ID of the region considered for each iElem. */
 
   su2double a_dt[9];                /*!< \brief Integration constants. */
@@ -11599,6 +11596,7 @@ protected:
   unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size must be a multiple of this. */
 
   bool element_based;               /*!< \brief Bool to determine if an element-based file is used. */
+  bool topol_filter_applied;        /*!< \brief True if density filtering has been performed. */
 
   unsigned long nElement;           /*!< \brief Number of elements. */
   unsigned long IterLinSol;         /*!< \brief Number of iterations of the linear solver. */

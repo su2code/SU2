@@ -86,8 +86,6 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   nDim = 0;
   nMarker = 0;
 
-  nFEA_Terms = 1;
-
   nPoint = 0;
   nPointDomain = 0;
 
@@ -135,10 +133,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   nPoint        = geometry->GetnPoint();
   nPointDomain  = geometry->GetnPointDomain();
-
-  /*--- Number of different terms for FEA ---*/
-  nFEA_Terms = 1;
-  if (de_effects) nFEA_Terms++; // The DE term is DE_TERM = 1
 
   /*--- Here is where we assign the kind of each element ---*/
 
