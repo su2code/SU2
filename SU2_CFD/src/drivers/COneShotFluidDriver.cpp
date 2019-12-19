@@ -352,8 +352,8 @@ void COneShotFluidDriver::RunOneShot(){
           (OneShotIter < config->GetOneShotStop())  &&
           (ArmijoFlag != 0) && (ArmijoIter < nArmijoIter) && (!bool_tol));
 
-  if((OneShotIter > config->GetOneShotStart()) && 
-     (OneShotIter < config->GetOneShotStop())) {
+  // if((OneShotIter > config->GetOneShotStart()) && 
+  //    (OneShotIter < config->GetOneShotStop())) {
     solver[ADJFLOW_SOL]->LoadSolution();
     solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     ComputeFunctionals();
@@ -361,8 +361,8 @@ void COneShotFluidDriver::RunOneShot(){
     StoreConstrFunction();
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-    UpdateLambda(1.0);
-  }
+    if((OneShotIter > config->GetOneShotStart()) && (OneShotIter < config->GetOneShotStop())) UpdateLambda(1.0);
+  // }
 
   /*--- Save solution ---*/
   solver[ADJFLOW_SOL]->SetSaveSolution();
