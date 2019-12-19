@@ -603,7 +603,7 @@ void COneShotFluidDriver::ComputeFunctionals(){
   }
 }
 
-void COneShotFluidDriver::SetProjection_AD(CSurfaceMovement *surface_movement, unsigned short kind_gradient){
+void COneShotFluidDriver::SetProjection_AD(CSurfaceMovement *surface_movement){
 
   su2double DV_Value, *VarCoord, Sensitivity, my_Gradient, localGradient;
   unsigned short nMarker, nDim, nDV, nDV_Value;
@@ -1251,7 +1251,7 @@ void COneShotFluidDriver::ProjectMeshSensitivities(){
   grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry, config, false, true);
   surface_movement[ZONE_0]->CopyBoundary(geometry, config);
   // project sensitivities (surface) on design variables
-  SetProjection_AD(surface_movement[ZONE_0], kind_gradient);
+  SetProjection_AD(surface_movement[ZONE_0]);
   config->SetKind_SU2(SU2_CFD); // set SU2_CFD as solver
 }
 
