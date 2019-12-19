@@ -62,8 +62,8 @@ COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   DConsVec = new su2double** [nConstr];
   for (unsigned short iConstr=0; iConstr<nConstr;iConstr++){
-    DConsVec[iConstr] = new su2double* [nPointDomain];
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
+    DConsVec[iConstr] = new su2double* [nPoint];
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
       DConsVec[iConstr][iPoint] = new su2double [nVar];
       for (unsigned short iVar = 0; iVar < nVar; iVar++){
         DConsVec[iConstr][iPoint][iVar]=0.0;
@@ -77,7 +77,7 @@ COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
 COneShotSolver::~COneShotSolver(void) {
   for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
       delete [] DConsVec[iConstr][iPoint];
     }
     delete [] DConsVec[iConstr];
@@ -508,7 +508,7 @@ void COneShotSolver::SetConstrDerivative(unsigned short iConstr){
   unsigned short iVar;
   unsigned long iPoint;
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
       DConsVec[iConstr][iPoint][iVar]=nodes->GetSolution(iPoint,iVar);
     }
@@ -521,7 +521,7 @@ su2double COneShotSolver::MultiplyConstrDerivative(unsigned short iConstr, unsig
   unsigned long iPoint;
   su2double product = 0.0, myProduct=0.0;
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
       myProduct+= DConsVec[iConstr][iPoint][iVar]*DConsVec[jConstr][iPoint][iVar];
     }
