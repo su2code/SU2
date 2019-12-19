@@ -2410,8 +2410,6 @@ void CDiscAdjFluidIteration::SetRecording(CSolver *****solver,
 
   /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
 
-  solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetRecording(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
-
   for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++){
     solver[val_iZone][val_iInst][iMesh][ADJFLOW_SOL]->SetRecording(geometry[val_iZone][val_iInst][iMesh], config[val_iZone]);
   }
