@@ -586,7 +586,7 @@ void COneShotFluidDriver::SetProjection_AD(CSurfaceMovement *surface_movement, s
 
   VarCoord = NULL;
 
-  // AD::Reset();
+  AD::Reset();
 
   /*--- Discrete adjoint gradient computation ---*/
 
