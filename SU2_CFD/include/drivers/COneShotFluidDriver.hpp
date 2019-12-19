@@ -325,12 +325,12 @@ public:
   /*!
    * \brief Set the objective function and register if requested.
    */
-  void SetObjFunction(bool registering);
+  void SetObjFunction();
 
   /*!
    * \brief Set the constraint functions and register if requested.
    */
-  void SetConstrFunction(bool registering);
+  void SetConstrFunction();
 
   /*!
    * \brief Initialize the adjoint value of the constraint functions.

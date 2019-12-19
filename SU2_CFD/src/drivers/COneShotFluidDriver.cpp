@@ -290,9 +290,7 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*--- Evaluate the objective at the old solution, new design ---*/
         ComputeFunctionals();
-        SetObjFunction(false);
         StoreObjFunction();
-        SetConstrFunction(false);
         StoreConstrFunction();
 
         // LoadOldLambda();
@@ -305,9 +303,7 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*--- Evaluate the objective at the old solution, new design ---*/
         ComputeFunctionals();
-        SetObjFunction(false);
         StoreObjFunction();
-        SetConstrFunction(false);
         StoreConstrFunction();
 
         // LoadOldLambda();
@@ -556,9 +552,9 @@ void COneShotFluidDriver::SetRecording(unsigned short kind_recording){
 
   /*--- Extract the objective function and store it --- */
 
-  SetObjFunction(true);
+  SetObjFunction();
 
-  SetConstrFunction(true);
+  SetConstrFunction();
 
   AD::StopRecording();
 
@@ -571,6 +567,47 @@ void COneShotFluidDriver::ComputeFunctionals(){
                   
   if((config->GetBuffet_Monitoring()) || (config->GetKind_ObjFunc() == BUFFET_SENSOR)){
     solver[FLOW_SOL]->Buffet_Monitoring(geometry, config);
+  }
+
+  ObjFunc = 0.0;
+  
+  direct_output->SetHistory_Output(geometry, solver, config,
+                                   config->GetTimeIter(),
+                                   config->GetOuterIter(),
+                                   config->GetInnerIter());
+
+  /*--- Specific scalar objective functions ---*/
+
+  solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
+
+  /*--- Surface based obj. function ---*/
+
+  solver[FLOW_SOL]->Evaluate_ObjFunc(config);
+  ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
+  if (heat){
+    if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
+      ObjFunc += solver[HEAT_SOL]->GetTotal_HeatFlux();
+    }
+    else if (config->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+      ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
+    }
+  }
+
+  su2double FunctionValue = 0.0;
+
+  for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+    const bool geqconstr = (config->GetKind_ConstrFuncType(iConstr) == GEQ_CONSTR);
+    ConstrFunc[iConstr] = 0.0;
+
+    FunctionValue = solver[FLOW_SOL]->Evaluate_ConstrFunc(config, iConstr);
+
+    /*--- Flip sign on GEQ constraint (we want descent on (Target-FuncVal)) ---*/
+    if(geqconstr) {
+      ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(config->GetConstraintTarget(iConstr) - FunctionValue);
+    }
+    else {
+      ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(FunctionValue - config->GetConstraintTarget(iConstr));
+    }
   }
 }
 
@@ -1244,99 +1281,7 @@ void COneShotFluidDriver::SetAdj_ConstrFunction_Zero(){
   }
 }
 
-void COneShotFluidDriver::SetObjFunction(bool registering){
-
-  bool heat  = (config->GetWeakly_Coupled_Heat());
-  bool turbo = (config->GetBoolTurbomachinery());
-
-  ObjFunc = 0.0;
-  
-  direct_output->SetHistory_Output(geometry, solver, config,
-                                   config->GetTimeIter(),
-                                   config->GetOuterIter(),
-                                   config->GetInnerIter());
-
-  /*--- Specific scalar objective functions ---*/
-
-  switch (config->GetKind_Solver()) {
-  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:    
-  case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-  case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
-  case ONE_SHOT_EULER:           case ONE_SHOT_NAVIER_STOKES:          case ONE_SHOT_RANS:
-
-    solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
-
-    /*--- Surface based obj. function ---*/
-
-    solver[FLOW_SOL]->Evaluate_ObjFunc(config);
-    ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
-    if (heat){
-      if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
-        ObjFunc += solver[HEAT_SOL]->GetTotal_HeatFlux();
-      }
-      else if (config->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
-        ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
-      }
-    }
-
-    /*--- This calls to be moved to a generic framework at a next stage         ---*/
-    /*--- Some things that are currently hacked into output must be reorganized ---*/
-    if (turbo){
-
-      solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
-      output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
-
-      switch (config_container[ZONE_0]->GetKind_ObjFunc()){
-      case ENTROPY_GENERATION:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetEntropyGen(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
-        break;
-      case FLOW_ANGLE_OUT:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetFlowAngleOut(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
-        break;
-      case MASS_FLOW_IN:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetMassFlowIn(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
-        break;
-      default:
-        break;
-      }
-
-      ObjFunc = solver[FLOW_SOL]->GetTotal_ComboObj();
-
-    }
-
-    break;
-  case DISC_ADJ_FEM:
-    switch (config->GetKind_ObjFunc()){
-    case REFERENCE_GEOMETRY:
-        ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
-        break;
-    case REFERENCE_NODE:
-        ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
-        break;
-    case VOLUME_FRACTION:
-        ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
-        break;
-    default:
-        ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
-        break;
-    }
-    break;
-  }
-
-  /*--- Scale objective for one-shot ---*/
-  switch (config->GetKind_Solver()) {
-    case ONE_SHOT_EULER: case ONE_SHOT_NAVIER_STOKES: case ONE_SHOT_RANS:
-      ObjFunc *= config->GetObjScale();
-      break;
-  }
-
-  if ((rank == MASTER_NODE) && (registering)){
-    AD::RegisterOutput(ObjFunc);
-  }
-
-}
-
-void COneShotFluidDriver::SetConstrFunction(bool registering){
+void COneShotFluidDriver::SetConstrFunction(){
 
   su2double FunctionValue = 0.0;
 
@@ -1354,7 +1299,7 @@ void COneShotFluidDriver::SetConstrFunction(bool registering){
       ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(FunctionValue - config->GetConstraintTarget(iConstr));
     }
 
-    if ((rank == MASTER_NODE) && (registering)){
+    if (rank == MASTER_NODE){
       AD::RegisterOutput(ConstrFunc[iConstr]);
     }
   }
