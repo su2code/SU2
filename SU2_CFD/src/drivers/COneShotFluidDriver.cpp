@@ -279,7 +279,7 @@ void COneShotFluidDriver::RunOneShot(){
           ComputeDesignVarUpdate(0.0);
           PrimalDualStep();
           solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-          UpdateLambda(1.0);
+          // UpdateLambda(1.0);
           ArmijoIter = 1;
           break;
         }
@@ -319,8 +319,8 @@ void COneShotFluidDriver::RunOneShot(){
       }
 
       LoadOldLambda();
-      UpdateLambda(1.0);
-      // UpdateLambda(stepsize);
+      // UpdateLambda(1.0);
+      UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
@@ -864,6 +864,13 @@ unsigned short COneShotFluidDriver::CheckArmijo(){
     /*--- AugLagGrad is the gradient at the old iterate. ---*/
     // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
   }
+  // for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+  //   /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
+  //   admissible_step += (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
+  //   // admissible_step_new += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
+  //   /*--- AugLagGrad is the gradient at the old iterate. ---*/
+  //   // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+  // }
   
   /*--- Return 0 if satisfied, 1 if 1st condition not satisfied, 2 if 2nd condition not satisfied ---*/
   if (Lagrangian > LagrangianOld + CWolfeOne*admissible_step) {
@@ -887,6 +894,13 @@ void COneShotFluidDriver::StoreGradDotDir(){
     /*--- AugLagGrad is the gradient at the old iterate. ---*/
     // GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
   }
+  // for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+  //   /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
+  //   GradDotDir += (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
+  //   // admissible_step_new += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
+  //   /*--- AugLagGrad is the gradient at the old iterate. ---*/
+  //   // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+  // }
 }
 
 void COneShotFluidDriver::StoreOldGradDotDir(){
