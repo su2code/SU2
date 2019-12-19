@@ -275,7 +275,7 @@ void COneShotFluidDriver::RunOneShot(){
           ComputeDesignVarUpdate(0.0);
           PrimalDualStep();
           solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-          UpdateLambda(1.0);
+          // UpdateLambda(1.0);
           ArmijoIter = 1;
           break;
         }
@@ -311,8 +311,8 @@ void COneShotFluidDriver::RunOneShot(){
       }
 
       LoadOldLambda();
-      UpdateLambda(1.0);
-      // UpdateLambda(stepsize);
+      // UpdateLambda(1.0);
+      UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
