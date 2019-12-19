@@ -39,6 +39,7 @@ su2double CWindowingTools::GetWndWeight(WINDOW_FUNCTION windowId, unsigned long 
 }
 su2double CWindowingTools::HannWindow(unsigned long i, unsigned long endTimeIdx){
   su2double currTime = static_cast<su2double>(i);
+  if(endTimeIdx==0) return 0; //Catch div by zero error, if window length is zero
   su2double endTime = static_cast<su2double>(endTimeIdx);
   su2double tau = currTime/endTime;
   return 1.0-cos(2*PI_NUMBER*tau);
@@ -46,6 +47,7 @@ su2double CWindowingTools::HannWindow(unsigned long i, unsigned long endTimeIdx)
 
 su2double CWindowingTools::HannSquaredWindow(unsigned long i, unsigned long endTimeIdx){
   su2double currTime = static_cast<su2double>(i);
+  if(endTimeIdx==0) return 0; //Catch div by zero error, if window length is zero
   su2double endTime = static_cast<su2double>(endTimeIdx);
   su2double tau = currTime/endTime;
   return 2.0/3.0*(1-cos(2*PI_NUMBER*tau))*(1-cos(2*PI_NUMBER*tau));
