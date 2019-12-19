@@ -584,14 +584,6 @@ void COneShotFluidDriver::ComputeFunctionals(){
 
   solver[FLOW_SOL]->Evaluate_ObjFunc(config);
   ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
-  if (heat){
-    if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
-      ObjFunc += solver[HEAT_SOL]->GetTotal_HeatFlux();
-    }
-    else if (config->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
-      ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
-    }
-  }
 
   su2double FunctionValue = 0.0;
 
