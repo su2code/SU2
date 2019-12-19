@@ -57,20 +57,21 @@ protected:
 
   su2double* Gradient;                  /*!< \brief Vector to store gradient obtained from projection .*/
   su2double* ShiftLagGrad;              /*!< \brief Saved gradient N_u of the shifted Lagrangian .*/
+  su2double* ShiftLagGradOld;           /*!< \brief Saved old gradient N_u of the shifted Lagrangian .*/
   su2double* DesignVarUpdate;           /*!< \brief Update of the design variable Delta u = u_{k+1} - u_k .*/
   su2double* SearchDirection;           /*!< \brief Search direction for optimization.*/
-  su2double** BFGSInv;                 /*!< \brief Inverse matrix for BFGS update.*/
+  su2double** BFGSInv;                  /*!< \brief Inverse matrix for BFGS update.*/
   su2double* DesignVar;                 /*!< \brief Current design variable value.*/
   su2double* AugLagGrad;                /*!< \brief Gradient of doubly augmented Lagrangian.*/
   su2double* AugLagGradAlpha;           /*!< \brief Alpha term of gradient of doubly augmented Lagrangian.*/
   su2double* AugLagGradBeta;            /*!< \brief Beta term of gradient of doubly augmented Lagrangian.*/
   su2double* AugLagGradGamma;           /*!< \brief Gamma term of gradient of doubly augmented Lagrangian.*/
-  su2double* AugLagGradOld;            /*!< \brief Gradient of doubly augmented Lagrangian (old value).*/
+  su2double* AugLagGradOld;             /*!< \brief Gradient of doubly augmented Lagrangian (old value).*/
   su2double* AugLagLamGrad;             /*!< \brief Gradient of doubly augmented Lagrangian wrt constraint multiplier.*/
-  su2double Lagrangian, LagrangianOld; /*!< \brief Value of doubly augmented Lagrangian.*/
+  su2double Lagrangian, LagrangianOld;  /*!< \brief Value of doubly augmented Lagrangian.*/
   su2double GradDotDir;                 /*!< \brief Gradient dotted with search direction at first Armijo search step (stepsize = 1.0).*/
   su2double GradDotDirOld;              /*!< \brief Gradient dotted with search direction for previous iteration.*/
-  su2double ObjFuncStore;              /*!< \brief Objective function at old flow, new design.*/
+  su2double ObjFuncStore;               /*!< \brief Objective function at old flow, new design.*/
   
   su2double lb, ub;    /*!< \brief Lower and upper bounds of design variables.*/
   su2double epsilon;   /*!< \brief Estimator for the active set.*/
@@ -158,7 +159,7 @@ public:
    * \brief Projection of the surface sensitivity using algorithmic differentiation (AD) (see also SU2_DOT).
    * \param[in] kind_radient - Gradient term to be computed.
    */
-  void SetProjection_AD(CSurfaceMovement *surface_movement);
+  void SetProjection_AD(CSurfaceMovement *surface_movement, unsigned short kind_gradient);
 
   /*!
    * \brief Performs a surface deformation and volumetric deformation (see also SU2_DEF).
@@ -253,7 +254,7 @@ public:
   /*!
    * \brief Project mesh sensitivities to surface and design variables using AD.
    */
-  void ProjectMeshSensitivities();
+  void ProjectMeshSensitivities(unsigned short kind_gradient);
 
   /*!
    * \brief Project input value into feasible bounds of design space.
