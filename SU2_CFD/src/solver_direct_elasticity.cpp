@@ -278,7 +278,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
 #endif
 
-  iElem_iDe = NULL;
+  iElem_iDe = nullptr;
 
   /*--- Initialize the value of the total objective function ---*/
   Total_OFRefGeom = 0.0;
@@ -372,23 +372,23 @@ CFEASolver::~CFEASolver(void) {
   unsigned short iVar, jVar;
   unsigned long iElem;
 
-  if (element_container != NULL) {
+  if (element_container != nullptr) {
     for (iVar = 0; iVar < MAX_TERMS; iVar++) {
       for (jVar = 0; jVar < MAX_FE_KINDS*omp_get_max_threads(); jVar++) {
-        if (element_container[iVar][jVar] != NULL) delete element_container[iVar][jVar];
+        if (element_container[iVar][jVar] != nullptr) delete element_container[iVar][jVar];
       }
       delete [] element_container[iVar];
     }
     delete [] element_container;
   }
 
-  if (element_properties != NULL){
+  if (element_properties != nullptr){
     for (iElem = 0; iElem < nElement; iElem++)
-      if (element_properties[iElem] != NULL) delete element_properties[iElem];
+      if (element_properties[iElem] != nullptr) delete element_properties[iElem];
     delete [] element_properties;
   }
 
-  if (iElem_iDe != NULL) delete [] iElem_iDe;
+  if (iElem_iDe != nullptr) delete [] iElem_iDe;
 
   if (nodes != nullptr) delete nodes;
 }
@@ -624,7 +624,7 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
   unsigned short iMarker, MarkerS, MarkerR;
   unsigned long iVertex, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+  su2double *Buffer_Receive_U = nullptr, *Buffer_Send_U = nullptr;
 
   int send_to, receive_from;
 
@@ -654,7 +654,7 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
       /*--- Send/Receive information using Sendrecv ---*/
       SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, nullptr);
 
       /*--- Deallocate send buffer ---*/
       delete [] Buffer_Send_U;
@@ -3673,9 +3673,9 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
+  if (Restart_Vars != nullptr) delete [] Restart_Vars;
+  if (Restart_Data != nullptr) delete [] Restart_Data;
+  Restart_Vars = nullptr; Restart_Data = nullptr;
 
 }
 
