@@ -293,8 +293,8 @@ void COneShotFluidDriver::RunOneShot(){
         StoreObjFunction();
         StoreConstrFunction();
 
-        LoadOldLambda();
-        UpdateLambda(stepsize);
+        // LoadOldLambda();
+        // UpdateLambda(stepsize);
       }
       else {
         stepsize = 0.0;
@@ -306,13 +306,13 @@ void COneShotFluidDriver::RunOneShot(){
         StoreObjFunction();
         StoreConstrFunction();
 
-        LoadOldLambda();
-        UpdateLambda(1.0);
+        // LoadOldLambda();
+        // UpdateLambda(1.0);
       }
 
-      // LoadOldLambda();
+      LoadOldLambda();
       // UpdateLambda(1.0);
-      // UpdateLambda(stepsize);
+      UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
