@@ -311,8 +311,8 @@ void COneShotFluidDriver::RunOneShot(){
       }
 
       LoadOldLambda();
-      // UpdateLambda(1.0);
-      UpdateLambda(stepsize);
+      UpdateLambda(1.0);
+      // UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
@@ -437,29 +437,29 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Modifiy initial line search guess based on success of line search ---*/
   if(OneShotIter > config->GetOneShotStart()) {
-    if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0)) {
-      stepsize0 = max(2.0*tol, stepsize0/2.0);
-    }
-    else if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
-      stepsize0 = min(1.0, stepsize0*2.0);
-    }
+    // if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0)) {
+    //   stepsize0 = max(2.0*tol, stepsize0/2.0);
+    // }
+    // else if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
+    //   stepsize0 = min(1.0, stepsize0*2.0);
+    // }
 
-  //   if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
-  //     StoreOldGradDotDir();
-  //     ComputeDesignVarUpdate(1.0);
-  //     StoreGradDotDir();
-  //     if(GradDotDirOld < 0 && GradDotDir < 0) {
-  //       stepsize0 = max(10.0*tol, min(1.0, 1.01*GradDotDirOld/GradDotDir));
-  //     }
-  //     else{
-  //       // stepsize0 = min(1.0, 2.0*stepsize0);
-  //       stepsize0 = 1.0;
-  //     }
-  //   }
-  //   else{
-  //     // stepsize0 = min(1.0, 2.0*stepsize0);
-  //     stepsize0 = 1.0;
-  //   }
+    if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
+      StoreOldGradDotDir();
+      ComputeDesignVarUpdate(1.0);
+      StoreGradDotDir();
+      if(GradDotDirOld < 0 && GradDotDir < 0) {
+        stepsize0 = max(10.0*tol, min(1.0, 1.01*GradDotDirOld/GradDotDir));
+      }
+      else{
+        // stepsize0 = min(1.0, 2.0*stepsize0);
+        stepsize0 = 1.0;
+      }
+    }
+    else{
+      // stepsize0 = min(1.0, 2.0*stepsize0);
+      stepsize0 = 1.0;
+    }
   }
 
 }
@@ -835,9 +835,9 @@ unsigned short COneShotFluidDriver::CheckArmijo(){
 
   for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
     /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-    admissible_step += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
+    // admissible_step += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
     /*--- AugLagGrad is the gradient at the old iterate. ---*/
-    // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+    admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
   }
   
   /*--- Return 0 if satisfied, 1 if 1st condition not satisfied, 2 if 2nd condition not satisfied ---*/
@@ -858,9 +858,9 @@ void COneShotFluidDriver::StoreGradDotDir(){
 
   for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
     /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-    GradDotDir += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
+    // GradDotDir += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
     /*--- AugLagGrad is the gradient at the old iterate. ---*/
-    // GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+    GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
   }
 }
 
