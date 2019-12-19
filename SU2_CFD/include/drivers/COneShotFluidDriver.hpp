@@ -159,7 +159,7 @@ public:
    * \brief Projection of the surface sensitivity using algorithmic differentiation (AD) (see also SU2_DOT).
    * \param[in] kind_radient - Gradient term to be computed.
    */
-  void SetProjection_AD(CSurfaceMovement *surface_movement, unsigned short kind_gradient);
+  void SetProjection_AD(CSurfaceMovement *surface_movement);
 
   /*!
    * \brief Performs a surface deformation and volumetric deformation (see also SU2_DEF).
@@ -254,7 +254,7 @@ public:
   /*!
    * \brief Project mesh sensitivities to surface and design variables using AD.
    */
-  void ProjectMeshSensitivities(unsigned short kind_gradient);
+  void ProjectMeshSensitivities();
 
   /*!
    * \brief Project input value into feasible bounds of design space.
