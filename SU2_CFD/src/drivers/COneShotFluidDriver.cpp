@@ -359,7 +359,7 @@ void COneShotFluidDriver::RunOneShot(){
   // StoreConstrFunction();
   // PrimalDualStep();
   // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-  if((OneShotIter > config->GetOneShotStart()) && (OneShotIter < config->GetOneShotStop())) UpdateLambda(1.0);
+  if((OneShotIter > config->GetOneShotStart()) && (OneShotIter < config->GetOneShotStop())) UpdateLambda(stepsize);
 
   /*--- Save solution ---*/
   solver[ADJFLOW_SOL]->SetSaveSolution();
