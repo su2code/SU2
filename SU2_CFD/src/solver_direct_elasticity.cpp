@@ -37,18 +37,6 @@
  */
 namespace {
 
-  void GetElemKindAndNumNodes(unsigned short VTK_Type, int& EL_KIND, unsigned short& nNodes) {
-    switch (VTK_Type) {
-      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA;  break;
-      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD;  break;
-      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
-      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
-      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA;  break;
-      default: assert(false); nNodes = 0; EL_KIND = -(1<<30); break;
-    }
-  }
-
   template<class T>
   void CrossProduct(const T* a, const T* b, T* c) {
     c[0] = a[1]*b[2] - a[2]*b[1];
@@ -3514,7 +3502,7 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
   su2double totalVolume_reduce = 0.0;
 
   /*--- Loop over the elements in the domain. ---*/
-  SU2_OMP(parallel for schedule(static,omp_chunk_size) reduction(+:weightedValue,totalVolume))
+  SU2_OMP(parallel for schedule(dynamic,omp_chunk_size) reduction(+:weightedValue,totalVolume))
   for (unsigned long iElem = 0; iElem < nElement; iElem++) {
 
     int thread = omp_get_thread_num();

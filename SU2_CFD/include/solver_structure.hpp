@@ -11610,8 +11610,26 @@ protected:
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
+  /*!
+   * \brief Get the element container index and number of nodes of a given VTK type.
+   * \param[in] VTK_Type - Type of element.
+   * \param[out] EL_KIND - Element container index.
+   * \param[out] nNodes - Number of nodes.
+   */
+  static void GetElemKindAndNumNodes(unsigned short VTK_Type, int& EL_KIND, unsigned short& nNodes) {
+    switch (VTK_Type) {
+      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA;  break;
+      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD;  break;
+      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
+      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
+      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
+      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA;  break;
+      default: assert(false); nNodes = 0; EL_KIND = -(1<<30); break;
+    }
+  }
+
 public:
-  
+
   CSysVector<su2double> TimeRes_Aux;    /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
   CSysVector<su2double> TimeRes;        /*!< \brief Vector for adding mass and damping contributions to the residual */
   CSysVector<su2double> LinSysReact;    /*!< \brief Vector to store the residual before applying the BCs */
