@@ -39,6 +39,7 @@ class CTurbVariable : public CVariable {
 protected:
   VectorType muT;         /*!< \brief Eddy viscosity. */
   MatrixType HB_Source;   /*!< \brief Harmonic Balance source term. */
+  VectorOfMatrix ReynoldsStressTensor;
 
   VectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
   VectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
@@ -84,7 +85,7 @@ public:
   }
   
   /*!
-   * \brief Get the value of the reconstruction variables gradient at a node.
+   * \brief Set the value of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
    * \param[in] iVar   - Index of the variable.
    * \param[in] iDim   - Index of the dimension.
@@ -100,6 +101,24 @@ public:
    * \return Array of the reconstruction variables gradient at a node.
    */
   inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+
+  /*!
+   * \brief Set the value of the [iDim, jDim] component of the Reynolds stress tensor at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \param[in] iDim   - Index of the velocity variable.
+   * \param[in] jDim   - Index of the spatial dimension.
+   * \param[in] value  - Value of the Reynolds stress tensor 
+   */
+  inline void SetReynoldsStressTensor(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) {
+    ReynoldsStressTensor(iPoint,iDim,jDim) = value;
+  }
+  
+  /*!
+   * \brief Get the Reynolds stress tensor at a node.
+   * \param[in] iPoint - Index of the current node.
+   * \return Reynolds stress tensor at a node.
+   */
+  inline su2double **GetReynoldsStressTensor(unsigned long iPoint) final { return ReynoldsStressTensor[iPoint]; }
   
 };
 

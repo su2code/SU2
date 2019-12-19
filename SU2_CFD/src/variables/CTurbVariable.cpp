@@ -56,6 +56,7 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
   Limiter.resize(nPoint,nVar) = su2double(0.0);
   Solution_Max.resize(nPoint,nVar) = su2double(0.0);
   Solution_Min.resize(nPoint,nVar) = su2double(0.0);
+  ReynoldsStressTensor.resize(nPoint, nDim, nDim, 0.0);
 
   Delta_Time.resize(nPoint) = su2double(0.0);
 

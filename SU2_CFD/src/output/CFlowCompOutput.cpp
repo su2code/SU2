@@ -367,6 +367,20 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     break;
   }
 
+  // Reynolds stress tensor values
+  if (config->GetKind_Solver() == RANS) {
+    AddVolumeOutput("U\'U\'", "u\'u\'", "REYNOLDS_STRESS_TENSOR", "u\'u\' term of Reynolds stress tensor");
+    AddVolumeOutput("V\'V\'", "v\'v\'", "REYNOLDS_STRESS_TENSOR", "v\'v\' term of Reynolds stress tensor");
+    if (nDim == 3){
+      AddVolumeOutput("W\'W\'", "w\'w\'", "REYNOLDS_STRESS_TENSOR", "w\'w\' term of Reynolds stress tensor");
+    }
+    AddVolumeOutput("U\'V\'", "u\'v\'", "REYNOLDS_STRESS_TENSOR", "u\'v\' term of Reynolds stress tensor");
+    if (nDim == 3){
+      AddVolumeOutput("U\'W\'", "u\'w\'", "REYNOLDS_STRESS_TENSOR", "u\'w\' term of Reynolds stress tensor");
+      AddVolumeOutput("V\'W\'", "v\'w\'", "REYNOLDS_STRESS_TENSOR", "v\'w\' term of Reynolds stress tensor");
+    }
+  }
+
   // Limiter values
   AddVolumeOutput("LIMITER_DENSITY", "Limiter_Density", "LIMITER", "Limiter value of the density");
   AddVolumeOutput("LIMITER_MOMENTUM-X", "Limiter_Momentum_x", "LIMITER", "Limiter value of the x-momentum");
@@ -548,6 +562,21 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
   }
 
+  if (config->GetKind_Solver() == RANS) {
+    su2double ** Reynolds_Stress_Tensor = Node_Turb->GetReynoldsStressTensor(iPoint);
+    SetVolumeOutputValue("U\'U\'", iPoint, Reynolds_Stress_Tensor[0][0]);
+    SetVolumeOutputValue("V\'V\'", iPoint, Reynolds_Stress_Tensor[1][1]);
+    if (nDim == 3){
+      SetVolumeOutputValue("W\'W\'", iPoint, Reynolds_Stress_Tensor[2][2]);
+    }
+    SetVolumeOutputValue("U\'V\'", iPoint, Reynolds_Stress_Tensor[0][1]);
+    if (nDim == 3){
+      SetVolumeOutputValue("U\'W\'", iPoint, Reynolds_Stress_Tensor[0][2]);
+      SetVolumeOutputValue("V\'W\'", iPoint, Reynolds_Stress_Tensor[1][2]);
+    }
+    
+  }
+  
   if (config->GetTime_Domain()){
     LoadTimeAveragedData(iPoint, Node_Flow);
   }

@@ -2017,6 +2017,8 @@ public:
    */
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
 
+  inline virtual su2double **GetReynoldsStressTensor(unsigned long iPoint) { return nullptr; }
+
   /*!
    * \brief Add a value to the maximum eigenvalue for the inviscid terms of the PDE.
    * \param[in] val_max_lambda - Value of the maximum eigenvalue for the inviscid terms of the PDE.

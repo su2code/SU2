@@ -9751,6 +9751,8 @@ public:
    * \param[in] val_turb_var - Value of the turbulence variable to be used.
    */
   void SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var);
+
+  void SetReynoldsStressTensor(CSolver **solver_container, CConfig *config, unsigned long iPoint);
 };
 
 /*!
