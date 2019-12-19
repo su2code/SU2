@@ -355,6 +355,10 @@ void COneShotFluidDriver::RunOneShot(){
   if((OneShotIter > config->GetOneShotStart()) && 
      (OneShotIter < config->GetOneShotStop())) {
     solver[ADJFLOW_SOL]->LoadSolution();
+    solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+    ComputeFunctionals();
+    StoreObjFunction();
+    StoreConstrFunction();
     PrimalDualStep();
     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
     UpdateLambda(1.0);
@@ -439,7 +443,10 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->SetSensitivityLagrangian(geometry, BETA_TERM);
     solver[ADJFLOW_SOL]->LoadSaveSolution();
 
-    /*--- Projection of the gradient N_u---*/
+    /*--- Projection of the gradient N_u ---*/
+    ProjectMeshSensitivities(SHIFTED);
+
+    /*--- Projection of the gradient terms of L_u---*/
     for(unsigned short kind = 0; kind < 3; kind++) ProjectMeshSensitivities(kind);
 
     /*--- Projection of the gradient L_u---*/
