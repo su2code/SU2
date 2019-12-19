@@ -3647,7 +3647,7 @@ public:
    * \param[in] iRow - Current matching row in inlet file for interpolation to Vertex
    * \param[in] index - Current interpolating column in inlet file
    */
-  su2double Get_Wi(vector<su2double> Inlet_Data,unsigned long iRow,unsigned short index);
+  su2double Get_Wi(vector<su2double> Inlet_Data,unsigned long iRow,unsigned short index, unsigned short nColumns);
 
     /*!
    * \brief Get the weighed slope of the interval being interpolated by Akima.
