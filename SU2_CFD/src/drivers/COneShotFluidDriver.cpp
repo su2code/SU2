@@ -872,9 +872,9 @@ unsigned short COneShotFluidDriver::CheckArmijo(){
   if (Lagrangian > LagrangianOld + CWolfeOne*admissible_step) {
     return 1;
   }
-  else if (abs(admissible_step_new) > CWolfeTwo*abs(admissible_step)) {
-    return 2;
-  }
+  // else if (abs(admissible_step_new) > CWolfeTwo*abs(admissible_step)) {
+  //   return 2;
+  // }
   else {
     return 0;
   }
