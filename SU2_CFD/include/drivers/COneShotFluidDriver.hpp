@@ -157,9 +157,9 @@ public:
   /*!
    * \brief Projection of the surface sensitivity using algorithmic differentiation (AD) (see also SU2_DOT).
    * \param[in] surface_movement - Surface movement class of the problem.
-   * \param[in] Gradient - Output to store the gradient data.
+   * \param[in] kind_radient - Gradient term to be computed.
    */
-  void SetProjection_AD(CSurfaceMovement *surface_movement, su2double* Gradient);
+  void SetProjection_AD(CSurfaceMovement *surface_movement, unsigned short kind_gradient);
 
   /*!
    * \brief Performs a surface deformation and volumetric deformation (see also SU2_DEF).
