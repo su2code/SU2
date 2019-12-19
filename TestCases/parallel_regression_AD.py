@@ -183,7 +183,7 @@ def main():
     discadj_cylinder.cfg_file  = "cylinder_Windowing_AD.cfg" 
     discadj_cylinder.test_iter = 6
     discadj_cylinder.test_vals = [3.612556] #last column
-    discadj_cylinder.su2_exec  = "discrete_adjoint.py -f"
+    discadj_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_cylinder.timeout   = 1600
     discadj_cylinder.tol       = 0.00001
     discadj_cylinder.unsteady  = True
