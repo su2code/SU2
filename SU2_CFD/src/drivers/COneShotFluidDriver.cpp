@@ -319,8 +319,8 @@ void COneShotFluidDriver::RunOneShot(){
       }
 
       LoadOldLambda();
-      // UpdateLambda(1.0);
-      UpdateLambda(stepsize);
+      UpdateLambda(1.0);
+      // UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
@@ -491,8 +491,8 @@ void COneShotFluidDriver::PrimalDualStep(){
 
   /*--- Note: Unsteady cases not applicable to the one-shot method yet! ---*/
 
-  // SetRecording(NONE);
-  // solver[ADJFLOW_SOL]->LoadSolution();
+  SetRecording(NONE);
+  solver[ADJFLOW_SOL]->LoadSolution();
   SetRecording(COMBINED);
 
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
@@ -1148,7 +1148,7 @@ void COneShotFluidDriver::ComputeBetaTerm(){
 
   /*--- Store the computational graph of one direct iteration with the conservative variables and the mesh coordinates as input. ---*/
 
-  // SetRecording(NONE);
+  SetRecording(NONE);
   solver[ADJFLOW_SOL]->UpdateStateVariable(config);
   SetRecording(COMBINED);
 
