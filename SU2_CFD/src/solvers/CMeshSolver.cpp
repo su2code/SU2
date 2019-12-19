@@ -188,86 +188,97 @@ CMeshSolver::~CMeshSolver(void) {
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
 
-  unsigned long iElem, indexNode, ElemCounter = 0;
-  unsigned short iNode, iDim, nNodes = 0;
-  su2double val_Coord;
-  su2double MaxVolume, MinVolume;
-  int EL_KIND = 0;
+  /*--- Shared reduction variables. ---*/
 
-  su2double ElemVolume;
+  unsigned long ElemCounter = 0;
+  su2double MaxVolume = -1E22, MinVolume = -1E22;
 
-  MaxVolume = -1E22; MinVolume = 1E22;
+  SU2_OMP_PARALLEL
+  {
+    /*--- Loop over the elements in the domain. ---*/
 
-  /*--- Loops over all the elements ---*/
+    SU2_OMP(for schedule(dynamic,omp_chunk_size) reduction(max:MaxVolume,MinVolume))
+    for (unsigned long iElem = 0; iElem < nElement; iElem++) {
 
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+      int thread = omp_get_thread_num();
 
-    switch(geometry->elem[iElem]->GetVTK_Type()) {
-      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA;  break;
-      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD;  break;
-      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
-      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
-      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA;  break;
-      default: SU2_MPI::Error("Unknown VTK element type",CURRENT_FUNCTION); break;
+      int EL_KIND;
+      unsigned short iNode, nNodes, iDim;
+
+      GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
+
+      CElement* fea_elem = element_container[FEA_TERM][EL_KIND + thread*MAX_FE_KINDS];
+
+      /*--- For the number of nodes, we get the coordinates from
+       *    the connectivity matrix and the geometry structure. ---*/
+
+      for (iNode = 0; iNode < nNodes; iNode++) {
+
+        auto indexNode = geometry->elem[iElem]->GetNode(iNode);
+
+        /*--- Compute the volume with the reference or current coordinates. ---*/
+        for (iDim = 0; iDim < nDim; iDim++) {
+          su2double val_Coord = nodes->GetMesh_Coord(indexNode,iDim);
+          if (updated)
+            val_Coord += nodes->GetSolution(indexNode,iDim);
+
+          fea_elem->SetRef_Coord(iNode, iDim, val_Coord);
+        }
+      }
+
+      /*--- Compute the volume of the element (or the area in 2D cases ). ---*/
+
+      su2double ElemVolume;
+      if (nDim == 2) ElemVolume = fea_elem->ComputeArea();
+      else           ElemVolume = fea_elem->ComputeVolume();
+
+      MaxVolume = max(MaxVolume, ElemVolume);
+      MinVolume = max(MinVolume, -1.0*ElemVolume);
+
+      if (updated) element[iElem].SetCurr_Volume(ElemVolume);
+      else element[iElem].SetRef_Volume(ElemVolume);
+
+      /*--- Count distorted elements. ---*/
+      if (ElemVolume <= 0.0) {
+        SU2_OMP(atomic)
+        ElemCounter++;
+      }
     }
+    MinVolume *= -1.0;
 
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix and the geometry structure ---*/
+    SU2_OMP_MASTER
+    {
+      unsigned long ElemCounter_Local = ElemCounter;
+      su2double MaxVolume_Local = MaxVolume;
+      su2double MinVolume_Local = MinVolume;
+      SU2_MPI::Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    }
+    SU2_OMP_BARRIER
 
-    for (iNode = 0; iNode < nNodes; iNode++) {
+    /*--- Volume from  0 to 1 ---*/
 
-      indexNode = geometry->elem[iElem]->GetNode(iNode);
-
-      /*--- Compute the volume with the reference or with the current coordinates ---*/
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = nodes->GetMesh_Coord(indexNode,iDim);
-        if (updated)
-          val_Coord += nodes->GetSolution(indexNode,iDim);
-
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+      if (updated) {
+        su2double ElemVolume = element[iElem].GetCurr_Volume()/MaxVolume;
+        element[iElem].SetCurr_Volume(ElemVolume);
+      }
+      else {
+        su2double ElemVolume = element[iElem].GetRef_Volume()/MaxVolume;
+        element[iElem].SetRef_Volume(ElemVolume);
       }
     }
 
-    /*--- Compute the volume of the element (or the area in 2D cases ) ---*/
+  } // end SU2_OMP_PARALLEL
 
-    if (nDim == 2)  ElemVolume = element_container[FEA_TERM][EL_KIND]->ComputeArea();
-    else            ElemVolume = element_container[FEA_TERM][EL_KIND]->ComputeVolume();
-
-    MaxVolume = max(MaxVolume, ElemVolume);
-    MinVolume = min(MinVolume, ElemVolume);
-    if (updated) element[iElem].SetCurr_Volume(ElemVolume);
-    else element[iElem].SetRef_Volume(ElemVolume);
-
-    /*--- Count distorted elements. ---*/
-    if (ElemVolume <= 0.0) ElemCounter++;
-
-  }
-
-  unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
-  su2double MaxVolume_Local = MaxVolume; MaxVolume = 0.0;
-  su2double MinVolume_Local = MinVolume; MinVolume = 0.0;
-  SU2_MPI::Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-
-  /*--- Volume from  0 to 1 ---*/
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    if (updated){
-      ElemVolume = element[iElem].GetCurr_Volume()/MaxVolume;
-      element[iElem].SetCurr_Volume(ElemVolume);
-    }
-    else{
-      ElemVolume = element[iElem].GetRef_Volume()/MaxVolume;
-      element[iElem].SetRef_Volume(ElemVolume);
-    }
-  }
-
-  /*--- Store the maximum and minimum volume ---*/
-  if (updated){
+  /*--- Store the maximum and minimum volume. ---*/
+  if (updated) {
     MaxVolume_Curr = MaxVolume;
     MinVolume_Curr = MinVolume;
   }
-  else{
+  else {
     MaxVolume_Ref = MaxVolume;
     MinVolume_Ref = MinVolume;
   }
@@ -379,15 +390,8 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
   /*--- Compute the element distances ---*/
   for (iElem = 0; iElem < nElement; iElem++) {
 
-    switch(geometry->elem[iElem]->GetVTK_Type()) {
-      case TRIANGLE:      nNodes = 3; break;
-      case QUADRILATERAL: nNodes = 4; break;
-      case TETRAHEDRON:   nNodes = 4; break;
-      case PYRAMID:       nNodes = 5; break;
-      case PRISM:         nNodes = 6; break;
-      case HEXAHEDRON:    nNodes = 8; break;
-      default: SU2_MPI::Error("Unknown VTK element type",CURRENT_FUNCTION); break;
-    }
+    int EL_KIND;
+    GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
     /*--- Average the distance of the nodes in the element ---*/
 
@@ -408,7 +412,7 @@ void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, 
 
   unsigned long iElem;
 
-  if(!stiffness_set){
+  if (!stiffness_set) {
     for (iElem = 0; iElem < nElement; iElem++) {
 
       switch (config->GetDeform_Stiffness_Type()) {
@@ -483,22 +487,19 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
 void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
 
-  unsigned short iDim;
-  unsigned long iPoint, total_index;
-  su2double val_disp, val_coord;
-
   /*--- Update the grid coordinates using the solution of the linear system ---*/
 
   /*--- LinSysSol contains the absolute x, y, z displacements. ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iDim = 0; iDim < nDim; iDim++) {
-      total_index = iPoint*nDim + iDim;
+  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      auto total_index = iPoint*nDim + iDim;
       /*--- Retrieve the displacement from the solution of the linear system ---*/
-      val_disp = LinSysSol[total_index];
+      su2double val_disp = LinSysSol[total_index];
       /*--- Store the displacement of the mesh node ---*/
       nodes->SetSolution(iPoint, iDim, val_disp);
       /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
-      val_coord = nodes->GetMesh_Coord(iPoint,iDim) + val_disp;
+      su2double val_coord = nodes->GetMesh_Coord(iPoint,iDim) + val_disp;
       /*--- Update the geometry container ---*/
       geometry->node[iPoint]->SetCoord(iDim, val_coord);
     }
@@ -531,30 +532,28 @@ void CMeshSolver::UpdateDualGrid(CGeometry *geometry, CConfig *config){
 
 void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
-  /*--- Local variables ---*/
-
-  su2double *Disp_nP1 = NULL, *Disp_n = NULL, *Disp_nM1 = NULL;
-  su2double TimeStep, GridVel = 0.0;
-  unsigned long iPoint;
-  unsigned short iDim;
-
   /*--- Compute the velocity of each node in the domain of the current rank
-   (halo nodes are not computed as the grid velocity is later communicated) ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+   (halo nodes are not computed as the grid velocity is later communicated). ---*/
 
-    /*--- Coordinates of the current point at n+1, n, & n-1 time levels ---*/
+  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    Disp_nM1 = nodes->GetSolution_time_n1(iPoint);
-    Disp_n   = nodes->GetSolution_time_n(iPoint);
-    Disp_nP1 = nodes->GetSolution(iPoint);
+    /*--- Coordinates of the current point at n+1, n, & n-1 time levels. ---*/
+
+    const su2double* Disp_nM1 = nodes->GetSolution_time_n1(iPoint);
+    const su2double* Disp_n   = nodes->GetSolution_time_n(iPoint);
+    const su2double* Disp_nP1 = nodes->GetSolution(iPoint);
 
     /*--- Unsteady time step ---*/
 
-    TimeStep = config->GetDelta_UnstTimeND();
+    su2double TimeStep = config->GetDelta_UnstTimeND();
 
-    /*--- Compute mesh velocity with 1st or 2nd-order approximation ---*/
+    /*--- Compute mesh velocity with 1st or 2nd-order approximation. ---*/
 
-    for (iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+
+      su2double GridVel = 0.0;
+
       if (config->GetTime_Marching() == DT_STEPPING_1ST)
         GridVel = ( Disp_nP1[iDim] - Disp_n[iDim] ) / TimeStep;
       if (config->GetTime_Marching() == DT_STEPPING_2ND)
@@ -568,7 +567,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- The velocity was computed for nPointDomain, now we communicate it ---*/
+  /*--- The velocity was computed for nPointDomain, now we communicate it. ---*/
   geometry->InitiateComms(geometry, config, GRID_VELOCITY);
   geometry->CompleteComms(geometry, config, GRID_VELOCITY);
 
