@@ -4658,6 +4658,11 @@ public:
    */
   virtual void SetSolutionDelta(CGeometry *geometry);
 
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetSaveSolutionDelta(CGeometry *geometry);
+
     /*!
    * \brief A virtual member.
    */
@@ -15986,6 +15991,11 @@ public:
    * \brief Set Solution_Delta for this time step.
    */
   void SetSolutionDelta(CGeometry *geometry);
+
+  /*!
+   * \brief Set Solution_Delta for this time step.
+   */
+  void SetSaveSolutionDelta(CGeometry *geometry);
 
   /*!
    * \brief Set Solution_Delta for this time step.

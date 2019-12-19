@@ -2554,6 +2554,8 @@ inline void CSolver::SetFiniteDifferenceSens(CGeometry *geometry, CConfig* confi
 
 inline void CSolver::SetSolutionDelta(CGeometry *geometry){}
 
+inline void CSolver::SetSaveSolutionDelta(CGeometry *geometry){}
+
 inline void CSolver::SetStoreSolutionDelta(){}
 
 inline void CSolver::SetConstrDerivative(unsigned short iConstr){}

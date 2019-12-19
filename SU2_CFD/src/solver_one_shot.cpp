@@ -483,6 +483,21 @@ void COneShotSolver::SetSolutionDelta(CGeometry *geometry){
   }
 }
 
+void COneShotSolver::SetSaveSolutionDelta(CGeometry *geometry){
+  unsigned short iVar;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++){
+      const su2double res_y    = direct_solver->GetNodes()->GetSolution(iPoint,iVar)-direct_solver->GetNodes()->GetSolution_Save(iPoint,iVar);
+      const su2double res_bary = nodes->GetSolution(iPoint,iVar)-nodes->GetSolution_Save(iPoint,iVar);
+
+      direct_solver->GetNodes()->SetSolution_Delta(iPoint, iVar, res_y);
+      nodes->SetSolution_Delta(iPoint, iVar, res_bary);
+    }
+  }
+}
+
 void COneShotSolver::SetStoreSolutionDelta(){
   unsigned short iVar;
   unsigned long iPoint;

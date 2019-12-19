@@ -330,7 +330,7 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- Do a primal and adjoint update ---*/
     PrimalDualStep();
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    solver[ADJFLOW_SOL]->SetSaveSolutionDelta(geometry);
 
     /*--- N_u ---*/
     solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangian(geometry);
