@@ -701,6 +701,7 @@ void COneShotFluidDriver::SetProjection_AD(CSurfaceMovement *surface_movement){
       for (unsigned short iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
         DV_Value = config->GetDV_Value(iDV, iDV_Value);
         my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
+        AD::ResetInput(DV_Value);
 
   #ifdef HAVE_MPI
       SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);

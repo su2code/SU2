@@ -836,7 +836,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConf
 
       /*--- Set the index manually to zero. ---*/
 
-      if(!config->GetBoolOneShot()) AD::ResetInput(Coord[iDim]);
+      AD::ResetInput(Coord[iDim]);
 
       /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 
