@@ -2065,82 +2065,75 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
         }
 
-        for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+        for (unsigned short iFace = 0; iFace < bound[iMarker][iElem]->GetnFaces(); iFace++){
+          iNode = bound[iMarker][iElem]->GetFaces(iFace,0);
+          jNode = bound[iMarker][iElem]->GetFaces(iFace,1);
           iPoint = bound[iMarker][iElem]->GetNode(iNode);
+          jPoint = bound[iMarker][iElem]->GetNode(jNode);
 
-          for (jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
-            jPoint = bound[iMarker][iElem]->GetNode(jNode);
+          if ((CrossProduct >= 0.0)
+              && ((AveXCoord > MinXCoord) && (AveXCoord < MaxXCoord))
+              && ((AveYCoord > MinYCoord) && (AveYCoord < MaxYCoord))
+              && ((AveZCoord > MinZCoord) && (AveZCoord < MaxZCoord))) {
 
-            /*--- CrossProduct concept is delicated because it allows triangles where only one side is divided by a plane.
-             that is going against the concept that all the triangles are divided twice  and causes probelms because
-             Xcoord_Index0.size() > Xcoord_Index1.size()! ---*/
-
-            if ((jPoint > iPoint) && (CrossProduct >= 0.0)
-                && ((AveXCoord > MinXCoord) && (AveXCoord < MaxXCoord))
-                && ((AveYCoord > MinYCoord) && (AveYCoord < MaxYCoord))
-                && ((AveZCoord > MinZCoord) && (AveZCoord < MaxZCoord))) {
-
-              Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;  Variable_P0 = 0.0;
-              Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;  Variable_P1 = 0.0;
+            Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;  Variable_P0 = 0.0;
+            Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;  Variable_P1 = 0.0;
 
 
-              for (iDim = 0; iDim < nDim; iDim++) {
-                if (original_surface == true) {
-                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
-                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
-                }
-                else {
-                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
-                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
-                }
+            for (iDim = 0; iDim < nDim; iDim++) {
+              if (original_surface == true) {
+                Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
+                Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
               }
-
-              if (FlowVariable != NULL) {
-                Variable_P0 = FlowVariable[iPoint];
-                Variable_P1 = FlowVariable[jPoint];
+              else {
+                Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
+                Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
               }
+            }
 
-              /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
+            if (FlowVariable != NULL) {
+              Variable_P0 = FlowVariable[iPoint];
+              Variable_P1 = FlowVariable[jPoint];
+            }
 
-              if (nDim == 2) {
-                Xcoord_Index0.push_back(Segment_P0[0]);                     Xcoord_Index1.push_back(Segment_P1[0]);
-                Ycoord_Index0.push_back(Segment_P0[2]);                     Ycoord_Index1.push_back(Segment_P1[2]);
-                Zcoord_Index0.push_back(Segment_P0[1]);                     Zcoord_Index1.push_back(Segment_P1[1]);
-                Variable_Index0.push_back(Variable_P0);                     Variable_Index1.push_back(Variable_P1);
-                IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); IGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
-                JGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
+            /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
+
+            if (nDim == 2) {
+              Xcoord_Index0.push_back(Segment_P0[0]);                     Xcoord_Index1.push_back(Segment_P1[0]);
+              Ycoord_Index0.push_back(Segment_P0[2]);                     Ycoord_Index1.push_back(Segment_P1[2]);
+              Zcoord_Index0.push_back(Segment_P0[1]);                     Zcoord_Index1.push_back(Segment_P1[1]);
+              Variable_Index0.push_back(Variable_P0);                     Variable_Index1.push_back(Variable_P1);
+              IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); IGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
+              JGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
+              PointIndex++;
+            }
+
+            /*--- In 3D compute the intersection ---*/
+
+            else if (nDim == 3) {
+              intersect = SegmentIntersectsPlane(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
+              if (intersect == true) {
+                if (PointIndex == 0) {
+                  Xcoord_Index0.push_back(Intersection[0]);
+                  Ycoord_Index0.push_back(Intersection[1]);
+                  Zcoord_Index0.push_back(Intersection[2]);
+                  Variable_Index0.push_back(Variable_Interp);
+                  IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex());
+                  JGlobalID_Index0.push_back(node[jPoint]->GetGlobalIndex());
+                }
+                if (PointIndex == 1) {
+                  Xcoord_Index1.push_back(Intersection[0]);
+                  Ycoord_Index1.push_back(Intersection[1]);
+                  Zcoord_Index1.push_back(Intersection[2]);
+                  Variable_Index1.push_back(Variable_Interp);
+                  IGlobalID_Index1.push_back(node[iPoint]->GetGlobalIndex());
+                  JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
+                }
                 PointIndex++;
               }
-
-              /*--- In 3D compute the intersection ---*/
-
-              else if (nDim == 3) {
-                intersect = SegmentIntersectsPlane(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
-                if (intersect == true) {
-                  if (PointIndex == 0) {
-                    Xcoord_Index0.push_back(Intersection[0]);
-                    Ycoord_Index0.push_back(Intersection[1]);
-                    Zcoord_Index0.push_back(Intersection[2]);
-                    Variable_Index0.push_back(Variable_Interp);
-                    IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex());
-                    JGlobalID_Index0.push_back(node[jPoint]->GetGlobalIndex());
-                  }
-                  if (PointIndex == 1) {
-                    Xcoord_Index1.push_back(Intersection[0]);
-                    Ycoord_Index1.push_back(Intersection[1]);
-                    Zcoord_Index1.push_back(Intersection[2]);
-                    Variable_Index1.push_back(Variable_Interp);
-                    IGlobalID_Index1.push_back(node[iPoint]->GetGlobalIndex());
-                    JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
-                  }
-                  PointIndex++;
-                }
-              }
-
             }
           }
         }
-
       }
     }
   }
