@@ -338,6 +338,9 @@ void COneShotFluidDriver::RunOneShot(){
           (OneShotIter < config->GetOneShotStop())  &&
           (ArmijoFlag != 0) && (ArmijoIter < nArmijoIter) && (!bool_tol));
 
+  /*--- Save solution ---*/
+  solver[ADJFLOW_SOL]->SetSaveSolution();
+
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
@@ -355,10 +358,10 @@ void COneShotFluidDriver::RunOneShot(){
   if(OneShotIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
   if(OneShotIter == config->GetOneShotStart()) {
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    solver[ADJFLOW_SOL]->SetSaveSolution();
-    solver[ADJFLOW_SOL]->LoadSolution();
+    // solver[ADJFLOW_SOL]->SetSaveSolution();
+    // solver[ADJFLOW_SOL]->LoadSolution();
     if(nConstr > 0) ComputePreconditioner();
-    solver[ADJFLOW_SOL]->LoadSaveSolution();
+    // solver[ADJFLOW_SOL]->LoadSaveSolution();
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
   }
   else if((OneShotIter > config->GetOneShotStart()) && 
@@ -391,8 +394,8 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- N_u ---*/
     solver[ADJFLOW_SOL]->SetSensitivityShiftedLagrangian(geometry);
-    solver[ADJFLOW_SOL]->SetSaveSolution();
-    solver[ADJFLOW_SOL]->LoadSolution();
+    // solver[ADJFLOW_SOL]->SetSaveSolution();
+    // solver[ADJFLOW_SOL]->LoadSolution();
 
     if(nConstr > 0) ComputePreconditioner();
 
@@ -400,13 +403,13 @@ void COneShotFluidDriver::RunOneShot(){
     if(nConstr > 0) {
       ComputeGammaTerm();
       solver[ADJFLOW_SOL]->SetSensitivityLagrangian(geometry, GAMMA_TERM);
-      solver[ADJFLOW_SOL]->LoadSolution();
+      // solver[ADJFLOW_SOL]->LoadSolution();
     }
 
     /*--- Alpha*Deltay^T*G_u ---*/
     ComputeAlphaTerm();
     solver[ADJFLOW_SOL]->SetSensitivityLagrangian(geometry, ALPHA_TERM);
-    solver[ADJFLOW_SOL]->LoadSolution();
+    // solver[ADJFLOW_SOL]->LoadSolution();
 
     /*--- Beta*DeltaBary^T*N_yu ---*/
     ComputeBetaTerm();
@@ -1195,7 +1198,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
 
     AD::ClearAdjoints();
 
-    solver[ADJFLOW_SOL]->LoadSolution();
+    // solver[ADJFLOW_SOL]->LoadSolution();
 
     seeding[iConstr]=0.0;
 
