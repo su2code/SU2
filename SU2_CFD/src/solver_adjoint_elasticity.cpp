@@ -456,15 +456,13 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
     /*--- Register acceleration (u'') and velocity (u') at time step n ---*/
     
-    direct_solver->GetNodes()->RegisterSolution_Accel(input);
-    direct_solver->GetNodes()->RegisterSolution_Vel(input);
+    direct_solver->GetNodes()->RegisterSolution_Accel(input, push_index);
+    direct_solver->GetNodes()->RegisterSolution_Vel(input, push_index);
     
     /*--- Register solution (u), acceleration (u'') and velocity (u') at time step n-1 ---*/
-    
-    direct_solver->GetNodes()->Register_femSolution_time_n();
-    direct_solver->GetNodes()->RegisterSolution_Accel_time_n();
-    direct_solver->GetNodes()->RegisterSolution_Vel_time_n();
-
+   direct_solver->GetNodes()->Register_femSolution_time_n(input, push_index);
+   direct_solver->GetNodes()->RegisterSolution_Accel_time_n(input, push_index);
+   direct_solver->GetNodes()->RegisterSolution_Vel_time_n(input, push_index);
   }
 
 }
@@ -561,8 +559,8 @@ void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
   if (dynamic) {
     /*--- Register acceleration (u'') and velocity (u') at time step n ---*/
-    direct_solver->GetNodes()->RegisterSolution_Accel(input);
-    direct_solver->GetNodes()->RegisterSolution_Vel(input);
+    direct_solver->GetNodes()->RegisterSolution_Accel(input, push_index);
+    direct_solver->GetNodes()->RegisterSolution_Vel(input, push_index);
   }
 
 }

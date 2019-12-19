@@ -390,29 +390,29 @@ public:
    * \brief Register the variables in the solution time_n array as input/output variable.
    * \param[in] input - input or output variables.
    */
-  void Register_femSolution_time_n() final;
+  void Register_femSolution_time_n(bool input, bool push_index) final;
 
   /*!
    * \brief Register the variables in the velocity array as input/output variable.
    * \param[in] input - input or output variables.
    */
-  void RegisterSolution_Vel(bool input) final;
+  void RegisterSolution_Vel(bool input, bool push_index) final;
 
   /*!
    * \brief Register the variables in the velocity time_n array as input/output variable.
    */
-  void RegisterSolution_Vel_time_n() final;
+  void RegisterSolution_Vel_time_n(bool input, bool push_index) final;
 
   /*!
    * \brief Register the variables in the acceleration array as input/output variable.
    * \param[in] input - input or output variables.
    */
-  void RegisterSolution_Accel(bool input) final;
+  void RegisterSolution_Accel(bool input, bool push_index) final;
 
   /*!
    * \brief Register the variables in the acceleration time_n array as input/output variable.
    */
-  void RegisterSolution_Accel_time_n() final;
+  void RegisterSolution_Accel_time_n(bool input, bool push_index) final;
 
   /*!
    * \brief Set the velocity adjoint values of the solution.

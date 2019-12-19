@@ -2485,27 +2485,27 @@ public:
    /*!
     * \brief A virtual member.
     */
-  inline virtual void Register_femSolution_time_n() {}
+  inline virtual void Register_femSolution_time_n(bool input, bool push_index) {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterSolution_Vel(bool input) {}
+  inline virtual void RegisterSolution_Vel(bool input, bool push_index) {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterSolution_Vel_time_n() {}
+  inline virtual void RegisterSolution_Vel_time_n(bool input, bool push_index) {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterSolution_Accel(bool input) {}
+  inline virtual void RegisterSolution_Accel(bool input, bool push_index) {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterSolution_Accel_time_n() {}
+  inline virtual void RegisterSolution_Accel_time_n(bool input, bool push_index) {}
 
   /*!
    * \brief A virtual member.
