@@ -323,11 +323,6 @@ public:
   void InitializeLambdaTilde(unsigned short iConstr);
 
   /*!
-   * \brief Set the objective function and register if requested.
-   */
-  void SetObjFunction();
-
-  /*!
    * \brief Set the constraint functions and register if requested.
    */
   void SetConstrFunction();
