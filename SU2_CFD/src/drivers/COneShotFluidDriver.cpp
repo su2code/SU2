@@ -394,7 +394,7 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->SetSaveSolution();
     solver[ADJFLOW_SOL]->LoadSolution();
 
-    if((nConstr > 0) && (!config->GetConstPrecond())) ComputePreconditioner();
+    if(nConstr > 0) ComputePreconditioner();
 
     /*--- Gamma*h^T*h_u ---*/
     if(nConstr > 0) {
