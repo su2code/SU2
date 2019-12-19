@@ -1025,6 +1025,7 @@ void COneShotFluidDriver::ComputeGammaTerm(){
   /*--- Initialize the adjoint of the output variables of the iteration with difference of the solution and the solution
    *    of the previous iteration. The values are passed to the AD tool. ---*/
 
+  solver[ADJFLOW_SOL]->ResetInputs(geometry, config);
   iteration->InitializeAdjoint_Zero(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
   /*--- Initialize the adjoint of the objective function with 0.0. ---*/
@@ -1073,6 +1074,7 @@ void COneShotFluidDriver::ComputeAlphaTerm(){
   /*--- Initialize the adjoint of the output variables of the iteration with difference of the solution and the solution
    *    of the previous iteration. The values are passed to the AD tool. ---*/
 
+  solver[ADJFLOW_SOL]->ResetInputs(geometry, config);
   iteration->InitializeAdjoint_Update(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
   /*--- Initialize the adjoint of the objective function with 0.0. ---*/
@@ -1172,11 +1174,11 @@ void COneShotFluidDriver::ComputePreconditioner(){
   }
 
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+    
     seeding[iConstr] = 1.0;
 
-
+    solver[ADJFLOW_SOL]->ResetInputs(geometry, config);
     iteration->InitializeAdjoint_Zero(solver_container, geometry_container, config_container, ZONE_0, INST_0);
-
 
     /*--- Initialize the adjoint of the objective function with 0.0. ---*/
 

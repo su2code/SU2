@@ -85,6 +85,20 @@ COneShotSolver::~COneShotSolver(void) {
   delete [] DConsVec;
 }
 
+void COneShotSolver::ResetInputs(CGeometry* geometry, CConfig* config) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      AD::ResetInput(direct_solver->GetNodes()->GetSolution(iPoint)[iVar]);
+      AD::ResetInput(direct_solver->GetNodes()->GetSolution_Store(iPoint)[iVar]);
+      AD::ResetInput(direct_solver->GetNodes()->GetSolution_Save(iPoint)[iVar]);
+    }
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      AD::ResetInput(geometry->node[iPoint]->GetCoord()[iDim]);
+      AD::ResetInput(geometry->node[iPoint]->GetCoord_Old()[iDim]);
+    }
+  }
+}
+
 void COneShotSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 
@@ -97,17 +111,7 @@ void COneShotSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
   /*--- For the one-shot solver the solution is not reset in each iteration step to the initial solution ---*/
 
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      AD::ResetInput(direct_solver->GetNodes()->GetSolution(iPoint)[iVar]);
-      AD::ResetInput(direct_solver->GetNodes()->GetSolution_Store(iPoint)[iVar]);
-      AD::ResetInput(direct_solver->GetNodes()->GetSolution_Save(iPoint)[iVar]);
-    }
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      AD::ResetInput(geometry->node[iPoint]->GetCoord()[iDim]);
-      AD::ResetInput(geometry->node[iPoint]->GetCoord_Old()[iDim]);
-    }
-  }
+  ResetInputs(geometry, config);
 
   // if (time_n_needed) {
   //   for (iPoint = 0; iPoint < nPoint; iPoint++) {

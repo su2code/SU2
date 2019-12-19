@@ -4076,6 +4076,12 @@ public:
    * \brief A virtual member.
    * \param[in] kind_recording - Kind of AD recording.
    */
+  virtual void ResetInputs(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] kind_recording - Kind of AD recording.
+   */
   virtual void SetRecording(CGeometry *geometry, CConfig *config);
   
   /*!
@@ -15885,6 +15891,13 @@ public:
   COneShotSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
 
   ~COneShotSolver(void);
+
+  /*!
+   * \brief Reset indices of inputs.
+   * \param[in] geometry - geometry class object
+   * \param[in] config - config class object
+   */
+  void ResetInputs(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Prepare the solver for a new recording (without setting solution to initial solution).
