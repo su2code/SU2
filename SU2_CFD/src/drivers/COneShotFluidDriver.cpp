@@ -455,7 +455,7 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Modifiy initial line search guess based on success of line search ---*/
   if(OneShotIter > config->GetOneShotStart()) {
-    if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0)) {
+    if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0)) {
       stepsize0 = max(2.0*tol, stepsize0/2.0);
     }
     else if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
