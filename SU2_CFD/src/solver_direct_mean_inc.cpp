@@ -2117,6 +2117,10 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
       numerics->SetConservative(nodes->GetSolution(iPoint), NULL);
       
+      /*--- Load the conservative variables ---*/
+      
+      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), NULL);
+      
       /*--- Set incompressible density ---*/
 
       numerics->SetDensity(nodes->GetDensity(iPoint), 0.0);
