@@ -99,11 +99,10 @@ public:
 
   /*!
    * \brief Get the value of the reference coordinate to set on the element structure.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] indexNode - Index of the node.
    * \param[in] iDim - Dimension required.
    */
-  inline su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {
+  inline su2double Get_ValCoord(CGeometry*, unsigned long indexNode, unsigned short iDim) const final {
     return nodes->GetMesh_Coord(indexNode,iDim);
   }
 
