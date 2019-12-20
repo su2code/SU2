@@ -297,8 +297,8 @@ void COneShotSolver::CalculateRhoTheta(CConfig *config){
 
   // rho   = min(max(sqrt(normDeltaNew)/sqrt(normDelta), 0.1*rho_old), 1.0-1.0E-6); // Upper bound 1-(1E-6)
   // theta = max(max(sqrt(fabs(helper)/normDelta), 0.1*theta_old), 1.0E-6); // Lower bound 1E-6
-  rho   = min(sqrt(normDeltaNew)/sqrt(normDelta), 1.0-1.0E-6); // Upper bound 1-(1E-6)
-  theta = min(max(sqrt(fabs(helper)/normDelta), 1.0E-6), 1.0); // Lower bound 1E-6
+  rho   = min(sqrt(normDeltaNew)/sqrt(normDelta), 1.0-1.0E-8); // Upper bound 1-(1E-6)
+  theta = min(max(sqrt(fabs(helper)/normDelta), 1.0E-8), 1.0); // Lower bound 1E-6
 
   /* --- Store rho and theta values for this iteration --- */
   rho_old   = rho;
@@ -318,8 +318,8 @@ void COneShotSolver::CalculateAlphaBeta(CConfig *config){
 
   // if(config->GetInnerIter() == config->GetOneShotStart()) {
 
-  alpha = max(min(alpha, 1.0E6), 1.0E-6);
-  beta = max(min(beta, 1.0E6), 1.0E-6);
+  alpha = max(min(alpha, 1.0E8), 1.0E-8);
+  beta = max(min(beta, 1.0E8), 1.0E-8);
   config->SetOneShotAlpha(alpha);
   config->SetOneShotBeta(beta);
   // }
@@ -338,7 +338,7 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, 
   
   /* --- Estimate gamma value --- */
   for(iConstr = 0; iConstr < nConstr; iConstr++) {
-    su2double gamma = 1.01/val_bcheck_norm;
+    su2double gamma = 2.0/val_bcheck_norm;
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (val_constr_func[iConstr] <= 0.0)) {
       // gamma = max(min(max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma()), config->GetOneShotGammaMax()), 1.0E-6);
     // }
@@ -351,7 +351,7 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, 
     // }
       // gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma());
     // if(config->GetInnerIter() == config->GetOneShotStart()) {
-      gamma = max(min(gamma, 1.0E6), 1.0E-6);
+      gamma = max(min(gamma, 1.0E8), 1.0E-8);
       config->SetOneShotGamma(gamma);
     // }
     // else {
