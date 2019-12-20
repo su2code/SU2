@@ -455,29 +455,29 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Modifiy initial line search guess based on success of line search ---*/
   if(OneShotIter > config->GetOneShotStart()) {
-    // if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0)) {
-    //   stepsize0 = max(2.0*tol, stepsize0/2.0);
-    // }
-    // else if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
-    //   stepsize0 = min(1.0, stepsize0*2.0);
-    // }
+    if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0)) {
+      stepsize0 = max(2.0*tol, stepsize0/2.0);
+    }
+    else if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
+      stepsize0 = min(1.0, stepsize0*2.0);
+    }
 
-    if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
-      StoreOldGradDotDir();
-      ComputeDesignVarUpdate(1.0);
-      StoreGradDotDir();
-      if(GradDotDirOld < 0 && GradDotDir < 0) {
-        stepsize0 = max(10.0*tol, min(1.0, 1.01*GradDotDirOld/GradDotDir));
-      }
-      else{
-        // stepsize0 = min(1.0, 2.0*stepsize0);
-        stepsize0 = 1.0;
-      }
-    }
-    else{
-      // stepsize0 = min(1.0, 2.0*stepsize0);
-      stepsize0 = 1.0;
-    }
+    // if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
+    //   StoreOldGradDotDir();
+    //   ComputeDesignVarUpdate(1.0);
+    //   StoreGradDotDir();
+    //   if(GradDotDirOld < 0 && GradDotDir < 0) {
+    //     stepsize0 = max(10.0*tol, min(1.0, 1.01*GradDotDirOld/GradDotDir));
+    //   }
+    //   else{
+    //     // stepsize0 = min(1.0, 2.0*stepsize0);
+    //     stepsize0 = 1.0;
+    //   }
+    // }
+    // else{
+    //   // stepsize0 = min(1.0, 2.0*stepsize0);
+    //   stepsize0 = 1.0;
+    // }
   }
 
 }
