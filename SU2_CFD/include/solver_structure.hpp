@@ -520,7 +520,7 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Value of the residual for the variable in the position <i>val_var</i>.
    */
-  virtual su2double GetRes_FEM(unsigned short val_var);
+  virtual su2double GetRes_FEM(unsigned short val_var) const;
   
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
@@ -2355,7 +2355,7 @@ public:
    * \brief A virtual member.
    * \return Value of the FEA coefficient (inviscid + viscous contribution).
    */
-  virtual su2double GetTotal_CFEA(void);
+  virtual su2double GetTotal_CFEA(void) const;
   
   /*!
    * \brief A virtual member.
@@ -2374,31 +2374,31 @@ public:
    * \brief A virtual member.
    * \return Value of the objective function for a reference geometry.
    */
-  virtual su2double GetTotal_OFRefGeom(void);
+  virtual su2double GetTotal_OFRefGeom(void) const;
   
   /*!
    * \brief A virtual member.
    * \return Value of the objective function for a reference node.
    */
-  virtual su2double GetTotal_OFRefNode(void);
+  virtual su2double GetTotal_OFRefNode(void) const;
   
   /*!
    * \brief A virtual member.
    * \return Value of the objective function for the volume fraction.
    */
-  virtual su2double GetTotal_OFVolFrac(void);
+  virtual su2double GetTotal_OFVolFrac(void) const;
   
   /*!
    * \brief A virtual member.
    * \return Value of the objective function for the structural compliance.
    */
-  virtual su2double GetTotal_OFCompliance(void);
+  virtual su2double GetTotal_OFCompliance(void) const;
 
   /*!
    * \brief A virtual member.
    * \return Bool that defines whether the solution has an element-based file or not
    */
-  virtual bool IsElementBased(void);
+  virtual bool IsElementBased(void) const;
 
   /*!
    * \brief A virtual member.
@@ -3485,19 +3485,19 @@ public:
    * \brief A virtual member.
    * \param[out] val_forcecoeff_history - Value of the force coefficient.
    */
-  virtual su2double GetForceCoeff();
+  virtual su2double GetForceCoeff() const;
 
   /*!
    * \brief A virtual member.
    * \param[out] val_relaxcoeff_history - Value of the relax coefficient.
    */
-  virtual su2double GetRelaxCoeff();
+  virtual su2double GetRelaxCoeff() const;
 
   /*!
    * \brief A virtual member.
    * \param[out] val_FSI_residual - Value of the residual.
    */
-  virtual su2double GetFSI_Residual();
+  virtual su2double GetFSI_Residual() const;
   
   /*!
    * \brief A virtual member.
@@ -3712,7 +3712,7 @@ public:
    * \param[in] iElem - element parameter.
    * \param[out] iElem_iDe - ID of the Dielectric Elastomer region.
    */
-  virtual unsigned short Get_iElem_iDe(unsigned long iElem);
+  virtual unsigned short Get_iElem_iDe(unsigned long iElem) const;
   
   /*!
    * \brief A virtual member.
@@ -3873,7 +3873,7 @@ public:
    * \param[in]  Value of interest: 0 - Initial value, 1 - Current value.
    * \return Values to compare
    */
-  virtual su2double GetFSI_ConvValue(unsigned short val_index);
+  virtual su2double GetFSI_ConvValue(unsigned short val_index) const;
   
   /*!
    * \brief A virtual member.
@@ -3903,14 +3903,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config);
-
-  /*!
-   * \brief A virtual member, get the value of the reference coordinate to set on the element structure.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] indexNode - Index of the node.
-   * \param[in] iDim - Dimension required.
-   */
-  virtual su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim);
 
   /*!
    * \brief A virtual member.
@@ -4000,13 +3992,13 @@ public:
    * \brief A virtual member.
    * \return Value of the dynamic Aitken relaxation factor
    */
-  virtual su2double GetWAitken_Dyn(void);
+  virtual su2double GetWAitken_Dyn(void) const;
   
   /*!
    * \brief A virtual member.
    * \return Value of the last Aitken relaxation factor in the previous time step.
    */
-  virtual su2double GetWAitken_Dyn_tn1(void);
+  virtual su2double GetWAitken_Dyn_tn1(void) const;
   
   /*!
    * \brief A virtual member.
@@ -4030,7 +4022,7 @@ public:
    * \brief A virtual member.
    * \param[in] Value of the load increment for nonlinear structural analysis
    */
-  virtual su2double GetLoad_Increment(void);
+  virtual su2double GetLoad_Increment(void) const;
 
   /*!
    * \brief A virtual member.
@@ -11711,7 +11703,9 @@ public:
    * \param[in] indexNode - Index of the node.
    * \param[in] iDim - Dimension required.
    */
-  su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim);
+  inline virtual su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) const {
+    return geometry->node[indexNode]->GetCoord(iDim);
+  }
   
   /*!
    * \brief Compute the stiffness matrix of the problem.
@@ -11796,7 +11790,7 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  void BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
   
   /*!
    * \brief Enforce the solution to be 0 in the clamped nodes - Avoids accumulation of numerical error.
@@ -11805,7 +11799,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  void BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
   
   /*!
    * \brief A virtual member.
@@ -11815,7 +11809,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   
-  void BC_DispDir(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  void BC_DispDir(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
   
   /*!
    * \brief Impose a displacement (constraint) boundary condition.
@@ -11824,7 +11818,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Normal_Displacement(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  void BC_Normal_Displacement(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
   
   
   /*!
@@ -11834,7 +11828,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  void BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
   
   /*!
    * \brief Impose a load boundary condition in cartesian coordinates.
@@ -11843,7 +11837,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  void BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
   
   /*!
    * \brief Impose a sine-wave load boundary condition in cartesian coordinates.
@@ -11852,7 +11846,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Sine_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  void BC_Sine_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
   
   /*!
    * \brief Impose a damping load.
@@ -11861,7 +11855,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  void BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
 
   /*!
    * \brief Deformable boundary condition.
@@ -11871,7 +11865,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
 
-  void BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  void BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
 
   /*!
    * \brief Required step for non conservative interpolation schemes where stresses are transferred instead of forces.
@@ -11886,7 +11880,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
   
   /*!
    * \brief Iterate using an implicit Newmark solver.
@@ -11894,7 +11888,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
   
   /*!
    * \brief Update the solution using an implicit Newmark solver.
@@ -11902,7 +11896,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
   
   /*!
    * \brief A virtual member.
@@ -11910,7 +11904,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
   
   /*!
    * \brief Iterate using an implicit Generalized Alpha solver.
@@ -11918,7 +11912,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
   
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
@@ -11926,7 +11920,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
   
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
@@ -11934,7 +11928,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
   
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
@@ -11942,7 +11936,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
   
   /*!
    * \brief Postprocessing.
@@ -11960,107 +11954,107 @@ public:
    * \param[in] solver_container - Container vector with the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solve_System(CGeometry *geometry, CConfig *config);
+  void Solve_System(CGeometry *geometry, CConfig *config) final;
   
   /*!
    * \brief Get the residual for FEM structural analysis.
    * \param[in] val_var - Index of the variable.
    * \return Value of the residual for the variable in the position <i>val_var</i>.
    */
-  su2double GetRes_FEM(unsigned short val_var);
+  inline su2double GetRes_FEM(unsigned short val_var) const final { return Conv_Check[val_var]; }
   
   /*!
    * \brief Provide the maximum Von Mises Stress for structural analysis.
    * \return Value of the maximum Von Mises Stress.
    */
-  su2double GetTotal_CFEA(void);
+  inline su2double GetTotal_CFEA(void) const final { return Total_CFEA; }
   
   /*!
    * \brief Retrieve the value of the objective function for a reference geometry
    * \param[out] OFRefGeom - value of the objective function.
    */
-  su2double GetTotal_OFRefGeom(void);
+  inline su2double GetTotal_OFRefGeom(void) const final { return Total_OFRefGeom; }
   
   /*!
    * \brief Retrieve the value of the objective function for a reference node
    * \param[out] OFRefNode - value of the objective function.
    */
-  su2double GetTotal_OFRefNode(void);
+  inline su2double GetTotal_OFRefNode(void) const final { return Total_OFRefNode; }
   
   /*!
    * \brief Retrieve the value of the volume fraction objective function
    * \param[out] OFVolFrac - value of the objective function.
    */
-  su2double GetTotal_OFVolFrac(void);
+  inline su2double GetTotal_OFVolFrac(void) const final { return Total_OFVolFrac; }
   
   /*!
    * \brief Retrieve the value of the structural compliance objective function
    * \return Value of the objective function.
    */
-  su2double GetTotal_OFCompliance(void);
+  inline su2double GetTotal_OFCompliance(void) const final { return Total_OFCompliance; }
 
   /*!
    * \brief Determines whether there is an element-based file or not.
    * \return Bool that defines whether the solution has an element-based file or not
    */
-  bool IsElementBased(void);
+  inline bool IsElementBased(void) const final { return element_based; }
 
   /*!
    * \brief Set the value of the FEA coefficient.
    * \param[in] val_cfea - Value of the FEA coefficient.
    */
-  void SetTotal_CFEA(su2double val_cfea);
+  inline void SetTotal_CFEA(su2double val_cfea) final { Total_CFEA = val_cfea; }
   
   /*!
    * \brief Set the value of the objective function for a reference geometry.
    * \param[in] val_ofrefgeom - Value of the objective function for a reference geometry.
    */
-  void SetTotal_OFRefGeom(su2double val_ofrefgeom);
+  inline void SetTotal_OFRefGeom(su2double val_ofrefgeom) final { Total_OFRefGeom = val_ofrefgeom; }
   
   /*!
    * \brief Set the value of the objective function for a reference node.
    * \param[in] val_ofrefnode - Value of the objective function for a reference node.
    */
-  void SetTotal_OFRefNode(su2double val_ofrefnode);
+  inline void SetTotal_OFRefNode(su2double val_ofrefnode) final { Total_OFRefNode = val_ofrefnode; }
 
   /*!
    * \brief Set the value of the force coefficient history for the history file.
    * \param[in] iBGS - Number of BGS iteration.
-   * \param[in] val_forcecoeff_history - Value of the force coefficient.
+   * \param[in] val_forcecoeff - Value of the force coefficient.
    */
-  void SetForceCoeff(su2double val_forcecoeff_history);
+  inline void SetForceCoeff(su2double val_forcecoeff) final { ForceCoeff = val_forcecoeff; }
 
   /*!
    * \brief Set the value of the FSI residual for the history file.
    * \param[in] iBGS - Number of BGS iteration.
    * \param[in] val_FSI_residual - Value of the residual.
    */
-  void SetFSI_Residual(su2double val_FSI_residual);
+  inline void SetFSI_Residual(su2double val_FSI_residual) final { FSI_Residual = val_FSI_residual; }
 
   /*!
-   * \brief Set the value of the FSI residual for the history file.
+   * \brief Set the value of the FSI relaxation factor.
    * \param[in] iBGS - Number of BGS iteration.
-   * \param[in] val_FSI_residual - Value of the residual.
+   * \param[in] val_relaxcoeff - Value of the relaxation factor.
    */
-  void SetRelaxCoeff(su2double val_relaxcoeff_history);
+  inline void SetRelaxCoeff(su2double val_relaxcoeff) final { RelaxCoeff = val_relaxcoeff; }
 
   /*!
    * \brief Get the value of the force coefficient history for the history file.
    * \param[out] val_forcecoeff_history - Value of the force coefficient.
    */
-  su2double GetForceCoeff(void);
+  inline su2double GetForceCoeff(void) const final { return ForceCoeff; }
 
   /*!
    * \brief Get the value of the relaxation coefficient history for the history file.
    * \param[out] val_relaxcoeff_history - Value of the relaxation coefficient.
    */
-  su2double GetRelaxCoeff(void);
+  inline su2double GetRelaxCoeff(void) const final { return RelaxCoeff; }
 
   /*!
    * \brief Get the value of the FSI residual for the history file.
    * \param[out] val_FSI_residual - Value of the residual.
    */
-  su2double GetFSI_Residual(void);
+  inline su2double GetFSI_Residual(void) const final { return FSI_Residual; }
   
   /*!
    * \brief Predictor for structural displacements based on previous iterations
@@ -12149,50 +12143,50 @@ public:
    * \brief Get the value of the FSI convergence.
    * \param[in] Set value of interest: 0 - Initial value, 1 - Current value.
    */
-  void SetFSI_ConvValue(unsigned short val_index, su2double val_criteria);
+  inline void SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) final { FSI_Conv[val_index] = val_criteria; }
   
   /*!
    * \brief Get the value of the FSI convergence.
    * \param[in]  Value of interest: 0 - Initial value, 1 - Current value.
    * \return Values to compare
    */
-  su2double GetFSI_ConvValue(unsigned short val_index);
+  inline su2double GetFSI_ConvValue(unsigned short val_index) const final { return FSI_Conv[val_index]; }
   
   /*!
    * \brief Retrieve the value of the dynamic Aitken relaxation factor.
    * \return Value of the dynamic Aitken relaxation factor.
    */
-  su2double GetWAitken_Dyn(void);
+  inline su2double GetWAitken_Dyn(void) const final { return WAitken_Dyn; }
   
   /*!
    * \brief Retrieve the value of the last Aitken relaxation factor in the previous time step.
    * \return Value of the last Aitken relaxation factor in the previous time step.
    */
-  su2double GetWAitken_Dyn_tn1(void);
+  inline su2double GetWAitken_Dyn_tn1(void) const final { return WAitken_Dyn_tn1; }
   
   /*!
    * \brief Set the value of the dynamic Aitken relaxation factor
    * \param[in] Value of the dynamic Aitken relaxation factor
    */
-  void SetWAitken_Dyn(su2double waitk);
+  inline void SetWAitken_Dyn(su2double waitk) final { WAitken_Dyn = waitk; }
   
   /*!
    * \brief Set the value of the last Aitken relaxation factor in the current time step.
    * \param[in] Value of the last Aitken relaxation factor in the current time step.
    */
-  void SetWAitken_Dyn_tn1(su2double waitk_tn1);
+  inline void SetWAitken_Dyn_tn1(su2double waitk_tn1) final { WAitken_Dyn_tn1 = waitk_tn1; }
   
   /*!
    * \brief Set the value of the load increment for nonlinear structural analysis
    * \param[in] Value of the coefficient
    */
-  void SetLoad_Increment(su2double val_loadIncrement);
+  inline void SetLoad_Increment(su2double val_loadIncrement) final { loadIncrement = val_loadIncrement; }
   
   /*!
    * \brief Get the value of the load increment for nonlinear structural analysis
    * \param[in] Value of the coefficient
    */
-  su2double GetLoad_Increment(void);
+  inline su2double GetLoad_Increment(void) const final { return loadIncrement; }
 
   /*!
    * \brief Set a reference geometry for prestretched conditions.
@@ -12206,8 +12200,8 @@ public:
    * \param[in] iElem - element parameter.
    * \param[out] iElem_iDe - ID of the Dielectric Elastomer region.
    */
-  unsigned short Get_iElem_iDe(unsigned long iElem);
-  
+  inline unsigned short Get_iElem_iDe(unsigned long iElem) const final { return iElem_iDe[iElem]; }
+
   /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.

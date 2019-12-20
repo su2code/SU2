@@ -141,32 +141,27 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
     element_container[iTerm] = new CElement* [MAX_FE_KINDS*omp_get_max_threads()]();
 
-  if (nDim == 2) {
-    for(int thread = 0; thread < omp_get_max_threads(); ++thread) {
+  SU2_OMP_PARALLEL
+  {
+    const int offset = omp_get_thread_num()*MAX_FE_KINDS;
 
-      const int offset = thread*MAX_FE_KINDS;
-
+    if (nDim == 2) {
       /*--- Basic terms ---*/
       element_container[FEA_TERM][EL_TRIA+offset] = new CTRIA1();
       element_container[FEA_TERM][EL_QUAD+offset] = new CQUAD4();
 
-      if (de_effects){
+      if (de_effects) {
         element_container[DE_TERM][EL_TRIA+offset] = new CTRIA1();
         element_container[DE_TERM][EL_QUAD+offset] = new CQUAD4();
       }
     }
-  }
-  else {
-    for(int thread = 0; thread < omp_get_max_threads(); ++thread) {
-
-      const int offset = thread*MAX_FE_KINDS;
-
+    else {
       element_container[FEA_TERM][EL_TETRA+offset] = new CTETRA1();
       element_container[FEA_TERM][EL_HEXA +offset] = new CHEXA8 ();
       element_container[FEA_TERM][EL_PYRAM+offset] = new CPYRAM5();
       element_container[FEA_TERM][EL_PRISM+offset] = new CPRISM6();
 
-      if (de_effects){
+      if (de_effects) {
         element_container[DE_TERM][EL_TETRA+offset] = new CTETRA1();
         element_container[DE_TERM][EL_HEXA +offset] = new CHEXA8 ();
         element_container[DE_TERM][EL_PYRAM+offset] = new CPYRAM5();
@@ -363,13 +358,10 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
 CFEASolver::~CFEASolver(void) {
 
-  unsigned short iVar, jVar;
-  unsigned long iElem;
-
   if (element_container != nullptr) {
-    for (iVar = 0; iVar < MAX_TERMS; iVar++) {
-      for (jVar = 0; jVar < MAX_FE_KINDS*omp_get_max_threads(); jVar++) {
-        if (element_container[iVar][jVar] != nullptr) delete element_container[iVar][jVar];
+    for (unsigned int iVar = 0; iVar < MAX_TERMS; iVar++) {
+      for (unsigned int jVar = 0; jVar < MAX_FE_KINDS*omp_get_max_threads(); jVar++) {
+        delete element_container[iVar][jVar];
       }
       delete [] element_container[iVar];
     }
@@ -377,7 +369,7 @@ CFEASolver::~CFEASolver(void) {
   }
 
   if (element_properties != nullptr){
-    for (iElem = 0; iElem < nElement; iElem++)
+    for (unsigned long iElem = 0; iElem < nElement; iElem++)
       if (element_properties[iElem] != nullptr) delete element_properties[iElem];
     delete [] element_properties;
   }
@@ -427,7 +419,7 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
     }
 
     for (iElem = 0; iElem < nElement; iElem++){
-      element_properties[iElem] = new CElementProperty(0, 0, 0, 0);
+      element_properties[iElem] = new CElementProperty(FEA_TERM, 0, 0, 0);
     }
 
     element_based = false;
@@ -482,10 +474,8 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
         else
           point_line >> index >> elProperties[0] >> elProperties[1] >> elProperties[2] >> elProperties[3];
 
-        element_properties[iElem_Local] = new CElementProperty(elProperties[0],
-                                                         elProperties[1],
-                                                         elProperties[2],
-                                                         elProperties[3]);
+        element_properties[iElem_Local] = new CElementProperty(
+          elProperties[0], elProperties[1], elProperties[2], elProperties[3]);
 
         /*--- For backwards compatibility we only read a fifth column in topology mode ---*/
         if (topology_mode) {
@@ -1025,7 +1015,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
         element->Set_ElProperties(element_properties[iElem]);
 
         /*--- Compute the components of the jacobian and the stress term, one numerics per thread. ---*/
-        int NUM_TERM = thread*MAX_TERMS + element_based? element_properties[iElem]->GetMat_Mod() : FEA_TERM;
+        int NUM_TERM = thread*MAX_TERMS + element_properties[iElem]->GetMat_Mod();
 
         numerics[NUM_TERM]->Compute_Tangent_Matrix(element, config);
 
@@ -1132,7 +1122,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
           de_elem->Set_ElProperties(element_properties[iElem]);
 
         /*--- Compute the components of the Jacobian and the stress term for the material. ---*/
-        int NUM_TERM = thread*MAX_TERMS + element_based? element_properties[iElem]->GetMat_Mod() : FEA_TERM;
+        int NUM_TERM = thread*MAX_TERMS + element_properties[iElem]->GetMat_Mod();
 
         numerics[NUM_TERM]->Compute_Tangent_Matrix(fea_elem, config);
 
@@ -1428,7 +1418,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
         element->Set_ElProperties(element_properties[iElem]);
 
         /*--- Compute the components of the Jacobian and the stress term for the material. ---*/
-        int NUM_TERM = thread*MAX_TERMS + element_based? element_properties[iElem]->GetMat_Mod() : FEA_TERM;
+        int NUM_TERM = thread*MAX_TERMS + element_properties[iElem]->GetMat_Mod();
 
         numerics[NUM_TERM]->Compute_NodalStress_Term(element, config);
 
@@ -1533,7 +1523,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
         element->Set_ElProperties(element_properties[iElem]);
 
         /*--- Compute the averaged nodal stresses. ---*/
-        int NUM_TERM = thread*MAX_TERMS + element_based? element_properties[iElem]->GetMat_Mod() : FEA_TERM;
+        int NUM_TERM = thread*MAX_TERMS + element_properties[iElem]->GetMat_Mod();
 
         numerics[NUM_TERM]->Compute_Averaged_NodalStress(element, config);
 
