@@ -181,8 +181,8 @@ def main():
     discadj_cylinder           = TestCase('unsteady_cylinder_windowed_average_AD')
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder_Windowing_AD.cfg" 
-    discadj_cylinder.test_iter = 6
-    discadj_cylinder.test_vals = [3.612556] #last column
+    discadj_cylinder.test_iter = 9
+    discadj_cylinder.test_vals = [2.999891] #last column
     discadj_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_cylinder.timeout   = 1600
     discadj_cylinder.tol       = 0.00001
