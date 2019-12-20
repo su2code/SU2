@@ -1209,35 +1209,36 @@ void COneShotFluidDriver::ComputePreconditioner(){
   }
 
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+    const bool active = (ConstrFuncStore[iConstr] > 0.);
+    if(active) {
+      seeding[iConstr] = 1.0;
 
-    seeding[iConstr] = 1.0;
+      solver[ADJFLOW_SOL]->ResetInputs(geometry, config);
+      iteration->InitializeAdjoint_Zero(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
-    solver[ADJFLOW_SOL]->ResetInputs(geometry, config);
-    iteration->InitializeAdjoint_Zero(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+      /*--- Initialize the adjoint of the objective function with 0.0. ---*/
 
-    /*--- Initialize the adjoint of the objective function with 0.0. ---*/
+      SetAdj_ObjFunction_Zero();
+      SetAdj_ConstrFunction(seeding);
 
-    SetAdj_ObjFunction_Zero();
-    SetAdj_ConstrFunction(seeding);
+      /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
-    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+      AD::ComputeAdjoint();
 
-    AD::ComputeAdjoint();
+      /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
+      iteration->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
+                                     solver_container, numerics_container, config_container,
+                                     surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
-    /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
-    iteration->Iterate_No_Residual(output_container[ZONE_0], integration_container, geometry_container,
-                                   solver_container, numerics_container, config_container,
-                                   surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-
-    solver[ADJFLOW_SOL]->SetConstrDerivative(iConstr);
+      solver[ADJFLOW_SOL]->SetConstrDerivative(iConstr);
 
 
-    AD::ClearAdjoints();
+      AD::ClearAdjoints();
 
-    // solver[ADJFLOW_SOL]->LoadSolution();
+      // solver[ADJFLOW_SOL]->LoadSolution();
 
-    seeding[iConstr]=0.0;
-
+      seeding[iConstr]=0.0;
+    }
   }
 
   su2double bcheck=0;
