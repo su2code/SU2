@@ -375,16 +375,13 @@ void COneShotFluidDriver::RunOneShot(){
   if(OneShotIter > 0) solver[ADJFLOW_SOL]->CalculateRhoTheta(config);
   if(OneShotIter == config->GetOneShotStart()) {
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    // solver[ADJFLOW_SOL]->SetSaveSolution();
-    // solver[ADJFLOW_SOL]->LoadSolution();
     if(nConstr > 0) ComputePreconditioner();
-    // solver[ADJFLOW_SOL]->LoadSaveSolution();
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
   }
   else if((OneShotIter > config->GetOneShotStart()) && 
-          (OneShotIter < config->GetOneShotStop())){
-          // (OneShotIter < config->GetOneShotStop()) &&
-          // (ArmijoFlag != 0)){
+          // (OneShotIter < config->GetOneShotStop())){
+          (OneShotIter < config->GetOneShotStop()) &&
+          (ArmijoFlag != 0)){
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
 
