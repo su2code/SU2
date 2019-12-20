@@ -1,5 +1,5 @@
 /*!
- * \file solver_direct_elasticity.cpp
+ * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
  * \version 7.0.0 "Blackbird"
@@ -25,11 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#include "../include/solver_structure.hpp"
-#include "../include/variables/CFEABoundVariable.hpp"
-#include "../../Common/include/toolboxes/printing_toolbox.hpp"
-#include "../../Common/include/omp_structure.hpp"
+#include "../../include/solvers/CFEASolver.hpp"
+#include "../../include/variables/CFEABoundVariable.hpp"
+#include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 #include <algorithm>
 
 /*!
