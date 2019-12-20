@@ -958,11 +958,11 @@ void COneShotFluidDriver::CalculateLagrangian(){
     // const bool active = (LambdaTilde[iConstr] > 0.);
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
     if((eqconstr) || (active)) {
-      Lagrangian += gamma/2.*helper*helper - 1./(2.*gamma)*Lambda[iConstr]*Lambda[iConstr];
-      // Lagrangian += gamma/2.*helper*helper;
+      // Lagrangian += gamma/2.*helper*helper - 1./(2.*gamma)*Lambda[iConstr]*Lambda[iConstr];
+      Lagrangian += gamma/2.*helper*helper;
     }
     else {
-      Lagrangian -= 1./(2.*gamma)*Lambda[iConstr]*Lambda[iConstr];
+      // Lagrangian -= 1./(2.*gamma)*Lambda[iConstr]*Lambda[iConstr];
     }
   }
 
