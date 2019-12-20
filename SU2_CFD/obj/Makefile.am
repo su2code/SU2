@@ -122,8 +122,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solver_direct_mean_inc.cpp \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
-  ../src/solver_direct_elasticity.cpp \
   ../src/solvers/CMeshSolver.cpp \
+  ../src/solvers/CFEASolver.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
   ../src/CMarkerProfileReaderFVM.cpp \
