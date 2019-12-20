@@ -484,7 +484,7 @@ void COneShotFluidDriver::PrimalDualStep(){
 
   /*--- Note: Unsteady cases not applicable to the one-shot method yet! ---*/
 
-  SetRecording(NONE);
+  // SetRecording(NONE);
   solver[ADJFLOW_SOL]->LoadSolution();
   SetRecording(COMBINED);
 
@@ -1141,7 +1141,8 @@ void COneShotFluidDriver::ComputeBetaTerm(){
 
   /*--- Store the computational graph of one direct iteration with the conservative variables and the mesh coordinates as input. ---*/
 
-  SetRecording(NONE);
+  // SetRecording(NONE);
+  solver[ADJFLOW_SOL]->ResetInputs(geometry, config);
   solver[ADJFLOW_SOL]->UpdateStateVariable(config);
   SetRecording(COMBINED);
 
