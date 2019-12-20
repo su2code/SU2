@@ -223,11 +223,8 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   static_cast<CFEABoundVariable*>(nodes)->AllocateBoundaryVariables(config);
 
 
-  bool reference_geometry = config->GetRefGeom();
-  if (reference_geometry) Set_ReferenceGeometry(geometry, config);
-
-  bool prestretch_fem = config->GetPrestretch();
-  if (prestretch_fem) Set_Prestretch(geometry, config);
+  if (config->GetRefGeom()) Set_ReferenceGeometry(geometry, config);
+  if (config->GetPrestretch()) Set_Prestretch(geometry, config);
 
   /*--- Initialization of matrix structures ---*/
   if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Non-Linear Elasticity)." << endl;
@@ -510,7 +507,6 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
   }
 
 }
-
 
 void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
@@ -931,8 +927,6 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   if (fsi && first_iter && consistent_interpolation) Integrate_FSI_Loads(geometry,config);
 
 }
-
-void CFEASolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
 
 void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
@@ -2024,8 +2018,6 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
 }
 
-void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
-
 void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Determine whether the load conditions are applied in the reference or in the current configuration. ---*/
@@ -2186,8 +2178,6 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *
   }
 
 }
-
-void CFEASolver::BC_Sine_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
 
 void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
@@ -2477,8 +2467,6 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
   return LoadCoeff;
 
 }
-
-void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 

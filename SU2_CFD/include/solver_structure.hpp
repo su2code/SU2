@@ -3874,27 +3874,6 @@ public:
    * \return Values to compare
    */
   virtual su2double GetFSI_ConvValue(unsigned short val_index) const;
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_Prestretch(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_ReferenceGeometry(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_ElementProperties(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -4589,13 +4568,13 @@ public:
    * \brief Get minimun volume in the mesh
    * \return 
    */
-  virtual su2double GetMinimum_Volume(){ return 0.0; }
+  virtual su2double GetMinimum_Volume() const { return 0.0; }
   
   /*!
    * \brief Get maximum volume in the mesh
    * \return 
    */
-  virtual su2double GetMaximum_Volume(){ return 0.0; }
+  virtual su2double GetMaximum_Volume() const { return 0.0; }
   
 protected:
   /*!

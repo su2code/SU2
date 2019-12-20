@@ -27,6 +27,7 @@
 
 
 #include "../include/iteration_structure.hpp"
+#include "../include/solvers/CFEASolver.hpp"
 
 CIteration::CIteration(CConfig *config) {
   rank = SU2_MPI::GetRank();
