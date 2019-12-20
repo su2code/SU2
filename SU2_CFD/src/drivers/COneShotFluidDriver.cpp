@@ -1252,14 +1252,14 @@ void COneShotFluidDriver::ComputePreconditioner(){
       // const bool active = (ConstrFuncStore[0] + Lambda[0]/gamma > 0.);
       const bool active = (ConstrFuncStore[0] > 0.);
       // const bool active = (LambdaTilde[0] > 0.);
-      // if(active) {
+      if(active) {
         BCheckNorm = BCheck[0][0] - 1./gamma;
         BCheckInv[0][0] = 1./BCheck[0][0];
-      // }
-      // else {
-      //   BCheckNorm = 2.0/gamma;
-      //   BCheckInv[0][0] = gamma;
-      // }
+      }
+      else {
+        BCheckNorm = 1.01/gamma;
+        BCheckInv[0][0] = gamma;
+      }
   } else {
     bcheck=1./(BCheck[0][0]*BCheck[1][1]*BCheck[2][2]+BCheck[1][0]*BCheck[2][1]*BCheck[0][2]+BCheck[2][0]*BCheck[0][1]*BCheck[1][2]-BCheck[0][0]*BCheck[2][1]*BCheck[1][2]-BCheck[2][0]*BCheck[1][1]*BCheck[0][2]-BCheck[1][0]*BCheck[0][1]*BCheck[2][2]);
     BCheckInv[0][0]=bcheck*(BCheck[1][1]*BCheck[2][2]-BCheck[1][2]*BCheck[2][1]);
