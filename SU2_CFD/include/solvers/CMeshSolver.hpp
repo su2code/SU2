@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -28,9 +28,9 @@
 
 #pragma once
 
-#include "../solver_structure.hpp"
+#include "CFEASolver.hpp"
 
-class CMeshSolver : public CFEASolver {
+class CMeshSolver final : public CFEASolver {
 protected:
 
   bool time_domain;
@@ -72,14 +72,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config);
+  void DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config) override;
 
   /*!
    * \brief Set the stiffness of the mesh.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config);
+  void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config) override;
 
   /*!
    * \brief Compute the min and max volume of the elements in the domain.
@@ -102,7 +102,7 @@ public:
    * \param[in] indexNode - Index of the node.
    * \param[in] iDim - Dimension required.
    */
-  inline su2double Get_ValCoord(CGeometry*, unsigned long indexNode, unsigned short iDim) const final {
+  inline su2double Get_ValCoord(CGeometry*, unsigned long indexNode, unsigned short iDim) const override {
     return nodes->GetMesh_Coord(indexNode,iDim);
   }
 
@@ -144,7 +144,7 @@ public:
   /*!
    * \brief Move the mesh in time.
    */
-  void SetDualTime_Mesh(void);
+  void SetDualTime_Mesh(void) override;
 
   /*!
    * \brief Load a solution from a restart file.
@@ -154,24 +154,24 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) override;
 
   /*!
    * \brief Load the geometries at the previous time states n and nM1.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
+  void Restart_OldGeometry(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Get minimun volume in the mesh
    * \return
    */
-  su2double GetMinimum_Volume(){return MinVolume_Curr;}
+  inline su2double GetMinimum_Volume() const override {return MinVolume_Curr;}
 
   /*!
    * \brief Get maximum volume in the mesh
    * \return
    */
-  su2double GetMaximum_Volume(){return MaxVolume_Curr;}
+  inline su2double GetMaximum_Volume() const override {return MaxVolume_Curr;}
 
 };

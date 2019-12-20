@@ -148,8 +148,8 @@ public:
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output);
-
+  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics,
+                     unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) override;
 
   /*!
    * \brief Set the initial condition for the FEM structural problem.
@@ -158,7 +158,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter);
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) override;
 
   /*!
    * \brief Reset the initial condition for the FEM structural problem.
@@ -167,7 +167,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter);
+  void ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) override;
 
   /*!
    * \brief Compute the time step for solving the FEM equations.
@@ -177,9 +177,8 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Index of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration);
-
+  inline void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                           unsigned short iMesh, unsigned long Iteration) override { }
 
   /*!
    * \brief Set a reference geometry for .
@@ -309,8 +308,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Normal_Displacement(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
-
+  inline void BC_Normal_Displacement(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final { }
 
   /*!
    * \brief Impose a load boundary condition normal to the boundary.
@@ -337,7 +335,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Sine_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
+  inline void BC_Sine_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final { }
 
   /*!
    * \brief Impose a damping load.
@@ -355,7 +353,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-
   void BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
 
   /*!
@@ -371,7 +368,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  inline void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final { };
 
   /*!
    * \brief Iterate using an implicit Newmark solver.
@@ -436,8 +433,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,  CNumerics **numerics,
-                      unsigned short iMesh);
+  void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                      CNumerics **numerics, unsigned short iMesh) final;
 
   /*!
    * \brief Routine to solve the Jacobian-Residual linearized system.
@@ -556,7 +553,7 @@ public:
    */
   void PredictStruct_Displacement(CGeometry **fea_geometry,
                                   CConfig *fea_config,
-                                  CSolver ***fea_solution);
+                                  CSolver ***fea_solution) final;
 
   /*!
    * \brief Computation of Aitken's coefficient.
@@ -567,7 +564,7 @@ public:
   void ComputeAitken_Coefficient(CGeometry **fea_geometry,
                                  CConfig *fea_config,
                                  CSolver ***fea_solution,
-                                 unsigned long iOuterIter);
+                                 unsigned long iOuterIter) final;
 
   /*!
    * \brief Aitken's relaxation of the solution.
@@ -577,7 +574,7 @@ public:
    */
   void SetAitken_Relaxation(CGeometry **fea_geometry,
                             CConfig *fea_config,
-                            CSolver ***fea_solution);
+                            CSolver ***fea_solution) final;
 
   /*!
    * \brief Aitken's relaxation of the solution.
@@ -587,7 +584,7 @@ public:
    */
   void Update_StructSolution(CGeometry **fea_geometry,
                              CConfig *fea_config,
-                             CSolver ***fea_solution);
+                             CSolver ***fea_solution) final;
 
   /*!
    * \brief Compute the objective function for a reference geometry
@@ -595,7 +592,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
 
   /*!
    * \brief Compute the objective function for a reference node
@@ -603,7 +600,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
 
   /*!
    * \brief Compute the objective function for a volume fraction
@@ -611,7 +608,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
 
   /*!
    * \brief Compute the compliance objective function
@@ -619,7 +616,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_OFCompliance(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void Compute_OFCompliance(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
 
   /*!
    * \brief Compute the penalty due to the stiffness increase
@@ -628,7 +625,7 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config);
+  void Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config) final;
 
   /*!
    * \brief Get the value of the FSI convergence.
@@ -715,7 +712,7 @@ public:
    * \param[in] CurrentTime - Current time step.
    * \param[in] config - Definition of the particular problem.
    */
-  su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config);
+  su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config) final;
 
   /*!
    * \brief A virtual member.

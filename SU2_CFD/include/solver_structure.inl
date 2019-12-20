@@ -974,12 +974,6 @@ inline su2double* CSolver::GetVecSolDOFs(void) {return NULL;}
 
 inline unsigned long CSolver::GetnDOFsGlobal(void) {return 0;}
 
-inline void CSolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_Prestretch(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) { }
-
 inline su2double CSolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config) { return 0.0; }
                       
 inline void CSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
