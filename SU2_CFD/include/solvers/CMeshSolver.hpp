@@ -28,7 +28,8 @@
 
 #pragma once
 
-#include "../solver_structure.hpp"
+#include "CFEASolver.hpp"
+#include ".../variables/CMeshElement.hpp"
 
 class CMeshSolver : public CFEASolver {
 protected:

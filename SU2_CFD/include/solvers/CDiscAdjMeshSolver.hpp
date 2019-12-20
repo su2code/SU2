@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../solver_structure.hpp"
+#include "CSolver.hpp"
 #include "../variables/CDiscAdjMeshBoundVariable.hpp"
 
 /*!

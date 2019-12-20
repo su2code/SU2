@@ -55,16 +55,6 @@
 #include "../../Common/include/graph_coloring_structure.hpp"
 #include "../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 
-/*--- CVariable includes, ToDo: Once this file is split, one per class these includes can also be separated. ---*/
-#include "variables/CIncEulerVariable.hpp"
-#include "variables/CTurbVariable.hpp"
-#include "variables/CAdjEulerVariable.hpp"
-#include "variables/CAdjTurbVariable.hpp"
-#include "variables/CHeatFVMVariable.hpp"
-#include "variables/CDiscAdjVariable.hpp"
-#include "variables/CDiscAdjFEABoundVariable.hpp"
-#include "variables/CMeshElement.hpp"
-
 using namespace std;
 
 class CSolver {
