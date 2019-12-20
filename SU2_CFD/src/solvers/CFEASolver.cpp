@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -2573,7 +2573,7 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
   {
     unsigned long iPoint;
     unsigned short iVar;
-  
+
     /*--- Update solution. ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -2775,7 +2775,7 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      
+
         /*--- External surface load contribution ---*/
 
         for (iVar = 0; iVar < nVar; iVar++) {
@@ -2909,7 +2909,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
   /*--- Store the value of the residual. ---*/
 
   SetResLinSolver(System.GetResidual());
-  
+
 }
 
 
@@ -3513,7 +3513,7 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
       // Compute the area/volume of the element
       su2double elementVolume;
-      
+
       if (nDim == 2)
         elementVolume = element->ComputeArea();
       else
