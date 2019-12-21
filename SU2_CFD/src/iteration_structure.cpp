@@ -2953,7 +2953,7 @@ void CDiscAdjFEAIteration::SetRecording(CSolver *****solver,
 
 void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst, unsigned short kind_recording){
 
-  if(kind_recording != MESH_COORDS) {
+  if(kind_recording != MESH_COORDS && kind_recording != MESH_DEFORM) {
 
     /*--- Register structural displacements as input ---*/
 
@@ -2966,7 +2966,7 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver, CGeometry ****geom
     /*--- Both need to be registered regardless of kind_recording for structural shape derivatives to work properly.
           Otherwise, the code simply diverges as the FEM_CROSS_TERM_GEOMETRY breaks! (no idea why) for this term we register but do not extract! ---*/
   }
-  else {
+  else if (kind_recording == MESH_COORDS) {
     /*--- Register topology optimization densities (note direct solver) ---*/
 
     solver[iZone][iInst][MESH_0][FEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
@@ -2974,6 +2974,14 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver, CGeometry ****geom
     /*--- Register mesh coordinates for geometric sensitivities ---*/
 
     geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
+  }
+  else if (kind_recording == MESH_DEFORM) {
+
+    /*--- Undeformed mesh coordinates ---*/
+    solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+
+    /*--- Boundary displacements ---*/
+    solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 }
 

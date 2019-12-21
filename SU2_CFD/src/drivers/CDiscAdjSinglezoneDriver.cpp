@@ -102,7 +102,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     direct_iteration = new CFEAIteration(config);
     direct_output = new CElasticityOutput(config, nDim);
     MainVariables = FEA_DISP_VARS;
-    SecondaryVariables = MESH_COORDS;
+    if (mesh_def) SecondaryVariables = MESH_DEFORM;
+    else          SecondaryVariables = MESH_COORDS;
     break;
 
   case DISC_ADJ_HEAT:
