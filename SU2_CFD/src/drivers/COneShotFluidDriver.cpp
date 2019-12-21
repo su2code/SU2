@@ -858,9 +858,9 @@ unsigned short COneShotFluidDriver::CheckArmijo(){
 
   for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
     /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-    // admissible_step += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
+    admissible_step += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
     /*--- AugLagGrad is the gradient at the old iterate. ---*/
-    admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+    // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
   }
   // for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
   //   /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
@@ -890,9 +890,9 @@ void COneShotFluidDriver::StoreGradDotDir(){
 
   for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
     /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-    // GradDotDir += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
+    GradDotDir += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
     /*--- AugLagGrad is the gradient at the old iterate. ---*/
-    GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+    // GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
   }
   // for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
   //   /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
