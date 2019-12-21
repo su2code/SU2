@@ -990,10 +990,6 @@ inline void CSolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numeri
 
 inline void CSolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
 
-inline void CSolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }  
-
-inline void CSolver::Compute_IntegrationConstants(CConfig *config) { }
-
 inline void CSolver::SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { };
 
 inline su2double CSolver::GetFSI_ConvValue(unsigned short val_index) const { return 0.0; }

@@ -25,11 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "../solver_structure.hpp"
 
-/*! \class CFEASolver
- *  \brief Main class for defining a FEM solver for elastic structural problems.
- *  \author R. Sanchez.
+/*!
+ * \class CFEASolver
+ * \brief Main class for defining a FEM solver for elastic structural problems.
+ * \author R. Sanchez.
  */
 class CFEASolver : public CSolver {
 protected:
@@ -73,7 +76,7 @@ protected:
 
   struct ElemColor {
     unsigned long size;             /*!< \brief Number of elements with a given color. */
-    const unsigned long* indices;   /*!< \brief The index of the elements in a color. */
+    const unsigned long* indices;   /*!< \brief Array of element indices for a given color. */
   };
   vector<ElemColor> ElemColoring;   /*!< \brief Element colors. */
   unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size must be a multiple of this. */
@@ -108,6 +111,33 @@ protected:
       default: assert(false); nNodes = 0; EL_KIND = -(1<<30); break;
     }
   }
+
+  /*!
+   * \brief Set container of element properties.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_ElementProperties(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set a reference geometry for .
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_ReferenceGeometry(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set a reference geometry for prestretched conditions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_Prestretch(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute constants for time integration.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_IntegrationConstants(CConfig *config);
 
 public:
 
@@ -158,7 +188,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) override;
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
+                           CConfig *config, unsigned long TimeIter) override;
 
   /*!
    * \brief Reset the initial condition for the FEM structural problem.
@@ -167,7 +198,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) override;
+  void ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
+                             CConfig *config, unsigned long TimeIter) override;
 
   /*!
    * \brief Compute the time step for solving the FEM equations.
@@ -179,13 +211,6 @@ public:
    */
   inline void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                            unsigned short iMesh, unsigned long Iteration) override { }
-
-  /*!
-   * \brief Set a reference geometry for .
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_ReferenceGeometry(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Get the value of the reference coordinate to set on the element structure.
@@ -204,7 +229,7 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+  void Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
 
   /*!
    * \brief Compute the stiffness matrix of the problem and the nodal stress terms at the same time.
@@ -214,7 +239,7 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+  void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
 
   /*!
    * \brief Compute the mass matrix of the problem.
@@ -222,7 +247,7 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+  void Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
 
   /*!
    * \brief Compute the mass residual of the problem.
@@ -230,7 +255,7 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+  void Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
 
   /*!
    * \brief Compute the nodal stress terms and add them to the residual.
@@ -238,7 +263,7 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+  void Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
 
   /*!
    * \brief Compute the stress at the nodes for output purposes.
@@ -247,8 +272,7 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-
-  void Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+  void Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
 
   /*!
    * \brief Compute the dead loads.
@@ -257,22 +281,7 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config);
-
-  /*!
-   * \brief Initializes the matrices/residuals in the solution process (avoids adding over previous values).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Compute_IntegrationConstants(CConfig *config);
+  void Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
 
   /*!
    * \brief Clamped boundary conditions.
@@ -308,7 +317,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline void BC_Normal_Displacement(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final { }
+  inline void BC_Normal_Displacement(CGeometry *geometry, CNumerics *numerics,
+                                     CConfig *config, unsigned short val_marker) final { }
 
   /*!
    * \brief Impose a load boundary condition normal to the boundary.
@@ -625,7 +635,8 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config) final;
+  void Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container,
+                         CNumerics **numerics_container, CConfig *config) final;
 
   /*!
    * \brief Get the value of the FSI convergence.
@@ -677,13 +688,6 @@ public:
   inline su2double GetLoad_Increment(void) const final { return loadIncrement; }
 
   /*!
-   * \brief Set a reference geometry for prestretched conditions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_Prestretch(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Retrieve the iDe index for DE computations
    * \param[in] iElem - element parameter.
    * \param[out] iElem_iDe - ID of the Dielectric Elastomer region.
@@ -699,13 +703,6 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
-
-  /*!
-   * \brief Set container of element properties.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_ElementProperties(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Get multiplier for loads.
