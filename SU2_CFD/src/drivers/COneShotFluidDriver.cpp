@@ -464,7 +464,7 @@ void COneShotFluidDriver::RunOneShot(){
     // else if(((!bool_tol) && (ArmijoIter < nArmijoIter)) || (ArmijoFlag == 2)) {
     // // else {
     //   stepsize0 = min(1.0, stepsize0*2.0);
-    }
+    // }
 
     // if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
     //   StoreOldGradDotDir();
