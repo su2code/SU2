@@ -99,7 +99,7 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
     for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
       BFGSInv[iDV][jDV] = 0.0;
     }
-    BFGSInv[iDV][iDV] = 0.0;
+    BFGSInv[iDV][iDV] = 1.0;
   }
 
   for (unsigned short iConstr = 0; iConstr  < nConstr; iConstr++){
@@ -871,7 +871,8 @@ unsigned short COneShotFluidDriver::CheckArmijo(){
   // }
   
   /*--- Return 0 if satisfied, 1 if 1st condition not satisfied, 2 if 2nd condition not satisfied ---*/
-  if (Lagrangian > LagrangianOld - CWolfeOne*abs(admissible_step)) {
+  // if (Lagrangian > LagrangianOld - CWolfeOne*abs(admissible_step)) {
+  if (Lagrangian > LagrangianOld - CWolfeOne*admissible_step) {
     return 1;
   }
   // else if (abs(admissible_step_new) > CWolfeTwo*abs(admissible_step)) {
