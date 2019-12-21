@@ -267,24 +267,24 @@ void COneShotFluidDriver::RunOneShot(){
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
       }
-      else{
-        // UpdateLambda(1.0);
-        // UpdateLambda(stepsize);
-        ComputeDesignVarUpdate(stepsize);
-        StoreGradDotDir();
-        // if(GradDotDir >= 0) {
-        //   stepsize = 0.0;
-        //   bool_tol = true;
-        //   ComputeDesignVarUpdate(0.0);
-        //   PrimalDualStep();
-        //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-        //   StoreObjFunction();
-        //   StoreConstrFunction();
-        //   // UpdateLambda(1.0);
-        //   ArmijoIter = 1;
-        //   break;
-        // }
-      }
+      // else{
+      //   // UpdateLambda(1.0);
+      //   // UpdateLambda(stepsize);
+      //   ComputeDesignVarUpdate(stepsize);
+      //   StoreGradDotDir();
+      //   if(GradDotDir >= 0) {
+      //     stepsize = 0.0;
+      //     bool_tol = true;
+      //     ComputeDesignVarUpdate(0.0);
+      //     PrimalDualStep();
+      //     solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+      //     StoreObjFunction();
+      //     StoreConstrFunction();
+      //     // UpdateLambda(1.0);
+      //     ArmijoIter = 1;
+      //     break;
+      //   }
+      // }
 
       // solver[ADJFLOW_SOL]->LoadSaveSolution();
       // --- Preprocess to recompute primitive variables ---
@@ -320,8 +320,8 @@ void COneShotFluidDriver::RunOneShot(){
       }
 
       LoadOldLambda();
-      UpdateLambda(1.0);
-      // UpdateLambda(stepsize);
+      // UpdateLambda(1.0);
+      UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
