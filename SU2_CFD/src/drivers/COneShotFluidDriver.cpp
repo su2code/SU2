@@ -251,9 +251,9 @@ void COneShotFluidDriver::RunOneShot(){
         if(ArmijoFlag == 1) {
           stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
         }
-        else if(ArmijoFlag == 2) {
-          stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
-        }
+        // else if(ArmijoFlag == 2) {
+        //   stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
+        // }
         if(stepsize < tol) {
           stepsize = tol;
           bool_tol = true;
@@ -345,7 +345,7 @@ void COneShotFluidDriver::RunOneShot(){
 
   } while((OneShotIter > config->GetOneShotStart()) && 
           (OneShotIter < config->GetOneShotStop())  &&
-          (ArmijoFlag != 0) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+          (ArmijoFlag != 1) && (ArmijoIter < nArmijoIter) && (!bool_tol));
 
   // solver[ADJFLOW_SOL]->LoadSolution();
   // solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
@@ -452,12 +452,18 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Modifiy initial line search guess based on success of line search ---*/
   if(OneShotIter > config->GetOneShotStart()) {
-    if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0)) {
+    if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0) && (ArmijoFlag == 0)) {
       stepsize0 = max(2.0*tol, stepsize0/2.0);
     }
-    else if(((!bool_tol) && (ArmijoIter < nArmijoIter)) || (ArmijoFlag == 2)) {
-    // else {
+    else if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0) && (ArmijoFlag == 2)) {
       stepsize0 = min(1.0, stepsize0*2.0);
+    }
+    else {
+      stepsize0 = 1.0;
+    }
+    // else if(((!bool_tol) && (ArmijoIter < nArmijoIter)) || (ArmijoFlag == 2)) {
+    // // else {
+    //   stepsize0 = min(1.0, stepsize0*2.0);
     }
 
     // if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
