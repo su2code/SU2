@@ -234,7 +234,6 @@ void COneShotFluidDriver::RunOneShot(){
   unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShotSearchIter();
   unsigned short ArmijoFlag = 1;
   bool bool_tol = false;
-  unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, SHIFTED = 3 , TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
 
   /*--- Store the old solution and the old design for line search ---*/
   // solver[ADJFLOW_SOL]->SetOldStoreSolution();
@@ -1032,7 +1031,6 @@ void COneShotFluidDriver::SetShiftLagGrad(){
 }
 
 void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
-  unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
   for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
     if(kind == ALPHA_TERM) {
       AugLagGradAlpha[iDV] = Gradient[iDV];

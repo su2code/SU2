@@ -92,6 +92,8 @@ protected:
   su2double** BCheckInv;        /*!< \brief Inverse matrix for multiplier update.*/
   su2double  BCheckNorm;        /*!< \brief Norm of the matrix for multiplier update.*/
 
+  const unsigned short ALPHA_TERM = 0, BETA_TERM = 1, GAMMA_TERM = 2, SHIFTED = 3 , TOTAL_AUGMENTED = 3, TOTAL_AUGMENTED_OLD = 4;
+
 public:
 
   /*!
