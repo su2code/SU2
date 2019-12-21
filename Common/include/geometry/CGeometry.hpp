@@ -1549,11 +1549,10 @@ public:
    * \param[in] filter_radius - Parameter defining the size of the neighbourhood.
    * \param[in] kernels - Kernel types and respective parameter, size of vector defines number of filter recursions.
    * \param[in] search_limit - Max degree of neighborhood considered for neighbor search, avoids excessive work in fine regions.
-   * \param[in] input_values - "Raw" values.
-   * \param[out] output_values - Filtered values.
+   * \param[in,out] values - On entry, the "raw" values, on exit, the filtered values.
    */
   void FilterValuesAtElementCG(const vector<su2double> &filter_radius, const vector<pair<unsigned short,su2double> > &kernels,
-                               const unsigned short search_limit, const su2double *input_values, su2double *output_values) const;
+                               const unsigned short search_limit, su2double *values) const;
 
   /*!
    * \brief Build the global (entire mesh!) adjacency matrix for the elements in compressed format.
