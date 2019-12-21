@@ -808,7 +808,8 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
     normsk += sk[iDV]*sk[iDV];
   }
 
-  if ((vk > 0) && (GradDotDir < 0)){
+  // if ((vk > 0) && (GradDotDir < 0)){
+  if (vk > 0){
     su2double** MatA = new su2double*[nDV_Total];
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       MatA[iDV] = new su2double[nDV_Total];
