@@ -379,17 +379,17 @@ void COneShotFluidDriver::RunOneShot(){
     if(nConstr > 0) ComputePreconditioner();
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
   }
-  // else if((OneShotIter > config->GetOneShotStart()) && 
-  //         // (OneShotIter < config->GetOneShotStop())){
-  //         (OneShotIter < config->GetOneShotStop()) &&
-  //         (ArmijoFlag != 0)){
-  //   solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-  //   solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
+  else if((OneShotIter > config->GetOneShotStart()) && 
+          // (OneShotIter < config->GetOneShotStop())){
+          (OneShotIter < config->GetOneShotStop()) &&
+          (ArmijoFlag != 0)){
+    solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
 
-  //   /*--- Recalculate Lagrangian and gradient with new Gamma ---*/
-  //   SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+    /*--- Recalculate Lagrangian and gradient with new Gamma ---*/
+    SetAugLagGrad(TOTAL_AUGMENTED_OLD);
 
-  // }
+  }
 
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
   StoreObjFunction();
@@ -836,11 +836,11 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
     }
     delete [] MatA;
   }else{
-    solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
-    solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
+    // solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
+    // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
 
-    /*--- Recalculate gradient with new alpha/beta/gamma ---*/
-    SetAugLagGrad(TOTAL_AUGMENTED);
+    // /*--- Recalculate gradient with new alpha/beta/gamma ---*/
+    // SetAugLagGrad(TOTAL_AUGMENTED);
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
         BFGSInv[iDV][jDV] = 0.0;
