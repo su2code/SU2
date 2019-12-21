@@ -2743,7 +2743,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics, CSolver***, CGeom
 
     for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++) {
 
-      for (unsigned int iTerm = 0; iTerm < MAX_TERMS; iTerm++) {
+      for (unsigned int iTerm = 0; iTerm < MAX_TERMS*omp_get_max_threads(); iTerm++) {
 
         delete numerics[val_iInst][iMGlevel][iSol][iTerm];
       }
