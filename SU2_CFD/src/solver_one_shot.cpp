@@ -318,8 +318,8 @@ void COneShotSolver::CalculateAlphaBeta(CConfig *config){
 
   // if(config->GetInnerIter() == config->GetOneShotStart()) {
 
-  alpha = max(min(alpha, 1.0E6), 1.0E-6);
-  beta = max(min(beta, 1.0E6), 1.0E-6);
+  alpha = max(min(alpha, 1.0E6), 1.0E-0);
+  beta = max(min(beta, 1.0E6), 1.0E-0);
   config->SetOneShotAlpha(alpha);
   config->SetOneShotBeta(beta);
   // }
@@ -338,7 +338,7 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, 
   
   /* --- Estimate gamma value --- */
   for(iConstr = 0; iConstr < nConstr; iConstr++) {
-    su2double gamma = 1.01/val_bcheck_norm;
+    su2double gamma = 2./val_bcheck_norm;
     // if((config->GetKind_ConstrFuncType(iConstr) != EQ_CONSTR) && (val_constr_func[iConstr] <= 0.0)) {
       // gamma = max(min(max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma()), config->GetOneShotGammaMax()), 1.0E-6);
     // }
@@ -351,7 +351,7 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, 
     // }
       // gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma());
     // if(config->GetInnerIter() == config->GetOneShotStart()) {
-      gamma = max(min(gamma, 1.0E6), 1.0E-6);
+      gamma = max(min(gamma, 1.0E6), 1.0E-0);
       config->SetOneShotGamma(gamma);
     // }
     // else {
