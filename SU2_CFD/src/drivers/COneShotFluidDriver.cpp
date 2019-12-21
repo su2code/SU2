@@ -230,7 +230,7 @@ void COneShotFluidDriver::Run(){
 
 void COneShotFluidDriver::RunOneShot(){
 
-  su2double stepsize = stepsize0, tol = config->GetOneShotSearchTol();
+  su2double stepsize = stepsize0, stepsizel = 0., stepsizer = 1., tol = config->GetOneShotSearchTol();
   unsigned short ArmijoIter = 0, nArmijoIter = config->GetOneShotSearchIter();
   unsigned short ArmijoFlag = 1;
   bool bool_tol = false;
@@ -250,11 +250,15 @@ void COneShotFluidDriver::RunOneShot(){
         // su2double stepsize_tmp = UpdateStepSizeQuadratic();
         if(ArmijoFlag == 1) {
           // stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
-          stepsize /= 2.0;
+          // stepsize /= 2.0;
+          stepsizer = stepsize;
+          stepsize  = 0.5*(stepsizel+stepsize);
         }
         else if(ArmijoFlag == 2) {
         //   stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
-          stepsize *= 1.5;
+          // stepsize *= 1.5;
+          stepsizel = stepsize;
+          stepsize  = 0.5*(stepsize+stepsizer);
         }
         if(stepsize < tol) {
           stepsize = tol;
@@ -465,10 +469,14 @@ void COneShotFluidDriver::RunOneShot(){
     // else {
     //   stepsize0 = 1.0;
     // }
-    else if(((!bool_tol) && (ArmijoIter < nArmijoIter)) || (ArmijoFlag == 2)) {
-    // else {
+    else if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize > stepsize0*2.0)) {
       stepsize0 = min(1.0, stepsize0*2.0);
+      // stepsize0 = stepsize;
     }
+    // else if(((!bool_tol) && (ArmijoIter < nArmijoIter)) || (ArmijoFlag == 2)) {
+    // // else {
+    //   stepsize0 = min(1.0, stepsize0*2.0);
+    // }
 
     // if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
     //   StoreOldGradDotDir();
