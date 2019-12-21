@@ -3722,19 +3722,19 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
   search_lim = config->GetTopology_Search_Limit();
   config->GetTopology_Optim_Projection(type,param);
 
-  su2double *design_rho = new su2double [nElement],
-            *physical_rho = new su2double [nElement];
+  su2double *physical_rho = new su2double [nElement];
 
-  /*--- "Rectify" the input. ---*/
+  /*--- "Rectify" the input, initialize the physical density with
+  the design density (the filter function works in-place). ---*/
   SU2_OMP(parallel for schedule(static,omp_chunk_size))
   for (auto iElem=0ul; iElem<nElement; ++iElem) {
     su2double rho = element_properties[iElem]->GetDesignDensity();
-    if      (rho > 1.0) design_rho[iElem] = 1.0;
-    else if (rho < 0.0) design_rho[iElem] = 0.0;
-    else                design_rho[iElem] = rho;
+    if      (rho > 1.0) physical_rho[iElem] = 1.0;
+    else if (rho < 0.0) physical_rho[iElem] = 0.0;
+    else                physical_rho[iElem] = rho;
   }
 
-  geometry->FilterValuesAtElementCG(filter_radius, kernels, search_lim, design_rho, physical_rho);
+  geometry->FilterValuesAtElementCG(filter_radius, kernels, search_lim, physical_rho);
 
   SU2_OMP_PARALLEL
   {
@@ -3767,7 +3767,6 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
     }
   }
 
-  delete [] design_rho;
   delete [] physical_rho;
 
   /*--- For when this method is called directly, e.g. by the adjoint solver. ---*/

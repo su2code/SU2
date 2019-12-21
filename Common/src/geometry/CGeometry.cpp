@@ -3318,8 +3318,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
                                         const vector<pair<unsigned short,su2double> > &kernels,
                                         const unsigned short search_limit,
-                                        const su2double *input_values,
-                                        su2double *output_values) const
+                                        su2double *values) const
 {
   /*--- Apply a filter to "input_values". The filter is an averaging process over the neighbourhood
   of each element, which is a circle in 2D and a sphere in 3D of radius "filter_radius".
@@ -3327,12 +3326,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
   can be specified in which case they are applied sequentially (each one being applied to the
   output values of the previous filter. ---*/
 
-  unsigned long limited_searches = 0;
-
-  /*--- Initialize output values and check if we need to do any more work than that. ---*/
-  for (auto iElem=0ul; iElem<nElem; ++iElem)
-    output_values[iElem] = input_values[iElem];
-
+  /*--- Check if we need to do any work. ---*/
   if ( kernels.empty() ) return;
 
 
@@ -3359,7 +3353,10 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
   whether an element is already added to the list of neighbors (one vector per thread). ---*/
   vector<vector<bool> > is_neighbor(omp_get_max_threads());
 
-  /*--- Begin OpenMP parallel section. ---*/
+  /*--- Begin OpenMP parallel section, count total number of searches for which
+  the recursion limit is reached and the full neighborhood is not considered. ---*/
+  unsigned long limited_searches = 0;
+
   SU2_OMP(parallel reduction(+:limited_searches))
   {
 
@@ -3438,7 +3435,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
     /*--- Populate ---*/
     SU2_OMP_FOR_STAT(256)
     for(auto iElem=0ul; iElem<nElem; ++iElem)
-      work_values[elem[iElem]->GetGlobalIndex()] = output_values[iElem];
+      work_values[elem[iElem]->GetGlobalIndex()] = values[iElem];
 
 #ifdef HAVE_MPI
     /*--- Share with all processors ---*/
@@ -3496,7 +3493,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
             numerator   += weight*work_values[idx];
             denominator += weight;
           }
-          output_values[iElem] = numerator/denominator;
+          values[iElem] = numerator/denominator;
           break;
 
         /*--- morphology kernels (image processing) ---*/
@@ -3511,8 +3508,8 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
             }
             denominator += 1.0;
           }
-          output_values[iElem] = log(numerator/denominator)/kernel_param;
-          if ( kernel_type==ERODE_MORPH_FILTER ) output_values[iElem] = 1.0-output_values[iElem];
+          values[iElem] = log(numerator/denominator)/kernel_param;
+          if ( kernel_type==ERODE_MORPH_FILTER ) values[iElem] = 1.0-values[iElem];
           break;
 
         default:
@@ -3526,7 +3523,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
   limited_searches /= kernels.size();
 
   unsigned long tmp = limited_searches;
-  MPI_Reduce(&tmp,&limited_searches,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+  SU2_MPI::Reduce(&tmp,&limited_searches,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
 
   if (rank==MASTER_NODE && limited_searches>0)
     cout << "Warning: The filter radius was limited for " << limited_searches
