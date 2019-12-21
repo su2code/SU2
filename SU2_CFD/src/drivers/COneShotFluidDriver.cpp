@@ -871,8 +871,8 @@ unsigned short COneShotFluidDriver::CheckArmijo(){
   // }
   
   /*--- Return 0 if satisfied, 1 if 1st condition not satisfied, 2 if 2nd condition not satisfied ---*/
-  if (Lagrangian > LagrangianOld - CWolfeOne*abs(admissible_step)) {
-  // if (Lagrangian > LagrangianOld - CWolfeOne*admissible_step) {
+  // if (Lagrangian > LagrangianOld - CWolfeOne*abs(admissible_step)) {
+  if (Lagrangian > LagrangianOld + CWolfeOne*admissible_step) {
     return 1;
   }
   // else if (abs(admissible_step_new) > CWolfeTwo*abs(admissible_step)) {
