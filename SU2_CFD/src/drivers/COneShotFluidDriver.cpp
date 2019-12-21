@@ -857,8 +857,8 @@ unsigned short COneShotFluidDriver::CheckArmijo(){
 
   for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
     /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-    // admissible_step += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
-    admissible_step_new += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
+    admissible_step += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
+    // admissible_step_new += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
     /*--- AugLagGrad is the gradient at the old iterate. ---*/
     // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
   }
