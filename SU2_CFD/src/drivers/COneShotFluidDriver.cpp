@@ -345,7 +345,7 @@ void COneShotFluidDriver::RunOneShot(){
 
   } while((OneShotIter > config->GetOneShotStart()) && 
           (OneShotIter < config->GetOneShotStop())  &&
-          (ArmijoFlag != 1) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+          (ArmijoFlag == 1) && (ArmijoIter < nArmijoIter) && (!bool_tol));
 
   // solver[ADJFLOW_SOL]->LoadSolution();
   // solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
