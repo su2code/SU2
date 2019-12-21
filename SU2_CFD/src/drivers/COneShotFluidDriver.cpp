@@ -247,13 +247,15 @@ void COneShotFluidDriver::RunOneShot(){
 
       if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
-        su2double stepsize_tmp = UpdateStepSizeQuadratic();
+        // su2double stepsize_tmp = UpdateStepSizeQuadratic();
         if(ArmijoFlag == 1) {
-          stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+          // stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+          stepsize /= 2.0;
         }
-        // else if(ArmijoFlag == 2) {
+        else if(ArmijoFlag == 2) {
         //   stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
-        // }
+          stepsize *= 1.5;
+        }
         if(stepsize < tol) {
           stepsize = tol;
           bool_tol = true;
@@ -345,7 +347,7 @@ void COneShotFluidDriver::RunOneShot(){
 
   } while((OneShotIter > config->GetOneShotStart()) && 
           (OneShotIter < config->GetOneShotStop())  &&
-          (ArmijoFlag == 1) && (ArmijoIter < nArmijoIter) && (!bool_tol));
+          (ArmijoFlag != 0) && (ArmijoIter < nArmijoIter) && (!bool_tol));
 
   // solver[ADJFLOW_SOL]->LoadSolution();
   // solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
