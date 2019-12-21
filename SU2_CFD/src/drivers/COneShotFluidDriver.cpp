@@ -252,7 +252,7 @@ void COneShotFluidDriver::RunOneShot(){
           stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
         }
         else if(ArmijoFlag == 2) {
-          stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.8, stepsize*9.0), 1.0);
+          stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*1.8), 1.0);
         }
         if(stepsize < tol) {
           stepsize = tol;
@@ -876,8 +876,9 @@ unsigned short COneShotFluidDriver::CheckArmijo(){
     return 1;
   }
   // else if (abs(admissible_step_new) > CWolfeTwo*abs(admissible_step)) {
-  //   return 2;
-  // }
+  else if (Lagrangian < LagrangianOld - CWolfeTwo*abs(admissible_step)) {
+    return 2;
+  }
   else {
     return 0;
   }
