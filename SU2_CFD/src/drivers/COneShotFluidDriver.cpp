@@ -272,18 +272,18 @@ void COneShotFluidDriver::RunOneShot(){
         // UpdateLambda(stepsize);
         ComputeDesignVarUpdate(stepsize);
         StoreGradDotDir();
-        // if(GradDotDir >= 0) {
-        //   stepsize = 0.0;
-        //   bool_tol = true;
-        //   ComputeDesignVarUpdate(0.0);
-        //   PrimalDualStep();
-        //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-        //   StoreObjFunction();
-        //   StoreConstrFunction();
-        //   UpdateLambda(1.0);
-        //   ArmijoIter = 1;
-        //   break;
-        // }
+        if(GradDotDir >= 0) {
+          stepsize = 0.0;
+          bool_tol = true;
+          ComputeDesignVarUpdate(0.0);
+          PrimalDualStep();
+          solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+          StoreObjFunction();
+          StoreConstrFunction();
+          // UpdateLambda(1.0);
+          ArmijoIter = 1;
+          break;
+        }
       }
 
       // solver[ADJFLOW_SOL]->LoadSaveSolution();
@@ -805,8 +805,8 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
     normsk += sk[iDV]*sk[iDV];
   }
 
-  // if ((vk > 0) && (GradDotDir < 0)){
-  if (vk > 0){
+  if ((vk > 0) && (GradDotDir < 0)){
+  // if (vk > 0){
     su2double** MatA = new su2double*[nDV_Total];
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       MatA[iDV] = new su2double[nDV_Total];
