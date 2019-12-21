@@ -92,9 +92,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
   /*--- Initialize the element structure ---*/
 
-  element = new CMeshElement[nElement];
-  for (iElem = 0; iElem < nElement; iElem++)
-    element[iElem] = CMeshElement();
+  element.resize(nElement);
 
   /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
 
@@ -179,11 +177,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   /*--- Compute the wall distance using the reference coordinates ---*/
   SetWallDistance(geometry, config);
 
-}
-
-CMeshSolver::~CMeshSolver(void) {
-
-  if (element != nullptr) delete [] element;
 }
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {

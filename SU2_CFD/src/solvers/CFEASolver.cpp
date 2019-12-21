@@ -1792,10 +1792,6 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CCo
 
 }
 
-void CFEASolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-
-}
-
 void CFEASolver::Compute_IntegrationConstants(CConfig *config) {
 
   su2double Delta_t= config->GetDelta_DynTime();
@@ -3724,14 +3720,14 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
     filter_radius.push_back(radius);
   }
   search_lim = config->GetTopology_Search_Limit();
+  config->GetTopology_Optim_Projection(type,param);
 
-  unsigned long iElem, nElem = geometry->GetnElem();
+  su2double *design_rho = new su2double [nElement],
+            *physical_rho = new su2double [nElement];
 
-  su2double *design_rho = new su2double [nElem],
-            *physical_rho = new su2double [nElem];
-
-  /*--- "Rectify" the input ---*/
-  for (iElem=0; iElem<nElem; ++iElem) {
+  /*--- "Rectify" the input. ---*/
+  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  for (auto iElem=0ul; iElem<nElement; ++iElem) {
     su2double rho = element_properties[iElem]->GetDesignDensity();
     if      (rho > 1.0) design_rho[iElem] = 1.0;
     else if (rho < 0.0) design_rho[iElem] = 0.0;
@@ -3740,29 +3736,35 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
 
   geometry->FilterValuesAtElementCG(filter_radius, kernels, search_lim, design_rho, physical_rho);
 
-  /*--- Apply projection ---*/
-  config->GetTopology_Optim_Projection(type,param);
-  switch (type) {
-    case NO_PROJECTION: break;
-    case HEAVISIDE_UP:
-      for (iElem=0; iElem<nElem; ++iElem)
-        physical_rho[iElem] = 1.0-exp(-param*physical_rho[iElem])+physical_rho[iElem]*exp(-param);
-      break;
-    case HEAVISIDE_DOWN:
-      for (iElem=0; iElem<nElem; ++iElem)
-        physical_rho[iElem] = exp(-param*(1.0-physical_rho[iElem]))-(1.0-physical_rho[iElem])*exp(-param);
-      break;
-    default:
-      SU2_MPI::Error("Unknown type of projection function",CURRENT_FUNCTION);
-  }
+  SU2_OMP_PARALLEL
+  {
+    /*--- Apply projection. ---*/
+    switch (type) {
+      case NO_PROJECTION: break;
+      case HEAVISIDE_UP:
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for (auto iElem=0ul; iElem<nElement; ++iElem)
+          physical_rho[iElem] = 1.0-exp(-param*physical_rho[iElem])+physical_rho[iElem]*exp(-param);
+        break;
+      case HEAVISIDE_DOWN:
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for (auto iElem=0ul; iElem<nElement; ++iElem)
+          physical_rho[iElem] = exp(-param*(1.0-physical_rho[iElem]))-(1.0-physical_rho[iElem])*exp(-param);
+        break;
+      default:
+        SU2_OMP_MASTER
+        SU2_MPI::Error("Unknown type of projection function",CURRENT_FUNCTION);
+    }
 
-  /*--- If input was out of bounds use the bound instead of the filtered
-   value, useful to enforce solid or void regions (e.g. a skin). ---*/
-  for (iElem=0; iElem<nElem; ++iElem) {
-    su2double rho = element_properties[iElem]->GetDesignDensity();
-    if      (rho > 1.0) element_properties[iElem]->SetPhysicalDensity(1.0);
-    else if (rho < 0.0) element_properties[iElem]->SetPhysicalDensity(0.0);
-    else element_properties[iElem]->SetPhysicalDensity(physical_rho[iElem]);
+    /*--- If input was out of bounds use the bound instead of the filtered
+     value, useful to enforce solid or void regions (e.g. a skin). ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iElem=0ul; iElem<nElement; ++iElem) {
+      su2double rho = element_properties[iElem]->GetDesignDensity();
+      if      (rho > 1.0) element_properties[iElem]->SetPhysicalDensity(1.0);
+      else if (rho < 0.0) element_properties[iElem]->SetPhysicalDensity(0.0);
+      else element_properties[iElem]->SetPhysicalDensity(physical_rho[iElem]);
+    }
   }
 
   delete [] design_rho;

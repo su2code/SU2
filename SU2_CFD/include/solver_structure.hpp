@@ -67,7 +67,6 @@
 #include "variables/CHeatFVMVariable.hpp"
 #include "variables/CDiscAdjVariable.hpp"
 #include "variables/CDiscAdjFEABoundVariable.hpp"
-#include "variables/CMeshElement.hpp"
 
 using namespace std;
 
@@ -3899,7 +3898,6 @@ public:
    */
   virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
-  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3930,7 +3928,6 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  
   virtual void Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
@@ -3940,7 +3937,6 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  
   virtual void Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
@@ -3950,22 +3946,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Solve_System(CGeometry *geometry, CConfig *config);
-  
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Compute_IntegrationConstants(CConfig *config);
   
   /*!
    * \brief A virtual member.

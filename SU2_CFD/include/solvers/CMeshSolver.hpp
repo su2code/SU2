@@ -29,6 +29,7 @@
 #pragma once
 
 #include "CFEASolver.hpp"
+#include "../variables/CMeshElement.hpp"
 
 class CMeshSolver final : public CFEASolver {
 protected:
@@ -53,33 +54,7 @@ protected:
   su2double Mu;                 /*!< \brief Lame's coeficient. */
   su2double Lambda;             /*!< \brief Lame's coeficient. */
 
-public:
-
-  CMeshElement* element;         /*!< \brief Vector which stores element information for each problem. */
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CMeshSolver(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CMeshSolver(void);
-
-  /*!
-   * \brief Grid deformation using the linear elasticity equations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config) override;
-
-  /*!
-   * \brief Set the stiffness of the mesh.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config) override;
+  vector<CMeshElement> element; /*!< \brief Vector which stores element information for each problem. */
 
   /*!
    * \brief Compute the min and max volume of the elements in the domain.
@@ -96,16 +71,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetWallDistance(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Get the value of the reference coordinate to set on the element structure.
-   * \param[in] indexNode - Index of the node.
-   * \param[in] iDim - Dimension required.
-   */
-  inline su2double Get_ValCoord(CGeometry*, unsigned long indexNode, unsigned short iDim) const override {
-    return nodes->GetMesh_Coord(indexNode,iDim);
-  }
-
+  
   /*!
    * \brief Update the value of the coordinates after the grid movement.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -140,6 +106,35 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config);
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CMeshSolver(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Grid deformation using the linear elasticity equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config) override;
+
+  /*!
+   * \brief Set the stiffness of the mesh.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config) override;
+
+  /*!
+   * \brief Get the value of the reference coordinate to set on the element structure.
+   * \param[in] indexNode - Index of the node.
+   * \param[in] iDim - Dimension required.
+   */
+  inline su2double Get_ValCoord(CGeometry*, unsigned long indexNode, unsigned short iDim) const override {
+    return nodes->GetMesh_Coord(indexNode,iDim);
+  }
 
   /*!
    * \brief Move the mesh in time.
