@@ -460,7 +460,7 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Modifiy initial line search guess based on success of line search ---*/
   if(OneShotIter > config->GetOneShotStart()) {
-    if(((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0)) || (ArmijoFlag == 1)) {
+    if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0)) {
       stepsize0 = max(2.0*tol, stepsize0/2.0);
       // stepsize0 = stepsize;
     }
@@ -471,7 +471,7 @@ void COneShotFluidDriver::RunOneShot(){
     // else {
     //   stepsize0 = 1.0;
     // }
-    else if(((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize > stepsize0*2.0)) || (ArmijoFlag == 1)) {
+    else if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize > stepsize0*2.0)) {
       stepsize0 = min(1.0, stepsize0*2.0);
       // stepsize0 = stepsize;
     }
