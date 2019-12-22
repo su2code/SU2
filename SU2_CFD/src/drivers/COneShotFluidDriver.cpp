@@ -330,7 +330,7 @@ void COneShotFluidDriver::RunOneShot(){
       UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
-      // StoreLambdaGrad();
+      StoreLambdaGrad();
       StoreGradDotDir();
 
     }
@@ -882,13 +882,10 @@ unsigned short COneShotFluidDriver::CheckArmijo(){
     /*--- AugLagGrad is the gradient at the old iterate. ---*/
     admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
   }
-  // for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-  //   /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-  //   admissible_step += (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
-  //   // admissible_step_new += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
-  //   /*--- AugLagGrad is the gradient at the old iterate. ---*/
-  //   // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
-  // }
+  for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+    /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
+    admissible_step += (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
+  }
   
   /*--- Return 0 if satisfied, 1 if 1st condition not satisfied, 2 if 2nd condition not satisfied ---*/
   if (Lagrangian > LagrangianOld - CWolfeOne*abs(admissible_step)) {
@@ -914,13 +911,10 @@ void COneShotFluidDriver::StoreGradDotDir(){
     /*--- AugLagGrad is the gradient at the old iterate. ---*/
     GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
   }
-  // for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-  //   /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-  //   GradDotDir += (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
-  //   // admissible_step_new += DesignVarUpdate[iDV]*ShiftLagGrad[iDV];
-  //   /*--- AugLagGrad is the gradient at the old iterate. ---*/
-  //   // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
-  // }
+  for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
+    /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
+    GradDotDir += (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
+  }
 }
 
 void COneShotFluidDriver::StoreOldGradDotDir(){
@@ -1464,10 +1458,11 @@ void COneShotFluidDriver::StoreLambdaGrad() {
     const su2double beta = config->GetOneShotBeta();
     for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++) {
       const su2double gamma = config->GetOneShotGamma();
-      const bool active = (ConstrFuncOld[iConstr] + LambdaOld[iConstr]/gamma > 0.);
-      // const bool active = (ConstrFuncOld[iConstr] > 0.);
+      // const bool active = (ConstrFuncOld[iConstr] + LambdaOld[iConstr]/gamma > 0.);
+      const bool active = (ConstrFuncStore[iConstr] > 0.);
+      const bool eqconstr = (config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR);
       su2double my_Gradient = 0.;
-      if((config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR) || (active)) {
+      if((eqconstr) || (active)) {
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
           for (unsigned short iVar = 0; iVar < nVar; iVar++) {
             my_Gradient += beta
