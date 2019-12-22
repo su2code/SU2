@@ -337,7 +337,7 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- Do a primal and adjoint update ---*/
     PrimalDualStep();
-    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    solver[ADJFLOW_SOL]->SetSaveSolutionDelta(geometry);
 
     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
     if ((OneShotIter > config->GetOneShotStart()) && 
