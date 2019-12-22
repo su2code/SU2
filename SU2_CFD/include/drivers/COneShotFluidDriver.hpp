@@ -190,12 +190,12 @@ public:
   /*!
    * \brief Check if the first Wolfe descent condition is fulfilled (line search condition).
    */
-  unsigned short CheckArmijo();
+  unsigned short CheckArmijo(bool designing);
 
   /*!
    * \brief Store gradient dotted with search direction for first Armijo search iteration.
    */
-  void StoreGradDotDir();
+  void StoreGradDotDir(bool designing);
 
   /*!
    * \brief Store gradient dotted with search direction used in previous iteration.

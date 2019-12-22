@@ -331,7 +331,7 @@ void COneShotFluidDriver::RunOneShot(){
 
       /*--- Compute and store GradL dot p ---*/
       StoreLambdaGrad();
-      StoreGradDotDir();
+      StoreGradDotDir(true);
 
     }
 
@@ -344,7 +344,7 @@ void COneShotFluidDriver::RunOneShot(){
         (OneShotIter < config->GetOneShotStop())  &&
         ((ArmijoIter < nArmijoIter-1) && (!bool_tol))) {
       CalculateLagrangian();
-      ArmijoFlag = CheckArmijo();
+      ArmijoFlag = CheckArmijo(true);
     }
 
     ArmijoIter++;
@@ -353,22 +353,62 @@ void COneShotFluidDriver::RunOneShot(){
           (OneShotIter < config->GetOneShotStop())  &&
           (ArmijoFlag != 0) && (ArmijoIter < nArmijoIter) && (!bool_tol));
 
-  // // if((OneShotIter > config->GetOneShotStart()) && (OneShotIter < config->GetOneShotStop())) {
-  //   solver[ADJFLOW_SOL]->LoadSolution();
-  //   solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-  //   ComputeFunctionals();
-  //   StoreObjFunction();
-  //   StoreConstrFunction();
-  //   PrimalDualStep();
-  //   solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-  //   if((OneShotIter > config->GetOneShotStart()) && (OneShotIter < config->GetOneShotStop())) UpdateLambda(stepsize);
-  // // }
-
   /*--- Save solution ---*/
   solver[ADJFLOW_SOL]->SetSaveSolution();
 
   /*--- Store number of search iterations ---*/
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
+
+  /*--- Perform line search on the design ---*/
+  if((OneShotIter > config->GetOneShotStart()) && 
+     (OneShotIter < config->GetOneShotStop())  && 
+     (ArmijoFlag != 0)) {
+
+    /*--- Compute and store GradL dot p ---*/
+    StoreLambdaGrad();
+
+    bool bool_tol_feas = false;
+    unsigned short ArmijoIterFeas = 0, ArmijoFlagFeas = 1;
+    su2double stepsizefeas = 1.0, stepsizel = 0.0, stepsizer = 1.0;
+    do {
+
+      if(ArmijoIterFeas > 0){
+        /*--- Parabolic backtracking ---*/
+        // su2double stepsize_tmp = UpdateStepSizeQuadratic();
+        if(ArmijoFlagFeas == 1) {
+          // stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+          // stepsize /= 2.0;
+          stepsizer    = stepsizefeas;
+          stepsizefeas = 0.5*(stepsizel+stepsizefeas);
+        }
+        else if(ArmijoFlagFeas == 2) {
+        //   stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
+          // stepsize *= 1.5;
+          stepsizel    = stepsizefeas;
+          stepsizefeas = 0.5*(stepsizefeas+stepsizer);
+        }
+        if(stepsizefeas < tol) {
+          stepsizefeas  = 0.0;
+          bool_tol_feas = true;
+        }
+
+      }
+
+      LoadOldLambda();
+      // UpdateLambda(1.0);
+      UpdateLambda(stepsizefeas);
+
+      StoreGradDotDir(false);
+      /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
+      if ((ArmijoIterFeas < nArmijoIter-1) && (!bool_tol_feas)) {
+        CalculateLagrangian();
+        ArmijoFlagFeas = CheckArmijo(false);
+      }
+
+      ArmijoIterFeas++;
+
+    } while((ArmijoFlagFeas != 0) && (ArmijoIterFeas < nArmijoIter) && (!bool_tol_feas));
+  }
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
@@ -873,14 +913,16 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
   delete [] sk;
 }
 
-unsigned short COneShotFluidDriver::CheckArmijo(){
+unsigned short COneShotFluidDriver::CheckArmijo(bool designing){
   su2double admissible_step = 0.0, admissible_step_new = 0.0;
 
-  for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
-    /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-    // admissible_step += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
-    /*--- AugLagGrad is the gradient at the old iterate. ---*/
-    admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+  if(designing) {
+    for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
+      /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
+      // admissible_step += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
+      /*--- AugLagGrad is the gradient at the old iterate. ---*/
+      admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+    }
   }
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
@@ -901,15 +943,17 @@ unsigned short COneShotFluidDriver::CheckArmijo(){
   }
 }
 
-void COneShotFluidDriver::StoreGradDotDir(){
+void COneShotFluidDriver::StoreGradDotDir(bool designing){
 
   GradDotDir = 0.0;
 
-  for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
-    /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-    // GradDotDir += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
-    /*--- AugLagGrad is the gradient at the old iterate. ---*/
-    GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+  if(designing) {
+    for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
+      /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
+      // GradDotDir += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
+      /*--- AugLagGrad is the gradient at the old iterate. ---*/
+      GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+    }
   }
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
