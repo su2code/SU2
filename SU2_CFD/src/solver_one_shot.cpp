@@ -318,8 +318,8 @@ void COneShotSolver::CalculateAlphaBeta(CConfig *config){
 
   // if(config->GetInnerIter() == config->GetOneShotStart()) {
 
-  alpha = max(min(alpha, 1.0E9), 1.0E-0);
-  beta = max(min(beta, 1.0E9), 1.0E-0);
+  alpha = max(min(alpha, 1.0E3), 1.0E-3);
+  beta = max(min(beta, 1.0E3), 1.0E-3);
   config->SetOneShotAlpha(alpha);
   config->SetOneShotBeta(beta);
   // }
@@ -351,7 +351,7 @@ void COneShotSolver::CalculateGamma(CConfig *config, su2double val_bcheck_norm, 
     // }
       // gamma = max(gamma, config->GetOneShotGammaRate()*config->GetOneShotGamma());
     // if(config->GetInnerIter() == config->GetOneShotStart()) {
-      gamma = max(min(gamma, 1.0E9), 1.0E-0);
+      gamma = max(min(gamma, 1.0E3), 1.0E-3);
       config->SetOneShotGamma(gamma);
     // }
     // else {
