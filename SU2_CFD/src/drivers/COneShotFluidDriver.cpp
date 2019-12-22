@@ -247,12 +247,12 @@ void COneShotFluidDriver::RunOneShot(){
 
       if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
-        su2double stepsize_tmp = UpdateStepSizeQuadratic();
+        // su2double stepsize_tmp = UpdateStepSizeQuadratic();
         if(ArmijoFlag == 1) {
-          stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+          // stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
           // stepsize /= 2.0;
-          // stepsizer = stepsize;
-          // stepsize  = 0.5*(stepsizel+stepsize);
+          stepsizer = stepsize;
+          stepsize  = 0.5*(stepsizel+stepsize);
         }
         else if(ArmijoFlag == 2) {
         //   stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
@@ -374,12 +374,12 @@ void COneShotFluidDriver::RunOneShot(){
 
       if(ArmijoIterFeas > 0){
         /*--- Parabolic backtracking ---*/
-        su2double stepsize_tmp = UpdateStepSizeQuadratic();
+        // su2double stepsize_tmp = UpdateStepSizeQuadratic();
         if(ArmijoFlagFeas == 1) {
-          stepsizefeas = UpdateStepSizeBound(stepsize_tmp, stepsizefeas/10., stepsizefeas/2.);
+          // stepsizefeas = UpdateStepSizeBound(stepsize_tmp, stepsizefeas/10., stepsizefeas/2.);
           // stepsize /= 2.0;
-          // stepsizer    = stepsizefeas;
-          // stepsizefeas = 0.5*(stepsizel+stepsizefeas);
+          stepsizer    = stepsizefeas;
+          stepsizefeas = 0.5*(stepsizel+stepsizefeas);
         }
         else if(ArmijoFlagFeas == 2) {
         //   stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
@@ -935,9 +935,9 @@ unsigned short COneShotFluidDriver::CheckArmijo(bool designing){
     return 1;
   }
   // else if (abs(admissible_step_new) > CWolfeTwo*abs(admissible_step)) {
-  // else if (Lagrangian < LagrangianOld - CWolfeTwo*abs(admissible_step)) {
-  //   return 2;
-  // }
+  else if (Lagrangian < LagrangianOld - CWolfeTwo*abs(admissible_step)) {
+    return 2;
+  }
   else {
     return 0;
   }
