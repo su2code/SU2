@@ -460,21 +460,21 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Modifiy initial line search guess based on success of line search ---*/
   if(OneShotIter > config->GetOneShotStart()) {
-    if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0)) {
-      stepsize0 = max(2.0*tol, stepsize0/2.0);
-      // stepsize0 = stepsize;
-    }
-    // else if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0) && (ArmijoFlag == 2)) {
+    // if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0)) {
+    //   stepsize0 = max(2.0*tol, stepsize0/2.0);
+    //   // stepsize0 = stepsize;
+    // }
+    // // else if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0) && (ArmijoFlag == 2)) {
+    // //   stepsize0 = min(1.0, stepsize0*2.0);
+    // //   // stepsize0 = min(1.0, stepsize*2.0);
+    // // }
+    // // else {
+    // //   stepsize0 = 1.0;
+    // // }
+    // else if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize > stepsize0*2.0)) {
     //   stepsize0 = min(1.0, stepsize0*2.0);
-    //   // stepsize0 = min(1.0, stepsize*2.0);
+    //   // stepsize0 = stepsize;
     // }
-    // else {
-    //   stepsize0 = 1.0;
-    // }
-    else if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize > stepsize0*2.0)) {
-      stepsize0 = min(1.0, stepsize0*2.0);
-      // stepsize0 = stepsize;
-    }
     // else if(((!bool_tol) && (ArmijoIter < nArmijoIter)) || (ArmijoFlag == 2)) {
     // // else {
     //   stepsize0 = min(1.0, stepsize0*2.0);
@@ -878,9 +878,9 @@ unsigned short COneShotFluidDriver::CheckArmijo(){
 
   for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
     /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-    admissible_step += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
+    // admissible_step += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
     /*--- AugLagGrad is the gradient at the old iterate. ---*/
-    // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+    admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
   }
   // for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
   //   /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
@@ -910,9 +910,9 @@ void COneShotFluidDriver::StoreGradDotDir(){
 
   for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
     /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-    GradDotDir += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
+    // GradDotDir += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
     /*--- AugLagGrad is the gradient at the old iterate. ---*/
-    // GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+    GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
   }
   // for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
   //   /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
