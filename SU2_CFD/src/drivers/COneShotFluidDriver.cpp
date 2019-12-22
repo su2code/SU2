@@ -236,7 +236,7 @@ void COneShotFluidDriver::RunOneShot(){
   bool bool_tol = false;
 
   /*--- Store the old solution and the old design for line search ---*/
-  // solver[ADJFLOW_SOL]->SetOldStoreSolution();
+  solver[ADJFLOW_SOL]->SetOldStoreSolution();
   solver[ADJFLOW_SOL]->SetStoreSolution();
   solver[ADJFLOW_SOL]->SetMeshPointsOld(config, geometry);
 
@@ -267,10 +267,10 @@ void COneShotFluidDriver::RunOneShot(){
 
         /*---Load the old design and solution for line search---*/
         solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
-        solver[ADJFLOW_SOL]->LoadSolution();
+        // solver[ADJFLOW_SOL]->LoadSolution();
 
-        /*--- Preprocess to recompute primitive variables ---*/
-        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+        // /*--- Preprocess to recompute primitive variables ---*/
+        // solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
       }
       // else{
@@ -292,9 +292,9 @@ void COneShotFluidDriver::RunOneShot(){
       //   }
       // }
 
-      // solver[ADJFLOW_SOL]->LoadSaveSolution();
-      // --- Preprocess to recompute primitive variables ---
-      // solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+      solver[ADJFLOW_SOL]->LoadSaveSolution();
+      /*--- Preprocess to recompute primitive variables ---*/
+      solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if ((ArmijoIter < nArmijoIter-1) && (!bool_tol)) {
@@ -325,9 +325,9 @@ void COneShotFluidDriver::RunOneShot(){
         // UpdateLambda(1.0);
       }
 
-      LoadOldLambda();
+      // LoadOldLambda();
       // UpdateLambda(1.0);
-      UpdateLambda(stepsize);
+      // UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
       // StoreLambdaGrad();
@@ -353,14 +353,16 @@ void COneShotFluidDriver::RunOneShot(){
           (OneShotIter < config->GetOneShotStop())  &&
           (ArmijoFlag != 0) && (ArmijoIter < nArmijoIter) && (!bool_tol));
 
-  // solver[ADJFLOW_SOL]->LoadSolution();
-  // solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-  // ComputeFunctionals();
-  // StoreObjFunction();
-  // StoreConstrFunction();
-  // PrimalDualStep();
-  // solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
-  // if((OneShotIter > config->GetOneShotStart()) && (OneShotIter < config->GetOneShotStop())) UpdateLambda(stepsize);
+  if((OneShotIter > config->GetOneShotStart()) && (OneShotIter < config->GetOneShotStop())) {
+    solver[ADJFLOW_SOL]->LoadSolution();
+    solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+    ComputeFunctionals();
+    StoreObjFunction();
+    StoreConstrFunction();
+    PrimalDualStep();
+    solver[ADJFLOW_SOL]->SetSolutionDelta(geometry);
+    UpdateLambda(stepsize);
+  }
 
   /*--- Save solution ---*/
   solver[ADJFLOW_SOL]->SetSaveSolution();
@@ -503,7 +505,7 @@ void COneShotFluidDriver::PrimalDualStep(){
   /*--- Note: Unsteady cases not applicable to the one-shot method yet! ---*/
 
   // SetRecording(NONE);
-  solver[ADJFLOW_SOL]->LoadSolution();
+  // solver[ADJFLOW_SOL]->LoadSolution();
   SetRecording(COMBINED);
 
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
