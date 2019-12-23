@@ -924,7 +924,7 @@ unsigned short COneShotFluidDriver::CheckArmijo(bool designing){
   }
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
-    admissible_step += (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
+    admissible_step -= (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
   }
   
   /*--- Return 0 if satisfied, 1 if 1st condition not satisfied, 2 if 2nd condition not satisfied ---*/
@@ -955,7 +955,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool designing){
   }
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
-    GradDotDir += (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
+    GradDotDir -= (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
   }
 }
 
