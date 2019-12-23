@@ -247,11 +247,11 @@ void COneShotFluidDriver::RunOneShot(){
 
       if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
-        // su2double stepsize_tmp = UpdateStepSizeQuadratic();
+        su2double stepsize_tmp = UpdateStepSizeQuadratic();
         if(ArmijoFlag == 1) {
           stepsizer = stepsize;
-          // stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
-          stepsize  = 0.5*(stepsizel+stepsize);
+          stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+          // stepsize  = 0.5*(stepsizel+stepsize);
         }
         else if(ArmijoFlag == 2) {
           // stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
@@ -372,16 +372,14 @@ void COneShotFluidDriver::RunOneShot(){
 
       if(ArmijoIterFeas > 0){
         /*--- Parabolic backtracking ---*/
-        // su2double stepsize_tmp = UpdateStepSizeQuadratic();
+        su2double stepsize_tmp = UpdateStepSizeQuadratic();
         if(ArmijoFlagFeas == 1) {
           stepsizer    = stepsizefeas;
-          // stepsizefeas = UpdateStepSizeBound(stepsize_tmp, stepsizefeas/10., stepsizefeas/2.);
-          // stepsize /= 2.0;
-          stepsizefeas = 0.5*(stepsizel+stepsizefeas);
+          stepsizefeas = UpdateStepSizeBound(stepsize_tmp, stepsizefeas/10., stepsizefeas/2.);
+          // stepsizefeas = 0.5*(stepsizel+stepsizefeas);
         }
         else if(ArmijoFlagFeas == 2) {
           // stepsizefeas = min(UpdateStepSizeBound(stepsize_tmp, stepsizefeas*1.5, stepsizefeas*7.5), 1.0);
-          // stepsize *= 1.5;
           stepsizel    = stepsizefeas;
           stepsizefeas = 0.5*(stepsizefeas+stepsizer);
         }
