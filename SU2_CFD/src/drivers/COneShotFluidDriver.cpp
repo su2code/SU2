@@ -1301,7 +1301,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
 
   su2double bcheck=0;
   for (unsigned short iConstr = 0; iConstr  < nConstr; iConstr++){
-    BCheck[iConstr][iConstr] = 1./config->GetOneShotGamma();
+    // BCheck[iConstr][iConstr] = 1./config->GetOneShotGamma();
     for (unsigned short jConstr = 0; jConstr < nConstr; jConstr++){
       BCheck[iConstr][jConstr] += config->GetOneShotBeta()*solver[ADJFLOW_SOL]->MultiplyConstrDerivative(iConstr,jConstr);
     }
@@ -1312,8 +1312,11 @@ void COneShotFluidDriver::ComputePreconditioner(){
       const bool active = (ConstrFuncStore[0] > 0.);
       // const bool active = (LambdaTilde[0] > 0.);
       if(active) {
-        BCheckNorm = BCheck[0][0] - 1./gamma;
-        BCheckInv[0][0] = 1./BCheck[0][0];
+        BCheckNorm = BCheck[0][0];
+        solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
+        SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+        // BCheckNorm = BCheck[0][0] - 1./gamma;
+        BCheckInv[0][0] = 1./(BCheck[0][0]+1./config->GetOneShotGamma());
       }
       else {
         BCheckNorm = 1.0001/gamma;
