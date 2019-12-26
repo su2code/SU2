@@ -1267,8 +1267,8 @@ void COneShotFluidDriver::ComputePreconditioner(){
   }
 
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    // const bool active = (ConstrFuncStore[iConstr] > 0.);
-    // if(active) {
+    const bool active = (ConstrFuncStore[iConstr] > 0.);
+    if(active) {
       seeding[iConstr] = 1.0;
 
       solver[ADJFLOW_SOL]->ResetInputs(geometry, config);
@@ -1296,7 +1296,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
       // solver[ADJFLOW_SOL]->LoadSolution();
 
       seeding[iConstr]=0.0;
-    // }
+    }
   }
 
   su2double bcheck=0;
@@ -1311,14 +1311,14 @@ void COneShotFluidDriver::ComputePreconditioner(){
       // const bool active = (ConstrFuncStore[0] + Lambda[0]/gamma > 0.);
       const bool active = (ConstrFuncStore[0] > 0.);
       // const bool active = (LambdaTilde[0] > 0.);
-      // if(active) {
+      if(active) {
         BCheckNorm = BCheck[0][0] - 1./gamma;
         BCheckInv[0][0] = 1./BCheck[0][0];
-      // }
-      // else {
-      //   BCheckNorm = 1.01/gamma;
-      //   BCheckInv[0][0] = gamma;
-      // }
+      }
+      else {
+        BCheckNorm = 1.0001/gamma;
+        BCheckInv[0][0] = gamma;
+      }
   } else {
     bcheck=1./(BCheck[0][0]*BCheck[1][1]*BCheck[2][2]+BCheck[1][0]*BCheck[2][1]*BCheck[0][2]+BCheck[2][0]*BCheck[0][1]*BCheck[1][2]-BCheck[0][0]*BCheck[2][1]*BCheck[1][2]-BCheck[2][0]*BCheck[1][1]*BCheck[0][2]-BCheck[1][0]*BCheck[0][1]*BCheck[2][2]);
     BCheckInv[0][0]=bcheck*(BCheck[1][1]*BCheck[2][2]-BCheck[1][2]*BCheck[2][1]);
