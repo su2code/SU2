@@ -2619,11 +2619,9 @@ class COptionConvect : public COptionBase {
   unsigned short & upwind;
 
 public:
-  COptionConvect(string option_field_name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field) : space(space_field), centered(centered_field), upwind(upwind_field) {
-    this->name = option_field_name;
-  }
+  COptionConvect(string option_field_name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field)
+    : name(option_field_name), space(space_field), centered(centered_field), upwind(upwind_field) { }
 
-  ~COptionConvect() {};
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
 
@@ -2645,9 +2643,7 @@ public:
       return "";
     }
     // Make them defined in case something weird happens
-    this->centered = NO_CENTERED;
-    this->upwind = NO_UPWIND;
-    this->space = SPACE_CENTERED;
+    SetDefault();
     return badValue(option_value, "convect", this->name);
 
   }
@@ -2655,7 +2651,7 @@ public:
   void SetDefault() {
     this->centered = NO_CENTERED;
     this->upwind = NO_UPWIND;
-    this->space = SPACE_CENTERED;
+    this->space = NO_CONVECTIVE;
   }
 };
 
