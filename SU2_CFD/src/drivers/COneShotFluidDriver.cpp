@@ -1310,7 +1310,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
   if (nConstr == 1){
       const su2double gamma = config->GetOneShotGamma();
       // const bool active = (ConstrFuncStore[0] + Lambda[0]/gamma > 0.);
-      const bool active = (ConstrFuncStore[0] > 0.);
+      const bool active = (ConstrFunc[0] > 0.);
       // const bool active = (LambdaTilde[0] > 0.);
       if(active) {
         BCheckNorm = BCheck[0][0];
@@ -1320,7 +1320,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
         BCheckInv[0][0] = 1./(BCheck[0][0]+1./config->GetOneShotGamma());
       }
       else {
-        BCheckNorm = 2./gamma;
+        BCheckNorm = 1.01/gamma;
         BCheckInv[0][0] = gamma;
       }
   } else {
