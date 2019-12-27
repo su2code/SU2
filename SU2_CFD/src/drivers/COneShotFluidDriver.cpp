@@ -249,14 +249,14 @@ void COneShotFluidDriver::RunOneShot(){
         /*--- Parabolic backtracking ---*/
         su2double stepsize_tmp = UpdateStepSizeQuadratic();
         if(ArmijoFlag == 1) {
-          stepsizer = stepsize;
+          // stepsizer = stepsize;
           stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
           // stepsize  = 0.5*(stepsizel+stepsize);
         }
         else if(ArmijoFlag == 2) {
-          // stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
-          stepsizel = stepsize;
-          stepsize  = 0.5*(stepsize+stepsizer);
+          stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
+          // stepsizel = stepsize;
+          // stepsize  = 0.5*(stepsize+stepsizer);
         }
         if(stepsize < tol) {
           stepsize = tol;
@@ -955,6 +955,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool designing){
     /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
     GradDotDir -= (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
   }
+  GradDotDir = -abs(GradDotDir);
 }
 
 void COneShotFluidDriver::StoreOldGradDotDir(){
@@ -1319,7 +1320,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
         BCheckInv[0][0] = 1./(BCheck[0][0]+1./config->GetOneShotGamma());
       }
       else {
-        BCheckNorm = 1.0001/gamma;
+        BCheckNorm = 1.1/gamma;
         BCheckInv[0][0] = gamma;
       }
   } else {
