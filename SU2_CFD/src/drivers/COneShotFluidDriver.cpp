@@ -1320,7 +1320,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
         BCheckInv[0][0] = 1./(BCheck[0][0]+1./config->GetOneShotGamma());
       }
       else {
-        BCheckNorm = 1.1/gamma;
+        BCheckNorm = 1.01/gamma;
         BCheckInv[0][0] = gamma;
       }
   } else {
