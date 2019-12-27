@@ -774,53 +774,25 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics,
                                unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long iPoint;
-  bool initial_calc = (config->GetTimeIter() == 0) && (config->GetInnerIter() == 0);                  // Checks if it is the first calculation.
-  bool first_iter = (config->GetInnerIter() == 0);                          // Checks if it is the first iteration
-  bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
-  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-  bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
-  bool restart = config->GetRestart();                        // Restart analysis
-  bool initial_calc_restart = (SU2_TYPE::Int(config->GetTimeIter()) ==SU2_TYPE::Int(config->GetRestart_Iter())); // Initial calculation for restart
+  bool dynamic = config->GetTime_Domain();
+  bool first_iter = (config->GetInnerIter() == 0);
 
-  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);     // Discrete adjoint FEM solver
+  /*--- Initial calculation, different logic for restarted simulations. ---*/
+  bool initial_calc = false;
+  if (config->GetRestart())
+    initial_calc = (config->GetTimeIter() == config->GetRestart_Iter()) && first_iter;
+  else
+    initial_calc = (config->GetTimeIter() == 0) && first_iter;
 
-  bool incremental_load = config->GetIncrementalLoad();               // If an incremental load is applied
+  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
 
-  bool body_forces = config->GetDeadLoad();                     // Body forces (dead loads).
+  bool body_forces = config->GetDeadLoad();
 
   bool fsi = config->GetFSI_Simulation();
   bool consistent_interpolation = (!config->GetConservativeInterpolation() ||
                                   (config->GetKindInterpolation() == WEIGHTED_AVERAGE));
 
-  bool topology_mode = config->GetTopology_Optimization();  // Density-based topology optimization
-
-
-  /*--- Set vector entries to zero ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-    LinSysAux.SetBlock_Zero(iPoint);
-    LinSysRes.SetBlock_Zero(iPoint);
-    LinSysSol.SetBlock_Zero(iPoint);
-  }
-
-  /*--- Set matrix entries to zero ---*/
-
-  /*
-   * If the problem is linear, we only need one Jacobian matrix in the problem, because
-   * it is going to be constant along the calculations. Therefore, we only initialize
-   * the Jacobian matrix once, at the beginning of the simulation.
-   *
-   * We don't need first_iter, because there is only one iteration per time step in linear analysis.
-   * For dynamic problems we also need to recompute the Jacobian as that is where the RHS is computed
-   * as a residual (and we need that for AD).
-   */
-  if ((initial_calc && linear_analysis)||
-      (restart && initial_calc_restart && linear_analysis) ||
-      (dynamic && disc_adj_fem) ||
-      (dynamic && linear_analysis)) {
-    Jacobian.SetValZero();
-  }
+  bool topology_mode = config->GetTopology_Optimization();
 
   /*
    * For topology optimization we apply a filter on the design density field to avoid
@@ -837,17 +809,12 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   }
 
   /*
-   * If the problem is dynamic, we need a mass matrix, which will be constant along the calculation
-   * both for linear and nonlinear analysis. Only initialized once, at the first time step.
+   * If the problem is dynamic we need a mass matrix, which will be constant along the calculation
+   * both for linear and nonlinear analysis, i.e. only computed once on the first time step.
    *
    * The same with the integration constants, as for now we consider the time step to be constant.
-   *
-   * We need first_iter, because in nonlinear problems there are more than one subiterations in the first time step.
    */
-  if ((dynamic && initial_calc && first_iter) ||
-      (dynamic && restart && initial_calc_restart && first_iter) ||
-      (dynamic && disc_adj_fem)) {
-    MassMatrix.SetValZero();
+  if (dynamic && (initial_calc || disc_adj_fem)) {
     Compute_IntegrationConstants(config);
     Compute_MassMatrix(geometry, numerics, config);
   }
@@ -856,65 +823,37 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * If body forces are taken into account, we need to compute the term that goes into the residual,
    * which will be constant along the calculation both for linear and nonlinear analysis.
    *
-   * Only initialized once, at the first iteration or the beginning of the calculation after a restart.
-   *
-   * We need first_iter, because in nonlinear problems there are more than one subiterations in the first time step.
+   * Only initialized once, at the first iteration of the first time step.
    */
-
-  if ((body_forces && initial_calc && first_iter) ||
-      (body_forces && restart && initial_calc_restart && first_iter)) {
-    // If the load is incremental, we have to reset the variable to avoid adding up over the increments
-    if (incremental_load) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) nodes->Clear_BodyForces_Res(iPoint);
-    }
-    // Compute the dead load term
+  if (body_forces && initial_calc)
     Compute_DeadLoad(geometry, numerics, config);
+
+
+  SU2_OMP_PARALLEL
+  {
+    /*--- Clear the linear system solution. ---*/
+    LinSysSol.SetValZero();
+
+    /*--- Some external forces may be considered constant over the time step. ---*/
+    if (first_iter) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+        nodes->Clear_SurfaceLoad_Res(iPoint);
+    }
   }
 
   /*
-   * If the problem is nonlinear, we need to initialize the Jacobian and the stiffness matrix at least at the beginning
-   * of each time step. If the solution method is Newton Rapshon, we initialize it also at the beginning of each
-   * iteration.
+   * If we apply nonlinear forces, we need to clear the residual
+   * on every iteration to avoid adding over previous values.
    */
-
-  if ((nonlinear_analysis) && ((newton_raphson) || (first_iter)))  {
-    Jacobian.SetValZero();
-    //    StiffMatrix.SetValZero();
-  }
-
-  /*
-   * Some external forces may be considered constant over the time step.
-   */
-  if (first_iter)  {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) nodes->Clear_SurfaceLoad_Res(iPoint);
-  }
-
-  /*
-   * If we apply nonlinear forces, we need to clear the residual on each iteration
-   */
-  unsigned short iMarker;
-  unsigned long iVertex;
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case LOAD_BOUNDARY:
-        /*--- Only if the load is nonzero - reduces computational cost ---*/
-        if(config->GetLoad_Value(config->GetMarker_All_TagBound(iMarker)) != 0 ) {
-          /*--- For all the vertices in the marker iMarker ---*/
-          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            /*--- Retrieve the point ID ---*/
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            /*--- Clear the residual of the node, to avoid adding on previous values ---*/
-            nodes->Clear_SurfaceLoad_Res(iPoint);
-          }
-        }
-        break;
       case DAMPER_BOUNDARY:
-        /*--- For all the vertices in the marker iMarker ---*/
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          /*--- Retrieve the point ID ---*/
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          /*--- Clear the residual of the node, to avoid adding on previous values ---*/
+        /*--- For all the vertices in the marker iMarker. ---*/
+        for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          /*--- Retrieve the point ID and clear the residual. ---*/
+          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           nodes->Clear_SurfaceLoad_Res(iPoint);
         }
         break;
@@ -954,6 +893,10 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
 
   SU2_OMP_PARALLEL
   {
+    /*--- Clear vector and matrix before calculation. ---*/
+    LinSysRes.SetValZero();
+    Jacobian.SetValZero();
+
 #ifdef HAVE_OMP
     /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
     auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
@@ -1046,6 +989,10 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
 
   SU2_OMP_PARALLEL
   {
+    /*--- Clear vector and matrix before calculation. ---*/
+    LinSysRes.SetValZero();
+    Jacobian.SetValZero();
+
 #ifdef HAVE_OMP
     /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
     auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
@@ -1182,6 +1129,9 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, C
 
   SU2_OMP_PARALLEL
   {
+    /*--- Clear matrix before calculation. ---*/
+    MassMatrix.SetValZero();
+
 #ifdef HAVE_OMP
     /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
     auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
@@ -1263,6 +1213,7 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CCon
 
   SU2_OMP_PARALLEL
   {
+    /*--- Clear vector before calculation. ---*/
     TimeRes.SetValZero();
     SU2_OMP_BARRIER
 
@@ -1350,6 +1301,10 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
 
   SU2_OMP_PARALLEL
   {
+    /*--- Clear vector before calculation. ---*/
+    LinSysRes.SetValZero();
+    SU2_OMP_BARRIER
+
 #ifdef HAVE_OMP
     /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
     auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
@@ -1448,6 +1403,9 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
   SU2_OMP_PARALLEL
   {
+    /*--- Clear reactions. ---*/
+    LinSysReact.SetValZero();
+
     /*--- Restart stress to avoid adding over results from previous time steps. ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1724,6 +1682,11 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CCo
 
   SU2_OMP_PARALLEL
   {
+    /*--- Clear integrated body forces before calculation. ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      nodes->Clear_BodyForces_Res(iPoint);
+
 #ifdef HAVE_OMP
     /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
     auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
@@ -1846,9 +1809,8 @@ void CFEASolver::Compute_IntegrationConstants(CConfig *config) {
 
 void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
-  bool dynamic = config->GetTime_Domain();
-
-  su2double zeros[3] = {0.0, 0.0, 0.0};
+  const bool dynamic = config->GetTime_Domain();
+  const su2double zeros[3] = {0.0, 0.0, 0.0};
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -1902,7 +1864,6 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConf
 void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
-  unsigned long iVertex;
 
   auto TagBound = config->GetMarker_All_TagBound(val_marker);
   su2double DispDirVal = config->GetDisp_Dir_Value(TagBound);
@@ -1925,7 +1886,7 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, CConfig *c
   for (iDim = 0; iDim < nDim; iDim++)
     Disp_Dir[iDim] = TotalDisp * Disp_Dir_Local[iDim];
 
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Get node index ---*/
     auto iNode = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -2205,7 +2166,7 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *co
 
 void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker){
 
-  for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Get node index ---*/
     auto iNode = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -2559,26 +2520,20 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
     unsigned short iVar;
 
     /*--- Update solution. ---*/
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-
-        /*--- Displacements component of the solution. ---*/
-
+      /*--- Displacement component of the solution. ---*/
+      for (iVar = 0; iVar < nVar; iVar++)
         nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
-
-      }
-
     }
 
     if (dynamic) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
         for (iVar = 0; iVar < nVar; iVar++) {
 
-          /*--- Acceleration component of the solution ---*/
+          /*--- Acceleration component of the solution. ---*/
           /*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
 
           su2double sol = a_dt[0]*(nodes->GetSolution(iPoint,iVar) -
@@ -2587,16 +2542,13 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
                           a_dt[3]* nodes->GetSolution_Accel_time_n(iPoint,iVar);
 
           nodes->SetSolution_Accel(iPoint, iVar, sol);
-        }
 
-        for (iVar = 0; iVar < nVar; iVar++) {
-
-          /*--- Velocity component of the solution ---*/
+          /*--- Velocity component of the solution. ---*/
           /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
 
-          su2double sol = nodes->GetSolution_Vel_time_n(iPoint,iVar)+
-                          a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
-                          a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
+          sol = nodes->GetSolution_Vel_time_n(iPoint,iVar)+
+                a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
+                a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
 
           nodes->SetSolution_Vel(iPoint, iVar, sol);
         }
@@ -2630,7 +2582,6 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solve
     if (dynamic) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
         for (iVar = 0; iVar < nVar; iVar++) {
 
           /*--- Acceleration component of the solution ---*/
@@ -2642,16 +2593,13 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solve
                           a_dt[3]* nodes->GetSolution_Accel_time_n(iPoint,iVar);
 
           nodes->SetSolution_Accel(iPoint, iVar, sol);
-        }
-
-        for (iVar = 0; iVar < nVar; iVar++) {
 
           /*--- Velocity component of the solution ---*/
           /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
 
-          su2double sol = nodes->GetSolution_Vel_time_n(iPoint,iVar)+
-                          a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
-                          a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
+          sol = nodes->GetSolution_Vel_time_n(iPoint,iVar)+
+                a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
+                a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
 
           nodes->SetSolution_Vel(iPoint, iVar, sol);
         }
@@ -2844,16 +2792,13 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **
       su2double sol = (1/(1-alpha_m)) * (tmp - alpha_m*nodes->GetSolution_Accel_time_n(iPoint,iVar));
 
       nodes->SetSolution_Accel(iPoint, iVar, sol);
-    }
-
-    for (iVar = 0; iVar < nVar; iVar++) {
 
       /*--- Velocity component of the solution ---*/
       /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
 
-      su2double sol = nodes->GetSolution_Vel_time_n(iPoint,iVar)+
-                      a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
-                      a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
+      sol = nodes->GetSolution_Vel_time_n(iPoint,iVar)+
+            a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
+            a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
 
       nodes->SetSolution_Vel(iPoint, iVar, sol);
     }
