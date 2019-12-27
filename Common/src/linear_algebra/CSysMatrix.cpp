@@ -1266,37 +1266,44 @@ template<class ScalarType>
 template<class OtherType>
 void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b) {
 
-  /*--- Both row and column associated with node i are eliminated (Block_ii = I and all else 0) to preserve eventual symmetry. ---*/
-  /*--- The vector is updated with the product of column i by the known (enforced) solution at node i. ---*/
+  /*--- Eliminate the row associated with node i (Block_ii = I and all other Block_ij = 0).
+   *    To preserve eventual symmetry, also attempt to eliminate the column, if the sparse pattern is not
+   *    symmetric the entire column may not be eliminated, the result (matrix and vector) is still correct.
+   *    The vector is updated with the product of column i by the known (enforced) solution at node i. ---*/
 
-  unsigned long iPoint, iVar, jVar, index, mat_begin;
+  for (auto index = row_ptr[node_i]; index < row_ptr[node_i+1]; ++index) {
 
-  /*--- Delete whole row first. ---*/
-  for (index = row_ptr[node_i]*nVar*nVar; index < row_ptr[node_i+1]*nVar*nVar; ++index)
-    matrix[index] = 0.0;
+    auto node_j = col_ind[index];
 
-  /*--- Update b with the column product and delete column. ---*/
-  for (iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; ++index) {
-      if (col_ind[index] == node_i)
-      {
-        mat_begin = index*nVar*nVar;
+    /*--- The diagonal block is handled outside the loop. ---*/
+    if (node_j == node_i) continue;
 
-        for(iVar = 0; iVar < nVar; ++iVar)
-          for(jVar = 0; jVar < nVar; ++jVar)
-            b[iPoint*nVar+iVar] -= matrix[mat_begin+iVar*nVar+jVar] * x_i[jVar];
+    /*--- Delete block j on row i (bij) and ATTEMPT to delete block i on row j (bji). ---*/
+    auto bij = &matrix[index*nVar*nVar];
+    auto bji = GetBlock(node_j, node_i);
 
-        /*--- If on diagonal, set diagonal of block to 1, else delete block. ---*/
-        if (iPoint == node_i)
-          for (iVar = 0; iVar < nVar; ++iVar) matrix[mat_begin+iVar*(nVar+1)] = 1.0;
-        else
-          for (iVar = 0; iVar < nVar*nVar; iVar++) matrix[mat_begin+iVar] = 0.0;
+    /*--- The "attempt" part. ---*/
+    if (bji == nullptr) {
+      node_j = node_i;
+      bji = bij;
+    }
+
+    for(auto iVar = 0ul; iVar < nVar; ++iVar) {
+      for(auto jVar = 0ul; jVar < nVar; ++jVar) {
+        /*--- Column product. ---*/
+        b[node_j*nVar+iVar] -= bji[iVar*nVar+jVar] * x_i[jVar];
+        /*--- Delete blocks. ---*/
+        bij[iVar*nVar+jVar] = bji[iVar*nVar+jVar] = 0.0;
       }
     }
+
   }
 
+  /*--- Set the diagonal block to the identity. ---*/
+  SetVal2Diag(node_i, 1.0);
+
   /*--- Set know solution in rhs vector. ---*/
-  for (iVar = 0; iVar < nVar; iVar++) b[node_i*nVar+iVar] = x_i[iVar];
+  b.SetBlock(node_i, x_i);
 
 }
 
@@ -1304,7 +1311,7 @@ template<class ScalarType>
 template<class OtherType>
 void CSysMatrix<ScalarType>::MatrixMatrixAddition(OtherType alpha, const CSysMatrix<OtherType>& B) {
 
-  /*--- Check the sparse structure is shared between the two matrices,
+  /*--- Check that the sparse structure is shared between the two matrices,
    *    comparing pointers is ok as they are obtained from CGeometry. ---*/
   bool ok = (row_ptr == B.row_ptr) && (col_ind == B.col_ind) &&
             (nVar == B.nVar) && (nEqn == B.nEqn) && (nnz == B.nnz);
