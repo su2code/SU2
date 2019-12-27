@@ -431,7 +431,7 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
 
     /*--- Recalculate Lagrangian and gradient with new Gamma ---*/
-    SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+    // SetAugLagGrad(TOTAL_AUGMENTED_OLD);
 
   }
 
