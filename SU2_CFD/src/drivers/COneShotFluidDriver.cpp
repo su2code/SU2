@@ -270,12 +270,11 @@ void COneShotFluidDriver::RunOneShot(){
         }
 
         /*---Load the old design and solution for line search---*/
-        // solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
+        solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
         solver[ADJFLOW_SOL]->LoadSolution();
 
-        // /*--- Preprocess to recompute primitive variables ---*/
-        // solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-
+        /*--- Preprocess to recompute primitive variables ---*/
+        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
       }
       else {
         StoreLambdaGrad();
@@ -305,19 +304,10 @@ void COneShotFluidDriver::RunOneShot(){
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
       if ((ArmijoIter < nArmijoIter-1) && (!bool_tol)) {
-        if(ArmijoIter == 0) {
-          ComputeDesignVarUpdate(stepsize);
-          config->SetKind_SU2(SU2_DEF); // set SU2_DEF as the solver
-          SurfaceDeformation(surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
-          config->SetKind_SU2(SU2_CFD); // set SU2_CFD as the solver
-        }
-        else {
-          solver[ADJFLOW_SOL]->LoadMeshPointsStep(config, geometry, stepsize);
-          grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
-        }
-
-        /*--- Preprocess to recompute primitive variables ---*/
-        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+        ComputeDesignVarUpdate(stepsize);
+        config->SetKind_SU2(SU2_DEF); // set SU2_DEF as the solver
+        SurfaceDeformation(surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
+        config->SetKind_SU2(SU2_CFD); // set SU2_CFD as the solver
 
         /*--- Evaluate the objective at the old solution, new design ---*/
         ComputeFunctionals();
@@ -329,12 +319,8 @@ void COneShotFluidDriver::RunOneShot(){
       }
       else {
         stepsize = 0.0;
-        solver[ADJFLOW_SOL]->LoadMeshPointsOld(config, geometry);
         grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
         ComputeDesignVarUpdate(0.0);
-
-        /*--- Preprocess to recompute primitive variables ---*/
-        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
         /*--- Evaluate the objective at the old solution, new design ---*/
         ComputeFunctionals();

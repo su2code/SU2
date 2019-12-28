@@ -205,12 +205,12 @@ void COneShotSolver::LoadMeshPointsOld(CConfig *config, CGeometry *geometry){
     for (jPoint=0; jPoint < nPoint; jPoint++){
         geometry->node[jPoint]->SetCoord(geometry->node[jPoint]->GetCoord_Old());
     }
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          geometry->vertex[iMarker][iVertex]->SetNormal(geometry->vertex[iMarker][iVertex]->GetNormal_Old());
-        }
-    }
+    // for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    //     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+    //       jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    //       geometry->vertex[iMarker][iVertex]->SetNormal(geometry->vertex[iMarker][iVertex]->GetNormal_Old());
+    //     }
+    // }
 }
 
 void COneShotSolver::LoadMeshPointsStep(CConfig *config, CGeometry *geometry, su2double stepsize){
