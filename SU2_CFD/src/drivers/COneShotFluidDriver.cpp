@@ -510,14 +510,7 @@ void COneShotFluidDriver::RunOneShot(){
       stepsize0 = max(10.0*tol, stepsize0/2.0);
       // stepsize0 = stepsize;
     }
-    // else if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0) && (ArmijoFlag == 2)) {
-    //   stepsize0 = min(1.0, stepsize0*2.0);
-    //   // stepsize0 = min(1.0, stepsize*2.0);
-    // }
-    // else {
-    //   stepsize0 = 1.0;
-    // }
-    else if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
+    else {
       stepsize0 = min(1.0, stepsize0*2.0);
       // stepsize0 = stepsize;
     }
