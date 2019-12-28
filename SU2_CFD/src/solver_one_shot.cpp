@@ -213,6 +213,17 @@ void COneShotSolver::LoadMeshPointsOld(CConfig *config, CGeometry *geometry){
     }
 }
 
+void COneShotSolver::LoadMeshPointsStep(CConfig *config, CGeometry *geometry, su2double stepsize){
+    unsigned long iVertex, jPoint;
+    unsigned short iMarker, iDim;
+    for (jPoint=0; jPoint < nPoint; jPoint++){
+      for(iDim = 0; iDim < nDim; iDim++) {
+        geometry->node[jPoint]->SetCoord(iDim, geometry->node[jPoint]->GetCoord_Old()[iDim]+stepsize*geometry->node[jPoint]->GetCoord()[iDim]);
+      }
+    }
+    
+}
+
 void COneShotSolver::SetStoreSolution(){
   unsigned long iPoint;
   for (iPoint = 0; iPoint < nPoint; iPoint++){
