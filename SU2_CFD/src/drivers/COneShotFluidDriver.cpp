@@ -277,6 +277,9 @@ void COneShotFluidDriver::RunOneShot(){
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
       }
+      else {
+        StoreLambdaGrad();
+      }
       // else{
       //   // UpdateLambda(1.0);
       //   // UpdateLambda(stepsize);
@@ -334,7 +337,6 @@ void COneShotFluidDriver::RunOneShot(){
       UpdateLambda(stepsize);
 
       /*--- Compute and store GradL dot p ---*/
-      StoreLambdaGrad();
       StoreGradDotDir(true);
 
     }
@@ -367,9 +369,6 @@ void COneShotFluidDriver::RunOneShot(){
   if((OneShotIter > config->GetOneShotStart()) && 
      (OneShotIter < config->GetOneShotStop())  && 
      (ArmijoFlag != 0)) {
-
-    /*--- Compute and store GradL dot p ---*/
-    StoreLambdaGrad();
 
     bool bool_tol_feas = false;
     unsigned short ArmijoIterFeas = 0, ArmijoFlagFeas = 1;
@@ -1294,7 +1293,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
   }
 
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    const bool active = (ConstrFuncStore[iConstr] > 0.);
+    const bool active = (ConstrFunc[iConstr] > 0.);
     if(active) {
       seeding[iConstr] = 1.0;
 
