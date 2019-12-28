@@ -4684,6 +4684,13 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] config - config class object
+   * \param[in] geometry - geometry class object
+   */
+  virtual void LoadMeshPointsStep(CConfig *config, CGeometry *geometry, su2double stepsize);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] geometry - geometry class object
    */
   virtual void SetSensitivityShiftedLagrangian(CGeometry *geometry);
@@ -15936,6 +15943,13 @@ public:
    * \param[in] geometry - geometry class object
    */
   void LoadMeshPointsOld(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Load old mesh coordinates and add perturbation.
+   * \param[in] config - config class object
+   * \param[in] geometry - geometry class object
+   */
+  void LoadMeshPointsStep(CConfig *config, CGeometry *geometry, su2double stepsize);
 
   /*!
    * \brief Store the geometry sensitivities (Sensitivity) in Sensitivity_ShiftedLagrangian

@@ -2524,6 +2524,8 @@ inline void CSolver::SetMeshPointsOld(CConfig *config, CGeometry *geometry){}
 
 inline void CSolver::LoadMeshPointsOld(CConfig *config, CGeometry *geometry){}
 
+inline void CSolver::LoadMeshPointsStep(CConfig *config, CGeometry *geometry, su2double stepsize){}
+
 inline void CSolver::SetSensitivityShiftedLagrangian(CGeometry *geometry){}
 
 inline void CSolver::SetSensitivityLagrangian(CGeometry *geometry, unsigned short kind){}

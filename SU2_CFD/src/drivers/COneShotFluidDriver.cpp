@@ -312,7 +312,7 @@ void COneShotFluidDriver::RunOneShot(){
           config->SetKind_SU2(SU2_CFD); // set SU2_CFD as the solver
         }
         else {
-          solver[ADJFLOW_SOL]->LoadMeshPointsStep(config, geometry);
+          solver[ADJFLOW_SOL]->LoadMeshPointsStep(config, geometry, stepsize);
           grid_movement[ZONE_0][INST_0]->UpdateDualGrid(geometry, config);
         }
 
