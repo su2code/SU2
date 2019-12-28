@@ -935,10 +935,10 @@ unsigned short COneShotFluidDriver::CheckArmijo(bool designing){
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const bool active = (ConstrFuncStore[iConstr] > 0.);
     if(active) {
-      admissible_step -= (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
+      admissible_step += (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
     }
     else {
-      admissible_step -= (Lambda[iConstr]-LambdaOld[iConstr])*Lambda[iConstr];
+      admissible_step += (Lambda[iConstr]-LambdaOld[iConstr])*Lambda[iConstr];
     }
     /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
     // admissible_step -= (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
@@ -973,10 +973,10 @@ void COneShotFluidDriver::StoreGradDotDir(bool designing){
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     const bool active = (ConstrFuncStore[iConstr] > 0.);
     if(active) {
-      GradDotDir -= (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
+      GradDotDir += (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
     }
     else {
-      GradDotDir -= (Lambda[iConstr]-LambdaOld[iConstr])*Lambda[iConstr];
+      GradDotDir += (Lambda[iConstr]-LambdaOld[iConstr])*Lambda[iConstr];
     }
     /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
     // GradDotDir -= (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
