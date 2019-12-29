@@ -482,7 +482,7 @@ void COneShotFluidDriver::RunOneShot(){
 
     /*--- Beta*DeltaBary^T*N_yu ---*/
     ComputeBetaTerm();
-    solver[ADJFLOW_SOL]->SetFiniteDifferenceSens(geometry, config);
+    // solver[ADJFLOW_SOL]->SetFiniteDifferenceSens(geometry, config);
     solver[ADJFLOW_SOL]->SetSensitivityLagrangian(geometry, BETA_TERM);
     solver[ADJFLOW_SOL]->LoadSaveSolution();
 
@@ -1108,7 +1108,7 @@ void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
       AugLagGradAlpha[iDV] = Gradient[iDV];
     }
     else if(kind == BETA_TERM) {
-      AugLagGradBeta[iDV] = Gradient[iDV];
+      AugLagGradBeta[iDV] = Gradient[iDV]/config->GetFDStep();
     }
     else if(kind == GAMMA_TERM) {
       AugLagGradGamma[iDV] = Gradient[iDV];
