@@ -448,10 +448,10 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Store the multiplier and constraint function, then recalculate Lagrangian for next iteration ---*/
   StoreObjFunction();
   StoreConstrFunction();
-  CheckLambda();
-  CalculateLagrangian();
   StoreOldLambda();
   StoreOldConstrFunction();
+  CheckLambda();
+  CalculateLagrangian();
 
   /*--- Store Deltay and DeltaBary ---*/
   solver[ADJFLOW_SOL]->SetStoreSolutionDelta();
