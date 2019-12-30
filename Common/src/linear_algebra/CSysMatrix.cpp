@@ -177,8 +177,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   omp_light_size = computeStaticChunkSize(nnz*nVar*nEqn, num_threads, OMP_MAX_SIZE_L);
   omp_heavy_size = computeStaticChunkSize(nPointDomain, num_threads, OMP_MAX_SIZE_H);
 
-  /// TODO: Get this from the config.
-  omp_num_parts = num_threads;
+  omp_num_parts = config->GetLinear_Solver_Prec_Threads();
+  if (omp_num_parts == 0) omp_num_parts = num_threads;
 
   /*--- This is akin to the row_ptr. ---*/
   omp_partitions = new unsigned long [omp_num_parts+1];
