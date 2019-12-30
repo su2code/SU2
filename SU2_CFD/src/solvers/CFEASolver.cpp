@@ -1803,7 +1803,6 @@ void CFEASolver::Compute_IntegrationConstants(CConfig *config) {
       break;
   }
 
-
 }
 
 
