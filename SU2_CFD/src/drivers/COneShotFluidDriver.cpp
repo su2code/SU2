@@ -249,21 +249,21 @@ void COneShotFluidDriver::RunOneShot(){
         /*--- Parabolic backtracking ---*/
         // su2double stepsize_tmp = UpdateStepSizeQuadratic();
         if(ArmijoFlag == 1) {
-          // stepsizer = stepsize;
+          stepsizer = stepsize;
           // stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
           stepsize  = 0.5*(stepsizel+stepsize);
         }
-        // else if(ArmijoFlag == 2) {
+        else if(ArmijoFlag == 2) {
         //   // stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
-        //   if(ArmijoIter == 1) {
-        //     ArmijoFlag = 0;
-        //     break;
-        //   }
-        //   else {
-        //     stepsizel = stepsize;
-        //     stepsize  = 0.5*(stepsize+stepsizer);
-        //   }
-        // }
+          if(ArmijoIter == 1) {
+            ArmijoFlag = 0;
+            break;
+          }
+          else {
+            stepsizel = stepsize;
+            stepsize  = 0.5*(stepsize+stepsizer);
+          }
+        }
         if(stepsize < tol) {
           stepsize = tol;
           bool_tol = true;
@@ -303,7 +303,7 @@ void COneShotFluidDriver::RunOneShot(){
       // solver[FLOW_SOL]->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
       /*--- Do a design update based on the search direction (mesh deformation with stepsize) ---*/
-      if ((ArmijoIter < nArmijoIter-1) && (!bool_tol)) {
+      if (((ArmijoIter < nArmijoIter-1) && (!bool_tol)) || (ArmijoFlag != 1)) {
         ComputeDesignVarUpdate(stepsize);
         config->SetKind_SU2(SU2_DEF); // set SU2_DEF as the solver
         SurfaceDeformation(surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
@@ -427,7 +427,7 @@ void COneShotFluidDriver::RunOneShot(){
        (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
       (OneShotIter > config->GetOneShotStart())                && 
       (OneShotIter < config->GetOneShotStop())                 &&
-       ((!config->GetZeroStep()) || (ArmijoFlag == 0))) {
+       ((!config->GetZeroStep()) || (ArmijoFlag != 1))) {
     surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container[ZONE_0][INST_0], config_container, false);
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
@@ -512,7 +512,7 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Modifiy initial line search guess based on success of line search ---*/
   if(OneShotIter > config->GetOneShotStart()) {
-    if((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0)) {
+    if(((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0)) || (ArmijoFlag == 1)) {
       stepsize0 = max(10.0*tol, stepsize0/2.0);
       // stepsize0 = stepsize;
     }
@@ -948,9 +948,9 @@ unsigned short COneShotFluidDriver::CheckArmijo(bool designing){
     return 1;
   }
   // else if (abs(admissible_step_new) > CWolfeTwo*abs(admissible_step)) {
-  // else if (Lagrangian < LagrangianOld - CWolfeTwo*abs(admissible_step)) {
-  //   return 2;
-  // }
+  else if (Lagrangian < LagrangianOld - CWolfeTwo*abs(admissible_step)) {
+    return 2;
+  }
   else {
     return 0;
   }
