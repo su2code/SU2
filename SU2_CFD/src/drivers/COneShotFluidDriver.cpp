@@ -253,6 +253,7 @@ void COneShotFluidDriver::RunOneShot(){
         if(ArmijoFlag == 1) {
           stepsizer = stepsize;
           stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+          stepsize = max(stepsize, stepsizel);
           // stepsize  = 0.5*(stepsizel+stepsize);
         }
         else if(ArmijoFlag == 2) {
@@ -388,6 +389,7 @@ void COneShotFluidDriver::RunOneShot(){
         if(ArmijoFlagFeas == 1) {
           stepsizer    = stepsizefeas;
           stepsizefeas = UpdateStepSizeBound(stepsize_tmp, stepsizefeas/10., stepsizefeas/2.);
+          stepsizefeas = max(stepsizefeas, stepsizel);
           // stepsizefeas = 0.5*(stepsizel+stepsizefeas);
         }
         else if(ArmijoFlagFeas == 2) {
