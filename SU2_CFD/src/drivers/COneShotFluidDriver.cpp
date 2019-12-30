@@ -741,7 +741,7 @@ void COneShotFluidDriver::SetProjection_AD(CSurfaceMovement *surface_movement){
 
   bool* visited = new bool[geometry->GetnPoint()];
 
-  for(unsigned short kind_gradient = 0; kind_gradient < 4; kind_gradient++) {
+  for(short kind_gradient = 4; kind_gradient >= 0; kind_gradient--) {
 
     if(kind_gradient < 3) solver[ADJFLOW_SOL]->SetGeometrySensitivityLagrangian(geometry, kind_gradient);
     else                  solver[ADJFLOW_SOL]->SetGeometrySensitivityGradient(geometry);
@@ -1116,7 +1116,7 @@ void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
       AugLagGradAlpha[iDV] = Gradient[iDV];
     }
     else if(kind == BETA_TERM) {
-      AugLagGradBeta[iDV] = Gradient[iDV]/config->GetFDStep();
+      AugLagGradBeta[iDV] = (Gradient[iDV]-ShiftLagGrad[iDV])/config->GetFDStep();
     }
     else if(kind == GAMMA_TERM) {
       AugLagGradGamma[iDV] = Gradient[iDV];
