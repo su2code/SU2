@@ -1288,8 +1288,8 @@ void COneShotFluidDriver::ComputePreconditioner(){
   }
 
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    const bool active = (ConstrFunc[iConstr] > 0.);
-    if(active) {
+    // const bool active = (ConstrFunc[iConstr] > 0.);
+    // if(active) {
       seeding[iConstr] = 1.0;
 
       solver[ADJFLOW_SOL]->ResetInputs(geometry, config);
@@ -1317,7 +1317,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
       // solver[ADJFLOW_SOL]->LoadSolution();
 
       seeding[iConstr]=0.0;
-    }
+    // }
   }
 
   su2double bcheck=0;
