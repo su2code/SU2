@@ -410,7 +410,7 @@ void COneShotFluidDriver::RunOneShot(){
 
       /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir(false);
-      
+
       /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
       if ((ArmijoIterFeas < nArmijoIter-1) && (!bool_tol_feas)) {
         CalculateLagrangian();
@@ -1345,7 +1345,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
         BCheckInv[0][0] = 1./(BCheck[0][0]+1./config->GetOneShotGamma());
       }
       else {
-        BCheckNorm = 2./gamma;
+        BCheckNorm = 1.01/gamma;
         BCheckInv[0][0] = gamma;
       }
   } else {
