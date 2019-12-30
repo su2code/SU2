@@ -1339,13 +1339,13 @@ void COneShotFluidDriver::ComputePreconditioner(){
       // const bool active = (LambdaTilde[0] > 0.);
       if(active) {
         BCheckNorm = BCheck[0][0];
-        solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
+        // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
         // SetAugLagGrad(TOTAL_AUGMENTED_OLD);
         // BCheckNorm = BCheck[0][0] - 1./gamma;
         BCheckInv[0][0] = 1./(BCheck[0][0]+1./config->GetOneShotGamma());
       }
       else {
-        BCheckNorm = 1.01/gamma;
+        BCheckNorm = 2./gamma;
         BCheckInv[0][0] = gamma;
       }
   } else {
