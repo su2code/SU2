@@ -924,7 +924,7 @@ unsigned short COneShotFluidDriver::CheckArmijo(bool designing){
     }
   }
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    // const bool active = (ConstrFuncOld[iConstr] > 0.);
+    // const bool active = (ConstrFuncStore[iConstr] > 0.);
     // if(active) {
     //   admissible_step -= (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
     // }
@@ -962,7 +962,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool designing){
     }
   }
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    // const bool active = (ConstrFuncOld[iConstr] > 0.);
+    // const bool active = (ConstrFuncStore[iConstr] > 0.);
     // if(active) {
     //   GradDotDir -= (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
     // }
@@ -1030,7 +1030,7 @@ void COneShotFluidDriver::CalculateLagrangian(){
     const su2double gamma = config->GetOneShotGamma();
     const su2double helper = ConstrFuncStore[iConstr] + Lambda[iConstr]/gamma;
     // const bool active = (ConstrFuncStore[iConstr] + LambdaOld[iConstr]/gamma > 0.);
-    const bool active = (ConstrFuncOld[iConstr] > 0.);
+    const bool active = (ConstrFuncStore[iConstr] > 0.);
     const bool eqconstr = (config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR);
     // const bool active = (LambdaTilde[iConstr] > 0.);
     /*--- Lagrangian += gamma/2 ||h + mu/gamma - P_I(h+mu/gamma)||^2 ---*/
@@ -1449,7 +1449,7 @@ void COneShotFluidDriver::UpdateLambda(su2double stepsize){
   for(unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
     su2double helper = 0.0;
     const su2double gamma = config->GetOneShotGamma();
-    const bool active = (ConstrFuncOld[iConstr] > 0.);
+    const bool active = (ConstrFuncStore[iConstr] > 0.);
     const bool eqconstr = (config->GetKind_ConstrFuncType(iConstr) == EQ_CONSTR);
 
     /*--- BCheck^(-1)*(h-P_I(h+mu/gamma)) ---*/
