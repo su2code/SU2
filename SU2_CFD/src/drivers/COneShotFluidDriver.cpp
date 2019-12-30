@@ -255,7 +255,7 @@ void COneShotFluidDriver::RunOneShot(){
         }
         else if(ArmijoFlag == 2) {
         //   // stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
-          if(ArmijoIter == 1) {
+          if((ArmijoIter == 1) || (ArmijoIter == nArmijoIter-1)) {
             ArmijoFlag = 0;
             break;
           }
