@@ -365,62 +365,62 @@ void COneShotFluidDriver::RunOneShot(){
   solver[ADJFLOW_SOL]->SetArmijoIter(ArmijoIter);
 
   /*--- Perform line search on the multiplier ---*/
-  // if((OneShotIter > config->GetOneShotStart()) && 
-  //    (OneShotIter < config->GetOneShotStop())  && 
-  //    (ArmijoFlag != 0)) {
+  if((OneShotIter > config->GetOneShotStart()) && 
+     (OneShotIter < config->GetOneShotStop())  && 
+     (ArmijoFlag != 0)) {
 
-  //   bool bool_tol_feas = false;
-  //   unsigned short ArmijoIterFeas = 0, ArmijoFlagFeas = 1;
-  //   su2double stepsizefeas = 1.0, stepsizel = 0.0, stepsizer = 1.0;
+    bool bool_tol_feas = false;
+    unsigned short ArmijoIterFeas = 0, ArmijoFlagFeas = 1;
+    su2double stepsizefeas = 1.0, stepsizel = 0.0, stepsizer = 1.0;
 
-  //   /*--- Store GradL ---*/
-  //   StoreLambdaGrad();
+    /*--- Store GradL ---*/
+    StoreLambdaGrad();
 
-  //   do {
+    do {
 
-  //     if(ArmijoIterFeas > 0){
-  //       /*--- Parabolic backtracking ---*/
-  //       su2double stepsize_tmp = UpdateStepSizeQuadratic();
-  //       if(ArmijoFlagFeas == 1) {
-  //         stepsizer    = stepsizefeas;
-  //         stepsizefeas = UpdateStepSizeBound(stepsize_tmp, stepsizefeas/10., stepsizefeas/2.);
-  //         // stepsizefeas = 0.5*(stepsizel+stepsizefeas);
-  //       }
-  //       else if(ArmijoFlagFeas == 2) {
-  //       //   // stepsizefeas = min(UpdateStepSizeBound(stepsize_tmp, stepsizefeas*1.5, stepsizefeas*7.5), 1.0);
-  //         if((ArmijoIterFeas == 1) || (ArmijoIterFeas == nArmijoIter-1)) {
-  //           ArmijoFlagFeas = 0;
-  //           break;
-  //         }
-  //         else {
-  //           stepsizel = stepsizefeas;
-  //           stepsizefeas  = 0.5*(stepsizefeas+stepsizer);
-  //         }
-  //       }
-  //       if(stepsizefeas < tol) {
-  //         stepsizefeas  = 0.0;
-  //         bool_tol_feas = true;
-  //       }
+      if(ArmijoIterFeas > 0){
+        /*--- Parabolic backtracking ---*/
+        su2double stepsize_tmp = UpdateStepSizeQuadratic();
+        if(ArmijoFlagFeas == 1) {
+          stepsizer    = stepsizefeas;
+          stepsizefeas = UpdateStepSizeBound(stepsize_tmp, stepsizefeas/10., stepsizefeas/2.);
+          // stepsizefeas = 0.5*(stepsizel+stepsizefeas);
+        }
+        else if(ArmijoFlagFeas == 2) {
+        //   // stepsizefeas = min(UpdateStepSizeBound(stepsize_tmp, stepsizefeas*1.5, stepsizefeas*7.5), 1.0);
+          if((ArmijoIterFeas == 1) || (ArmijoIterFeas == nArmijoIter-1)) {
+            ArmijoFlagFeas = 0;
+            break;
+          }
+          else {
+            stepsizel = stepsizefeas;
+            stepsizefeas  = 0.5*(stepsizefeas+stepsizer);
+          }
+        }
+        if(stepsizefeas < tol) {
+          stepsizefeas  = 0.0;
+          bool_tol_feas = true;
+        }
 
-  //     }
+      }
 
-  //     LoadOldLambda();
-  //     // UpdateLambda(1.0);
-  //     UpdateLambda(stepsizefeas);
+      LoadOldLambda();
+      // UpdateLambda(1.0);
+      UpdateLambda(stepsizefeas);
 
-  //     /*--- Compute and store GradL dot p ---*/
-  //     StoreGradDotDir(false);
+      /*--- Compute and store GradL dot p ---*/
+      StoreGradDotDir(false);
 
-  //     /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
-  //     if ((ArmijoIterFeas < nArmijoIter-1) && (!bool_tol_feas)) {
-  //       CalculateLagrangian();
-  //       ArmijoFlagFeas = CheckArmijo(false);
-  //     }
+      /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
+      if ((ArmijoIterFeas < nArmijoIter-1) && (!bool_tol_feas)) {
+        CalculateLagrangian();
+        ArmijoFlagFeas = CheckArmijo(false);
+      }
 
-  //     ArmijoIterFeas++;
+      ArmijoIterFeas++;
 
-  //   } while((ArmijoFlagFeas != 0) && (ArmijoIterFeas < nArmijoIter) && (!bool_tol_feas));
-  // }
+    } while((ArmijoFlagFeas != 0) && (ArmijoIterFeas < nArmijoIter) && (!bool_tol_feas));
+  }
 
   /*--- Store FFD info in file ---*/
   if (((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
