@@ -247,11 +247,11 @@ void COneShotFluidDriver::RunOneShot(){
 
       if(ArmijoIter > 0){
         /*--- Parabolic backtracking ---*/
-        // su2double stepsize_tmp = UpdateStepSizeQuadratic();
+        su2double stepsize_tmp = UpdateStepSizeQuadratic();
         if(ArmijoFlag == 1) {
           stepsizer = stepsize;
-          // stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
-          stepsize  = 0.5*(stepsizel+stepsize);
+          stepsize = UpdateStepSizeBound(stepsize_tmp, stepsize/10., stepsize/2.);
+          // stepsize  = 0.5*(stepsizel+stepsize);
         }
         else if(ArmijoFlag == 2) {
         //   // stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
