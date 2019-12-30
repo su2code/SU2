@@ -235,6 +235,8 @@ void COneShotFluidDriver::RunOneShot(){
   unsigned short ArmijoFlag = 1;
   bool bool_tol = false;
 
+  Converged = false;
+
   /*--- Store the old solution and the old design for line search ---*/
   // solver[ADJFLOW_SOL]->SetOldStoreSolution();
   solver[ADJFLOW_SOL]->SetStoreSolution();
@@ -358,6 +360,8 @@ void COneShotFluidDriver::RunOneShot(){
           (OneShotIter < config->GetOneShotStop())  &&
           (ArmijoFlag != 0) && (ArmijoIter < nArmijoIter) && (!bool_tol));
 
+  if(ArmijoFlag != 1) Converged = true;
+
   /*--- Save solution ---*/
   solver[ADJFLOW_SOL]->SetSaveSolution();
 
@@ -367,7 +371,7 @@ void COneShotFluidDriver::RunOneShot(){
   /*--- Perform line search on the multiplier ---*/
   if((OneShotIter > config->GetOneShotStart()) && 
      (OneShotIter < config->GetOneShotStop())  && 
-     (ArmijoFlag != 0)) {
+     (!Converged)) {
 
     bool bool_tol_feas = false;
     unsigned short ArmijoIterFeas = 0, ArmijoFlagFeas = 1;
@@ -427,7 +431,7 @@ void COneShotFluidDriver::RunOneShot(){
        (config->GetDesign_Variable(0) == FFD_CONTROL_POINT))   &&
       (OneShotIter > config->GetOneShotStart())                && 
       (OneShotIter < config->GetOneShotStop())                 &&
-       ((!config->GetZeroStep()) || (ArmijoFlag != 1))) {
+      (Converged)) {
     surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container[ZONE_0][INST_0], config_container, false);
     config->SetMesh_FileName(config->GetMesh_Out_FileName());
   }
@@ -442,7 +446,7 @@ void COneShotFluidDriver::RunOneShot(){
   else if((OneShotIter > config->GetOneShotStart()) && 
           // (OneShotIter < config->GetOneShotStop())){
           (OneShotIter < config->GetOneShotStop()) &&
-          (ArmijoFlag != 0)){
+          (!Converged)){
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
 
@@ -525,7 +529,7 @@ void COneShotFluidDriver::RunOneShot(){
     //   stepsize0 = min(1.0, stepsize0*2.0);
     // }
 
-    if((!bool_tol) && (ArmijoIter < nArmijoIter)) {
+    if((Converged) && (ConvergedStore)) {
       StoreOldGradDotDir();
       ComputeDesignVarUpdate(1.0);
       UpdateLambda(1.0);
@@ -533,7 +537,7 @@ void COneShotFluidDriver::RunOneShot(){
       StoreGradDotDir(true);
       LoadOldLambda();
       if(GradDotDirOld < 0 && GradDotDir < 0) {
-        stepsize0 = max(10.0*tol, min(1.0, 1.01*GradDotDirOld/GradDotDir));
+        stepsize0 = max(10.0*tol, min(1.0, 2.*GradDotDirOld/GradDotDir));
       }
       else{
         // stepsize0 = min(1.0, 2.0*stepsize0);
@@ -545,6 +549,8 @@ void COneShotFluidDriver::RunOneShot(){
       stepsize0 = 1.0;
     }
   }
+
+  if(OneShotIter >= config->GetOneShotStart()) ConvergedStore = Converged;
 
 }
 

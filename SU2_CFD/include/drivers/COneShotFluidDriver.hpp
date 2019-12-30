@@ -55,6 +55,8 @@ protected:
 
   unsigned long OneShotIter; /*!< \brief Iterations of One-Shot solver, after PrimalDual. */
 
+  bool Converged, ConvergedStore; /*!< \brief Whether or not the line search converged. */
+
   su2double* Gradient;                  /*!< \brief Vector to store gradient obtained from projection .*/
   su2double* ShiftLagGrad;              /*!< \brief Saved gradient N_u of the shifted Lagrangian .*/
   su2double* ShiftLagGradOld;           /*!< \brief Saved old gradient N_u of the shifted Lagrangian .*/
