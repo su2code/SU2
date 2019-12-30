@@ -924,22 +924,22 @@ unsigned short COneShotFluidDriver::CheckArmijo(bool designing){
   if(designing) {
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-      // admissible_step += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
+      admissible_step += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
       /*--- AugLagGrad is the gradient at the old iterate. ---*/
-      admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+      // admissible_step += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    // const bool active = (ConstrFuncStore[iConstr] > 0.);
-    // const su2double gamma = config->GetOneShotGamma();
-    // if(active) {
-    //   admissible_step += (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
-    // }
-    // else {
-    //   admissible_step -= (Lambda[iConstr]-LambdaOld[iConstr])*Lambda[iConstr]/gamma;
-    // }
+    const bool active = (ConstrFuncStore[iConstr] > 0.);
+    const su2double gamma = config->GetOneShotGamma();
+    if(active) {
+      admissible_step += (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
+    }
+    else {
+      admissible_step -= (Lambda[iConstr]-LambdaOld[iConstr])*Lambda[iConstr]/gamma;
+    }
     /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
-    admissible_step -= (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
+    // admissible_step -= (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
   }
   
   /*--- Return 0 if satisfied, 1 if 1st condition not satisfied, 2 if 2nd condition not satisfied ---*/
@@ -963,22 +963,22 @@ void COneShotFluidDriver::StoreGradDotDir(bool designing){
   if(designing) {
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       /*--- ShiftLagGrad is the gradient at the old iterate. ---*/
-      // GradDotDir += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
+      GradDotDir += DesignVarUpdate[iDV]*ShiftLagGradOld[iDV];
       /*--- AugLagGrad is the gradient at the old iterate. ---*/
-      GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
+      // GradDotDir += DesignVarUpdate[iDV]*AugLagGrad[iDV];
     }
   }
   for (unsigned short iConstr = 0; iConstr < nConstr; iConstr++){
-    // const bool active = (ConstrFuncStore[iConstr] > 0.);
-    // const su2double gamma = config->GetOneShotGamma();
-    // if(active) {
-    //   GradDotDir += (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
-    // }
-    // else {
-    //   GradDotDir -= (Lambda[iConstr]-LambdaOld[iConstr])*Lambda[iConstr]/gamma;
-    // }
+    const bool active = (ConstrFuncStore[iConstr] > 0.);
+    const su2double gamma = config->GetOneShotGamma();
+    if(active) {
+      GradDotDir += (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
+    }
+    else {
+      GradDotDir -= (Lambda[iConstr]-LambdaOld[iConstr])*Lambda[iConstr]/gamma;
+    }
     /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
-    GradDotDir -= (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
+    // GradDotDir -= (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
   }
   GradDotDir = -abs(GradDotDir);
 }
@@ -1339,8 +1339,8 @@ void COneShotFluidDriver::ComputePreconditioner(){
       // const bool active = (LambdaTilde[0] > 0.);
       if(active) {
         BCheckNorm = BCheck[0][0];
-        solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
-        SetAugLagGrad(TOTAL_AUGMENTED_OLD);
+        // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
+        // SetAugLagGrad(TOTAL_AUGMENTED_OLD);
         // BCheckNorm = BCheck[0][0] - 1./gamma;
         BCheckInv[0][0] = 1./(BCheck[0][0]+1./config->GetOneShotGamma());
       }
