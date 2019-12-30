@@ -530,7 +530,7 @@ void COneShotFluidDriver::RunOneShot(){
       ComputeDesignVarUpdate(1.0);
       UpdateLambda(1.0);
       StoreLambdaGrad();
-      StoreGradDotDir();
+      StoreGradDotDir(true);
       LoadOldLambda();
       if(GradDotDirOld < 0 && GradDotDir < 0) {
         stepsize0 = max(10.0*tol, min(1.0, 1.01*GradDotDirOld/GradDotDir));
