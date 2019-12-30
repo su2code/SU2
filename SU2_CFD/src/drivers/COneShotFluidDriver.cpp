@@ -335,10 +335,6 @@ void COneShotFluidDriver::RunOneShot(){
       // UpdateLambda(1.0);
       UpdateLambda(stepsize);
 
-      /*--- Compute and store GradL dot p ---*/
-      StoreLambdaGrad();
-      StoreGradDotDir(true);
-
     }
 
     /*--- Do a primal and adjoint update ---*/
@@ -349,6 +345,9 @@ void COneShotFluidDriver::RunOneShot(){
     if ((OneShotIter > config->GetOneShotStart()) && 
         (OneShotIter < config->GetOneShotStop())  &&
         ((ArmijoIter < nArmijoIter-1) && (!bool_tol))) {
+      /*--- Compute and store GradL dot p ---*/
+      StoreLambdaGrad();
+      StoreGradDotDir(true);
       CalculateLagrangian();
       ArmijoFlag = CheckArmijo(true);
     }
@@ -373,6 +372,10 @@ void COneShotFluidDriver::RunOneShot(){
     bool bool_tol_feas = false;
     unsigned short ArmijoIterFeas = 0, ArmijoFlagFeas = 1;
     su2double stepsizefeas = 1.0, stepsizel = 0.0, stepsizer = 1.0;
+
+    /*--- Store GradL ---*/
+    StoreLambdaGrad();
+
     do {
 
       if(ArmijoIterFeas > 0){
@@ -405,7 +408,9 @@ void COneShotFluidDriver::RunOneShot(){
       // UpdateLambda(1.0);
       UpdateLambda(stepsizefeas);
 
+      /*--- Compute and store GradL dot p ---*/
       StoreGradDotDir(false);
+      
       /*--- Calculate Lagrangian with old Alpha, Beta, and Gamma ---*/
       if ((ArmijoIterFeas < nArmijoIter-1) && (!bool_tol_feas)) {
         CalculateLagrangian();
@@ -1531,7 +1536,7 @@ void COneShotFluidDriver::StoreLambdaGrad() {
           for (unsigned short iVar = 0; iVar < nVar; iVar++) {
             my_Gradient += beta
                 * solver[ADJFLOW_SOL]->GetConstrDerivative(iConstr, iPoint, iVar)
-                * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_DeltaStore(iPoint,iVar);
+                * solver[ADJFLOW_SOL]->GetNodes()->GetSolution_Delta(iPoint,iVar);
           }
         }
 #ifdef HAVE_MPI
