@@ -174,7 +174,7 @@ public:
    * \brief Update the inverse of the BFGS approximation.
    * \param[in] config - config class.
    */
-  void BFGSUpdate(CConfig *config, bool search_flag);
+  void BFGSUpdate(CConfig *config, unsigned short search_flag);
 
   /*!
    * \brief Compute the search direction using the approximated inverse, the gradient N_u and an active set projection.
