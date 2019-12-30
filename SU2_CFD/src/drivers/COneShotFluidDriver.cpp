@@ -502,7 +502,7 @@ void COneShotFluidDriver::RunOneShot(){
     ComputeActiveSet(stepsize);
 
     /*--- Do a BFGS update to approximate the inverse preconditioner ---*/
-    if(OneShotIter > config->GetOneShotStart()) BFGSUpdate(config);
+    if(OneShotIter > config->GetOneShotStart()) BFGSUpdate(config, ArmijoFlag);
 
     /*--- Compute the search direction for the line search procedure ---*/
     ComputeSearchDirection();
@@ -855,7 +855,7 @@ void COneShotFluidDriver::SurfaceDeformation(CSurfaceMovement *surface_movement,
 
 }
 
-void COneShotFluidDriver::BFGSUpdate(CConfig *config){
+void COneShotFluidDriver::BFGSUpdate(CConfig *config, unsigned short search_flag){
 
   su2double vk = 0;
   su2double normyk = 0;
@@ -872,7 +872,7 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config){
   }
 
   // if ((vk > 0) && (GradDotDir < 0)){
-  if (vk > 0){
+  if ((vk > 0) && (search_flag == 0)){
     su2double** MatA = new su2double*[nDV_Total];
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       MatA[iDV] = new su2double[nDV_Total];
@@ -1339,7 +1339,7 @@ void COneShotFluidDriver::ComputePreconditioner(){
       // const bool active = (LambdaTilde[0] > 0.);
       if(active) {
         BCheckNorm = BCheck[0][0];
-        solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
+        // solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
         // SetAugLagGrad(TOTAL_AUGMENTED_OLD);
         // BCheckNorm = BCheck[0][0] - 1./gamma;
         BCheckInv[0][0] = 1./(BCheck[0][0]+1./config->GetOneShotGamma());
