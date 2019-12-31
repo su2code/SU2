@@ -494,7 +494,6 @@ void COneShotFluidDriver::RunOneShot(){
     // solver[ADJFLOW_SOL]->LoadSolution();
 
     /*--- Beta*DeltaBary^T*N_yu ---*/
-    fdstep = max(tol, stepsize);
     solver[ADJFLOW_SOL]->ResetInputs(geometry, config);
     solver[ADJFLOW_SOL]->UpdateStateVariable(config, fdstep);
     ComputeBetaTerm();
