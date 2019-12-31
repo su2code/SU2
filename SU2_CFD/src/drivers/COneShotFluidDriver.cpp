@@ -952,7 +952,7 @@ unsigned short COneShotFluidDriver::CheckArmijo(bool designing){
       admissible_step -= (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
     }
     else {
-      admissible_step += (Lambda[iConstr]-LambdaOld[iConstr])*Lambda[iConstr]/gamma;
+      // admissible_step += (Lambda[iConstr]-LambdaOld[iConstr])*Lambda[iConstr]/gamma;
     }
     /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
     // admissible_step -= (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
@@ -991,7 +991,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool designing){
       GradDotDir -= (Lambda[iConstr]-LambdaOld[iConstr])*ConstrFuncOld[iConstr];
     }
     else {
-      GradDotDir += (Lambda[iConstr]-LambdaOld[iConstr])*Lambda[iConstr]/gamma;
+      // GradDotDir += (Lambda[iConstr]-LambdaOld[iConstr])*Lambda[iConstr]/gamma;
     }
     /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
     // GradDotDir -= (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
