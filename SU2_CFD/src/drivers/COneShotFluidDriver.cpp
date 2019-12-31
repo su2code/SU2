@@ -394,7 +394,7 @@ void COneShotFluidDriver::RunOneShot(){
         }
         else if(ArmijoFlagFeas == 2) {
         //   // stepsizefeas = min(UpdateStepSizeBound(stepsize_tmp, stepsizefeas*1.5, stepsizefeas*7.5), 1.0);
-          if(((ArmijoIterFeas == 1) && (stepsizefeas = 1.0)) || (ArmijoIterFeas == nArmijoIter-1)) {
+          if((ArmijoIterFeas == 1) || (ArmijoIterFeas == nArmijoIter-1)) {
             ArmijoFlagFeas = 0;
             break;
           }
@@ -518,17 +518,13 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Modifiy initial line search guess based on success of line search ---*/
   if(OneShotIter > config->GetOneShotStart()) {
-    if((stepsize < stepsize0/2.0) || (!Converged)) {
-      stepsize0 = max(10.0*tol, stepsize0/2.0);
-      // stepsize0 = stepsize;
-    }
-    else {
-      stepsize0 = min(1.0, stepsize0*2.0);
-      // stepsize0 = stepsize;
-    }
-    // else if(((!bool_tol) && (ArmijoIter < nArmijoIter)) || (ArmijoFlag == 2)) {
-    // // else {
+    // if((stepsize < stepsize0/2.0) || (!Converged)) {
+    //   stepsize0 = max(10.0*tol, stepsize0/2.0);
+    //   // stepsize0 = stepsize;
+    // }
+    // else {
     //   stepsize0 = min(1.0, stepsize0*2.0);
+    //   // stepsize0 = stepsize;
     // }
 
     // if((Converged) && (ConvergedStore)) {
