@@ -991,7 +991,7 @@ void COneShotFluidDriver::StoreGradDotDir(bool designing){
     /*--- AugLagLamGrad is the gradient at the old iterate. ---*/
     GradDotDir += (Lambda[iConstr]-LambdaOld[iConstr])*AugLagLamGrad[iConstr];
   }
-  GradDotDir = -abs(GradDotDir);
+  // GradDotDir = -abs(GradDotDir);
 }
 
 void COneShotFluidDriver::StoreOldGradDotDir(){
