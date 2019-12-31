@@ -77,6 +77,7 @@ protected:
   
   su2double lb, ub;    /*!< \brief Lower and upper bounds of design variables.*/
   su2double epsilon;   /*!< \brief Estimator for the active set.*/
+  su2double fdstep;    /*!< \brief Finite difference step size. */
   su2double stepsize0; /*!< \brief Initial guess for the stepsize.*/
   su2double CWolfeOne; /*!< \brief First Wolfe line search parameter.*/
   su2double CWolfeTwo; /*!< \brief Second Wolfe line search parameter.*/

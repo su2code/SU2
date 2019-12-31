@@ -122,9 +122,10 @@ COneShotFluidDriver::COneShotFluidDriver(char* confFile,
   BCheckNorm = 1./config->GetOneShotGamma();
 
   /*----- calculate values for bound projection algorithm -------*/
-  lb=-config->GetBound()*config->GetDesignScale();
-  ub=config->GetBound()*config->GetDesignScale();
-  epsilon=(ub-lb)/2.0;
+  lb = -config->GetBound()*config->GetDesignScale();
+  ub = config->GetBound()*config->GetDesignScale();
+  fdstep = config->GetFDStep();
+  epsilon = (ub-lb)/2.0;
   stepsize0 = 1.0;
 
   /*---- calculate line search parameter ----*/
@@ -493,6 +494,9 @@ void COneShotFluidDriver::RunOneShot(){
     // solver[ADJFLOW_SOL]->LoadSolution();
 
     /*--- Beta*DeltaBary^T*N_yu ---*/
+    fdstep = max(tol, stepsize);
+    solver[ADJFLOW_SOL]->ResetInputs(geometry, config);
+    solver[ADJFLOW_SOL]->UpdateStateVariable(config, fdstep);
     ComputeBetaTerm();
     // solver[ADJFLOW_SOL]->SetFiniteDifferenceSens(geometry, config);
     solver[ADJFLOW_SOL]->SetSensitivityLagrangian(geometry, BETA_TERM);
@@ -1132,7 +1136,7 @@ void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
       AugLagGradAlpha[iDV] = Gradient[iDV];
     }
     else if(kind == BETA_TERM) {
-      AugLagGradBeta[iDV] = (Gradient[iDV]-ShiftLagGrad[iDV])/config->GetFDStep();
+      AugLagGradBeta[iDV] = (Gradient[iDV]-ShiftLagGrad[iDV])fdstep;
     }
     else if(kind == GAMMA_TERM) {
       AugLagGradGamma[iDV] = Gradient[iDV];
@@ -1244,8 +1248,8 @@ void COneShotFluidDriver::ComputeBetaTerm(){
   /*--- Store the computational graph of one direct iteration with the conservative variables and the mesh coordinates as input. ---*/
 
   // SetRecording(NONE);
-  solver[ADJFLOW_SOL]->ResetInputs(geometry, config);
-  solver[ADJFLOW_SOL]->UpdateStateVariable(config);
+  // solver[ADJFLOW_SOL]->ResetInputs(geometry, config);
+  // solver[ADJFLOW_SOL]->UpdateStateVariable(config);
   SetRecording(COMBINED);
 
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution

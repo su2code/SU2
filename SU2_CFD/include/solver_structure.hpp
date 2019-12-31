@@ -4739,7 +4739,7 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - geometry class object
    */
-  virtual void UpdateStateVariable(CConfig *config);
+  virtual void UpdateStateVariable(CConfig *config, su2double fd_step);
 
   /*!
    * \brief A virtual member.
@@ -16067,7 +16067,7 @@ public:
    * (This is done to calculate the finite difference update for the beta term)
    * \param[in] config - config class element
    */
-  void UpdateStateVariable(CConfig *config);
+  void UpdateStateVariable(CConfig *config, su2double fd_step);
 
   /*!
    * \brief Set the sensitivity to the finite difference to approximate N_yx for the beta term.

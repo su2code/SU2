@@ -456,10 +456,9 @@ void COneShotSolver::ExtractAdjoint_Solution_Clean(CGeometry *geometry, CConfig 
 
 }
 
-void COneShotSolver::UpdateStateVariable(CConfig *config){
+void COneShotSolver::UpdateStateVariable(CConfig *config, su2double fd_step){
   unsigned long iPoint;
   unsigned short iVar;
-  su2double fd_step=config->GetFDStep();
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
       Solution[iVar] = direct_solver->GetNodes()->GetSolution_Store(iPoint,iVar)+fd_step*nodes->GetSolution_Delta(iPoint,iVar);
