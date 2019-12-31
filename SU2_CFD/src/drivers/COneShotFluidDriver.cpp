@@ -446,9 +446,9 @@ void COneShotFluidDriver::RunOneShot(){
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
   }
   else if((OneShotIter > config->GetOneShotStart()) && 
-          // (OneShotIter < config->GetOneShotStop())){
-          (OneShotIter < config->GetOneShotStop()) &&
-          (!Converged)){
+          (OneShotIter < config->GetOneShotStop())){
+          // (OneShotIter < config->GetOneShotStop()) &&
+          // (!Converged)){
     solver[ADJFLOW_SOL]->CalculateAlphaBeta(config);
     solver[ADJFLOW_SOL]->CalculateGamma(config, BCheckNorm, ConstrFunc, Lambda);
 
