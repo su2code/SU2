@@ -525,7 +525,7 @@ void COneShotFluidDriver::RunOneShot(){
       stepsize0 = max(10.0*tol, stepsize0/2.0);
       // stepsize0 = stepsize;
     }
-    else {
+    else if (Converged) {
       stepsize0 = min(1.0, stepsize0*2.0);
       // stepsize0 = stepsize;
     }
