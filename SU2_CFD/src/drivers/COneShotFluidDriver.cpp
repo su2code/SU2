@@ -258,7 +258,7 @@ void COneShotFluidDriver::RunOneShot(){
         }
         else if(ArmijoFlag == 2) {
         //   // stepsize = min(UpdateStepSizeBound(stepsize_tmp, stepsize*1.5, stepsize*7.5), 1.0);
-          if((ArmijoIter == 1) || (ArmijoIter == nArmijoIter-1)) {
+          if(((ArmijoIter == 1) && (stepsize = 1.0)) || (ArmijoIter == nArmijoIter-1)) {
             ArmijoFlag = 0;
             break;
           }
@@ -394,7 +394,7 @@ void COneShotFluidDriver::RunOneShot(){
         }
         else if(ArmijoFlagFeas == 2) {
         //   // stepsizefeas = min(UpdateStepSizeBound(stepsize_tmp, stepsizefeas*1.5, stepsizefeas*7.5), 1.0);
-          if((ArmijoIterFeas == 1) || (ArmijoIterFeas == nArmijoIter-1)) {
+          if(((ArmijoIterFeas == 1) && (stepsizefeas = 1.0)) || (ArmijoIterFeas == nArmijoIter-1)) {
             ArmijoFlagFeas = 0;
             break;
           }
