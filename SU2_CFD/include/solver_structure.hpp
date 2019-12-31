@@ -1,28 +1,18 @@
-﻿/*!
+/*!
  * \file solver_structure.hpp
  * \brief Headers of the main subroutines for solving partial differential equations.
  *        The subroutines and functions are in the <i>solver_structure.cpp</i>,
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,7 +47,7 @@
 #include "numerics_structure.hpp"
 #include "sgs_model.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/geometry/CGeometry.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/linear_algebra/CSysMatrix.hpp"
 #include "../../Common/include/linear_algebra/CSysVector.hpp"
@@ -94,6 +84,13 @@ protected:
   bool adjoint;   /*!< \brief Boolean to determine whether solver is initialized as a direct or an adjoint solver. */
   unsigned short MGLevel;        /*!< \brief Multigrid level of this solver object. */
   unsigned short IterLinSolver;  /*!< \brief Linear solver iterations. */
+  su2double ResLinSolver;        /*!< \brief Final linear solver residual. */
+  su2double NonLinRes_Value,        /*!< \brief Summed value of the nonlinear residual indicator. */
+  NonLinRes_Func;      /*!< \brief Current value of the nonlinear residual indicator at one iteration. */
+  unsigned short NonLinRes_Counter;  /*!< \brief Number of elements of the nonlinear residual indicator series. */
+  vector<su2double> NonLinRes_Series;      /*!< \brief Vector holding the nonlinear residual indicator series. */
+  su2double Old_Func,  /*!< \brief Old value of the nonlinear residual indicator. */
+  New_Func;      /*!< \brief Current value of the nonlinear residual indicator. */
   unsigned short nVar,           /*!< \brief Number of variables of the problem. */
   nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */
@@ -104,7 +101,10 @@ protected:
   unsigned long nPoint;          /*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain;    /*!< \brief Number of points of the computational grid. */
   su2double Max_Delta_Time,  /*!< \brief Maximum value of the delta time for all the control volumes. */
-  Min_Delta_Time;            /*!< \brief Minimum value of the delta time for all the control volumes. */
+  Min_Delta_Time;          /*!< \brief Minimum value of the delta time for all the control volumes. */
+  su2double Max_CFL_Local;  /*!< \brief Maximum value of the CFL across all the control volumes. */
+  su2double Min_CFL_Local;  /*!< \brief Minimum value of the CFL across all the control volumes. */
+  su2double Avg_CFL_Local;  /*!< \brief Average value of the CFL across all the control volumes. */
   su2double *Residual_RMS,  /*!< \brief Vector with the mean residual for each variable. */
   *Residual_Max,            /*!< \brief Vector with the maximal residual for each variable. */
   *Residual,                /*!< \brief Auxiliary nVar vector. */
@@ -147,14 +147,7 @@ protected:
 
   unsigned long nMarker,                 /*!< \brief Total number of markers using the grid information. */
   *nVertex;                              /*!< \brief Store nVertex at each marker for deallocation */
-  unsigned long nMarker_InletFile;       /*!< \brief Auxiliary structure for holding the number of markers in an inlet profile file. */
-  vector<string> Marker_Tags_InletFile;  /*!< \brief Auxiliary structure for holding the string names of the markers in an inlet profile file. */
-  unsigned long *nRow_InletFile;         /*!< \brief Auxiliary structure for holding the number of rows for a particular marker in an inlet profile file. */
-  unsigned long *nRowCum_InletFile;      /*!< \brief Auxiliary structure for holding the number of rows in cumulative storage format for a particular marker in an inlet profile file. */
-  unsigned long maxCol_InletFile;        /*!< \brief Auxiliary structure for holding the maximum number of columns in all inlet marker profiles (for data structure size) */
-  unsigned long *nCol_InletFile;         /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in an inlet profile file. */
-  passivedouble *Inlet_Data;             /*!< \brief Auxiliary structure for holding the data values from an inlet profile file. */
-  
+
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
 
@@ -164,8 +157,6 @@ protected:
   su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
   
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
-  
-  su2double valResidual;  /*!< \brief Store the residual of the linear system solution. */
 
   /*!
    * \brief Pure virtual function, all derived solvers MUST implement a method returning their "nodes".
@@ -189,7 +180,7 @@ private:
   CVariable* base_nodes;  /*!< \brief Pointer to CVariable to allow polymorphic access to solver nodes. */
 
 public:
-  
+
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector<su2double> LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
   CSysVector<su2double> LinSysAux;    /*!< \brief vector to store iterative residual of implicit linear system. */
@@ -279,6 +270,12 @@ public:
   void SetIterLinSolver(unsigned short val_iterlinsolver);
   
   /*!
+   * \brief Set the final linear solver residual.
+   * \param[in] val_reslinsolver - Value of final linear solver residual.
+   */
+  void SetResLinSolver(su2double val_reslinsolver);
+  
+  /*!
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
@@ -332,6 +329,12 @@ public:
   unsigned short GetIterLinSolver(void);
   
   /*!
+   * \brief Get the final linear solver residual.
+   * \return Value of final linear solver residual.
+   */
+  inline su2double GetResLinSolver(void) { return ResLinSolver; }
+
+  /*!
    * \brief Get the value of the maximum delta time.
    * \return Value of the maximum delta time.
    */
@@ -354,6 +357,24 @@ public:
    * \return Value of the minimum delta time.
    */
   virtual su2double GetMin_Delta_Time(unsigned short val_Species);
+  
+  /*!
+   * \brief Get the value of the maximum local CFL number.
+   * \return Value of the maximum local CFL number.
+   */
+  inline su2double GetMax_CFL_Local(void) { return Max_CFL_Local; }
+  
+  /*!
+   * \brief Get the value of the minimum local CFL number.
+   * \return Value of the minimum local CFL number.
+   */
+  inline su2double GetMin_CFL_Local(void) { return Min_CFL_Local; }
+  
+  /*!
+   * \brief Get the value of the average local CFL number.
+   * \return Value of the average local CFL number.
+   */
+  inline su2double GetAvg_CFL_Local(void) { return Avg_CFL_Local; }
   
   /*!
    * \brief Get the number of variables of the problem.
@@ -583,15 +604,18 @@ public:
   /*!
    * \brief Compute the Green-Gauss gradient of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config);
+  void SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the Least Squares gradient of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config);
+  void SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the Least Squares gradient of the grid velocity.
@@ -1372,6 +1396,27 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config);
+  
+  /*!
+   * \brief Adapt the CFL number based on the local under-relaxation parameters
+   *        computed for each nonlinear iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   */
+  void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config);
+  
+  /*!
+   * \brief Reset the local CFL adaption variables
+   */
+  void ResetCFLAdapt();
+  
+  /*!
+   * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
@@ -1498,15 +1543,17 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  virtual void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config);
+  virtual void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
+  virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief A virtual member.
@@ -3569,14 +3616,6 @@ public:
   void Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint_run, string val_filename);
 
   /*!
-   * \brief Read a native SU2 inlet file in ASCII format.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_filename - String name of the restart file.
-   */
-  void Read_InletFile_ASCII(CGeometry *geometry, CConfig *config, string val_filename);
-
-  /*!
    * \brief Load a inlet profile data from file into a particular solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -4587,12 +4626,6 @@ public:
    */
   virtual su2double GetMaximum_Volume(){ return 0.0; }
   
-  /*!
-   * \brief Get residual of the linear solver
-   * \return 
-   */
-  su2double GetLinSol_Residual(){ return valResidual; }
-  
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.
@@ -4679,7 +4712,7 @@ public:
  * \class CBaselineSolver_FEM
  * \brief Main class for defining a baseline solution from a restart file for the DG-FEM solver output.
  * \author T. Economon.
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CBaselineSolver_FEM : public CSolver {
 protected:
@@ -5222,16 +5255,18 @@ public:
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the limiter of the primitive variables.
@@ -5662,6 +5697,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config);
   
   /*!
    * \brief Compute the pressure forces and all the adimensional coefficients.
@@ -6848,7 +6890,8 @@ public:
    * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
    * \param[in] density_miz - value of the mixed-out avaraged density.
    */
-  void MixedOut_Average (CConfig *config, su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
+  void MixedOut_Average (CConfig *config, su2double val_init_pressure, const su2double *val_Averaged_Flux,
+                         const su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
 
   /*!
    * \brief It gathers into the master node average quantities at inflow and outflow needed for turbomachinery analysis.
@@ -6863,7 +6906,8 @@ public:
    * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
    * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
    */
-  void ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
+  void ComputeTurboVelocity(const su2double *cartesianVelocity, const su2double *turboNormal, su2double *turboVelocity,
+                            unsigned short marker_flag, unsigned short marker_kindturb);
 
   /*!
    * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
@@ -6871,7 +6915,8 @@ public:
    * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
    * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
    */
-  void ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
+  void ComputeBackVelocity(const su2double *turboVelocity, const su2double *turboNormal, su2double *cartesianVelocity,
+                           unsigned short marker_flag, unsigned short marker_kindturb);
 
   /*!
    * \brief Provide the average density at the boundary of interest.
@@ -7526,16 +7571,18 @@ public:
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the limiter of the primitive variables.
@@ -7713,6 +7760,13 @@ public:
    */
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config);
+  
   /*!
    * \brief Provide the non dimensional lift coefficient (inviscid contribution).
    * \param val_marker Surface where the coefficient is going to be computed.
@@ -9643,6 +9697,13 @@ public:
    */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+  
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config);
   
   /*!
    * \brief Load a solution from a restart file.
@@ -13111,7 +13172,7 @@ public:
  * \brief Main class for defining the Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
@@ -14740,7 +14801,7 @@ protected:
  * \brief Main class for defining the Navier-Stokes Discontinuous Galerkin finite element flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CFEM_DG_NSSolver : public CFEM_DG_EulerSolver {
 private:

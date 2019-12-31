@@ -2,24 +2,14 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #include "../include/solver_structure.hpp"
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
@@ -479,8 +470,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
    gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
    c vector := transpose(WA)*(Wb) ---*/
   
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    
+  if (config->GetLeastSquaresRequired()) {
     Smatrix = new su2double* [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
       Smatrix[iDim] = new su2double [nDim];
@@ -488,7 +478,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     Cvector = new su2double* [nPrimVarGrad];
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       Cvector[iVar] = new su2double [nDim];
-    
   }
   
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
@@ -888,8 +877,19 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
   
+  /* Store the initial CFL number for all grid points. */
+  
+  const su2double CFL = config->GetCFL(MGLevel);
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    nodes->SetLocalCFL(iPoint, CFL);
+  }
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
+
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "C.FLOW";
+
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -3013,15 +3013,14 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
     
-    /*--- Gradient computation ---*/
-    
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-      SetPrimitive_Gradient_GG(geometry, config);
-    }
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      SetPrimitive_Gradient_LS(geometry, config);
-    }
-  
+    /*--- Gradient computation for MUSCL reconstruction. ---*/
+
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+      SetPrimitive_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
     
     /*--- Limiter computation ---*/
     
@@ -3070,21 +3069,19 @@ void CEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
 
 unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
   
-  unsigned long iPoint, ErrorCounter = 0;
-  bool RightSol = true;
+  unsigned long iPoint, nonPhysicalPoints = 0;
+  bool physical = true;
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
-    /*--- Initialize the non-physical points vector ---*/
-    
-    nodes->SetNon_Physical(iPoint,false);
-    
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
     
-    RightSol = nodes->SetPrimVar(iPoint,FluidModel);
-    nodes->SetSecondaryVar(iPoint,FluidModel);
+    physical = nodes->SetPrimVar(iPoint, FluidModel);
+    nodes->SetSecondaryVar(iPoint, FluidModel);
 
-    if (!RightSol) { nodes->SetNon_Physical(iPoint,true); ErrorCounter++; }
+    /* Check for non-realizable states for reporting. */
+    
+    if (!physical) nonPhysicalPoints++;
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
     
@@ -3092,7 +3089,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
     
   }
   
-  return ErrorCounter;
+  return nonPhysicalPoints;
 }
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
@@ -3102,12 +3099,12 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool time_steping = config->GetTime_Marching() == TIME_STEPPING;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  bool dual_time     = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                        (config->GetTime_Marching() == DT_STEPPING_2ND));
   
-  Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+  Min_Delta_Time = 1.E30; Max_Delta_Time = 0.0;
   
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
   
@@ -3195,7 +3192,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     Vol = geometry->node[iPoint]->GetVolume();
     
     if (Vol != 0.0) {
-      Local_Delta_Time = config->GetCFL(iMesh)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
+      Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
       Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
@@ -3228,7 +3225,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
   
-  if (time_steping) {
+  if (time_stepping) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Global_Delta_Time;
@@ -3236,26 +3233,35 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     Global_Delta_Time = rbuf_time;
 #endif
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-            
-            /*--- Sets the regular CFL equal to the unsteady CFL ---*/
-            config->SetCFL(iMesh,config->GetUnst_CFL());
-            
-            /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step, otherwise
-             it computes the time step based on the unsteady CFL ---*/
-            if (config->GetCFL(iMesh) == 0.0) {
-                nodes->SetDelta_Time(iPoint,config->GetDelta_UnstTime());
-            } else {
-                nodes->SetDelta_Time(iPoint,Global_Delta_Time);
-            }
-        }
+    /*--- If the unsteady CFL is set to zero, it uses the defined
+     unsteady time step, otherwise it computes the time step based
+     on the unsteady CFL ---*/
+    
+    if (config->GetUnst_CFL() == 0.0) {
+      Global_Delta_Time = config->GetDelta_UnstTime();
+    }
+    config->SetDelta_UnstTimeND(Global_Delta_Time);
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      
+      /*--- Sets the regular CFL equal to the unsteady CFL ---*/
+      
+      nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
+      nodes->SetDelta_Time(iPoint, Global_Delta_Time);
+      Min_Delta_Time = Global_Delta_Time;
+      Max_Delta_Time = Global_Delta_Time;
+      
+    }
   }
   
   /*--- Recompute the unsteady time step for the dual time strategy
    if the unsteady CFL is diferent from 0 ---*/
   
   if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
-    Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
+
+    Global_Delta_UnstTimeND = 1e30;
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND,config->GetUnst_CFL()*Global_Delta_Time/nodes->GetLocalCFL(iPoint));
+    }
     
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
@@ -3340,7 +3346,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short iMesh) {
   
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
-  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Non_Physical = 1.0, Sensor_i, Sensor_j, Dissipation_i, Dissipation_j, *Coord_i, *Coord_j;
+  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Sensor_i, Sensor_j, Dissipation_i, Dissipation_j, *Coord_i, *Coord_j;
   
   su2double z, velocity2_i, velocity2_j, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
   
@@ -3396,8 +3402,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
       }
       
-      Gradient_i = nodes->GetGradient_Primitive(iPoint);
-      Gradient_j = nodes->GetGradient_Primitive(jPoint);
+      Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+
       if (limiter) {
         Limiter_i = nodes->GetLimiter_Primitive(iPoint);
         Limiter_j = nodes->GetLimiter_Primitive(jPoint);
@@ -3405,10 +3412,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-        Non_Physical = nodes->GetNon_Physical(iPoint)*nodes->GetNon_Physical(jPoint);
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*Non_Physical;
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
         }
         if (limiter) {
           if (van_albada){
@@ -3484,26 +3490,48 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       }
       RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
       neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
-      
+
       if (neg_sound_speed) {
         for (iVar = 0; iVar < nPrimVar; iVar++) {
           Primitive_i[iVar] = V_i[iVar];
-          Primitive_j[iVar] = V_j[iVar]; }
+          Primitive_j[iVar] = V_j[iVar];
+        }
+        nodes->SetNon_Physical(iPoint, true);
+        nodes->SetNon_Physical(iPoint, true);
         Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1];
         Secondary_j[0] = S_i[0]; Secondary_j[1] = S_i[1];
-        counter_local++;
       }
-      
+
       if (neg_density_i || neg_pressure_i) {
         for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_i[iVar] = V_i[iVar];
+        nodes->SetNon_Physical(iPoint, true);
         Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1];
-        counter_local++;
       }
-      
+
       if (neg_density_j || neg_pressure_j) {
         for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = V_j[iVar];
+        nodes->SetNon_Physical(jPoint, true);
         Secondary_j[0] = S_j[0]; Secondary_j[1] = S_j[1];
+      }
+      
+      if (!neg_sound_speed && !neg_density_i && !neg_pressure_i)
+        nodes->SetNon_Physical(iPoint, false);
+      
+      if (!neg_sound_speed && !neg_density_j && !neg_pressure_j)
+        nodes->SetNon_Physical(jPoint, false);
+      
+      /* Lastly, check for existing first-order points still active
+       from previous iterations. */
+
+      if (nodes->GetNon_Physical(iPoint)) {
         counter_local++;
+        for (iVar = 0; iVar < nPrimVar; iVar++)
+          Primitive_i[iVar] = V_i[iVar];
+      }
+      if (nodes->GetNon_Physical(jPoint)) {
+        counter_local++;
+        for (iVar = 0; iVar < nPrimVar; iVar++)
+          Primitive_j[iVar] = V_j[iVar];
       }
 
       numerics->SetPrimitive(Primitive_i, Primitive_j);
@@ -5161,20 +5189,22 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
+  /*--- Store the value of the residual. ---*/
+  
+  SetResLinSolver(System.GetResidual());
+  
   /*--- The the number of iterations of the linear solver ---*/
   
   SetIterLinSolver(IterLinSol);
   
-  /*--- Set the residual --- */
-  
-  valResidual = System.GetResidual();
+  ComputeUnderRelaxationFactor(solver_container, config);
   
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {
-        nodes->AddSolution(iPoint,iVar, config->GetRelaxation_Factor_Flow()*LinSysSol[iPoint*nVar+iVar]);
+        nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
       }
     }
   }
@@ -5199,7 +5229,51 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
 }
 
-void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
+  
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+  
+  su2double localUnderRelaxation = 1.0;
+  const su2double allowableRatio = 0.2;
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    localUnderRelaxation = 1.0;
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      
+      /* We impose a limit on the maximum percentage that the
+       density and energy can change over a nonlinear iteration. */
+      
+      if ((iVar == 0) || (iVar == nVar-1)) {
+        const unsigned long index = iPoint*nVar + iVar;
+        su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, iVar)+EPS);
+        if (ratio > allowableRatio) {
+          localUnderRelaxation = min(allowableRatio/ratio, localUnderRelaxation);
+        }
+      }
+    }
+    
+    /* In case of turbulence, take the min of the under-relaxation factor
+     between the mean flow and the turb model. */
+    
+    if (config->GetKind_Turb_Model() != NONE)
+      localUnderRelaxation = min(localUnderRelaxation, solver_container[TURB_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
+    
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+    
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+    
+    /* Store the under-relaxation factor for this point. */
+    
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+
+  }
+  
+}
+
+void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
   unsigned long iPoint, jPoint, iEdge, iVertex;
   unsigned short iDim, iVar, iMarker;
   su2double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
@@ -5280,8 +5354,11 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
     
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        Partial_Gradient = nodes->GetGradient_Primitive(iPoint,iVar, iDim)/Vol;
-        nodes->SetGradient_Primitive(iPoint,iVar, iDim, Partial_Gradient);
+        Partial_Gradient = nodes->GetGradient_Primitive(iPoint, iVar, iDim)/Vol;
+        if (reconstruction)
+          nodes->SetGradient_Reconstruction(iPoint, iVar, iDim, Partial_Gradient);
+        else
+          nodes->SetGradient_Primitive(iPoint, iVar, iDim, Partial_Gradient);
       }
     }
     
@@ -5298,7 +5375,7 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
   
 }
 
-void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
   
   unsigned short iVar, iDim, jDim, iNeigh;
   unsigned long iPoint, jPoint;
@@ -5307,6 +5384,16 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
   su2double z11, z12, z13, z22, z23, z33, detR2;
   bool singular;
   
+  /*--- Set a flag for unweighted or weighted least-squares. ---*/
+  
+  bool weighted = true;
+  if (reconstruction) {
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      weighted = false;
+  } else if (config->GetKind_Gradient_Method() == LEAST_SQUARES) {
+    weighted = false;
+  }
+
   /*--- Clear Rmatrix and Primitive gradient ---*/
   nodes->SetRmatrixZero();
   nodes->SetGradient_PrimitiveZero();
@@ -5347,10 +5434,14 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
 
       AD::SetPreaccIn(Coord_j, nDim);
       AD::SetPreaccIn(PrimVar_j, nPrimVarGrad);
-
-      weight = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+      
+      if (weighted) {
+        weight = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+      } else {
+        weight = 1.0;
+      }
       
       /*--- Sumations for entries of upper triangular matrix R ---*/
       
@@ -5384,8 +5475,13 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
   /*--- Correct the gradient values across any periodic boundaries. ---*/
 
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
+    if (weighted) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
+    } else {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_ULS);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_ULS);
+    }
   }
   
   /*--- Second loop over points of the grid to compute final gradient ---*/
@@ -5483,14 +5579,17 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
     
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        nodes->SetGradient_Primitive(iPoint,iVar, iDim, Cvector[iVar][iDim]);
+        if (reconstruction)
+          nodes->SetGradient_Reconstruction(iPoint, iVar, iDim, Cvector[iVar][iDim]);
+        else
+          nodes->SetGradient_Primitive(iPoint, iVar, iDim, Cvector[iVar][iDim]);
       }
     }
     
   }
   
   /*--- Communicate the gradient values via MPI. ---*/
-  
+
   InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
   CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
   
@@ -5584,8 +5683,8 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
       
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
-      Gradient_i = nodes->GetGradient_Primitive(iPoint);
-      Gradient_j = nodes->GetGradient_Primitive(jPoint);
+      Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
       
@@ -5701,8 +5800,8 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
       
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
-      Gradient_i = nodes->GetGradient_Primitive(iPoint);
-      Gradient_j = nodes->GetGradient_Primitive(jPoint);
+      Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
 
@@ -7312,6 +7411,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     Total_CMz_Prev = 0.0;
     AoA_Prev = config->GetAoA();
     dCL_dAlpha = config->GetdCL_dAlpha();
+    AoA_inc = 0.0;
   }
   
   /*--- Retrieve the AoA (degrees) ---*/
@@ -9698,7 +9798,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
   su2double relfacFouCfg       = config->GetGiles_RelaxFactorFourier(Marker_Tag);
   su2double *Normal;
   su2double TwoPiThetaFreq_Pitch, pitch,theta;
-  su2double *SpanWiseValues = NULL;
+  const su2double *SpanWiseValues = NULL;
   su2double spanPercent, extrarelfacAvg = 0.0, deltaSpan = 0.0, relfacAvg, relfacFou, coeffrelfacAvg = 0.0;
   unsigned short Turbo_Flag;
 
@@ -12528,7 +12628,7 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
       
     }
     
-    /*---   Loop over the boundary edges ---*/
+    /*--- Loop over the boundary edges ---*/
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)  &&
@@ -13017,7 +13117,8 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
       Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, *UnitNormal, *TurboNormal;
   string Marker_Tag, Monitoring_Tag;
   unsigned short  iZone     = config->GetiZone();
-  su2double  *AverageTurboNormal, VelSq;
+  const su2double  *AverageTurboNormal;
+  su2double VelSq;
 
   /*-- Variables declaration and allocation ---*/
   Velocity           = new su2double[nDim];
@@ -13194,7 +13295,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   string Marker_Tag, Monitoring_Tag;
   su2double val_init_pressure;
   unsigned short  iZone     = config->GetiZone();
-  su2double TotalDensity, TotalPressure, *TotalVelocity, *AverageTurboNormal, *TotalFluxes;
+  su2double TotalDensity, TotalPressure, *TotalVelocity, *TotalFluxes;
+  const su2double *AverageTurboNormal;
   su2double TotalNu, TotalOmega, TotalKine, TotalMassNu, TotalMassOmega, TotalMassKine, TotalAreaNu, TotalAreaOmega, TotalAreaKine;
   su2double Nu, Kine, Omega;
   su2double MachTest, soundSpeed;
@@ -13810,9 +13912,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
 }
 
-void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal,
-    su2double& pressure_mix, su2double& density_mix) {
-
+void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressure, const su2double *val_Averaged_Flux,
+                                     const su2double *val_normal, su2double& pressure_mix, su2double& density_mix) {
 
   su2double dx, f, df, resdl = 1.0E+05;
   unsigned short iter = 0, iDim;
@@ -14369,8 +14470,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
    gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
    c vector := transpose(WA)*(Wb) ---*/
   
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    
+  if (config->GetLeastSquaresRequired()) {
     Smatrix = new su2double* [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
       Smatrix[iDim] = new su2double [nDim];
@@ -14894,8 +14994,19 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
   
+  /* Store the initial CFL number for all grid points. */
+  
+  const su2double CFL = config->GetCFL(MGLevel);
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    nodes->SetLocalCFL(iPoint, CFL);
+  }
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
+
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "C.FLOW";
+
 }
 
 CNSSolver::~CNSSolver(void) {
@@ -15037,6 +15148,17 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     }
   }
   
+  /*--- Compute gradient for MUSCL reconstruction. ---*/
+  
+  if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+      SetPrimitive_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
+  }
+  
   /*--- Compute gradient of the primitive variables ---*/
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -15103,10 +15225,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
 unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
   
-  unsigned long iPoint, ErrorCounter = 0;
+  unsigned long iPoint, nonPhysicalPoints = 0;
   su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
   unsigned short turb_model = config->GetKind_Turb_Model();
-  bool RightSol = true;
+  bool physical = true;
   
   bool tkeNeeded = ((turb_model == SST) || (turb_model == SST_SUST)) ;
 
@@ -15123,17 +15245,15 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
       }
     }
     
-    /*--- Initialize the non-physical points vector ---*/
-    
-    nodes->SetNon_Physical(iPoint,false);
-    
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
     
-    RightSol = static_cast<CNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, FluidModel);
+    physical = static_cast<CNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, FluidModel);
     nodes->SetSecondaryVar(iPoint,FluidModel);
 
-    if (!RightSol) { nodes->SetNon_Physical(iPoint,true); ErrorCounter++; }
-        
+    /* Check for non-realizable states for reporting. */
+    
+    if (!physical) nonPhysicalPoints++;
+    
     /*--- Set the DES length scale ---*/
     
     nodes->SetDES_LengthScale(iPoint,DES_LengthScale);
@@ -15144,7 +15264,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
     
   }
   
-  return ErrorCounter;
+  return nonPhysicalPoints;
 }
 
 void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
@@ -15159,7 +15279,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   
-  Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+  Min_Delta_Time = 1.E30; Max_Delta_Time = 0.0;
   
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
   
@@ -15279,8 +15399,8 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     Vol = geometry->node[iPoint]->GetVolume();
     
     if (Vol != 0.0) {
-      Local_Delta_Time = config->GetCFL(iMesh)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
-      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
+      Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
+      Local_Delta_Time_Visc = nodes->GetLocalCFL(iPoint)*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
       Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
@@ -15321,16 +15441,34 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     Global_Delta_Time = rbuf_time;
 #endif
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      nodes->SetDelta_Time(iPoint,Global_Delta_Time);
+    /*--- If the unsteady CFL is set to zero, it uses the defined
+     unsteady time step, otherwise it computes the time step based
+     on the unsteady CFL ---*/
     
+    if (config->GetUnst_CFL() == 0.0) {
+      Global_Delta_Time = config->GetDelta_UnstTime();
+    }
     config->SetDelta_UnstTimeND(Global_Delta_Time);
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      
+      /*--- Sets the regular CFL equal to the unsteady CFL ---*/
+      
+      nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
+      nodes->SetDelta_Time(iPoint, Global_Delta_Time);
+      Min_Delta_Time = Global_Delta_Time;
+      Max_Delta_Time = Global_Delta_Time;
+      
+    }
   }
   
   /*--- Recompute the unsteady time step for the dual time strategy
    if the unsteady CFL is diferent from 0 ---*/
   if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
-    Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
+    
+    Global_Delta_UnstTimeND = 1e30;
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND,config->GetUnst_CFL()*Global_Delta_Time/nodes->GetLocalCFL(iPoint));
+    }
     
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;

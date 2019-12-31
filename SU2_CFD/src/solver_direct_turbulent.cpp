@@ -2,24 +2,14 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios, A. Bueno
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #include "../include/solver_structure.hpp"
 #include "../include/variables/CTurbSAVariable.hpp"
@@ -137,8 +128,9 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Mean flow primitive variables using gradient reconstruction and limiters ---*/
       
-      Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
-      Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(jPoint);
+      Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(iPoint);
+      Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(jPoint);
+
       if (limiter) {
         Limiter_i = solver_container[FLOW_SOL]->GetNodes()->GetLimiter_Primitive(iPoint);
         Limiter_j = solver_container[FLOW_SOL]->GetNodes()->GetLimiter_Primitive(jPoint);
@@ -164,8 +156,9 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Turbulent variables using gradient reconstruction and limiters ---*/
       
-      Gradient_i = nodes->GetGradient(iPoint);
-      Gradient_j = nodes->GetGradient(jPoint);
+      Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+
       if (limiter) {
         Limiter_i = nodes->GetLimiter(iPoint);
         Limiter_j = nodes->GetLimiter(jPoint);
@@ -379,7 +372,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
-    Delta = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
+    Delta = Vol / ((nodes->GetLocalCFL(iPoint)/solver_container[FLOW_SOL]->GetNodes()->GetLocalCFL(iPoint))*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
     Jacobian.AddVal2Diag(iPoint, Delta);
     
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
@@ -405,28 +398,27 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   
   /*--- Solve or smooth the linear system ---*/
   
-  System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  unsigned long IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  SetIterLinSolver(IterLinSol);
+  
+  /*--- Store the value of the residual. ---*/
+  
+  SetResLinSolver(System.GetResidual());
+  
+  ComputeUnderRelaxationFactor(solver_container, config);
   
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
     
-    /*--- Update and clip trubulent solution ---*/
+    /*--- Update the turbulent solution. Only SST variants are clipped. ---*/
     
     switch (config->GetKind_Turb_Model()) {
         
-      case SA: case SA_E: case SA_COMP: case SA_E_COMP: 
+      case SA: case SA_E: case SA_COMP: case SA_E_COMP: case SA_NEG:
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          nodes->AddClippedSolution(iPoint,0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
-        }
-        
-        break;
-        
-      case SA_NEG:
-        
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          nodes->AddSolution(iPoint,0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint]);
+          nodes->AddSolution(iPoint, 0, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint]);
         }
         
         break;
@@ -445,7 +437,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
           }
           
           for (iVar = 0; iVar < nVar; iVar++) {
-            nodes->AddConservativeSolution(iPoint,iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+            nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
           }
           
         }
@@ -468,6 +460,62 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   /*--- Compute the root mean square residual ---*/
   
   SetResidual_RMS(geometry, config);
+  
+}
+
+void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
+  
+  /* Only apply the turbulent under-relaxation to the SA variants. The
+   SA_NEG model is more robust due to allowing for negative nu_tilde,
+   so the under-relaxation is not applied to that variant. */
+  
+  bool sa_model = ((config->GetKind_Turb_Model() == SA)        ||
+                   (config->GetKind_Turb_Model() == SA_E)      ||
+                   (config->GetKind_Turb_Model() == SA_COMP)   ||
+                   (config->GetKind_Turb_Model() == SA_E_COMP));
+  
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+  
+  su2double localUnderRelaxation    =  1.00;
+  const su2double allowableDecrease = -0.99;
+  const su2double allowableIncrease =  0.99;
+
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    localUnderRelaxation = 1.0;
+    if (sa_model) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        
+        /* We impose a limit on the maximum percentage that the
+         turbulence variables can change over a nonlinear iteration. */
+        
+        const unsigned long index = iPoint*nVar + iVar;
+        su2double ratio = LinSysSol[index]/(nodes->GetSolution(iPoint, iVar)+EPS);
+        if (ratio > allowableIncrease) {
+          localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
+        } else if (ratio < allowableDecrease) {
+          localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
+        }
+        
+      }
+    }
+    
+    /* Choose the minimum factor between mean flow and turbulence. */
+    
+    localUnderRelaxation = min(localUnderRelaxation, solver_container[FLOW_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
+    
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+    
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+
+    /* Store the under-relaxation factor for this point. */
+    
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+    
+  }
   
 }
 
@@ -981,14 +1029,13 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     
     /*--- Computation of gradients by least squares ---*/
     
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    if (config->GetLeastSquaresRequired()) {
       /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
       Smatrix = new su2double* [nDim];
       for (iDim = 0; iDim < nDim; iDim++)
         Smatrix[iDim] = new su2double [nDim];
       
       /*--- c vector := transpose(WA)*(Wb) ---*/
-      
       Cvector = new su2double* [nVar];
       for (iVar = 0; iVar < nVar; iVar++)
         Cvector[iVar] = new su2double [nDim];
@@ -1010,15 +1057,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     }
 
   }
-  
-  /*--- Initialize lower and upper limits---*/
-  
-  lowerlimit = new su2double[nVar];
-  upperlimit = new su2double[nVar];
-  
-  lowerlimit[0] = 1.0e-10;
-  upperlimit[0] = 1.0;
-  
 
   /*--- Read farfield conditions from config ---*/
   
@@ -1107,8 +1145,19 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   SetImplicitPeriodic(true);
 
+  /* Store the initial CFL number for all grid points. */
+
+  const su2double CFL = config->GetCFL(MGLevel);
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    nodes->SetLocalCFL(iPoint, CFL);
+  }
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
+  
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "SA";
+
 }
 
 CTurbSASolver::~CTurbSASolver(void) {
@@ -1162,10 +1211,18 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   
   Jacobian.SetValZero();
 
+  /*--- Upwind second order reconstruction and gradients ---*/
+
+  if (config->GetReconstructionGradientRequired()) {
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+      SetSolution_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
+  }
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
-
-  /*--- Upwind second order reconstruction ---*/
 
   if (limiter_turb) SetSolution_Limiter(geometry, config);
 
@@ -3317,7 +3374,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   
   /*--- Computation of gradients by least squares ---*/
   
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetLeastSquaresRequired()) {
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
     Smatrix = new su2double* [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
@@ -3426,7 +3483,17 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   implicit flag in case we have periodic BCs. ---*/
 
   SetImplicitPeriodic(true);
-
+      
+  /* Store the initial CFL number for all grid points. */
+  
+  const su2double CFL = config->GetCFL(MGLevel);
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    nodes->SetLocalCFL(iPoint, CFL);
+  }
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
+      
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "K-W SST";
 
@@ -3482,9 +3549,17 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   /*--- Initialize the Jacobian matrices ---*/
   
   Jacobian.SetValZero();
-
-  /*--- Upwind second order reconstruction ---*/
   
+  /*--- Upwind second order reconstruction and gradients ---*/
+  
+  if (config->GetReconstructionGradientRequired()) {
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+      SetSolution_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
+  }
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
@@ -3493,7 +3568,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  su2double rho = 0.0, mu = 0.0, dist, omega, kine, strMag, F2, muT, zeta;
+  su2double rho = 0.0, mu = 0.0, dist, omega, kine, F2, muT, zeta;
   su2double a1 = constants[7];
   unsigned long iPoint;
   
@@ -3515,8 +3590,11 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     
     dist = geometry->node[iPoint]->GetWall_Distance();
     
-    strMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
-
+    su2double *Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+    su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
+                                  Vorticity[1]*Vorticity[1] +
+                                  Vorticity[2]*Vorticity[2]);
+    
     nodes->SetBlendingFunc(iPoint,mu, dist, rho);
     
     F2 = nodes->GetF2blending(iPoint);
@@ -3525,8 +3603,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     
     kine  = nodes->GetSolution(iPoint,0);
     omega = nodes->GetSolution(iPoint,1);
-    zeta = min(1.0/omega, a1/(strMag*F2));
-    muT = min(max(rho*kine*zeta,0.0),1.0);
+    zeta  = min(1.0/omega, a1/(VorticityMag*F2));
+    muT   = max(rho*kine*zeta,0.0);
     nodes->SetmuT(iPoint,muT);
     
   }

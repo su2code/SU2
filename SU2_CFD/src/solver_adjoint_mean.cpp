@@ -2,24 +2,14 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subroutines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon, H. Kline
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #include "../include/solver_structure.hpp"
 #include "../include/variables/CAdjEulerVariable.hpp"
@@ -203,7 +194,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   }
   
   /*--- Computation of gradients by least squares ---*/
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetLeastSquaresRequired()) {
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
     Smatrix = new su2double* [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
@@ -1626,9 +1617,9 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
 
 void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
-  unsigned long iPoint, ErrorCounter = 0;
+  unsigned long iPoint, nonPhysicalPoints = 0;
   su2double SharpEdge_Distance;
-  bool RightSol = true;
+  bool physical = true;
   
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
@@ -1652,16 +1643,15 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     /*--- Get the distance form a sharp edge ---*/
     
     SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
-    
-    /*--- Initialize the non-physical points vector ---*/
 
-    nodes->SetNon_Physical(iPoint,false);
-    
     /*--- Set the primitive variables compressible
      adjoint variables ---*/
     
-    RightSol = nodes->SetPrimVar(iPoint,SharpEdge_Distance, false, config);
-    if (!RightSol) { nodes->SetNon_Physical(iPoint,true); ErrorCounter++; }
+    physical = nodes->SetPrimVar(iPoint,SharpEdge_Distance, false, config);
+
+    /* Check for non-realizable states for reporting. */
+    
+    if (!physical) nonPhysicalPoints++;
     
     /*--- Initialize the convective residual vector ---*/
     
@@ -1669,13 +1659,16 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     
   }
   
-  
   if ((muscl) && (iMesh == MESH_0)) {
     
-    /*--- Compute gradients for upwind second-order reconstruction ---*/
-
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+    /*--- Gradient computation for MUSCL reconstruction. ---*/
+    
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+      SetSolution_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
     
     /*--- Limiter computation ---*/
     
@@ -1702,10 +1695,10 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
-    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    unsigned long MyErrorCounter = nonPhysicalPoints; nonPhysicalPoints = 0;
+    SU2_MPI::Allreduce(&MyErrorCounter, &nonPhysicalPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+    if (iMesh == MESH_0) config->SetNonphysical_Points(nonPhysicalPoints);
   }
   
 }
@@ -1785,8 +1778,8 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
   
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, *Limiter_i = NULL,
-  *Limiter_j = NULL, *Psi_i = NULL, *Psi_j = NULL, *V_i, *V_j, Non_Physical = 1.0;
-  unsigned long iEdge, iPoint, jPoint;
+  *Limiter_j = NULL, *Psi_i = NULL, *Psi_j = NULL, *V_i, *V_j;
+  unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
   
   bool implicit         = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -1831,15 +1824,19 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Adjoint variables using gradient reconstruction and limiters ---*/
 
-      Gradient_i = nodes->GetGradient(iPoint); Gradient_j = nodes->GetGradient(jPoint);
-      if (limiter) { Limiter_i = nodes->GetLimiter(iPoint); Limiter_j = nodes->GetLimiter(jPoint); }
+      Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+      
+      if (limiter) {
+        Limiter_i = nodes->GetLimiter(iPoint);
+        Limiter_j = nodes->GetLimiter(jPoint);
+      }
       
       for (iVar = 0; iVar < nVar; iVar++) {
         Project_Grad_i = 0; Project_Grad_j = 0;
-        Non_Physical = nodes->GetNon_Physical(iPoint)*nodes->GetNon_Physical(jPoint);
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*Non_Physical;
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
         }
         if (limiter) {
           Solution_i[iVar] = Psi_i[iVar] + Project_Grad_i*Limiter_i[iDim];
@@ -1851,6 +1848,33 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         }
       }
       
+      /* Check our reconstruction for exceeding bounds on the
+       adjoint density. */
+      
+      su2double adj_limit = config->GetAdjointLimit();
+      bool phi_bound_i = (fabs(Solution_i[0]) > adj_limit);
+      bool phi_bound_j = (fabs(Solution_j[0]) > adj_limit);
+
+      if (phi_bound_i) nodes->SetNon_Physical(iPoint, true);
+      else             nodes->SetNon_Physical(iPoint, false);
+      
+      if (phi_bound_j) nodes->SetNon_Physical(jPoint, true);
+      else             nodes->SetNon_Physical(jPoint, false);
+      
+      /* Lastly, check for existing first-order points still active
+       from previous iterations. */
+      
+      if (nodes->GetNon_Physical(iPoint)) {
+        counter_local++;
+        for (iVar = 0; iVar < nVar; iVar++)
+          Solution_i[iVar] = Psi_i[iVar];
+      }
+      if (nodes->GetNon_Physical(jPoint)) {
+        counter_local++;
+        for (iVar = 0; iVar < nVar; iVar++)
+          Solution_j[iVar] = Psi_j[iVar];
+      }
+
       numerics->SetAdjointVar(Solution_i, Solution_j);
       
     }
@@ -1873,6 +1897,17 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_jj);
     }
     
+  }
+  
+  /*--- Warning message about non-physical reconstructions. ---*/
+  
+  if (config->GetComm_Level() == COMM_FULL) {
+#ifdef HAVE_MPI
+    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+#else
+    counter_global = counter_local;
+#endif
+    if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
   }
   
 }
@@ -4980,7 +5015,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
   
   /*--- Array structures for computation of gradients by least squares ---*/
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  if (config->GetLeastSquaresRequired()) {
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
     Smatrix = new su2double* [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
@@ -5157,9 +5192,9 @@ void CAdjNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
 void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
-  unsigned long iPoint, ErrorCounter = 0;
+  unsigned long iPoint, nonPhysicalPoints = 0;
   su2double SharpEdge_Distance;
-  bool RightSol = true;
+  bool physical = true;
   
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
@@ -5182,15 +5217,14 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
     
-    /*--- Initialize the non-physical points vector ---*/
-    
-    nodes->SetNon_Physical(iPoint,false);
-    
     /*--- Set the primitive variables compressible
      adjoint variables ---*/
     
-    RightSol = nodes->SetPrimVar(iPoint,SharpEdge_Distance, false, config);
-    if (!RightSol) { nodes->SetNon_Physical(iPoint,true); ErrorCounter++; }
+    physical = nodes->SetPrimVar(iPoint,SharpEdge_Distance, false, config);
+
+    /* Check for non-realizable states for reporting. */
+    
+    if (!physical) nonPhysicalPoints++;
     
     /*--- Initialize the convective residual vector ---*/
     
@@ -5200,6 +5234,14 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Compute gradients adj for solution reconstruction and viscous term ---*/
   
+  if (config->GetReconstructionGradientRequired()) {
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+      SetSolution_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetSolution_Gradient_LS(geometry, config, true);
+  }
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
   
@@ -5229,10 +5271,10 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
-    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    unsigned long MyErrorCounter = nonPhysicalPoints; nonPhysicalPoints = 0;
+    SU2_MPI::Allreduce(&MyErrorCounter, &nonPhysicalPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+    if (iMesh == MESH_0) config->SetNonphysical_Points(nonPhysicalPoints);
   }
   
 }
