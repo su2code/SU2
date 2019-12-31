@@ -882,16 +882,16 @@ void COneShotFluidDriver::BFGSUpdate(CConfig *config, unsigned short search_flag
   }
 
   // if ((vk > 0) && (GradDotDir < 0)){
-  if (vk > 0){
-    /*--- Reset to identity then update if line search failed ---*/
-    if(search_flag != 0) {
-      for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
-        for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
-          BFGSInv[iDV][jDV] = 0.0;
-        }
-        BFGSInv[iDV][iDV] = 1.0;
-      }
-    }
+  if (vk > 0 && search_Flag == 0){
+    // /*--- Reset to identity then update if line search failed ---*/
+    // if(search_flag != 0) {
+    //   for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
+    //     for (unsigned short jDV = 0; jDV < nDV_Total; jDV++){
+    //       BFGSInv[iDV][jDV] = 0.0;
+    //     }
+    //     BFGSInv[iDV][iDV] = 1.0;
+    //   }
+    // }
     su2double** MatA = new su2double*[nDV_Total];
     for (unsigned short iDV = 0; iDV < nDV_Total; iDV++){
       MatA[iDV] = new su2double[nDV_Total];
