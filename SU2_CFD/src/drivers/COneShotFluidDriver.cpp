@@ -542,13 +542,13 @@ void COneShotFluidDriver::RunOneShot(){
         stepsize0 = max(10.0*tol, min(1.0, 2.*GradDotDirOld/GradDotDir));
       }
       else{
-        // stepsize0 = min(1.0, 2.0*stepsize0);
-        stepsize0 = 1.0;
+        stepsize0 = min(1.0, 2.0*stepsize0);
+        // stepsize0 = 1.0;
       }
     }
     else{
-      // stepsize0 = min(1.0, 2.0*stepsize0);
-      stepsize0 = 1.0;
+      stepsize0 = min(1.0, 2.0*stepsize0);
+      // stepsize0 = 1.0;
     }
   }
 
