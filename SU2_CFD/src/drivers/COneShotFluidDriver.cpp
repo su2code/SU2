@@ -350,7 +350,7 @@ void COneShotFluidDriver::RunOneShot(){
         (OneShotIter < config->GetOneShotStop())  &&
         ((ArmijoIter < nArmijoIter-1) && (!bool_tol))) {
       /*--- Compute and store GradL dot p ---*/
-      // StoreLambdaGrad();
+      StoreLambdaGrad();
       StoreGradDotDir(true);
       CalculateLagrangian();
       ArmijoFlag = CheckArmijo(true);
