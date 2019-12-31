@@ -518,14 +518,14 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Modifiy initial line search guess based on success of line search ---*/
   if(OneShotIter > config->GetOneShotStart()) {
-    // if((stepsize < stepsize0/2.0) || (!Converged)) {
-    //   stepsize0 = max(10.0*tol, stepsize0/2.0);
-    //   // stepsize0 = stepsize;
-    // }
-    // else {
-    //   stepsize0 = min(1.0, stepsize0*2.0);
-    //   // stepsize0 = stepsize;
-    // }
+    if((Converged) && (stepsize < stepsize0/2.0)) {
+      stepsize0 = max(10.0*tol, stepsize0/2.0);
+      // stepsize0 = stepsize;
+    }
+    else {
+      stepsize0 = min(1.0, stepsize0*2.0);
+      // stepsize0 = stepsize;
+    }
 
     // if((Converged) && (ConvergedStore)) {
     //   StoreOldGradDotDir();
