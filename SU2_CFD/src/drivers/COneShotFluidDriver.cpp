@@ -1136,7 +1136,7 @@ void COneShotFluidDriver::SetAugLagGrad(unsigned short kind){
       AugLagGradAlpha[iDV] = Gradient[iDV];
     }
     else if(kind == BETA_TERM) {
-      AugLagGradBeta[iDV] = (Gradient[iDV]-ShiftLagGrad[iDV])fdstep;
+      AugLagGradBeta[iDV] = (Gradient[iDV]-ShiftLagGrad[iDV])/fdstep;
     }
     else if(kind == GAMMA_TERM) {
       AugLagGradGamma[iDV] = Gradient[iDV];
