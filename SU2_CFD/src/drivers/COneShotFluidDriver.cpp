@@ -518,38 +518,38 @@ void COneShotFluidDriver::RunOneShot(){
 
   /*--- Modifiy initial line search guess based on success of line search ---*/
   if(OneShotIter > config->GetOneShotStart()) {
-    // if(((!bool_tol) && (ArmijoIter < nArmijoIter) && (stepsize < stepsize0/2.0) && (ArmijoFlag == 0)) || (ArmijoFlag == 1)) {
-    //   stepsize0 = max(10.0*tol, stepsize0/2.0);
-    //   // stepsize0 = stepsize;
-    // }
-    // else {
-    //   stepsize0 = min(1.0, stepsize0*2.0);
-    //   // stepsize0 = stepsize;
-    // }
+    if((stepsize < stepsize0/2.0) || (!Converged)) {
+      stepsize0 = max(10.0*tol, stepsize0/2.0);
+      // stepsize0 = stepsize;
+    }
+    else {
+      stepsize0 = min(1.0, stepsize0*2.0);
+      // stepsize0 = stepsize;
+    }
     // else if(((!bool_tol) && (ArmijoIter < nArmijoIter)) || (ArmijoFlag == 2)) {
     // // else {
     //   stepsize0 = min(1.0, stepsize0*2.0);
     // }
 
-    if((Converged) && (ConvergedStore)) {
-      StoreOldGradDotDir();
-      ComputeDesignVarUpdate(1.0);
-      UpdateLambda(1.0);
-      StoreLambdaGrad();
-      StoreGradDotDir(true);
-      LoadOldLambda();
-      // if(GradDotDirOld < 0 && GradDotDir < 0) {
-        stepsize0 = max(10.0*tol, min(1.0, 2.*abs(GradDotDirOld)/abs(GradDotDir)));
-      // }
-      // else{
-      //   stepsize0 = min(1.0, 2.0*stepsize0);
-      //   // stepsize0 = 1.0;
-      // }
-    }
-    else{
-      stepsize0 = min(1.0, 2.0*stepsize0);
-      // stepsize0 = 1.0;
-    }
+    // if((Converged) && (ConvergedStore)) {
+    //   StoreOldGradDotDir();
+    //   ComputeDesignVarUpdate(1.0);
+    //   UpdateLambda(1.0);
+    //   StoreLambdaGrad();
+    //   StoreGradDotDir(true);
+    //   LoadOldLambda();
+    //   // if(GradDotDirOld < 0 && GradDotDir < 0) {
+    //     stepsize0 = max(10.0*tol, min(1.0, 2.*abs(GradDotDirOld)/abs(GradDotDir)));
+    //   // }
+    //   // else{
+    //   //   stepsize0 = min(1.0, 2.0*stepsize0);
+    //   //   // stepsize0 = 1.0;
+    //   // }
+    // }
+    // else{
+    //   stepsize0 = min(1.0, 2.0*stepsize0);
+    //   // stepsize0 = 1.0;
+    // }
   }
 
   if(OneShotIter >= config->GetOneShotStart()) ConvergedStore = Converged;
