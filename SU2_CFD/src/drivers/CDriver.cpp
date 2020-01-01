@@ -3760,6 +3760,13 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
 
 void CFluidDriver::Output(unsigned long InnerIter) {
 
+  for (iZone = 0; iZone < nZone; iZone++) {
+    output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+                                             config_container[iZone],
+                                             solver_container[iZone][INST_0][MESH_0],
+                                             InnerIter, StopCalc);
+  }
+
 }
 
 
