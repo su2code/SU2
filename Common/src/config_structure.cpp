@@ -9483,6 +9483,7 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
   unsigned short iZone = 0;
 
   /*--- If there is at least a fluid and a structural zone ---*/
+  if (nZone > 1) {
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
@@ -9494,6 +9495,7 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
       Relaxation = true;
       break;
     }
+  }
   }
 
   /*--- If the problem has FSI properties ---*/
