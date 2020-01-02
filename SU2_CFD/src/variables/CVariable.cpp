@@ -73,6 +73,18 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
   if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
     AD_InputIndex.resize(nPoint,nVar) = -1;
     AD_OutputIndex.resize(nPoint,nVar) = -1;
+    if (config->GetTime_Domain()) {
+      AD_Time_n_InputIndex.resize(nPoint,nVar) = -1;
+      AD_Time_n_OutputIndex.resize(nPoint,nVar) = -1;
+      AD_Vel_InputIndex.resize(nPoint,nVar) = -1;
+      AD_Vel_OutputIndex.resize(nPoint,nVar) = -1;
+      AD_Vel_Time_n_InputIndex.resize(nPoint,nVar) = -1;
+      AD_Vel_Time_n_OutputIndex.resize(nPoint,nVar) = -1;
+      AD_Accel_InputIndex.resize(nPoint,nVar) = -1;
+      AD_Accel_OutputIndex.resize(nPoint,nVar) = -1;
+      AD_Accel_Time_n_InputIndex.resize(nPoint,nVar) = -1;
+      AD_Accel_Time_n_OutputIndex.resize(nPoint,nVar) = -1;
+    }
   }
 
   if (config->GetMultizone_Problem())

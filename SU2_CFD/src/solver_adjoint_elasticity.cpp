@@ -669,7 +669,12 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Extract the adjoint acceleration solution u'' ---*/
 
+    if(config->GetMultizone_Problem()) {
+      direct_solver->GetNodes()->GetAdjointSolution_Accel_LocalIndex(iPoint,Solution_Accel);
+    }
+    else {
       direct_solver->GetNodes()->GetAdjointSolution_Accel(iPoint,Solution_Accel);
+    }
 
       /*--- Store the adjoint acceleration solution u'' ---*/
 
@@ -685,8 +690,12 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
       /*--- Extract the adjoint velocity solution u'' ---*/
-
+      if(config->GetMultizone_Problem()) {
+        direct_solver->GetNodes()->GetAdjointSolution_Vel_LocalIndex(iPoint,Solution_Vel);
+      }
+      else {
       direct_solver->GetNodes()->GetAdjointSolution_Vel(iPoint,Solution_Vel);
+      }
 
       /*--- Store the adjoint velocity solution u'' ---*/
 
@@ -698,8 +707,12 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
       /*--- Extract the adjoint solution at time n ---*/
-
+      if(config->GetMultizone_Problem()) {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n_LocalIndex(iPoint,Solution);
+      }
+      else {
       direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
+      }
 
       /*--- Store the adjoint solution at time n ---*/
 
@@ -710,8 +723,12 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
       /*--- Extract the adjoint acceleration solution u'' at time n ---*/
-
+      if(config->GetMultizone_Problem()) {
+        direct_solver->GetNodes()->GetAdjointSolution_Accel_time_n_LocalIndex(iPoint,Solution_Accel);
+      }
+      else {
       direct_solver->GetNodes()->GetAdjointSolution_Accel_time_n(iPoint,Solution_Accel);
+      }
 
       /*--- Store the adjoint acceleration solution u'' at time n---*/
 
@@ -723,8 +740,12 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
       /*--- Extract the adjoint velocity solution u' at time n ---*/
-
+      if(config->GetMultizone_Problem()) {
+        direct_solver->GetNodes()->GetAdjointSolution_Vel_time_n_LocalIndex(iPoint,Solution_Vel);
+      }
+      else {
       direct_solver->GetNodes()->GetAdjointSolution_Vel_time_n(iPoint,Solution_Vel);
+      }
 
       /*--- Store the adjoint velocity solution u' at time n ---*/
 

@@ -119,6 +119,24 @@ protected:
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
+  su2matrix<int> AD_Time_n_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Time_n_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
+  su2matrix<int> AD_Time_n1_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Time_n1_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
+  su2matrix<int> AD_Vel_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Vel_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
+  su2matrix<int> AD_Vel_Time_n_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Vel_Time_n_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
+  su2matrix<int> AD_Accel_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Accel_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
+  su2matrix<int> AD_Accel_Time_n_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Accel_Time_n_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
   unsigned long nPoint = {0};  /*!< \brief Number of points in the domain. */
   unsigned long nDim = {0};      /*!< \brief Number of dimension of the problem. */
   unsigned long nVar = {0};        /*!< \brief Number of variables of the problem. */
@@ -2586,7 +2604,7 @@ public:
    * \brief A virtual member.
    */
   inline virtual void GetAdjointSolution_Vel(unsigned long iPoint, su2double *adj_sol) const {}
-
+  inline virtual void GetAdjointSolution_Vel_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {}
   /*!
    * \brief A virtual member.
    */
@@ -2596,6 +2614,7 @@ public:
    * \brief A virtual member.
    */
   inline virtual void GetAdjointSolution_Vel_time_n(unsigned long iPoint, su2double *adj_sol) const {}
+  inline virtual void GetAdjointSolution_Vel_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {}
 
   /*!
    * \brief A virtual member.
@@ -2606,6 +2625,7 @@ public:
    * \brief A virtual member.
    */
   inline virtual void GetAdjointSolution_Accel(unsigned long iPoint, su2double *adj_sol) const {}
+  inline virtual void GetAdjointSolution_Accel_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {}
 
   /*!
    * \brief A virtual member.
@@ -2616,6 +2636,7 @@ public:
    * \brief A virtual member.
    */
   inline virtual void GetAdjointSolution_Accel_time_n(unsigned long iPoint, su2double *adj_sol) const {}
+  inline virtual void GetAdjointSolution_Accel_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {}
 
   /*!
    * \brief Register the variables in the solution array as input/output variable.
@@ -2688,6 +2709,11 @@ public:
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n(iPoint,iVar));
   }
 
+  inline void GetAdjointSolution_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_Time_n_InputIndex(iPoint,iVar));
+  }
+
   /*!
    * \brief Set the adjoint values of the solution at time n-1.
    * \param[in] adj_sol - The adjoint values of the solution.
@@ -2704,6 +2730,11 @@ public:
   inline void GetAdjointSolution_time_n1(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n1(iPoint,iVar));
+  }
+
+  inline void GetAdjointSolution_time_n1_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_Time_n1_InputIndex(iPoint,iVar));
   }
 
   /*!

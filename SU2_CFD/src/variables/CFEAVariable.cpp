@@ -102,13 +102,13 @@ void CFEAVariable::Register_femSolution_time_n(bool input, bool push_index) {
         }
         else {
           AD::RegisterInput(Solution_time_n(iPoint,iVar), false);
-          AD::SetIndex(AD_InputIndex(iPoint,iVar), Solution_time_n(iPoint,iVar));
+          AD::SetIndex(AD_Time_n_InputIndex(iPoint,iVar), Solution_time_n(iPoint,iVar));
         }
       }
       else {
         AD::RegisterOutput(Solution_time_n(iPoint,iVar));
         if(!push_index)
-          AD::SetIndex(AD_OutputIndex(iPoint,iVar), Solution_time_n(iPoint,iVar));
+          AD::SetIndex(AD_Time_n_OutputIndex(iPoint,iVar), Solution_time_n(iPoint,iVar));
       }
     }
   }
@@ -123,13 +123,13 @@ void CFEAVariable::RegisterSolution_Vel(bool input, bool push_index) {
         }
         else {
           AD::RegisterInput(Solution_Vel(iPoint,iVar), false);
-          AD::SetIndex(AD_InputIndex(iPoint,iVar), Solution_Vel(iPoint,iVar));
+          AD::SetIndex(AD_Vel_InputIndex(iPoint,iVar), Solution_Vel(iPoint,iVar));
         }
       }
       else {
         AD::RegisterOutput(Solution_Vel(iPoint,iVar));
         if(!push_index)
-          AD::SetIndex(AD_OutputIndex(iPoint,iVar), Solution_Vel(iPoint,iVar));
+          AD::SetIndex(AD_Vel_OutputIndex(iPoint,iVar), Solution_Vel(iPoint,iVar));
       }
     }
   }
@@ -144,13 +144,13 @@ void CFEAVariable::RegisterSolution_Vel_time_n(bool input, bool push_index) {
         }
         else {
           AD::RegisterInput(Solution_Vel_time_n(iPoint,iVar), false);
-          AD::SetIndex(AD_InputIndex(iPoint,iVar), Solution_Vel_time_n(iPoint,iVar));
+          AD::SetIndex(AD_Vel_Time_n_InputIndex(iPoint,iVar), Solution_Vel_time_n(iPoint,iVar));
         }
       }
       else {
         AD::RegisterOutput(Solution_Vel_time_n(iPoint,iVar));
         if(!push_index)
-          AD::SetIndex(AD_OutputIndex(iPoint,iVar), Solution_Vel_time_n(iPoint,iVar));
+          AD::SetIndex(AD_Vel_Time_n_OutputIndex(iPoint,iVar), Solution_Vel_time_n(iPoint,iVar));
       }
     }
   }
@@ -165,13 +165,13 @@ void CFEAVariable::RegisterSolution_Accel(bool input, bool push_index) {
         }
         else {
           AD::RegisterInput(Solution_Accel(iPoint,iVar), false);
-          AD::SetIndex(AD_InputIndex(iPoint,iVar), Solution_Accel(iPoint,iVar));
+          AD::SetIndex(AD_Accel_InputIndex(iPoint,iVar), Solution_Accel(iPoint,iVar));
         }
       }
       else {
         AD::RegisterOutput(Solution_Accel(iPoint,iVar));
         if(!push_index)
-          AD::SetIndex(AD_OutputIndex(iPoint,iVar), Solution_Accel(iPoint,iVar));
+          AD::SetIndex(AD_Accel_OutputIndex(iPoint,iVar), Solution_Accel(iPoint,iVar));
       }
     }
   }
@@ -186,13 +186,13 @@ void CFEAVariable::RegisterSolution_Accel_time_n(bool input, bool push_index) {
         }
         else {
           AD::RegisterInput(Solution_Accel_time_n(iPoint,iVar), false);
-          AD::SetIndex(AD_InputIndex(iPoint,iVar), Solution_Accel_time_n(iPoint,iVar));
+          AD::SetIndex(AD_Accel_Time_n_InputIndex(iPoint,iVar), Solution_Accel_time_n(iPoint,iVar));
         }
       }
       else {
         AD::RegisterOutput(Solution_Accel_time_n(iPoint,iVar));
         if(!push_index)
-          AD::SetIndex(AD_OutputIndex(iPoint,iVar), Solution_Accel_time_n(iPoint,iVar));
+          AD::SetIndex(AD_Accel_Time_n_OutputIndex(iPoint,iVar), Solution_Accel_time_n(iPoint,iVar));
       }
     }
   }

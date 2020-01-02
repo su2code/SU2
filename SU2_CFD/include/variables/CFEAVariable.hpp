@@ -422,6 +422,11 @@ public:
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Vel(iPoint,iVar));
   }
 
+  inline void GetAdjointSolution_Vel_LocalIndex(unsigned long iPoint, su2double *adj_sol) const final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_Vel_InputIndex(iPoint,iVar));
+  }
+
   /*!
    * \brief Set the velocity adjoint values of the solution at time n.
    * \param[in] adj_sol - The adjoint values of the solution.
@@ -438,6 +443,11 @@ public:
   inline void GetAdjointSolution_Vel_time_n(unsigned long iPoint, su2double *adj_sol) const final {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Vel_time_n(iPoint,iVar));
+  }
+
+  inline void GetAdjointSolution_Vel_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_Vel_Time_n_InputIndex(iPoint,iVar));
   }
 
   /*!
@@ -458,6 +468,11 @@ public:
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel(iPoint,iVar));
   }
 
+  inline void GetAdjointSolution_Accel_LocalIndex(unsigned long iPoint, su2double *adj_sol) const final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_Accel_InputIndex(iPoint,iVar));
+  }
+
   /*!
    * \brief Set the acceleration adjoint values of the solution at time n.
    * \param[in] adj_sol - The adjoint values of the solution.
@@ -476,4 +491,8 @@ public:
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel_time_n(iPoint,iVar));
   }
 
+  inline void GetAdjointSolution_Accel_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_Accel_Time_n_InputIndex(iPoint,iVar));
+  }
 };
