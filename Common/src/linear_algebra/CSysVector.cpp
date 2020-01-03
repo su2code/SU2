@@ -211,10 +211,11 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
 
   /*--- All threads get the same "view" of the vectors and shared variable. ---*/
   SU2_OMP_BARRIER
+  dotRes = 0.0;
+  SU2_OMP_BARRIER
 
   /*--- Reduction over all threads in this mpi rank using the shared variable. ---*/
   ScalarType sum = 0.0;
-  dotRes = 0.0;
 
   PARALLEL_FOR
   for(auto i=0ul; i<nElmDomain; ++i)
