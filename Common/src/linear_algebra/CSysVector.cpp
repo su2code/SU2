@@ -220,7 +220,6 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
   PARALLEL_FOR
   for(auto i=0ul; i<nElmDomain; ++i)
     sum += vec_val[i]*u.vec_val[i];
-  SU2_OMP_BARRIER
 
   SU2_OMP(atomic)
   dotRes += sum;
