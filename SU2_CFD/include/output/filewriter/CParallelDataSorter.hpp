@@ -121,6 +121,14 @@ public:
    * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
   virtual void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort = true){}
+  
+  /*!
+   * \brief Sort the connectivities into data structures (only for surface data sorters).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] markerList - A list of marker names that should be sorted.
+   */
+  virtual void SortConnectivity(CConfig *config, CGeometry *geometry, vector<string> markerList){}
 
   /*!
    * \brief Get the number of points the local rank owns.
