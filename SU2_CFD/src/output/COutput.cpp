@@ -431,22 +431,128 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
+    case PARAVIEW_XML:
+      
+      if (fileName.empty())
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      
+      /*--- Load and sort the output data and connectivity. ---*/
+      
+      volumeDataSorter->SortConnectivity(config, geometry, true);
+      
+      /*--- Write paraview binary ---*/
+      if (rank == MASTER_NODE) {
+        (*fileWritingTable) << "Paraview" << fileName + CParaviewXMLFileWriter::fileExt;
+      }
+      
+      fileWriter = new CParaviewXMLFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      
+      break;
+      
     case PARAVIEW_BINARY:
+      
+      if (fileName.empty())
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      
+      /*--- Load and sort the output data and connectivity. ---*/
+      
+      volumeDataSorter->SortConnectivity(config, geometry, true);
+      
+      /*--- Write paraview binary ---*/
+      if (rank == MASTER_NODE) {
+        (*fileWritingTable) << "Paraview" << fileName + CParaviewBinaryFileWriter::fileExt;
+      }
+      
+      fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      
+      break;
+      
+    case PARAVIEW_MULTIBLOCK:
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      
+      {
+        string folderName = fileName;
+        
+        if (config->GetMultizone_Problem()){
+          fileName = "Multizone";
+        }
+        fileWriter = new CParaviewVTMFileWriter(fileName, folderName, config->GetiZone(), config->GetnZone());
+        
+        CParaviewVTMFileWriter* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
+        
+        CParaviewXMLFileWriter *XMLWriter = NULL; 
+        if (rank == MASTER_NODE) {
+            (*fileWritingTable) << "Paraview Multiblock" 
+                                << fileName + CParaviewVTMFileWriter::fileExt + " -> " + vtmWriter->GetFolderName();
+        }
+        fileName = "Internal";
+        fileName = vtmWriter->GetFolderName() + "/" + fileName;
+        
+        vtmWriter->StartBlock("Zone " + PrintingToolbox::to_string(config->GetiZone()));
+        
+        vtmWriter->StartBlock("Internal");
+        vtmWriter->AddDataset("Internal", fileName + CParaviewXMLFileWriter::fileExt);
+        vtmWriter->EndBlock();
+         
+        /*--- Sort volume connectivity ---*/
+        
+        volumeDataSorter->SortConnectivity(config, geometry, true);
+        
+        /*--- Create XML writer and write volume data to file ---*/
+        
+        XMLWriter = new CParaviewXMLFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+        XMLWriter->Write_Data();
+        delete XMLWriter;
+        
+        vtmWriter->StartBlock("Boundary");
+        for (unsigned short iMarker = 0; iMarker < config->GetnMarker_CfgFile(); iMarker++){
+          
+          /*--- Get the name of the marker ---*/
+          
+          string markerTag = config->GetMarker_CfgFile_TagBound(iMarker);
+          
+ 
+          vector<string> markerList;
+          /*--- If the current marker can be found on this partition, add it to the marker list.
+             * Note that we have to provide a vector of markers to the sorter routine, although we only do 
+             * one marker at a time, i.e. markerList always contains one item. ---*/
+          
+          for (unsigned short jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++){ 
 
-      /*--- Load and sort the output data and connectivity. ---*/
-
-      volumeDataSorter->SortConnectivity(config, geometry, true);
-
-      /*--- Write paraview binary ---*/
-      if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Paraview" << fileName + CParaviewBinaryFileWriter::fileExt;
+            /*--- Write all markers to file, except send-receive markers ---*/
+            
+            if (config->GetMarker_All_TagBound(jMarker) == markerTag && 
+                config->GetMarker_All_KindBC(jMarker) != SEND_RECEIVE){
+              markerList.push_back(markerTag);
+            }
+          }
+          
+          /*--- Only sort if there is at least one processor with this marker ---*/
+          
+          int globalMarkerSize = 0, localMarkerSize = markerList.size(); 
+          SU2_MPI::Allreduce(&localMarkerSize, &globalMarkerSize, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+          
+          if (globalMarkerSize > 0){
+            /*--- Sort connectivity of the current marker ---*/
+            
+            surfaceDataSorter->SortConnectivity(config, geometry, markerList);
+            surfaceDataSorter->SortOutputData();
+            
+            fileName =  vtmWriter->GetFolderName() + "/" + markerTag;
+            XMLWriter = new CParaviewXMLFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+            XMLWriter->Write_Data();            
+            delete XMLWriter;  
+            
+            vtmWriter->AddDataset(markerTag, fileName + CParaviewXMLFileWriter::fileExt);
+          }
+        }
+        vtmWriter->EndBlock();
+        vtmWriter->EndBlock();
       }
-
-      fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
-
+      
+      
       break;
 
     case PARAVIEW:
@@ -502,6 +608,25 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       }
 
       fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+
+      break;
+      
+    case SURFACE_PARAVIEW_XML:
+
+      if (fileName.empty())
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+
+      /*--- Load and sort the output data and connectivity. ---*/
+
+      surfaceDataSorter->SortConnectivity(config, geometry);
+      surfaceDataSorter->SortOutputData();
+
+      /*--- Write paraview binary ---*/
+      if (rank == MASTER_NODE) {
+          (*fileWritingTable) << "Paraview surface" << fileName + CParaviewXMLFileWriter::fileExt;
+      }
+
+      fileWriter = new CParaviewXMLFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
 
       break;
 
