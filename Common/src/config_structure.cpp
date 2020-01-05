@@ -9464,7 +9464,28 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
       SU2_MPI::Error("Option MULTIZONE_MESH must be the same in all zones.", CURRENT_FUNCTION);
     }
   }
-
+  
+  bool multiblockDriver = false;  
+  for (unsigned short iFiles = 0; iFiles < driver_config->GetnVolumeOutputFiles(); iFiles++){
+    if (driver_config->GetVolumeOutputFiles()[iFiles] == PARAVIEW_MULTIBLOCK){
+      multiblockDriver = true;
+    }
+  }
+  
+  bool multiblockZone = false;
+  for (unsigned short iZone = 0; iZone < nZone; iZone++){
+    multiblockZone = false;
+    for (unsigned short iFiles = 0; iFiles < config_container[iZone]->GetnVolumeOutputFiles(); iFiles++){
+      if (config_container[iZone]->GetVolumeOutputFiles()[iFiles] == PARAVIEW_MULTIBLOCK){
+        multiblockZone = true;
+      }
+    }
+    if (multiblockZone != multiblockDriver){
+      SU2_MPI::Error("To enable PARAVIEW_MULTIBLOCK output, add it to OUTPUT_FILES option in main config and\n"
+                     "remove option from sub-config files.", CURRENT_FUNCTION);
+    }
+  }
+  
   /*--- Set the Restart iter for time dependent problems ---*/
   if (driver_config->GetRestart()){
     Unst_RestartIter = driver_config->GetRestart_Iter();
