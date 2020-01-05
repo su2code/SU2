@@ -1491,7 +1491,10 @@ enum ENUM_OUTPUT {
   MESH      = 11,                /*!< \brief SU2 mesh format. */
   RESTART_BINARY = 12,           /*!< \brief SU2 binary restart format. */
   RESTART_ASCII = 13,            /*!< \brief SU2 ASCII restart format. */
-  CGNS = 14                      /*!< \brief CGNS format. */
+  CGNS = 14,                      /*!< \brief CGNS format. */
+  PARAVIEW_XML = 15,              /*!< \brief Paraview XML with binary data format */
+  SURFACE_PARAVIEW_XML = 16,       /*!< \brief Surface Paraview XML with binary data format */
+  PARAVIEW_MULTIBLOCK = 17        /*!< \brief Paraview XML Multiblock */
 };
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
 ("TECPLOT_ASCII", TECPLOT)
@@ -1501,9 +1504,12 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("CSV", CSV)
 ("SURFACE_CSV", SURFACE_CSV)
 ("PARAVIEW_ASCII", PARAVIEW)
-("PARAVIEW", PARAVIEW_BINARY)
+("PARAVIEW_LEGACY", PARAVIEW_BINARY)
 ("SURFACE_PARAVIEW_ASCII", SURFACE_PARAVIEW)
-("SURFACE_PARAVIEW", SURFACE_PARAVIEW_BINARY)
+("SURFACE_PARAVIEW_LEGACY", SURFACE_PARAVIEW_BINARY)
+("PARAVIEW", PARAVIEW_XML)
+("SURFACE_PARAVIEW", SURFACE_PARAVIEW_XML)
+("PARAVIEW_MULTIBLOCK", PARAVIEW_MULTIBLOCK)
 ("RESTART_ASCII", RESTART_ASCII)
 ("RESTART", RESTART_BINARY)
 ("CGNS", CGNS);
