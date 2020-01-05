@@ -440,9 +440,12 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    we can allocate the new data structure to hold these points alone. Here,
    we also copy the data for those points from our volume data structure. ---*/
 
-  if (passiveDoubleBuffer == nullptr){
-    passiveDoubleBuffer = new passivedouble[nParallel_Poin*VARS_PER_POINT];
+  if (passiveDoubleBuffer != NULL){
+    delete [] passiveDoubleBuffer;
   }
+  
+  passiveDoubleBuffer = new passivedouble[nParallel_Poin*VARS_PER_POINT];
+  
   for (int jj = 0; jj < VARS_PER_POINT; jj++) {
     count = 0;
     for (int ii = 0; ii < (int)volume_sorter->GetnPoints(); ii++) {
@@ -1097,15 +1100,23 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
 void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
 
+  std::vector<string> markerList;
+  
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    if (config->GetMarker_All_Plotting(iMarker) == YES) {
+      markerList.push_back(config->GetMarker_All_TagBound(iMarker));
+    }
+  }
+  
   /*--- Sort connectivity for each type of element (excluding halos). Note
    In these routines, we sort the connectivity into a linear partitioning
    across all processors based on the global index of the grid nodes. ---*/
 
   /*--- Sort volumetric grid connectivity. ---*/
 
-  SortSurfaceConnectivity(config, geometry, LINE         );
-  SortSurfaceConnectivity(config, geometry, TRIANGLE     );
-  SortSurfaceConnectivity(config, geometry, QUADRILATERAL);
+  SortSurfaceConnectivity(config, geometry, LINE         , markerList);
+  SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
+  SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);
 
 
   unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
@@ -1119,7 +1130,31 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
 
 }
 
-void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, vector<string> markerList) {
+
+  /*--- Sort connectivity for each type of element (excluding halos). Note
+   In these routines, we sort the connectivity into a linear partitioning
+   across all processors based on the global index of the grid nodes. ---*/
+
+  /*--- Sort volumetric grid connectivity. ---*/
+
+  SortSurfaceConnectivity(config, geometry, LINE         , markerList);
+  SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
+  SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);
+
+
+  unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
+#ifndef HAVE_MPI
+  nGlobal_Elem_Par   = nTotal_Surf_Elem;
+#else
+  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+  connectivity_sorted = true;
+
+}
+
+void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type, vector<string> markerList) {
 
   unsigned long iProcessor;
   unsigned short NODES_PER_ELEMENT;
@@ -1176,7 +1211,12 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
   nElem_Send[size] = 0; nElem_Recv[size] = 0;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Plotting(iMarker) == YES) {
+    
+    string markerTag = config->GetMarker_All_TagBound(iMarker);
+    
+    auto it = std::find(markerList.begin(), markerList.end(), markerTag);
+    
+    if (it != markerList.end()) {
 
       for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
 
@@ -1270,7 +1310,12 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
    additional data that we will send to the other procs. ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Plotting(iMarker) == YES) {
+    
+    string markerTag = config->GetMarker_All_TagBound(iMarker);
+    
+    auto it = std::find(markerList.begin(), markerList.end(), markerTag);
+    
+    if (it != markerList.end()) {
 
       for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
 

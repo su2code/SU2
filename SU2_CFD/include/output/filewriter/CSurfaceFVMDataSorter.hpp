@@ -73,6 +73,8 @@ public:
   unsigned long GetGlobalIndex(unsigned long iPoint)  override{
     return Renumber2Global[iPoint];
   }
+  
+  void SortConnectivity(CConfig *config, CGeometry *geometry, vector<string> markerList) override;
 
 
 private:
@@ -83,6 +85,6 @@ private:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
    */
-  void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type, vector<string> markerList);
 
 };
