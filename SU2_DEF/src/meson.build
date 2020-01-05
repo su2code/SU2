@@ -21,6 +21,8 @@ if get_option('enable-normal')
                                         'output/filewriter/CCSVFileWriter.cpp',
                                         'output/filewriter/CSU2FileWriter.cpp',
                                         'output/filewriter/CSU2BinaryFileWriter.cpp',
+                                        'output/filewriter/CParaviewXMLFileWriter.cpp',
+                                        'output/filewriter/CParaviewVTMFileWriter.cpp',
                                         'output/filewriter/CSU2MeshFileWriter.cpp'])
 
   su2_def = executable('SU2_DEF',
