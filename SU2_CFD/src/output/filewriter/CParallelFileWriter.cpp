@@ -42,10 +42,26 @@ CFileWriter::CFileWriter(vector<string> fields, string fileName,
   this->fileName += file_ext;
 
   file_size = 0.0;
-
+  Bandwidth = 0.0;
+  
 }
 
+CFileWriter::CFileWriter(string fileName,string file_ext):
+  file_ext(file_ext),
+  fileName(std::move(fileName)){
+  
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+  
+  this->fileName += file_ext;
+  
+  file_size = 0.0;
+  Bandwidth = 0.0;
+  
+}
 
 CFileWriter::~CFileWriter(){
 
 }
+
+
