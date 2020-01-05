@@ -88,21 +88,29 @@ protected:
    * \brief Filename
    */
   string fileName;
-
+  
   /*!
    * \brief The parallel data sorter
    */
   CParallelDataSorter* dataSorter;
-
+  
 public:
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
    * \param[in] fields - A list of field names
+   * \param[in] fileName - The name of the file
    * \param[in] file_ext - The file extension to be attached to the filename
    * \param[in] nDim - Physical dimension
    */
   CFileWriter(std::vector<std::string> fields, string fileName, CParallelDataSorter* dataSorter, string file_ext, unsigned short nDim);
-
+  
+  /*!
+   * \brief Construct a file writer using field names, file extension and dimension.
+   * \param[in] fileName - The name of the file
+   * \param[in] file_ext - The file extension to be attached to the filename
+   */
+  CFileWriter(string fileName, string file_ext);
+  
   /*!
    * \brief Destructor
    */
