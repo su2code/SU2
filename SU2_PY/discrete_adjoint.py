@@ -107,7 +107,7 @@ def discrete_adjoint( filename           ,
         # Update konfig
         konfig = copy.deepcopy(config)
 
-        if konfig.get('WND_CAUCHY_CRIT', 'NO') == 'YES' and konfig.TIME_MARCHING != 'NO':
+        if konfig.get('WINDOW_CAUCHY_CRIT', 'NO') == 'YES' and konfig.TIME_MARCHING != 'NO':
             konfig['TIME_ITER'] = info.WND_CAUCHY_DATA['TIME_ITER']
             konfig['ITER_AVERAGE_OBJ'] = info.WND_CAUCHY_DATA['ITER_AVERAGE_OBJ']
             konfig['UNST_ADJOINT_ITER'] = info.WND_CAUCHY_DATA['UNST_ADJOINT_ITER']

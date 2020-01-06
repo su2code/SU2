@@ -287,7 +287,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
     /*--- Check whether the outer time integration has reached the final time ---*/
 
-    FinalTimeReached     = CurTime >= MaxTime ;
+    FinalTimeReached     = CurTime >= MaxTime;
     MaxIterationsReached = TimeIter+1 >= nTimeIter;
 
     if ((FinalTimeReached || MaxIterationsReached || TimeConvergence) && (rank == MASTER_NODE)){
@@ -311,8 +311,8 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   return StopCalc;
 }
 
-bool CSinglezoneDriver::GetTimeConvergence(){
-    return output_container[ZONE_0]->GetTimeConvergence();
+bool CSinglezoneDriver::GetTimeConvergence() const{
+  return output_container[ZONE_0]->GetTimeConvergence();
 }
 
 void CSinglezoneDriver::Runtime_Options(){

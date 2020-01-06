@@ -32,48 +32,36 @@
 
 class CWindowingTools{
 public:
-
-    /*! \brief Returns the value of a windowing function given by fctIdx at CurTimeIdx with given endTimeIdx (i.e. endTimeIdx=nTimeIter, if one starts  windowing at time t =0.) */
-    su2double GetWndWeight(WINDOW_FUNCTION windowId, unsigned long CurTimeIdx, unsigned long endTimeIdx);
+  /*! \brief Returns the value of a windowing function given by fctIdx at CurTimeIdx with given endTimeIdx (i.e. endTimeIdx=nTimeIter, if one starts  windowing at time t =0.) */
+  su2double GetWndWeight(WINDOW_FUNCTION windowId, unsigned long CurTimeIdx, unsigned long endTimeIdx) const;
 
 protected:
-// Long time windows
-    su2double HannWindow(unsigned long i, unsigned long endTimeIdx);
-
-    su2double HannSquaredWindow(unsigned long i, unsigned long endTimeIdx);
-
-    su2double BumpWindow(unsigned long i, unsigned long endTimeIdx);
+  // Long time windows
+  su2double HannWindow(unsigned long i, unsigned long endTimeIdx) const;
+  su2double HannSquaredWindow(unsigned long i, unsigned long endTimeIdx) const;
+  su2double BumpWindow(unsigned long i, unsigned long endTimeIdx) const;
 };
 
 class CWindowedAverage:CWindowingTools{
 private:
-su2double val;
-unsigned long count;
-std::vector<su2double> values;
-
+  su2double val;
+  unsigned long count;
+  std::vector<su2double> values;
 
 public:
-CWindowedAverage();
+  CWindowedAverage();
 
-su2double Update(su2double valIn);
-
-su2double Get();
-
-unsigned long Count();
-
-void Reset();
-
-void addValue(su2double valIn, unsigned long currentIter,unsigned long startIter = 0);
-
-su2double WindowedUpdate(int fctIdx); //Computes a windowed time average (integral)
+  su2double Update(su2double valIn); //Legacy
+  su2double Get() const;
+  unsigned long Count() const; //Legacy
+  void Reset();
+  void addValue(su2double valIn, unsigned long currentIter,unsigned long startIter = 0);
+  su2double WindowedUpdate(int fctIdx); //Computes a windowed time average (integral)
 
 private:
-//Using Midpoint rule for consistentcy with adjoint solver
-su2double NoWindowing(); // == Square Window
-
-su2double HannWindowing();
-
-su2double HannSquaredWindowing();
-
-su2double BumpWindowing();
+  //Using Midpoint rule for consistentcy with adjoint solver
+  su2double NoWindowing(); // == Square Window
+  su2double HannWindowing();
+  su2double HannSquaredWindowing();
+  su2double BumpWindowing();
 };

@@ -128,9 +128,9 @@ public:
   void SecondaryRecording(void);
 
   /*!
-   * \brief gets Convergence on physical time scale, (deaktivated in adjoint case)
+   * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
    * \param none
    */
-  virtual bool GetTimeConvergence();
+  virtual bool GetTimeConvergence() const;
 
 };

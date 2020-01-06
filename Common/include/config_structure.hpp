@@ -9234,39 +9234,39 @@ public:
    * \param[in] iField - Index of the field
    * \return Field name for monitoring convergence
    */
-  string GetWndConv_Field(unsigned short iField);
+  string GetWndConv_Field(unsigned short iField) const;
 
   /*!
    * \brief Get the number of iterations that are considered in the Cauchy convergence criteria for the windowed time average of the unsteady problem.
    * \return Number of elements in the Cauchy criteria windowed time average of the unsteady problem.
    */
-  unsigned short GetWnd_Cauchy_Elems(void);
+  unsigned short GetWnd_Cauchy_Elems(void) const;
 
   /*!
    * \brief Get the value of convergence criteria for the Cauchy method for the time averaged
    *        windowed objective functions for unsteady flows
    * \return Value of the convergence criteria.
    */
-  su2double GetWnd_Cauchy_Eps(void);
+  su2double GetWnd_Cauchy_Eps(void) const;
 
   /*!
    * \brief Get the number of iterations that are not considered in the convergence criteria for the windowed average output function
    * \return Number of iterations before starting with the convergence criteria for the windowed average output function.
    */
-  unsigned long  GetWnd_StartConv_Iter(void);
+  unsigned long  GetWnd_StartConv_Iter(void) const;
 
   /*!
    * \brief Get the boolean value, whether the the Cauchy method for the time averaged
    *        windowed objective functions for unsteady flows is used or not.
    * \return Boolean value, if the criterion is used.
    */
-  bool GetWnd_Cauchy_Crit(void);
+  bool GetWnd_Cauchy_Crit(void) const;
 
   /*!
   * \brief Get the number of convergence monitoring fields for time convergence monitoring.
   * return Number of convergence monitoring fields.
   */
-  unsigned short GetnWndConv_Field();
+  unsigned short GetnWndConv_Field() const;
 
   /*!
   * \brief Get the number of convergence monitoring fields for inner convergence monitoring.

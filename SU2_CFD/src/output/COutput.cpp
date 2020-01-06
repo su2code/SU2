@@ -722,7 +722,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
         SetHistoryOutputValue("CAUCHY_" + convField, cauchyValue);
 
         if(Iteration == 0){
-            SetHistoryOutputValue("CAUCHY_" + convField, 1.0);
+          SetHistoryOutputValue("CAUCHY_" + convField, 1.0);
         }
       }
 
@@ -791,78 +791,69 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
   bool Inner_IterConv = GetConvergence() || config->GetnInner_Iter()-1 <= curInnerIter; //Check, if Inner_Iter is converged
 
   if(TimeIteration == 0){
-       for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
-          const string WndConv_Field= wndConvFields[iField_Conv];
-          if (historyOutput_Map.count(WndConv_Field) > 0) SetHistoryOutputValue("CAUCHY_"+ WndConv_Field, 1.0);
-       }
-    }
-  if(Inner_IterConv && TimeIteration >= config->GetStartWindowIteration()){
-
-     TimeConvergence = true;
-
-     unsigned short iCounter;
-
-     for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
-
-         bool fieldConverged = false;
-
-         const string WndConv_Field= wndConvFields[iField_Conv];
-
-         if (historyOutput_Map.count(WndConv_Field) > 0){
-           su2double monitor = historyOutput_Map[WndConv_Field].value;
-
-
-           /*--- Cauchy based convergence criteria ---*/
-
-             if (historyOutput_Map[WndConv_Field].fieldType == HistoryFieldType::AUTO_COEFFICIENT) { //TAVG values are AUTO_COEFF
-
-             if (TimeIteration == config->GetStartWindowIteration()){
-                 for (iCounter = 0; iCounter < nWndCauchy_Elems; iCounter++){
-                   WndCauchy_Serie[iField_Conv][iCounter] = 0.0;
-                 }
-                 WndNew_Func[iField_Conv] = monitor;
-             }
-
-             WndOld_Func[iField_Conv] = WndNew_Func[iField_Conv];
-             WndNew_Func[iField_Conv] = monitor;
-             WndCauchy_Func = fabs(WndNew_Func[iField_Conv] - WndOld_Func[iField_Conv]);
-
-             WndCauchy_Serie[iField_Conv][TimeIteration % nWndCauchy_Elems] = WndCauchy_Func;
-             WndCauchy_Value = 1.0;
-
-             if (TimeIteration >= nWndCauchy_Elems+config->GetStartWindowIteration()){
-               WndCauchy_Value = 0.0;
-               for (iCounter = 0; iCounter < nWndCauchy_Elems; iCounter++)
-                 WndCauchy_Value += WndCauchy_Serie[iField_Conv][iCounter];
-                 WndCauchy_Value /= nWndCauchy_Elems;
-             }
-
-             if (WndCauchy_Value >= wndCauchyEps) { fieldConverged = false;}
-             else { fieldConverged = true;}
-
-             /*--- Start monitoring only if the current iteration
-              *  is larger than the number of cauchy elements and
-              * the number of start-up iterations --- */
-
-             if (TimeIteration <  config->GetStartWindowIteration() + max(config->GetWnd_StartConv_Iter(), nWndCauchy_Elems)){
-               fieldConverged = false;
-             }
-
-             SetHistoryOutputValue("CAUCHY_" + WndConv_Field, WndCauchy_Value);
-           }
-
-           TimeConvergence = fieldConverged && TimeConvergence;
-
-           /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-
-           if (monitor != monitor) {SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);}
-         }
+    for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
+      const string WndConv_Field= wndConvFields[iField_Conv];
+      if (historyOutput_Map.count(WndConv_Field) > 0){
+        SetHistoryOutputValue("CAUCHY_"+ WndConv_Field, 1.0);
       }
+    }
+  }
+  if(Inner_IterConv && TimeIteration >= config->GetStartWindowIteration()){
+    TimeConvergence = true;
+    unsigned short iCounter;
 
-     /*--- Do not apply any convergence criterion if the option is disabled. */
+    for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
+      bool fieldConverged = false;
+      const string WndConv_Field= wndConvFields[iField_Conv];
 
-     if(!config->GetWnd_Cauchy_Crit()) TimeConvergence = false;
-     if(wndConvFields.empty()) TimeConvergence = false;
+      if (historyOutput_Map.count(WndConv_Field) > 0){
+        su2double monitor = historyOutput_Map[WndConv_Field].value;
+
+        /*--- Cauchy based convergence criteria ---*/
+
+        if (historyOutput_Map[WndConv_Field].fieldType == HistoryFieldType::AUTO_COEFFICIENT) { //TAVG values are AUTO_COEFF
+          if (TimeIteration == config->GetStartWindowIteration()){
+            for (iCounter = 0; iCounter < nWndCauchy_Elems; iCounter++){
+              WndCauchy_Serie[iField_Conv][iCounter] = 0.0;
+            }
+            WndNew_Func[iField_Conv] = monitor;
+          }
+          WndOld_Func[iField_Conv] = WndNew_Func[iField_Conv];
+          WndNew_Func[iField_Conv] = monitor;
+          WndCauchy_Func = fabs(WndNew_Func[iField_Conv] - WndOld_Func[iField_Conv]);
+          WndCauchy_Serie[iField_Conv][TimeIteration % nWndCauchy_Elems] = WndCauchy_Func;
+          WndCauchy_Value = 1.0;
+
+          if (TimeIteration >= nWndCauchy_Elems+config->GetStartWindowIteration()){
+            WndCauchy_Value = 0.0;
+            for (iCounter = 0; iCounter < nWndCauchy_Elems; iCounter++){
+              WndCauchy_Value += WndCauchy_Serie[iField_Conv][iCounter];
+            }
+            WndCauchy_Value /= nWndCauchy_Elems;
+          }
+          if (WndCauchy_Value >= wndCauchyEps){fieldConverged = false;}
+          else{fieldConverged = true;}
+
+          /*--- Start monitoring only if the current iteration is larger than the
+           *  number of cauchy elements and the number of start-up iterations ---*/
+
+          if (TimeIteration <  config->GetStartWindowIteration() + max(config->GetWnd_StartConv_Iter(), nWndCauchy_Elems)){
+            fieldConverged = false;
+          }
+          SetHistoryOutputValue("CAUCHY_" + WndConv_Field, WndCauchy_Value);
+        }
+        TimeConvergence = fieldConverged && TimeConvergence;
+
+        /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
+
+        if (monitor != monitor){
+          SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);}
+      }
+    }
+
+    /*--- Do not apply any convergence criterion if the option is disabled. */
+    if(!config->GetWnd_Cauchy_Crit()){TimeConvergence = false;}
+    if(wndConvFields.empty()){TimeConvergence = false;}
   }
   return TimeConvergence;
 }
@@ -1247,16 +1238,15 @@ void COutput::CheckHistoryOutput(){
 
   if (rank == MASTER_NODE){
     if(wndConvFields.size() == 0){
-        cout << "Warning: No (valid) fields chosen for convergence monitoring. Convergence monitoring inactive."<<  endl;
+      cout << "Warning: No (valid) fields chosen for convergence monitoring. Convergence monitoring inactive."<<  endl;
     }
     else{
-        cout <<"Convergence field(s): ";
-
-        for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
-          cout << convFields[iField_Conv];
-          if (iField_Conv != convFields.size() - 1) cout << ", ";
-        }
-        cout << endl;
+      cout <<"Convergence field(s): ";
+      for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
+        cout << convFields[iField_Conv];
+        if (iField_Conv != convFields.size() - 1) cout << ", ";
+      }
+      cout << endl;
     }
   }
 
@@ -1276,20 +1266,19 @@ void COutput::CheckHistoryOutput(){
   if (removedField && rank ==MASTER_NODE) cout << endl;
 
   for (unsigned short iField_Conv = 0; iField_Conv < FieldsToRemove.size(); iField_Conv++){
-    wndConvFields.erase(std::find(wndConvFields.begin(),
-                               wndConvFields.end(), FieldsToRemove[iField_Conv]));
+    wndConvFields.erase(std::find(wndConvFields.begin(), wndConvFields.end(), FieldsToRemove[iField_Conv]));
   }
   if (rank == MASTER_NODE){
     if(wndConvFields.size() == 0){
-        cout << "Warning: No (valid) fields chosen for time convergence monitoring. Time convergence monitoring inactive."<<  endl;
+      cout << "Warning: No (valid) fields chosen for time convergence monitoring. Time convergence monitoring inactive."<<  endl;
     }
     else{
-        cout <<"Time Convergence field(s): ";
-        for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
-          cout << wndConvFields[iField_Conv];
-          if (iField_Conv != wndConvFields.size() - 1) cout << ", ";
-        }
-        cout << endl;
+      cout <<"Time Convergence field(s): ";
+      for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
+        cout << wndConvFields[iField_Conv];
+        if (iField_Conv != wndConvFields.size() - 1) cout << ", ";
+      }
+      cout << endl;
     }
   }
 }
@@ -1605,10 +1594,9 @@ void COutput::Postprocess_HistoryData(CConfig *config){
       if(SetUpdate_Averages(config)){
         if (config->GetTime_Domain()){
           windowedTimeAverages[historyOutput_List[iField]].addValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
-          SetHistoryOutputValue("TAVG_" + fieldIdentifier,    windowedTimeAverages[fieldIdentifier].WindowedUpdate(config->GetKindWindow()));
+          SetHistoryOutputValue("TAVG_" + fieldIdentifier, windowedTimeAverages[fieldIdentifier].WindowedUpdate(config->GetKindWindow()));
           if (config->GetDirectDiff() != NO_DERIVATIVE) {
-            SetHistoryOutputValue("D_TAVG_" + fieldIdentifier,
-                                  SU2_TYPE::GetDerivative(windowedTimeAverages[fieldIdentifier].Get()));
+            SetHistoryOutputValue("D_TAVG_" + fieldIdentifier, SU2_TYPE::GetDerivative(windowedTimeAverages[fieldIdentifier].Get()));
           }
         }
       }
@@ -1626,7 +1614,6 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     if (historyOutput_Map.count("AVG_" + it->first) > 0 )
       SetHistoryOutputValue("AVG_" + it->first, average);
   }
-
 }
 
 void COutput::Postprocess_HistoryFields(CConfig *config){
@@ -1700,7 +1687,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   for (unsigned short iFieldConv = 0; iFieldConv < wndConvFields.size(); iFieldConv++){
     const string &wndConvField = wndConvFields[iFieldConv];
     if (historyOutput_Map.count(wndConvField) > 0){
-        AddHistoryOutput("CAUCHY_" + wndConvField, "C_" + historyOutput_Map[wndConvField].fieldName, ScreenOutputFormat::SCIENTIFIC, "CAUCHY_", "Cauchy residual value of field set with WND_CONV_FIELD.", HistoryFieldType::AUTO_COEFFICIENT);
+      AddHistoryOutput("CAUCHY_" + wndConvField, "C_" + historyOutput_Map[wndConvField].fieldName, ScreenOutputFormat::SCIENTIFIC, "CAUCHY_", "Cauchy residual value of field set with WND_CONV_FIELD.", HistoryFieldType::AUTO_COEFFICIENT);
     }
   }
 }
