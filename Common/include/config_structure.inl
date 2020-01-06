@@ -2073,3 +2073,5 @@ inline unsigned short* CConfig::GetVolumeOutputFiles() {return VolumeOutputFiles
 inline unsigned short CConfig::GetnVolumeOutputFiles() {return nVolumeOutputFiles;}
 
 inline bool CConfig::OptionIsSet(string option){ return all_options.find(option) == all_options.end();}
+
+inline string CConfig::GetCaseName(){ return caseName;}

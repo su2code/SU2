@@ -1118,6 +1118,7 @@ private:
   unsigned short pastix_verb_lvl;  /*!< \brief Verbosity level for PaStiX */
   unsigned short pastix_fill_lvl;  /*!< \brief Fill level for PaStiX ILU */
 
+  string caseName;                   /*!< \brief Name of the current case
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -9292,6 +9293,12 @@ public:
    * \return <TRUE> if option was set in the config file
    */
   bool OptionIsSet(string option);
+  
+  /*!
+   * \brief Get the name of the current case
+   * \return the case name
+   */
+  string GetCaseName();
 };
 
 #include "config_structure.inl"
