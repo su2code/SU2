@@ -86,6 +86,10 @@ protected:
   unsigned long *idSend;               //!< Send buffer holding global indices that will be send to other processors
   int nSends,                          //!< Number of sends
   nRecvs;                              //!< Number of receives
+  
+  vector<string> fieldNames;           //!< Vector with names of the output fields
+  
+  unsigned short nDim;                 //!< Spatial dimension of the data
 
   /*!
    * \brief Prepare the send buffers by filling them with the global indices.
@@ -100,9 +104,9 @@ public:
   /*!
    * \brief Constructor
    * \param[in] config - Pointer to the current config structure
-   * \param[in] nFields - Number of output fields
+   * \param[in] fieldNames - Vector containing the field names
    */
-  CParallelDataSorter(CConfig *config, unsigned short nFields);
+  CParallelDataSorter(CConfig *config, vector<string> fieldNames);
 
   /*!
    * \brief Destructor
@@ -239,5 +243,21 @@ public:
 
   su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField){
     return connSend[Index[iPoint] + iField];
+  }
+  
+  /*!
+   * \brief Get the vector containing the names of the output fields
+   * \return Vector of strings containing the field names
+   */
+  vector<string> GetFieldNames(){
+    return fieldNames;
+  }
+  
+  /*!
+   * \brief Get the spatial dimension
+   * \return The spatial dimension
+   */
+  unsigned short GetnDim(){
+    return nDim;
   }
 };

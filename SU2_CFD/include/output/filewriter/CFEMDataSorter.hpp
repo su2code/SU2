@@ -37,9 +37,9 @@ public:
    * \brief Constructor
    * \param[in] config - Pointer to the current config structure
    * \param[in] geometry - Pointer to the current geometry
-   * \param[in] nFields - Number of output fields
+   * \param[in] fieldNames - Vector containing the field names
    */
-  CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields);
+  CFEMDataSorter(CConfig *config, CGeometry *geometry, vector<string> fieldNames);
 
   /*!
    * \brief Destructor

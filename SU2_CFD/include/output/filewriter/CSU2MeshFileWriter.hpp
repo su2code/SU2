@@ -42,15 +42,12 @@ public:
 
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fields - A list of field names
-   * \param[in] nDim - Physical dimension
    * \param[in] fileName - The name of the file
    * \param[in] data_sorter - The parallel sorted data to write
    * \param[in] iZone - Index of the current zone
    * \param[in] nZone - Number of zones
    */
-  CSU2MeshFileWriter(vector<string> fields, unsigned short nDim,
-                     string fileName, CParallelDataSorter* data_sorter,
+  CSU2MeshFileWriter(string fileName, CParallelDataSorter* data_sorter,
                      unsigned short iZone, unsigned short nZone);
 
   /*!

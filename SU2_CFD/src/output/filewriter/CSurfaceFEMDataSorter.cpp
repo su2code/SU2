@@ -29,7 +29,8 @@
 #include "../../../../Common/include/fem_geometry_structure.hpp"
 
 
-CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, CFEMDataSorter* volume_sorter) : CParallelDataSorter(config, nFields){
+CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* volume_sorter) :
+  CParallelDataSorter(config, volume_sorter->GetFieldNames()){
 
   this->volume_sorter = volume_sorter;
 

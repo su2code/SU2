@@ -42,13 +42,10 @@ public:
 
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fields - A list of field names
-   * \param[in] nDim - Physical dimension
    * \param[in] - The name of the file
    * \param[in] - The parallel sorted data to write
    */
-  CTecplotFileWriter(vector<string> fields, unsigned short nDim,
-                     string fileName, CParallelDataSorter *dataSorter,
+  CTecplotFileWriter(string fileName, CParallelDataSorter *dataSorter,
                      unsigned long time_iter, su2double timestep);
 
   /*!

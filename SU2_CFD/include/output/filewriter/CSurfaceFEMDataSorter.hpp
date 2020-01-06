@@ -41,10 +41,9 @@ public:
    * \brief Constructor
    * \param[in] config - Pointer to the current config structure
    * \param[in] geometry - Pointer to the current geometry
-   * \param[in] nFields - Number of output fields
    * \param[in] volume_sorter - Pointer to the corresponding volume sorter instance
    */
-  CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, CFEMDataSorter* volume_sorter);
+  CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* volume_sorter);
 
   /*!
    * \brief Destructor

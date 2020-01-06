@@ -28,7 +28,8 @@
 #include "../../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 
-CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields) : CParallelDataSorter(config, nFields){
+CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, vector<string> fieldNames) : 
+  CParallelDataSorter(config, fieldNames){
 
   std::vector<unsigned long> globalID;
 

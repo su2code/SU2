@@ -31,9 +31,10 @@
 
 const string CParaviewVTMFileWriter::fileExt = ".vtm";
 
-CParaviewVTMFileWriter::CParaviewVTMFileWriter(string fileName, string folderName, su2double time, unsigned short iZone, unsigned short nZone)
+CParaviewVTMFileWriter::CParaviewVTMFileWriter(string fileName, string folderName, su2double time, 
+                                               unsigned short iZone, unsigned short nZone)
   : CFileWriter(std::move(fileName), fileExt),
-    folderName(std::move(folderName)){
+    folderName(std::move(folderName)), iZone(iZone), nZone(nZone), curTime(time){
   
   if (rank == MASTER_NODE)
 #if defined(_WIN32)
@@ -41,11 +42,7 @@ CParaviewVTMFileWriter::CParaviewVTMFileWriter(string fileName, string folderNam
 #else 
     mkdir(this->folderName.c_str(), 0777); // notice that 777 is different than 0777
 #endif
-  
-  this->iZone = iZone;
-  this->nZone = nZone;
-  
-  curTime = time;
+
 }
 
 
@@ -90,8 +87,7 @@ void CParaviewVTMFileWriter::Write_Data(){
   
 }
 
-void CParaviewVTMFileWriter::AddDataset(string name, string file, vector<string> fieldNames,
-                                        unsigned short nDim, CParallelDataSorter* dataSorter){
+void CParaviewVTMFileWriter::AddDataset(string name, string file, CParallelDataSorter* dataSorter){
   
   /*--- Construct the full file name incl. folder ---*/
   
@@ -99,7 +95,7 @@ void CParaviewVTMFileWriter::AddDataset(string name, string file, vector<string>
   
   /*--- Create an XML writer and dump data into file ---*/
   
-  CParaviewXMLFileWriter* XMLWriter = new CParaviewXMLFileWriter(fieldNames, nDim, fullFilename, dataSorter);
+  CParaviewXMLFileWriter* XMLWriter = new CParaviewXMLFileWriter(fullFilename, dataSorter);
   XMLWriter->Write_Data();
   delete XMLWriter;
   

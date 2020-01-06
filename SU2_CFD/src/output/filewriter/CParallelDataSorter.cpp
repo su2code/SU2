@@ -28,12 +28,13 @@
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
 #include <cassert>
 
-CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields){
+CParallelDataSorter::CParallelDataSorter(CConfig *config, vector<string> fieldNames) : 
+  fieldNames(std::move(fieldNames)){
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 
-  GlobalField_Counter = nFields;
+  GlobalField_Counter = this->fieldNames.size();
 
   nParallel_Hexa = 0;
   nParallel_Line = 0;

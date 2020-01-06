@@ -28,7 +28,8 @@
 #include "../../../include/output/filewriter/CFEMDataSorter.hpp"
 #include "../../../../Common/include/fem_geometry_structure.hpp"
 
-CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields) : CParallelDataSorter(config, nFields){
+CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, vector<string> fieldNames) :
+  CParallelDataSorter(config, fieldNames){
 
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/

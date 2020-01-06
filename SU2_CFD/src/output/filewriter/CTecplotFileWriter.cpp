@@ -29,10 +29,9 @@
 
 const string CTecplotFileWriter::fileExt = ".dat";
 
-CTecplotFileWriter::CTecplotFileWriter(vector<string> fields, unsigned short nDim,
-                                       string fileName, CParallelDataSorter *dataSorter,
+CTecplotFileWriter::CTecplotFileWriter(string fileName, CParallelDataSorter *dataSorter,
                                        unsigned long time_iter, su2double timestep) :
-  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim), time_iter(time_iter), timestep(timestep){}
+  CFileWriter(std::move(fileName), dataSorter, fileExt), time_iter(time_iter), timestep(timestep){}
 
 CTecplotFileWriter::~CTecplotFileWriter(){}
 
@@ -41,6 +40,8 @@ void CTecplotFileWriter::Write_Data(){
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
+  
+  const vector<string> fieldNames = dataSorter->GetFieldNames();
 
   unsigned short iVar;
 
@@ -97,10 +98,10 @@ void CTecplotFileWriter::Write_Data(){
     Tecplot_File << "TITLE = \"Visualization of the solution\"" << endl;
 
     Tecplot_File << "VARIABLES = ";
-    for (iVar = 0; iVar < fieldnames.size()-1; iVar++) {
-      Tecplot_File << "\"" << fieldnames[iVar] << "\",";
+    for (iVar = 0; iVar < fieldNames.size()-1; iVar++) {
+      Tecplot_File << "\"" << fieldNames[iVar] << "\",";
     }
-    Tecplot_File << "\"" << fieldnames[fieldnames.size()-1] << "\"" << endl;
+    Tecplot_File << "\"" << fieldNames[fieldNames.size()-1] << "\"" << endl;
 
     /*--- Write the header ---*/
 
@@ -112,7 +113,7 @@ void CTecplotFileWriter::Write_Data(){
 
     Tecplot_File << "NODES= "<< dataSorter->GetnPointsGlobal() <<", ELEMENTS= "<< dataSorter->GetnElem();
 
-    if (nDim == 3){
+    if (dataSorter->GetnDim() == 3){
       if ((nTot_Quad > 0 || nTot_Tria > 0) && (nTot_Hexa + nTot_Pris + nTot_Pyra + nTot_Tetr == 0)){
         Tecplot_File << ", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL" << endl;
       }
@@ -148,7 +149,7 @@ void CTecplotFileWriter::Write_Data(){
 
 
       for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
-        for (iVar = 0; iVar < fieldnames.size(); iVar++)
+        for (iVar = 0; iVar < fieldNames.size(); iVar++)
           Tecplot_File << scientific << dataSorter->GetData(iVar, iPoint) << "\t";
         Tecplot_File << endl;
       }

@@ -29,9 +29,8 @@
 
 const string CSU2BinaryFileWriter::fileExt = ".dat";
 
-CSU2BinaryFileWriter::CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim,
-                                           string fileName, CParallelDataSorter *dataSorter)  :
-  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
+CSU2BinaryFileWriter::CSU2BinaryFileWriter(string fileName, CParallelDataSorter *dataSorter)  :
+  CFileWriter(std::move(fileName), dataSorter, fileExt){}
 
 
 CSU2BinaryFileWriter::~CSU2BinaryFileWriter(){
@@ -43,8 +42,9 @@ void CSU2BinaryFileWriter::Write_Data(){
   /*--- Local variables ---*/
 
   unsigned short iVar;
-
-  unsigned short GlobalField_Counter = fieldnames.size();
+  
+  const vector<string> fieldNames = dataSorter->GetFieldNames();
+  unsigned short GlobalField_Counter = fieldNames.size();
   unsigned long nParallel_Poin = dataSorter->GetnPoints();
 
   ofstream restart_file;
@@ -163,7 +163,7 @@ void CSU2BinaryFileWriter::Write_Data(){
 
     for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
       disp = var_buf_size*sizeof(int) + iVar*CGNS_STRING_SIZE*sizeof(char);
-      strncpy(str_buf, fieldnames[iVar].c_str(), CGNS_STRING_SIZE);
+      strncpy(str_buf, fieldNames[iVar].c_str(), CGNS_STRING_SIZE);
       MPI_File_write_at(fhw, disp, str_buf, CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
       file_size += (su2double)CGNS_STRING_SIZE*sizeof(char);
     }

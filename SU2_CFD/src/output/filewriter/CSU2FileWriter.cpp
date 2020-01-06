@@ -29,9 +29,8 @@
 
 const string CSU2FileWriter::fileExt = ".csv";
 
-CSU2FileWriter::CSU2FileWriter(vector<string> fields, unsigned short nDim,
-                               string fileName, CParallelDataSorter *dataSorter) :
-  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
+CSU2FileWriter::CSU2FileWriter(string fileName, CParallelDataSorter *dataSorter) :
+  CFileWriter(std::move(fileName), dataSorter, fileExt){}
 
 
 CSU2FileWriter::~CSU2FileWriter(){
@@ -48,6 +47,7 @@ void CSU2FileWriter::Write_Data(){
   ofstream restart_file;
 
   int iProcessor;
+  const vector<string> fieldNames = dataSorter->GetFieldNames();
 
   /*--- Set a timer for the file writing. ---*/
 
@@ -63,9 +63,9 @@ void CSU2FileWriter::Write_Data(){
     restart_file.open(fileName.c_str(), ios::out);
     restart_file.precision(15);
     restart_file << "\"PointID\"";
-    for (iVar = 0; iVar < fieldnames.size()-1; iVar++)
-      restart_file << ",\"" << fieldnames[iVar] << "\"";
-    restart_file << ",\"" << fieldnames[fieldnames.size()-1] << "\"" << endl;
+    for (iVar = 0; iVar < fieldNames.size()-1; iVar++)
+      restart_file << ",\"" << fieldNames[iVar] << "\"";
+    restart_file << ",\"" << fieldNames[fieldNames.size()-1] << "\"" << endl;
     restart_file.close();
   }
 
@@ -96,10 +96,10 @@ void CSU2FileWriter::Write_Data(){
 
         /*--- Loop over the variables and write the values to file ---*/
 
-        for (iVar = 0; iVar < fieldnames.size()-1; iVar++) {
+        for (iVar = 0; iVar < fieldNames.size()-1; iVar++) {
           restart_file << scientific << dataSorter->GetData(iVar, iPoint) << ", ";
         }
-        restart_file << scientific << dataSorter->GetData(fieldnames.size()-1, iPoint) << "\n";
+        restart_file << scientific << dataSorter->GetData(fieldNames.size()-1, iPoint) << "\n";
       }
 
     }

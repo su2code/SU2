@@ -29,9 +29,8 @@
 
 const string CParaviewFileWriter::fileExt = ".vtk";
 
-CParaviewFileWriter::CParaviewFileWriter(vector<string> fields, unsigned short nDim,
-                                         string fileName, CParallelDataSorter *dataSorter) :
-  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
+CParaviewFileWriter::CParaviewFileWriter(string fileName, CParallelDataSorter *dataSorter) :
+  CFileWriter(std::move(fileName), dataSorter, fileExt){}
 
 
 CParaviewFileWriter::~CParaviewFileWriter(){}
@@ -42,7 +41,7 @@ void CParaviewFileWriter::Write_Data(){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
 
-  unsigned short iDim;
+  unsigned short iDim = 0, nDim = dataSorter->GetnDim();
 
   unsigned long iPoint, iElem;
 
@@ -51,6 +50,8 @@ void CParaviewFileWriter::Write_Data(){
   ofstream Paraview_File;
 
   int iProcessor;
+  
+  const vector<string> fieldNames = dataSorter->GetFieldNames();
 
   /*--- Set a timer for the file writing. ---*/
 
@@ -267,19 +268,19 @@ void CParaviewFileWriter::Write_Data(){
   /*--- Need to adjust container location to avoid PointID tag and coords. ---*/
   unsigned short VarCounter = varStart;
 
-  for (unsigned short iField = varStart; iField < fieldnames.size(); iField++) {
+  for (unsigned short iField = varStart; iField < fieldNames.size(); iField++) {
 
-    string fieldname = fieldnames[iField];
+    string fieldname = fieldNames[iField];
 
     fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
 
     bool output_variable = true, isVector = false;
-    size_t found = fieldnames[iField].find("_x");
+    size_t found = fieldNames[iField].find("_x");
     if (found!=string::npos) {
       output_variable = true;
       isVector = true;
     }
-    found = fieldnames[iField].find("_y");
+    found = fieldNames[iField].find("_y");
     if (found!=string::npos) {
       output_variable = false;
       //skip
@@ -289,7 +290,7 @@ void CParaviewFileWriter::Write_Data(){
 #endif
       VarCounter++;
     }
-found = fieldnames[iField].find("_z");
+    found = fieldNames[iField].find("_z");
     if (found!=string::npos) {
       output_variable = false;
       //skip

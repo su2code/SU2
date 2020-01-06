@@ -29,9 +29,8 @@
 
 const string CParaviewBinaryFileWriter::fileExt = ".vtk";
 
-CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(vector<string> fields, unsigned short nDim, string fileName,
-                                                     CParallelDataSorter *dataSorter) :
-  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
+CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(string fileName, CParallelDataSorter *dataSorter) :
+  CFileWriter(std::move(fileName), dataSorter, fileExt){}
 
 
 CParaviewBinaryFileWriter::~CParaviewBinaryFileWriter(){
@@ -43,9 +42,11 @@ void CParaviewBinaryFileWriter::Write_Data(){
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
+  
+  const vector<string> fieldNames = dataSorter->GetFieldNames();
 
-  unsigned short iDim;
-
+  unsigned short iDim = 0, nDim = dataSorter->GetnDim();
+  
   unsigned long iPoint, iElem;
 
   ofstream Paraview_File;
@@ -356,7 +357,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
   /*--- Need to adjust container location to avoid PointID tag and coords. ---*/
 
   unsigned short iField, VarCounter = varStart;
-  for (iField = varStart; iField < fieldnames.size(); iField++) {
+  for (iField = varStart; iField < fieldNames.size(); iField++) {
 
     string fieldname = fieldnames[iField];
     fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'),
@@ -903,27 +904,27 @@ void CParaviewBinaryFileWriter::Write_Data(){
   /*--- Loop over all variables that have been registered in the output. ---*/
 
   unsigned short iField, VarCounter = varStart;
-  for (iField = varStart; iField < fieldnames.size(); iField++) {
+  for (iField = varStart; iField < fieldNames.size(); iField++) {
 
-    string fieldname = fieldnames[iField];
+    string fieldname = fieldNames[iField];
     fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'),
                     fieldname.end());
 
     /*--- Check whether this field is a vector or scalar. ---*/
 
     bool output_variable = true, isVector = false;
-    size_t found = fieldnames[iField].find("_x");
+    size_t found = fieldNames[iField].find("_x");
     if (found!=string::npos) {
       output_variable = true;
       isVector        = true;
     }
-    found = fieldnames[iField].find("_y");
+    found = fieldNames[iField].find("_y");
     if (found!=string::npos) {
       /*--- We have found a vector, so skip the Y component. ---*/
       output_variable = false;
       VarCounter++;
     }
-    found = fieldnames[iField].find("_z");
+    found = fieldNames[iField].find("_z");
     if (found!=string::npos) {
       /*--- We have found a vector, so skip the Z component. ---*/
       output_variable = false;

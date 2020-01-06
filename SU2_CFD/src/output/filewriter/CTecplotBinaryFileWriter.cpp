@@ -33,10 +33,9 @@
 
 const string CTecplotBinaryFileWriter::fileExt = ".szplt";
 
-CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(vector<string> fields, unsigned short nDim,
-                                                   string fileName, CParallelDataSorter *dataSorter,
+CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(string fileName, CParallelDataSorter *dataSorter,
                                                    unsigned long time_iter, su2double timestep) :
-  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim), time_iter(time_iter), timestep(timestep){}
+  CFileWriter(std::move(fileName), dataSorter, fileExt), time_iter(time_iter), timestep(timestep){}
 
 CTecplotBinaryFileWriter::~CTecplotBinaryFileWriter(){}
 
@@ -55,6 +54,8 @@ void CTecplotBinaryFileWriter::Write_Data(){
 #endif
 
 #ifdef HAVE_TECIO
+  
+  const vector<string> fieldNames = dataSorter->GetFieldNames();
 
   /*--- Reduce the total number of each element. ---*/
 
@@ -88,10 +89,10 @@ void CTecplotBinaryFileWriter::Write_Data(){
   string data_set_title = "Visualization of the solution";
 
   ostringstream tecplot_variable_names;
-  for (size_t iVar = 0; iVar < fieldnames.size()-1; ++iVar) {
-    tecplot_variable_names << fieldnames[iVar] << ",";
+  for (size_t iVar = 0; iVar < fieldNames.size()-1; ++iVar) {
+    tecplot_variable_names << fieldNames[iVar] << ",";
   }
-  tecplot_variable_names << fieldnames[fieldnames.size()-1];
+  tecplot_variable_names << fieldNames[fieldNames.size()-1];
 
   void* file_handle = NULL;
   int32_t err = tecFileWriterOpen(fileName.c_str(), data_set_title.c_str(), tecplot_variable_names.str().c_str(),
@@ -112,7 +113,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
   num_nodes = static_cast<int64_t>(dataSorter->GetnPointsGlobal());
   num_cells = static_cast<int64_t>(dataSorter->GetnElem());
-  if (nDim == 3){
+  if (dataSorter->GetnDim() == 3){
     if ((nTot_Quad > 0 || nTot_Tria > 0) && (nTot_Hexa + nTot_Pris + nTot_Pyra + nTot_Tetr == 0)){
       zone_type = ZONETYPE_FEQUADRILATERAL;
     }
@@ -139,7 +140,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
   }
 
   int32_t zone;
-  vector<int32_t> value_locations(fieldnames.size(), 1); /* Nodal variables. */
+  vector<int32_t> value_locations(fieldNames.size(), 1); /* Nodal variables. */
   err = tecZoneCreateFE(file_handle, "Zone", zone_type, num_nodes, num_cells, NULL, NULL, &value_locations[0], NULL, 0, 0, 0, &zone);
   if (err) cout << rank << ": Error creating Tecplot zone." << endl;
   if (is_unsteady) {
@@ -254,19 +255,19 @@ void CTecplotBinaryFileWriter::Write_Data(){
                        MPI_COMM_WORLD);
 
     /* Now actually send and receive the data */
-    vector<passivedouble> data_to_send(max(1, total_num_nodes_to_send * (int)fieldnames.size()));
-    halo_var_data.resize(max((size_t)1, fieldnames.size() * num_halo_nodes));
+    vector<passivedouble> data_to_send(max(1, total_num_nodes_to_send * (int)fieldNames.size()));
+    halo_var_data.resize(max((size_t)1, fieldNames.size() * num_halo_nodes));
     vector<int> num_values_to_send(size);
     vector<int> values_to_send_displacements(size);
     vector<int> num_values_to_receive(size);
     size_t index = 0;
     for(int iRank = 0; iRank < size; ++iRank) {
       /* We send and receive GlobalField_Counter values per node. */
-      num_values_to_send[iRank]              = num_nodes_to_send[iRank] * fieldnames.size();
-      values_to_send_displacements[iRank]    = nodes_to_send_displacements[iRank] * fieldnames.size();
-      num_values_to_receive[iRank]           = num_nodes_to_receive[iRank] * fieldnames.size();
-      values_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank] * fieldnames.size();
-      for(iVar = 0; iVar < fieldnames.size(); ++iVar)
+      num_values_to_send[iRank]              = num_nodes_to_send[iRank] * fieldNames.size();
+      values_to_send_displacements[iRank]    = nodes_to_send_displacements[iRank] * fieldNames.size();
+      num_values_to_receive[iRank]           = num_nodes_to_receive[iRank] * fieldNames.size();
+      values_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank] * fieldNames.size();
+      for(iVar = 0; iVar < fieldNames.size(); ++iVar)
         for(int iNode = 0; iNode < num_nodes_to_send[iRank]; ++iNode) {
           unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - dataSorter->GetNodeBegin(rank) - 1;
           data_to_send[index++] =dataSorter->GetData(iVar,node_offset);
@@ -286,7 +287,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
   if (zone_type == ZONETYPE_FEBRICK) {
     std::vector<passivedouble> values_to_write(dataSorter->GetnPoints());
-    for (iVar = 0; err == 0 && iVar < fieldnames.size(); iVar++) {
+    for (iVar = 0; err == 0 && iVar < fieldNames.size(); iVar++) {
       for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
         values_to_write[i] = dataSorter->GetData(iVar, i);
       err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, rank + 1, dataSorter->GetnPoints(), &values_to_write[0]);
@@ -312,7 +313,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
         if (rank_num_points > 0) {
           if (iRank == rank) { /* Output local data. */
             std::vector<passivedouble> values_to_write;
-            for (iVar = 0; err == 0 && iVar < fieldnames.size(); iVar++) {
+            for (iVar = 0; err == 0 && iVar < fieldNames.size(); iVar++) {
               values_to_write.resize(rank_num_points);
               for(unsigned long i = 0; i < (unsigned long)rank_num_points; ++i)
                 values_to_write[i] = dataSorter->GetData(iVar,i);
@@ -321,9 +322,9 @@ void CTecplotBinaryFileWriter::Write_Data(){
             }
           }
           else { /* Receive data from other rank. */
-            var_data.resize(max((int64_t)1, (int64_t)fieldnames.size() * rank_num_points));
-            CBaseMPIWrapper::Recv(&var_data[0], fieldnames.size() * rank_num_points, MPI_DOUBLE, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            for (iVar = 0; err == 0 && iVar < fieldnames.size(); iVar++) {
+            var_data.resize(max((int64_t)1, (int64_t)fieldNames.size() * rank_num_points));
+            CBaseMPIWrapper::Recv(&var_data[0], fieldNames.size() * rank_num_points, MPI_DOUBLE, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            for (iVar = 0; err == 0 && iVar < fieldNames.size(); iVar++) {
               err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &var_data[iVar * rank_num_points]);
               if (err) cout << rank << ": Error outputting Tecplot surface variable values." << endl;
             }
@@ -337,9 +338,9 @@ void CTecplotBinaryFileWriter::Write_Data(){
       SU2_MPI::Gather(&nPoint, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 
       vector<passivedouble> var_data;
-      size_t var_data_size = fieldnames.size() * dataSorter->GetnPoints();
+      size_t var_data_size = fieldNames.size() * dataSorter->GetnPoints();
       var_data.reserve(var_data_size);
-      for (iVar = 0; err == 0 && iVar < fieldnames.size() ; iVar++)
+      for (iVar = 0; err == 0 && iVar < fieldNames.size() ; iVar++)
           for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
             var_data.push_back(dataSorter->GetData(iVar,i));
 
@@ -353,11 +354,11 @@ void CTecplotBinaryFileWriter::Write_Data(){
   unsigned short iVar;
 
   vector<passivedouble> var_data;
-  size_t var_data_size = fieldnames.size() * dataSorter->GetnPoints();
+  size_t var_data_size = fieldNames.size() * dataSorter->GetnPoints();
   var_data.reserve(var_data_size);
 
 
-  for (iVar = 0; err == 0 && iVar <  fieldnames.size(); iVar++) {
+  for (iVar = 0; err == 0 && iVar <  fieldNames.size(); iVar++) {
     for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
       var_data.push_back(dataSorter->GetData(iVar,i));
     err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, dataSorter->GetnPoints(), &var_data[iVar * dataSorter->GetnPoints()]);

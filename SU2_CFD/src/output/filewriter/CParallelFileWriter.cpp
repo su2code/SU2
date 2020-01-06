@@ -28,10 +28,7 @@
 #include "../../../include/output/filewriter/CFileWriter.hpp"
 
 
-CFileWriter::CFileWriter(vector<string> fields, string fileName,
-                         CParallelDataSorter *dataSorter, string file_ext, unsigned short nDim):
-  fieldnames(std::move(fields)),
-  nDim(nDim),
+CFileWriter::CFileWriter(string fileName, CParallelDataSorter *dataSorter, string file_ext):
   file_ext(file_ext),
   fileName(std::move(fileName)),
   dataSorter(dataSorter){
@@ -46,14 +43,14 @@ CFileWriter::CFileWriter(vector<string> fields, string fileName,
   
 }
 
-CFileWriter::CFileWriter(string fileName,string file_ext):
-  file_ext(file_ext),
+CFileWriter::CFileWriter(string fileName, string fileExt):
+  file_ext(fileExt),
   fileName(std::move(fileName)){
   
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
   
-  this->fileName += file_ext;
+  this->fileName += fileExt;
   
   file_size = 0.0;
   Bandwidth = 0.0;
