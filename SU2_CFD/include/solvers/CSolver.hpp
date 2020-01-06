@@ -3504,7 +3504,7 @@ public:
    */
   virtual void SetInitialCondition(CGeometry **geometry,
                                    CSolver ***solver_container,
-                                   CConfig *config, unsigned long ExtIter);
+                                   CConfig *config, unsigned long TimeIter);
   
   /*!
    * \brief A virtual member.
@@ -3515,7 +3515,7 @@ public:
    */
   virtual void ResetInitialCondition(CGeometry **geometry,
                                      CSolver ***solver_container,
-                                     CConfig *config, unsigned long ExtIter);
+                                     CConfig *config, unsigned long TimeIter);
   
   /*!
    * \brief A virtual member.
