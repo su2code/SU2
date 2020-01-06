@@ -83,386 +83,12 @@ void CParaviewXMLFileWriter::Write_Data(){
   StartTime = MPI_Wtime();
 #endif
 
-  /*--- Serial implementation in case we have not compiled with MPI. ---*/
-
-#ifndef HAVE_MPI
-
-  FILE* fhw;
-  fhw = fopen(fname, "wb");
-
-  unsigned long iNode2;
-  unsigned long nGlobal_Elem_Storage;
-
-  /*--- Error check for opening the file. ---*/
-
-  if (!fhw) {
-    SU2_MPI::Error(string("Unable to open VTK binary legacy file ") +
-                   fileName, CURRENT_FUNCTION);
-  }
-
-  /*--- File header written in ASCII. ---*/
-
-  strcpy(str_buf, "# vtk DataFile Version 3.0\n");
-  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-  file_size += sizeof(char)*strlen(str_buf);
-
-  strcpy(str_buf, "vtk output\n");
-  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-  file_size += sizeof(char)*strlen(str_buf);
-
-  strcpy(str_buf, "BINARY\n");
-  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-  file_size += sizeof(char)*strlen(str_buf);
-
-  strcpy(str_buf, "DATASET UNSTRUCTURED_GRID\n");
-  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-  file_size += sizeof(char)*strlen(str_buf);
-
-  /*--- Write the point coordinates. ---*/
-
-  unsigned long GlobalPoint = dataSorter->GetnPointsGlobal();
-
-  SPRINTF(str_buf, "POINTS %i float\n", (int)GlobalPoint);
-  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-  file_size += sizeof(char)*strlen(str_buf);
-
-  /*--- Load/write the 1D buffer of point coordinates. ---*/
-
-  float *coord_buf = new float[GlobalPoint*NCOORDS];
-  for (iPoint = 0; iPoint < GlobalPoint; iPoint++) {
-    for (iDim = 0; iDim < NCOORDS; iDim++) {
-      if (nDim == 2 && iDim == 2) {
-        coord_buf[iPoint*NCOORDS + iDim] = 0.0;
-      } else {
-        float val = (float)dataSorter->GetData(iDim,iPoint);
-        coord_buf[iPoint*NCOORDS + iDim] = val;
-      }
-    }
-  }
-  if (!BigEndian) SwapBytes((char *)coord_buf, sizeof(float), 3*GlobalPoint);
-
-  fwrite(coord_buf, sizeof(float), 3*GlobalPoint, fhw);
-  file_size += sizeof(char)*3*GlobalPoint;
-
-  delete [] coord_buf;
-
-  /*--- Write the connectivity data. ---*/
-
-  unsigned long nTot_Line;
-  unsigned long nTot_Tria, nTot_Quad;
-  unsigned long nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
-  nTot_Line = dataSorter->GetnElem(LINE);
-  nTot_Tria = dataSorter->GetnElem(TRIANGLE);
-  nTot_Quad = dataSorter->GetnElem(QUADRILATERAL);
-  nTot_Tetr = dataSorter->GetnElem(TETRAHEDRON);
-  nTot_Hexa = dataSorter->GetnElem(HEXAHEDRON);
-  nTot_Pris = dataSorter->GetnElem(PRISM);
-  nTot_Pyra = dataSorter->GetnElem(PYRAMID);
-  nGlobal_Elem_Storage = (nTot_Line*3 + nTot_Tria*4 + nTot_Quad*5 + nTot_Tetr*5 +
-                          nTot_Hexa*9 + nTot_Pris*7 + nTot_Pyra*6);
-
-  int *conn_buf = NULL;
-
-  SPRINTF (str_buf, "\nCELLS %i %i\n", (int)dataSorter->GetnElem(),
-           (int)nGlobal_Elem_Storage);
-  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-  file_size += sizeof(char)*strlen(str_buf);
-
-  conn_buf = new int[dataSorter->GetnElem()*(N_POINTS_HEXAHEDRON+1)];
-
-
-  /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
-
-
-  for (iElem = 0; iElem < nTot_Line; iElem++) {
-    iNode2 = iElem*(N_POINTS_LINE+1);
-    conn_buf[iNode2+0] = N_POINTS_LINE;
-    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(LINE, iElem, 0)-1;
-    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(LINE, iElem, 1)-1;
-  }
-  if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
-                            nTot_Line*(N_POINTS_LINE+1));
-  fwrite(conn_buf, sizeof(int),
-         nTot_Line*(N_POINTS_LINE+1), fhw);
-
-  file_size += sizeof(int)*nTot_Line*(N_POINTS_LINE+1);
-
-  for (iElem = 0; iElem < nTot_Tria; iElem++) {
-    iNode2 = iElem*(N_POINTS_TRIANGLE+1);
-    conn_buf[iNode2+0] = N_POINTS_TRIANGLE;
-    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0)-1;
-    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1)-1;
-    conn_buf[iNode2+3] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2)-1;
-  }
-  if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
-                            nTot_Tria*(N_POINTS_TRIANGLE+1));
-  fwrite(conn_buf, sizeof(int),
-         nTot_Tria*(N_POINTS_TRIANGLE+1), fhw);
-  file_size += sizeof(int)*nTot_Tria*(N_POINTS_TRIANGLE+1);
-
-  for (iElem = 0; iElem < nTot_Quad; iElem++) {
-    iNode2 = iElem*(N_POINTS_QUADRILATERAL+1);
-    conn_buf[iNode2+0] = N_POINTS_QUADRILATERAL;
-    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0)-1;
-    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1)-1;
-    conn_buf[iNode2+3] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2)-1;
-    conn_buf[iNode2+4] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3)-1;
-  }
-  if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
-                            nTot_Quad*(N_POINTS_QUADRILATERAL+1));
-  fwrite(conn_buf, sizeof(int),
-         nTot_Quad*(N_POINTS_QUADRILATERAL+1), fhw);
-  file_size += sizeof(int)*nTot_Quad*(N_POINTS_QUADRILATERAL+1);
-
-  for (iElem = 0; iElem < nTot_Tetr; iElem++) {
-    iNode2 = iElem*(N_POINTS_TETRAHEDRON+1);
-    conn_buf[iNode2+0] = N_POINTS_TETRAHEDRON;
-    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0)-1;
-    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1)-1;
-    conn_buf[iNode2+3] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2)-1;
-    conn_buf[iNode2+4] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3)-1;
-  }
-  if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
-                            nTot_Tetr*(N_POINTS_TETRAHEDRON+1));
-  fwrite(conn_buf, sizeof(int),
-         nTot_Tetr*(N_POINTS_TETRAHEDRON+1), fhw);
-  file_size += sizeof(int)*nTot_Tetr*(N_POINTS_TETRAHEDRON+1);
-
-  for (iElem = 0; iElem < nTot_Hexa; iElem++) {
-    iNode2 = iElem*(N_POINTS_HEXAHEDRON+1);
-    conn_buf[iNode2+0] = N_POINTS_HEXAHEDRON;
-    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0)-1;
-    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1)-1;
-    conn_buf[iNode2+3] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2)-1;
-    conn_buf[iNode2+4] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3)-1;
-    conn_buf[iNode2+5] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4)-1;
-    conn_buf[iNode2+6] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5)-1;
-    conn_buf[iNode2+7] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6)-1;
-    conn_buf[iNode2+8] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7)-1;
-  }
-  if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
-                            nTot_Hexa*(N_POINTS_HEXAHEDRON+1));
-  fwrite(conn_buf, sizeof(int),
-         nTot_Hexa*(N_POINTS_HEXAHEDRON+1), fhw);
-  file_size += sizeof(int)*nTot_Hexa*(N_POINTS_HEXAHEDRON+1);
-
-  for (iElem = 0; iElem < nTot_Pris; iElem++) {
-    iNode2 = iElem*(N_POINTS_PRISM+1);
-    conn_buf[iNode2+0] = N_POINTS_PRISM;
-    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(PRISM, iElem, 0)-1;
-    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(PRISM, iElem, 1)-1;
-    conn_buf[iNode2+3] = dataSorter->GetElem_Connectivity(PRISM, iElem, 2)-1;
-    conn_buf[iNode2+4] = dataSorter->GetElem_Connectivity(PRISM, iElem, 3)-1;
-    conn_buf[iNode2+5] = dataSorter->GetElem_Connectivity(PRISM, iElem, 4)-1;
-    conn_buf[iNode2+6] = dataSorter->GetElem_Connectivity(PRISM, iElem, 5)-1;
-  }
-  if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
-                            nTot_Pris*(N_POINTS_PRISM+1));
-  fwrite(conn_buf, sizeof(int),
-         nTot_Pris*(N_POINTS_PRISM+1), fhw);
-  file_size += sizeof(int)*nTot_Pris*(N_POINTS_PRISM+1);
-
-  for (iElem = 0; iElem < nTot_Pyra; iElem++) {
-    iNode2 = iElem*(N_POINTS_PYRAMID+1);
-    conn_buf[iNode2+0] = N_POINTS_PYRAMID;
-    conn_buf[iNode2+1] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 0)-1;
-    conn_buf[iNode2+2] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 1)-1;
-    conn_buf[iNode2+3] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 2)-1;
-    conn_buf[iNode2+4] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 3)-1;
-    conn_buf[iNode2+5] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4)-1;
-  }
-  if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
-                            nTot_Pyra*(N_POINTS_PYRAMID+1));
-  fwrite(conn_buf, sizeof(int),
-         nTot_Pyra*(N_POINTS_PYRAMID+1), fhw);
-  file_size += sizeof(int)*nTot_Pyra*(N_POINTS_PYRAMID+1);
-
-
-  if (conn_buf != NULL) delete [] conn_buf;
-
-  /*--- Load/write the cell type for all elements in the file. ---*/
-
-
-  SPRINTF (str_buf, "\nCELL_TYPES %i\n", SU2_TYPE::Int(dataSorter->GetnElem()));
-  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-  file_size += sizeof(char)*strlen(str_buf);
-
-  int *type_buf = NULL;
-
-  type_buf = new int[dataSorter->GetnElem()];
-
-  for (iElem = 0; iElem < nTot_Line; iElem++) {
-    type_buf[iElem] = LINE;
-  }
-  if (!BigEndian)
-    SwapBytes((char *)type_buf, sizeof(int), nTot_Line);
-  fwrite(type_buf, sizeof(int), nTot_Line, fhw);
-  file_size += sizeof(int)*nTot_Line;
-
-  for (iElem = 0; iElem < nTot_Tria; iElem++) {
-    type_buf[iElem] = TRIANGLE;
-  }
-  if (!BigEndian)
-    SwapBytes((char *)type_buf, sizeof(int), nTot_Tria);
-  fwrite(type_buf, sizeof(int), nTot_Tria, fhw);
-  file_size += sizeof(int)*nTot_Tria;
-
-  for (iElem = 0; iElem < nTot_Quad; iElem++) {
-    type_buf[iElem] = QUADRILATERAL;
-  }
-  if (!BigEndian)
-    SwapBytes((char *)type_buf, sizeof(int), nTot_Quad);
-  fwrite(type_buf, sizeof(int), nTot_Quad, fhw);
-  file_size += sizeof(int)*nTot_Quad;
-
-  for (iElem = 0; iElem < nTot_Tetr; iElem++) {
-    type_buf[iElem] = TETRAHEDRON;
-  }
-  if (!BigEndian)
-    SwapBytes((char *)type_buf, sizeof(int), nTot_Tetr);
-  fwrite(type_buf, sizeof(int), nTot_Tetr, fhw);
-  file_size += sizeof(int)*nTot_Tetr;
-
-  for (iElem = 0; iElem < nTot_Hexa; iElem++) {
-    type_buf[iElem] = HEXAHEDRON;
-  }
-  if (!BigEndian)
-    SwapBytes((char *)type_buf, sizeof(int), nTot_Hexa);
-  fwrite(type_buf, sizeof(int), nTot_Hexa, fhw);
-  file_size += sizeof(int)*nTot_Hexa;
-
-  for (iElem = 0; iElem < nTot_Pris; iElem++) {
-    type_buf[iElem] = PRISM;
-  }
-  if (!BigEndian)
-    SwapBytes((char *)type_buf, sizeof(int), nTot_Pris);
-  fwrite(type_buf, sizeof(int), nTot_Pris, fhw);
-  file_size += sizeof(int)*nTot_Pris;
-
-  for (iElem = 0; iElem < nTot_Pyra; iElem++) {
-    type_buf[iElem] = PYRAMID;
-  }
-  if (!BigEndian)
-    SwapBytes((char *)type_buf, sizeof(int), nTot_Pyra);
-  fwrite(type_buf, sizeof(int), nTot_Pyra, fhw);
-  file_size += sizeof(int)*nTot_Pyra;
-
-
-  if (type_buf != NULL) delete [] type_buf;
-
-  /*--- Now write the scalar and vector data (reuse the counts above). ---*/
-
-  SPRINTF (str_buf, "\nPOINT_DATA %i\n", (int)GlobalPoint);
-  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-  file_size += sizeof(char)* strlen(str_buf);
-
-  unsigned short varStart = 2;
-  if (nDim == 3) varStart++;
-
-  /*--- Need to adjust container location to avoid PointID tag and coords. ---*/
-
-  unsigned short iField, VarCounter = varStart;
-  for (iField = varStart; iField < fieldnames.size(); iField++) {
-
-    string fieldname = fieldnames[iField];
-    fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'),
-                    fieldname.end());
-
-    bool output_variable = true, isVector = false;
-    size_t found = fieldnames[iField].find("_x");
-    if (found!=string::npos) {
-      output_variable = true;
-      isVector = true;
-    }
-    found = fieldnames[iField].find("_y");
-    if (found!=string::npos) {
-      //skip
-      output_variable = false;
-      VarCounter++;
-    }
-    found = fieldnames[iField].find("_z");
-    if (found!=string::npos) {
-      //skip
-      output_variable = false;
-      VarCounter++;
-    }
-
-    if (output_variable && isVector) {
-
-      fieldname.erase(fieldname.end()-2,fieldname.end());
-      SPRINTF (str_buf, "\nVECTORS %s float\n", fieldname.c_str());
-      fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-      file_size += sizeof(char)* strlen(str_buf);
-
-      /*--- Prepare the 1D data buffer on this rank. ---*/
-
-      float *vec_buf = new float[GlobalPoint*NCOORDS];
-
-      /*--- For now, create a temp 1D buffer to load up the data for writing.
-       This will be replaced with a derived data type most likely. ---*/
-
-      float val = 0.0;
-      for (iPoint = 0; iPoint < GlobalPoint; iPoint++)
-        for (iDim = 0; iDim < NCOORDS; iDim++) {
-          if (nDim == 2 && iDim == 2) {
-            vec_buf[iPoint*NCOORDS + iDim] = 0.0;
-          } else {
-            val = (float)dataSorter->GetData(VarCounter+iDim,iPoint);
-            vec_buf[iPoint*NCOORDS + iDim] = val;
-          }
-        }
-      if (!BigEndian)
-        SwapBytes((char *)vec_buf, sizeof(float), NCOORDS*GlobalPoint);
-      fwrite(vec_buf, sizeof(float), NCOORDS*GlobalPoint, fhw);
-      file_size += sizeof(float)*NCOORDS*GlobalPoint;
-
-      delete [] vec_buf;
-
-      VarCounter++;
-
-    } else if (output_variable) {
-
-      SPRINTF (str_buf, "\nSCALARS %s float 1\n", fieldname.c_str());
-      fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-      file_size += sizeof(char)* strlen(str_buf);
-
-      SPRINTF (str_buf, "LOOKUP_TABLE default\n");
-      fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-      file_size += sizeof(char)* strlen(str_buf);
-
-      /*--- Prepare the 1D data buffer on this rank. ---*/
-
-      float *scalar_buf = new float[GlobalPoint];
-
-      /*--- For now, create a temp 1D buffer to load up the data for writing.
-       This will be replaced with a derived data type most likely. ---*/
-
-      for (iPoint = 0; iPoint < GlobalPoint; iPoint++) {
-        float val = (float)dataSorter->GetData(VarCounter,iPoint);
-        scalar_buf[iPoint] = val;
-      }
-      if (!BigEndian)
-        SwapBytes((char *)scalar_buf, sizeof(float), GlobalPoint);
-      fwrite(scalar_buf, sizeof(float), GlobalPoint, fhw);
-      file_size += sizeof(float)*GlobalPoint;
-
-      delete [] scalar_buf;
-
-      VarCounter++;
-    }
-
-  }
-
-  /*--- Close the file. ---*/
-
-  fclose(fhw);
-
-#else
 
   /*--- Parallel binary output using MPI I/O. ---*/
 
   int ierr;
 
+#ifdef HAVE_MPI
   /*--- All ranks open the file using MPI. Here, we try to open the file with
    exclusive so that an error is generated if the file exists. We always want
    to write a fresh output file, so we delete any existing files and create
@@ -486,7 +112,16 @@ void CParaviewXMLFileWriter::Write_Data(){
     SU2_MPI::Error(string("Unable to open VTK binary legacy file ") +
                    string(fname), CURRENT_FUNCTION);
   }
+#else
+  fhw = fopen(fname, "wb");
+  /*--- Error check for opening the file. ---*/
 
+  if (!fhw) {
+    SU2_MPI::Error(string("Unable to open VTK binary legacy file ") +
+                   fileName, CURRENT_FUNCTION);
+  }
+#endif  
+  
   /*--- Write the initial strings to the file. Only the master will
    write the header lines, but all ranks will store the offsets. ---*/
 
@@ -847,10 +482,13 @@ void CParaviewXMLFileWriter::Write_Data(){
   WriteString("</AppendedData>\n", MASTER_NODE);
   WriteString("</VTKFile>\n", MASTER_NODE);
   
+#ifdef HAVE_MPI
   /*--- All ranks close the file after writing. ---*/
 
   MPI_File_close(&fhw);
-
+#else
+  fclose(fhw);
+#endif
 
   /*--- Compute and store the write time. ---*/
 
@@ -879,12 +517,12 @@ void CParaviewXMLFileWriter::Write_Data(){
   delete [] nElemStorage_Snd; delete [] nElemStorage_Cum;
   delete [] nPoint_Snd;       delete [] nPoint_Cum;
 
-#endif
 }
 
 
 void CParaviewXMLFileWriter::WriteString(std::string str, int rank){
-  
+
+#ifdef HAVE_MPI  
   /*--- Reset the file view before writing the next ASCII line for cells. ---*/
 
   MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE,
@@ -895,13 +533,18 @@ void CParaviewXMLFileWriter::WriteString(std::string str, int rank){
                       MPI_CHAR, MPI_STATUS_IGNORE);
   disp += strlen( str.c_str())*sizeof(char);
   file_size += sizeof(char)*strlen( str.c_str());
+#else
+  char str_buf[255];
+  strcpy(str_buf, str.c_str());
+  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  file_size += sizeof(char)*strlen(str_buf);
+#endif
   
 }
 
-void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsigned long arraySize, unsigned long cumSize, MPI_Offset offset){
+void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsigned long arraySize, unsigned long cumSize, unsigned long offset){
   
-  MPI_Datatype filetype;
-  MPI_Status status;
+
   unsigned long totalByteSize, byteSize;
   
   std::string typeStr;
@@ -931,6 +574,11 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
   /*--- The total data size ---*/
   
   totalByteSize = cumSize*typeSize;
+  
+#ifdef HAVE_MPI
+  
+  MPI_Datatype filetype;
+  MPI_Status status;
   
   /*--- Write the total size in bytes at the beginning of the binary data blob ---*/
   
@@ -963,7 +611,16 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
   
   disp      += totalByteSize;
   file_size += byteSize;
+#else
+  /*--- Write the total size in bytes at the beginning of the binary data blob ---*/
+
+  fwrite(&totalByteSize, sizeof(int),1, fhw);
   
+  /*--- Write binary data ---*/
+  
+  fwrite(data, sizeof(char), byteSize, fhw);
+  file_size += byteSize;
+#endif
 }
 
 void CParaviewXMLFileWriter::AddDataArray(VTKDatatype type, string name, 
