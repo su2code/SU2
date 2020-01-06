@@ -115,8 +115,7 @@ def direct ( config ):
     info.HISTORY.DIRECT = history
 
     '''If WINDOW_CAUCHY_CRIT is activated and the time marching converged before the final time has been reached, 
-       store the information for the adjoint run
-    '''
+       store the information for the adjoint run'''
     if config.get('WINDOW_CAUCHY_CRIT', 'NO') == 'YES' and config.TIME_MARCHING != 'NO':
         konfig['TIME_ITER'] = int(info.HISTORY.DIRECT.Time_Iter[-1] + 1)  # update the last iteration
         if konfig['UNST_ADJOINT_ITER'] > konfig['TIME_ITER']:
