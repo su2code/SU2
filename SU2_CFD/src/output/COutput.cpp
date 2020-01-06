@@ -1844,17 +1844,18 @@ void COutput::SetCommonHistoryFields(CConfig *config){
 }
 
 void COutput::LoadCommonHistoryData(CConfig *config){
+  
+  SetHistoryOutputValue("TIME_STEP", config->GetDelta_UnstTimeND()*config->GetTime_Ref());
 
+  /*--- Update the current time time only if the time iteration has changed ---*/
+  
+  if ((unsigned long)GetHistoryFieldValue("TIME_ITER") != curTimeIter){
+    SetHistoryOutputValue("CUR_TIME",  GetHistoryFieldValue("CUR_TIME") + GetHistoryFieldValue("TIME_STEP"));    
+  }
+  
   SetHistoryOutputValue("TIME_ITER",  curTimeIter);
   SetHistoryOutputValue("INNER_ITER", curInnerIter);
   SetHistoryOutputValue("OUTER_ITER", curOuterIter);
-
-  if (config->GetTime_Domain()){
-    SetHistoryOutputValue("TIME_STEP", config->GetDelta_UnstTimeND()*config->GetTime_Ref());
-    if (curInnerIter == 0){
-      SetHistoryOutputValue("CUR_TIME",  GetHistoryFieldValue("CUR_TIME") + GetHistoryFieldValue("TIME_STEP"));
-    }
-  }
 
   su2double StopTime, UsedTime;
 #ifndef HAVE_MPI

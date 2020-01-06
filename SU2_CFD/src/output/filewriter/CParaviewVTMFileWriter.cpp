@@ -26,11 +26,12 @@
  */
 
 #include "../../../include/output/filewriter/CParaviewVTMFileWriter.hpp"
+#include "../../../include/output/filewriter/CParaviewXMLFileWriter.hpp"
 #include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
 
 const string CParaviewVTMFileWriter::fileExt = ".vtm";
 
-CParaviewVTMFileWriter::CParaviewVTMFileWriter(string fileName, string folderName, unsigned short iZone, unsigned short nZone)
+CParaviewVTMFileWriter::CParaviewVTMFileWriter(string fileName, string folderName, su2double time, unsigned short iZone, unsigned short nZone)
   : CFileWriter(std::move(fileName), fileExt),
     folderName(std::move(folderName)){
   
@@ -43,6 +44,8 @@ CParaviewVTMFileWriter::CParaviewVTMFileWriter(string fileName, string folderNam
   
   this->iZone = iZone;
   this->nZone = nZone;
+  
+  curTime = time;
 }
 
 
@@ -51,6 +54,9 @@ CParaviewVTMFileWriter::~CParaviewVTMFileWriter(){
 }
 
 void CParaviewVTMFileWriter::Write_Data(){
+  
+  /*--- If we are in the first zone, create new file and write the file header, 
+   * otherwise append to already existing file ---*/
   
   if (rank == MASTER_NODE){
     ofstream multiBlockFile;
@@ -64,13 +70,41 @@ void CParaviewVTMFileWriter::Write_Data(){
       multiBlockFile << "<vtkMultiBlockDataSet>" << endl;
     }
     
+    /*--- Write all blocks that have been added ---*/
+    
     multiBlockFile << output.str();
+    
+    /*--- If we are in the last zone, write the additional data and close all blocks ---*/
     
     if (iZone == nZone-1){
       multiBlockFile << "</vtkMultiBlockDataSet>" << endl;
+      multiBlockFile << "<FieldData>" << endl;
+      multiBlockFile << "<DataArray type='Float32' Name='TimeValue'>" << endl;
+      multiBlockFile << curTime << endl;
+      multiBlockFile << "</DataArray>" << endl;
+      multiBlockFile << "</FieldData>" << endl;
       multiBlockFile << "</VTKFile>" << endl;
     }
     multiBlockFile.close();
   }
+  
+}
+
+void CParaviewVTMFileWriter::AddDataset(string name, string file, vector<string> fieldNames,
+                                        unsigned short nDim, CParallelDataSorter* dataSorter){
+  
+  /*--- Construct the full file name incl. folder ---*/
+  
+  string fullFilename = folderName + "/" + file;
+  
+  /*--- Create an XML writer and dump data into file ---*/
+  
+  CParaviewXMLFileWriter* XMLWriter = new CParaviewXMLFileWriter(fieldNames, nDim, fullFilename, dataSorter);
+  XMLWriter->Write_Data();
+  delete XMLWriter;
+  
+  /*--- Add the dataset to the vtm file ---*/
+  
+  AddDataset(name, fullFilename + CParaviewXMLFileWriter::fileExt);
   
 }
