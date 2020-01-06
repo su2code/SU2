@@ -39,11 +39,15 @@ private:
     UINT8
   };
   
+#ifdef HAVE_MPI
   MPI_Offset disp;
   MPI_File fhw;
+#else
+  unsigned long disp;
+  FILE* fhw;
+#endif
   
   bool BigEndian;
-  
   unsigned long dataOffset;
     
 public:
@@ -79,6 +83,6 @@ private:
   
   void AddDataArray(VTKDatatype type, string name, unsigned short nComponents, unsigned long size, unsigned long cumSize);
   
-  void WriteDataArray(void *data, VTKDatatype type, unsigned long size, unsigned long cumSize, MPI_Offset offset);
+  void WriteDataArray(void *data, VTKDatatype type, unsigned long size, unsigned long cumSize, unsigned long offset);
 };
 
