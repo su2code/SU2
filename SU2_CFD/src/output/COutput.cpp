@@ -282,19 +282,19 @@ void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){
   if (femOutput){
 
     if (volumeDataSorter == nullptr)
-      volumeDataSorter = new CFEMDataSorter(config, geometry, nVolumeFields);
+      volumeDataSorter = new CFEMDataSorter(config, geometry, volumeFieldNames);
 
     if (surfaceDataSorter == nullptr)
-      surfaceDataSorter = new CSurfaceFEMDataSorter(config, geometry, nVolumeFields,
+      surfaceDataSorter = new CSurfaceFEMDataSorter(config, geometry,
                                                   dynamic_cast<CFEMDataSorter*>(volumeDataSorter));
 
   }  else {
 
     if (volumeDataSorter == nullptr)
-      volumeDataSorter = new CFVMDataSorter(config, geometry, nVolumeFields);
+      volumeDataSorter = new CFVMDataSorter(config, geometry, volumeFieldNames);
 
     if (surfaceDataSorter == nullptr)
-      surfaceDataSorter = new CSurfaceFVMDataSorter(config, geometry, nVolumeFields,
+      surfaceDataSorter = new CSurfaceFVMDataSorter(config, geometry,
                                                   dynamic_cast<CFVMDataSorter*>(volumeDataSorter));
 
   }
@@ -340,7 +340,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         (*fileWritingTable) << "CSV file" << fileName + CSU2FileWriter::fileExt;
       }
 
-      fileWriter = new CSU2FileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      fileWriter = new CSU2FileWriter(fileName, surfaceDataSorter);
 
       break;
 
@@ -353,7 +353,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "SU2 ASCII restart" << fileName + CSU2FileWriter::fileExt;
       }
 
-      fileWriter = new CSU2FileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CSU2FileWriter(fileName, volumeDataSorter);
 
       break;
 
@@ -366,7 +366,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "SU2 restart" << fileName + CSU2BinaryFileWriter::fileExt;
       }
 
-      fileWriter = new CSU2BinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CSU2BinaryFileWriter(fileName, volumeDataSorter);
 
       break;
 
@@ -385,7 +385,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "SU2 mesh" << fileName + CSU2MeshFileWriter::fileExt;
       }
 
-      fileWriter = new CSU2MeshFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
+      fileWriter = new CSU2MeshFileWriter(fileName, volumeDataSorter,
                                           config->GetiZone(), config->GetnZone());
 
 
@@ -406,7 +406,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Tecplot" << fileName + CTecplotBinaryFileWriter::fileExt;
       }
 
-      fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
+      fileWriter = new CTecplotBinaryFileWriter(fileName, volumeDataSorter,
                                                 curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
@@ -426,7 +426,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Tecplot ASCII" << fileName + CTecplotFileWriter::fileExt;
       }
 
-      fileWriter = new CTecplotFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
+      fileWriter = new CTecplotFileWriter(fileName, volumeDataSorter,
                                           curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
@@ -445,7 +445,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         (*fileWritingTable) << "Paraview" << fileName + CParaviewXMLFileWriter::fileExt;
       }
       
-      fileWriter = new CParaviewXMLFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CParaviewXMLFileWriter(fileName, volumeDataSorter);
       
       break;
       
@@ -559,7 +559,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Paraview ASCII" << fileName + CParaviewFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CParaviewFileWriter(fileName, volumeDataSorter);
 
       break;
 
@@ -578,7 +578,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Paraview ASCII surface" << fileName + CParaviewFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      fileWriter = new CParaviewFileWriter(fileName, surfaceDataSorter);
 
       break;
 
@@ -597,7 +597,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Paraview surface" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      fileWriter = new CParaviewBinaryFileWriter(fileName, surfaceDataSorter);
 
       break;
       
@@ -616,7 +616,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Paraview surface" << fileName + CParaviewXMLFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewXMLFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      fileWriter = new CParaviewXMLFileWriter(fileName, surfaceDataSorter);
 
       break;
 
@@ -635,7 +635,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Tecplot ASCII surface" << fileName + CTecplotFileWriter::fileExt;
       }
 
-      fileWriter = new CTecplotFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
+      fileWriter = new CTecplotFileWriter(fileName, surfaceDataSorter,
                                           curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
@@ -655,7 +655,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Tecplot surface" << fileName + CTecplotBinaryFileWriter::fileExt;
       }
 
-      fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
+      fileWriter = new CTecplotBinaryFileWriter(fileName, surfaceDataSorter,
                                                 curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
