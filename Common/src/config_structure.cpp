@@ -55,6 +55,12 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high) {
   
+  /*--- Set the case name to the base config file name without extension ---*/
+  
+  caseName = string(case_filename);
+  unsigned short lastindex = caseName.find_last_of(".");
+  caseName = caseName.substr(0, lastindex);
+  
   base_config = true;
   
   /*--- Store MPI rank and size ---*/ 
@@ -101,6 +107,8 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 }
 
 CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high) {
+  
+  caseName = config->GetCaseName();
   
   unsigned short val_nDim;
   
@@ -157,6 +165,12 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned 
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
 
+  /*--- Set the case name to the base config file name without extension ---*/
+  
+  caseName = string(case_filename);
+  unsigned short lastindex = caseName.find_last_of(".");
+  caseName = caseName.substr(0, lastindex);
+  
   base_config = true;
   
   nZone = 1;
@@ -203,6 +217,12 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
+  /*--- Set the case name to the base config file name without extension ---*/
+  
+  caseName = string(case_filename);
+  unsigned short lastindex = caseName.find_last_of(".");
+  caseName = caseName.substr(0, lastindex);
+  
   base_config = true;
   
   /*--- Store MPI rank and size ---*/ 
