@@ -30,6 +30,8 @@
 
 CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, vector<string> fieldNames) : 
   CParallelDataSorter(config, fieldNames){
+  
+  nDim = geometry->GetnDim();
 
   std::vector<unsigned long> globalID;
 
