@@ -7411,6 +7411,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     Total_CMz_Prev = 0.0;
     AoA_Prev = config->GetAoA();
     dCL_dAlpha = config->GetdCL_dAlpha();
+    AoA_inc = 0.0;
   }
   
   /*--- Retrieve the AoA (degrees) ---*/
