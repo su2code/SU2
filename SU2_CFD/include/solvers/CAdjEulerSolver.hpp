@@ -588,3 +588,5 @@ public:
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
 
 };
+
+#include "../solver_inlines/CAdjEulerSolver.inl"

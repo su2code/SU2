@@ -533,3 +533,5 @@ public:
   void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
  
 };
+
+#include "../solver_inlines/CIncNSSolver.inl"

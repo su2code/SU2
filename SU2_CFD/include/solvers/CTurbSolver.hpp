@@ -263,3 +263,5 @@ public:
    */
   void SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var);
 };
+
+#include "../solver_inlines/CTurbSolver.inl"

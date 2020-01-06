@@ -933,3 +933,5 @@ private:
                                                   su2double &kOverCv,
                                                   su2double *normalFlux);
 };
+
+#include "../solver_inlines/CFEM_DG_NSSolver.inl"

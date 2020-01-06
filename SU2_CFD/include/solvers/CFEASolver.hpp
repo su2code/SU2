@@ -755,3 +755,5 @@ public:
   void FilterElementDensities(CGeometry *geometry, CConfig *config);
 
 };
+
+#include "../solver_inlines/CFEASolver.inl"

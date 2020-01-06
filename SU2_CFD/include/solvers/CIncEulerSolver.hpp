@@ -1409,3 +1409,5 @@ public:
   void ComputeVerificationError(CGeometry *geometry, CConfig *config);
 
 };
+
+#include "../solver_inlines/CIncEulerSolver.inl"
