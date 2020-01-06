@@ -44,8 +44,7 @@ public:
    * \param[in] fileName - The name of the file
    * \param[in] data_sorter - The parallel sorted data to write
    */
-  CParaviewFileWriter(vector<string> fields, unsigned short nDim,
-                      string fileName, CParallelDataSorter* data_sorter);
+  CParaviewFileWriter(string fileName, CParallelDataSorter* data_sorter);
 
   /*!
    * \brief Destructor

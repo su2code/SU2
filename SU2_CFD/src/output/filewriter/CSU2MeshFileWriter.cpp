@@ -30,10 +30,9 @@
 
 const string CSU2MeshFileWriter::fileExt = ".su2";
 
-CSU2MeshFileWriter::CSU2MeshFileWriter(vector<string> fields, unsigned short nDim,
-                                       string fileName, CParallelDataSorter *dataSorter,
+CSU2MeshFileWriter::CSU2MeshFileWriter(string fileName, CParallelDataSorter *dataSorter,
                                        unsigned short iZone, unsigned short nZone) :
-   CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim), iZone(iZone), nZone(nZone) {}
+   CFileWriter(std::move(fileName), dataSorter, fileExt), iZone(iZone), nZone(nZone) {}
 
 
 CSU2MeshFileWriter::~CSU2MeshFileWriter(){
@@ -77,7 +76,7 @@ void CSU2MeshFileWriter::Write_Data(){
 
     /*--- Write dimensions data. ---*/
 
-    output_file << "NDIME= " << nDim << endl;
+    output_file << "NDIME= " << dataSorter->GetnDim() << endl;
 
     output_file << "NELEM= " << dataSorter->GetnElem() << endl;
 
@@ -179,7 +178,7 @@ void CSU2MeshFileWriter::Write_Data(){
 
         /*--- Loop over the variables and write the values to file ---*/
 
-        for (iDim = 0; iDim < nDim; iDim++) {
+        for (iDim = 0; iDim < dataSorter->GetnDim(); iDim++) {
           output_file << scientific << dataSorter->GetData(iDim, iPoint) << "\t";
         }
 

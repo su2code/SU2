@@ -30,9 +30,8 @@
 
 const string CParaviewXMLFileWriter::fileExt = ".vtu";
 
-CParaviewXMLFileWriter::CParaviewXMLFileWriter(vector<string> fields, unsigned short nDim, string fileName,
-                                                     CParallelDataSorter *dataSorter) :
-  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){
+CParaviewXMLFileWriter::CParaviewXMLFileWriter(string fileName, CParallelDataSorter *dataSorter) :
+  CFileWriter(std::move(fileName), dataSorter, fileExt){
   
   /* Check for big endian. We have to swap bytes otherwise.
    * Since size of character is 1 byte when the character pointer
@@ -59,8 +58,9 @@ void CParaviewXMLFileWriter::Write_Data(){
   }
   
   const int NCOORDS = 3;  
+  const vector<string> fieldNames = dataSorter->GetFieldNames();
 
-  unsigned short iDim;
+  unsigned short iDim = 0, nDim = dataSorter->GetnDim();
   
   dataOffset = 0;
 
@@ -212,27 +212,27 @@ void CParaviewXMLFileWriter::Write_Data(){
   /*--- Loop over all variables that have been registered in the output. ---*/
   
   unsigned short iField, VarCounter = varStart;
-  for (iField = varStart; iField < fieldnames.size(); iField++) {
+  for (iField = varStart; iField < fieldNames.size(); iField++) {
     
-    string fieldname = fieldnames[iField];
+    string fieldname = fieldNames[iField];
     fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'),
                     fieldname.end());
     
     /*--- Check whether this field is a vector or scalar. ---*/
     
     bool output_variable = true, isVector = false;
-    size_t found = fieldnames[iField].find("_x");
+    size_t found = fieldNames[iField].find("_x");
     if (found!=string::npos) {
       output_variable = true;
       isVector        = true;
     }
-    found = fieldnames[iField].find("_y");
+    found = fieldNames[iField].find("_y");
     if (found!=string::npos) {
       /*--- We have found a vector, so skip the Y component. ---*/
       output_variable = false;
       VarCounter++;
     }
-    found = fieldnames[iField].find("_z");
+    found = fieldNames[iField].find("_z");
     if (found!=string::npos) {
       /*--- We have found a vector, so skip the Z component. ---*/
       output_variable = false;
@@ -402,27 +402,27 @@ void CParaviewXMLFileWriter::Write_Data(){
   /*--- Loop over all variables that have been registered in the output. ---*/
 
   VarCounter = varStart;
-  for (iField = varStart; iField < fieldnames.size(); iField++) {
+  for (iField = varStart; iField < fieldNames.size(); iField++) {
 
-    string fieldname = fieldnames[iField];
+    string fieldname = fieldNames[iField];
     fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'),
                     fieldname.end());
 
     /*--- Check whether this field is a vector or scalar. ---*/
 
     bool output_variable = true, isVector = false;
-    size_t found = fieldnames[iField].find("_x");
+    size_t found = fieldNames[iField].find("_x");
     if (found!=string::npos) {
       output_variable = true;
       isVector        = true;
     }
-    found = fieldnames[iField].find("_y");
+    found = fieldNames[iField].find("_y");
     if (found!=string::npos) {
       /*--- We have found a vector, so skip the Y component. ---*/
       output_variable = false;
       VarCounter++;
     }
-    found = fieldnames[iField].find("_z");
+    found = fieldNames[iField].find("_z");
     if (found!=string::npos) {
       /*--- We have found a vector, so skip the Z component. ---*/
       output_variable = false;

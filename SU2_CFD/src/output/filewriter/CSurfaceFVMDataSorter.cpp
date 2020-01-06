@@ -29,7 +29,8 @@
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 
 
-CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, CFVMDataSorter* volume_sorter) : CParallelDataSorter(config, nFields){
+CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometry, CFVMDataSorter* volume_sorter) :
+  CParallelDataSorter(config, volume_sorter->GetFieldNames()){
 
   this->volume_sorter = volume_sorter;
 

@@ -59,13 +59,10 @@ public:
 
   /*!
    * \brief Construct a file writer using field names, dimension.
-   * \param[in] fields - A list of field names
-   * \param[in] nDim - Physical dimension
    * \param[in] fileName - The name of the file
    * \param[in] data_sorter - The parallel sorted data to write
    */
-  CParaviewXMLFileWriter(vector<string> fields, unsigned short nDim,
-                            string fileName, CParallelDataSorter* data_sorter);
+  CParaviewXMLFileWriter(string fileName, CParallelDataSorter* data_sorter);
 
   /*!
    * \brief Destructor

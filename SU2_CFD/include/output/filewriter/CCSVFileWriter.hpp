@@ -37,7 +37,7 @@ public:
    * \param[in] fields - A list of field names
    * \param[in] nDim - Physical dimension
    */
-  CCSVFileWriter(vector<string> fields, unsigned short nDim, string fileName, CParallelDataSorter* data_sorter);
+  CCSVFileWriter(string fileName, CParallelDataSorter* data_sorter);
 
   /*!
    * \brief Destructor

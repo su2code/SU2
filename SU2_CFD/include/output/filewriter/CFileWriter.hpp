@@ -43,16 +43,6 @@ class CFileWriter{
 protected:
 
   /*!
-   * \brief Vector containing the field names
-   */
-  std::vector<std::string> fieldnames;
-
-  /*!
-   * \brief The physical dimension of the problem
-   */
-  unsigned short nDim;
-
-  /*!
    * \brief The MPI rank
    */
   int rank;
@@ -97,19 +87,17 @@ protected:
 public:
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fields - A list of field names
    * \param[in] fileName - The name of the file
    * \param[in] file_ext - The file extension to be attached to the filename
-   * \param[in] nDim - Physical dimension
    */
-  CFileWriter(std::vector<std::string> fields, string fileName, CParallelDataSorter* dataSorter, string file_ext, unsigned short nDim);
+  CFileWriter(string fileName, CParallelDataSorter* dataSorter, string file_ext);
   
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
    * \param[in] fileName - The name of the file
-   * \param[in] file_ext - The file extension to be attached to the filename
+   * \param[in] fileExt - The file extension to be attached to the filename
    */
-  CFileWriter(string fileName, string file_ext);
+  CFileWriter(string fileName, string fileExt);
   
   /*!
    * \brief Destructor

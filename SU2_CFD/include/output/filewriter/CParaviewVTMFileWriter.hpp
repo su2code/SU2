@@ -62,7 +62,7 @@ public:
   void Write_Data() override;
   
   
-  void AddDataset(string name, string file, vector<string> fieldNames, unsigned short nDim, CParallelDataSorter* dataSorter);
+  void AddDataset(string name, string file, CParallelDataSorter* dataSorter);
 
   inline void StartBlock(string name){
     if (rank == MASTER_NODE){

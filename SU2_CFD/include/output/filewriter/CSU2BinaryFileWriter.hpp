@@ -40,13 +40,10 @@ public:
 
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fields - A list of field names
-   * \param[in] nDim - Physical dimension
    * \param[in] fileName - The name of the file
    * \param[in] data_sorter - The parallel sorted data to write
    */
-  CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim,
-                       string fileName, CParallelDataSorter* data_sorter);
+  CSU2BinaryFileWriter(string fileName, CParallelDataSorter* data_sorter);
 
   /*!
    * \brief Destructor
