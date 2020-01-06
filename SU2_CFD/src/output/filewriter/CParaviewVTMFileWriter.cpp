@@ -40,7 +40,8 @@ CParaviewVTMFileWriter::CParaviewVTMFileWriter(string fileName, string folderNam
 #if defined(_WIN32)
     _mkdir(this->folderName.c_str());
 #else 
-    mkdir(this->folderName.c_str(), 0777); // notice that 777 is different than 0777
+    mkdir(this->folderName.c_str(), 0777); 
+    mkdir((this->folderName + "/zone_" + to_string(iZone)).c_str(), 0777);
 #endif
 
 }
@@ -91,7 +92,7 @@ void CParaviewVTMFileWriter::AddDataset(string name, string file, CParallelDataS
   
   /*--- Construct the full file name incl. folder ---*/
   
-  string fullFilename = folderName + "/" + file;
+  string fullFilename = folderName + "/zone_" + to_string(iZone) + "/" + file;
   
   /*--- Create an XML writer and dump data into file ---*/
   
