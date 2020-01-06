@@ -259,3 +259,5 @@ public:
   su2double GetOmega_Inf(void);
 
 };
+
+#include "../solver_inlines/CTurbSSTSolver.inl"

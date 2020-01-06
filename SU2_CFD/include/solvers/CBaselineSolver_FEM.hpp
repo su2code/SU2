@@ -90,3 +90,5 @@ public:
   su2double* GetVecSolDOFs(void);
 
 };
+
+#include "../solver_inlines/CBaselineSolver_FEM.inl"
