@@ -1687,7 +1687,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   for (unsigned short iFieldConv = 0; iFieldConv < wndConvFields.size(); iFieldConv++){
     const string &wndConvField = wndConvFields[iFieldConv];
     if (historyOutput_Map.count(wndConvField) > 0){
-      AddHistoryOutput("CAUCHY_" + wndConvField, "C_" + historyOutput_Map[wndConvField].fieldName, ScreenOutputFormat::SCIENTIFIC, "CAUCHY_", "Cauchy residual value of field set with WND_CONV_FIELD.", HistoryFieldType::AUTO_COEFFICIENT);
+      AddHistoryOutput("CAUCHY_" + wndConvField, "Cauchy[" + historyOutput_Map[wndConvField].fieldName  + "]", ScreenOutputFormat::SCIENTIFIC, "CAUCHY", "Cauchy residual value of field set with WND_CONV_FIELD.", HistoryFieldType::AUTO_COEFFICIENT);
     }
   }
 }
