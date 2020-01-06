@@ -497,7 +497,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         
         /*--- Open a block for the zone ---*/
         
-        vtmWriter->StartBlock("Zone " + PrintingToolbox::to_string(config->GetiZone()));
+        vtmWriter->StartBlock(multiZoneHeaderString);
         
         fileName = "Internal";   
         
