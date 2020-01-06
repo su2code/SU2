@@ -16585,6 +16585,8 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
+  su2double Temperature_Ref = config->GetTemperature_Ref();
+
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Identify the boundary ---*/
@@ -16674,16 +16676,14 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
       /*--- Compute the normal gradient in temperature using Twall ---*/
 
       There = nodes->GetTemperature(Point_Normal);
-      Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0);
+      Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
 
-      HF_FactorHere = thermal_conductivity*config->GetViscosity_Ref()/dist_ij;
-      HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 2);
+      // feasible alternative to compute (conjugate) wall termperature
+      // HF_FactorHere = thermal_conductivity*config->GetViscosity_Ref()/dist_ij;
+      // HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 2);
+      // Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
 
-      Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
-
-      // this will be changed soon...
-      Twall = GetConjugateHeatVariable(val_marker, iVertex, 0);
-
+      Twall = Tconjugate;
       dTdn = -(There - Twall)/dist_ij;
 
       /*--- Apply a weak boundary condition for the energy equation.
@@ -16863,7 +16863,6 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
           Jacobian.DeleteValsRowi(total_index);
         }
       }
-
     }
   }
 }
