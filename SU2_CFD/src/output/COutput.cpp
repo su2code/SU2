@@ -476,18 +476,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         /*--- Sort volume connectivity ---*/
         
         volumeDataSorter->SortConnectivity(config, geometry, true);  
-        
-        /*--- The file name will be the folder name where the data files are stored ---*/
-        
-        const string folderName = fileName;
-        
+
         /*--- The file name of the multiblock file is the case name (i.e. the config file name w/o ext.) ---*/
         
         fileName = config->GetUnsteady_FileName(config->GetCaseName(), curTimeIter, "");
         
         /*--- Allocate the vtm file writer ---*/
         
-        fileWriter = new CParaviewVTMFileWriter(fileName, folderName, GetHistoryFieldValue("CUR_TIME"), 
+        fileWriter = new CParaviewVTMFileWriter(fileName, fileName, GetHistoryFieldValue("CUR_TIME"), 
                                                 config->GetiZone(), config->GetnZone());
         
         /*--- We cast the pointer to its true type, to avoid virtual functions ---*/
