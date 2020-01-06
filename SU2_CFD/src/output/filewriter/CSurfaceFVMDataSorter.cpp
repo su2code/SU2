@@ -1519,16 +1519,19 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     case LINE:
       nParallel_Line = nElem_Total;
       if (Conn_Line_Par != NULL) delete [] Conn_Line_Par;
+      Conn_Line_Par = NULL;
       if (nParallel_Line > 0) Conn_Line_Par = Conn_Elem;
       break;
     case TRIANGLE:
       nParallel_Tria = nElem_Total;
       if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+      Conn_Tria_Par = NULL;      
       if (nParallel_Tria > 0) Conn_Tria_Par = Conn_Elem;
       break;
     case QUADRILATERAL:
       nParallel_Quad = nElem_Total;
       if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+      Conn_Quad_Par = NULL;            
       if (nParallel_Quad > 0) Conn_Quad_Par = Conn_Elem;
       break;
     default:

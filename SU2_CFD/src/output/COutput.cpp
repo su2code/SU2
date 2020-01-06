@@ -472,40 +472,29 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
       
+      /*--- Sort volume connectivity ---*/
+      
+      volumeDataSorter->SortConnectivity(config, geometry, true);      
+      
       {
         string folderName = fileName;
         
         if (config->GetMultizone_Problem()){
-          fileName = "Multizone";
+          fileName = config->GetUnsteady_FileName("Multizone", curTimeIter, "");
         }
-        fileWriter = new CParaviewVTMFileWriter(fileName, folderName, config->GetiZone(), config->GetnZone());
+        fileWriter = new CParaviewVTMFileWriter(fileName, folderName, GetHistoryFieldValue("CUR_TIME"), config->GetiZone(), config->GetnZone());
         
         CParaviewVTMFileWriter* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
         
-        CParaviewXMLFileWriter *XMLWriter = NULL; 
         if (rank == MASTER_NODE) {
             (*fileWritingTable) << "Paraview Multiblock" 
                                 << fileName + CParaviewVTMFileWriter::fileExt + " -> " + vtmWriter->GetFolderName();
         }
-        fileName = "Internal";
-        fileName = vtmWriter->GetFolderName() + "/" + fileName;
-        
+        fileName = "Internal";        
         vtmWriter->StartBlock("Zone " + PrintingToolbox::to_string(config->GetiZone()));
-        
-        vtmWriter->StartBlock("Internal");
-        vtmWriter->AddDataset("Internal", fileName + CParaviewXMLFileWriter::fileExt);
+        vtmWriter->StartBlock(fileName);
+        vtmWriter->AddDataset(fileName, fileName, volumeFieldNames, nDim, volumeDataSorter);
         vtmWriter->EndBlock();
-         
-        /*--- Sort volume connectivity ---*/
-        
-        volumeDataSorter->SortConnectivity(config, geometry, true);
-        
-        /*--- Create XML writer and write volume data to file ---*/
-        
-        XMLWriter = new CParaviewXMLFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
-        XMLWriter->Write_Data();
-        delete XMLWriter;
-        
         vtmWriter->StartBlock("Boundary");
         for (unsigned short iMarker = 0; iMarker < config->GetnMarker_CfgFile(); iMarker++){
           
@@ -535,20 +524,21 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           SU2_MPI::Allreduce(&localMarkerSize, &globalMarkerSize, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
           
           if (globalMarkerSize > 0){
+            
             /*--- Sort connectivity of the current marker ---*/
             
             surfaceDataSorter->SortConnectivity(config, geometry, markerList);
             surfaceDataSorter->SortOutputData();
             
-            fileName =  vtmWriter->GetFolderName() + "/" + markerTag;
-            XMLWriter = new CParaviewXMLFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
-            XMLWriter->Write_Data();            
-            delete XMLWriter;  
+            /*--- Add the dataset ---*/
             
-            vtmWriter->AddDataset(markerTag, fileName + CParaviewXMLFileWriter::fileExt);
+            vtmWriter->AddDataset(markerTag, markerTag, volumeFieldNames, nDim, surfaceDataSorter);
+
           }
         }
+        /*--- End "Boundary" block ---*/
         vtmWriter->EndBlock();
+        /*--- End "Zone" block ---*/
         vtmWriter->EndBlock();
       }
       
