@@ -463,26 +463,34 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         (*fileWritingTable) << "Paraview" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
       
-      fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CParaviewBinaryFileWriter(fileName, volumeDataSorter);
       
       break;
       
     case PARAVIEW_MULTIBLOCK:
+      {      
 
-      if (fileName.empty())
-        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
-      
-      /*--- Sort volume connectivity ---*/
-      
-      volumeDataSorter->SortConnectivity(config, geometry, true);      
-      
-      {
-        string folderName = fileName;
+        if (fileName.empty())
+          fileName = config->GetFilename(volumeFilename, "", curTimeIter);
         
-        if (config->GetMultizone_Problem()){
-          fileName = config->GetUnsteady_FileName("Multizone", curTimeIter, "");
-        }
-        fileWriter = new CParaviewVTMFileWriter(fileName, folderName, GetHistoryFieldValue("CUR_TIME"), config->GetiZone(), config->GetnZone());
+        /*--- Sort volume connectivity ---*/
+        
+        volumeDataSorter->SortConnectivity(config, geometry, true);  
+        
+        /*--- The file name will be the folder name where the data files are stored ---*/
+        
+        const string folderName = fileName;
+        
+        /*--- The file name of the multiblock file is the case name (i.e. the config file name w/o ext.) ---*/
+        
+        fileName = config->GetUnsteady_FileName(config->GetCaseName(), curTimeIter, "");
+        
+        /*--- Allocate the vtm file writer ---*/
+        
+        fileWriter = new CParaviewVTMFileWriter(fileName, folderName, GetHistoryFieldValue("CUR_TIME"), 
+                                                config->GetiZone(), config->GetnZone());
+        
+        /*--- We cast the pointer to its true type, to avoid virtual functions ---*/
         
         CParaviewVTMFileWriter* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
         
@@ -490,49 +498,61 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
             (*fileWritingTable) << "Paraview Multiblock" 
                                 << fileName + CParaviewVTMFileWriter::fileExt + " -> " + vtmWriter->GetFolderName();
         }
-        fileName = "Internal";        
+        
+        /*--- Open a block for the zone ---*/
+        
         vtmWriter->StartBlock("Zone " + PrintingToolbox::to_string(config->GetiZone()));
+        
+        fileName = "Internal";   
+        
+        /*--- Open a block for the internal (volume) data and add the dataset ---*/
+        
         vtmWriter->StartBlock(fileName);
-        vtmWriter->AddDataset(fileName, fileName, volumeFieldNames, nDim, volumeDataSorter);
+        vtmWriter->AddDataset(fileName, fileName, volumeDataSorter);
         vtmWriter->EndBlock();
+        
+        /*--- Open a block for the boundary ---*/
+        
         vtmWriter->StartBlock("Boundary");
+        
+        /*--- Loop over all markers used in the config file ---*/
+        
         for (unsigned short iMarker = 0; iMarker < config->GetnMarker_CfgFile(); iMarker++){
           
           /*--- Get the name of the marker ---*/
           
           string markerTag = config->GetMarker_CfgFile_TagBound(iMarker);
           
- 
-          vector<string> markerList;
-          /*--- If the current marker can be found on this partition, add it to the marker list.
+          /*--- If the current marker can be found on this partition store its name.
              * Note that we have to provide a vector of markers to the sorter routine, although we only do 
-             * one marker at a time, i.e. markerList always contains one item. ---*/
+             * one marker at a time, i.e. ::marker always contains one item. ---*/
           
+          vector<string> marker;          
           for (unsigned short jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++){ 
 
-            /*--- Write all markers to file, except send-receive markers ---*/
+            /*--- We want to write all markers except send-receive markers ---*/
             
             if (config->GetMarker_All_TagBound(jMarker) == markerTag && 
                 config->GetMarker_All_KindBC(jMarker) != SEND_RECEIVE){
-              markerList.push_back(markerTag);
+              marker.push_back(markerTag);
             }
           }
           
-          /*--- Only sort if there is at least one processor with this marker ---*/
+          /*--- Only sort if there is at least one processor that has this marker ---*/
           
-          int globalMarkerSize = 0, localMarkerSize = markerList.size(); 
+          int globalMarkerSize = 0, localMarkerSize = marker.size(); 
           SU2_MPI::Allreduce(&localMarkerSize, &globalMarkerSize, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
           
           if (globalMarkerSize > 0){
             
             /*--- Sort connectivity of the current marker ---*/
             
-            surfaceDataSorter->SortConnectivity(config, geometry, markerList);
+            surfaceDataSorter->SortConnectivity(config, geometry, marker);
             surfaceDataSorter->SortOutputData();
             
             /*--- Add the dataset ---*/
             
-            vtmWriter->AddDataset(markerTag, markerTag, volumeFieldNames, nDim, surfaceDataSorter);
+            vtmWriter->AddDataset(markerTag, markerTag, surfaceDataSorter);
 
           }
         }
