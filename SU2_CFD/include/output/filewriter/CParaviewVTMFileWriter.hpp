@@ -34,9 +34,10 @@ class CParaviewVTMFileWriter final: public CFileWriter{
   stringstream output;
   
   string folderName;
-  \
+  
   unsigned short iZone, nZone;
   
+  su2double curTime;
 public:
 
   /*!
@@ -48,7 +49,7 @@ public:
    * \brief Construct a file writer using field names, dimension.
    * \param[in] fileName - The name of the file
    */
-  CParaviewVTMFileWriter(string fileName, string folderName, unsigned short iZone, unsigned short nZone);
+  CParaviewVTMFileWriter(string fileName, string folderName, su2double time, unsigned short iZone, unsigned short nZone);
 
   /*!
    * \brief Destructor
@@ -59,6 +60,9 @@ public:
    * \brief Write sorted data to file in paraview binary file format
    */
   void Write_Data() override;
+  
+  
+  void AddDataset(string name, string file, vector<string> fieldNames, unsigned short nDim, CParallelDataSorter* dataSorter);
 
   inline void StartBlock(string name){
     if (rank == MASTER_NODE){
