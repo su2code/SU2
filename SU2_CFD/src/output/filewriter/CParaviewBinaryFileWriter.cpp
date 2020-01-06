@@ -359,12 +359,12 @@ void CParaviewBinaryFileWriter::Write_Data(){
   unsigned short iField, VarCounter = varStart;
   for (iField = varStart; iField < fieldNames.size(); iField++) {
 
-    string fieldname = fieldnames[iField];
+    string fieldname = fieldNames[iField];
     fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'),
                     fieldname.end());
 
     bool output_variable = true, isVector = false;
-    size_t found = fieldnames[iField].find("_x");
+    size_t found = fieldNames[iField].find("_x");
     if (found!=string::npos) {
       output_variable = true;
       isVector = true;
@@ -375,7 +375,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
       output_variable = false;
       VarCounter++;
     }
-    found = fieldnames[iField].find("_z");
+    found = fieldNames[iField].find("_z");
     if (found!=string::npos) {
       //skip
       output_variable = false;

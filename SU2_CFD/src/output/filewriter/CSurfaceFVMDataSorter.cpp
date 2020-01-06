@@ -32,6 +32,8 @@
 CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometry, CFVMDataSorter* volume_sorter) :
   CParallelDataSorter(config, volume_sorter->GetFieldNames()){
 
+  nDim = geometry->GetnDim();
+  
   this->volume_sorter = volume_sorter;
 
   connectivity_sorted = false;

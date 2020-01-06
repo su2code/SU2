@@ -31,6 +31,8 @@
 CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, vector<string> fieldNames) :
   CParallelDataSorter(config, fieldNames){
 
+  nDim = geometry->GetnDim();
+  
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
 
