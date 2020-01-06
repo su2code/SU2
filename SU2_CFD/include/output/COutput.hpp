@@ -430,7 +430,7 @@ public:
      * \param config, Iteration
      */
   bool MonitorTimeConvergence(CConfig *config, unsigned long Iteration);
-  bool GetTimeConvergence() {return TimeConvergence;} /*! \brief Indicates, if the time loop is converged. COnvergence criterion: Windowed time average */
+  bool GetTimeConvergence()const {return TimeConvergence;} /*! \brief Indicates, if the time loop is converged. COnvergence criterion: Windowed time average */
 
 
   /*!

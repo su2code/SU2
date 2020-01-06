@@ -102,7 +102,7 @@ public:
    * \brief gets Convergence on physical time scale
    * \param none
    */
-  virtual bool GetTimeConvergence();
+  virtual bool GetTimeConvergence() const;
 
   /*!
    * \brief Runtime_Parsing

@@ -542,6 +542,6 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
 }
 
-bool CDiscAdjSinglezoneDriver::GetTimeConvergence(){
-    return false;
+bool CDiscAdjSinglezoneDriver::GetTimeConvergence() const{
+  return false;
 }
