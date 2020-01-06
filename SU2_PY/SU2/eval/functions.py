@@ -260,8 +260,7 @@ def aerodynamics( config, state=None ):
             ''' 
             If the time convergence criterion was activated, we have less time iterations. 
             Store the changed values of TIME_ITER, ITER_AVERAGE_OBJ and UNST_ADJOINT_ITER in
-            info.WND_CAUCHY_DATA
-            '''
+            info.WND_CAUCHY_DATA'''
             if konfig.get('WINDOW_CAUCHY_CRIT', 'NO') == 'YES' and konfig.TIME_MARCHING != 'NO':  # Tranfer Convergence Data, if necessary
                 konfig['TIME_ITER']         = info.WND_CAUCHY_DATA['TIME_ITER']
                 konfig['ITER_AVERAGE_OBJ']  = info.WND_CAUCHY_DATA['ITER_AVERAGE_OBJ']

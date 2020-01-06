@@ -127,8 +127,7 @@ class Design(object):
         ''' 
         If the time convergence criterion was activated, we have less time iterations. 
         Store the changed values of TIME_ITER, ITER_AVERAGE_OBJ and UNST_ADJOINT_ITER in
-        state.WND_CAUCHY_DATA
-        '''
+        state.WND_CAUCHY_DATA'''
         if 'TIME_ITER' in state.WND_CAUCHY_DATA:         # Use Convergence data, if we have already a direct run
             konfig['TIME_ITER'] = state.WND_CAUCHY_DATA['TIME_ITER']
             konfig['ITER_AVERAGE_OBJ'] = state.WND_CAUCHY_DATA['ITER_AVERAGE_OBJ']
