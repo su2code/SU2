@@ -1101,16 +1101,16 @@ def main():
     test_list.append(cht_incompressible)
 
     # CHT compressible
-    cht_incompressible           = TestCase('cht_compressible')
-    cht_incompressible.cfg_dir   = "coupled_cht/comp_2d"
-    cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
-    cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-4.257630, -0.526123, -0.526123, -0.526123] #last 4 columns
-    cht_incompressible.su2_exec  = "SU2_CFD"
-    cht_incompressible.timeout   = 1600
-    cht_incompressible.multizone = True
-    cht_incompressible.tol       = 0.00001
-    test_list.append(cht_incompressible)
+    cht_compressible           = TestCase('cht_compressible')
+    cht_compressible.cfg_dir   = "coupled_cht/comp_2d"
+    cht_compressible.cfg_file  = "cht_2d_3cylinders.cfg"
+    cht_compressible.test_iter = 10
+    cht_compressible.test_vals = [-4.257607, -0.526125, -0.526125, -0.526125] #last 4 columns
+    cht_compressible.su2_exec  = "SU2_CFD"
+    cht_compressible.timeout   = 1600
+    cht_compressible.multizone = True
+    cht_compressible.tol       = 0.00001
+    test_list.append(cht_compressible)
 
     ##########################
     ###   Python wrapper   ###
