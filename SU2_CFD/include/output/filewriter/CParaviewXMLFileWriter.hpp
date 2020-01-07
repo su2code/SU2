@@ -33,6 +33,9 @@ class CParaviewXMLFileWriter final: public CFileWriter{
 
 private:
   
+  /*!
+   * \brief Enum that defines the VTK datatypes
+   */
   enum class VTKDatatype {
     FLOAT32,
     INT32,
@@ -40,14 +43,36 @@ private:
   };
   
 #ifdef HAVE_MPI
+  /*!
+   * \brief The displacement that every process has in the current file view
+   */
   MPI_Offset disp;
+  
+  /*!
+   * \brief The file handle for writing
+   */
   MPI_File fhw;
 #else
+  
+  /*!
+   * \brief The displacement that every process has in the current file view
+   */
   unsigned long disp;
+  
+  /*!
+   * \brief The file handle for writing
+   */
   FILE* fhw;
 #endif
   
+  /*!
+   * \brief Boolean storing whether we are on a big or little endian machine
+   */
   bool BigEndian;
+  
+  /*!
+   * \brief The current data offset that is used to find data in the binary blob at the end of the file
+   */
   unsigned long dataOffset;
     
 public:
@@ -76,10 +101,31 @@ public:
 
 private:
 
+  /*!
+   * \brief Write a string to the vtu file
+   * \param[in] str - The string to write to file
+   * \param[in] rank - The rank that should write the string
+   */
   void WriteString(std::string str, int rank);
   
-  void AddDataArray(VTKDatatype type, string name, unsigned short nComponents, unsigned long size, unsigned long cumSize);
+  /*!
+   * \brief Add a new data array definition to the vtu file.
+   * \param[in] type - The vtk datatype
+   * \param[in] name - The name of the array
+   * \param[in] nComponents - The number of components
+   * \param[in] size        - The total size of the array
+   * \param[in] globalSize  - The global size of the array over all processors
+   */
+  void AddDataArray(VTKDatatype type, string name, unsigned short nComponents, unsigned long size, unsigned long globalSize);
   
-  void WriteDataArray(void *data, VTKDatatype type, unsigned long size, unsigned long cumSize, unsigned long offset);
+  /*!
+   * \brief Write an array that has previously been defined with ::AddDataArray to the vtu file in binary format
+   * \param[in] data - Pointer to the data
+   * \param[in] type - The vtk datatype 
+   * \param[in] size - The total size of the array
+   * \param[in] globalSize - The global size of the array over all processors
+   * \param[in] offset - The displacement in the file view for the current processor
+   */
+  void WriteDataArray(void *data, VTKDatatype type, unsigned long size, unsigned long globalSize, unsigned long offset);
 };
 

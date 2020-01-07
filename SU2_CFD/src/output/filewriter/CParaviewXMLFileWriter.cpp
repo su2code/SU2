@@ -190,7 +190,8 @@ void CParaviewXMLFileWriter::Write_Data(){
 
   WriteString("<UnstructuredGrid>\n", MASTER_NODE);  
   
-  SPRINTF(str_buf, "<Piece NumberOfPoints=\"%i\" NumberOfCells=\"%i\">\n", SU2_TYPE::Int(GlobalPoint), SU2_TYPE::Int(GlobalElem));
+  SPRINTF(str_buf, "<Piece NumberOfPoints=\"%i\" NumberOfCells=\"%i\">\n", 
+          SU2_TYPE::Int(GlobalPoint), SU2_TYPE::Int(GlobalElem));
   
   WriteString(std::string(str_buf), MASTER_NODE);
   WriteString("<Points>\n", MASTER_NODE);  
@@ -542,7 +543,8 @@ void CParaviewXMLFileWriter::WriteString(std::string str, int rank){
   
 }
 
-void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsigned long arraySize, unsigned long cumSize, unsigned long offset){
+void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsigned long arraySize, 
+                                            unsigned long globalSize, unsigned long offset){
   
 
   unsigned long totalByteSize, byteSize;
@@ -573,7 +575,7 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
   
   /*--- The total data size ---*/
   
-  totalByteSize = cumSize*typeSize;
+  totalByteSize = globalSize*typeSize;
   
 #ifdef HAVE_MPI
   
@@ -624,7 +626,7 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
 }
 
 void CParaviewXMLFileWriter::AddDataArray(VTKDatatype type, string name, 
-                                          unsigned short nComponents, unsigned long arraySize, unsigned long cumSize){
+                                          unsigned short nComponents, unsigned long arraySize, unsigned long globalSize){
   
   /*--- Add quotation marks around the arguments ---*/
   
@@ -665,7 +667,7 @@ void CParaviewXMLFileWriter::AddDataArray(VTKDatatype type, string name,
   
   /*--- Total data size ---*/
   
-  totalByteSize = cumSize*typeSize;
+  totalByteSize = globalSize*typeSize;
       
   /*--- Write the ASCII XML header information for this array ---*/
   
