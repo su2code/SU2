@@ -369,7 +369,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
       output_variable = true;
       isVector = true;
     }
-    found = fieldnames[iField].find("_y");
+    found = fieldNames[iField].find("_y");
     if (found!=string::npos) {
       //skip
       output_variable = false;

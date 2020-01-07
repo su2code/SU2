@@ -31,13 +31,31 @@
 
 class CParaviewVTMFileWriter final: public CFileWriter{
 
+  /*!
+   * \brief String stream that stores the content of the vtm file
+   */
   stringstream output;
   
+  /*!
+   * \brief The folder name where all the files associated with the datasets will be stored
+   */
   string folderName;
   
-  unsigned short iZone, nZone;
+  /*!
+   * \brief The current zone index
+   */
+  unsigned short iZone;
   
+  /*!
+   * \brief The total number of zones
+   */
+  unsigned short nZone;
+  
+  /*!
+   * \brief Current physical time
+   */
   su2double curTime;
+  
 public:
 
   /*!
@@ -61,31 +79,48 @@ public:
    */
   void Write_Data() override;
   
-  
+  /*!
+   * \brief Add a new dataset by writing data from a datasorter to file and adding it to the vtm file
+   * \param[in] name - The name of the dataset
+   * \param[in] file - The name of the vtu dataset file to write
+   * \param[in] dataSorter - Datasorter object containing the actual data. Note, data must be sorted.
+   */
   void AddDataset(string name, string file, CParallelDataSorter* dataSorter);
 
+  /*!
+   * \brief Start a new block
+   * \param[in] name - The name of the block
+   */
   inline void StartBlock(string name){
     if (rank == MASTER_NODE){
       output << "<Block name=\"" << name << "\">" << endl;
     }   
   }
   
+  /*!
+   * \brief Close currently opened block
+   */
   inline void EndBlock(){
     if (rank == MASTER_NODE){
       output << "</Block>" << endl;
     }
   }
   
+  /*!
+   * \brief Add a new dataset by writing it to the vtm file
+   * \param[in] name - Name of the dataset
+   * \param[in] file - vtu file where the data is stored
+   */
   inline void AddDataset(string name, string file){
     if (rank == MASTER_NODE){
       output << "<DataSet name=\"" << name <<"\" file=\"" << file << "\"/>" << endl;
     }
   }
   
-  inline void Clear(){
-    output.clear();
-  }
-  
+  /*!
+   * \brief Get the name of the folder where the data will be stored
+   * \return The folder name
+   */
   inline string GetFolderName(){
     return folderName;
   }
