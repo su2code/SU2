@@ -121,7 +121,7 @@ public:
    * \brief Get the name of the folder where the data will be stored
    * \return The folder name
    */
-  inline string GetFolderName(){
+  inline string GetFolderName() const{
     return folderName;
   }
 };

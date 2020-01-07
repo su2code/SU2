@@ -28,6 +28,9 @@
 #include "../../../include/output/filewriter/CParaviewVTMFileWriter.hpp"
 #include "../../../include/output/filewriter/CParaviewXMLFileWriter.hpp"
 #include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
+#if defined(_WIN32) || defined(_WIN64) || defined (__WINDOWS__)
+#include <direct.h>
+#endif
 
 const string CParaviewVTMFileWriter::fileExt = ".vtm";
 
