@@ -37,8 +37,9 @@ CParaviewVTMFileWriter::CParaviewVTMFileWriter(string fileName, string folderNam
     folderName(std::move(folderName)), iZone(iZone), nZone(nZone), curTime(time){
   
   if (rank == MASTER_NODE)
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(_WIN64) || defined (__WINDOWS__)
     _mkdir(this->folderName.c_str());
+    _mkdir((this->folderName + "/zone_" + to_string(iZone)).c_str());
 #else 
     mkdir(this->folderName.c_str(), 0777); 
     mkdir((this->folderName + "/zone_" + to_string(iZone)).c_str(), 0777);
