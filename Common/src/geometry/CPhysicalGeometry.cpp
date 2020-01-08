@@ -29,10 +29,10 @@
 #include "../../include/adt_structure.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
-#include "../../include/CSU2ASCIIMeshReaderFVM.hpp"
-#include "../../include/CCGNSMeshReaderFVM.hpp"
-#include "../../include/CRectangularMeshReaderFVM.hpp"
-#include "../../include/CBoxMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CRectangularMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CBoxMeshReaderFVM.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -18,18 +18,14 @@ common_src =files(['geometry_structure_fem_part.cpp',
            'interpolation_structure.cpp',
            'mpi_structure.cpp',
            'fem_cgns_elements.cpp',
-           'CMultiGridQueue.cpp',
-           'CMeshReaderFVM.cpp',
-           'CSU2ASCIIMeshReaderFVM.cpp',
-           'CBoxMeshReaderFVM.cpp',
-           'CCGNSMeshReaderFVM.cpp',
-           'CRectangularMeshReaderFVM.cpp'])
+           'CMultiGridQueue.cpp'])
 
 subdir('linear_algebra')
 subdir('toolboxes')
 subdir('geometry')
 subdir('geometry/elements')
 subdir('geometry/dual_grid')
+subdir('geometry/meshreader')
 
 if get_option('enable-normal')
   common = static_library('SU2Common', 
