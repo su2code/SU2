@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -37,15 +37,15 @@
  */
 class CTurboVertex final : public CVertex {
 private:
-  su2double *TurboNormal;			/*!< \brief Normal for computing correct turbomachinery quantities. */
-  su2double Area;							/*!< \brief Value of the face area associated to the vertex */
-  //	su2double PitchCoord;       /*!< \brief Value of the abscissa pitch wise */
+  su2double *TurboNormal;     /*!< \brief Normal for computing correct turbomachinery quantities. */
+  su2double Area;             /*!< \brief Value of the face area associated to the vertex */
+  //  su2double PitchCoord;       /*!< \brief Value of the abscissa pitch wise */
   su2double AngularCoord;     /*!< \brief Value of the angular coordinate  */
   su2double DeltaAngularCoord;     /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
   su2double RelAngularCoord; /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
 
   unsigned long OldVertex;    /*!< \brief Value of the vertex numeration before the ordering */
-  int GlobalIndex;						/*!< \brief Value of the vertex numeration after the ordering and global with respect to MPI partinioning */
+  int GlobalIndex;            /*!< \brief Value of the vertex numeration after the ordering and global with respect to MPI partinioning */
 
 public:
 
@@ -70,7 +70,7 @@ public:
     for(iDim= 0; iDim < nDim; iDim++)
       TurboNormal[iDim] = val_normal[iDim];
   }
-  
+
   /*!
    * \brief set face Area.
    * \param[in] val_area - value of the face area.
@@ -90,7 +90,7 @@ public:
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       val_normal[iDim] = TurboNormal[iDim];
   }
-  
+
   /*!
    * \brief Get the turbo normal to a face where turboperformance are computed .
    * \return Dimensionaless normal vector, the modulus is the area of the face.

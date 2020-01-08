@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -32,42 +32,42 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
   unsigned short iDim;
 
   /*--- Set periodic points to zero ---*/
-  
+
   PeriodicPoint[0] = -1; PeriodicPoint[1] = -1; PeriodicPoint[2] = -1;
   PeriodicPoint[3] = -1; PeriodicPoint[4] = -1;
-  
+
   /*--- Identify the points at the perimeter of the actuatrod disk ---*/
-  
+
   ActDisk_Perimeter = false;
 
   /*--- Pointers initialization ---*/
-  
+
   Nodes  = NULL;
   Normal = NULL;
 
   /*--- Allocate node, and face normal ---*/
-  
-  Nodes  = new unsigned long[1]; 
+
+  Nodes  = new unsigned long[1];
   Normal = new su2double [nDim];
 
   /*--- Initializate the structure ---*/
-  
+
   Nodes[0] = val_point;
-  for (iDim = 0; iDim < nDim; iDim ++) 
+  for (iDim = 0; iDim < nDim; iDim ++)
     Normal[iDim] = 0.0;
 
   /*--- Set to zero the variation of the coordinates ---*/
-  
-  VarCoord[0] = 0.0; 
-  VarCoord[1] = 0.0; 
+
+  VarCoord[0] = 0.0;
+  VarCoord[1] = 0.0;
   VarCoord[2] = 0.0;
 
   /*--- Set to NULL variation of the rotation  ---*/
-  
+
   VarRot = NULL;
 
   /*--- Set to NULL donor arrays for interpolation ---*/
-  
+
   Donor_Points  = NULL;
   Donor_Proc    = NULL;
   Donor_Coeff   = NULL;
@@ -76,12 +76,12 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
 }
 
 CVertex::~CVertex() {
-  
+
   if (Normal != NULL) delete[] Normal;
   if (Nodes  != NULL) delete[] Nodes;
 
   /*---  donor arrays for interpolation ---*/
-  
+
   if (VarRot       != NULL) delete[] VarRot;
   if (Donor_Coeff  != NULL) delete[] Donor_Coeff;
   if (Donor_Proc   != NULL) delete[] Donor_Proc;
@@ -128,23 +128,23 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
 
   AD::SetPreaccOut(Normal, nDim);
   AD::EndPreacc();
- 
+
 }
 
 void CVertex::AddNormal(su2double *val_face_normal) {
 
   unsigned short i;
   for( i = 0; i < nDim; i++ )
-    Normal[i] += val_face_normal[i]; 
+    Normal[i] += val_face_normal[i];
 
 }
 
 void CVertex::Allocate_DonorInfo(void){
-  
+
   if( Donor_Points != NULL )  delete [] Donor_Points;
   if( Donor_Proc   != NULL )  delete [] Donor_Proc;
-  if( Donor_Coeff  != NULL )  delete [] Donor_Coeff;  
-  
+  if( Donor_Coeff  != NULL )  delete [] Donor_Coeff;
+
   Donor_Points = new unsigned long[nDonor_Points];
   Donor_Proc   = new unsigned long[nDonor_Points];
   Donor_Coeff  = new su2double[nDonor_Points];

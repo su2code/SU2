@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -28,7 +28,7 @@
 #include "../../../include/geometry/dual_grid/CPoint.hpp"
 
 CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *config) : CDualGrid(val_nDim) {
-  
+
   unsigned short iDim, jDim;
 
   /*--- Element, point and edge structures initialization ---*/
@@ -44,15 +44,15 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
-  if (config->GetTime_Marching() == NO) { 
-    Volume = new su2double[1]; 
-    Volume[0] = 0.0; 
+  if (config->GetTime_Marching() == NO) {
+    Volume = new su2double[1];
+    Volume[0] = 0.0;
   }
-  else { 
-    Volume = new su2double[3]; 
-    Volume[0] = 0.0; 
-    Volume[1] = 0.0; 
-    Volume[2] = 0.0; 
+  else {
+    Volume = new su2double[3];
+    Volume[0] = 0.0;
+    Volume[1] = 0.0;
+    Volume[2] = 0.0;
   }
 
   Coord = new su2double[nDim];
@@ -72,10 +72,10 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   /*--- Indicator if the point is going to be moved in a volumetric deformation ---*/
   Move = true;
 
-  /*--- Identify boundaries, physical boundaries (not send-receive 
-  condition), detect if an element belong to the domain or it must 
+  /*--- Identify boundaries, physical boundaries (not send-receive
+  condition), detect if an element belong to the domain or it must
   be computed with other processor  ---*/
-  Domain           = true;  
+  Domain           = true;
   Boundary         = false;
   SolidBoundary    = false;
   PhysicalBoundary = false;
@@ -106,7 +106,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   if ( dynamic_grid ) {
     GridVel  = new su2double[nDim];
 
-    for (iDim = 0; iDim < nDim; iDim++) 
+    for (iDim = 0; iDim < nDim; iDim++)
       GridVel[iDim] = 0.0;
 
     if (continuous_adjoint){
@@ -120,7 +120,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
       }
     }
 
-    /*--- Structures for storing old node coordinates for computing grid 
+    /*--- Structures for storing old node coordinates for computing grid
     velocities via finite differencing with dynamically deforming meshes. ---*/
     /*--- In the case of deformable mesh solver, these coordinates are stored as solutions to the mesh problem ---*/
     if ( config->GetGrid_Movement() && (config->GetTime_Marching() != NO)) {
@@ -136,9 +136,9 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
   /*--- Intialize the value of the periodic volume. ---*/
   Periodic_Volume = 0.0;
-  
+
   /*--- Init walldistance ---*/
-  
+
   Wall_Distance = 0.0;
 }
 
@@ -159,19 +159,19 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
-  if (config->GetTime_Marching() == NO) { 
-    Volume = new su2double[1]; 
-    Volume[0] = 0.0; 
+  if (config->GetTime_Marching() == NO) {
+    Volume = new su2double[1];
+    Volume[0] = 0.0;
   }
-  else{ 
-    Volume = new su2double[3]; 
-    Volume[0] = 0.0; 
-    Volume[1] = 0.0; 
-    Volume[2] = 0.0; 
+  else{
+    Volume = new su2double[3];
+    Volume[0] = 0.0;
+    Volume[1] = 0.0;
+    Volume[2] = 0.0;
   }
 
-  Coord    = new su2double[nDim]; 
-  Coord[0] = val_coord_0; 
+  Coord    = new su2double[nDim];
+  Coord[0] = val_coord_0;
   Coord[1] = val_coord_1;
 
   if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
@@ -189,8 +189,8 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   /*--- Indicator if the point is going to be moved in a volumetric deformation ---*/
   Move = true;
 
-  /*--- Identify boundaries, physical boundaries (not send-receive 
-  condition), detect if an element belong to the domain or it must 
+  /*--- Identify boundaries, physical boundaries (not send-receive
+  condition), detect if an element belong to the domain or it must
   be computed with other processor  ---*/
   Domain           = true;
   Boundary         = false;
@@ -255,7 +255,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
 
   /*--- Intialize the value of the periodic volume. ---*/
   Periodic_Volume = 0.0;
-  
+
 }
 
 CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord_2, unsigned long val_globalindex, CConfig *config) : CDualGrid(3) {
@@ -274,20 +274,20 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   AD_InputIndex     = NULL;           AD_OutputIndex      = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
-  if ( config->GetTime_Marching() == NO ) { 
-    Volume = new su2double[1]; 
-    Volume[0] = 0.0; 
+  if ( config->GetTime_Marching() == NO ) {
+    Volume = new su2double[1];
+    Volume[0] = 0.0;
   }
-  else{ 
-    Volume = new su2double[3]; 
-    Volume[0] = 0.0; 
+  else{
+    Volume = new su2double[3];
+    Volume[0] = 0.0;
     Volume[1] = 0.0;
-    Volume[2] = 0.0; 
+    Volume[2] = 0.0;
   }
 
-  Coord    = new su2double[nDim]; 
-  Coord[0] = val_coord_0; 
-  Coord[1] = val_coord_1; 
+  Coord    = new su2double[nDim];
+  Coord[0] = val_coord_0;
+  Coord[1] = val_coord_1;
   Coord[2] = val_coord_2;
 
   if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
@@ -305,8 +305,8 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   /*--- Flip the normal orientation ---*/
   Flip_Orientation = false;
 
-  /*--- Identify boundaries, physical boundaries (not send-receive 
-  condition), detect if an element belong to the domain or it must 
+  /*--- Identify boundaries, physical boundaries (not send-receive
+  condition), detect if an element belong to the domain or it must
   be computed with other processor  ---*/
   Domain           = true;
   Boundary         = false;
@@ -372,7 +372,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 
   /*--- Intialize the value of the periodic volume. ---*/
   Periodic_Volume = 0.0;
-  
+
 }
 
 CPoint::~CPoint() {
@@ -404,7 +404,7 @@ void CPoint::SetPoint(unsigned long val_point) {
   new_point = true;
   for (iPoint = 0; iPoint < GetnPoint(); iPoint++)
   if (Point[iPoint] == val_point) {
-    new_point = false; 
+    new_point = false;
     break;
   }
 
@@ -426,7 +426,7 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
     Vertex = new long[val_nmarker];
 
     /*--- The initialization is made with -1 ---*/
-    for (imarker = 0; imarker < val_nmarker; imarker++) 
+    for (imarker = 0; imarker < val_nmarker; imarker++)
       Vertex[imarker] = -1;
   }
   Boundary = true;
