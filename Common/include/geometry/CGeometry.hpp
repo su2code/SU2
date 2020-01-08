@@ -50,7 +50,12 @@ extern "C" {
 #include <climits>
 
 #include "../primal_grid_structure.hpp"
-#include "../dual_grid_structure.hpp"
+#include "dual_grid/CDualGrid.hpp"
+#include "dual_grid/CPoint.hpp"
+#include "dual_grid/CEdge.hpp"
+#include "dual_grid/CVertex.hpp"
+#include "dual_grid/CTurboVertex.hpp"
+
 #include "../config_structure.hpp"
 #include "../geometry_structure_fem_part.hpp"
 
