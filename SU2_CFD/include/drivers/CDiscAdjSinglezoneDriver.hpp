@@ -131,6 +131,6 @@ public:
    * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
    * \param none
    */
-  virtual bool GetTimeConvergence() const;
+  bool GetTimeConvergence() const override;
 
 };

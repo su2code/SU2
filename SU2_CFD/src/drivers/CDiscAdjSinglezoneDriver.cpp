@@ -275,7 +275,7 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
   if (time_stepping){
     if (TimeIter < IterAvg_Obj){
-      seeding = windowEvaluator.GetWndWeight(config->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ ((su2double)IterAvg_Obj);
+      seeding = windowEvaluator.GetWndWeight(config->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));
     }
     else{
       seeding = 0.0;
