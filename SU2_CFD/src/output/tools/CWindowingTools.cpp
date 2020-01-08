@@ -71,7 +71,7 @@ CWindowedAverage::CWindowedAverage(){
 }
 
 su2double CWindowedAverage::Update(su2double valIn){
-  su2double scaling = 1. / (su2double)(count + 1);
+  su2double scaling = 1. / static_cast<su2double>(count + 1);
   val = valIn * scaling + val * (1. - scaling);
   count++;
   return val;
