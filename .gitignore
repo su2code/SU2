@@ -81,4 +81,3 @@ Mercurial
 
 # Ignore build folder
 ./build/
-ninja

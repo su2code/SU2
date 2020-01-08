@@ -771,7 +771,6 @@ private:
   Wrt_Vol_Sol,               /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,               /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,               /*!< \brief Write a surface comma-separated values solution file */
-  Wrt_Stl_Sol,               /*!< \brief Write a surface STereoLithographie (STL) solution file */
   Wrt_Crd_Sol,               /*!< \brief Write a binary file with the grid coordinates only. */
   Wrt_Residuals,             /*!< \brief Write residuals to solution file */
   Wrt_Surface,               /*!< \brief Write solution at each surface */
@@ -3228,12 +3227,6 @@ public:
    * \return <code>TRUE</code> means that a surface comma-separated values (CSV) solution file will be written.
    */
   bool GetWrt_Csv_Sol(void);
-
-  /*!
-   * \brief Get information about writing a surface STereoLithographie (STL) solution file.
-   * \return <code>TRUE</code> means that a surface STereoLithographie (STL) solution file will be written.
-   */
-  bool GetWrt_Stl_Sol(void);
   
   /*!
    * \brief Get information about writing a binary coordinates file.
