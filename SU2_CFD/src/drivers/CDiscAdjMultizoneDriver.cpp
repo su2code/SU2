@@ -547,6 +547,11 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:
         cout << " Zone " << iZone << " (flow)       - log10[U(0)]    : "
              << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
+        if (config_container[iZone]->GetKind_RadiationModel() != NONE) {
+
+          cout << " Zone " << iZone << " (radiation)  - log10[Rad(0)]  : "
+               << log10(solvers[RAD_SOL]->GetRes_RMS(0)) << endl;
+        }
         break;
 
       case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
@@ -557,6 +562,11 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
 
           cout << " Zone " << iZone << " (turbulence) - log10[Turb(0)] : "
                << log10(solvers[TURB_SOL]->GetRes_RMS(0)) << endl;
+        }
+        if (config_container[iZone]->GetKind_RadiationModel() != NONE) {
+
+          cout << " Zone " << iZone << " (radiation)  - log10[Rad(0)]  : "
+               << log10(solvers[RAD_SOL]->GetRes_RMS(0)) << endl;
         }
         break;
 
