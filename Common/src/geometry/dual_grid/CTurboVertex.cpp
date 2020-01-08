@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -28,19 +28,19 @@
 #include "../../../include/geometry/dual_grid/CTurboVertex.hpp"
 
 CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : CVertex(val_point, val_nDim){
-	unsigned short iDim;
+  unsigned short iDim;
  /*--- Pointers initialization ---*/
-	TurboNormal = NULL;
-	/*--- Allocate node, and face normal ---*/
-	TurboNormal = new su2double [nDim];
+  TurboNormal = NULL;
+  /*--- Allocate node, and face normal ---*/
+  TurboNormal = new su2double [nDim];
 
-	/*--- Initializate the structure ---*/
-	for (iDim = 0; iDim < nDim; iDim ++) TurboNormal[iDim] = 0.0;
+  /*--- Initializate the structure ---*/
+  for (iDim = 0; iDim < nDim; iDim ++) TurboNormal[iDim] = 0.0;
 
 }
 
 CTurboVertex::~CTurboVertex() {
 
-	if (TurboNormal != NULL) delete [] TurboNormal;
+  if (TurboNormal != NULL) delete [] TurboNormal;
 
 }

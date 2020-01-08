@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -28,9 +28,9 @@
 #include "../../../include/geometry/dual_grid/CEdge.hpp"
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {
-    
+
   unsigned short iDim;
-    
+
   /*--- Pointers initialization ---*/
   Coord_CG = NULL;
   Normal   = NULL;
@@ -47,17 +47,17 @@ CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short 
     Normal[iDim]   = 0.0;
   }
 
-  Nodes[0] = val_iPoint; 
+  Nodes[0] = val_iPoint;
   Nodes[1] = val_jPoint;
 
 }
 
 CEdge::~CEdge() {
-  
+
   if (Coord_CG != NULL) delete[] Coord_CG;
   if (Normal   != NULL) delete[] Normal;
   if (Nodes    != NULL) delete[] Nodes;
-  
+
 }
 
 void CEdge::SetCoord_CG(su2double **val_coord) {
@@ -146,8 +146,8 @@ void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Fa
   Dim_Normal[1] = -0.5 * ( vec_a[0] * vec_b[2] - vec_a[2] * vec_b[0] );
   Dim_Normal[2] =  0.5 * ( vec_a[0] * vec_b[1] - vec_a[1] * vec_b[0] );
 
-  Normal[0] += Dim_Normal[0]; 
-  Normal[1] += Dim_Normal[1];       
+  Normal[0] += Dim_Normal[0];
+  Normal[1] += Dim_Normal[1];
   Normal[2] += Dim_Normal[2];
 
   AD::SetPreaccOut(Normal, nDim);
@@ -166,7 +166,7 @@ void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_El
   Dim_Normal[0] =   val_coord_Elem_CG[1] - val_coord_Edge_CG[1];
   Dim_Normal[1] = -(val_coord_Elem_CG[0] - val_coord_Edge_CG[0]);
 
-  Normal[0] += Dim_Normal[0]; 
+  Normal[0] += Dim_Normal[0];
   Normal[1] += Dim_Normal[1];
 
   AD::SetPreaccOut(Normal, nDim);

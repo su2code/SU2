@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -35,87 +35,87 @@
 
 #include "../../config_structure.hpp"
 
-/*! 
+/*!
  * \class CDualGrid
- * \brief Class for controlling the dual volume definition. The dual volume is compose by 
+ * \brief Class for controlling the dual volume definition. The dual volume is compose by
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios
  */
 class CDualGrid{
 protected:
-	static unsigned short nDim; /*!< \brief Number of dimensions of the problem. */
-	
+  static unsigned short nDim; /*!< \brief Number of dimensions of the problem. */
+
 public:
-	
-	/*! 
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.		 
-	 */
-	CDualGrid(unsigned short val_nDim);
-	
-	/*! 
-	 * \brief Destructor of the class. 
-	 */
-	virtual ~CDualGrid(void);
-	
-	/*! 
-	 * \brief A pure virtual member.
-	 */
-	virtual su2double *GetCoord(void) = 0;
-	
-	/*! 
-	 * \brief A pure virtual member.
-	 * \param[in] val_coord - Coordinate of the point.		 
-	 */
-	virtual void SetCoord(su2double *val_coord) = 0;
-	
-	/*! 
-	 * \brief A pure virtual member.
-	 * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
-	 * \param[in] val_coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
-	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
-   * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) = 0;
-	
-	/*! 
-	 * \overload
-	 * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
-	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
-   * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) = 0;
-	
-	/*! 
-	 * \brief A pure virtual member.
-	 * \param[in] val_normal - Coordinates of the normal.
-	 */
-	virtual void GetNormal(su2double *val_normal) = 0;
-	
-	/*! 
-	 * \brief A pure virtual member.
-	 */
-	virtual su2double *GetNormal(void) = 0;
-	
-	/*! 
-	 * \brief A pure virtual member.
-	 * \param[in] val_face_normal - Coordinates of the normal.
-	 */	
-	virtual void SetNormal(su2double *val_face_normal) = 0;
 
-	/*! 
-	 * \brief A pure virtual member.
-	 */
-	virtual unsigned short GetnNodes(void) = 0;
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   */
+  CDualGrid(unsigned short val_nDim);
 
-	/*! 
-	 * \brief A pure virtual member.
-	 */	
-	virtual void SetZeroValues(void) = 0;
-	
-	/*! 
-	 * \brief A pure virtual member.
-	 * \param[in] val_face_normal - Normal vector to be added.
-	 */	
-	virtual void AddNormal(su2double *val_face_normal) = 0;
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CDualGrid(void);
+
+  /*!
+   * \brief A pure virtual member.
+   */
+  virtual su2double *GetCoord(void) = 0;
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_coord - Coordinate of the point.
+   */
+  virtual void SetCoord(su2double *val_coord) = 0;
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
+   * \param[in] val_coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
+   * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) = 0;
+
+  /*!
+   * \overload
+   * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
+   * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) = 0;
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_normal - Coordinates of the normal.
+   */
+  virtual void GetNormal(su2double *val_normal) = 0;
+
+  /*!
+   * \brief A pure virtual member.
+   */
+  virtual su2double *GetNormal(void) = 0;
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_face_normal - Coordinates of the normal.
+   */
+  virtual void SetNormal(su2double *val_face_normal) = 0;
+
+  /*!
+   * \brief A pure virtual member.
+   */
+  virtual unsigned short GetnNodes(void) = 0;
+
+  /*!
+   * \brief A pure virtual member.
+   */
+  virtual void SetZeroValues(void) = 0;
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_face_normal - Normal vector to be added.
+   */
+  virtual void AddNormal(su2double *val_face_normal) = 0;
 };
