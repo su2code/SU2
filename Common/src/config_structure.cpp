@@ -1759,9 +1759,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief WRT_CSV_SOL
    *  \n DESCRIPTION: Write a surface CSV solution file  \ingroup Config*/
   addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, true);
-  /*!\brief WRT_STL_SOL
-   *  \n DESCRIPTION: Write a surface STL solution file  \ingroup Config*/
-  addBoolOption("WRT_STL_SOL", Wrt_Stl_Sol, true);
   /*!\brief WRT_CSV_SOL
    *  \n DESCRIPTION: Write a binary coordinates file  \ingroup Config*/
   addBoolOption("WRT_CRD_SOL", Wrt_Crd_Sol, false);

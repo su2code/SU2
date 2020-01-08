@@ -1641,8 +1641,6 @@ inline bool CConfig::GetWrt_Srf_Sol(void) { return Wrt_Srf_Sol; }
 
 inline bool CConfig::GetWrt_Csv_Sol(void) { return Wrt_Csv_Sol; }
 
-inline bool CConfig::GetWrt_Stl_Sol(void) { return Wrt_Stl_Sol; }
-
 inline bool CConfig::GetWrt_Crd_Sol(void) { return Wrt_Crd_Sol; }
 
 inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
