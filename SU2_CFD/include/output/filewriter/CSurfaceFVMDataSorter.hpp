@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -72,7 +72,7 @@ public:
   unsigned long GetGlobalIndex(unsigned long iPoint) const override{
     return Renumber2Global.at(iPoint);
   }
-  
+
   void SortConnectivity(CConfig *config, CGeometry *geometry, vector<string> markerList) override;
 
 

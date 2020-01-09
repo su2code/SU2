@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -47,7 +47,7 @@ public:
    * \brief Construct a file writer using field names and the data sorter.
    * \param[in] valFileName - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
-   * \param[in] valTimeIter - The current time iteration 
+   * \param[in] valTimeIter - The current time iteration
    * \param[in] valTimeStep - The current physical time step value
    */
   CTecplotBinaryFileWriter(string valFileName, CParallelDataSorter* valDataSorter,

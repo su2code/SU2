@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -53,7 +53,7 @@ void CCSVFileWriter::Write_Data(){
   unsigned long iPoint, index;
   unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
   unsigned long nLocalVertex_Surface = 0, MaxLocalVertex_Surface = 0;
-  
+
   const vector<string> fieldNames = dataSorter->GetFieldNames();
 
   ofstream Surf_file;

@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -35,27 +35,27 @@ class CParaviewVTMFileWriter final: public CFileWriter{
    * \brief String stream that stores the content of the vtm file
    */
   stringstream output;
-  
+
   /*!
    * \brief The folder name where all the files associated with the datasets will be stored
    */
   string folderName;
-  
+
   /*!
    * \brief The current zone index
    */
   unsigned short iZone;
-  
+
   /*!
    * \brief The total number of zones
    */
   unsigned short nZone;
-  
+
   /*!
    * \brief Current physical time
    */
   su2double curTime;
-  
+
 public:
 
   /*!
@@ -82,7 +82,7 @@ public:
    * \brief Write sorted data to file in paraview binary file format
    */
   void Write_Data() override;
-  
+
   /*!
    * \brief Add a new dataset by writing data from a datasorter to file and adding it to the vtm file
    * \param[in] name - The name of the dataset
@@ -98,9 +98,9 @@ public:
   inline void StartBlock(string name){
     if (rank == MASTER_NODE){
       output << "<Block name=\"" << name << "\">" << endl;
-    }   
+    }
   }
-  
+
   /*!
    * \brief Close currently opened block
    */
@@ -109,7 +109,7 @@ public:
       output << "</Block>" << endl;
     }
   }
-  
+
   /*!
    * \brief Add a new dataset by writing it to the vtm file
    * \param[in] name - Name of the dataset
@@ -120,7 +120,7 @@ public:
       output << "<DataSet name=\"" << name <<"\" file=\"" << file << "\"/>" << endl;
     }
   }
-  
+
   /*!
    * \brief Get the name of the folder where the data will be stored
    * \return The folder name
