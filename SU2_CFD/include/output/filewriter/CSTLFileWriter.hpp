@@ -1,12 +1,12 @@
 /*!
  * \file CSTLFileWriter.hpp
  * \brief Headers fo the STL file writer class.
- * \author T. Kattmann
+ * \author T. Kattmann, T. Albring
  * \version 7.0.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -33,9 +33,9 @@
 
 class CSTLFileWriter final : public CFileWriter{
 
-  std::set<unsigned long> halo_nodes;
+  std::set<unsigned long> halo_nodes; /*!< \brief Solution of the problem. */
   vector<unsigned long> sorted_halo_nodes;
-  
+
   vector<passivedouble> data_to_send;
   vector<passivedouble> halo_var_data;
   vector<int> num_values_to_send;
@@ -78,6 +78,12 @@ public:
    */
   void Write_Data() override;
 
+  /*!
+   * \brief Get the halo-node value of a global renumbered Point for a specific variable.
+   * \param[in] global_node_number - global renumbered Point ID
+   * \param[in] iVar - Variable number
+   * \return Value of the halo-node variable
+   */
   double GetHaloNodeValue(unsigned long global_node_number, unsigned short iVar);
 
 };

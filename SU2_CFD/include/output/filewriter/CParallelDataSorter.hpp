@@ -234,6 +234,11 @@ public:
     return connSend[Index[iPoint] + iField];
   }
 
+  /*!
+   * \brief Get the Processor ID a Point belongs to.
+   * \param[in] iPoint - global renumbered ID of the point
+   * \return The rank/processor number.
+   */
   virtual unsigned short FindProcessor(unsigned long iPoint){return linearPartitioner->GetRankContainingIndex(iPoint);}
 
 };
