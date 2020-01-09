@@ -127,5 +127,31 @@ private:
    * \param[in] offset - The displacement in the file view for the current processor
    */
   void WriteDataArray(void *data, VTKDatatype type, unsigned long size, unsigned long globalSize, unsigned long offset);
+
+  /*!
+   * \brief Get the type string and size of a VTK datatype
+   * \param[in]  type - The VTK datatype
+   * \param[out] typeStr - The string name of the type
+   * \param[out] typeSize - The size in bytes of the type
+   */
+  inline void GetTypeInfo(const VTKDatatype type, string &typeStr, unsigned long &typeSize){
+    switch (type) {
+      case VTKDatatype::FLOAT32:
+        typeStr = "\"Float32\"";
+        typeSize = sizeof(float);
+        break;
+      case VTKDatatype::INT32:
+        typeStr = "\"Int32\"";
+        typeSize = sizeof(int);
+        break;
+      case VTKDatatype::UINT8:
+        typeStr = "\"UInt8\"";
+        typeSize = sizeof(char);     
+        break;
+      default:
+        SU2_MPI::Error("Unknown Type", CURRENT_FUNCTION);
+        break;
+    }
+  }
 };
 

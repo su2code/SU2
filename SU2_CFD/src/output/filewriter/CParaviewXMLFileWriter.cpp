@@ -551,23 +551,8 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
   
   std::string typeStr;
   unsigned long typeSize;
-  switch (type) {
-    case VTKDatatype::FLOAT32:
-      typeStr = "\"Float32\"";
-      typeSize = sizeof(float);
-      break;
-    case VTKDatatype::INT32:
-      typeStr = "\"Int32\"";
-      typeSize = sizeof(int);
-      break;
-    case VTKDatatype::UINT8:
-      typeStr = "\"UInt8\"";
-      typeSize = sizeof(char);     
-      break;
-    default:
-      SU2_MPI::Error("Unknown Type", CURRENT_FUNCTION);
-      break;
-  }
+  
+  GetTypeInfo(type, typeStr, typeSize);
   
   /*--- Compute the size of the data to write in bytes ---*/
   
@@ -643,24 +628,9 @@ void CParaviewXMLFileWriter::AddDataArray(VTKDatatype type, string name,
   
   std::string typeStr;
   unsigned long typeSize, byteSize, totalByteSize;
-  switch (type) {
-    case VTKDatatype::FLOAT32:
-      typeStr = "\"Float32\"";
-      typeSize = sizeof(float);
-      break;
-    case VTKDatatype::INT32:
-      typeStr = "\"Int32\"";
-      typeSize = sizeof(int);
-      break;
-    case VTKDatatype::UINT8:
-      typeStr = "\"UInt8\"";
-      typeSize = sizeof(char);     
-      break;
-    default:
-      SU2_MPI::Error("Unknown Type", CURRENT_FUNCTION);
-      break;
-  }
   
+  GetTypeInfo(type, typeStr, typeSize);
+
   /*--- Compute the size of the data to write in bytes ---*/
   
   byteSize = arraySize*typeSize;
