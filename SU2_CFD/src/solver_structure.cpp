@@ -5635,6 +5635,67 @@ void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
   base_nodes->Set_BGSSolution_k();
 }
 
+void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
+  unsigned short iVar, iFlux, iMetr;
+  unsigned short nMetr = 3*(nDim-1);
+  bool viscous = config->GetViscous();
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY ) {
+      
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        
+        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        /*--- If the node belong to the domain ---*/
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          //--- Correct if any of the neighbors belong to the volume
+          unsigned short iNeigh, counter = 0;
+          su2double hess[nMetr*nVar*nDim], hessvisc[nMetr*nVar*nDim];
+          for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+            const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+            if(!geometry->node[iPoint]->GetBoundary()) {
+              for(iFlux = 0; iFlux < nDim; iFlux++) {
+                for(iVar = 0; iVar < nVar; iVar++){
+                  const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
+
+                  //--- Reset hessian if first volume node detected
+                  if(counter == 0) {
+                    for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                      hess[i+iMetr] = 0.0;
+                      if(viscous) hessvisc[i+iMetr] = 0.0;
+                    }
+                  }
+                  for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                    hess[i+iMetr] += base_nodes->GetAnisoHess(jPoint, i+iMetr);
+                    if(viscous) hessvisc[i+iMetr] += base_nodes->GetAnisViscoHess(jPoint, i+iMetr);
+                  }
+                  counter ++;
+                }
+              }
+            }
+          }
+          if(counter > 0) {
+            for(iFlux = 0; iFlux < nDim; iFlux++) {
+              for(iVar = 0; iVar < nVar; iVar++){
+                const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
+                for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                  base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]/su2double(counter));
+                  if(viscous) base_nodes->SetAnisoViscHess(iPoint, i+iMetr, hessvisc[i+iMetr]/su2double(counter));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
 
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {

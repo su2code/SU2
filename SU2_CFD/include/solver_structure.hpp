@@ -340,6 +340,11 @@ public:
   void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Apply a correction to the boundary Hessian using the volume Hessian.
+   */
+  void CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Set the solver nondimensionalization.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.

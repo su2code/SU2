@@ -754,6 +754,11 @@ void CErrorEstimationDriver::ComputeMetric() {
     solver_flow->SetHessian_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
                                     config[ZONE_0]);
 
+    //---Surface flow Hess correction
+    if(rank == MASTER_NODE) cout << "Correcting flow surface Hessian." << endl;
+    solver_flow->CorrectBoundAnisoHess(geometry[ZONE_0][INST_0][MESH_0], 
+                                       config[ZONE_0]);
+
     //--- Volume adj grad
     if(rank == MASTER_NODE) cout << "Computing adjoint volume gradient via L2 Projection." << endl;
     solver_adjflow->SetGradient_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
@@ -770,6 +775,11 @@ void CErrorEstimationDriver::ComputeMetric() {
       if(rank == MASTER_NODE) cout << "Computing turbulent volume Hessian via L2 Projection." << endl;
       solver_turb->SetHessian_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
                                       config[ZONE_0]);
+
+      //--- Surface turb Hess correction
+      if(rank == MASTER_NODE) cout << "Correcting turbulent surface Hessian." << endl;
+      solver_turb->CorrectBoundAnisoHess(geometry[ZONE_0][INST_0][MESH_0], 
+                                         config[ZONE_0]);
 
       //--- Volume adj turb grad
       if(rank == MASTER_NODE) cout << "Computing turbulent adjoint volume gradient via L2 Projection." << endl;
@@ -794,6 +804,11 @@ void CErrorEstimationDriver::ComputeMetric() {
     solver_flow->SetHessian_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
                                     config[ZONE_0]);
 
+    //--- Surface flow Hess correction
+    if(rank == MASTER_NODE) cout << "Correcting flow surface Hessian." << endl;
+    solver_flow->CorrectBoundAnisoHess(geometry[ZONE_0][INST_0][MESH_0], 
+                                       config[ZONE_0]);
+
     //--- Volume adj grad
     if(rank == MASTER_NODE) cout << "Computing adjoint volume gradient via L2 Projection." << endl;
     solver_adjflow->SetGradient_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
@@ -810,6 +825,11 @@ void CErrorEstimationDriver::ComputeMetric() {
       if(rank == MASTER_NODE) cout << "Computing turbulent volume Hessian via L2 Projection." << endl;
       solver_turb->SetHessian_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
                                       config[ZONE_0]);
+
+      //--- Surface flow Hess correction
+      if(rank == MASTER_NODE) cout << "Correcting turbulent surface Hessian." << endl;
+      solver_turb->CorrectBoundAnisoHess(geometry[ZONE_0][INST_0][MESH_0], 
+                                         config[ZONE_0]);
 
       //--- Volume adj turb grad
       if(rank == MASTER_NODE) cout << "Computing turbulent adjoint volume gradient via L2 Projection." << endl;
@@ -922,13 +942,13 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(abs(EigVal[iDim]), 1.E-16);
+    // for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(abs(EigVal[iDim]), 1.E-16);
 
-    CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+    // CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[0][1]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[1][1]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[0][1]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[1][1]);
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
@@ -1091,16 +1111,16 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(abs(EigVal[iDim]), 1.E-16);
+    // for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(abs(EigVal[iDim]), 1.E-16);
 
-    CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+    // CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[0][1]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[0][2]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 3, A[1][1]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 4, A[1][2]);
-    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 5, A[2][2]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[0][1]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[0][2]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 3, A[1][1]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 4, A[1][2]);
+    // solver_flow->GetNodes()->SetAnisoMetr(iPoint, 5, A[2][2]);
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
