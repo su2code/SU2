@@ -33,7 +33,7 @@
 
 class CSTLFileWriter final : public CFileWriter{
 
-  std::set<unsigned long> halo_nodes; /*!< \brief Solution of the problem. */
+  std::set<unsigned long> halo_nodes;
   vector<unsigned long> sorted_halo_nodes;
 
   vector<passivedouble> data_to_send;
