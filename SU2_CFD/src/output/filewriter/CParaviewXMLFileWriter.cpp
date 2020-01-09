@@ -266,9 +266,9 @@ void CParaviewXMLFileWriter::Write_Data(){
 
   nPoint_Snd[0] = 0; nPoint_Cum[0] = 0;
   for (int ii=1; ii < size; ii++) {
-    nPoint_Snd[ii] = myPoint; nPoint_Cum[ii] = 0;
+    nPoint_Snd[ii] = int(myPoint); nPoint_Cum[ii] = 0;
   }
-  nPoint_Snd[size] = myPoint; nPoint_Cum[size] = 0;
+  nPoint_Snd[size] = int(myPoint); nPoint_Cum[size] = 0;
 
   /*--- Communicate the local counts to all ranks for building offsets. ---*/
 
@@ -288,24 +288,20 @@ void CParaviewXMLFileWriter::Write_Data(){
   /*--- Load/write the 1D buffer of point coordinates. Note that we
    always have 3 coordinate dimensions, even for 2D problems. ---*/
 
-  float *coord_buf = new float[myPoint*NCOORDS];
+  vector<float> dataBufferFloat(myPoint*NCOORDS);
   for (iPoint = 0; iPoint < myPoint; iPoint++) {
     for (iDim = 0; iDim < NCOORDS; iDim++) {
       if (nDim == 2 && iDim == 2) {
-        coord_buf[iPoint*NCOORDS + iDim] = 0.0;
+        dataBufferFloat[iPoint*NCOORDS + iDim] = 0.0;
       } else {
         float val = (float)dataSorter->GetData(iDim, iPoint);
-        coord_buf[iPoint*NCOORDS + iDim] = val;
+        dataBufferFloat[iPoint*NCOORDS + iDim] = val;
       }
     }
   }
 
-  WriteDataArray((void*)coord_buf, VTKDatatype::FLOAT32, NCOORDS*myPoint, GlobalPoint*NCOORDS, nPoint_Cum[rank]*NCOORDS);
+  WriteDataArray(dataBufferFloat.data(), VTKDatatype::FLOAT32, NCOORDS*myPoint, GlobalPoint*NCOORDS, nPoint_Cum[rank]*NCOORDS);
   
-  /*--- Free the coordinate array. ---*/
-
-  delete [] coord_buf;
-    
   /*--- Communicate the number of total cells/storage that will be
    written by each rank. After this communication, each proc knows how
    many cells will be written before its location in the file and the
@@ -317,10 +313,10 @@ void CParaviewXMLFileWriter::Write_Data(){
   nElem_Snd[0] = 0; nElemStorage_Snd[0] = 0;
   nElem_Cum[0] = 0; nElemStorage_Cum[0] = 0;
   for (int ii=1; ii < size; ii++) {
-    nElem_Snd[ii] = myElem; nElemStorage_Snd[ii] = myElemStorage;
+    nElem_Snd[ii] = int(myElem); nElemStorage_Snd[ii] = int(myElemStorage);
     nElem_Cum[ii] = 0;      nElemStorage_Cum[ii] = 0;
   }
-  nElem_Snd[size] = myElem; nElemStorage_Snd[size] = myElemStorage;
+  nElem_Snd[size] = int(myElem); nElemStorage_Snd[size] = int(myElemStorage);
   nElem_Cum[size] = 0;      nElemStorage_Cum[size] = 0;
 
   /*--- Communicate the local counts to all ranks for building offsets. ---*/
@@ -340,18 +336,18 @@ void CParaviewXMLFileWriter::Write_Data(){
   
   /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
 
-  int *conn_buf = new int[myElemStorage];
-  int *offset_buf = new int[myElem];
+  vector<int> connBuf(myElemStorage);
+  vector<int> offsetBuf(myElem);
   unsigned long iStorage = 0, iElemID = 0;
   unsigned short iNode = 0;
   
   auto copyToBuffer = [&](GEO_TYPE type, unsigned long nElem, unsigned short nPoints){
     for (iElem = 0; iElem < nElem; iElem++) {
       for (iNode = 0; iNode < nPoints; iNode++){
-        conn_buf[iStorage+iNode] = dataSorter->GetElem_Connectivity(type, iElem, iNode)-1;
+        connBuf[iStorage+iNode] = int(dataSorter->GetElem_Connectivity(type, iElem, iNode)-1);
       }
       iStorage += nPoints;
-      offset_buf[iElemID++] = (iStorage + nElemStorage_Cum[rank]);
+      offsetBuf[iElemID++] = int(iStorage + nElemStorage_Cum[rank]);
     }
   };
   
@@ -363,51 +359,28 @@ void CParaviewXMLFileWriter::Write_Data(){
   copyToBuffer(PRISM,         nParallel_Pris, N_POINTS_PRISM);
   copyToBuffer(PYRAMID,       nParallel_Pyra, N_POINTS_PYRAMID);
 
-  WriteDataArray((void*)conn_buf, VTKDatatype::INT32, myElemStorage, GlobalElemStorage, nElemStorage_Cum[rank]);
-  WriteDataArray((void*)offset_buf, VTKDatatype::INT32, myElem, GlobalElem, nElem_Cum[rank]);
-  
-  delete [] conn_buf;
-  delete [] offset_buf;
+  WriteDataArray(connBuf.data(), VTKDatatype::INT32, myElemStorage, GlobalElemStorage, nElemStorage_Cum[rank]);
+  WriteDataArray(offsetBuf.data(), VTKDatatype::INT32, myElem, GlobalElem, nElem_Cum[rank]);
   
   /*--- Load/write the cell type for all elements in the file. ---*/
 
-  uint8_t *type_buf = new uint8_t[myElem];
-  unsigned long jElem = 0;
-
-  for (iElem = 0; iElem < nParallel_Line; iElem++) {
-    type_buf[jElem] = LINE; jElem++;
-  }
-  for (iElem = 0; iElem < nParallel_Tria; iElem++) {
-    type_buf[jElem] = TRIANGLE; jElem++;
-  }
-  for (iElem = 0; iElem < nParallel_Quad; iElem++) {
-    type_buf[jElem] = QUADRILATERAL; jElem++;
-  }
-  for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
-    type_buf[jElem] = TETRAHEDRON; jElem++;
-  }
-  for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
-    type_buf[jElem] = HEXAHEDRON; jElem++;
-  }
-  for (iElem = 0; iElem < nParallel_Pris; iElem++) {
-    type_buf[jElem] = PRISM; jElem++;
-  }
-  for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
-    type_buf[jElem] = PYRAMID; jElem++;
-  }
+  vector<uint8_t> typeBuf(myElem);
+  vector<uint8_t>::iterator typeIter = typeBuf.begin();
   
-  WriteDataArray((void*)type_buf, VTKDatatype::UINT8, myElem, GlobalElem, nElem_Cum[rank]);
-
-  delete [] type_buf;
+  std::fill(typeIter, typeIter+nParallel_Line, LINE);          typeIter += nParallel_Line;
+  std::fill(typeIter, typeIter+nParallel_Tria, TRIANGLE);      typeIter += nParallel_Tria;
+  std::fill(typeIter, typeIter+nParallel_Quad, QUADRILATERAL); typeIter += nParallel_Quad;
+  std::fill(typeIter, typeIter+nParallel_Tetr, TETRAHEDRON);   typeIter += nParallel_Tetr;
+  std::fill(typeIter, typeIter+nParallel_Hexa, HEXAHEDRON);    typeIter += nParallel_Hexa;
+  std::fill(typeIter, typeIter+nParallel_Pris, PRISM);         typeIter += nParallel_Pris;
+  std::fill(typeIter, typeIter+nParallel_Pyra, PYRAMID);       typeIter += nParallel_Pyra;
+  
+  WriteDataArray(typeBuf.data(), VTKDatatype::UINT8, myElem, GlobalElem, nElem_Cum[rank]);
 
   /*--- Loop over all variables that have been registered in the output. ---*/
 
   VarCounter = varStart;
   for (iField = varStart; iField < fieldNames.size(); iField++) {
-
-    string fieldname = fieldNames[iField];
-    fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'),
-                    fieldname.end());
 
     /*--- Check whether this field is a vector or scalar. ---*/
 
@@ -434,47 +407,37 @@ void CParaviewXMLFileWriter::Write_Data(){
 
     if (output_variable && isVector) {
 
-      /*--- Prepare the 1D data buffer on this rank. ---*/
-
-      float *vec_buf = new float[myPoint*NCOORDS];
-
       /*--- Load up the buffer for writing this rank's vector data. ---*/
 
       float val = 0.0;
       for (iPoint = 0; iPoint < myPoint; iPoint++) {
         for (iDim = 0; iDim < NCOORDS; iDim++) {
           if (nDim == 2 && iDim == 2) {
-            vec_buf[iPoint*NCOORDS + iDim] = 0.0;
+            dataBufferFloat[iPoint*NCOORDS + iDim] = 0.0;
           } else {
             val = (float)dataSorter->GetData(VarCounter+iDim,iPoint);
-            vec_buf[iPoint*NCOORDS + iDim] = val;
+            dataBufferFloat[iPoint*NCOORDS + iDim] = val;
           }
         }
       }
       
-      WriteDataArray((void*)vec_buf, VTKDatatype::FLOAT32, myPoint*NCOORDS, GlobalPoint*NCOORDS, nPoint_Cum[rank]*NCOORDS);
+      WriteDataArray(dataBufferFloat.data(), VTKDatatype::FLOAT32, myPoint*NCOORDS, GlobalPoint*NCOORDS, nPoint_Cum[rank]*NCOORDS);
 
-      delete [] vec_buf;
-      
       VarCounter++;
 
     } else if (output_variable) {
 
-      /*--- Prepare the 1D data buffer on this rank. ---*/
-
-      float *scalar_buf = new float[myPoint];
 
       /*--- For now, create a temp 1D buffer to load up the data for writing.
        This will be replaced with a derived data type most likely. ---*/
 
       for (iPoint = 0; iPoint < myPoint; iPoint++) {
         float val = (float)dataSorter->GetData(VarCounter,iPoint);
-        scalar_buf[iPoint] = val;
+        dataBufferFloat[iPoint] = val;
       }
       
-      WriteDataArray((void*)scalar_buf, VTKDatatype::FLOAT32, myPoint, GlobalPoint, nPoint_Cum[rank]);
+      WriteDataArray(dataBufferFloat.data(), VTKDatatype::FLOAT32, myPoint, GlobalPoint, nPoint_Cum[rank]);
       
-      delete [] scalar_buf; scalar_buf = NULL;
       VarCounter++;
     }
 
