@@ -1014,8 +1014,7 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
   }
   delete [] A;
   delete [] EigVec;
-  delete [] EigVal;
-}
+  delete [] EigVal;ßƒƒ
 }
 
 void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
