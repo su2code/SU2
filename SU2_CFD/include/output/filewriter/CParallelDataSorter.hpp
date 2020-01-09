@@ -132,7 +132,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] markerList - A list of marker names that should be sorted.
    */
-  virtual void SortConnectivity(CConfig *config, CGeometry *geometry, vector<string> markerList){}
+  virtual void SortConnectivity(CConfig *config, CGeometry *geometry, const vector<string> &markerList){}
 
   /*!
    * \brief Get the number of points the local rank owns.

@@ -58,12 +58,22 @@ public:
   void SortOutputData() override;
 
   /*!
-   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
+   * \brief Sort the connectivities on the surface into data structures used for output file writing.
+   *  All markers in MARKER_PLOTTING will be sorted.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
+   * \param[in] surf - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
    */
-  void SortConnectivity(CConfig *config, CGeometry *geometry,  bool val_sort) override;
+  void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) override;
+
+  /*!
+   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing. 
+   * Only markers in the markerList argument will be sorted. 
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] markerList - List of markers to sort.
+   */
+  void SortConnectivity(CConfig *config, CGeometry *geometry, const vector<string> &markerList) override;
 
   /*!
    * \brief Get the global index of a point.
@@ -77,11 +87,12 @@ public:
 private:
 
   /*!
-   * \brief Sort the connectivity for a single surface element type into a linear partitioning across all processors (DG-FEM solver).
+   * \brief Sort the connectivity for a single surface element type into a linear partitioning across all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
    */
-  void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type,
+                               const vector<string> &markerList);
 
 };
