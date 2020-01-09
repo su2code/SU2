@@ -224,9 +224,11 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   /* Allocate the memory for Parallel_Surf_Data. */
   nParallel_Poin = globalSurfaceDOFIDs.size();
 
-  if (passiveDoubleBuffer == nullptr){
-    passiveDoubleBuffer = new passivedouble[nParallel_Poin*VARS_PER_POINT];
+  if (passiveDoubleBuffer != NULL){
+    delete [] passiveDoubleBuffer;
   }
+
+  passiveDoubleBuffer = new passivedouble[nParallel_Poin*VARS_PER_POINT];
 
   /* Determine the local index of the global surface DOFs and
      copy the data into Parallel_Surf_Data. */
@@ -427,7 +429,7 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     unsigned long nSubElem_Local = 0;
     for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); ++iMarker) {
       if( !boundaries[iMarker].periodicBoundary ) {
-        string markerTag = config->GetMarker_All_TagBound(iMarker);
+        string markerTag = boundaries[iMarker].markerTag;
         auto it = std::find(markerList.begin(), markerList.end(), markerTag);
         if (it != markerList.end()) {
           const vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
@@ -450,7 +452,7 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     unsigned long kNode = 0;
     for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); ++iMarker) {
       if( !boundaries[iMarker].periodicBoundary ) {
-        string markerTag = config->GetMarker_All_TagBound(iMarker);
+        string markerTag = boundaries[iMarker].markerTag;
         auto it = std::find(markerList.begin(), markerList.end(), markerTag);
         if (it != markerList.end()) {
           const vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
