@@ -1493,7 +1493,7 @@ enum ENUM_OUTPUT {
   RESTART_ASCII           = 13, /*!< \brief SU2 ASCII restart format. */
   CGNS                    = 14, /*!< \brief CGNS format. */
   STL                     = 15, /*!< \brief STL ASCII format for surface solution output. */
-  STL_BINARY              = 16  /*!< \brief STL binary format for surface solution output. */
+  STL_BINARY              = 16  /*!< \brief STL binary format for surface solution output. Not implemented yet. */
 };
 
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>

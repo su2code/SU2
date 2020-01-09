@@ -379,7 +379,6 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
       /*--- Set the mesh ASCII format ---*/
-
       if (rank == MASTER_NODE) {
           (*fileWritingTable) << "SU2 mesh" << fileName + CSU2MeshFileWriter::fileExt;
       }
@@ -400,9 +399,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       volumeDataSorter->SortConnectivity(config, geometry, false);
 
       /*--- Write tecplot binary ---*/
-
       if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Tecplot" << fileName + CTecplotBinaryFileWriter::fileExt;
+          (*fileWritingTable) << "Tecplot binary" << fileName + CTecplotBinaryFileWriter::fileExt;
       }
 
       fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
@@ -419,8 +417,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write tecplot binary ---*/
-
+      /*--- Write tecplot ascii ---*/
       if (rank == MASTER_NODE) {
           (*fileWritingTable) << "Tecplot ASCII" << fileName + CTecplotFileWriter::fileExt;
       }
@@ -441,7 +438,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       /*--- Write paraview binary ---*/
       if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Paraview" << fileName + CParaviewBinaryFileWriter::fileExt;
+          (*fileWritingTable) << "Paraview binary" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
 
       fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
@@ -457,7 +454,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write paraview binary ---*/
+      /*--- Write paraview ascii ---*/
       if (rank == MASTER_NODE) {
           (*fileWritingTable) << "Paraview ASCII" << fileName + CParaviewFileWriter::fileExt;
       }
@@ -476,7 +473,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write paraview binary ---*/
+      /*--- Write surface paraview ascii ---*/
       if (rank == MASTER_NODE) {
           (*fileWritingTable) << "Paraview ASCII surface" << fileName + CParaviewFileWriter::fileExt;
       }
@@ -495,9 +492,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write paraview binary ---*/
+      /*--- Write surface paraview binary ---*/
       if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Paraview surface" << fileName + CParaviewBinaryFileWriter::fileExt;
+          (*fileWritingTable) << "Paraview binary surface" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
 
       fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
@@ -514,7 +511,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write paraview binary ---*/
+      /*--- Write surface tecplot ascii ---*/
       if (rank == MASTER_NODE) {
           (*fileWritingTable) << "Tecplot ASCII surface" << fileName + CTecplotFileWriter::fileExt;
       }
@@ -534,9 +531,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write paraview binary ---*/
+      /*--- Write surface tecplot binary ---*/
       if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Tecplot surface" << fileName + CTecplotBinaryFileWriter::fileExt;
+          (*fileWritingTable) << "Tecplot binary surface" << fileName + CTecplotBinaryFileWriter::fileExt;
       }
 
       fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
@@ -553,9 +550,10 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
-      
+
+      /*--- Write ASCII STL ---*/
       if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Writing STL file." << fileName + CSTLFileWriter::fileExt;
+          (*fileWritingTable) << "STL ASCII" << fileName + CSTLFileWriter::fileExt;
       }
 
       fileWriter = new CSTLFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);

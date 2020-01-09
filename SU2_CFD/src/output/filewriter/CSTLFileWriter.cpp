@@ -1,12 +1,12 @@
 /*!
  * \file CSTLFileWriter.cpp
  * \brief STL Writer output class
- * \author T. Kattmann
+ * \author T. Kattmann, T. Albring
  * \version 7.0.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -27,7 +27,8 @@
 
 #include "../../../include/output/filewriter/CSTLFileWriter.hpp"
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
-#include <iomanip> /*--- for setprecision ---*/
+#include <iomanip> /*--- Used for ofstream.precision(int). ---*/
+
 
 const string CSTLFileWriter::fileExt = ".stl";
 
@@ -47,16 +48,28 @@ CSTLFileWriter::~CSTLFileWriter(){}
 
 void CSTLFileWriter::Write_Data(){
 
+  /*--- This Write_Data routine has 3 major parts:
+    1. Prerequisite info: The parallel data-sorter distributes nodes of the primal mesh onto the processes
+    (i.e. this step is only important for parallel excecution) and not elements. For the STL file the connectivity
+    of the elements is broken/lost especially on the node-borders between processes. This information is
+    re-processed in this first (cumbersome) step.
+    2. The coordinate data for each node in a Triangle is successively written into a local array.
+    Quadrilateral surface elements are split into 2 triangles. All local arrays are gathered on the MASTER_NODE.
+    3. The MASTER_NODE only writes the data into a .stl file.
+  ---*/
+
+  /*--- 1. Re-process the element connectivity information and store that appropriatly such that
+    this information can be accessed in step 2---*/
+
   unsigned long nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
                 nParallel_Quad = dataSorter->GetnElem(QUADRILATERAL);
-
   unsigned short iVar;
-  //  NodePartitioner node_partitioner(num_nodes, size);
+
   num_nodes_to_receive.resize(size, 0);
   values_to_receive_displacements.resize(size);
   halo_nodes.clear();
   sorted_halo_nodes.clear();
-  
+
   /* We output a single, partitioned zone where each rank outputs one partition. */
   vector<int32_t> partition_owners;
   partition_owners.reserve(size);
@@ -64,31 +77,30 @@ void CSTLFileWriter::Write_Data(){
     partition_owners.push_back(iRank);
 
   /* Gather a list of nodes we refer to but are not outputting. */
-
   for (unsigned long i = 0; i < nParallel_Tria * N_POINTS_TRIANGLE; ++i)
-    if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i) -1) != rank)
+    if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i)-1) != rank)
       halo_nodes.insert(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i)-1);
 
   for (unsigned long i = 0; i < nParallel_Quad * N_POINTS_QUADRILATERAL; ++i)
-    if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i) -1) != rank)
+    if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i)-1) != rank)
       halo_nodes.insert(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i)-1);
-  
+
 
   /* Sorted list of halo nodes for this MPI rank. */
   sorted_halo_nodes.assign(halo_nodes.begin(), halo_nodes.end());
-      
+
   /*--- We effectively tack the halo nodes onto the end of the node list for this partition.
     TecIO will later replace them with references to nodes in neighboring partitions. */
   num_halo_nodes = sorted_halo_nodes.size();
   vector<int64_t> halo_node_local_numbers(max((size_t)1, num_halo_nodes)); /* Min size 1 to avoid crashes when we access these vectors below. */
   vector<int32_t> neighbor_partitions(max((size_t)1, num_halo_nodes));
   vector<int64_t> neighbor_nodes(max((size_t)1, num_halo_nodes));
+
   for(int64_t i = 0; i < static_cast<int64_t>(num_halo_nodes); ++i) {
     halo_node_local_numbers[i] = dataSorter->GetNodeEnd(rank) - dataSorter->GetNodeBegin(rank) + i;
     int owning_rank = dataSorter->FindProcessor(sorted_halo_nodes[i]);
     unsigned long node_number = sorted_halo_nodes[i] - dataSorter->GetNodeBegin(owning_rank);
-    neighbor_partitions[i] = owning_rank; /* Partition numbers are 1-based. */
-    if (rank == 0) cout << owning_rank << endl;
+    neighbor_partitions[i] = owning_rank; /* Partition numbers are 1-based, i.e. start with 1! */
     neighbor_nodes[i] = static_cast<int64_t>(node_number);
   }
 
@@ -106,10 +118,12 @@ void CSTLFileWriter::Write_Data(){
   nodes_to_receive_displacements.resize(size);
   nodes_to_send_displacements[0] = 0;
   nodes_to_receive_displacements[0] = 0;
+
   for(int iRank = 1; iRank < size; ++iRank) {
-    nodes_to_send_displacements[iRank] = nodes_to_send_displacements[iRank - 1] + num_nodes_to_send[iRank - 1];
+    nodes_to_send_displacements[iRank]    = nodes_to_send_displacements[iRank - 1]    + num_nodes_to_send[iRank - 1];
     nodes_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank - 1] + num_nodes_to_receive[iRank - 1];
   }
+
   int total_num_nodes_to_send = nodes_to_send_displacements[size - 1] + num_nodes_to_send[size - 1];
 
   nodes_to_send.resize(max(1, total_num_nodes_to_send));
@@ -120,7 +134,7 @@ void CSTLFileWriter::Write_Data(){
   SU2_MPI::Alltoallv(&sorted_halo_nodes[0], &num_nodes_to_receive[0], &nodes_to_receive_displacements[0], MPI_UNSIGNED_LONG,
                      &nodes_to_send[0],     &num_nodes_to_send[0],    &nodes_to_send_displacements[0],    MPI_UNSIGNED_LONG,
                      MPI_COMM_WORLD);
-  
+
   /* Now actually send and receive the data */
   data_to_send.resize(max(1, total_num_nodes_to_send * (int)fieldnames.size()));
   halo_var_data.resize(max((size_t)1, fieldnames.size() * num_halo_nodes));
@@ -128,21 +142,30 @@ void CSTLFileWriter::Write_Data(){
   values_to_send_displacements.resize(size);
   num_values_to_receive.resize(size);
   size_t index = 0;
+
   for(int iRank = 0; iRank < size; ++iRank) {
+
     /* We send and receive GlobalField_Counter values per node. */
     num_values_to_send[iRank]              = num_nodes_to_send[iRank] * fieldnames.size();
     values_to_send_displacements[iRank]    = nodes_to_send_displacements[iRank] * fieldnames.size();
     num_values_to_receive[iRank]           = num_nodes_to_receive[iRank] * fieldnames.size();
     values_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank] * fieldnames.size();
-    for(iVar = 0; iVar < fieldnames.size(); ++iVar)
+
+    for(iVar = 0; iVar < fieldnames.size(); ++iVar) {
       for(int iNode = 0; iNode < num_nodes_to_send[iRank]; ++iNode) {
         unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - dataSorter->GetNodeBegin(rank);
         data_to_send[index++] = SU2_TYPE::GetValue(dataSorter->GetData(iVar,node_offset));
       }
+    }
+
   }
+
   SU2_MPI::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
                      &halo_var_data[0], &num_values_to_receive[0], &values_to_receive_displacements[0], MPI_DOUBLE,
                      MPI_COMM_WORLD);
+
+  /*--- 2. Load the coordinate data succesively in an array. 3coordinates*3nodes = 9 consecutive
+    su2doubles form a triangle ---*/
 
   /*--- Routine to write the surface STL files (ASCII). We
    assume here that, as an ASCII file, it is safer to merge the
@@ -173,7 +196,7 @@ void CSTLFileWriter::Write_Data(){
 
   /*--- Find the max number of surface vertices among all
    partitions so we can set up buffers. The master node will handle
-   the writing of the CSV file after gathering all of the data. ---*/
+   the writing of the STL file after gathering all of the data. ---*/
 
   nLocalTria = dataSorter->GetnElem(TRIANGLE);
   nLocalQuad = dataSorter->GetnElem(QUADRILATERAL);
@@ -187,28 +210,17 @@ void CSTLFileWriter::Write_Data(){
   SU2_MPI::Allreduce(&nLocalTriaAll, &MaxLocalTriaAll, 1,
                      MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
 
-  cout << "Rank: " << rank << " ltria " << nLocalTria << " lquad " << nLocalQuad << " max " << MaxLocalTriaAll << endl;
-
   SU2_MPI::Gather(&nLocalTriaAll,       1, MPI_UNSIGNED_LONG,
                   Buffer_Recv_nTriaAll, 1, MPI_UNSIGNED_LONG,
                   MASTER_NODE, MPI_COMM_WORLD);
 
-  if (rank == MASTER_NODE) {
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      cout << "Buffer_Recv_nTriaAll " << iProcessor << " " <<  Buffer_Recv_nTriaAll[iProcessor] << endl;
-    }
-  }
-
-  /*--- Allocate buffers for send/recv of the data and global IDs. ---*/
-
-  bufD_Send = new su2double[MaxLocalTriaAll*3*3](); // Triangle has 3 Points with 3 coords each, holds all coordinates
-
-  /*--- Only the master rank allocates buffers for the recv. ---*/
+  /*--- Allocate buffer for send/recv of the coordinate data. Only the master rank allocates buffers for the recv. ---*/
+  bufD_Send = new su2double[MaxLocalTriaAll*3*3](); /* Triangle has 3 Points with 3 coords each */
   if (rank == MASTER_NODE)
     bufD_Recv = new su2double[nProcessor*MaxLocalTriaAll*3*3];
 
   /*--- Load send buffers with the local data on this rank. ---*/
-  // Tria data
+  /*--- Write triangle element coordinate data into send buffer---*/
   index = 0;
   for (iElem = 0; iElem < nLocalTria; iElem++) {
     for (iPoint = 0; iPoint < 3; iPoint++) {
@@ -217,86 +229,69 @@ void CSTLFileWriter::Write_Data(){
       unsigned long local_node_number = global_node_number - dataSorter->GetNodeBegin(rank);
 
       for (iVar = 0; iVar < 3; iVar++){
-
         if (dataSorter->FindProcessor(global_node_number) == rank) {
-          bufD_Send[index] = dataSorter->GetData(iVar, local_node_number); 
+          bufD_Send[index] = dataSorter->GetData(iVar, local_node_number);
         } else {
           bufD_Send[index] = GetHaloNodeValue(global_node_number, iVar);
         }
-        if ((abs(bufD_Send[index]) < 1e-4 || abs(bufD_Send[index]) > 1e5) && bufD_Send[index] != 0) {
-          cout << "Bad bufD_Send value: " << bufD_Send[index] << " at iproc " << rank << " iElem " << iElem << " iPoint " << iPoint << " iVat " << iVar << endl;
-        }
-        index++;
-      }
-    }
-  }
 
-  // Quad data
+        index++;
+      }//iVar
+    }//iPoint
+  }//iElem
+
+  /*--Write quadrilateral element coordinate data into send buffer: 
+    Each quad is split into two triangles after a fixed node order. ---*/
   for (iElem = 0; iElem < nLocalQuad; iElem++) {
     for (iPoint = 0; iPoint < Nodelist.size(); iPoint++) {
       global_node_number = dataSorter->GetElem_Connectivity(QUADRILATERAL,iElem,Nodelist[iPoint]) - 1; // (var, GlobalPointindex)
-      unsigned long local_node_number = global_node_number - dataSorter->GetNodeBegin(rank); 
-      //cout << rank << " " <<  global_node_number << " " << dataSorter->GetNodeBegin(rank) << endl;
-      //unsigned long global_node_number_volume = dataSorter->GetGlobalIndex(local_node_number);
+      unsigned long local_node_number = global_node_number - dataSorter->GetNodeBegin(rank);
 
       for (iVar = 0; iVar < 3; iVar++){
-
-         if (dataSorter->FindProcessor(global_node_number) == rank) {
-        //if (local_node_number < dataSorter->GetnPoints()) {
-
+        if (dataSorter->FindProcessor(global_node_number) == rank) {
           bufD_Send[index] = dataSorter->GetData(iVar, local_node_number);
-          if ((abs(bufD_Send[index]) < 1e-4 || abs(bufD_Send[index]) > 1e5) && bufD_Send[index] != 0) {
-            cout << "Bad bufD_Send value Local: " << bufD_Send[index] << " at iproc " << rank << " iElem " << iElem << " iPoint " << iPoint << " iVat " << iVar <<  endl;
-           // cout << "global_node_number global renumered" << global_node_number << " local renumbered " << global_node_number - dataSorter->GetNodeBegin(rank) << " global not renumbered " << dataSorter->GetGlobalIndex(global_node_number - dataSorter->GetNodeBegin(rank)) << endl;
-          }
         } else {
-           bufD_Send[index] = GetHaloNodeValue(global_node_number, iVar);
-          // if ((abs(bufD_Send[index]) < 1e-4 || abs(bufD_Send[index]) > 1e5) ) {
-            // cout << "Bad bufD_Send value Halo: " << bufD_Send[index] << " at iproc " << rank << " iElem " << iElem << " iPoint " << iPoint << " iVat " << iVar << endl;
-          // }
+          bufD_Send[index] = GetHaloNodeValue(global_node_number, iVar);
         }
-        
+
         index++;
-      }
-    }
-  }
+      }//iVar
+    }//iPoint
+  }//iElem
 
   /*--- Collective comms of the solution data and global IDs. ---*/
   SU2_MPI::Gather(bufD_Send, static_cast<int>(MaxLocalTriaAll*3*3), MPI_DOUBLE,
                   bufD_Recv, static_cast<int>(MaxLocalTriaAll*3*3), MPI_DOUBLE,
                   MASTER_NODE, MPI_COMM_WORLD);
 
-  /*--- The master rank alone writes the surface CSV file. ---*/
-
+  /*--- 3. The master rank alone writes the surface STL  file. ---*/
   if (rank == MASTER_NODE) {
 
-    /*--- Open the CSV file and write the header with variable names. ---*/
+    /*--- Open the STL file and write the header with variable names. ---*/
     Surf_file.precision(6);
     Surf_file.open(fileName.c_str(), ios::out);
     Surf_file << "solid SU2_output" << endl;
     /*--- Loop through all of the collected data and write each node's values ---*/
 
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      cout << "iProcessor: " << iProcessor << " out of " << nProcessor << endl;
       for (iElem = 0; iElem < Buffer_Recv_nTriaAll[iProcessor]; iElem++) { // loops over nLocalTriaAll
 
-        /*--- Write the solution data for each field variable. ---*/
+        /*--- Write the coordinate data for each node in a triangle. ---*/
+        /*--- Every tested software recomputes the normal anyway,
+              such that this arbitray face normal does not matter  ---*/
         Surf_file << "facet normal " << 1 << " " << 2 << " " << 3 << endl;
-        Surf_file << "    outer loop" << endl;
+        Surf_file << "    outer loop" << endl; // 4 leading whitespaces
 
         for(iPoint = 0; iPoint < 3; iPoint++) {
-          Surf_file << "        vertex";
+          Surf_file << "        vertex"; // 8 leading whitespaces
           index = iProcessor*MaxLocalTriaAll*3*3 + iElem*3*3 + iPoint*3;
 
           for (iVar = 0; iVar < 3; iVar++) {
             Surf_file << " " <<  bufD_Recv[index + iVar];
-            //if ((abs(bufD_Recv[index + iVar]) < 1e-4 || abs(bufD_Recv[index + iVar]) > 1e5) && bufD_Recv[index + iVar] != 0) {
-            //  cout << "Bad bufD_Recv value: " << bufD_Recv[index + iVar] << " at iproc " << iProcessor << " iElem " << iElem << " iPoint " << iPoint << " iVat " << iVar << endl;
-            //} 
           }
           Surf_file << endl;
-        }
-        Surf_file << "    endloop" << endl;
+        }//iPoint
+        Surf_file << "    endloop" << endl; // 4 leading whitespaces
         Surf_file << "endfacet" << endl;
       }//iElem
     }//iProcessor
@@ -316,24 +311,18 @@ void CSTLFileWriter::Write_Data(){
 double CSTLFileWriter::GetHaloNodeValue(unsigned long global_node_number, unsigned short iVar) {
 
   vector<unsigned long>::iterator it = lower_bound(sorted_halo_nodes.begin(), sorted_halo_nodes.end(), global_node_number);
-
   int offset = distance(sorted_halo_nodes.begin(), it);
-    cout << offset << " " << sorted_halo_nodes.size() << endl;
-
-
   int id = 0;
+  
   for (int iRank = 0; iRank < size; ++iRank) {
-    cout << rank << " " << num_nodes_to_receive[iRank] << endl;
-    for (int i = 0; i < num_nodes_to_receive[iRank]; i++){  
+    for (int i = 0; i < num_nodes_to_receive[iRank]; i++){
       int displ = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank]*iVar;
       if (id == offset)
         return halo_var_data[displ+i];
-      id++;    
+      id++;
     }
   }
 
-  SU2_MPI::Error("Node not found", CURRENT_FUNCTION);
-  
-
-  return 0.0; 
+  SU2_MPI::Error("Halo node not found.", CURRENT_FUNCTION);
+  return 0.0;
 }

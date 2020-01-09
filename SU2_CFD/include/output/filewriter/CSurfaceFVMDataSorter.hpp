@@ -67,26 +67,31 @@ public:
 
   /*!
    * \brief Get the global index of a point.
-   * \input iPoint - the point ID.
+   * \param[in] iPoint - the local renumbered point ID.
    * \return Global index of a specific point.
    */
   unsigned long GetGlobalIndex(unsigned long iPoint)  override{
-    if (iPoint > nParallel_Poin){
-      cout << "nParallel_Poin: " << nParallel_Poin << " iPoint loc_ren_surf " << iPoint << endl;
-      SU2_MPI::Error("HAHA", CURRENT_FUNCTION);
-    }
+    if (iPoint > nParallel_Poin)
+      SU2_MPI::Error(string("Local renumbered iPoint ID ") + to_string(iPoint) +
+                     string(" is larger than max number of nodes ") + to_string(nParallel_Poin), CURRENT_FUNCTION);
+
     return Renumber2Global[iPoint];
   }
 
   /*!
-   * \brief Beginning node ID of the linear partition owned by a specific processor.
-   * \input rank - the processor rank.
-   * \return The beginning node ID.
+   * \brief Get the beginning global renumbered node ID of the linear partition owned by a specific processor.
+   * \param[in] rank - the processor rank.
+   * \return The beginning global renumbered node ID.
    */
   unsigned long GetNodeBegin(unsigned short rank) override {
     return nPoint_Recv[rank];
   } 
 
+  /*!
+   * \brief Get the Processor ID a Point belongs to.
+   * \param[in] iPoint - global renumbered ID of the point
+   * \return The rank/processor number.
+   */
   unsigned short FindProcessor(unsigned long iPoint) override {
 
     for (unsigned short iRank = 1; iRank < size; iRank++){
@@ -98,9 +103,9 @@ public:
   }
 
   /*!
-   * \brief Ending node ID of the linear partition owned by a specific processor.
-   * \input rank - the processor rank.
-   * \return The ending node ID.
+   * \brief Get the ending global renumbered node ID of the linear partition owned by a specific processor.
+   * \param[in] rank - the processor rank.
+   * \return The ending global renumbered node ID.
    */
   unsigned long GetNodeEnd(unsigned short rank) override {
     for (unsigned short iRank = 0; iRank < size-1; iRank++){
