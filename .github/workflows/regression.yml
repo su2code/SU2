@@ -5,7 +5,6 @@ on:
     branches:
       - 'develop'
       - 'master'
-      - 'feature_STLwriter'
   pull_request:
     branches: 
       - 'develop'

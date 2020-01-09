@@ -22,7 +22,7 @@ notifications:
   
 branches:
     only:
-        - feature_STLwriter
+        - develop
 
 virtualenv:
   system_site_packages: true

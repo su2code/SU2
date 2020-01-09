@@ -151,7 +151,7 @@ def download_module(name, alt_name, git_repo, commit_sha):
     if os.path.exists(alt_name) and os.listdir(alt_name): 
       print('Directory ' + alt_name + ' is not empty')
       print('Maybe submodules are already cloned with git?')
-      #sys.exit(1) 
+      sys.exit(1) 
  
     else:
       print('Downloading ' + name + ' \'' + commit_sha + '\'')
