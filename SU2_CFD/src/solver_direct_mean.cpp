@@ -5317,8 +5317,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
           //for (unsigned short = 0; i < nVar; i++){
           // int place = (nVar*iPoint+1)*m + (nVar*k);
           // Jac[place] = mat[i*nVar];
-          
-
         }
       }
     }
@@ -5338,11 +5336,11 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   //}
   int index = 0;
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
+    //local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
     
     for (iVar = 0; iVar < nVar; iVar++) {
-      r[index] = local_Residual[iVar] + local_Res_TruncError[iVar];
+      r[index] = local_Residual[iVar];// + local_Res_TruncError[iVar];
       index++;
     }
   }
@@ -5389,7 +5387,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.close();
   
   // backtracking line search to find step size:
-  double a =  0.1;
+  double a =  0.09;
   
   for (int i = 0; i < n; i++) {
     GenCoordsY[i] += a * r[i];
