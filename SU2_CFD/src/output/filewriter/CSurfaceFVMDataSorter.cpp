@@ -29,14 +29,14 @@
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 
 
-CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometry, CFVMDataSorter* volume_sorter) :
-  CParallelDataSorter(config, volume_sorter->GetFieldNames()){
+CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometry, CFVMDataSorter* valVolumeSorter) :
+  CParallelDataSorter(config, valVolumeSorter->GetFieldNames()){
 
   nDim = geometry->GetnDim();
   
-  this->volume_sorter = volume_sorter;
+  this->volumeSorter = valVolumeSorter;
 
-  connectivity_sorted = false;
+  connectivitySorted = false;
 
   nGlobalPoint_Sort = geometry->GetGlobal_nPointDomain();
   nLocalPoint_Sort  = geometry->GetnPointDomain();
@@ -390,11 +390,11 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   /*--- Create a local data structure that acts as a mask to extract the
    set of points within the local set that are on the surface. ---*/
 
-  int *surfPoint = new int[volume_sorter->GetnPoints()];
-  for (iPoint = 0; iPoint < volume_sorter->GetnPoints(); iPoint++) surfPoint[iPoint] = -1;
+  int *surfPoint = new int[volumeSorter->GetnPoints()];
+  for (iPoint = 0; iPoint < volumeSorter->GetnPoints(); iPoint++) surfPoint[iPoint] = -1;
 
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    surfPoint[(int)idRecv[ii] - volume_sorter->GetNodeBegin(rank)] = (int)idRecv[ii];
+    surfPoint[(int)idRecv[ii] - volumeSorter->GetNodeBegin(rank)] = (int)idRecv[ii];
   }
 
   /*--- First, add up the number of surface points I have on my rank. ---*/
@@ -402,7 +402,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   nParallel_Poin = 0;
   Renumber2Global.clear();
 
-  for (iPoint = 0; iPoint < volume_sorter->GetnPoints(); iPoint++) {
+  for (iPoint = 0; iPoint < volumeSorter->GetnPoints(); iPoint++) {
     if (surfPoint[iPoint] != -1) {
 
       /*--- Save the global index values for CSV output. ---*/
@@ -451,9 +451,9 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   
   for (int jj = 0; jj < VARS_PER_POINT; jj++) {
     count = 0;
-    for (int ii = 0; ii < (int)volume_sorter->GetnPoints(); ii++) {
+    for (int ii = 0; ii < (int)volumeSorter->GetnPoints(); ii++) {
       if (surfPoint[ii] !=-1) {
-        passiveDoubleBuffer[count*VARS_PER_POINT + jj] = volume_sorter->GetData(jj,ii);
+        passiveDoubleBuffer[count*VARS_PER_POINT + jj] = volumeSorter->GetData(jj,ii);
         count++;
       }
     }
@@ -477,7 +477,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   unsigned long *renumbP = new unsigned long[nParallel_Poin]();
 
   count = 0;
-  for (iPoint = 0; iPoint < volume_sorter->GetnPoints(); iPoint++) {
+  for (iPoint = 0; iPoint < volumeSorter->GetnPoints(); iPoint++) {
     if (surfPoint[iPoint] != -1) {
       globalP[count] = surfPoint[iPoint];
       renumbP[count] = count + nPoint_Recv[rank];
@@ -1129,7 +1129,7 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
   SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
-  connectivity_sorted = true;
+  connectivitySorted = true;
 
 }
 
@@ -1153,7 +1153,7 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
   SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
-  connectivity_sorted = true;
+  connectivitySorted = true;
 
 }
 
@@ -1362,7 +1362,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
                  as a halo cell. We will use this later to sort and remove
                  any duplicates from the connectivity list. ---*/
 
-                if (volume_sorter->GetHalo(iPoint)) haloSend[mm] = true;
+                if (volumeSorter->GetHalo(iPoint)) haloSend[mm] = true;
 
               }
 

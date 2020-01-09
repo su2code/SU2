@@ -37,9 +37,9 @@ public:
    * \brief Constructor
    * \param[in] config - Pointer to the current config structure
    * \param[in] geometry - Pointer to the current geometry
-   * \param[in] fieldNames - Vector containing the field names
+   * \param[in] valFieldNames - Vector containing the field names
    */
-  CFEMDataSorter(CConfig *config, CGeometry *geometry, vector<string> fieldNames);
+  CFEMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames);
 
   /*!
    * \brief Destructor
@@ -59,7 +59,7 @@ public:
    * \input iPoint - the point ID.
    * \return Global index of a specific point.
    */
-  unsigned long GetGlobalIndex(unsigned long iPoint) override{
+  unsigned long GetGlobalIndex(unsigned long iPoint) const override{
     return linearPartitioner->GetFirstIndexOnRank(rank) + iPoint;
   }
 

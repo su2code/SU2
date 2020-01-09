@@ -68,7 +68,7 @@ private:
   /*!
    * \brief Boolean storing whether we are on a big or little endian machine
    */
-  bool BigEndian;
+  bool bigEndian;
   
   /*!
    * \brief The current data offset that is used to find data in the binary blob at the end of the file
@@ -83,11 +83,11 @@ public:
   const static string fileExt;
 
   /*!
-   * \brief Construct a file writer using field names, dimension.
-   * \param[in] fileName - The name of the file
-   * \param[in] data_sorter - The parallel sorted data to write
+   * \brief Construct a file writer using field names and the data sorter.
+   * \param[in] valFileName - The name of the file
+   * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CParaviewXMLFileWriter(string fileName, CParallelDataSorter* data_sorter);
+  CParaviewXMLFileWriter(string valFileName, CParallelDataSorter* valDataSorter);
 
   /*!
    * \brief Destructor
@@ -106,7 +106,7 @@ private:
    * \param[in] str - The string to write to file
    * \param[in] rank - The rank that should write the string
    */
-  void WriteString(std::string str, int rank);
+  void WriteString(std::string str, int rankOut);
   
   /*!
    * \brief Add a new data array definition to the vtu file.

@@ -34,10 +34,10 @@
 
 const string CParaviewVTMFileWriter::fileExt = ".vtm";
 
-CParaviewVTMFileWriter::CParaviewVTMFileWriter(string fileName, string folderName, su2double time, 
-                                               unsigned short iZone, unsigned short nZone)
-  : CFileWriter(std::move(fileName), fileExt),
-    folderName(std::move(folderName)), iZone(iZone), nZone(nZone), curTime(time){
+CParaviewVTMFileWriter::CParaviewVTMFileWriter(string valFileName, string valFolderName, su2double valTime, 
+                                               unsigned short valiZone, unsigned short valnZone)
+  : CFileWriter(std::move(valFileName), fileExt),
+    folderName(std::move(valFolderName)), iZone(valiZone), nZone(valnZone), curTime(valTime){
   
   if (rank == MASTER_NODE)
 #if defined(_WIN32) || defined(_WIN64) || defined (__WINDOWS__)
@@ -45,7 +45,7 @@ CParaviewVTMFileWriter::CParaviewVTMFileWriter(string fileName, string folderNam
     _mkdir((this->folderName + "/zone_" + to_string(iZone)).c_str());
 #else 
     mkdir(this->folderName.c_str(), 0777); 
-    mkdir((this->folderName + "/zone_" + to_string(iZone)).c_str(), 0777);
+    mkdir((this->folderName + "/zone_" + to_string(valiZone)).c_str(), 0777);
 #endif
 
 }

@@ -29,14 +29,14 @@
 #include "../../../../Common/include/fem_geometry_structure.hpp"
 
 
-CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* volume_sorter) :
-  CParallelDataSorter(config, volume_sorter->GetFieldNames()){
+CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* valVolumeSorter) :
+  CParallelDataSorter(config, valVolumeSorter->GetFieldNames()){
 
   nDim = geometry->GetnDim();
   
-  this->volume_sorter = volume_sorter;
+  this->volumeSorter = valVolumeSorter;
 
-  connectivity_sorted = false;
+  connectivitySorted = false;
 
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
@@ -81,7 +81,7 @@ CSurfaceFEMDataSorter::~CSurfaceFEMDataSorter(){
 
 void CSurfaceFEMDataSorter::SortOutputData() {
 
-  if (!connectivity_sorted){
+  if (!connectivitySorted){
     SU2_MPI::Error("Connectivity must be sorted before sorting output data", CURRENT_FUNCTION);
   }
 
@@ -234,7 +234,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
     const unsigned long ii = globalSurfaceDOFIDs[i] - linearPartitioner->GetCumulativeSizeBeforeRank(rank);
 
     for(int jj=0; jj<VARS_PER_POINT; jj++)
-      passiveDoubleBuffer[i*VARS_PER_POINT+jj] = volume_sorter->GetData(jj,ii);
+      passiveDoubleBuffer[i*VARS_PER_POINT+jj] = volumeSorter->GetData(jj,ii);
   }
 
   /*--- Reduce the total number of surf points we have. This will be
@@ -350,7 +350,7 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
   SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
-  connectivity_sorted = true;
+  connectivitySorted = true;
 
 }
 

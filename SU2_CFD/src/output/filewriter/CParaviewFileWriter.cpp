@@ -29,8 +29,8 @@
 
 const string CParaviewFileWriter::fileExt = ".vtk";
 
-CParaviewFileWriter::CParaviewFileWriter(string fileName, CParallelDataSorter *dataSorter) :
-  CFileWriter(std::move(fileName), dataSorter, fileExt){}
+CParaviewFileWriter::CParaviewFileWriter(string valFileName, CParallelDataSorter *valDataSorter) :
+  CFileWriter(std::move(valFileName), valDataSorter, fileExt){}
 
 
 CParaviewFileWriter::~CParaviewFileWriter(){}
@@ -56,9 +56,9 @@ void CParaviewFileWriter::Write_Data(){
   /*--- Set a timer for the file writing. ---*/
 
 #ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StartTime = MPI_Wtime();
+  startTime = MPI_Wtime();
 #endif
 
   /*--- Open Paraview ASCII file and write the header. ---*/
@@ -378,16 +378,16 @@ void CParaviewFileWriter::Write_Data(){
   /*--- Compute and store the write time. ---*/
 
 #ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StopTime = MPI_Wtime();
+  stopTime = MPI_Wtime();
 #endif
-  UsedTime = StopTime-StartTime;
+  usedTime = stopTime-startTime;
 
-  file_size = Determine_Filesize(fileName);
+  fileSize = Determine_Filesize(fileName);
 
   /*--- Compute and store the bandwidth ---*/
 
-  Bandwidth = file_size/(1.0e6)/UsedTime;
+  bandwidth = fileSize/(1.0e6)/usedTime;
 }
 

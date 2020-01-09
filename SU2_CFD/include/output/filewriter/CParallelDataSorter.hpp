@@ -73,7 +73,7 @@ protected:
 
   unsigned short GlobalField_Counter;  //!< Number of output fields
 
-  bool connectivity_sorted;            //!< Boolean to store information on whether the connectivity is sorted
+  bool connectivitySorted;            //!< Boolean to store information on whether the connectivity is sorted
 
   int *nPoint_Send;                    //!< Number of points this processor has to send to other processors
   int *nPoint_Recv;                    //!< Number of points this processor receives from other processors
@@ -106,7 +106,7 @@ public:
    * \param[in] config - Pointer to the current config structure
    * \param[in] fieldNames - Vector containing the field names
    */
-  CParallelDataSorter(CConfig *config, vector<string> fieldNames);
+  CParallelDataSorter(CConfig *config, const vector<string> &valFieldNames);
 
   /*!
    * \brief Destructor
@@ -138,32 +138,32 @@ public:
    * \brief Get the number of points the local rank owns.
    * \return local number of points.
    */
-  unsigned long GetnPoints(){return nParallel_Poin;}
+  unsigned long GetnPoints() const {return nParallel_Poin;}
 
   /*!
    * \brief Get the number of points to sort.
    * \return local number of points.
    */
-  unsigned long GetnLocalPointSort(){return nLocalPoint_Sort;}
+  unsigned long GetnLocalPointSort() const {return nLocalPoint_Sort;}
 
   /*!
    * \brief Get the global number of points (accumulated from all ranks)
    * \return Global number of points.
    */
-  unsigned long GetnPointsGlobal(){return nGlobal_Poin_Par;}
+  unsigned long GetnPointsGlobal() const {return nGlobal_Poin_Par;}
 
   /*!
    * \brief Get the global of elements (accumulated from all ranks and element types)
    * \return Global number elements.
    */
-  unsigned long GetnElem(){return nGlobal_Elem_Par;}
+  unsigned long GetnElem() const {return nGlobal_Elem_Par;}
 
   /*!
    * \brief Get the local number of elements of a specific type that the current rank owns
    * \input type - The type of element, ref GEO_TYPE
    * \return Local number of elements of a specific type.
    */
-  unsigned long GetnElem(GEO_TYPE type);
+  unsigned long GetnElem(GEO_TYPE type) const;
 
   /*!
    * \brief Get the connectivity of specific element.
@@ -172,21 +172,21 @@ public:
    * \input iNode - The node ID
    * \return the connected node.
    */
-  unsigned long GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode);
+  unsigned long GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode) const ;
 
   /*!
    * \brief Beginning node ID of the linear partition owned by a specific processor.
    * \input rank - the processor rank.
    * \return The beginning node ID.
    */
-  unsigned long GetNodeBegin(unsigned short rank){return linearPartitioner->GetFirstIndexOnRank(rank);}
+  unsigned long GetNodeBegin(unsigned short rank) const {return linearPartitioner->GetFirstIndexOnRank(rank);}
 
   /*!
    * \brief Ending node ID of the linear partition owned by a specific processor.
    * \input rank - the processor rank.
    * \return The ending node ID.
    */
-  unsigned long GetNodeEnd(unsigned short rank){return linearPartitioner->GetLastIndexOnRank(rank);}
+  unsigned long GetNodeEnd(unsigned short rank) const {return linearPartitioner->GetLastIndexOnRank(rank);}
 
   /*!
    * \brief Get the value of the linear partitioned data.
@@ -194,40 +194,40 @@ public:
    * \input iPoint - the point ID.
    * \return the value of the data field at a point.
    */
-  passivedouble GetData(unsigned short iField, unsigned long iPoint) {return passiveDoubleBuffer[iPoint*GlobalField_Counter + iField];}
+  passivedouble GetData(unsigned short iField, unsigned long iPoint) const  {return passiveDoubleBuffer[iPoint*GlobalField_Counter + iField];}
 
   /*!
    * \brief Get the pointer to the sorted linear partitioned data.
    * \return Pointer to the sorted data.
    */
-  const passivedouble *GetData() {return passiveDoubleBuffer;}
+  const passivedouble *GetData() const {return passiveDoubleBuffer;}
 
   /*!
    * \brief Get the global index of a point.
    * \input iPoint - the point ID.
    * \return Global index of a specific point.
    */
-  virtual unsigned long GetGlobalIndex(unsigned long iPoint){return 0;}
+  virtual unsigned long GetGlobalIndex(unsigned long iPoint) const {return 0;}
 
   /*!
    * \brief Get the cumulated number of points
    * \input rank - the processor rank.
    * \return The cumulated number of points up to certain processor rank.
    */
-  unsigned long GetnPointCumulative(unsigned short rank){return linearPartitioner->GetCumulativeSizeBeforeRank(rank);}
+  unsigned long GetnPointCumulative(unsigned short rank) const {return linearPartitioner->GetCumulativeSizeBeforeRank(rank);}
 
   /*!
    * \brief Get the linear number of points
    * \input rank - the processor rank.
    * \return The linear number of points up to certain processor rank.
    */
-  unsigned long GetnPointLinear(unsigned short rank){return linearPartitioner->GetSizeOnRank(rank);}
+  unsigned long GetnPointLinear(unsigned short rank) const {return linearPartitioner->GetSizeOnRank(rank);}
 
   /*!
    * \brief Check whether the current connectivity is sorted (i.e. if SortConnectivity has been called)
    * \return <TRUE> if the connectivity is sorted.
    */
-  bool GetConnectivitySorted(){return connectivity_sorted;}
+  bool GetConnectivitySorted() const {return connectivitySorted;}
 
   /*!
    * \brief Set the value of a specific field at a point.
@@ -241,7 +241,7 @@ public:
     connSend[Index[iPoint] + iField] = data;
   }
 
-  su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField){
+  su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField) const {
     return connSend[Index[iPoint] + iField];
   }
   
@@ -249,7 +249,7 @@ public:
    * \brief Get the vector containing the names of the output fields
    * \return Vector of strings containing the field names
    */
-  vector<string> GetFieldNames(){
+  const vector<string>& GetFieldNames() const{
     return fieldNames;
   }
   
@@ -257,7 +257,7 @@ public:
    * \brief Get the spatial dimension
    * \return The spatial dimension
    */
-  unsigned short GetnDim(){
+  unsigned short GetnDim() const {
     return nDim;
   }
 };

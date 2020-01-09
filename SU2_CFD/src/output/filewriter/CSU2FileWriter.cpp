@@ -29,8 +29,8 @@
 
 const string CSU2FileWriter::fileExt = ".csv";
 
-CSU2FileWriter::CSU2FileWriter(string fileName, CParallelDataSorter *dataSorter) :
-  CFileWriter(std::move(fileName), dataSorter, fileExt){}
+CSU2FileWriter::CSU2FileWriter(string valFileName, CParallelDataSorter *valDataSorter) :
+  CFileWriter(std::move(valFileName), valDataSorter, fileExt){}
 
 
 CSU2FileWriter::~CSU2FileWriter(){
@@ -52,9 +52,9 @@ void CSU2FileWriter::Write_Data(){
   /*--- Set a timer for the file writing. ---*/
 
 #ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StartTime = MPI_Wtime();
+  startTime = MPI_Wtime();
 #endif
 
   /*--- Only the master node writes the header. ---*/
@@ -114,19 +114,19 @@ void CSU2FileWriter::Write_Data(){
   /*--- Compute and store the write time. ---*/
 
 #ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StopTime = MPI_Wtime();
+  stopTime = MPI_Wtime();
 #endif
-  UsedTime = StopTime-StartTime;
+  usedTime = stopTime-startTime;
 
   /*--- Determine the file size ---*/
 
-  file_size = Determine_Filesize(fileName);
+  fileSize = Determine_Filesize(fileName);
 
   /*--- Compute and store the bandwidth ---*/
 
-  Bandwidth = file_size/(1.0e6)/UsedTime;
+  bandwidth = fileSize/(1.0e6)/usedTime;
 
   /*--- All processors close the file. ---*/
 

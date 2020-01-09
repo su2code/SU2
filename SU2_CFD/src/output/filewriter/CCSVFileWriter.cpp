@@ -28,8 +28,8 @@
 #include "../../../include/output/filewriter/CCSVFileWriter.hpp"
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
 
-CCSVFileWriter::CCSVFileWriter(string fileName, CParallelDataSorter *dataSorter) :
-  CFileWriter(std::move(fileName), dataSorter, std::move(".csv")){}
+CCSVFileWriter::CCSVFileWriter(string valFileName, CParallelDataSorter *valDataSorter) :
+  CFileWriter(std::move(valFileName), valDataSorter, std::move(".csv")){}
 
 
 CCSVFileWriter::~CCSVFileWriter(){

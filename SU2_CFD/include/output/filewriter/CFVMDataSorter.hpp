@@ -42,9 +42,9 @@ public:
    * \brief Constructor
    * \param[in] config - Pointer to the current config structure
    * \param[in] geometry - Pointer to the current geometry
-   * \param[in] fieldNames - Vector containing the field names
+   * \param[in] valFieldNames - Vector containing the field names
    */
-  CFVMDataSorter(CConfig *config, CGeometry *geometry, vector<string> fieldNames);
+  CFVMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames);
 
   /*!
    * \brief Destructor
@@ -64,7 +64,7 @@ public:
    * \input iPoint - the point ID.
    * \return Global index of a specific point.
    */
-  unsigned long GetGlobalIndex(unsigned long iPoint) override {
+  unsigned long GetGlobalIndex(unsigned long iPoint) const override {
     return linearPartitioner->GetFirstIndexOnRank(rank) + iPoint;
   }
 
@@ -73,7 +73,7 @@ public:
    * \param[in] iPoint - ID of the point
    * \return <TRUE> if the point is a halo node.
    */
-  bool GetHalo(unsigned long iPoint) {return Local_Halo[iPoint];}
+  bool GetHalo(unsigned long iPoint) const {return Local_Halo[iPoint];}
 
 private:
 

@@ -29,9 +29,9 @@
 
 const string CTecplotFileWriter::fileExt = ".dat";
 
-CTecplotFileWriter::CTecplotFileWriter(string fileName, CParallelDataSorter *dataSorter,
-                                       unsigned long time_iter, su2double timestep) :
-  CFileWriter(std::move(fileName), dataSorter, fileExt), time_iter(time_iter), timestep(timestep){}
+CTecplotFileWriter::CTecplotFileWriter(string valFileName, CParallelDataSorter *valDataSorter,
+                                       unsigned long valTimeIter, su2double valTimeStep) :
+  CFileWriter(std::move(valFileName), valDataSorter, fileExt), timeIter(valTimeIter), timeStep(valTimeStep){}
 
 CTecplotFileWriter::~CTecplotFileWriter(){}
 
@@ -51,14 +51,14 @@ void CTecplotFileWriter::Write_Data(){
 
   ofstream Tecplot_File;
 
-  file_size = 0.0;
+  fileSize = 0.0;
 
   /*--- Set a timer for the file writing. ---*/
 
 #ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StartTime = MPI_Wtime();
+  startTime = MPI_Wtime();
 #endif
 
   /*--- Reduce the total number of each element. ---*/
@@ -107,8 +107,8 @@ void CTecplotFileWriter::Write_Data(){
 
     Tecplot_File << "ZONE ";
 
-    if (timestep > 0.0){
-      Tecplot_File << "STRANDID="<<SU2_TYPE::Int(time_iter+1)<<", SOLUTIONTIME="<< time_iter*timestep <<", ";
+    if (timeStep > 0.0){
+      Tecplot_File << "STRANDID="<<SU2_TYPE::Int(timeIter+1)<<", SOLUTIONTIME="<< timeIter*timeStep <<", ";
     }
 
     Tecplot_File << "NODES= "<< dataSorter->GetnPointsGlobal() <<", ELEMENTS= "<< dataSorter->GetnElem();
@@ -228,17 +228,17 @@ void CTecplotFileWriter::Write_Data(){
   /*--- Compute and store the write time. ---*/
 
 #ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StopTime = MPI_Wtime();
+  stopTime = MPI_Wtime();
 #endif
-  UsedTime = StopTime-StartTime;
+  usedTime = stopTime-startTime;
 
-  file_size = Determine_Filesize(fileName);
+  fileSize = Determine_Filesize(fileName);
 
   /*--- Compute and store the bandwidth ---*/
 
-  Bandwidth = file_size/(1.0e6)/UsedTime;
+  bandwidth = fileSize/(1.0e6)/usedTime;
 }
 
 

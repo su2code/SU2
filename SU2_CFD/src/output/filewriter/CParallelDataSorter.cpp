@@ -28,8 +28,8 @@
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
 #include <cassert>
 
-CParallelDataSorter::CParallelDataSorter(CConfig *config, vector<string> fieldNames) : 
-  fieldNames(std::move(fieldNames)){
+CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &valFieldNames) : 
+  fieldNames(std::move(valFieldNames)){
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -94,7 +94,7 @@ CParallelDataSorter::~CParallelDataSorter(){
 }
 
 
-unsigned long CParallelDataSorter::GetnElem(GEO_TYPE type){
+unsigned long CParallelDataSorter::GetnElem(GEO_TYPE type) const {
 
   switch (type) {
     case LINE:
@@ -404,7 +404,7 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   delete [] idIndex;
 }
 
-unsigned long CParallelDataSorter::GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode) {
+unsigned long CParallelDataSorter::GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode) const {
 
   switch (type) {
     case LINE:

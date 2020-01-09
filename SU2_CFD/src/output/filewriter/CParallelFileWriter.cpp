@@ -28,32 +28,32 @@
 #include "../../../include/output/filewriter/CFileWriter.hpp"
 
 
-CFileWriter::CFileWriter(string fileName, CParallelDataSorter *dataSorter, string file_ext):
-  file_ext(file_ext),
-  fileName(std::move(fileName)),
-  dataSorter(dataSorter){
+CFileWriter::CFileWriter(string valFileName, CParallelDataSorter *valDataSorter, string valFileExt):
+  fileExt(valFileExt),
+  fileName(std::move(valFileName)),
+  dataSorter(valDataSorter){
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 
-  this->fileName += file_ext;
+  this->fileName += valFileExt;
 
-  file_size = 0.0;
-  Bandwidth = 0.0;
+  fileSize = 0.0;
+  bandwidth = 0.0;
   
 }
 
-CFileWriter::CFileWriter(string fileName, string fileExt):
-  file_ext(fileExt),
-  fileName(std::move(fileName)){
+CFileWriter::CFileWriter(string valFileName, string valFileExt):
+  fileExt(valFileExt),
+  fileName(std::move(valFileName)){
   
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
   
-  this->fileName += fileExt;
+  this->fileName += valFileExt;
   
-  file_size = 0.0;
-  Bandwidth = 0.0;
+  fileSize = 0.0;
+  bandwidth = 0.0;
   
 }
 

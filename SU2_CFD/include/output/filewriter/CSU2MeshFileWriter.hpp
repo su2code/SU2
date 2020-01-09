@@ -41,14 +41,14 @@ public:
   const static string fileExt;
 
   /*!
-   * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fileName - The name of the file
-   * \param[in] data_sorter - The parallel sorted data to write
-   * \param[in] iZone - Index of the current zone
-   * \param[in] nZone - Number of zones
+   * \brief Construct a file writer using field names, dimension.
+   * \param[in] valFileName - The name of the file
+   * \param[in] valDataSorter - The parallel sorted data to write
+   * \param[in] valiZone - The index of the current zone
+   * \param[in] valnZone - The total number of zones
    */
-  CSU2MeshFileWriter(string fileName, CParallelDataSorter* data_sorter,
-                     unsigned short iZone, unsigned short nZone);
+  CSU2MeshFileWriter(string valFileName, CParallelDataSorter* valDataSorter,
+                     unsigned short valiZone, unsigned short valnZone);
 
   /*!
    * \brief Destructor

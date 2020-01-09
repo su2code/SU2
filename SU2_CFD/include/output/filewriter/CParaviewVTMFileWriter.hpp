@@ -65,9 +65,13 @@ public:
 
   /*!
    * \brief Construct a file writer using field names, dimension.
-   * \param[in] fileName - The name of the file
+   * \param[in] valFileName - The name of the file
+   * \param[in] valFolderName - The name of the output folder
+   * \param[in] valTime - The current physical time
+   * \param[in] valiZone - The index of the current zone
+   * \param[in] valnZone - The total number of zones
    */
-  CParaviewVTMFileWriter(string fileName, string folderName, su2double time, unsigned short iZone, unsigned short nZone);
+  CParaviewVTMFileWriter(string valFileName, string valFolderName, su2double valTime, unsigned short valiZone, unsigned short valnZone);
 
   /*!
    * \brief Destructor

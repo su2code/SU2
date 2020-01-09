@@ -55,13 +55,13 @@ protected:
   /*!
    * \brief The file extension to be attached to the filename.
    */
-  std::string file_ext;
+  std::string fileExt;
 
-  su2double StartTime, /*!< \brief Start time for time measurement  */
-            StopTime , /*!< \brief Stop time for time measurement  */
-            UsedTime , /*!< \brief Used time for time measurement  */
-            Bandwidth, /*!< \brief Used bandwidth  */
-            file_size; /*!< \brief Size of the last written file  */
+  su2double startTime, /*!< \brief Start time for time measurement  */
+            stopTime , /*!< \brief Stop time for time measurement  */
+            usedTime , /*!< \brief Used time for time measurement  */
+            bandwidth, /*!< \brief Used bandwidth  */
+            fileSize; /*!< \brief Size of the last written file  */
 
   /*!
    * \brief Determine the file size
@@ -86,18 +86,19 @@ protected:
   
 public:
   /*!
-   * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fileName - The name of the file
-   * \param[in] file_ext - The file extension to be attached to the filename
+   * \brief Construct a file writer using field names, the data sorter and the file extension.
+   * \param[in] valFileName - The name of the file
+   * \param[in] valDataSorter - The parallel sorted data to write
+   * \param[in] valFileExt - The file extension.
    */
-  CFileWriter(string fileName, CParallelDataSorter* dataSorter, string file_ext);
+  CFileWriter(string valFileName, CParallelDataSorter* valDataSorter, string valFileExt);
   
   /*!
-   * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fileName - The name of the file
-   * \param[in] fileExt - The file extension to be attached to the filename
+   * \brief Construct a file writer using field names, file extension.
+   * \param[in] valFileName - The name of the file
+   * \param[in] valFileExt - The file extension to be attached to the filename
    */
-  CFileWriter(string fileName, string fileExt);
+  CFileWriter(string valFileName, string valFileExt);
   
   /*!
    * \brief Destructor
@@ -112,18 +113,18 @@ public:
   /*!
    * \brief Get the bandwith used for the last writing
    */
-  su2double Get_Bandwidth(){return Bandwidth;}
+  su2double Get_Bandwidth() const {return bandwidth;}
 
   /*!
    * \brief Get the filesize of the last written file.
    */
-  su2double Get_Filesize(){return file_size;}
+  su2double Get_Filesize() const {return fileSize;}
 
   /*!
    * \brief Get the used time of the last file writing.
    * \return
    */
-  su2double Get_UsedTime(){return UsedTime;}
+  su2double Get_UsedTime() const {return usedTime;}
 
 };
 

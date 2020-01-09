@@ -28,8 +28,8 @@
 #include "../../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 
-CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, vector<string> fieldNames) : 
-  CParallelDataSorter(config, fieldNames){
+CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames) : 
+  CParallelDataSorter(config, valFieldNames){
   
   nDim = geometry->GetnDim();
 
@@ -132,7 +132,7 @@ void CFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
   SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
-  connectivity_sorted = true;
+  connectivitySorted = true;
 
 }
 
