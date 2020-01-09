@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -78,12 +78,12 @@ protected:
    * \brief Filename
    */
   string fileName;
-  
+
   /*!
    * \brief The parallel data sorter
    */
   CParallelDataSorter* dataSorter;
-  
+
 public:
   /*!
    * \brief Construct a file writer using field names, the data sorter and the file extension.
@@ -92,14 +92,14 @@ public:
    * \param[in] valFileExt - The file extension.
    */
   CFileWriter(string valFileName, CParallelDataSorter* valDataSorter, string valFileExt);
-  
+
   /*!
    * \brief Construct a file writer using field names, file extension.
    * \param[in] valFileName - The name of the file
    * \param[in] valFileExt - The file extension to be attached to the filename
    */
   CFileWriter(string valFileName, string valFileExt);
-  
+
   /*!
    * \brief Destructor
    */

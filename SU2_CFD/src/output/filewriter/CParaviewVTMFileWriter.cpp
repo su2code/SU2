@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -34,17 +34,17 @@
 
 const string CParaviewVTMFileWriter::fileExt = ".vtm";
 
-CParaviewVTMFileWriter::CParaviewVTMFileWriter(string valFileName, string valFolderName, su2double valTime, 
+CParaviewVTMFileWriter::CParaviewVTMFileWriter(string valFileName, string valFolderName, su2double valTime,
                                                unsigned short valiZone, unsigned short valnZone)
   : CFileWriter(std::move(valFileName), fileExt),
     folderName(std::move(valFolderName)), iZone(valiZone), nZone(valnZone), curTime(valTime){
-  
+
   if (rank == MASTER_NODE)
 #if defined(_WIN32) || defined(_WIN64) || defined (__WINDOWS__)
     _mkdir(this->folderName.c_str());
     _mkdir((this->folderName + "/zone_" + to_string(iZone)).c_str());
-#else 
-    mkdir(this->folderName.c_str(), 0777); 
+#else
+    mkdir(this->folderName.c_str(), 0777);
     mkdir((this->folderName + "/zone_" + to_string(valiZone)).c_str(), 0777);
 #endif
 
@@ -56,28 +56,28 @@ CParaviewVTMFileWriter::~CParaviewVTMFileWriter(){
 }
 
 void CParaviewVTMFileWriter::Write_Data(){
-  
-  /*--- If we are in the first zone, create new file and write the file header, 
+
+  /*--- If we are in the first zone, create new file and write the file header,
    * otherwise append to already existing file ---*/
-  
+
   if (rank == MASTER_NODE){
     ofstream multiBlockFile;
     if (iZone == 0)
       multiBlockFile.open (fileName.c_str());
-    else 
+    else
       multiBlockFile.open(fileName.c_str(), ios::app);
-    
+
     if (iZone == 0){
       multiBlockFile << "<VTKFile type=\"vtkMultiBlockDataSet\" version=\"1.0\">" << endl;
       multiBlockFile << "<vtkMultiBlockDataSet>" << endl;
     }
-    
+
     /*--- Write all blocks that have been added ---*/
-    
+
     multiBlockFile << output.str();
-    
+
     /*--- If we are in the last zone, write the additional data and close all blocks ---*/
-    
+
     if (iZone == nZone-1){
       multiBlockFile << "</vtkMultiBlockDataSet>" << endl;
       multiBlockFile << "<FieldData>" << endl;
@@ -89,23 +89,23 @@ void CParaviewVTMFileWriter::Write_Data(){
     }
     multiBlockFile.close();
   }
-  
+
 }
 
 void CParaviewVTMFileWriter::AddDataset(string name, string file, CParallelDataSorter* dataSorter){
-  
+
   /*--- Construct the full file name incl. folder ---*/
-  
+
   string fullFilename = folderName + "/zone_" + to_string(iZone) + "/" + file;
-  
+
   /*--- Create an XML writer and dump data into file ---*/
-  
+
   CParaviewXMLFileWriter* XMLWriter = new CParaviewXMLFileWriter(fullFilename, dataSorter);
   XMLWriter->Write_Data();
   delete XMLWriter;
-  
+
   /*--- Add the dataset to the vtm file ---*/
-  
+
   AddDataset(name, fullFilename + CParaviewXMLFileWriter::fileExt);
-  
+
 }

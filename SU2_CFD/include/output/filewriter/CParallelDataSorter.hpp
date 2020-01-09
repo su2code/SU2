@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -86,9 +86,9 @@ protected:
   unsigned long *idSend;               //!< Send buffer holding global indices that will be send to other processors
   int nSends,                          //!< Number of sends
   nRecvs;                              //!< Number of receives
-  
+
   vector<string> fieldNames;           //!< Vector with names of the output fields
-  
+
   unsigned short nDim;                 //!< Spatial dimension of the data
 
   /*!
@@ -125,7 +125,7 @@ public:
    * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
   virtual void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort = true){}
-  
+
   /*!
    * \brief Sort the connectivities into data structures (only for surface data sorters).
    * \param[in] config - Definition of the particular problem.
@@ -244,7 +244,7 @@ public:
   su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField) const {
     return connSend[Index[iPoint] + iField];
   }
-  
+
   /*!
    * \brief Get the vector containing the names of the output fields
    * \return Vector of strings containing the field names
@@ -252,7 +252,7 @@ public:
   const vector<string>& GetFieldNames() const{
     return fieldNames;
   }
-  
+
   /*!
    * \brief Get the spatial dimension
    * \return The spatial dimension

@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -50,7 +50,7 @@ void CParaviewFileWriter::Write_Data(){
   ofstream Paraview_File;
 
   int iProcessor;
-  
+
   const vector<string> fieldNames = dataSorter->GetFieldNames();
 
   /*--- Set a timer for the file writing. ---*/

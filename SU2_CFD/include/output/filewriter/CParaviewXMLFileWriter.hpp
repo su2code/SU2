@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -32,7 +32,7 @@
 class CParaviewXMLFileWriter final: public CFileWriter{
 
 private:
-  
+
   /*!
    * \brief Enum that defines the VTK datatypes
    */
@@ -41,40 +41,40 @@ private:
     INT32,
     UINT8
   };
-  
+
 #ifdef HAVE_MPI
   /*!
    * \brief The displacement that every process has in the current file view
    */
   MPI_Offset disp;
-  
+
   /*!
    * \brief The file handle for writing
    */
   MPI_File fhw;
 #else
-  
+
   /*!
    * \brief The displacement that every process has in the current file view
    */
   unsigned long disp;
-  
+
   /*!
    * \brief The file handle for writing
    */
   FILE* fhw;
 #endif
-  
+
   /*!
    * \brief Boolean storing whether we are on a big or little endian machine
    */
   bool bigEndian;
-  
+
   /*!
    * \brief The current data offset that is used to find data in the binary blob at the end of the file
    */
   unsigned long dataOffset;
-    
+
 public:
 
   /*!
@@ -107,7 +107,7 @@ private:
    * \param[in] rank - The rank that should write the string
    */
   void WriteString(std::string str, int rankOut);
-  
+
   /*!
    * \brief Add a new data array definition to the vtu file.
    * \param[in] type - The vtk datatype
@@ -117,11 +117,11 @@ private:
    * \param[in] globalSize  - The global size of the array over all processors
    */
   void AddDataArray(VTKDatatype type, string name, unsigned short nComponents, unsigned long size, unsigned long globalSize);
-  
+
   /*!
    * \brief Write an array that has previously been defined with ::AddDataArray to the vtu file in binary format
    * \param[in] data - Pointer to the data
-   * \param[in] type - The vtk datatype 
+   * \param[in] type - The vtk datatype
    * \param[in] size - The total size of the array
    * \param[in] globalSize - The global size of the array over all processors
    * \param[in] offset - The displacement in the file view for the current processor
@@ -146,7 +146,7 @@ private:
         break;
       case VTKDatatype::UINT8:
         typeStr = "\"UInt8\"";
-        typeSize = sizeof(char);     
+        typeSize = sizeof(char);
         break;
       default:
         SU2_MPI::Error("Unknown Type", CURRENT_FUNCTION);
