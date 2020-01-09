@@ -39,11 +39,11 @@ public:
   const static string fileExt;
 
   /*!
-   * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fileName - The name of the file
-   * \param[in] data_sorter - The parallel sorted data to write
+   * \brief Construct a file writer using field names and the data sorter.
+   * \param[in] valFileName - The name of the file
+   * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CSU2BinaryFileWriter(string fileName, CParallelDataSorter* data_sorter);
+  CSU2BinaryFileWriter(string valFileName, CParallelDataSorter* valDataSorter);
 
   /*!
    * \brief Destructor

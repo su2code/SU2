@@ -31,19 +31,19 @@
 
 class CSurfaceFEMDataSorter final: public CParallelDataSorter{
 
-  CFEMDataSorter* volume_sorter;                  //!< Pointer to the volume sorter instance
+  CFEMDataSorter* volumeSorter;                  //!< Pointer to the volume sorter instance
    //! Structure to map the local sorted point ID to the global point ID
   std::vector<unsigned long> globalSurfaceDOFIDs;
 
 public:
 
   /*!
-   * \brief Constructor
+   * \brief Construct a file writer using field names and the data sorter.
    * \param[in] config - Pointer to the current config structure
    * \param[in] geometry - Pointer to the current geometry
-   * \param[in] volume_sorter - Pointer to the corresponding volume sorter instance
+   * \param[in] valVolumeSorter - The datasorter containing the volume data
    */
-  CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* volume_sorter);
+  CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* valVolumeSorter);
 
   /*!
    * \brief Destructor
@@ -70,7 +70,7 @@ public:
    * \input iPoint - the point ID.
    * \return Global index of a specific point.
    */
-  unsigned long GetGlobalIndex(unsigned long iPoint) override {
+  unsigned long GetGlobalIndex(unsigned long iPoint) const override {
     return globalSurfaceDOFIDs[iPoint];
   }
 

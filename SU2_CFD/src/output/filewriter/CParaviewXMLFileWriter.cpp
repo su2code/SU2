@@ -30,18 +30,18 @@
 
 const string CParaviewXMLFileWriter::fileExt = ".vtu";
 
-CParaviewXMLFileWriter::CParaviewXMLFileWriter(string fileName, CParallelDataSorter *dataSorter) :
-  CFileWriter(std::move(fileName), dataSorter, fileExt){
+CParaviewXMLFileWriter::CParaviewXMLFileWriter(string valFileName, CParallelDataSorter *valDataSorter) :
+  CFileWriter(std::move(valFileName), valDataSorter, fileExt){
   
   /* Check for big endian. We have to swap bytes otherwise.
    * Since size of character is 1 byte when the character pointer
    *  is de-referenced it will contain only first byte of integer. ---*/
 
-  BigEndian = false;
+  bigEndian = false;
   unsigned int i = 1;
   char *c = (char*)&i;
-  if (*c) BigEndian = false;
-  else BigEndian = true;
+  if (*c) bigEndian = false;
+  else bigEndian = true;
     
 }
 
@@ -73,14 +73,14 @@ void CParaviewXMLFileWriter::Write_Data(){
 
   strcpy(fname, fileName.c_str());
 
-  file_size = 0.0;
+  fileSize = 0.0;
 
   /*--- Set a timer for the file writing. ---*/
 
 #ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StartTime = MPI_Wtime();
+  startTime = MPI_Wtime();
 #endif
 
 
@@ -182,7 +182,7 @@ void CParaviewXMLFileWriter::Write_Data(){
   * which means that all data is appended at the end of the file in one binary blob.
   */
   
-  if (!BigEndian){
+  if (!bigEndian){
     WriteString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\">\n", MASTER_NODE);
   } else {
     WriteString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"BigEndian\">\n", MASTER_NODE);    
@@ -494,23 +494,23 @@ void CParaviewXMLFileWriter::Write_Data(){
   /*--- Compute and store the write time. ---*/
 
 #ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StopTime = MPI_Wtime();
+  stopTime = MPI_Wtime();
 #endif
-  UsedTime = StopTime-StartTime;
+  usedTime = stopTime-startTime;
 
   /*--- Communicate the total file size for the restart ---*/
 
 #ifdef HAVE_MPI
-  su2double my_file_size = file_size;
-  SU2_MPI::Allreduce(&my_file_size, &file_size, 1,
+  su2double my_fileSize = fileSize;
+  SU2_MPI::Allreduce(&my_fileSize, &fileSize, 1,
                      MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
   /*--- Compute and store the bandwidth ---*/
 
-  Bandwidth = file_size/(1.0e6)/UsedTime;
+  bandwidth = fileSize/(1.0e6)/usedTime;
 
   /*--- Delete the offset counters that we needed for MPI IO. ---*/
 
@@ -521,24 +521,24 @@ void CParaviewXMLFileWriter::Write_Data(){
 }
 
 
-void CParaviewXMLFileWriter::WriteString(std::string str, int rank){
+void CParaviewXMLFileWriter::WriteString(std::string str, int rankOut){
 
 #ifdef HAVE_MPI  
   /*--- Reset the file view before writing the next ASCII line for cells. ---*/
 
   MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE,
-                    (char*)"native", MPI_INFO_NULL);
+                    "native", MPI_INFO_NULL);
   
-  if (SU2_MPI::GetRank() == rank)
-    MPI_File_write_at(fhw, disp, str.c_str(), strlen( str.c_str()),
+  if (SU2_MPI::GetRank() == rankOut)
+    MPI_File_write_at(fhw, disp, str.c_str(), int(strlen(str.c_str())),
                       MPI_CHAR, MPI_STATUS_IGNORE);
   disp += strlen( str.c_str())*sizeof(char);
-  file_size += sizeof(char)*strlen( str.c_str());
+  fileSize += sizeof(char)*strlen( str.c_str());
 #else
   char str_buf[255];
   strcpy(str_buf, str.c_str());
   fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-  file_size += sizeof(char)*strlen(str_buf);
+  fileSize += sizeof(char)*strlen(str_buf);
 #endif
   
 }
@@ -595,7 +595,7 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
     
   /*--- Prepare to write the actual data ---*/
   
-  MPI_Type_contiguous(byteSize, MPI_BYTE, &filetype);
+  MPI_Type_contiguous(int(byteSize), MPI_BYTE, &filetype);
   MPI_Type_commit(&filetype);
   
   /*--- Set the view for the MPI file write, i.e., describe the
@@ -607,12 +607,12 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
   
   /*--- Collective call for all ranks to write simultaneously. ---*/
   
-  MPI_File_write_all(fhw, data, byteSize, MPI_BYTE, &status);
+  MPI_File_write_all(fhw, data, int(byteSize), MPI_BYTE, &status);
 
   MPI_Type_free(&filetype);
   
   disp      += totalByteSize;
-  file_size += byteSize;
+  fileSize  += byteSize;
 #else
   /*--- Write the total size in bytes at the beginning of the binary data blob ---*/
 
@@ -621,7 +621,7 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
   /*--- Write binary data ---*/
   
   fwrite(data, sizeof(char), byteSize, fhw);
-  file_size += byteSize;
+  fileSize += byteSize;
 #endif
 }
 

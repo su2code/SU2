@@ -33,11 +33,11 @@ class CCSVFileWriter final: public CFileWriter{
 public:
 
   /*!
-   * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fields - A list of field names
-   * \param[in] nDim - Physical dimension
+   * \brief Construct a file writer using field name and the data sorter.
+   * \param[in] valFileName - The name of the file
+   * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CCSVFileWriter(string fileName, CParallelDataSorter* data_sorter);
+  CCSVFileWriter(string valFileName, CParallelDataSorter* valDataSorter);
 
   /*!
    * \brief Destructor

@@ -31,18 +31,18 @@
 
 class CSurfaceFVMDataSorter final: public CParallelDataSorter{
 
-  CFVMDataSorter* volume_sorter;                    //!< Pointer to the volume sorter instance
+  CFVMDataSorter* volumeSorter;                    //!< Pointer to the volume sorter instance
   //! Structure to map the local sorted point ID to the global point ID
   map<unsigned long,unsigned long> Renumber2Global;
 public:
 
   /*!
-   * \brief Constructor
+   * \brief Construct a file writer using field names and the data sorter.
    * \param[in] config - Pointer to the current config structure
    * \param[in] geometry - Pointer to the current geometry
-   * \param[in] volume_sorter - Pointer to the corresponding volume sorter instance
+   * \param[in] valVolumeSorter - The datasorter containing the volume data
    */
-  CSurfaceFVMDataSorter(CConfig *config, CGeometry* geometry, CFVMDataSorter* volume_sorter);
+  CSurfaceFVMDataSorter(CConfig *config, CGeometry* geometry, CFVMDataSorter* valVolumeSorter);
 
   /*!
    * \brief Destructor
@@ -69,8 +69,8 @@ public:
    * \input iPoint - the point ID.
    * \return Global index of a specific point.
    */
-  unsigned long GetGlobalIndex(unsigned long iPoint)  override{
-    return Renumber2Global[iPoint];
+  unsigned long GetGlobalIndex(unsigned long iPoint) const override{
+    return Renumber2Global.at(iPoint);
   }
   
   void SortConnectivity(CConfig *config, CGeometry *geometry, vector<string> markerList) override;

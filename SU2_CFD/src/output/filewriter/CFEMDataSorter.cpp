@@ -28,8 +28,8 @@
 #include "../../../include/output/filewriter/CFEMDataSorter.hpp"
 #include "../../../../Common/include/fem_geometry_structure.hpp"
 
-CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, vector<string> fieldNames) :
-  CParallelDataSorter(config, fieldNames){
+CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames) :
+  CParallelDataSorter(config, valFieldNames){
 
   nDim = geometry->GetnDim();
   
@@ -113,7 +113,7 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
   SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
-  connectivity_sorted = true;
+  connectivitySorted = true;
 
 }
 

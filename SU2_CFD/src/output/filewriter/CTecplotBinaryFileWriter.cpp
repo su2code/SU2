@@ -33,9 +33,9 @@
 
 const string CTecplotBinaryFileWriter::fileExt = ".szplt";
 
-CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(string fileName, CParallelDataSorter *dataSorter,
-                                                   unsigned long time_iter, su2double timestep) :
-  CFileWriter(std::move(fileName), dataSorter, fileExt), time_iter(time_iter), timestep(timestep){}
+CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(string valFileName, CParallelDataSorter *valDataSorter,
+                                                   unsigned long valTimeIter, su2double valTimeStep) :
+  CFileWriter(std::move(valFileName), valDataSorter, fileExt), timeIter(valTimeIter), timeStep(valTimeStep){}
 
 CTecplotBinaryFileWriter::~CTecplotBinaryFileWriter(){}
 
@@ -48,9 +48,9 @@ void CTecplotBinaryFileWriter::Write_Data(){
   /*--- Set a timer for the binary file writing. ---*/
 
 #ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StartTime = MPI_Wtime();
+  startTime = MPI_Wtime();
 #endif
 
 #ifdef HAVE_TECIO
@@ -134,9 +134,9 @@ void CTecplotBinaryFileWriter::Write_Data(){
   bool is_unsteady = false;
   passivedouble solution_time = 0.0;
 
-  if (timestep > 0.0){
+  if (timeStep > 0.0){
     is_unsteady = true;
-    solution_time = SU2_TYPE::GetValue(timestep)*time_iter;
+    solution_time = SU2_TYPE::GetValue(timeStep)*timeIter;
   }
 
   int32_t zone;
@@ -144,7 +144,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
   err = tecZoneCreateFE(file_handle, "Zone", zone_type, num_nodes, num_cells, NULL, NULL, &value_locations[0], NULL, 0, 0, 0, &zone);
   if (err) cout << rank << ": Error creating Tecplot zone." << endl;
   if (is_unsteady) {
-    err = tecZoneSetUnsteadyOptions(file_handle, zone, solution_time, time_iter + 1);
+    err = tecZoneSetUnsteadyOptions(file_handle, zone, solution_time, timeIter + 1);
     if (err) cout << rank << ": Error setting Tecplot zone unsteady options." << std::endl;
   }
 
@@ -600,17 +600,17 @@ void CTecplotBinaryFileWriter::Write_Data(){
   /*--- Compute and store the write time. ---*/
 
 #ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StopTime = MPI_Wtime();
+  stopTime = MPI_Wtime();
 #endif
-  UsedTime = StopTime-StartTime;
+  usedTime = stopTime-startTime;
 
-  file_size = Determine_Filesize(fileName);
+  fileSize = Determine_Filesize(fileName);
 
   /*--- Compute and store the bandwidth ---*/
 
-  Bandwidth = file_size/(1.0e6)/UsedTime;
+  bandwidth = fileSize/(1.0e6)/usedTime;
 }
 
 

@@ -39,13 +39,11 @@ public:
   const static string fileExt;
 
   /*!
-   * \brief Construct a file writer using field names, dimension.
-   * \param[in] fields - A list of field names
-   * \param[in] nDim - Physical dimension
-   * \param[in] fileName - The name of the file
-   * \param[in] data_sorter - The parallel sorted data to write
+   * \brief Construct a file writer using field names and the data sorter.
+   * \param[in] valFileName - The name of the file
+   * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CParaviewBinaryFileWriter(string fileName, CParallelDataSorter* data_sorter);
+  CParaviewBinaryFileWriter(string valFileName, CParallelDataSorter* valDataSorter);
 
   /*!
    * \brief Destructor
