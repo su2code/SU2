@@ -5636,8 +5636,9 @@ void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 }
 
 void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iFlux, iMetr;
+  unsigned short iVar, iFlux, iMetr, iMarker;
   unsigned short nMetr = 3*(nDim-1);
+  unsigned long iVertex;
   bool viscous = config->GetViscous();
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -5672,7 +5673,7 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
                   }
                   for(iMetr = 0; iMetr < nMetr; iMetr++) {
                     hess[i+iMetr] += base_nodes->GetAnisoHess(jPoint, i+iMetr);
-                    if(viscous) hessvisc[i+iMetr] += base_nodes->GetAnisViscoHess(jPoint, i+iMetr);
+                    if(viscous) hessvisc[i+iMetr] += base_nodes->GetAnisoViscHess(jPoint, i+iMetr);
                   }
                   counter ++;
                 }
