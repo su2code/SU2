@@ -57,9 +57,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   
   /*--- Set the case name to the base config file name without extension ---*/
   
-  caseName = string(case_filename);
-  unsigned short lastindex = caseName.find_last_of(".");
-  caseName = caseName.substr(0, lastindex);
+  caseName = PrintingToolbox::split(string(case_filename),'.')[0];
   
   base_config = true;
   
@@ -167,9 +165,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Set the case name to the base config file name without extension ---*/
   
-  caseName = string(case_filename);
-  unsigned short lastindex = caseName.find_last_of(".");
-  caseName = caseName.substr(0, lastindex);
+  caseName = PrintingToolbox::split(string(case_filename),'.')[0];
   
   base_config = true;
   
@@ -219,9 +215,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
   /*--- Set the case name to the base config file name without extension ---*/
   
-  caseName = string(case_filename);
-  unsigned short lastindex = caseName.find_last_of(".");
-  caseName = caseName.substr(0, lastindex);
+  caseName = PrintingToolbox::split(string(case_filename),'.')[0];
   
   base_config = true;
   
