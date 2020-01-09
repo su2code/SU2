@@ -1007,6 +1007,15 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
     cout << "Maximum density: " << globalMaxDensity << "." << endl;
     cout << "Mesh complexity: " << globalTotComplex << "." << endl;
   }
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    delete [] A[iDim];
+    delete [] EigVec[iDim];
+  }
+  delete [] A;
+  delete [] EigVec;
+  delete [] EigVal;
+}
 }
 
 void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
@@ -1187,6 +1196,14 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
     cout << "Maximum density: " << globalMaxDensity << "." << endl;
     cout << "Mesh complexity: " << globalTotComplex << "." << endl;
   }
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    delete [] A[iDim];
+    delete [] EigVec[iDim];
+  }
+  delete [] A;
+  delete [] EigVec;
+  delete [] EigVal;
 }
 
 void CErrorEstimationDriver::Output() {
