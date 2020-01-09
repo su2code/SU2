@@ -57,13 +57,23 @@ public:
   void SortOutputData() override;
 
   /*!
-   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
+   * \brief Sort the connectivities on the surface into data structures used for output file writing.
+   *  All markers in MARKER_PLOTTING will be sorted.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] surf - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
    */
   void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) override;
 
+  /*!
+   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing. 
+   * Only markers in the markerList argument will be sorted. 
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] markerList - List of markers to sort.
+   */
+  void SortConnectivity(CConfig *config, CGeometry *geometry, const vector<string> &markerList) override;
+  
   /*!
    * \brief Get the global index of a point.
    * \input iPoint - the point ID.
@@ -72,8 +82,6 @@ public:
   unsigned long GetGlobalIndex(unsigned long iPoint) const override{
     return Renumber2Global.at(iPoint);
   }
-
-  void SortConnectivity(CConfig *config, CGeometry *geometry, vector<string> markerList) override;
 
 
 private:
@@ -84,6 +92,7 @@ private:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
    */
-  void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type, vector<string> markerList);
+  void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type,
+                               const vector<string> &markerList);
 
 };

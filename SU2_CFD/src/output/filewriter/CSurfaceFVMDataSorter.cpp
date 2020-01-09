@@ -1133,7 +1133,7 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
 
 }
 
-void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, vector<string> markerList) {
+void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, const vector<string> &markerList) {
 
   /*--- Sort connectivity for each type of element (excluding halos). Note
    In these routines, we sort the connectivity into a linear partitioning
@@ -1157,7 +1157,8 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
 
 }
 
-void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type, vector<string> markerList) {
+void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type, 
+                                                    const vector<string> &markerList) {
 
   unsigned long iProcessor;
   unsigned short NODES_PER_ELEMENT;

@@ -337,10 +337,36 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 }
 
 void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
+  
+  std::vector<string> markerList;
 
-  SortSurfaceConnectivity(config, geometry, LINE         );
-  SortSurfaceConnectivity(config, geometry, TRIANGLE     );
-  SortSurfaceConnectivity(config, geometry, QUADRILATERAL);
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    if (config->GetMarker_All_Plotting(iMarker) == YES) {
+      markerList.push_back(config->GetMarker_All_TagBound(iMarker));
+    }
+  }
+
+  SortSurfaceConnectivity(config, geometry, LINE         , markerList);
+  SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
+  SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);
+
+
+  unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
+#ifndef HAVE_MPI
+  nGlobal_Elem_Par   = nTotal_Surf_Elem;
+#else
+  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+  connectivitySorted = true;
+
+}
+
+void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, const vector<string> &markerList) {
+
+  SortSurfaceConnectivity(config, geometry, LINE         , markerList);
+  SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
+  SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);
 
 
   unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
@@ -355,8 +381,8 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
 }
 
 
-
-void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type,
+                                                    const vector<string> &markerList) {
 
   /* Determine the number of nodes for this element type. */
     unsigned short NODES_PER_ELEMENT = 0;
@@ -401,7 +427,9 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     unsigned long nSubElem_Local = 0;
     for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); ++iMarker) {
       if( !boundaries[iMarker].periodicBoundary ) {
-        if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        string markerTag = config->GetMarker_All_TagBound(iMarker);
+        auto it = std::find(markerList.begin(), markerList.end(), markerTag);
+        if (it != markerList.end()) {
           const vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
           for(unsigned long i=0; i<surfElem.size(); ++i) {
             const unsigned short ind      = surfElem[i].indStandardElement;
@@ -422,7 +450,9 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     unsigned long kNode = 0;
     for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); ++iMarker) {
       if( !boundaries[iMarker].periodicBoundary ) {
-        if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        string markerTag = config->GetMarker_All_TagBound(iMarker);
+        auto it = std::find(markerList.begin(), markerList.end(), markerTag);
+        if (it != markerList.end()) {
           const vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
 
           /* Loop over the surface elements of this boundary marker. */
