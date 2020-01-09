@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CInriaFileWriter.hpp
  * \brief Headers fo the GMF file writer class.
  * \author B. Munguía
@@ -38,8 +38,8 @@
 #pragma once
 #include "CFileWriter.hpp"
 #include "../../../include/solver_structure.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
-#include "../../../Common/include/config_structure.hpp"
+#include "../../../../Common/include/geometry_structure.hpp"
+#include "../../../../Common/include/config_structure.hpp"
 
 class CInriaFileWriter final: public CFileWriter{
 

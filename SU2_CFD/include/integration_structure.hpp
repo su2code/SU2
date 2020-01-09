@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file integration_structure.hpp
  * \brief Headers of the main subroutines for space and time integration. 
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
@@ -71,6 +71,7 @@ protected:
   Convergence_FSI,    /*!< \brief To indicate if the FSI problem has converged or not. */
   Convergence_FullMG;    /*!< \brief To indicate if the Full Multigrid has converged and it is necessary to add a new level. */
   su2double InitResidual;  /*!< \brief Initial value of the residual to evaluate the convergence level. */
+  su2double OrderReduction;  /*!< \brief Order of reduction of the of the residual to evaluate the convergence for cold flow. */
 
 public:
   
@@ -180,7 +181,6 @@ public:
    *            otherwise <code>FALSE</code>.
    */
   void SetConvergence(bool value);
-  
 
   /*!
    * \brief Set the indicator of the convergence for FSI.
@@ -189,7 +189,6 @@ public:
    */
   void SetConvergence_FSI(bool valueFSI);
 
-
   /*! 
    * \brief Get the indicator of the convergence for the full multigrid problem.
    * \return <code>TRUE</code> means that the convergence criteria is satisfied; 
@@ -197,6 +196,18 @@ public:
    */
   bool GetConvergence_FullMG(void);
   
+  /*!
+   * \brief Value of the order of magnitude reduction of the residual.
+   * \return Value of the order of magnitude reduction of the residual.
+   */
+  void SetOrderResReduction(su2double reduction);
+
+  /*!
+   * \brief Value of the order of magnitude reduction of the residual.
+   * \return Value of the order of magnitude reduction of the residual.
+   */
+  su2double GetOrderResReduction(void);
+
   /*!
    * \brief Save the solution, and volume at different time steps.
    * \param[in] geometry - Geometrical definition of the problem.

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file primitive_structure.inl
  * \brief Inline subroutines for <i>datatype_structure.hpp<i>.
  * \author T. Albring

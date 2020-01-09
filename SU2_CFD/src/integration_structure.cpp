@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
@@ -67,6 +67,27 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool cold_flow = config->GetCOLD_FLOW();
+  bool source    = true;
+
+  su2double Source_Iter  = config->GetCold_Flow_Options(0);
+  su2double Res_Red      = config->GetCold_Flow_Options(1);
+  su2double Res_Mag      = config->GetCold_Flow_Options(2);
+
+  /*--- Determine if source term required ---*/
+
+  if (cold_flow){
+    if (config->GetTimeIter()<config->GetStartConv_Iter()){source = false;}
+    if ((config->GetTimeIter() < Source_Iter)                        &&
+        (log10(solver_container[MESH_0]->GetRes_RMS(0)) > Res_Mag)  &&
+        (GetOrderResReduction() < Res_Red)) {
+      source = false;
+    }
+    if (source == true){
+      config ->SetCFL(0,(config->GetCFL(0)*config->GetCFLRedCoeff_Chem()));
+      config->SetCOLD_FLOW(false);
+    }
+  }
 
   /*--- Compute inviscid residuals ---*/
   
@@ -87,9 +108,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
   
   /*--- Compute source term residuals ---*/
+  if (source){
+    solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
+  }
 
-  solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
-  
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
   
   if (dual_time)
@@ -175,8 +197,20 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case ISOTHERMAL:
         solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
+      case ISOTHERMAL_NONCATALYTIC:
+        solver_container[MainSolver]->BC_IsothermalNonCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case ISOTHERMAL_CATALYTIC:
+        solver_container[MainSolver]->BC_IsothermalCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
       case HEAT_FLUX:
         solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case HEAT_FLUX_NONCATALYTIC:
+        solver_container[MainSolver]->BC_HeatFluxNonCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case HEAT_FLUX_CATALYTIC:
+        solver_container[MainSolver]->BC_HeatFluxCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
       case DIRICHLET:
         solver_container[MainSolver]->BC_Dirichlet(geometry, solver_container, config, iMarker);
@@ -292,10 +326,10 @@ void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_con
                                  unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
   
   unsigned short iMGLevel;
-  
+
   if ( ( (RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) && (Iteration == 0) ) ) {
     for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
-      
+
       /*--- Set the time step in all the MG levels ---*/
       
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][INST_0][iMGLevel], solver_container[iZone][INST_0][iMGLevel], config[iZone], iMGLevel, Iteration);
@@ -319,6 +353,29 @@ void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_con
     }
   }
   
+  if ( ( (RunTime_EqSystem == RUNTIME_ADJTNE2_SYS) && (Iteration == 0) ) ) {
+    for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
+
+      /*--- Set the time step in all the MG levels ---*/
+      solver_container[iZone][INST_0][iMGLevel][TNE2_SOL]->SetTime_Step(geometry[iZone][INST_0][iMGLevel], solver_container[iZone][INST_0][iMGLevel], config[iZone], iMGLevel, Iteration);
+
+      /*--- Set the force coefficients ---*/
+      solver_container[iZone][INST_0][iMGLevel][TNE2_SOL]->SetTotal_CD(solver_container[iZone][INST_0][MESH_0][TNE2_SOL]->GetTotal_CD());
+      solver_container[iZone][INST_0][iMGLevel][TNE2_SOL]->SetTotal_CL(solver_container[iZone][INST_0][MESH_0][TNE2_SOL]->GetTotal_CL());
+      solver_container[iZone][INST_0][iMGLevel][TNE2_SOL]->SetTotal_CT(solver_container[iZone][INST_0][MESH_0][TNE2_SOL]->GetTotal_CT());
+      solver_container[iZone][INST_0][iMGLevel][TNE2_SOL]->SetTotal_CQ(solver_container[iZone][INST_0][MESH_0][TNE2_SOL]->GetTotal_CQ());
+
+      /*--- Restrict solution and gradients to the coarse levels ---*/
+
+      if (iMGLevel != config[iZone]->GetnMGLevels()) {
+        SetRestricted_Solution(RUNTIME_TNE2_SYS, solver_container[iZone][INST_0][iMGLevel][TNE2_SOL], solver_container[iZone][INST_0][iMGLevel+1][TNE2_SOL],
+                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
+        SetRestricted_Gradient(RUNTIME_TNE2_SYS, solver_container[iZone][INST_0][iMGLevel][TNE2_SOL], solver_container[iZone][INST_0][iMGLevel+1][TNE2_SOL],
+                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
+      }
+
+    }
+  }
 }
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,

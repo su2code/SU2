@@ -54,12 +54,12 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
   if (fsi) {
     Cross_Term_Derivative.resize(nPoint,nDim) = su2double(0.0);
     Geometry_CrossTerm_Derivative.resize(nPoint,nDim) = su2double(0.0);
-    
+
     Solution_BGS.resize(nPoint,nDim) = su2double(0.0);
   }
-  
+
   if (config->GetMultizone_Problem())
-    Set_BGSSolution_k();
+    Solution_BGS_k.resize(nPoint,nDim) = su2double(0.0);
 
   /*--- Nothing else to allocate ---*/
   if (!unsteady) return;

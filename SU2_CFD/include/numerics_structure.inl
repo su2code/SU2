@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
@@ -63,6 +63,8 @@ inline void CNumerics::Compute_NodalStress_Term(CElement *element_container, CCo
 
 inline void CFEAElasticity::Compute_NodalStress_Term(CElement *element_container, CConfig *config) { }
 
+inline void CNumerics::SetMeshElasticProperties(unsigned long iElem, su2double val_E) { }
+
 inline void CNumerics::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
 
 inline void CFEAElasticity::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
@@ -78,8 +80,6 @@ inline su2double CFEANonlinearElasticity::deltaij(unsigned short iVar, unsigned 
 }
 
 inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
-
-inline void CNumerics::SetMeshElasticProperties(unsigned long iElem, su2double val_E) { }
 
 inline void CNumerics::ReadDV(CConfig *config){ }
 
@@ -195,11 +195,43 @@ inline void CNumerics::ComputeResidual_Axisymmetric_ad(su2double *val_residual, 
 
 inline void CNumerics::SetJacobian_Axisymmetric(su2double **val_Jacobian_i, CConfig *config) { }
 
+inline void CNumerics::ComputeAxisymmetric(su2double *val_residual, su2double **val_Jacobian, CConfig *config) { }
+
 inline void CNumerics::ComputeVibRelaxation(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
 
 inline void CNumerics::ComputeChemistry(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
 
 inline void CNumerics::GetKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config) { }
+
+inline void CNumerics::SetRhosIndex(unsigned short val_Index) { RHOS_INDEX = val_Index; }
+
+inline void CNumerics::SetRhoIndex(unsigned short val_Index) { RHO_INDEX = val_Index; }
+
+inline void CNumerics::SetPIndex(unsigned short val_Index) { P_INDEX = val_Index; }
+
+inline void CNumerics::SetTIndex(unsigned short val_Index) { T_INDEX = val_Index; }
+
+inline void CNumerics::SetTveIndex(unsigned short val_Index) { TVE_INDEX = val_Index; }
+
+inline void CNumerics::SetVelIndex(unsigned short val_Index) { VEL_INDEX = val_Index; }
+
+inline void CNumerics::SetHIndex(unsigned short val_Index) { H_INDEX = val_Index; }
+
+inline void CNumerics::SetAIndex(unsigned short val_Index) { A_INDEX = val_Index; }
+
+inline void CNumerics::SetRhoCvtrIndex(unsigned short val_Index) { RHOCVTR_INDEX = val_Index; }
+
+inline void CNumerics::SetRhoCvveIndex(unsigned short val_Index) { RHOCVVE_INDEX = val_Index; }
+
+inline void CNumerics::SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j) { dPdU_i = val_dPdU_i; dPdU_j = val_dPdU_j; }
+
+inline void CNumerics::SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j) { dTdU_i = val_dTdU_i; dTdU_j = val_dTdU_j; }
+
+inline void CNumerics::SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) { dTvedU_i = val_dTvedU_i; dTvedU_j = val_dTvedU_j; }
+
+inline void CNumerics::SetEve(su2double *val_Eve_i, su2double *val_Eve_j) {eve_i = val_Eve_i; eve_j = val_Eve_j; }
+
+inline void CNumerics::SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j) {Cvve_i = val_Cvve_i; Cvve_j = val_Cvve_j; }
 
 inline void CNumerics::SetUndivided_Laplacian(su2double *val_und_lapl_i, su2double *val_und_lapl_j) {
   Und_Lapl_i = val_und_lapl_i; 
@@ -507,6 +539,37 @@ inline su2double CSourcePieceWise_TurbSA::GetGammaBC(void) { return gamma_BC; }
 inline su2double CSourcePieceWise_TurbSA::GetDestruction(void) { return Destruction; }
 
 inline su2double CSourcePieceWise_TurbSA::GetCrossProduction(void) { return CrossProduction; }
+
+inline void CSourcePieceWise_TNE2TurbSST::SetF1blending(su2double val_F1_i, su2double val_F1_j) {
+  F1_i = val_F1_i;
+  F1_j = val_F1_j;
+}
+
+inline void CSourcePieceWise_TNE2TurbSST::SetF2blending(su2double val_F2_i, su2double val_F2_j) {
+  F2_i = val_F2_i;
+  F2_j = val_F2_j;
+}
+
+inline void CSourcePieceWise_TNE2TurbSST::SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {
+  CDkw_i = val_CDkw_i;
+  CDkw_j = val_CDkw_j;
+}
+
+inline void CSourcePieceWise_TNE2TurbSA::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
+
+inline void CSourcePieceWise_TNE2TurbSA::SetProduction(su2double val_production) { Production = val_production; }
+
+inline void CSourcePieceWise_TNE2TurbSA::SetDestruction(su2double val_destruction) { Destruction = val_destruction; }
+
+inline void CSourcePieceWise_TNE2TurbSA::SetCrossProduction(su2double val_crossproduction) { CrossProduction = val_crossproduction; }
+
+inline su2double CSourcePieceWise_TNE2TurbSA::GetProduction(void) { return Production; }
+
+inline su2double CSourcePieceWise_TNE2TurbSA::GetGammaBC(void) { return gamma_BC; }
+
+inline su2double CSourcePieceWise_TNE2TurbSA::GetDestruction(void) { return Destruction; }
+
+inline su2double CSourcePieceWise_TNE2TurbSA::GetCrossProduction(void) { return CrossProduction; }
 
 inline void CSourcePieceWise_TurbSA_E::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
 

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
@@ -134,7 +134,13 @@ const unsigned int INST_0 = 0; /*!< \brief Definition of the first instance per 
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 
+const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogardro's constant, number of particles in one kmole. */
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;  /*!< \brief Universal gas constant in J/(mol*K) */
+const su2double BOLTZMANN_CONSTANT = 1.3806503E-23; /*! \brief Boltzmann's constant [J K^-1] */
+const su2double ELECTRON_CHARGE = 1.60217646E-19;	/*!< \brief Electronic charge constant. */
+const su2double ELECTRON_MASS = 9.10938188E-31;	/*!< \brief Mass of an electron. */
+const su2double FREE_PERMITTIVITY = 8.8541878176E-12; /*!< \brief Premittivity of free space. */
+const su2double MAGNETIC_CONSTANT = 1.25663706E-6;  /*!< \brief magnetic permeability of free space. */
 
 const su2double EPS = 1.0E-16;		   /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16; /*!< \brief Turbulent Error scale. */
@@ -223,7 +229,13 @@ enum ENUM_SOLVER {
   FEM_NAVIER_STOKES = 27,               /*!< \brief Definition of the finite element Navier-Stokes' solver. */
   FEM_RANS = 28,                        /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
   FEM_LES = 29,                         /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
-  MULTIPHYSICS = 30
+  MULTIPHYSICS = 30,
+  TNE2_EULER = 41,                    /*!< \brief Definition of the TNE2 Euler solver. */
+  TNE2_NAVIER_STOKES = 42,            /*!< \brief Definition of the TNE2 NS solver. */
+  TNE2_RANS = 43,                     /*!< \brief Definition of the TNE2 RANS solver. */
+  DISC_ADJ_TNE2_EULER = 44,           /*!< \brief Definition of the discrete adjoint for the TNE2 Euler solver. */
+  DISC_ADJ_TNE2_NAVIER_STOKES = 45,   /*!< \brief Definition of the discrete adjoint for the TNE2 NS solver. */
+  DISC_ADJ_TNE2_RANS = 46,            /*!< \brief Definition of the discrete adjoint for the TNE2 RANS solver. */
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -238,6 +250,9 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("FEM_NAVIER_STOKES", FEM_NAVIER_STOKES)
 ("FEM_RANS", FEM_RANS)
 ("FEM_LES", FEM_LES)
+("TNE2_EULER",TNE2_EULER)
+("TNE2_NAVIER_STOKES",TNE2_NAVIER_STOKES)
+("TNE2_RANS", TNE2_RANS)
 ("ADJ_EULER", ADJ_EULER)
 ("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
 ("ADJ_RANS", ADJ_RANS )
@@ -254,6 +269,9 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("DISC_ADJ_FEM_RANS", DISC_ADJ_FEM_RANS)
 ("DISC_ADJ_FEM_NS", DISC_ADJ_FEM_NS)
 ("DISC_ADJ_FEM", DISC_ADJ_FEM)
+("DISC_ADJ_TNE2_EULER",DISC_ADJ_TNE2_EULER)
+("DISC_ADJ_TNE2_NAVIER_STOKES",DISC_ADJ_TNE2_NAVIER_STOKES)
+("DISC_ADJ_TNE2_RANS",DISC_ADJ_TNE2_RANS)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
 ("MULTIPHYSICS", MULTIPHYSICS);
@@ -434,17 +452,19 @@ static const map<string, ENUM_MEASUREMENTS> Measurements_Map = CCreateMap<string
  * \brief different types of systems
  */
 enum RUNTIME_TYPE {
-  RUNTIME_FLOW_SYS = 2,			/*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
-  RUNTIME_TURB_SYS = 3,			/*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_ADJPOT_SYS = 5,		/*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
-  RUNTIME_ADJFLOW_SYS = 6,		/*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
-  RUNTIME_ADJTURB_SYS = 7,		/*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
-  RUNTIME_MULTIGRID_SYS = 14,   	/*!< \brief Full Approximation Storage Multigrid system of equations. */
-  RUNTIME_FEA_SYS = 20,		/*!< \brief One-physics case, the code is solving the FEA equation. */
-  RUNTIME_ADJFEA_SYS = 30,		/*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
-  RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
-  RUNTIME_ADJHEAT_SYS = 31, /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
-  RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_FLOW_SYS = 2,		   /*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
+  RUNTIME_TURB_SYS = 3,		   /*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_ADJPOT_SYS = 5,	   /*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
+  RUNTIME_ADJFLOW_SYS = 6,	   /*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
+  RUNTIME_ADJTURB_SYS = 7,	   /*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
+  RUNTIME_MULTIGRID_SYS = 14,  /*!< \brief Full Approximation Storage Multigrid system of equations. */
+  RUNTIME_FEA_SYS = 20,		   /*!< \brief One-physics case, the code is solving the FEA equation. */
+  RUNTIME_ADJFEA_SYS = 30,	   /*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
+  RUNTIME_HEAT_SYS = 21,	   /*!< \brief One-physics case, the code is solving the heat equation. */
+  RUNTIME_TRANS_SYS = 22,	   /*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_TNE2_SYS = 23,       /*!< \brief One-physics case, the code is solving the two-temperature model. */
+  RUNTIME_ADJTNE2_SYS = 24,    /*!< \brief One-physics case, the code is solving the two-temperature model. */
+  RUNTIME_ADJHEAT_SYS = 31,    /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
 };
 
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
@@ -453,21 +473,24 @@ const int ADJFLOW_SOL = 1;	/*!< \brief Position of the continuous adjoint flow s
 const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solver container array. */
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 
+const int TNE2_SOL = 0;		/*!< \brief Position of the mean flow solution in the solution container array. */
+const int ADJTNE2_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solution container array. */
+
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
 const int HEAT_SOL = 5;		/*!< \brief Position of the heat equation in the solution solver array. */
-const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array. */
+const int ADJHEAT_SOL = 6;      /*!< \brief Position of the adjoint heat equation in the solution solver array. */
 
 const int FEA_SOL = 0;			/*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;		/*!< \brief Position of the FEA adjoint equation in the solution solver array. */
 
 const int TEMPLATE_SOL = 0;     /*!< \brief Position of the template solution. */
 
-const int CONV_TERM = 0;	/*!< \brief Position of the convective terms in the numerics container array. */
-const int VISC_TERM = 1;        /*!< \brief Position of the viscous terms in the numerics container array. */
-const int SOURCE_FIRST_TERM = 2;        /*!< \brief Position of the first source term in the numerics container array. */
-const int SOURCE_SECOND_TERM = 3;   /*!< \brief Position of the second source term in the numerics container array. */
-const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boundary terms in the numerics container array. */
-const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the numerics container array. */
+const int CONV_TERM = 0;	   /*!< \brief Position of the convective terms in the numerics container array. */
+const int VISC_TERM = 1;           /*!< \brief Position of the viscous terms in the numerics container array. */
+const int SOURCE_FIRST_TERM = 2;   /*!< \brief Position of the first source term in the numerics container array. */
+const int SOURCE_SECOND_TERM = 3;  /*!< \brief Position of the second source term in the numerics container array. */
+const int CONV_BOUND_TERM = 4;     /*!< \brief Position of the convective boundary terms in the numerics container array. */
+const int VISC_BOUND_TERM = 5;     /*!< \brief Position of the viscous boundary terms in the numerics container array. */
 
 const int FEA_TERM = 0;			/*!< \brief Position of the finite element analysis terms in the numerics container array. */
 const int DE_TERM = 1;			/*!< \brief Position of the dielectric terms in the numerics container array. */
@@ -483,7 +506,6 @@ const int ADJMESH_SOL = 9;   /*!< \brief Position of the adjoint of the mesh sol
 /*!
  * \brief types of finite elements (in 2D or 3D)
  */
-
 const int EL_TRIA = 0;		/*!< \brief Elements of three nodes (2D). */
 const int EL_QUAD = 1;		/*!< \brief Elements of four nodes (2D). */
 
@@ -542,6 +564,42 @@ static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, EN
 ("CONSTANT_DENSITY", CONSTANT_DENSITY)
 ("INC_IDEAL_GAS", INC_IDEAL_GAS)
 ("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY);
+
+/*!
+ * \brief types of gas models
+ */
+enum ENUM_GASMODEL {
+   NO_MODEL   = 0,
+   ARGON      = 1,
+   AIR7       = 2,
+   AIR21      = 3,
+   O2         = 4,
+   N2         = 5,
+   AIR5       = 6,
+   ARGON_SID  = 7,
+   ONESPECIES = 8
+};
+static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_GASMODEL>
+("NONE", NO_MODEL)
+("ARGON", ARGON)
+("AIR-7", AIR7)
+("AIR-21", AIR21)
+("O2", O2)
+("N2", N2)
+("AIR-5", AIR5)
+("ARGON-SID",ARGON_SID)
+("ONESPECIES", ONESPECIES);
+
+/*!
+ * \brief types of coefficient transport model
+ */
+enum ENUM_TRANSCOEFFMODEL {
+  WBE      = 0,
+	GUPTAYOS = 1
+};
+static const map<string, ENUM_TRANSCOEFFMODEL> TransCoeffModel_Map = CCreateMap<string, ENUM_TRANSCOEFFMODEL>
+("WBE", WBE)
+("GUPTA-YOS", GUPTAYOS);
 
 /*!
  * \brief types of density models
@@ -659,7 +717,7 @@ enum ENUM_SURFACEMOVEMENT {
   EXTERNAL = 6,
   EXTERNAL_ROTATION = 7,
   FLUID_STRUCTURE_STATIC = 8 /*!< \brief Fluid structure deformation with no grid velocity. */
-  
+
 };
 
 static const map<string, ENUM_SURFACEMOVEMENT> SurfaceMovement_Map = CCreateMap<string, ENUM_SURFACEMOVEMENT>
@@ -742,7 +800,8 @@ enum ENUM_UPWIND {
   FDS = 14,                   /*!< \brief Flux difference splitting upwind method (incompressible flows). */
   LAX_FRIEDRICH = 15,         /*!< \brief Lax-Friedrich numerical method. */
   AUSMPLUSUP = 16,            /*!< \brief AUSM+ -up numerical method (All Speed) */
-  AUSMPLUSUP2 = 17            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
+  AUSMPLUSUP2 = 17,           /*!< \brief AUSM+ -up2 numerical method (All Speed) */
+  AUSMPWplus = 18,            /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
 ("NONE", NO_UPWIND)
@@ -751,6 +810,7 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("AUSM", AUSM)
 ("AUSMPLUSUP", AUSMPLUSUP)
 ("AUSMPLUSUP2", AUSMPLUSUP2)
+("AUSMPWplus", AUSMPWplus)
 ("SLAU", SLAU)
 ("HLLC", HLLC)
 ("SW", SW)
@@ -1061,6 +1121,10 @@ enum BC_TYPE {
   DISP_DIR_BOUNDARY = 40,    /*!< \brief Boundary displacement definition. */
   DAMPER_BOUNDARY = 41,    /*!< \brief Damper. */
   CHT_WALL_INTERFACE = 50, /*!< \brief Domain interface definition. */
+  HEAT_FLUX_NONCATALYTIC = 51, /*!< \brief No-slip, constant heat flux, noncatalytic bc. */
+  HEAT_FLUX_CATALYTIC= 52, /*!< \brief No-slip, constant heat flux, catalytic bc. */
+  ISOTHERMAL_NONCATALYTIC = 53, /*!< \brief No-slip, constant temperature, noncatalytic bc. */
+  ISOTHERMAL_CATALYTIC = 54, /*!< \brief No-slip, constant temperature, catalytic bc. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
@@ -1527,7 +1591,6 @@ enum ENUM_ANISO_SENSOR {
   ANISO_MACH_PRES = 2, /*!< \brief Use Mach and pressure fields for anisotropy. */
   ANISO_GOAL = 3       /*!< \brief Use adjoint-weighted Euler fluxes for anisotropy. */
 };
-
 static const map<string, ENUM_ANISO_SENSOR> Aniso_Sensor_Map = CCreateMap<string, ENUM_ANISO_SENSOR>
 ("MACH", ANISO_MACH)
 ("PRES", ANISO_PRES)
@@ -1569,7 +1632,6 @@ enum ENUM_OUTPUT {
   CGNS = 14,
   INRIA = 15 /*!< \brief GMF restart format. */
 };
-
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
 ("TECPLOT_ASCII", TECPLOT)
 ("TECPLOT", TECPLOT_BINARY)
@@ -1913,7 +1975,7 @@ static const map<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = CCreateMap<stri
 enum ENUM_DEFORM_STIFFNESS {
   CONSTANT_STIFFNESS = 0,               /*!< \brief Impose a constant stiffness for each element (steel). */
   INVERSE_VOLUME = 1,			/*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
-  SOLID_WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
+  SOLID_WALL_DISTANCE = 2		/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
 };
 static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMap<string, ENUM_DEFORM_STIFFNESS>
 ("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
@@ -2492,8 +2554,8 @@ public:
   }
 
   ~COptionDoubleArray() {
-     if(def  != NULL) delete [] def; 
-     if(vals != NULL) delete [] vals; 
+     if(def  != NULL) delete [] def;
+     if(vals != NULL) delete [] vals;
   };
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);

@@ -79,8 +79,10 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics_direct_heat.cpp \
   ../src/numerics_direct_mean.cpp \
   ../src/numerics_direct_mean_inc.cpp \
+  ../src/numerics_direct_tne2.cpp \
   ../src/numerics_direct_transition.cpp \
   ../src/numerics_direct_turbulent.cpp \
+  ../src/numerics_direct_tne2_turbulent.cpp \
   ../src/numerics_direct_elasticity_nonlinear.cpp \
   ../src/numerics_direct_elasticity_linear.cpp \
   ../src/numerics_direct_elasticity.cpp \
@@ -128,7 +130,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solver_direct_mean.cpp \
   ../src/solver_direct_mean_fem.cpp \
   ../src/solver_direct_mean_inc.cpp \
+  ../src/solver_direct_tne2.cpp \
   ../src/solver_direct_transition.cpp \
+	../src/solver_direct_tne2_turbulent.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_elasticity.cpp \
   ../src/solvers/CMeshSolver.cpp \
@@ -154,20 +158,25 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CVariable.cpp \
   ../src/variables/CAdjNSVariable.cpp \
   ../src/variables/CTurbSSTVariable.cpp \
+  ../src/variables/CTNE2TurbSSTVariable.cpp \
   ../src/variables/CAdjTurbVariable.cpp \
   ../src/variables/CTransLMVariable.cpp \
   ../src/variables/CDiscAdjFEABoundVariable.cpp \
   ../src/variables/CDiscAdjFEAVariable.cpp \
   ../src/variables/CIncEulerVariable.cpp \
   ../src/variables/CTurbVariable.cpp \
+  ../src/variables/CTNE2TurbVariable.cpp \
   ../src/variables/CNSVariable.cpp \
   ../src/variables/CBaselineVariable.cpp \
   ../src/variables/CTurbSAVariable.cpp \
+  ../src/variables/CTNE2TurbSAVariable.cpp \
   ../src/variables/CFEAVariable.cpp \
   ../src/variables/CAdjEulerVariable.cpp \
   ../src/variables/CDiscAdjVariable.cpp \
   ../src/variables/CIncNSVariable.cpp \
-  ../src/variables/CEulerVariable.cpp
+  ../src/variables/CEulerVariable.cpp \
+  ../src/variables/CTNE2EulerVariable.cpp \
+  ../src/variables/CTNE2NSVariable.cpp
 
 su2_cfd_sources = \
   ../include/SU2_CFD.hpp \

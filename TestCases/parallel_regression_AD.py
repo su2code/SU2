@@ -135,7 +135,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [20.000000, -2.104640, -2.004547, 0.0000e+00] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [20.000000, -2.188743, -2.068616, 0.000000] #last 4 columns
     discadj_incomp_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_cylinder.timeout   = 1600
     discadj_incomp_cylinder.tol       = 0.00001
@@ -239,7 +239,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-5.394766, -5.572142, -0.000364, -8.708681] #last 4 columns
+    discadj_fea.test_vals = [-5.394766, -5.572142, -0.000364, -8.708700] #last 4 columns
     discadj_fea.su2_exec  = "parallel_computation.py -f"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
@@ -264,16 +264,16 @@ def main():
     ### Coupled FSI Adjoint         ###
     ###################################
    
-#    # Structural model
-#    discadj_fsi           = TestCase('discadj_fsi')
-#    discadj_fsi.cfg_dir   = "disc_adj_fsi"
-#    discadj_fsi.cfg_file  = "configAD_fsi.cfg" 
-#    discadj_fsi.test_iter = 3000
-#    discadj_fsi.test_vals = [0.958848,-0.157183,0.658415,1.302076] #last 4 columns
-#    discadj_fsi.su2_exec  = "parallel_computation.py -f"
-#    discadj_fsi.timeout   = 1600
-#    discadj_fsi.tol       = 0.00001
-#    test_list.append(discadj_fsi)
+    # Structural model
+    discadj_fsi           = TestCase('discadj_fsi')
+    discadj_fsi.cfg_dir   = "disc_adj_fsi"
+    discadj_fsi.cfg_file  = "config.cfg"
+    discadj_fsi.test_iter = 3000
+    discadj_fsi.test_vals = [0.958848,-0.157601,2.726147,1.798362] #last 4 columns
+    discadj_fsi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
+    discadj_fsi.timeout   = 1600
+    discadj_fsi.tol       = 0.00001
+    test_list.append(discadj_fsi)
 
     ###################################
     ### Coupled CHT Adjoint         ###
@@ -284,7 +284,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.403180, -3.097866, -3.097837, -3.095571] #last 4 columns
+    discadj_cht.test_vals = [-2.403782, -3.097868, -3.097839, -3.097835] #last 4 columns
     discadj_cht.su2_exec  = "parallel_computation.py -f"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
@@ -305,7 +305,7 @@ def main():
     discadj_topol_optim.cfg_dir = "fea_topology"
     discadj_topol_optim.cfg_file  = "config.cfg"
     discadj_topol_optim.test_iter = 0
-    discadj_topol_optim.su2_exec  = "parallel_computation.py"
+    discadj_topol_optim.su2_exec  = "parallel_computation.py -f"
     discadj_topol_optim.timeout   = 1600
     discadj_topol_optim.reference_file = "grad_ref_node.dat.ref"
     discadj_topol_optim.test_file = "grad_ref_node.dat"
@@ -316,16 +316,16 @@ def main():
     ### Coupled FSI Adjoint         ###
     ###################################
 
-#    discadj_fsi2           = TestCase('discadj_fsi_airfoil')
-#    discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
-#    discadj_fsi2.cfg_file  = "config.cfg"
-#    discadj_fsi2.test_iter = 0
-#    discadj_fsi2.su2_exec  = "parallel_computation.py"
-#    discadj_fsi2.timeout   = 1600
-#    discadj_fsi2.reference_file = "grad_young.opt.ref"
-#    discadj_fsi2.test_file = "grad_young.opt"
-#    pass_list.append(discadj_fsi2.run_filediff())
-#    test_list.append(discadj_fsi2)
+    discadj_fsi2           = TestCase('discadj_fsi_airfoil')
+    discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
+    discadj_fsi2.cfg_file  = "config.cfg"
+    discadj_fsi2.test_iter = 0
+    discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
+    discadj_fsi2.timeout   = 1600
+    discadj_fsi2.reference_file = "grad_young.opt.ref"
+    discadj_fsi2.test_file = "grad_young.opt"
+    pass_list.append(discadj_fsi2.run_filediff())
+    test_list.append(discadj_fsi2)
 
     # Tests summary
     print('==================================================================')

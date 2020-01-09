@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
@@ -46,7 +46,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   /*--- Store the number of internal iterations that will be run by the adjoint solver ---*/
   nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
-  
+
 
   /*--- Store the pointers ---*/
   config      = config_container[ZONE_0];
@@ -61,7 +61,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   /*--- Determine if the problem is a turbomachinery problem ---*/
   bool turbo = config->GetBoolTurbomachinery();
-  
+
   bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
 
   /*--- Determine if the problem has a mesh deformation solver ---*/
@@ -72,7 +72,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   switch (config->GetKind_Solver()) {
 
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+  case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) {
@@ -85,6 +85,15 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     MainVariables = FLOW_CONS_VARS;
     if (mesh_def) SecondaryVariables = MESH_DEFORM;
     else          SecondaryVariables = MESH_COORDS;
+    break;
+    
+ case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_RANS:
+    if (rank == MASTER_NODE)
+      cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
+    direct_iteration = new CTNE2Iteration(config);
+    direct_output = new CTNE2CompOutput(config, nDim);
+    MainVariables = FLOW_CONS_VARS;
+    SecondaryVariables = MESH_COORDS;
     break;
 
   case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
@@ -109,13 +118,13 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: heat equation." << endl;
     direct_iteration = new CHeatIteration(config);
-    direct_output = new CHeatOutput(config, nDim);    
+    direct_output = new CHeatOutput(config, nDim);
     MainVariables = FLOW_CONS_VARS;
     SecondaryVariables = MESH_COORDS;
     break;
 
   }
-  
+
  direct_output->PreprocessHistoryOutput(config, false);
 
 }
@@ -125,7 +134,7 @@ CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {
 }
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
-  
+
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
   /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
@@ -184,7 +193,7 @@ void CDiscAdjSinglezoneDriver::Run() {
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
-    
+
     if (StopCalc) break;
 
   }
@@ -196,6 +205,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
   switch(config->GetKind_Solver())
   {
     case DISC_ADJ_EULER :     case DISC_ADJ_NAVIER_STOKES :     case DISC_ADJ_RANS :
+    case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES:
     case DISC_ADJ_INC_EULER : case DISC_ADJ_INC_NAVIER_STOKES : case DISC_ADJ_INC_RANS :
 
       /*--- Compute the geometrical sensitivities ---*/
@@ -293,7 +303,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   bool turbo        = (config->GetBoolTurbomachinery());
 
   ObjFunc = 0.0;
-  
+
   direct_output->SetHistory_Output(geometry, solver, config,
                                    config->GetTimeIter(),
                                    config->GetOuterIter(),
@@ -302,7 +312,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   /*--- Specific scalar objective functions ---*/
 
   switch (config->GetKind_Solver()) {
-  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:    
+  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:
   case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
   case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
 
@@ -356,6 +366,26 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
       ObjFunc = solver[FLOW_SOL]->GetTotal_ComboObj();
 
+    }
+
+    break;
+
+  case TNE2_EULER:           case TNE2_NAVIER_STOKES:           case TNE2_RANS:
+  case DISC_ADJ_TNE2_EULER:  case DISC_ADJ_TNE2_NAVIER_STOKES:  case DISC_ADJ_TNE2_RANS:
+
+    solver[TNE2_SOL]->SetTotal_ComboObj(0.0);
+
+    /*--- Surface based obj. function ---*/
+
+    solver[TNE2_SOL]->Evaluate_ObjFunc(config);
+    ObjFunc += solver[TNE2_SOL]->GetTotal_ComboObj();
+    if (heat){
+      if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
+        ObjFunc += solver[HEAT_SOL]->GetTotal_HeatFlux();
+      }
+      else if (config->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+        ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
+      }
     }
 
     break;
@@ -423,6 +453,24 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
            << ", log10[U(2)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(2)) << "." << endl;
       cout << "log10[U(3)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(3));
       if (geometry->GetnDim() == 3) cout << ", log10[U(4)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(4));
+      cout << "." << endl;
+      if ( config->GetKind_Turb_Model() != NONE && !config->GetFrozen_Visc_Disc()) {
+        cout << "log10[Turb(0)]: "   << log10(solver[TURB_SOL]->GetRes_RMS(0));
+        if (solver[TURB_SOL]->GetnVar() > 1) cout << ", log10[Turb(1)]: " << log10(solver[TURB_SOL]->GetRes_RMS(1));
+        cout << "." << endl;
+      }
+      if (config->GetWeakly_Coupled_Heat()){
+        cout << "log10[Heat(0)]: "   << log10(solver[HEAT_SOL]->GetRes_RMS(0)) << "." << endl;
+      }
+      break;
+
+    case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_RANS:
+      //THIS ISNT GENERAL YET --- DELETE ME
+      cout << "log10[U(0)]: "   << log10(solver[TNE2_SOL]->GetRes_RMS(0))
+           << ", log10[U(1)]: " << log10(solver[TNE2_SOL]->GetRes_RMS(1))
+           << ", log10[U(2)]: " << log10(solver[TNE2_SOL]->GetRes_RMS(2)) << "." << endl;
+      cout << "log10[U(3)]: " << log10(solver[TNE2_SOL]->GetRes_RMS(3));
+      if (geometry->GetnDim() == 3) cout << ", log10[U(4)]: " << log10(solver[TNE2_SOL]->GetRes_RMS(4));
       cout << "." << endl;
       if ( config->GetKind_Turb_Model() != NONE && !config->GetFrozen_Visc_Disc()) {
         cout << "log10[Turb(0)]: "   << log10(solver[TURB_SOL]->GetRes_RMS(0));

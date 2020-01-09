@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file integration_structure.inl
  * \brief In-Line subroutines of the <i>integration_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
@@ -48,6 +48,10 @@ inline bool CIntegration::GetConvergence_FullMG(void) { return Convergence_FullM
 inline void CIntegration::SetConvergence(bool value) { Convergence = value; }
 
 inline void CIntegration::SetConvergence_FSI(bool valueFSI) { Convergence_FSI = valueFSI; }
+
+inline void CIntegration::SetOrderResReduction(su2double reduction) { OrderReduction = reduction; }
+
+inline su2double CIntegration::GetOrderResReduction(void) { return OrderReduction; }
 
 inline void CIntegration::MultiGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container, 
                         CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { }

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file integration_time.cpp
  * \brief Time dependent numerical methods
  * \author F. Palacios, T. Economon
@@ -54,13 +54,19 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   
   const bool direct = ((config[iZone]->GetKind_Solver() == EULER)                         ||
                        (config[iZone]->GetKind_Solver() == NAVIER_STOKES)                 ||
+                       (config[iZone]->GetKind_Solver() == TNE2_EULER)                    ||
+                       (config[iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)            ||
                        (config[iZone]->GetKind_Solver() == RANS)                          ||
+                       (config[iZone]->GetKind_Solver() == TNE2_RANS)                     ||
                        (config[iZone]->GetKind_Solver() == FEM_EULER)                     ||
                        (config[iZone]->GetKind_Solver() == FEM_NAVIER_STOKES)             ||
                        (config[iZone]->GetKind_Solver() == FEM_RANS)                      ||
                        (config[iZone]->GetKind_Solver() == FEM_LES)                       ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_EULER)                ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)        ||
+                       (config[iZone]->GetKind_Solver() == DISC_ADJ_TNE2_EULER)           ||
+                       (config[iZone]->GetKind_Solver() == DISC_ADJ_TNE2_NAVIER_STOKES)   ||
+                       (config[iZone]->GetKind_Solver() == DISC_ADJ_TNE2_RANS)            ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER)            ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)               ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_RANS));
@@ -172,7 +178,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   }
   
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
-    if ( iMesh < config[iZone]->GetnMGLevels() ) {
+  if ( iMesh < config[iZone]->GetnMGLevels() ) {
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
     
     solver_container[iZone][iInst][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem, false);
@@ -473,7 +479,6 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   delete [] Solution;
 }
 
-
 void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long Point_Fine, Point_Coarse;
   unsigned short iChildren;
@@ -708,19 +713,48 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       break;
+
+   case RUNTIME_TNE2_SYS:
+
+     /*--- Calculate the inviscid and viscous forces ---*/
+
+     solver_container[FinestMesh][TNE2_SOL]->Pressure_Forces(geometry[FinestMesh], config);
+     solver_container[FinestMesh][TNE2_SOL]->Momentum_Forces(geometry[FinestMesh], config);
+     solver_container[FinestMesh][TNE2_SOL]->Friction_Forces(geometry[FinestMesh], config);
+
+     /*--- Evaluate the buffet metric if requested ---*/
+
+     if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+         solver_container[FinestMesh][TNE2_SOL]->Buffet_Monitoring(geometry[FinestMesh], config);
+     }
+
+     break;
       
-    case RUNTIME_ADJFLOW_SYS:
+   case RUNTIME_ADJFLOW_SYS:
       
-      /*--- Calculate the inviscid and viscous sensitivities ---*/
+     /*--- Calculate the inviscid and viscous sensitivities ---*/
+
+     solver_container[FinestMesh][ADJFLOW_SOL]->Inviscid_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
+     solver_container[FinestMesh][ADJFLOW_SOL]->Viscous_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
       
-      solver_container[FinestMesh][ADJFLOW_SOL]->Inviscid_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
-      solver_container[FinestMesh][ADJFLOW_SOL]->Viscous_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
+     /*--- Smooth the inviscid and viscous sensitivities ---*/
+
+     if (config->GetKind_SensSmooth() != NONE) solver_container[FinestMesh][ADJFLOW_SOL]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
       
-      /*--- Smooth the inviscid and viscous sensitivities ---*/
-      
-      if (config->GetKind_SensSmooth() != NONE) solver_container[FinestMesh][ADJFLOW_SOL]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
-      
-      break;
+     break;
+
+  case RUNTIME_ADJTNE2_SYS:
+
+    /*--- Calculate the inviscid and viscous sensitivities ---*/
+
+    solver_container[FinestMesh][ADJTNE2_SOL]->Inviscid_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJTNE2_SOL][CONV_BOUND_TERM], config);
+    solver_container[FinestMesh][ADJTNE2_SOL]->Viscous_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJTNE2_SOL][CONV_BOUND_TERM], config);
+
+    /*--- Smooth the inviscid and viscous sensitivities ---*/
+
+    if (config->GetKind_SensSmooth() != NONE) solver_container[FinestMesh][ADJTNE2_SOL]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJTNE2_SOL][CONV_BOUND_TERM], config);
+
+    break;
           
   }
   

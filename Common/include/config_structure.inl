@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
@@ -364,7 +364,7 @@ inline su2double CConfig::GetThermalDiffusivity(void) { return Thermal_Diffusivi
 
 inline su2double CConfig::GetThermalDiffusivity_Solid(void) { return Thermal_Diffusivity_Solid; }
 
-inline su2double CConfig::GetTemperature_Freestream_Solid(void) { return Temperature_Freestream_Solid;  }
+inline su2double CConfig::GetTemperature_Initial_Solid(void) { return Temperature_Freestream_Solid;  }
 
 inline su2double CConfig::GetElasticyMod(unsigned short id_val) { return ElasticityMod[id_val]; }
 
@@ -442,6 +442,12 @@ inline su2double CConfig::GetStations_Bounds(unsigned short val_var) { return St
 
 inline su2double CConfig::GetFFD_Axis(unsigned short val_var) { return FFD_Axis[val_var]; }
 
+inline int ***CConfig::GetReaction_Map(void) { return Reactions; }
+
+inline su2double ***CConfig::GetCollisionIntegral00(void) { return Omega00; }
+
+inline su2double ***CConfig::GetCollisionIntegral11(void) { return Omega11; }
+
 inline su2double CConfig::GetBulk_Modulus(void) { return Bulk_Modulus; }
 
 inline su2double CConfig::GetBeta_Factor(void) { return Beta_Factor; }
@@ -454,8 +460,6 @@ inline su2double CConfig::GetMolecular_Weight(void) { return Molecular_Weight; }
 
 inline su2double CConfig::GetSpecific_Heat_Cp(void) { return Specific_Heat_Cp; }
 
-inline su2double CConfig::GetSpecific_Heat_Cp_Solid(void) { return Specific_Heat_Cp_Solid; }
-
 inline su2double CConfig::GetSpecific_Heat_CpND(void) { return Specific_Heat_CpND; }
 
 inline su2double CConfig::GetSpecific_Heat_Cv(void) { return Specific_Heat_Cv; }
@@ -465,6 +469,10 @@ inline su2double CConfig::GetSpecific_Heat_CvND(void) { return Specific_Heat_CvN
 inline su2double CConfig::GetThermal_Expansion_Coeff(void) { return Thermal_Expansion_Coeff; }
 
 inline su2double CConfig::GetThermal_Expansion_CoeffND(void) { return Thermal_Expansion_CoeffND; }
+
+inline su2double **CConfig::GetBlottnerCoeff(void) {return Blottner; }
+
+inline su2double CConfig::GetPnormHeat(void) { return pnorm_heat; }
 
 inline su2double CConfig::GetInc_Density_Ref(void) { return Inc_Density_Ref; }
 
@@ -850,13 +858,17 @@ inline unsigned short CConfig::GetSystemMeasurements(void) { return SystemMeasur
 
 inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
 
+inline unsigned short CConfig::GetKind_TransCoeffModel(void) {return Kind_TransCoeffModel; }
+
 inline unsigned short CConfig::GetKind_FluidModel(void) { return Kind_FluidModel; }
 
 inline unsigned short CConfig::GetKind_FreeStreamOption(void) { return Kind_FreeStreamOption; } 
 
 inline unsigned short CConfig::GetKind_DensityModel(void) { return Kind_DensityModel; } 
 
-inline bool CConfig::GetEnergy_Equation(void) { return Energy_Equation; } 
+inline bool CConfig::GetEnergy_Equation(void) { return Energy_Equation; }
+
+inline bool CConfig::GetIonization(void) {return ionization; }
 
 inline unsigned short CConfig::GetKind_InitOption(void) { return Kind_InitOption; }
 
@@ -1036,6 +1048,58 @@ inline unsigned short CConfig::GetKind_DiscAdj_Linear_Prec(void) { return Kind_D
 
 inline unsigned short CConfig::GetKind_Deform_Linear_Solver_Prec(void) { return Kind_Deform_Linear_Solver_Prec; }
 
+inline unsigned short CConfig::GetnSpecies(void) {return nSpecies; }
+
+inline unsigned short CConfig::GetnReactions(void) {return nReactions; }
+
+inline bool CConfig::GetCOLD_FLOW(void) { return COLD_FLOW; }
+
+inline void CConfig::SetCOLD_FLOW(bool coldflow) { COLD_FLOW = coldflow; }
+
+inline su2double CConfig::GetCold_Flow_Options(unsigned short opt) {return Cold_Flow_Options[opt]; }
+
+inline su2double CConfig::GetArrheniusCoeff(unsigned short iReaction) { return ArrheniusCoefficient[iReaction]; }
+
+inline su2double CConfig::GetArrheniusEta(unsigned short iReaction) { return ArrheniusEta[iReaction]; }
+
+inline su2double CConfig::GetArrheniusTheta(unsigned short iReaction) { return ArrheniusTheta[iReaction]; }
+
+inline su2double* CConfig::GetRxnTcf_a(void) { return Tcf_a; }
+
+inline su2double* CConfig::GetRxnTcf_b(void) { return Tcf_b; }
+
+inline su2double* CConfig::GetRxnTcb_a(void) { return Tcb_a; }
+
+inline su2double* CConfig::GetRxnTcb_b(void) { return Tcb_b; }
+
+inline su2double* CConfig::GetDissociationPot(void) { return Diss; }
+
+inline su2double CConfig::GetCharVibTemp(unsigned short iSpecies) {return CharVibTemp[iSpecies]; }
+
+inline su2double* CConfig::GetCharVibTemp() {return CharVibTemp; }
+
+inline su2double** CConfig::GetCharElTemp() {return CharElTemp; }
+
+inline unsigned short* CConfig::GetnElStates() {return nElStates; }
+
+inline su2double** CConfig::GetElDegeneracy() {return degen; }
+
+inline su2double* CConfig::GetRotationModes() { return RotationModes; }
+
+inline su2double* CConfig::GetRefTemperature() { return Ref_Temperature; }
+
+inline su2double* CConfig::GetWall_Catalycity() { return Wall_Catalycity; }
+
+inline su2double* CConfig::GetMolar_Mass() { return Molar_Mass; }
+
+inline su2double CConfig::GetMolar_Mass(unsigned short iSpecies) { return Molar_Mass[iSpecies]; }
+
+inline su2double CConfig::GetInitial_Gas_Composition(unsigned short iSpecies) { return Gas_Composition[iSpecies]; }
+
+inline su2double* CConfig::GetEnthalpy_Formation(void) { return Enthalpy_Formation; }
+
+inline su2double CConfig::GetEnthalpy_Formation(unsigned short iSpecies) { return Enthalpy_Formation[iSpecies]; }
+
 inline void CConfig::SetKind_AdjTurb_Linear_Prec(unsigned short val_kind_prec) { Kind_AdjTurb_Linear_Prec = val_kind_prec; }
 
 inline su2double CConfig::GetAdjTurb_Linear_Error(void) { return AdjTurb_Linear_Error; }
@@ -1045,8 +1109,6 @@ inline su2double CConfig::GetEntropyFix_Coeff(void) { return EntropyFix_Coeff; }
 inline unsigned short CConfig::GetAdjTurb_Linear_Iter(void) { return AdjTurb_Linear_Iter; }
 
 inline su2double CConfig::GetCFLRedCoeff_AdjTurb(void) { return CFLRedCoeff_AdjTurb; }
-
-inline unsigned long CConfig::GetGridDef_Linear_Iter(void) { return GridDef_Linear_Iter; }
 
 inline unsigned long CConfig::GetGridDef_Nonlinear_Iter(void) { return GridDef_Nonlinear_Iter; }
 
@@ -1090,15 +1152,21 @@ inline bool CConfig::GetMUSCL_Turb(void) { return MUSCL_Turb; }
 
 inline bool CConfig::GetMUSCL_Heat(void) { return MUSCL_Heat; }
 
+inline bool CConfig::GetMUSCL_TNE2(void) { return MUSCL_TNE2; }
+
 inline bool CConfig::GetMUSCL_AdjFlow(void) { return MUSCL_AdjFlow; }
 
 inline bool CConfig::GetMUSCL_AdjTurb(void) { return MUSCL_AdjTurb; }
+
+inline bool CConfig::GetMUSCL_AdjTNE2(void) { return MUSCL_AdjTNE2; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }
 
 inline unsigned short CConfig::GetKind_ADER_Predictor(void) { return Kind_ADER_Predictor; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Heat(void) { return Kind_TimeIntScheme_Heat; }
+
+inline unsigned short CConfig::GetKind_TimeIntScheme_TNE2(void) { return Kind_TimeIntScheme_TNE2; }
 
 inline unsigned short CConfig::GetKind_TimeStep_Heat(void) { return Kind_TimeStep_Heat; }
 
@@ -1108,11 +1176,15 @@ inline unsigned short CConfig::GetKind_SpaceIteScheme_FEA(void) { return Kind_Sp
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Flow(void) { return Kind_ConvNumScheme_Flow; }
 
+inline unsigned short CConfig::GetKind_ConvNumScheme_TNE2(void) { return Kind_ConvNumScheme_TNE2; }
+
 inline unsigned short CConfig::GetKind_ConvNumScheme_FEM_Flow(void) { return Kind_ConvNumScheme_FEM_Flow; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Template(void) { return Kind_ConvNumScheme_Template; }
 
 inline unsigned short CConfig::GetKind_Centered_Flow(void) { return Kind_Centered_Flow; }
+
+inline unsigned short CConfig::GetKind_Centered_TNE2(void) { return Kind_Centered_TNE2; }
 
 inline unsigned short CConfig::GetKind_SlopeLimit(void) { return Kind_SlopeLimit; }
 
@@ -1120,11 +1192,17 @@ inline unsigned short CConfig::GetKind_SlopeLimit_Flow(void) { return Kind_Slope
 
 inline unsigned short CConfig::GetKind_SlopeLimit_Turb(void) { return Kind_SlopeLimit_Turb; }
 
+inline unsigned short CConfig::GetKind_SlopeLimit_TNE2(void) { return Kind_SlopeLimit_TNE2; }
+
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjTurb(void) { return Kind_SlopeLimit_AdjTurb; }
 
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjFlow(void) { return Kind_SlopeLimit_AdjFlow; }
 
+inline unsigned short CConfig::GetKind_SlopeLimit_AdjTNE2(void) { return Kind_SlopeLimit_AdjTNE2; }
+
 inline unsigned short CConfig::GetKind_Upwind_Flow(void) { return Kind_Upwind_Flow; }
+
+inline unsigned short CConfig::GetKind_Upwind_TNE2(void) { return Kind_Upwind_TNE2; }
 
 inline unsigned short CConfig::GetKind_FEM_Flow(void) { return Kind_FEM_Flow; }
 
@@ -1137,6 +1215,12 @@ inline su2double CConfig::GetKappa_1st_Flow(void) { return Kappa_1st_Flow; }
 inline su2double CConfig::GetKappa_2nd_Flow(void) { return Kappa_2nd_Flow; }
 
 inline su2double CConfig::GetKappa_4th_Flow(void) { return Kappa_4th_Flow; }
+
+inline su2double CConfig::GetKappa_1st_TNE2(void) { return Kappa_1st_TNE2; }
+
+inline su2double CConfig::GetKappa_2nd_TNE2(void) { return Kappa_2nd_TNE2; }
+
+inline su2double CConfig::GetKappa_4th_TNE2(void) { return Kappa_4th_TNE2; }
 
 inline su2double CConfig::GetKappa_2nd_Heat(void) { return Kappa_2nd_Heat; }
 
@@ -1155,6 +1239,20 @@ inline su2double CConfig::GetKappa_1st_AdjFlow(void) { return Kappa_1st_AdjFlow;
 inline su2double CConfig::GetKappa_2nd_AdjFlow(void) { return Kappa_2nd_AdjFlow; }
 
 inline su2double CConfig::GetKappa_4th_AdjFlow(void) { return Kappa_4th_AdjFlow; }
+
+inline unsigned short CConfig::GetKind_TimeIntScheme_AdjTNE2(void) { return Kind_TimeIntScheme_AdjTNE2; }
+
+inline unsigned short CConfig::GetKind_ConvNumScheme_AdjTNE2(void) { return Kind_ConvNumScheme_AdjTNE2; }
+
+inline unsigned short CConfig::GetKind_Centered_AdjTNE2(void) { return Kind_Centered_AdjTNE2; }
+
+inline unsigned short CConfig::GetKind_Upwind_AdjTNE2(void) { return Kind_Upwind_AdjTNE2; }
+
+inline su2double CConfig::GetKappa_1st_AdjTNE2(void) { return Kappa_1st_AdjTNE2; }
+
+inline su2double CConfig::GetKappa_2nd_AdjTNE2(void) { return Kappa_2nd_AdjTNE2; }
+
+inline su2double CConfig::GetKappa_4th_AdjTNE2(void) { return Kappa_4th_AdjTNE2; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Turb(void) { return Kind_TimeIntScheme_Turb; }
 
@@ -1595,6 +1693,8 @@ inline su2double CConfig::GetFixAzimuthalLine(void) { return FixAzimuthalLine; }
 
 inline su2double CConfig::GetCFLRedCoeff_Turb(void) { return CFLRedCoeff_Turb; }
 
+inline su2double CConfig::GetCFLRedCoeff_Chem(void) { return CFLRedCoeff_Chem; }
+
 inline bool CConfig::GetGrid_Movement(void) { return (Kind_GridMovement != NO_MOVEMENT) || ((nKind_SurfaceMovement > 0) && !GetSurface_Movement(FLUID_STRUCTURE_STATIC)); }
 
 inline bool CConfig::GetDynamic_Grid(void) {
@@ -1783,13 +1883,15 @@ inline su2double CConfig::GetdCM_diH(void) {return dCM_diH; }
 
 inline unsigned long CConfig::GetIter_Fixed_NetThrust(void) {return Iter_Fixed_NetThrust; }
 
-inline unsigned long CConfig::GetIter_Fixed_CL(void) { return Iter_Fixed_CL; }
-
-inline unsigned long CConfig::GetUpdate_Alpha(void) {return Update_Alpha; }
-
 inline unsigned long CConfig::GetIter_dCL_dAlpha(void) {return Iter_dCL_dAlpha; }
 
 inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
+
+inline unsigned long CConfig::GetUpdate_AoA_Iter_Limit(void) { return Update_AoA_Iter_Limit; }
+
+inline bool CConfig::GetFinite_Difference_Mode(void) { return Finite_Difference_Mode; }
+
+inline void CConfig::SetFinite_Difference_Mode(bool val_fd_mode) { Finite_Difference_Mode = val_fd_mode; }
 
 inline bool CConfig::GetUpdate_BCThrust_Bool(void) { return Update_BCThrust_Bool; }
 
@@ -2090,7 +2192,11 @@ inline su2double  CConfig::Get_StartTime() {return StartTime;}
 
 inline unsigned long CConfig::GetHistory_Wrt_Freq(unsigned short iter) {return HistoryWrtFreq[iter];}
 
+inline void CConfig::SetHistory_Wrt_Freq(unsigned short iter, unsigned long nIter) { HistoryWrtFreq[iter] = nIter;}
+
 inline unsigned long CConfig::GetScreen_Wrt_Freq(unsigned short iter) {return ScreenWrtFreq[iter];}
+
+inline void CConfig::SetScreen_Wrt_Freq(unsigned short iter, unsigned long nIter) { ScreenWrtFreq[iter] = nIter;}
 
 inline unsigned long CConfig::GetVolume_Wrt_Freq() {return VolumeWrtFreq;}
 

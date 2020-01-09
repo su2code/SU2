@@ -1,4 +1,4 @@
-  /*!
+﻿/*!
  * \file CVariable.hpp
  * \brief Declaration and inlines of the parent class for defining problem
           variables, function definitions in file <i>CVariable.cpp</i>.
@@ -127,8 +127,8 @@ protected:
   MatrixType AnisoHess;       /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */ 
   MatrixType AnisoMetr;       /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
 
-  su2matrix<int> Input_AdjIndices;    /*!< \brief Indices of Solution variables in the adjoint vector. */
-  su2matrix<int> Output_AdjIndices;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+  su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
   unsigned long nPoint = {0};  /*!< \brief Number of points in the domain. */
   unsigned long nDim = {0};      /*!< \brief Number of dimension of the problem. */
@@ -137,7 +137,7 @@ protected:
   unsigned long nPrimVarGrad = {0};    /*!< \brief Number of primitives for which a gradient is computed. */
   unsigned long nSecondaryVar = {0};     /*!< \brief Number of secondary variables. */
   unsigned long nSecondaryVarGrad = {0};   /*!< \brief Number of secondaries for which a gradient is computed. */
-  
+
 public:
 
   /*--- Disable default construction copy and assignment. ---*/
@@ -485,7 +485,7 @@ public:
    * \return Pointer to the External row for iPoint.
    */
   inline const su2double *Get_External(unsigned long iPoint) const { return External[iPoint]; }
-  
+
   /*!
    * \brief Get the old external contributions of the problem.
    * \param[in] iPoint - Point index.
@@ -1201,7 +1201,7 @@ public:
    * \param[in] val_Species - Index of species s.
    * \return Value of the mass fraction of species s.
    */
-  inline virtual su2double GetMassFraction(unsigned long iPoint, unsigned long val_Species) const { return 0.0; }
+  inline virtual su2double GetMassFraction(unsigned long iPoint, unsigned short val_Species) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1486,6 +1486,21 @@ public:
    */
   inline virtual bool Cons2PrimVar(CConfig *config, unsigned long iPoint, su2double *U, su2double *V, su2double *dPdU,
                                    su2double *dTdU, su2double *dTvedU) { return false; }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual bool Cons2PrimVar(CConfig *config, su2double *U, su2double *V,
+                                   su2double *val_dPdU, su2double *val_dTdU,
+                                   su2double *val_dTvedU, su2double *val_eves,
+                                   su2double *val_Cvves) { return false; }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual bool GradCons2GradPrimVar(CConfig *config, su2double *U,
+                                           su2double *V, su2double **GradU,
+                                           su2double **GradV) { return false; }
   /*!
    * \brief A virtual member.
    */
@@ -1521,6 +1536,16 @@ public:
    * \brief A virtual member.
    */
   inline virtual su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double *GetPrimVar(void) { return NULL; }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double GetPrimVar(unsigned short val_var) { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -1648,17 +1673,17 @@ public:
   /*!
    * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
    */
-  inline virtual su2double CalcEve(unsigned long iPoint, su2double *V, CConfig *config, unsigned long val_Species) { return 0.0; }
+  inline virtual su2double CalcEve(CConfig *config, su2double val_Tve, unsigned short val_Species) { return 0.0; }
 
   /*!
    * \brief Calculates enthalpy per mass, \f$h_s\f$, for input species (not including KE)
    */
-  inline virtual su2double CalcHs(unsigned long iPoint, su2double *V, CConfig *config, unsigned long val_Species) { return 0.0; }
+  inline virtual su2double CalcHs(CConfig *config, su2double T, su2double T_ve,  unsigned short val_Species) { return 0.0; }
 
   /*!
-   * \brief Calculates enthalpy per mass, \f$Cv_s\f$, for input species (not including KE)
+   * \brief Calculates cvve, \f$Cv_s\f$, for input species (not including KE)
    */
-  inline virtual su2double CalcCvve(unsigned long iPoint, su2double val_Tve, CConfig *config, unsigned long val_Species) { return 0.0; }
+  inline virtual su2double CalcCvve(su2double val_Tve, CConfig *config, unsigned short val_Species) { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1666,7 +1691,7 @@ public:
    * \param[in] config - Configuration settings
    * \param[in] dPdU
    */
-  inline virtual void CalcdPdU(unsigned long iPoint, su2double *V, CConfig *config, su2double *dPdU) {}
+  inline virtual void CalcdPdU(su2double *V, su2double *val_eves, CConfig *config, su2double *dPdU) {}
 
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
@@ -1674,7 +1699,7 @@ public:
    * \param[in] config - Configuration settings
    * \param[in] dTdU
    */
-  inline virtual void CalcdTdU(unsigned long iPoint, su2double *V, CConfig *config, su2double *dTdU) {}
+  inline virtual void CalcdTdU(su2double *V, CConfig *config, su2double *dTdU) {}
 
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
@@ -1682,7 +1707,7 @@ public:
    * \param[in] config - Configuration settings
    * \param[in] dTdU
    */
-  inline virtual void CalcdTvedU(unsigned long iPoint, su2double *V, CConfig *config, su2double *dTdU) {}
+  inline virtual void CalcdTvedU(su2double *V, su2double *val_eves, CConfig *config, su2double *dTvedU) {}
 
   /*!
    * \brief A virtual member.
@@ -1705,6 +1730,56 @@ public:
    * \param[in] Gamma - Ratio of Specific heats
    */
   inline virtual void SetDeltaPressure(unsigned long iPoint, const su2double *val_velocity, su2double Gamma) {}
+
+  /*!
+   * \brief Retrieves the value of the species density in the primitive variable vector.
+   */
+  inline virtual unsigned short GetRhosIndex(void) { return 0; }
+
+  /*!
+   * \brief Retrieves the value of the total density in the primitive variable vector.
+   */
+  inline virtual unsigned short GetRhoIndex(void) { return 0; }
+
+  /*!
+   * \brief Retrieves the value of the pressure in the primitive variable vector.
+   */
+  inline virtual unsigned short GetPIndex(void) { return 0; }
+
+  /*!
+   * \brief Retrieves the value of the temperature in the primitive variable vector.
+   */
+  inline virtual unsigned short GetTIndex(void) { return 0; }
+
+  /*!
+   * \brief Retrieves the value of the vibe-elec temperature in the primitive variable vector.
+   */
+  inline virtual unsigned short GetTveIndex(void) { return 0; }
+
+  /*!
+   * \brief Retrieves the value of the velocity in the primitive variable vector.
+   */
+  inline virtual unsigned short GetVelIndex(void) { return 0; }
+
+  /*!
+   * \brief Retrieves the value of the enthalpy in the primitive variable vector.
+   */
+  inline virtual unsigned short GetHIndex(void) { return 0; }
+
+  /*!
+   * \brief Retrieves the value of the sound speed in the primitive variable vector.
+   */
+  inline virtual unsigned short GetAIndex(void) { return 0; }
+
+  /*!
+   * \brief Retrieves the value of the RhoCvtr in the primitive variable vector.
+   */
+  inline virtual unsigned short GetRhoCvtrIndex(void) { return 0; }
+
+  /*!
+   * \brief Retrieves the value of the RhoCvve in the primitive variable vector.
+   */
+  inline virtual unsigned short GetRhoCvveIndex(void) { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -1753,6 +1828,13 @@ public:
    * \param[in] Coord - Physical coordinates.
    */
   inline virtual void SetPrimitive(unsigned long iPoint, CConfig *config, su2double *Coord) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Configuration parameters.
+   * \param[in] Coord - Physical coordinates.
+   */
+  inline virtual bool SetPrimVar_Compressible(unsigned long iPoint, CConfig *config) { return true; }
 
   /*!
    * \brief A virtual member.
@@ -1879,7 +1961,7 @@ public:
   inline virtual void Set_isVertex(unsigned long iPoint, bool isVertex) {}
 
   /*!
-   * \brief A virtual member.
+   * \brief A virtual member.nodes
    */
   inline virtual bool Get_isVertex(unsigned long iPoint) const { return false; }
 
@@ -2172,7 +2254,7 @@ public:
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
   virtual void Set_BGSSolution_k();
-  
+
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
@@ -2636,20 +2718,9 @@ public:
   /*!
    * \brief Register the variables in the solution array as input/output variable.
    * \param[in] input - input or output variables.
+   * \param[in] push_index - boolean whether we want to push the index or save it in a member variable.
    */
-  void RegisterSolution(bool input);
-
-  /*!
-   * \brief Register the variables in the solution array as input/output variable.
-   * \param[in] input - input or output variables.
-   */
-  void RegisterSolution_intIndexBased(bool input);
-
-  /*!
-   * \brief Saving the adjoint vector position with respect to the solution variables.
-   * \param[in] input - input or output variables.
-   */
-  void SetAdjIndices(bool input);
+  void RegisterSolution(bool input, bool push_index = true);
 
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
@@ -2674,9 +2745,9 @@ public:
    * \brief Set the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
-  inline void SetAdjointSolution_intIndexBased(unsigned long iPoint, const su2double *adj_sol) {
+  inline void SetAdjointSolution_LocalIndex(unsigned long iPoint, const su2double *adj_sol) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      AD::SetDerivative(Output_AdjIndices(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
+      AD::SetDerivative(AD_OutputIndex(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
   }
 
   /*!
@@ -2692,9 +2763,9 @@ public:
    * \brief Get the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
-  inline void GetAdjointSolution_intIndexBased(unsigned long iPoint, su2double *adj_sol) const {
+  inline void GetAdjointSolution_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      adj_sol[iVar] = AD::GetDerivative(Input_AdjIndices(iPoint,iVar));
+      adj_sol[iVar] = AD::GetDerivative(AD_InputIndex(iPoint,iVar));
   }
 
   /*!

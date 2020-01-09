@@ -3538,7 +3538,6 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
   AD::EndPreacc();
 }
 
-
 void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 
   //su2double delta_rhoStaticEnergy, err_P, s, D;
@@ -4596,7 +4595,6 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     PrimVar_j[iVar] = V_j[iVar];
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
-  
 
   /*--- Compute vector going from iPoint to jPoint ---*/
   
@@ -4691,8 +4689,6 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
 }
 
-
-
 void CAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradprimvar,
                                       const su2double val_laminar_viscosity,
                                       const su2double val_eddy_viscosity) {
@@ -4750,7 +4746,6 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
 
   }
 }
-
 
 CGeneralAvgGrad_Flow::CGeneralAvgGrad_Flow(unsigned short val_nDim,
                                            unsigned short val_nVar,

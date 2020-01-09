@@ -43,7 +43,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
                        unsigned short val_nZone,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          MPICommunicator, 
+                                                          MPICommunicator,
                                                           false) {
 
   /*--- Initialize the counter for TimeIter ---*/
@@ -88,7 +88,8 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
-    case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:    
+    case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
+    case TNE2_EULER: case TNE2_NAVIER_STOKES: case TNE2_RANS:
       fluid_zone = true;
       break;
     case FEM_ELASTICITY:
@@ -112,14 +113,14 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   prefixed_motion = new bool[nZone];
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_GridMovement()){
-      case RIGID_MOTION: 
+      case RIGID_MOTION:
         prefixed_motion[iZone] = true; break;
       case STEADY_TRANSLATION: case ROTATING_FRAME:
       case NO_MOVEMENT: case GUST: default:
       case ELASTICITY:
         prefixed_motion[iZone] = false; break;
     }
-    if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) || 
+    if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) ||
         config_container[iZone]->GetSurface_Movement(AEROELASTIC_RIGID_MOTION) ||
         config_container[iZone]->GetSurface_Movement(DEFORMING) ||
         config_container[iZone]->GetSurface_Movement(EXTERNAL) ||
@@ -137,7 +138,7 @@ CMultizoneDriver::~CMultizoneDriver(void) {
     delete [] residual[iZone];
     delete [] residual_rel[iZone];
   }
-  
+
   delete [] nVarZone;
   delete [] init_res;
   delete [] residual;
@@ -148,15 +149,15 @@ CMultizoneDriver::~CMultizoneDriver(void) {
 }
 
 void CMultizoneDriver::StartSolver() {
-  
+
 #ifndef HAVE_MPI
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
   StartTime = MPI_Wtime();
 #endif
-  
+
   driver_config->Set_StartTime(StartTime);
-  
+
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
   if (rank == MASTER_NODE)
@@ -212,10 +213,10 @@ void CMultizoneDriver::StartSolver() {
 void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
   bool unsteady = driver_config->GetTime_Domain();
-  
-  
+
+
   /*--- Set the current time iteration in the config ---*/
-  
+
   driver_config->SetTimeIter(TimeIter);
 
   for (iZone = 0; iZone < nZone; iZone++){
@@ -223,17 +224,17 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
     /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
     config_container[iZone]->SetTimeIter(TimeIter);
-    
+
 
     /*--- Store the current physical time in the config container, as
      this can be used for verification / MMS. This should also be more
      general once the drivers are more stable. ---*/
-    
+
     if (unsteady)
       config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
     else
       config_container[iZone]->SetPhysicalTime(0.0);
-    
+
     /*--- Read the target pressure for inverse design. ---------------------------------------------*/
     /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
 //    if (config_container[iZone]->GetInvDesign_Cp() == YES)
@@ -256,7 +257,11 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
         (config_container[iZone]->GetKind_Solver() ==  INC_RANS) ) {
         if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
     }
-
+    if ((config_container[iZone]->GetKind_Solver() ==  TNE2_EULER) ||
+        (config_container[iZone]->GetKind_Solver() ==  TNE2_NAVIER_STOKES) ||
+        (config_container[iZone]->GetKind_Solver() ==  TNE2_RANS) ) {
+        if(!fsi) solver_container[iZone][INST_0][MESH_0][TNE2_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
+    }
   }
 
 #ifdef HAVE_MPI
@@ -341,6 +346,7 @@ void CMultizoneDriver::Run_Jacobi() {
   unsigned long iOuter_Iter;
   unsigned short jZone, UpdateMesh;
   bool DeformMesh = false;
+  unsigned long ExtIter = 0;
   bool Convergence = false;
 
   unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
@@ -404,25 +410,25 @@ void CMultizoneDriver::Corrector(unsigned short val_iZone) {
 }
 
 bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
-  
+
   /*--- Update the residual for the all the zones ---*/
-  
+
   for (iZone = 0; iZone < nZone; iZone++){
-    
+
     /*--- Account for all the solvers ---*/
-    
+
     for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL){    
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL){
         solver_container[iZone][INST_0][MESH_0][iSol]->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
       }
     }
-    
+
     /*--- make sure that everything is loaded into the output container ---*/
-    
+
     output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0],solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
-    
+
   }
-  
+
   /*--- Update the residual for the all the zones ---*/
   for (iZone = 0; iZone < nZone; iZone++){
     /*--- Accounting for all the solvers ---*/
@@ -478,7 +484,7 @@ void CMultizoneDriver::Update() {
 }
 
 void CMultizoneDriver::Output(unsigned long TimeIter) {
-  
+
   /*--- Time the output for performance benchmarking. ---*/
 #ifndef HAVE_MPI
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
@@ -491,17 +497,17 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
 #else
   StartTime = MPI_Wtime();
 #endif
-  
+
   bool wrote_files = false;
-  
+
   for (iZone = 0; iZone < nZone; iZone++){
     wrote_files = output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
                                                             config_container[iZone],
                                                             solver_container[iZone][INST_0][MESH_0], TimeIter, StopCalc);
   }
-  
+
   if (wrote_files){
-    
+
 #ifndef HAVE_MPI
     StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -528,7 +534,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
    harmonic_balance = (config_container[iZone]->GetTime_Marching() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && (!fsi)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone], 
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone],
                                                                grid_movement[iZone][INST_0], solver_container[iZone][INST_0],
                                                                config_container[iZone], 0, TimeIter);
     }
@@ -539,7 +545,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long
 
   /*--- Legacy dynamic mesh update - Only if GRID_MOVEMENT = YES ---*/
   if (config_container[ZONE_0]->GetGrid_Movement() || config_container[ZONE_0]->GetSurface_Movement(FLUID_STRUCTURE_STATIC)) {
-  iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone], 
+  iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone],
                                                            grid_movement[val_iZone][INST_0], solver_container[val_iZone][INST_0],
                                                            config_container[val_iZone], 0, TimeIter);
   }
@@ -647,27 +653,27 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 }
 
 bool CMultizoneDriver::Monitor(unsigned long TimeIter){
-  
+
   unsigned long nOuterIter, OuterIter, nTimeIter;
   su2double MaxTime, CurTime;
   bool TimeDomain, InnerConvergence, FinalTimeReached, MaxIterationsReached;
-  
+
   OuterIter  = driver_config->GetOuterIter();
   nOuterIter = driver_config->GetnOuter_Iter();
   nTimeIter  = driver_config->GetnTime_Iter();
   MaxTime    = driver_config->GetMax_Time();
   CurTime    = driver_output->GetHistoryFieldValue("CUR_TIME");
-  
+
   TimeDomain = driver_config->GetTime_Domain();
-  
-  
+
+
   /*--- Check whether the inner solver has converged --- */
 
   if (TimeDomain == NO){
-    
-    InnerConvergence     = driver_output->GetConvergence();    
+
+    InnerConvergence     = driver_output->GetConvergence();
     MaxIterationsReached = OuterIter+1 >= nOuterIter;
-        
+
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
       cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
       if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
@@ -675,28 +681,28 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
       driver_output->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
     }
-    
+
     StopCalc = MaxIterationsReached || InnerConvergence;
   }
 
 
   if (TimeDomain == YES) {
-    
+
     /*--- Check whether the outer time integration has reached the final time ---*/
-  
+
     FinalTimeReached     = CurTime >= MaxTime;
-    MaxIterationsReached = TimeIter+1 >= nTimeIter;    
-    
+    MaxIterationsReached = TimeIter+1 >= nTimeIter;
+
     if ((FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
       cout << endl << "----------------------------- Solver Exit -------------------------------";
       if (FinalTimeReached) cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
       else cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
-      cout << "-------------------------------------------------------------------------" << endl;      
+      cout << "-------------------------------------------------------------------------" << endl;
     }
-    
+
     StopCalc = FinalTimeReached || MaxIterationsReached;
   }
 
   return StopCalc;
-  
+
 }

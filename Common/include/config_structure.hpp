@@ -60,6 +60,10 @@
 #include "cgnslib.h"
 #endif
 
+#ifdef HAVE_MUTATIONPP
+#include "mutation++.h"
+#endif
+
 using namespace std;
 
 /*!
@@ -68,7 +72,6 @@ using namespace std;
  *        stores all the information.
  * \author F. Palacios
  */
-
 class CConfig {
 private:
   SU2_MPI::Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
@@ -137,6 +140,7 @@ private:
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
   Integrated_HeatFlux, /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  ionization,                  /*!< \brief Flag for determining if free electron gas is in the mixture. */
   Buffet_Monitoring;       /*!< \brief Flag for computing the buffet sensor.*/
   su2double Buffet_k;     /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda; /*!< \brief Offset parameter for buffet sensor.*/
@@ -208,7 +212,11 @@ private:
   nMarker_Supersonic_Outlet,					/*!< \brief Number of supersonic outlet flow markers. */
   nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
   nMarker_Isothermal,     /*!< \brief Number of isothermal wall boundaries. */
+  nMarker_IsothermalNonCatalytic, /*!< \brief Number of constant temperature wall boundaries. */
+  nMarker_IsothermalCatalytic, /*!< \brief Number of constant temperature wall boundaries. */
   nMarker_HeatFlux,       /*!< \brief Number of constant heat flux wall boundaries. */
+  nMarker_HeatFluxNonCatalytic, /*!< \brief Number of constant heat flux wall boundaries. */
+  nMarker_HeatFluxCatalytic, /*!< \brief Number of constant heat flux wall boundaries. */
   nMarker_EngineExhaust,					/*!< \brief Number of nacelle exhaust flow markers. */
   nMarker_EngineInflow,					/*!< \brief Number of nacelle inflow flow markers. */
   nMarker_Clamped,						/*!< \brief Number of clamped markers in the FEM. */
@@ -254,7 +262,11 @@ private:
   *Marker_Supersonic_Outlet,					/*!< \brief Supersonic outlet flow markers. */
   *Marker_Outlet,					/*!< \brief Outlet flow markers. */
   *Marker_Isothermal,     /*!< \brief Isothermal wall markers. */
+  *Marker_IsothermalNonCatalytic,     /*!< \brief Isothermal wall markers. */
+  *Marker_IsothermalCatalytic,     /*!< \brief Isothermal wall markers. */
   *Marker_HeatFlux,       /*!< \brief Constant heat flux wall markers. */
+  *Marker_HeatFluxNonCatalytic,       /*!< \brief Constant heat flux wall markers. */
+  *Marker_HeatFluxCatalytic,       /*!< \brief Constant heat flux wall markers. */
   *Marker_EngineInflow,					/*!< \brief Engine Inflow flow markers. */
   *Marker_EngineExhaust,					/*!< \brief Engine Exhaust flow markers. */
   *Marker_Clamped,						/*!< \brief Clamped markers. */
@@ -281,6 +293,7 @@ private:
   su2double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
   su2double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
   su2double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
+  su2double **Inlet_MassFrac;  /*!< \brief Specified Mass fraction vectors for supersonic inlet bounfaries (TNE2). */
   su2double *EngineInflow_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Inflow_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Inflow_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -308,7 +321,10 @@ private:
   su2double *Engine_Area;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
   su2double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
+  su2double *Wall_Catalycity; /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   su2double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
+  su2double *Heat_FluxNonCatalytic;  /*!< \brief Specified wall heat fluxes. */
+  su2double *Heat_FluxCatalytic;  /*!< \brief Specified wall heat fluxes. */
   su2double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
   su2double *Load_Value;    /*!< \brief Specified force for load boundaries. */
   su2double *Damper_Constant;    /*!< \brief Specified constant for damper boundaries. */
@@ -416,6 +432,7 @@ private:
   CFLRedCoeff_Turb,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
   CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
+  CFLRedCoeff_Chem,     /*!< \brief CFL reduction chemical source terms in TNE2 solver. */
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
   Max_DeltaTime,  		/*!< \brief Max delta time. */
   Unst_CFL;		/*!< \brief Unsteady CFL number. */
@@ -458,6 +475,7 @@ private:
   Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   Kind_InitOption,			/*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
+  Kind_TransCoeffModel, /*!< \brief Transport coefficient Model. */
   Kind_DensityModel,				/*!< \brief Kind of the density model for incompressible flows. */
   Kind_GridMovement,    /*!< \brief Kind of the static mesh movement. */
   *Kind_SurfaceMovement,    /*!< \brief Kind of the static mesh movement. */
@@ -477,14 +495,18 @@ private:
   Kind_DiscAdj_Linear_Prec_FSI_Struc,   /*!< \brief Preconditioner of the discrete adjoint linear solver in the structural side of FSI problems. */
   Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
   Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
+  Kind_SlopeLimit_AdjFlow,	/*!< \brief Slope limiter for the adjoint equation.*/
+  Kind_SlopeLimit_TNE2,		/*!< \brief Slope limiter for TNE2 flow equations.*/
+  Kind_SlopeLimit_AdjTNE2, /*!< \brief Slope Limiter for adjoint TNE2 eqaution. */
   Kind_SlopeLimit_Turb,		/*!< \brief Slope limiter for the turbulence equation.*/
   Kind_SlopeLimit_AdjTurb,	/*!< \brief Slope limiter for the adjoint turbulent equation.*/
-  Kind_SlopeLimit_AdjFlow,	/*!< \brief Slope limiter for the adjoint equation.*/
   Kind_TimeNumScheme,			/*!< \brief Global explicit or implicit time integration. */
   Kind_TimeIntScheme_Flow,	/*!< \brief Time integration for the flow equations. */
   Kind_TimeIntScheme_FEM_Flow,  /*!< \brief Time integration for the flow equations. */
   Kind_ADER_Predictor,          /*!< \brief Predictor step of the ADER-DG time integration scheme. */
   Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
+  Kind_TimeIntScheme_TNE2,	/*!< \brief Time integration for the flow equations. */
+  Kind_TimeIntScheme_AdjTNE2, /*!< \brief Time integration for the flow equations. */
   Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
   Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
@@ -496,12 +518,16 @@ private:
   Kind_ConvNumScheme_FEM_Flow,  /*!< \brief Finite element scheme for the flow equations. */
   Kind_ConvNumScheme_Heat,	/*!< \brief Centered or upwind scheme for the flow equations. */
   Kind_ConvNumScheme_AdjFlow,		/*!< \brief Centered or upwind scheme for the adjoint flow equations. */
+  Kind_ConvNumScheme_TNE2,	/*!< \brief Centered or upwind scheme for the flow equations. */
+  Kind_ConvNumScheme_AdjTNE2,		/*!< \brief Centered or upwind scheme for the adjoint TNE2 equations. */
   Kind_ConvNumScheme_Turb,	/*!< \brief Centered or upwind scheme for the turbulence model. */
   Kind_ConvNumScheme_AdjTurb,	/*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
   Kind_ConvNumScheme_Template,	/*!< \brief Centered or upwind scheme for the level set equation. */
   Kind_Centered,				/*!< \brief Centered scheme. */
   Kind_Centered_Flow,			/*!< \brief Centered scheme for the flow equations. */
   Kind_Centered_AdjFlow,			/*!< \brief Centered scheme for the adjoint flow equations. */
+  Kind_Centered_TNE2,			/*!< \brief Centered scheme for the flow equations. */
+  Kind_Centered_AdjTNE2,			/*!< \brief Centered scheme for the adjoint TNE2 equations. */
   Kind_Centered_Turb,			/*!< \brief Centered scheme for the turbulence model. */
   Kind_Centered_AdjTurb,		/*!< \brief Centered scheme for the adjoint turbulence model. */
   Kind_Centered_Template,		/*!< \brief Centered scheme for the template model. */
@@ -510,6 +536,8 @@ private:
   Kind_Upwind_AdjFlow,			/*!< \brief Upwind scheme for the adjoint flow equations. */
   Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
   Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
+  Kind_Upwind_TNE2,			/*!< \brief Upwind scheme for the flow equations. */
+  Kind_Upwind_AdjTNE2,			/*!< \brief Upwind scheme for the adjoint TNE2 equations. */
   Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
   Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_Flow,                        /*!< \brief Finite element scheme for the flow equations. */
@@ -521,6 +549,8 @@ private:
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
+  MUSCL_TNE2,    /*!< \brief MUSCL scheme for the TNE2 equations. */
+  MUSCL_AdjTNE2, /*!< \brief MUSCL scheme for the adj TNE2 equations. */
   MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
   MUSCL_Heat,	 /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
@@ -548,12 +578,10 @@ private:
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
-  su2double Linear_Solver_Error_Heat;        /*!< \brief Min error of the linear solver for the implicit formulation in the fvm heat solver . */
   su2double Linear_Solver_Smoother_Relaxation;  /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
-  unsigned long Linear_Solver_Iter_Heat;       /*!< \brief Max iterations of the linear solver for the implicit formulation in the fvm heat solver. */
   unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned short Linear_Solver_ILU_n;		/*!< \brief ILU fill=in level. */
   su2double SemiSpan;		/*!< \brief Wing Semi span. */
@@ -570,7 +598,9 @@ private:
   nWingStations;               /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
   *Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint flow equations. */
-  *Kappa_Heat;                    /*!< \brief Numerical dissipation coefficients for the (fvm) heat equation. */  
+  *Kappa_Heat,                    /*!< \brief Numerical dissipation coefficients for the (fvm) heat equation. */
+  *Kappa_TNE2,             /*!< \brief Numerical dissipation coefficients for the TNE2 equations. */
+  *Kappa_AdjTNE2;          /*!< \brief Numerical dissipation coefficients for the adjoint TNE2 equations. */
   su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
   Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
@@ -578,6 +608,12 @@ private:
   Kappa_1st_Flow,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+  Kappa_1st_TNE2,			/*!< \brief JST 1st order dissipation coefficient for tne2 equations (coarse multigrid levels). */
+  Kappa_2nd_TNE2,			/*!< \brief JST 2nd order dissipation coefficient for tne2 equations. */
+  Kappa_4th_TNE2,			/*!< \brief JST 4th order dissipation coefficient for tne2 equations. */
+  Kappa_1st_AdjTNE2,                    /*!< \brief JST 1st order dissipation coeff for adjoint tne2 equations. */ 
+  Kappa_2nd_AdjTNE2,                    /*!< \brief JST 2nd order dissipation coeff for adjoint tne2 equations. */
+  Kappa_4th_AdjTNE2,                    /*!< \brief JST 4th order dissipation coeff for adjoint tne2 equations. */
   Kappa_2nd_Heat,     /*!< \brief 2nd order dissipation coefficient for heat equation. */
   Kappa_4th_Heat,     /*!< \brief 4th order dissipation coefficient for heat equation. */
   Cent_Jac_Fix_Factor;/*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes by this factor to make the global matrix more diagonal dominant. */
@@ -585,8 +621,7 @@ private:
   
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
   Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
-  unsigned long GridDef_Nonlinear_Iter, /*!< \brief Number of nonlinear increments for grid deformation. */
-  GridDef_Linear_Iter; /*!< \brief Number of linear smoothing iterations for grid deformation. */
+  unsigned long GridDef_Nonlinear_Iter; /*!< \brief Number of nonlinear increments for grid deformation. */
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Mesh;    /*!< \brief Determines whether the mesh will be deformed. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
@@ -615,16 +650,17 @@ private:
   su2double Total_CD;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
   su2double dCL_dAlpha;        /*!< \brief value of dCl/dAlpha. */
   su2double dCM_diH;        /*!< \brief value of dCM/dHi. */
-  unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_CM;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_NetThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_dCL_dAlpha;   /*!< \brief Number of iterations to evaluate dCL_dAlpha. */
   unsigned long Update_Alpha;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_iH;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_BCThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
-  su2double dNetThrust_dBCThrust;        /*!< \brief value of dCl/dAlpha. */
+  su2double dNetThrust_dBCThrust;        /*!< \brief value of dNetThrust/dBCThrust. */
   bool Update_BCThrust_Bool;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   bool Update_AoA;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
+  unsigned long Update_AoA_Iter_Limit; /*!< \brief Limit on number of iterations between AoA updates for fixed lift mode */
+  bool Finite_Difference_Mode;
   bool Update_HTPIncidence;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   su2double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
   unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
@@ -774,7 +810,6 @@ private:
   Molecular_Weight,     /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
   Specific_Heat_Cp,     /*!< \brief Specific heat at constant pressure. */
   Specific_Heat_CpND,     /*!< \brief Non-dimensional specific heat at constant pressure. */
-  Specific_Heat_Cp_Solid, /*!< \brief Specific heat in solids. */
   Specific_Heat_Cv,     /*!< \brief Specific heat at constant volume. */
   Specific_Heat_CvND,     /*!< \brief Non-dimensional specific heat at constant volume. */
   Thermal_Expansion_Coeff,     /*!< \brief Thermal expansion coefficient. */
@@ -837,23 +872,55 @@ private:
   Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
   Density_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
   Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization.*/
-  Time_Ref,                  /*!< \brief Reference time for non-dimensionalization. */
-  Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
-  Conductivity_Ref,           /*!< \brief Reference conductivity for non-dimensionalization. */
-  Energy_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
-  Wall_Temperature,           /*!< \brief Temperature at an isotropic wall in Kelvin. */
-  Omega_Ref,                  /*!< \brief Reference angular velocity for non-dimensionalization. */
-  Force_Ref,                  /*!< \brief Reference body force for non-dimensionalization. */
-  Pressure_FreeStreamND,      /*!< \brief Farfield pressure value (external flow). */
-  Pressure_ThermodynamicND,   /*!< \brief Farfield thermodynamic pressure value. */
-  Temperature_FreeStreamND,   /*!< \brief Farfield temperature value (external flow). */
-  Density_FreeStreamND,       /*!< \brief Farfield density value (external flow). */
-  Velocity_FreeStreamND[3],   /*!< \brief Farfield velocity values (external flow). */
-  Energy_FreeStreamND,        /*!< \brief Farfield energy value (external flow). */
-  Viscosity_FreeStreamND,     /*!< \brief Farfield viscosity value (external flow). */
-  Tke_FreeStreamND,           /*!< \brief Farfield kinetic energy (external flow). */
-  Omega_FreeStreamND,         /*!< \brief Specific dissipation (external flow). */
-  Omega_FreeStream;           /*!< \brief Specific dissipation (external flow). */
+  Time_Ref,                      /*!< \brief Reference time for non-dimensionalization. */
+  Viscosity_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
+  Conductivity_Ref,              /*!< \brief Reference conductivity for non-dimensionalization. */
+  Energy_Ref,                    /*!< \brief Reference viscosity for non-dimensionalization. */
+  Wall_Temperature,              /*!< \brief Temperature at an isotropic wall in Kelvin. */
+  Omega_Ref,                     /*!< \brief Reference angular velocity for non-dimensionalization. */
+  Force_Ref,                     /*!< \brief Reference body force for non-dimensionalization. */
+  Pressure_FreeStreamND,         /*!< \brief Farfield pressure value (external flow). */
+  Pressure_ThermodynamicND,      /*!< \brief Farfield thermodynamic pressure value. */
+  Temperature_FreeStreamND,      /*!< \brief Farfield temperature value (external flow). */
+  Density_FreeStreamND,          /*!< \brief Farfield density value (external flow). */
+  Velocity_FreeStreamND[3],      /*!< \brief Farfield velocity values (external flow). */
+  Energy_FreeStreamND,           /*!< \brief Farfield energy value (external flow). */
+  Viscosity_FreeStreamND,        /*!< \brief Farfield viscosity value (external flow). */
+  Tke_FreeStreamND,              /*!< \brief Farfield kinetic energy (external flow). */
+  Omega_FreeStreamND,            /*!< \brief Specific dissipation (external flow). */
+  Omega_FreeStream;              /*!< \brief Specific dissipation (external flow). */
+  bool COLD_FLOW;                /*!< \brief Cold Flow Simulation. */
+  su2double *Cold_Flow_Options;  /*!< \brief Cold flow simulation option vector. */
+  su2double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
+  *ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
+  *ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
+  *CharVibTemp,									/*!< \brief Characteristic vibrational temperature for e_vib */
+  *RotationModes,			/*!< \brief Rotational modes of energy storage */
+  *Ref_Temperature,   			/*!< \brief Reference temperature for thermodynamic relations */
+  *Tcf_a,   /*!< \brief Rate controlling temperature exponent (fwd) */
+  *Tcf_b,   /*!< \brief Rate controlling temperature exponent (fwd) */
+  *Tcb_a,   /*!< \brief Rate controlling temperature exponent (bkw) */
+  *Tcb_b,   /*!< \brief Rate controlling temperature exponent (bkw) */
+  *Diss;                /*!< \brief Dissociation potential. */
+  su2double pnorm_heat; /*! brief pnorm for heat-flux. */
+  int ***Reactions;     /*!</brief reaction map for chemically reacting flows */
+  su2double ***Omega00;        /*!< \brief Collision integrals (Omega(0,0)) */
+  su2double ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
+  unsigned short nMass,                 /*!< \brief No of particle masses */
+  nTemp;						/*!< \brief No of freestream temperatures specified */
+  su2double *Particle_Mass,         /*!< \brief Mass of all particles present in the plasma */
+  *Molar_Mass,               /*!< \brief Molar mass of species in the plasma [kg/kmol] */
+  Mixture_Molar_mass,       /*!< \brief Molar mass of the multi-species fluid [kg/kmol] */
+  *Gas_Composition,          /*!< \brief Initial mass fractions of flow [dimensionless] */
+  *Enthalpy_Formation,     /*!< \brief Enthalpy of formation */
+  **Blottner,               /*!< \brief Blottner viscosity coefficients */
+  *Species_Ref_Temperature,  /*!< \brief Reference Temperature for viscosity of all particles present in the plasma */
+  *Species_Ref_Viscosity;    /*!< \brief Reference viscosity  of all particles present in the plasma */
+  unsigned short *nElStates; /*!< \brief Number of electron states. */
+  su2double **CharElTemp, /*!< \brief Characteristic temperature of electron states. */
+  **degen; /*!< \brief Degeneracy of electron states. */
+  unsigned short nSpecies, 		/*!< \brief No of species present in plasma */
+  nReactions;									/*!< \brief Number of reactions in chemical model. */
   unsigned short nElectric_Constant; /*!< \brief Number of different electric constants. */
   su2double *Electric_Constant;   /*!< \brief Dielectric constant modulus. */
   su2double Knowles_B,      /*!< \brief Knowles material model constant B. */
@@ -984,6 +1051,7 @@ private:
   unsigned short Kind_RoeLowDiss;    /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   bool QCR;                   /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
+  *default_cold_flow,         /*!< \brief Default cold flow simulation array for the COption class. */
   *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
@@ -1626,7 +1694,45 @@ public:
    * \return Value of the constant: Gamma
    */
   su2double GetGamma(void);
-  
+
+  /*!
+   * \brief Get the value of the Gamma of fluid (ratio of specific heats) for a particular species.
+   * \param[in] - val_Species: Index of desired species specific heat ratio.
+   * \return Value of the constant: Species_Gamma[iSpecies]
+   */
+  su2double GetSpecies_Gamma(unsigned short val_Species);
+
+  /*!
+   * \brief Get the value of the charge number for a particular species (1 for ions, -1 for electrons, 0 for neutral).
+   * \param[in] - val_Species: Index of desired species charge number.
+   * \return Value of the constant: Charge_Number[val_Species]
+   */
+  int GetCharge_Number(unsigned short val_Species);
+
+  /*!
+   * \brief Get the value of the limits for the sections.
+   * \return Value of the limits for the sections.
+   */
+  su2double GetSection_Location(unsigned short val_var);
+
+  /*!
+   * \brief Get the array that maps chemical consituents to each chemical reaction.
+   * \return Memory location of the triple pointer to the 3-D reaction map array.
+   */
+  int ***GetReaction_Map(void);
+
+  /*!
+   * \brief Get the array containing the curve fit coefficients for the Omega(0,0) collision integrals.
+   * \return Memory location of the triple pointer to the 3-D collision integral array.
+   */
+  su2double ***GetCollisionIntegral00(void);
+
+  /*!
+   * \brief Get the array containing the curve fit coefficients for the Omega(1,1) collision integrals.
+   * \return Memory location of the triple pointer to the 3-D collision integral array.
+   */
+  su2double ***GetCollisionIntegral11(void);
+
   /*!
    * \brief Get the values of the CFL adapation.
    * \return Value of CFL adapation
@@ -1692,12 +1798,6 @@ public:
    * \return Value of the constant: Cp
    */
   su2double GetSpecific_Heat_Cp(void);
-
-  /*!
-   * \brief Get the value of the specific heat for solids.
-   * \return Specific heat number (solid).
-   */
-  su2double GetSpecific_Heat_Cp_Solid(void);
   
   /*!
    * \brief Get the non-dimensional value of specific heat at constant pressure.
@@ -1723,7 +1823,7 @@ public:
    * \param[in] val_Coeff - Index of the coefficient (As, Bs, Cs)
    * \return Value of the Blottner coefficient
    */
-  su2double GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff);
+  su2double **GetBlottnerCoeff(void);
   
   /*!
    * \brief Get the p-norm for heat-flux objective functions (adjoint problem).
@@ -1822,10 +1922,10 @@ public:
   su2double GetThermalDiffusivity_Solid(void);
 
   /*!
-   * \brief Get the temperature in solids at freestream conditions.
+   * \brief Get the temperature in solids at initial conditions.
    * \return Freestream temperature (solid).
    */
-  su2double GetTemperature_Freestream_Solid(void);
+  su2double GetTemperature_Initial_Solid(void);
   
   /*!
    * \brief Get the value of the reference length for non-dimensionalization.
@@ -2578,7 +2678,13 @@ public:
    * \return Value of the Froude number.
    */
   void SetTemperature_FreeStream(su2double val_temperature_freestream);
-  
+
+  /*!
+   * \brief Set the Froude number for free surface problems.
+   * \return Value of the Froude number.
+   */
+  void SetTemperature_ve_FreeStream(su2double val_temperature_ve_freestream);
+
   /*!
    * \brief Set the Froude number for free surface problems.
    * \return Value of the Froude number.
@@ -3777,7 +3883,13 @@ public:
    * \return Gas model that we are using.
    */
   unsigned short GetKind_GasModel(void);
-  
+
+  /*!
+   * \brief Get the transport coefficient model.
+   * \return Index of transport coefficient model.
+   */
+  unsigned short GetKind_TransCoeffModel(void);
+
   /*!
    * \brief Fluid model that we are using.
    * \return Fluid model that we are using.
@@ -4185,12 +4297,6 @@ public:
   su2double GetCFLRedCoeff_AdjTurb(void);
   
   /*!
-   * \brief Get the number of linear smoothing iterations for mesh deformation.
-   * \return Number of linear smoothing iterations for mesh deformation.
-   */
-  unsigned long GetGridDef_Linear_Iter(void);
-  
-  /*!
    * \brief Get the number of nonlinear increments for mesh deformation.
    * \return Number of nonlinear increments for mesh deformation.
    */
@@ -4362,7 +4468,25 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_Flow(void);
-  
+
+  /*!
+   * \brief Get if the upwind scheme used MUSCL or not.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return MUSCL scheme.
+   */
+  bool GetMUSCL_TNE2(void);
+
+  /*!
+   * \brief Get if the upwind scheme used MUSCL or not.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return MUSCL scheme.
+   */
+  bool GetMUSCL_AdjTNE2(void);
+
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
@@ -4428,6 +4552,15 @@ public:
    *       during the computation.
    * \return Kind of integration scheme for the plasma equations.
    */
+  unsigned short GetKind_TimeIntScheme_TNE2(void);
+
+  /*!
+   * \brief Get the kind of integration scheme (explicit or implicit)
+   *        for the flow equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of integration scheme for the plasma equations.
+   */
   unsigned short GetKind_TimeIntScheme_Heat(void);
   
   /*!
@@ -4485,6 +4618,24 @@ public:
   unsigned short GetKind_ConvNumScheme_FEM_Flow(void);
 
   /*!
+   * \brief Get the kind of convective numerical scheme for the flow
+   *        equations (centered or upwind).
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of convective numerical scheme for the flow equations.
+   */
+  unsigned short GetKind_ConvNumScheme_TNE2(void);
+
+  /*!
+   * \brief Get the kind of convective numerical scheme for the flow
+   *        equations (centered or upwind).
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of convective numerical scheme for the flow equations.
+   */
+  unsigned short GetKind_ConvNumScheme_AdjTNE2(void);
+
+  /*!
    * \brief Get the kind of convective numerical scheme for the template
    *        equations (centered or upwind).
    * \note This value is obtained from the config file, and it is constant
@@ -4500,7 +4651,23 @@ public:
    * \return Kind of center convective numerical scheme for the flow equations.
    */
   unsigned short GetKind_Centered_Flow(void);
-  
+
+  /*!
+	 * \brief Get the kind of center convective numerical scheme for the two-temperature model.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of center convective numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_Centered_TNE2(void);
+
+  /*!
+	 * \brief Get the kind of center convective numerical scheme for the two-temperature model.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of center convective numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_Centered_AdjTNE2(void);
+
   /*!
    * \brief Get the kind of center convective numerical scheme for the plasma equations.
    * \note This value is obtained from the config file, and it is constant
@@ -4542,6 +4709,21 @@ public:
   unsigned short GetKind_Matrix_Coloring(void);
 
   /*!
+   * \brief Get the kind of upwind convective numerical scheme for the flow equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of upwind convective numerical scheme for the flow equations.
+   */
+  unsigned short GetKind_Upwind_TNE2(void);
+
+  /*!
+   * \brief Get the kind of upwind convective numerical scheme for the flow equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of upwind convective numerical scheme for the flow equations.
+   */
+  unsigned short GetKind_Upwind_AdjTNE2(void);
+  /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients.
    */
@@ -4571,6 +4753,18 @@ public:
    */
   unsigned short GetKind_SlopeLimit_AdjFlow(void);
   
+ /*!
+  * \brief Get the method for limiting the spatial gradients.
+   * \return Method for limiting the spatial gradients solving the flow equations.
+   */
+  unsigned short GetKind_SlopeLimit_TNE2(void);
+
+  /*!
+   * \brief Get the method for limiting the spatial gradients.
+   * \return Method for limiting the spatial gradients solving the flow equations.
+   */
+  unsigned short GetKind_SlopeLimit_AdjTNE2(void);
+
   /*!
    * \brief Value of the calibrated constant for the Lax method (center scheme).
    * \note This constant is used in coarse levels and with first order methods.
@@ -4589,6 +4783,24 @@ public:
    * \return Calibrated constant for the JST method for the flow equations.
    */
   su2double GetKappa_4th_Flow(void);
+
+  /*!
+   * \brief Value of the calibrated constant for the JST method (center scheme).
+   * \return Calibrated constant for the JST method for the flow equations.
+   */
+  su2double GetKappa_1st_TNE2(void);
+ 
+  /*!
+   * \brief Value of the calibrated constant for the JST method (center scheme).
+   * \return Calibrated constant for the JST method for the flow equations.
+   */
+  su2double GetKappa_2nd_TNE2(void);
+
+  /*!
+   * \brief Value of the calibrated constant for the JST method (center scheme).
+   * \return Calibrated constant for the JST method for the flow equations.
+   */
+  su2double GetKappa_4th_TNE2(void);
 
   /*!
    * \brief Value of the calibrated constant for the JST method (center scheme).
@@ -4616,7 +4828,16 @@ public:
    * \return Kind of integration scheme for the adjoint flow equations.
    */
   unsigned short GetKind_TimeIntScheme_AdjFlow(void);
-  
+
+  /*!
+   * \brief Get the kind of integration scheme (explicit or implicit)
+   *        for the adjoint flow equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of integration scheme for the adjoint flow equations.
+   */
+  unsigned short GetKind_TimeIntScheme_AdjTNE2(void);
+
   /*!
    * \brief Get the kind of convective numerical scheme for the adjoint flow
    *        equations (centered or upwind).
@@ -4659,7 +4880,25 @@ public:
    * \return Calibrated constant for the low order center method for the adjoint flow equations.
    */
   su2double GetKappa_1st_AdjFlow(void);
-  
+
+  /*!
+   * \brief Value of the calibrated constant for the high order method (center scheme).
+   * \return Calibrated constant for the high order center method for the adjoint flow equations.
+   */
+  su2double GetKappa_2nd_AdjTNE2(void);
+
+  /*!
+   * \brief Value of the calibrated constant for the high order method (center scheme).
+   * \return Calibrated constant for the high order center method for the adjoint flow equations.
+   */
+  su2double GetKappa_4th_AdjTNE2(void);
+
+  /*!
+   * \brief Value of the calibrated constant for the low order method (center scheme).
+   * \return Calibrated constant for the low order center method for the adjoint flow equations.
+   */
+  su2double GetKappa_1st_AdjTNE2(void);
+
   /*!
    * \brief Get the kind of integration scheme (implicit)
    *        for the turbulence equations.
@@ -5172,6 +5411,34 @@ public:
   unsigned short GetTime_Marching(void);
   
   /*!
+   * \brief Get if the cold flow simulation is required.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending if cold flow is desired.
+   * \return Cold Flow Simulation.
+   */
+  bool GetCOLD_FLOW(void);
+
+  /*!
+   * \brief Set cold flow simulation if required.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending if cold flow is desired.
+   * \return Cold Flow Simulation.
+   */
+  void SetCOLD_FLOW(bool coldflow);
+
+  /*!
+   * \brief Get the vector of the cold flow options.
+   * \return Cold flow options.
+   */
+  su2double GetCold_Flow_Options(unsigned short opt);
+
+  /*!
+   * \brief Provides the number of species present in the plasma
+   * \return: The number of species present in the plasma, read from input file
+   */
+  unsigned short GetnSpecies(void);
+
+  /*!
    * \brief Provides the number of chemical reactions in the chemistry model
    * \return: The number of chemical reactions, read from input file
    */
@@ -5267,7 +5534,13 @@ public:
    * \return: The number of chemical reactions, read from input file
    */
   su2double GetCharVibTemp(unsigned short iSpecies);
-  
+
+  /*!
+   * \brief Provides a table of equilibrium constants for a particular chemical reaction for a supplied gas model.
+   * \return: Matrix of reaction constants
+   */
+  void GetChemistryEquilConstants(su2double **RxnConstantTable, unsigned short iReaction);
+
   /*!
    * \brief Provides the molar mass of each species present in multi species fluid
    * \return: Vector of molar mass of each species in kg/kmol
@@ -6574,6 +6847,13 @@ public:
   su2double* GetInlet_Velocity(string val_index);
   
   /*!
+   * \brief Get the mass fraction vector at a supersonic inlet boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet mass fraction vector - TNE2 only.
+   */
+  su2double* GetInlet_MassFrac(string val_index);
+
+  /*!
    * \brief Get the fixed value at the Dirichlet boundary.
    * \param[in] val_index - Index corresponding to the Dirichlet boundary.
    * \return The total temperature.
@@ -6614,6 +6894,12 @@ public:
    */
   su2double GetCFLRedCoeff_Turb(void);
   
+  /*!
+   * \brief Get the CFL Levi number for chemistry solvers.
+   * \return Value of the CFL reduction in cold flow TNE2 problems.
+   */
+  su2double GetCFLRedCoeff_Chem(void);
+
   /*!
    * \brief Get the flow direction unit vector at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
@@ -6796,6 +7082,12 @@ public:
    * \return The heat flux.
    */
   su2double GetWall_HeatFlux(string val_index);
+
+  /*!
+   * \brief Get the wall heat flux on a constant heat flux boundary.
+   * \return The heat flux.
+   */
+  su2double *GetWall_Catalycity(void);
 
   /*!
    * \brief Get the wall function treatment for the given boundary marker.
@@ -8298,12 +8590,6 @@ public:
   su2double GetdCL_dAlpha(void);
   
   /*!
-   * \brief Get the value of iterations to re-evaluate the angle of attack.
-   * \return Number of iterations.
-   */
-  unsigned long GetUpdate_Alpha(void);
-  
-  /*!
    * \brief Number of iterations to evaluate dCL_dAlpha.
    * \return Number of iterations.
    */
@@ -8314,12 +8600,6 @@ public:
    * \return Damping coefficient for fixed CL mode.
    */
   su2double GetdCM_diH(void);
-  
-  /*!
-   * \brief Get the value of iterations to re-evaluate the angle of attack.
-   * \return Number of iterations.
-   */
-  unsigned long GetIter_Fixed_CL(void);
   
   /*!
    * \brief Get the value of iterations to re-evaluate the angle of attack.
@@ -8362,6 +8642,23 @@ public:
    * \return <code>TRUE</code> if we should update the AoA for fixed lift mode; otherwise <code>FALSE</code>.
    */
   bool GetUpdate_AoA(void);
+
+  /*!
+   * \brief Get the maximum number of iterations between AoA updates for fixed C_L mode
+   * \return Number of maximum iterations between AoA updates
+   */
+  unsigned long GetUpdate_AoA_Iter_Limit(void);
+
+  /*!
+   * \brief Get whether at the end of finite differencing (Fixed CL mode)
+   * \return boolean indicating end of finite differencing mode (Fixed CL mode)
+   */
+  bool GetFinite_Difference_Mode(void);
+
+  /*!
+   * \brief Set whether at the end of finite differencing (Fixed CL mode)
+   */
+  void SetFinite_Difference_Mode(bool val_fd_mode);
   
   /*!
    * \brief Set the current number of non-physical nodes in the solution.
@@ -8879,9 +9176,9 @@ public:
    */
   inline unsigned short GetKindInterpolation(void);
 	
-	/*!
-	 * \brief Get option of whether to use conservative interpolation between zones.
-	 */
+  /*!
+   * \brief Get option of whether to use conservative interpolation between zones.
+   */
   inline bool GetConservativeInterpolation(void);
 	
   /*!
@@ -9270,12 +9567,26 @@ public:
    * \return 
    */
   unsigned long GetHistory_Wrt_Freq(unsigned short iter);
+
+    /*!
+   * \brief SetHistory_Wrt_Freq_Inner
+   * \param[in] iter: index for Time (0), Outer (1), or Inner (2) iterations
+   * \param[in] nIter: Number of iterations
+   */
+  void SetHistory_Wrt_Freq(unsigned short iter, unsigned long nIter);
   
   /*!
    * \brief GetScreen_Wrt_Freq_Inner
    * \return 
    */
   unsigned long GetScreen_Wrt_Freq(unsigned short iter);
+  
+  /*!
+   * \brief SetScreen_Wrt_Freq_Inner
+   * \param[in] iter: index for Time (0), Outer (1), or Inner (2) iterations
+   * \param[in] nIter: Number of iterations
+   */
+  void SetScreen_Wrt_Freq(unsigned short iter, unsigned long nIter);
   
   /*!
    * \brief GetScreen_Wrt_Freq_Inner

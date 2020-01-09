@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
@@ -106,9 +106,13 @@ inline su2double* CSolver::GetPsiRhos_Inf(void) { return NULL; }
 
 inline su2double CSolver::GetPsiE_Inf(void) { return 0; }
 
+inline void CSolver::SetPrimitive_Gradient(CConfig *config){}
+
 inline void CSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, unsigned long val_Point) { }
 
 inline void CSolver::SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
 
@@ -691,8 +695,16 @@ inline void CSolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, CCon
 
 inline void CSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
+inline void CSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
+
+inline void CSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
+
 inline void CSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
                   
+inline void CSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
+
+inline void CSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
+
 inline void CSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
                   unsigned short val_marker) { }
 
@@ -782,6 +794,18 @@ inline void CSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                      CConfig *config, unsigned short iMesh, bool Output) { }
+
+inline bool CSolver::FixedCL_Convergence(CConfig *config, bool convergence) { return false; }
+
+inline bool CSolver::GetStart_AoA_FD(void) { return false; }
+
+inline bool CSolver::GetEnd_AoA_FD(void) { return false; }
+
+inline unsigned long CSolver::GetIter_Update_AoA(void) { return 0; }
+
+inline su2double CSolver::GetPrevious_AoA(void) { return 0.0; }
+
+inline su2double CSolver::GetAoA_inc(void) { return 0.0; }
 
 inline void CSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_container,
                                          CConfig *config, unsigned short iMesh, bool Output) { }
@@ -1643,6 +1667,16 @@ inline void CEulerSolver::SetPressure_Inf(su2double p_inf) {Pressure_Inf = p_inf
 
 inline void CEulerSolver::SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
 
+inline bool CEulerSolver::GetStart_AoA_FD(void) { return Start_AoA_FD; }
+
+inline bool CEulerSolver::GetEnd_AoA_FD(void) { return End_AoA_FD; }
+
+inline unsigned long CEulerSolver::GetIter_Update_AoA(void) { return Iter_Update_AoA; }
+
+inline su2double CEulerSolver::GetPrevious_AoA(void) { return AoA_Prev; }
+
+inline su2double CEulerSolver::GetAoA_inc(void) { return AoA_inc; }
+
 inline su2double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline su2double CNSSolver::GetTke_Inf(void) { return Tke_Inf; }
@@ -2255,6 +2289,92 @@ inline su2double CIncNSSolver::GetConjugateHeatVariable(unsigned short val_marke
 inline void CIncNSSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
   HeatConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*HeatConjugateVar[val_marker][val_vertex][pos_var]; }
 
+inline su2double CTNE2EulerSolver::GetDensity_Inf(void) { return Density_Inf; }
+
+inline su2double CTNE2EulerSolver::GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
+
+inline su2double CTNE2EulerSolver::GetDensity_Velocity_Inf(unsigned short val_dim) { cout << "CTNE2EulerSolver::GetDensity_Velocity_Inf NOT RETURNING THE CORRECT VALUE!!!" << endl; return Density_Inf; }
+
+inline su2double CTNE2EulerSolver::GetPressure_Inf(void) { return Pressure_Inf; }
+
+inline su2double CTNE2EulerSolver::GetDensity_Energy_Inf(void) { cout << "CTNE2EulerSolver::GetDensity_Energy_Inf NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
+
+inline su2double CTNE2EulerSolver::GetModVelocity_Inf(void) {
+	su2double Vel2 = 0;
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Vel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+	return sqrt(Vel2);
+}
+
+inline su2double CTNE2EulerSolver::GetCPressure(unsigned short val_marker, unsigned long val_vertex) { return CPressure[val_marker][val_vertex]; }
+
+inline su2double CTNE2EulerSolver::GetCL_Inv(unsigned short val_marker) { return CL_Inv[val_marker]; }
+
+inline su2double CTNE2EulerSolver::GetCD_Inv(unsigned short val_marker) { return CD_Inv[val_marker]; }
+
+inline su2double CTNE2EulerSolver::GetCSF_Inv(unsigned short val_marker) { return CSF_Inv[val_marker]; }
+
+inline su2double CTNE2EulerSolver::GetCEff_Inv(unsigned short val_marker) { return CEff_Inv[val_marker]; }
+
+inline void CTNE2EulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboObj = ComboObj; }
+
+inline su2double CTNE2EulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
+inline su2double CTNE2EulerSolver::GetTotal_CL() { return Total_CL; }
+
+inline su2double CTNE2EulerSolver::GetTotal_CD() { return Total_CD; }
+
+inline su2double CTNE2EulerSolver::GetTotal_CMx() { return Total_CMx; }
+
+inline su2double CTNE2EulerSolver::GetTotal_CMy() { return Total_CMy; }
+
+inline su2double CTNE2EulerSolver::GetTotal_CMz() { return Total_CMz; }
+
+inline su2double CTNE2EulerSolver::GetTotal_CFx() { return Total_CFx; }
+
+inline su2double CTNE2EulerSolver::GetTotal_CFy() { return Total_CFy; }
+
+inline su2double CTNE2EulerSolver::GetTotal_CFz() { return Total_CFz; }
+
+inline su2double CTNE2EulerSolver::GetTotal_CSF() { return Total_CSF; }
+
+inline su2double CTNE2EulerSolver::GetTotal_CEff() { return Total_CEff; }
+
+inline su2double CTNE2EulerSolver::GetTotal_HeatFlux() { return Total_Heat; }
+
+inline su2double CTNE2EulerSolver::GetTotal_MaxHeatFlux() { return Total_MaxHeat; }
+
+inline void CTNE2EulerSolver::SetTotal_HeatFlux(su2double val_Total_Heat) { Total_Heat = val_Total_Heat; }
+
+inline void CTNE2EulerSolver::SetTotal_MaxHeatFlux(su2double val_Total_MaxHeat) { Total_MaxHeat = val_Total_MaxHeat; }
+
+inline void CTNE2EulerSolver::SetTotal_CL(su2double val_Total_CL) { Total_CL = val_Total_CL; }
+
+inline void CTNE2EulerSolver::SetTotal_CD(su2double val_Total_CD) { Total_CD = val_Total_CD; }
+
+inline su2double CTNE2EulerSolver::GetAllBound_CL_Inv() { return AllBound_CL_Inv; }
+
+inline su2double CTNE2EulerSolver::GetAllBound_CD_Inv() { return AllBound_CD_Inv; }
+
+inline su2double CTNE2EulerSolver::GetAllBound_CSF_Inv() { return AllBound_CSF_Inv; }
+
+inline su2double CTNE2EulerSolver::GetAllBound_CEff_Inv() { return AllBound_CEff_Inv; }
+
+inline su2double CTNE2NSSolver::GetCD_Visc(unsigned short val_marker) { return CD_Visc[val_marker]; }
+
+inline su2double CTNE2NSSolver::GetCL_Visc(unsigned short val_marker) { return CL_Visc[val_marker]; }
+
+inline su2double CTNE2NSSolver::GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex, unsigned short val_dim) { return CSkinFriction[val_marker][val_dim][val_vertex]; }
+
+inline su2double CTNE2NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
+
+inline su2double CTNE2NSSolver::GetHeatFlux(unsigned short val_marker, unsigned short val_vertex) { return HeatFlux[val_marker][val_vertex]; }
+
+inline su2double CTNE2NSSolver::GetYPlus(unsigned short val_marker, unsigned short val_vertex) { return YPlus[val_marker][val_vertex]; }
+
+inline su2double CTNE2NSSolver::GetAllBound_CL_Visc() { return AllBound_CL_Visc; }
+
+inline su2double CTNE2NSSolver::GetAllBound_CD_Visc() { return AllBound_CD_Visc; }
+
 inline su2double CHeatSolverFVM::GetTotal_HeatFlux() { return Total_HeatFlux; }
 
 inline su2double CHeatSolverFVM::GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
@@ -2406,8 +2526,6 @@ inline void CIncEulerSolver::SetSlidingStateStructure(unsigned short val_marker,
     SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
 }
 
-
-
 inline void CTurbSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){ 
   SlidingState[val_marker][val_vertex][val_state][donor_index] = component; 
 }
@@ -2461,6 +2579,61 @@ inline void CTurbSSTSolver::SetFreeStream_Solution(CConfig *config){
 inline su2double CTurbSSTSolver::GetTke_Inf(void) { return kine_Inf; }
 
 inline su2double CTurbSSTSolver::GetOmega_Inf(void) { return omega_Inf; }
+
+inline void CTNE2TurbSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){
+  SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
+}
+
+inline int CTNE2TurbSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return SlidingStateNodes[val_marker][val_vertex]; }
+
+inline void CTNE2TurbSolver::SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex){
+  int iVar;
+
+  for( iVar = 0; iVar < nVar+1; iVar++){
+    if( SlidingState[val_marker][val_vertex][iVar] != NULL )
+      delete [] SlidingState[val_marker][val_vertex][iVar];
+  }
+
+  for( iVar = 0; iVar < nVar+1; iVar++)
+    SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
+}
+
+inline void CTNE2TurbSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
+
+inline su2double CTNE2TurbSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }
+
+inline void CTNE2TurbSolver::SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var) {
+  /*--- Since this call can be accessed indirectly using python, do some error
+   * checking to prevent segmentation faults ---*/
+  if (val_marker >= nMarker)
+    SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
+  else if (Inlet_TurbVars == NULL || Inlet_TurbVars[val_marker] == NULL)
+    SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
+  else if (val_vertex >= nVertex[val_marker])
+    SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
+  else if (val_dim >= nVar)
+    SU2_MPI::Error("Out-of-bounds index used for inlet turbulence variable.", CURRENT_FUNCTION);
+  else
+    Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
+}
+
+inline void CTNE2TurbSASolver::SetFreeStream_Solution(CConfig *config) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    {nodes->SetSolution(iPoint, 0, nu_tilde_Inf);}
+}
+
+inline su2double CTNE2TurbSASolver::GetNuTilde_Inf(void) { return nu_tilde_Inf; }
+
+inline void CTNE2TurbSSTSolver::SetFreeStream_Solution(CConfig *config){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+    nodes->SetSolution(iPoint, 0, kine_Inf);
+    nodes->SetSolution(iPoint, 1, omega_Inf);
+  }
+}
+
+inline su2double CTNE2TurbSSTSolver::GetTke_Inf(void) { return kine_Inf; }
+
+inline su2double CTNE2TurbSSTSolver::GetOmega_Inf(void) { return omega_Inf; }
 
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_E(unsigned short iVal) { return Total_Sens_E[iVal]; }
 

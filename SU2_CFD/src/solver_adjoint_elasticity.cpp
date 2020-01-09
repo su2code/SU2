@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file solver_adjoint_elasticity.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
@@ -921,7 +921,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
 
 }
 
-void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config){
+void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config){
 
   unsigned short iVar;
 
@@ -983,31 +983,16 @@ void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *
 
 }
 
-void CDiscAdjFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CDiscAdjFEASolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, iVertex;
-  bool dynamic = (config->GetTime_Domain());
+  unsigned long iPoint;
+  unsigned short iVar;
 
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (nDim == 2) {
-      Solution[0] = 0.0;  Solution[1] = 0.0;
-    }
-    else {
-      Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
-    }
-
-    nodes->SetSolution(iPoint,Solution);
-
-    if (dynamic){
-      nodes->SetSolution_Vel(iPoint,Solution);
-      nodes->SetSolution_Accel(iPoint,Solution);
-    }
-
+  /*--- To nPoint: The solution must be communicated beforehand ---*/
+  /*--- As there are geometrical crossed dependencies, we need to use the full BGS solution and not just the node Solution ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++)
+        nodes->Set_BGSSolution_k(iPoint, iVar, nodes->Get_BGSSolution(iPoint, iVar));
   }
 
 }
