@@ -90,12 +90,12 @@ public:
    * \brief A pure virtual member.
    * \param[in] val_normal - Coordinates of the normal.
    */
-  virtual void GetNormal(su2double *val_normal) = 0;
+  virtual void GetNormal(su2double *val_normal) const = 0;
 
   /*!
    * \brief A pure virtual member.
    */
-  virtual su2double *GetNormal(void) = 0;
+  virtual su2double *GetNormal(void) const = 0;
 
   /*!
    * \brief A pure virtual member.
@@ -106,7 +106,7 @@ public:
   /*!
    * \brief A pure virtual member.
    */
-  virtual unsigned short GetnNodes(void) = 0;
+  virtual unsigned short GetnNodes(void) const = 0;
 
   /*!
    * \brief A pure virtual member.

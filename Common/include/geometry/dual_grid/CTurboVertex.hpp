@@ -80,7 +80,7 @@ public:
   /*!
    * \brief get face Area associate to the vertex.
    */
-  inline su2double GetArea(void) { return Area; }
+  inline su2double GetArea(void) const { return Area; }
 
   /*!
    * \brief Copy the the turbo normal vector of a face.
@@ -95,7 +95,7 @@ public:
    * \brief Get the turbo normal to a face where turboperformance are computed .
    * \return Dimensionaless normal vector, the modulus is the area of the face.
    */
-  inline su2double *GetTurboNormal(void) { return TurboNormal; }
+  inline su2double *GetTurboNormal(void) const { return TurboNormal; }
 
   /*!
    * \brief set vertex value not ordered.
@@ -106,7 +106,7 @@ public:
   /*!
    * \brief retrieve vertex value not ordered.
    */
-  inline unsigned long GetOldVertex(void) { return OldVertex; }
+  inline unsigned long GetOldVertex(void) const { return OldVertex; }
 
   /*!
    * \brief set global index for ordered span-wise turbovertex.
@@ -116,17 +116,17 @@ public:
   /*!
    * \brief get global index for ordered span-wise turbovertex.
    */
-  inline int GetGlobalVertexIndex(void){return GlobalIndex;}
-
+  inline int GetGlobalVertexIndex(void)const {return GlobalIndex;}
+ 
   /*!
    * \brief set angular coord.
    */
-  inline void SetAngularCoord(su2double angCoord){AngularCoord = angCoord;}
+  inline void SetAngularCoord(su2double angCoord) {AngularCoord = angCoord;}
 
   /*!
    * \brief get angular coord.
    */
-  inline su2double GetAngularCoord(void) { return AngularCoord; }
+  inline su2double GetAngularCoord(void) const { return AngularCoord; }
 
   /*!
    * \brief set angular coord.
@@ -136,7 +136,7 @@ public:
   /*!
    * \brief get angular coord.
    */
-  inline su2double GetDeltaAngularCoord(void) { return DeltaAngularCoord; }
+  inline su2double GetDeltaAngularCoord(void) const { return DeltaAngularCoord; }
 
   /*!
    * \brief set angular coord.
@@ -146,6 +146,6 @@ public:
   /*!
    * \brief get angular coord.
    */
-  inline su2double GetRelAngularCoord(void){return RelAngularCoord;}
+  inline su2double GetRelAngularCoord(void) const {return RelAngularCoord;}
 
 };

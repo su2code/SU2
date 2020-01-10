@@ -73,13 +73,13 @@ public:
    * \brief Get the number of nodes of a vertex.
    * \return Number of nodes that set a vertex (1).
    */
-  inline unsigned short GetnNodes() override { return 1; }
+  inline unsigned short GetnNodes() const override { return 1; }
 
   /*!
    * \brief Get the node of the vertex.
    * \return Index of the node that compose the vertex.
    */
-  inline unsigned long GetNode() { return Nodes[0]; }
+  inline unsigned long GetNode() const { return Nodes[0]; }
 
   /*!
    * \brief Set the face that correspond to a vertex.
@@ -102,7 +102,7 @@ public:
    * \brief Copy the the normal vector of a face.
    * \param[in] val_normal - Vector where the subroutine is goint to copy the normal (dimensional).
    */
-  inline void GetNormal(su2double *val_normal) override {
+  inline void GetNormal(su2double *val_normal) const override {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       val_normal[iDim] = Normal[iDim];
   }
@@ -111,7 +111,7 @@ public:
    * \brief Get the normal to a face of the control volume asociated with a vertex.
    * \return Dimensional normal vector, the modulus is the area of the face.
    */
-  inline su2double *GetNormal(void) override { return Normal; }
+  inline su2double *GetNormal(void) const override { return Normal; }
 
   /*!
    * \brief Initialize normal vector.
@@ -131,7 +131,7 @@ public:
    * \brief Get the value of an auxiliary variable for gradient computation.
    * \return Value of the auxiliar variable.
    */
-  inline su2double GetAuxVar(void) { return Aux_Var; }
+  inline su2double GetAuxVar(void) const { return Aux_Var; }
 
   /*!
    * \brief Add the value of an auxiliary variable for gradient computation.
@@ -199,7 +199,7 @@ public:
    * \param[in] val_dim - Variable of the dimension.
    * \return Value of the cartesian coordinate of the vertex.
    */
-  inline su2double GetCoord(unsigned short val_dim) { return CartCoord[val_dim]; }
+  inline su2double GetCoord(unsigned short val_dim) const { return CartCoord[val_dim]; }
 
   /*!
    * \brief Set the type of rotation associated to the vertex.
@@ -211,7 +211,7 @@ public:
    * \brief Get the type of rotation associated to the vertex.
    * \return Value of the rotation that must be applied to the solution of the vertex
    */
-  inline short GetRotation_Type(void) { return Rotation_Type; }
+  inline short GetRotation_Type(void) const { return Rotation_Type; }
 
   /*!
    * \overload
@@ -261,37 +261,37 @@ public:
    * \brief Get the value of the periodic point of a vertex.
    * \return Value of the periodic point of a vertex.
    */
-  inline long GetDonorPoint(void) { return PeriodicPoint[0]; }
+  inline long GetDonorPoint(void) const { return PeriodicPoint[0]; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex.
    * \return Value of the periodic point of a vertex.
    */
-  inline long GetDonorMarker(void) { return PeriodicPoint[4]; }
+  inline long GetDonorMarker(void) const { return PeriodicPoint[4]; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex.
    * \return Value of the periodic point of a vertex.
    */
-  inline long GetDonorVertex(void) { return PeriodicPoint[3]; }
+  inline long GetDonorVertex(void) const { return PeriodicPoint[3]; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex.
    * \return Value of the periodic point of a vertex.
    */
-  inline long GetDonorGlobalIndex(void) { return PeriodicPoint[2]; }
+  inline long GetDonorGlobalIndex(void) const { return PeriodicPoint[2]; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex.
    * \return Value of the periodic point of a vertex.
    */
-  inline long GetGlobalDonorPoint(void) { return PeriodicPoint[2]; }
+  inline long GetGlobalDonorPoint(void) const { return PeriodicPoint[2]; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex.
    * \return Value of the periodic point of a vertex.
    */
-  inline long GetDonorProcessor(void) { return PeriodicPoint[1]; }
+  inline long GetDonorProcessor(void) const { return PeriodicPoint[1]; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex, and its somain
@@ -303,7 +303,7 @@ public:
    * \brief Get the value of the periodic point of a vertex, and its somain
    * \return Value of the periodic point of a vertex, and the domain.
    */
-  inline bool GetActDisk_Perimeter(void) { return ActDisk_Perimeter; }
+  inline bool GetActDisk_Perimeter(void) const { return ActDisk_Perimeter; }
 
   /*!
    * \brief Set the donor element of a vertex for interpolation across zones.
@@ -315,7 +315,7 @@ public:
    * \brief Get the donor element of a vertex for interpolation across zones.
    * \return Value of the donor element of a vertex.
    */
-  inline long GetDonorElem(void) { return Donor_Elem; }
+  inline long GetDonorElem(void) const { return Donor_Elem; }
 
   /*!
    * \brief Set the donor face of a vertex for interpolation across zones.
@@ -327,7 +327,7 @@ public:
    * \brief Get the donor face of a vertex for interpolation across zones.
    * \return Value of the donor face index (w/in donor elem).
    */
-  inline unsigned short GetDonorFace(void) { return Donor_Face; }
+  inline unsigned short GetDonorFace(void) const { return Donor_Face; }
 
   /*!
    * \brief Set the finite element basis functions needed for interpolation.
@@ -353,7 +353,7 @@ public:
    * \brief Get the value of the closest neighbor.
    * \return Index of the closest neighbor.
    */
-  inline unsigned long GetNormal_Neighbor(void) { return Normal_Neighbor; }
+  inline unsigned long GetNormal_Neighbor(void) const { return Normal_Neighbor; }
 
   /*!
    * \brief Increment the number of donor points by 1.
@@ -370,21 +370,21 @@ public:
    * \brief Return the value of nDonor_Points
    * \return nDonor - the number of donor points
    */
-  inline unsigned short GetnDonorPoints(void) { return nDonor_Points;}
+  inline unsigned short GetnDonorPoints(void) const { return nDonor_Points;}
 
   /*!
    * \brief Set the coefficient value of a donor point.
    * \param[in] iDonor - Index of the donor point.
    * \param[in] val  - Value of the coefficent for point iDonor.
    */
-  inline void SetDonorCoeff(unsigned short iDonor, su2double val) { Donor_Coeff[iDonor] = val; }
+  inline void SetDonorCoeff(unsigned short iDonor, su2double val) const { Donor_Coeff[iDonor] = val; }
 
   /*!
    * \brief Get the coefficient value of a donor point.
    * \param[in] iDonor - Index of the donor point.
    * \return  - Value of the coefficent for point iDonor.
    */
-  inline su2double GetDonorCoeff(unsigned short iDonor) { return Donor_Coeff[iDonor];}
+  inline su2double GetDonorCoeff(unsigned short iDonor) const { return Donor_Coeff[iDonor];}
 
   /*!
    * \brief Set the donor point of a vertex for interpolation across zones.
@@ -398,7 +398,7 @@ public:
    * \brief Get the value of the donor point of a vertex (for interpolation).
    * \return Value of the donor point of a vertex.
    */
-  inline long GetInterpDonorPoint(unsigned short val_donorindex) { return Donor_Points[val_donorindex]; }
+  inline long GetInterpDonorPoint(unsigned short val_donorindex) const { return Donor_Points[val_donorindex]; }
 
   /*!
    * \brief Set the donor point of a vertex for interpolation across zones.
@@ -412,7 +412,7 @@ public:
    * \brief Get the value of the donor point of a vertex (for interpolation).
    * \return Value of the donor point of a vertex.
    */
-  inline long GetInterpDonorProcessor(unsigned short val_donorindex) { return Donor_Proc[val_donorindex]; }
+  inline long GetInterpDonorProcessor(unsigned short val_donorindex) const { return Donor_Proc[val_donorindex]; }
 
   /*!
    * \brief Allocate memory based on how many donor points need to be stored.
@@ -424,7 +424,7 @@ public:
    * \brief Get the rotation variation
    * \return  - pointer to the vector defining the rotation
    */
-  inline su2double *GetVarRot(void) { return VarRot;}
+  inline su2double *GetVarRot(void) const { return VarRot;}
 
   /*!
    * \brief Set the rotation variation
