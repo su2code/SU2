@@ -1,6 +1,6 @@
 /*!
- * \file solution_template.cpp
- * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
+ * \file CTemplateSolver.cpp
+ * \brief Subrotuines to be implemented for any new solvers
  * \author F. Palacios
  * \version 7.0.0 "Blackbird"
  *
@@ -26,7 +26,7 @@
  */
 
 
-#include "../include/solver_structure.hpp"
+#include "../include/solvers/CTemplateSolver.hpp"
 
 CTemplateSolver::CTemplateSolver(void) : CSolver() { }
 

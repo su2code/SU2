@@ -1,5 +1,5 @@
 /*!
- * \file solver_adjoint_elasticity.cpp
+ * \file CDiscAdjFEASolver.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
  * \version 7.0.0 "Blackbird"
@@ -26,9 +26,7 @@
  */
 
 
-#include "../include/solver_structure.hpp"
-#include "../include/variables/CDiscAdjFEAVariable.hpp"
-#include "../include/variables/CDiscAdjFEABoundVariable.hpp"
+#include "../../include/solvers/CDiscAdjFEASolver.hpp"
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(void) : CSolver (){
 

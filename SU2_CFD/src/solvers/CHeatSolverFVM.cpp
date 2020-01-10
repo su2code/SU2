@@ -1,5 +1,5 @@
 /*!
- * \file solution_direct_heat.cpp
+ * \file CHeatSolverFVM.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
  * \version 7.0.0 "Blackbird"
@@ -26,8 +26,7 @@
  */
 
 
-#include "../include/solver_structure.hpp"
-#include "../include/variables/CHeatFVMVariable.hpp"
+#include "../../include/solvers/CHeatSolverFVM.hpp"
 
 CHeatSolverFVM::CHeatSolverFVM(void) : CSolver() {
 

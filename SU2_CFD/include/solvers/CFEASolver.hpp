@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CSolver.hpp"
+#include "../variables/CFEABoundVariable.hpp"
 
 /*! \class CFEASolver
  *  \brief Main class for defining a FEM solver for elastic structural problems.

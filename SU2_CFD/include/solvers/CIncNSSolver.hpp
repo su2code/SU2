@@ -27,23 +27,21 @@
 
 #pragma once
 
-#include "CSolver.hpp"
 #include "CIncEulerSolver.hpp"
 #include "../variables/CIncNSVariable.hpp"
 
 /*!
- * \class CNSSolver
- * \brief Main class for defining the Navier-Stokes flow solver.
+ * \class CIncNSSolver
+ * \brief Main class for defining the incompressible Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
- * \author F. Palacios
+ * \author F. Palacios, T. Economon, T. Albring
  */
-class CNSSolver : public CEulerSolver {
+class CIncNSSolver : public CIncEulerSolver {
 private:
   su2double Viscosity_Inf;  /*!< \brief Viscosity at the infinity. */
   su2double Tke_Inf;        /*!< \brief Turbulent kinetic energy at the infinity. */
-  su2double Prandtl_Lam,    /*!< \brief Laminar Prandtl number. */
-  Prandtl_Turb;             /*!< \brief Turbulent Prandtl number. */
-  su2double *CD_Visc,       /*!< \brief Drag coefficient (viscous contribution) for each boundary. */
+  su2double
+  *CD_Visc,            /*!< \brief Drag coefficient (viscous contribution) for each boundary. */
   *CL_Visc,            /*!< \brief Lift coefficient (viscous contribution) for each boundary. */
   *CSF_Visc,           /*!< \brief Side force coefficient (viscous contribution) for each boundary. */
   *CMx_Visc,           /*!< \brief Moment x coefficient (viscous contribution) for each boundary. */
@@ -65,62 +63,59 @@ private:
   *Surface_CMx_Visc,   /*!< \brief Moment x coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CMy_Visc,   /*!< \brief Moment y coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CMz_Visc,   /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
-  *Surface_Buffet_Metric,  /*!< \brief Integrated separation sensor for each monitoring surface. */
-  *CEff_Visc,        /*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
-  *CMerit_Visc,      /*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
-  *Buffet_Metric,    /*!< \brief Integrated separation sensor for each boundary. */
-  *CT_Visc,    /*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
-  *CQ_Visc,    /*!< \brief Torque coefficient (viscous contribution) for each boundary. */
-  *HF_Visc,    /*!< \brief Heat load (viscous contribution) for each boundary. */
-  *MaxHF_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-  ***HeatConjugateVar,   /*!< \brief Conjugate heat transfer variables for each boundary and vertex. */
-  ***CSkinFriction,     /*!< \brief Skin friction coefficient for each boundary and vertex. */
-  **Buffet_Sensor;      /*!< \brief Separation sensor for each boundary and vertex. */
-  su2double Total_Buffet_Metric;  /*!< \brief Integrated separation sensor for all the boundaries. */
-  su2double *ForceViscous,        /*!< \brief Viscous force for each boundary. */
-  *MomentViscous;                 /*!< \brief Inviscid moment for each boundary. */
+  *CEff_Visc,          /*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
+  *CMerit_Visc,        /*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
+  *CT_Visc,            /*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
+  *CQ_Visc,            /*!< \brief Torque coefficient (viscous contribution) for each boundary. */
+  *HF_Visc,            /*!< \brief Heat load (viscous contribution) for each boundary. */
+  *MaxHF_Visc,         /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  ***HeatConjugateVar, /*!< \brief Conjugate heat transfer variables for each boundary and vertex. */
+  ***CSkinFriction;    /*!< \brief Skin friction coefficient for each boundary and vertex. */
   su2double
-  AllBound_CD_Visc,      /*!< \brief Drag coefficient (viscous contribution) for all the boundaries. */
-  AllBound_CL_Visc,      /*!< \brief Lift coefficient (viscous contribution) for all the boundaries. */
-  AllBound_CSF_Visc,     /*!< \brief Sideforce coefficient (viscous contribution) for all the boundaries. */
-  AllBound_CMx_Visc,     /*!< \brief Moment x coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMy_Visc,     /*!< \brief Moment y coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMz_Visc,     /*!< \brief Moment z coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CoPx_Visc,    /*!< \brief Moment x coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CoPy_Visc,    /*!< \brief Moment y coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CoPz_Visc,    /*!< \brief Moment z coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CEff_Visc,    /*!< \brief Efficient coefficient (Viscous contribution) for all the boundaries. */
-  AllBound_CFx_Visc,     /*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFy_Visc,     /*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFz_Visc,     /*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMerit_Visc,  /*!< \brief Rotor Figure of Merit coefficient (Viscous contribution) for all the boundaries. */
-  AllBound_CT_Visc,      /*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
-  AllBound_CQ_Visc,      /*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
-  AllBound_HF_Visc,      /*!< \brief Heat load (viscous contribution) for all the boundaries. */
-  AllBound_MaxHF_Visc;   /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  *ForceViscous,       /*!< \brief Viscous force for each boundary. */
+  *MomentViscous;      /*!< \brief Inviscid moment for each boundary. */
+  su2double
+  AllBound_CD_Visc,     /*!< \brief Drag coefficient (viscous contribution) for all the boundaries. */
+  AllBound_CL_Visc,     /*!< \brief Lift coefficient (viscous contribution) for all the boundaries. */
+  AllBound_CSF_Visc,    /*!< \brief Sideforce coefficient (viscous contribution) for all the boundaries. */
+  AllBound_CMx_Visc,    /*!< \brief Moment x coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMy_Visc,    /*!< \brief Moment y coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMz_Visc,    /*!< \brief Moment z coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPx_Visc,   /*!< \brief Moment x coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPy_Visc,   /*!< \brief Moment y coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPz_Visc,   /*!< \brief Moment z coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CEff_Visc,   /*!< \brief Efficient coefficient (Viscous contribution) for all the boundaries. */
+  AllBound_CFx_Visc,    /*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFy_Visc,    /*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFz_Visc,    /*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMerit_Visc, /*!< \brief Rotor Figure of Merit coefficient (Viscous contribution) for all the boundaries. */
+  AllBound_CT_Visc,     /*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
+  AllBound_CQ_Visc,     /*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
+  AllBound_HF_Visc,     /*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  AllBound_MaxHF_Visc;  /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   su2double
   StrainMag_Max,
-  Omega_Max;             /*!< \brief Maximum Strain Rate magnitude and Omega. */
+  Omega_Max;            /*!< \brief Maximum Strain Rate magnitude and Omega. */
   
 public:
   
   /*!
    * \brief Constructor of the class.
    */
-  CNSSolver(void);
-  
+  CIncNSSolver(void);
+    
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-  
+  CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+    
   /*!
    * \brief Destructor of the class.
    */
-  ~CNSSolver(void);
-  
+  ~CIncNSSolver(void);
+    
   /*!
    * \brief Provide the non dimensional lift coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -134,22 +129,22 @@ public:
    * \return Value of the drag coefficient on the surface <i>val_marker</i>.
    */
   su2double GetSurface_CD_Visc(unsigned short val_marker);
-  
+    
   /*!
    * \brief Provide the non dimensional side-force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
    */
   su2double GetSurface_CSF_Visc(unsigned short val_marker);
-  
+    
   /*!
    * \brief Provide the non dimensional side-force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
    */
   su2double GetSurface_CEff_Visc(unsigned short val_marker);
-  
-  /*!
+    
+    /*!
    * \brief Provide the non dimensional x force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x force coefficient on the surface <i>val_marker</i>.
@@ -162,14 +157,14 @@ public:
    * \return Value of the y force coefficient on the surface <i>val_marker</i>.
    */
   su2double GetSurface_CFy_Visc(unsigned short val_marker);
-  
+    
   /*!
    * \brief Provide the non dimensional z force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z force coefficient on the surface <i>val_marker</i>.
    */
   su2double GetSurface_CFz_Visc(unsigned short val_marker);
-  
+    
   /*!
    * \brief Provide the non dimensional x moment coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -190,13 +185,6 @@ public:
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
   su2double GetSurface_CMz_Visc(unsigned short val_marker);
-    
-  /*!
-   * \brief Provide the buffet metric.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the buffet metric on the surface <i>val_marker</i>.
-   */
-  su2double GetSurface_Buffet_Metric(unsigned short val_marker);
   
   /*!
    * \brief Get the inviscid contribution to the lift coefficient.
@@ -233,25 +221,25 @@ public:
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CMy_Visc(void);
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CMz_Visc(void);
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CoPx_Visc(void);
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CoPy_Visc(void);
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
@@ -275,12 +263,6 @@ public:
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CFz_Visc(void);
-    
-  /*!
-   * \brief Get the buffet metric.
-   * \return Value of the buffet metric.
-   */
-  su2double GetTotal_Buffet_Metric(void);
   
   /*!
    * \brief Compute the viscosity at the infinity.
@@ -324,15 +306,9 @@ public:
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
-    
-  /*!
-   * \brief Compute weighted-sum "combo" objective output
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Evaluate_ObjFunc(CConfig *config);
   
   /*!
-   * \brief Impose a constant heat-flux condition at the wall.
+   * \brief Impose a no-slip condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -341,9 +317,9 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-  
+
   /*!
-   * \brief Impose the Navier-Stokes boundary condition (strong).
+   * \brief Impose an isothermal temperature condition at the wall.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -351,15 +327,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                          unsigned short val_marker);
+  void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
   /*!
-   * \brief Impose the Navier-Stokes boundary condition (strong) with values from a CHT coupling.
+   * \brief Impose the (received) conjugate heat variables.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
@@ -370,32 +344,25 @@ public:
    * \param[in] val_marker        - marker index
    * \param[in] val_vertex        - vertex index
    * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
+   * \param[in] relaxation factor - relaxation factor for the change of the variables
+   * \param[in] val_var           - value of the variable
    */
-  su2double GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var);
+  void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var);
 
   /*!
    * \brief Set the conjugate heat variables.
    * \param[in] val_marker        - marker index
    * \param[in] val_vertex        - vertex index
    * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
-   * \param[in] relaxation factor - relaxation factor for the change of the variables
-   * \param[in] val_var           - value of the variable
    */
-  void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var);
-  
+  su2double GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var);
+
   /*!
    * \brief Compute the viscous forces and all the addimensional coefficients.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void Friction_Forces(CGeometry *geometry, CConfig *config);
-    
-  /*!
-   * \brief Compute the buffet sensor.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Buffet_Monitoring(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Get the total heat flux.
@@ -410,7 +377,7 @@ public:
    * \return Value of the maximum heat flux (viscous contribution) on the surface <i>val_marker</i>.
    */
   su2double GetSurface_MaxHF_Visc(unsigned short val_marker);
-  
+
   /*!
    * \brief Get the non dimensional lift coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -475,15 +442,6 @@ public:
    * \return Value of the pressure coefficient.
    */
   void SetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_heat);
-
-
-  /*!
-   * \brief Get the value of the buffet sensor
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the buffet sensor.
-   */
-  su2double GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
    * \brief Get the y plus.
@@ -516,22 +474,7 @@ public:
    * \return Value of the Omega_Max
    */
   void SetOmega_Max(su2double val_omega_max);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetRoe_Dissipation(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
- 
+
 };
 
 #include "../solver_inlines/CIncNSSolver.inl"

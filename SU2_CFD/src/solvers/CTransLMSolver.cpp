@@ -1,6 +1,6 @@
 /*!
- * \file solution_direct_transition.cpp
- * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
+ * \file CTransLMSolver.cpp
+ * \brief Main subrotuines for Transition model solver.
  * \author A. Aranake
  * \version 7.0.0 "Blackbird"
  *
@@ -26,9 +26,8 @@
  */
 
 
-#include "../include/solver_structure.hpp"
-#include "../include/variables/CTransLMVariable.hpp"
-#include "../include/variables/CTurbSAVariable.hpp"
+#include "../../include/solvers/CTransLMSolver.hpp"
+
 
 CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 

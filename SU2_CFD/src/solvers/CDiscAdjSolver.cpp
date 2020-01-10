@@ -1,5 +1,5 @@
 /*!
- * \file solver_adjoint_discrete.cpp
+ * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
  * \version 7.0.0 "Blackbird"
@@ -25,8 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/solver_structure.hpp"
-#include "../include/variables/CDiscAdjVariable.hpp"
+#include "../../include/solvers/CDiscAdjSolver.hpp"
 
 CDiscAdjSolver::CDiscAdjSolver(void) : CSolver () {
 

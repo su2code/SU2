@@ -27,7 +27,6 @@
 
 #pragma once
 
-#include "CSolver.hpp"
 #include "CEulerSolver.hpp"
 #include "../variables/CNSVariable.hpp"
 
