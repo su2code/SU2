@@ -110,11 +110,13 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/CFlowCompOutput.cpp \
   ../src/output/CFlowCompFEMOutput.cpp \
   ../src/output/CFlowIncOutput.cpp \
+  ../src/output/CTNE2CompOutput.cpp \
   ../src/output/CHeatOutput.cpp \
   ../src/output/CBaselineOutput.cpp \
   ../src/output/CAdjElasticityOutput.cpp \
   ../src/output/CAdjHeatOutput.cpp \
   ../src/output/CAdjFlowCompOutput.cpp \
+  ../src/output/CAdjTNE2CompOutput.cpp \
   ../src/output/CAdjFlowIncOutput.cpp \
   ../src/output/CMultizoneOutput.cpp \
   ../src/output/output_structure_legacy.cpp \
@@ -130,7 +132,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solver_direct_mean_inc.cpp \
   ../src/solver_direct_tne2.cpp \
   ../src/solver_direct_transition.cpp \
-	../src/solver_direct_tne2_turbulent.cpp \
+  ../src/solver_direct_tne2_turbulent.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_elasticity.cpp \
   ../src/solvers/CMeshSolver.cpp \
@@ -163,7 +165,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CDiscAdjFEAVariable.cpp \
   ../src/variables/CIncEulerVariable.cpp \
   ../src/variables/CTurbVariable.cpp \
-  ../src/variables/CTNE2TurbVariable.cpp \
   ../src/variables/CNSVariable.cpp \
   ../src/variables/CBaselineVariable.cpp \
   ../src/variables/CTurbSAVariable.cpp \
