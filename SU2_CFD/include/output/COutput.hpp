@@ -356,11 +356,11 @@ public:
    * \return Value of the field
    */
   su2double GetHistoryFieldValue(string field){
-    return historyOutput_Map[field].value;
+    return historyOutput_Map.at(field).value;
   }
 
   su2double GetHistoryFieldValuePerSurface(string field, unsigned short iMarker){
-    return historyOutputPerSurface_Map[field][iMarker].value;
+    return historyOutputPerSurface_Map.at(field)[iMarker].value;
   }
 
   /*!
@@ -371,7 +371,7 @@ public:
   vector<HistoryOutputField> GetHistoryGroup(string groupname){
     vector<HistoryOutputField> HistoryGroup;
     for (unsigned short iField = 0; iField < historyOutput_Map.size(); iField++){
-      if (historyOutput_Map[historyOutput_List[iField]].outputGroup == groupname){
+      if (historyOutput_Map.at(historyOutput_List[iField]).outputGroup == groupname){
         HistoryGroup.push_back((historyOutput_Map[historyOutput_List[iField]]));
       }
     }
