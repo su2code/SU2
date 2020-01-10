@@ -67,7 +67,7 @@ CMultizoneOutput::CMultizoneOutput(CConfig* driver_config, CConfig** config, uns
 
   multiZoneHeaderString = "Multizone Summary";
 
-  historyFilename = "multizone_history";
+  historyFilename = driver_config->GetCaseName();
 
   /*--- Add the correct file extension depending on the file format ---*/
 

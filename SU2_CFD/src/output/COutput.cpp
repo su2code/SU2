@@ -1024,7 +1024,7 @@ void COutput::SetScreen_Output(CConfig *config) {
 
 void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
-    noWriting = !wrt;
+    noWriting = !wrt || !WriteHistoryFile_Output(config);
 
     /*--- Set the common output fields ---*/
 
@@ -1791,6 +1791,12 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
   unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
   unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);
 
+  if (config->GetMultizone_Problem() && !config->GetWrt_ZoneConv()){
+
+    return false;
+
+  }
+  
   /*--- Check if screen output should be written --- */
 
   if (!PrintOutput(curTimeIter, HistoryWrt_Freq_Time)&&
