@@ -360,8 +360,8 @@ void CTNE2NSVariable ::SetThermalConductivity_GuptaYos(CConfig *config) {
     }
 
     /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
-    ThermalCond    = 0.0;
-    ThermalCond_ve = 0.0;
+    ThermalCond(iPoint)    = 0.0;
+    ThermalCond_ve(iPoint) = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 
       /*--- Calculate molar concentration ---*/
