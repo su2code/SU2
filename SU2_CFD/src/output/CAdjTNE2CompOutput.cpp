@@ -206,17 +206,17 @@ void CAdjTNE2CompOutput::SetHistoryOutputFields(CConfig *config){
 
 void CAdjTNE2CompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver){
 
-  CSolver* adjTNE2_SOLver = solver[ADJTNE2_SOL];
+  CSolver* adjTNE2_solver = solver[ADJTNE2_SOL];
   CSolver* adjturb_solver = solver[ADJTURB_SOL];
 
-  SetHistoryOutputValue("RMS_ADJ_DENSITY", log10(adjTNE2_SOLver->GetRes_RMS(0)));
-  SetHistoryOutputValue("RMS_ADJ_MOMENTUM-X", log10(adjTNE2_SOLver->GetRes_RMS(1)));
-  SetHistoryOutputValue("RMS_ADJ_MOMENTUM-Y", log10(adjTNE2_SOLver->GetRes_RMS(2)));
+  SetHistoryOutputValue("RMS_ADJ_DENSITY", log10(adjTNE2_solver->GetRes_RMS(0)));
+  SetHistoryOutputValue("RMS_ADJ_MOMENTUM-X", log10(adjTNE2_solver->GetRes_RMS(1)));
+  SetHistoryOutputValue("RMS_ADJ_MOMENTUM-Y", log10(adjTNE2_solver->GetRes_RMS(2)));
   if (geometry->GetnDim() == 3) {
-    SetHistoryOutputValue("RMS_ADJ_MOMENTUM-Z", log10(adjTNE2_SOLver->GetRes_RMS(3)));
-    SetHistoryOutputValue("RMS_ADJ_ENERGY", log10(adjTNE2_SOLver->GetRes_RMS(4)));
+    SetHistoryOutputValue("RMS_ADJ_MOMENTUM-Z", log10(adjTNE2_solver->GetRes_RMS(3)));
+    SetHistoryOutputValue("RMS_ADJ_ENERGY", log10(adjTNE2_solver->GetRes_RMS(4)));
   } else {
-    SetHistoryOutputValue("RMS_ADJ_ENERGY", log10(adjTNE2_SOLver->GetRes_RMS(3)));
+    SetHistoryOutputValue("RMS_ADJ_ENERGY", log10(adjTNE2_solver->GetRes_RMS(3)));
   }
   if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
@@ -230,14 +230,14 @@ void CAdjTNE2CompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
     default: break;
     }
   }
-  SetHistoryOutputValue("MAX_ADJ_DENSITY", log10(adjTNE2_SOLver->GetRes_Max(0)));
-  SetHistoryOutputValue("MAX_ADJ_MOMENTUM-X", log10(adjTNE2_SOLver->GetRes_Max(1)));
-  SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Y", log10(adjTNE2_SOLver->GetRes_Max(2)));
+  SetHistoryOutputValue("MAX_ADJ_DENSITY", log10(adjTNE2_solver->GetRes_Max(0)));
+  SetHistoryOutputValue("MAX_ADJ_MOMENTUM-X", log10(adjTNE2_solver->GetRes_Max(1)));
+  SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Y", log10(adjTNE2_solver->GetRes_Max(2)));
   if (geometry->GetnDim() == 3) {
-    SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Z", log10(adjTNE2_SOLver->GetRes_Max(3)));
-    SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjTNE2_SOLver->GetRes_Max(4)));
+    SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Z", log10(adjTNE2_solver->GetRes_Max(3)));
+    SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjTNE2_solver->GetRes_Max(4)));
   } else {
-    SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjTNE2_SOLver->GetRes_Max(3)));
+    SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjTNE2_solver->GetRes_Max(3)));
   }
   if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
@@ -253,14 +253,14 @@ void CAdjTNE2CompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   }
 
   if (multiZone){
-    SetHistoryOutputValue("BGS_ADJ_DENSITY", log10(adjTNE2_SOLver->GetRes_BGS(0)));
-    SetHistoryOutputValue("BGS_ADJ_MOMENTUM-X", log10(adjTNE2_SOLver->GetRes_BGS(1)));
-    SetHistoryOutputValue("BGS_ADJ_MOMENTUM-Y", log10(adjTNE2_SOLver->GetRes_BGS(2)));
+    SetHistoryOutputValue("BGS_ADJ_DENSITY", log10(adjTNE2_solver->GetRes_BGS(0)));
+    SetHistoryOutputValue("BGS_ADJ_MOMENTUM-X", log10(adjTNE2_solver->GetRes_BGS(1)));
+    SetHistoryOutputValue("BGS_ADJ_MOMENTUM-Y", log10(adjTNE2_solver->GetRes_BGS(2)));
     if (geometry->GetnDim() == 3) {
-      SetHistoryOutputValue("BGS_ADJ_MOMENTUM-Z", log10(adjTNE2_SOLver->GetRes_BGS(3)));
-      SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjTNE2_SOLver->GetRes_BGS(4)));
+      SetHistoryOutputValue("BGS_ADJ_MOMENTUM-Z", log10(adjTNE2_solver->GetRes_BGS(3)));
+      SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjTNE2_solver->GetRes_BGS(4)));
     } else {
-      SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjTNE2_SOLver->GetRes_BGS(3)));
+      SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjTNE2_solver->GetRes_BGS(3)));
     }
     if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
       switch(turb_model){
@@ -276,11 +276,11 @@ void CAdjTNE2CompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
     }
   }
 
-  SetHistoryOutputValue("SENS_GEO", adjTNE2_SOLver->GetTotal_Sens_Geo());
-  SetHistoryOutputValue("SENS_AOA", adjTNE2_SOLver->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
-  SetHistoryOutputValue("SENS_MACH", adjTNE2_SOLver->GetTotal_Sens_Mach());
-  SetHistoryOutputValue("SENS_PRESS", adjTNE2_SOLver->GetTotal_Sens_Press());
-  SetHistoryOutputValue("SENS_TEMP", adjTNE2_SOLver->GetTotal_Sens_Temp());
+  SetHistoryOutputValue("SENS_GEO", adjTNE2_solver->GetTotal_Sens_Geo());
+  SetHistoryOutputValue("SENS_AOA", adjTNE2_solver->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+  SetHistoryOutputValue("SENS_MACH", adjTNE2_solver->GetTotal_Sens_Mach());
+  SetHistoryOutputValue("SENS_PRESS", adjTNE2_solver->GetTotal_Sens_Press());
+  SetHistoryOutputValue("SENS_TEMP", adjTNE2_solver->GetTotal_Sens_Temp());
 
 }
 
@@ -445,7 +445,6 @@ void CAdjTNE2CompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, C
   SetVolumeOutputValue("SENSITIVITY", iPoint, solver[ADJTNE2_SOL]->GetCSensitivity(iMarker, iVertex));
 
 }
-
 
 bool CAdjTNE2CompOutput::SetInit_Residuals(CConfig *config){
 

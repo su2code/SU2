@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file output_adj_flow_comp.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
@@ -445,7 +445,6 @@ void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, C
   SetVolumeOutputValue("SENSITIVITY", iPoint, solver[ADJFLOW_SOL]->GetCSensitivity(iMarker, iVertex));
 
 }
-
 
 bool CAdjFlowCompOutput::SetInit_Residuals(CConfig *config){
 

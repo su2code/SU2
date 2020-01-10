@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file solver_adjoint_discrete.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
@@ -137,6 +137,9 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   switch(KindDirect_Solver){
   case RUNTIME_FLOW_SYS:
     SolverName = "ADJ.FLOW";
+    break;
+  case RUNTIME_TNE2_SYS:
+    SolverName = "ADJ.TNE2";
     break;
   case RUNTIME_HEAT_SYS:
     SolverName = "ADJ.HEAT";
@@ -293,6 +296,46 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
     su2double SoundSpeed = 0.0;
     
+    if (nDim == 2) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*Mach); }
+    if (nDim == 3) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*cos(Beta)*Mach); }
+
+    if (!reset) {
+      AD::RegisterInput(Mach);
+      AD::RegisterInput(Alpha);
+      AD::RegisterInput(Temperature);
+      AD::RegisterInput(Pressure);
+    }
+
+    /*--- Recompute the free stream velocity ---*/
+
+    if (nDim == 2) {
+      config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*Mach*SoundSpeed/Velocity_Ref;
+      config->GetVelocity_FreeStreamND()[1] = sin(Alpha)*Mach*SoundSpeed/Velocity_Ref;
+    }
+    if (nDim == 3) {
+      config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
+      config->GetVelocity_FreeStreamND()[1] = sin(Beta)*Mach*SoundSpeed/Velocity_Ref;
+      config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
+    }
+
+    config->SetTemperature_FreeStreamND(Temperature);
+    direct_solver->SetTemperature_Inf(Temperature);
+    config->SetPressure_FreeStreamND(Pressure);
+    direct_solver->SetPressure_Inf(Pressure);
+
+  }
+
+  if((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_TNE2_SYS && !config->GetBoolTurbomachinery())) {
+
+    su2double Velocity_Ref = config->GetVelocity_Ref();
+    Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
+    Beta                   = config->GetAoS()*PI_NUMBER/180.0;
+    Mach                   = config->GetMach();
+    Pressure               = config->GetPressure_FreeStreamND();
+    Temperature            = config->GetTemperature_FreeStreamND();
+
+    su2double SoundSpeed = 0.0;
+
     if (nDim == 2) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*Mach); }
     if (nDim == 3) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*cos(Beta)*Mach); }
 
@@ -566,6 +609,27 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 #endif
   }
 
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_TNE2_SYS) && !config->GetBoolTurbomachinery()) {
+    su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
+
+    Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
+    Local_Sens_AoA   = SU2_TYPE::GetDerivative(Alpha);
+    Local_Sens_Temp  = SU2_TYPE::GetDerivative(Temperature);
+    Local_Sens_Press = SU2_TYPE::GetDerivative(Pressure);
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&Local_Sens_Mach,  &Total_Sens_Mach,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_AoA,   &Total_Sens_AoA,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_Temp,  &Total_Sens_Temp,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    Total_Sens_Mach  = Local_Sens_Mach;
+    Total_Sens_AoA   = Local_Sens_AoA;
+    Total_Sens_Temp  = Local_Sens_Temp;
+    Total_Sens_Press = Local_Sens_Press;
+#endif
+  }
+
   if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
     su2double Local_Sens_BPress, Local_Sens_Temperature;
 
@@ -608,7 +672,6 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
 
 }
-
 
 void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {
 
@@ -875,7 +938,11 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
     if(config->GetMarker_All_KindBC(iMarker) == EULER_WALL
        || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
+       || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC
+       || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC
        || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL
+       || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC
+       || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC
        || config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
 
       Sens = 0.0;

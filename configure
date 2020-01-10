@@ -6335,6 +6335,7 @@ ac_config_files="$ac_config_files externals/cgns/Makefile"
 
 
 
+su2_externals_INCLUDES="-I\$(top_srcdir)/externals/CLI11 $su2_externals_INCLUDES"
 
 ##########################
 
@@ -6519,7 +6520,7 @@ fi
 
         if test "$build_CODI_FORWARD" == "yes"
         then
-           DIRECTDIFF_CXX="-std=c++0x -DCODI_FORWARD_TYPE -I\$(top_srcdir)/externals/codi/include"
+           DIRECTDIFF_CXX="-DCODI_FORWARD_TYPE -I\$(top_srcdir)/externals/codi/include"
            build_DIRECTDIFF=yes
            if test "$enablempi" == "yes"
            then
@@ -6556,7 +6557,7 @@ fi
            build_NORMAL=no
         elif test "$build_CODI_REVERSE" == "yes"
         then
-           REVERSE_CXX="-std=c++0x -DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/codi/include"
+           REVERSE_CXX="-DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/codi/include"
            if test "$enablempi" == "yes"
            then
               as_ac_File=`$as_echo "ac_cv_file_$AMPIheader" | $as_tr_sh`
@@ -6631,6 +6632,10 @@ then
   build_SOL=no
   build_GEO=no
   build_PY=no
+fi
+
+if test $build_DIRECTDIFF == "yes"
+then
   build_PY_WRAPPER=no
 fi
 
