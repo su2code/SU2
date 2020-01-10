@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CTurbSolver.hpp"
+#include "../variables/CTurbSSTVariable.hpp"
 
 /*!
  * \class CTurbSSTSolver

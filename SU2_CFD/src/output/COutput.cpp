@@ -42,7 +42,7 @@
 
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../include/solver_structure.hpp"
+#include "../../include/solvers/CSolver.hpp"
 
 COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutput(fem_output) {
 

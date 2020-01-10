@@ -35,7 +35,8 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "solver_structure.hpp"
+// #include "solver_structure.hpp"
+#include "solvers/CSolver.hpp"
 #include "../../Common/include/geometry/CGeometry.hpp"
 #include "../../Common/include/config_structure.hpp"
 

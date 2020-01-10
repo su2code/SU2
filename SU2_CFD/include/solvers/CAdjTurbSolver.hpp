@@ -28,7 +28,7 @@
 #pragma once
 
 #include "CSolver.hpp"
-#include "variables/CAdjTurbVariable.hpp"
+#include "../variables/CAdjTurbVariable.hpp"
 
 /*!
  * \class CAdjTurbSolver

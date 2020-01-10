@@ -25,9 +25,12 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #pragma once
 
 #include "CTurbSolver.hpp"
+#include "../variables/CTurbSAVariable.hpp"
+
 
 /*!
  * \class CTurbSASolver

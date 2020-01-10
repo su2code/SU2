@@ -1,6 +1,6 @@
 /*!
- * \file solution_adjoint_turbulent.cpp
- * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
+ * \file CAdjTurbVariable.cpp
+ * \brief Main subrotuines for solving turbulent adjoint problems.
  * \author F. Palacios, A. Bueno, T. Economon
  * \version 7.0.0 "Blackbird"
  *
@@ -26,8 +26,7 @@
  */
 
 
-#include "../include/solver_structure.hpp"
-#include "../include/variables/CAdjTurbVariable.hpp"
+#include "../../include/solvers/CAdjTurbSolver.hpp"
 
 CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
 

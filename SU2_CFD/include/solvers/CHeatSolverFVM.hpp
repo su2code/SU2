@@ -28,7 +28,7 @@
 #pragma once
 
 #include "CSolver.hpp"
-#include "variables/CHeatFVMVariable.hpp"
+#include "../variables/CHeatFVMVariable.hpp"
 
 /*! \class CHeatSolverFVM
  *  \brief Main class for defining the finite-volume heat solver.
