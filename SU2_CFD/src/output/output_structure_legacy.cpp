@@ -29,7 +29,7 @@
 #include "../../include/output/COutputLegacy.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../include/solver_structure.hpp"
+#include "../../include/solvers/CBaselineSolver.hpp"
 
 COutputLegacy::COutputLegacy(CConfig *config) {
 
