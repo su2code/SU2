@@ -9493,6 +9493,12 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
     if (config_container[iZone]->GetMultizone_Mesh() != GetMultizone_Mesh()){
       SU2_MPI::Error("Option MULTIZONE_MESH must be the same in all zones.", CURRENT_FUNCTION);
     }
+    if(config_container[iZone]->GetWnd_Cauchy_Crit() == true){
+      SU2_MPI::Error("Option WINDOW_CAUCHY_CRIT must be deactivated for multizone problems.", CURRENT_FUNCTION);
+    }
+  }
+  if(driver_config->GetWnd_Cauchy_Crit() == true){
+    SU2_MPI::Error("Option WINDOW_CAUCHY_CRIT must be deactivated for multizone problems.", CURRENT_FUNCTION);
   }
 
   /*--- Set the Restart iter for time dependent problems ---*/
