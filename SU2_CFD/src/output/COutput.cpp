@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
@@ -280,6 +280,7 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
   }
 
 }
+
 void COutput::SetCFL_Number(CSolver ****solver_container, CConfig *config) {
 
   su2double CFLFactor = 1.0, power = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, Div = 1.0, Diff = 0.0, MGFactor[100];
@@ -669,8 +670,6 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   }
 }
 
-
-
 bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
                               unsigned long iter, bool force_writing){
 
@@ -911,7 +910,6 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
   historyFileTable->PrintHeader();
   histFile.flush();
 }
-
 
 void COutput::SetHistoryFile_Output(CConfig *config) {
 
