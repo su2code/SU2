@@ -1,6 +1,9 @@
------------------------------------------------------------
-  SU2 (ver. 6.2.0 "Falcon"): The Open-Source CFD Code
------------------------------------------------------------
+<p align="center">
+<img width="250" height="154" src="Common/doc/logoSU2small.png">
+</p>
+
+
+# SU2 (ver. 7.0.0 "Blackbird"): The Open-Source CFD Code
 
 Computational analysis tools have revolutionized the way we design engineering systems, but most established codes are proprietary, unavailable, or prohibitively expensive for many users. The SU2 team is changing this, making multiphysics analysis and design optimization freely available as open-source software and involving everyone in its creation and development. 
 
@@ -12,11 +15,9 @@ Please note that this project is released with a [Contributor Code of Conduct](C
 
 Continuous Integration:<br/>
 [![Regression Testing](https://github.com/su2code/SU2/workflows/Regression%20Testing/badge.svg?branch=develop)](https://github.com/su2code/SU2/actions)
+[![Release](https://github.com/su2code/SU2/workflows/Release%20Management/badge.svg?branch=develop)](https://github.com/su2code/SU2/actions)
 
-
-----------------------------------------------------------
-  SU2 INTRODUCTION 
-----------------------------------------------------------
+# SU2 Introduction
 
 SU2 is a suite of open-source software tools written in C++ for the numerical solution of partial differential equations (PDE) and performing PDE constrained optimization. 
 
@@ -29,49 +30,61 @@ You will find more information and the latest news in:
    - Twitter: https://twitter.com/su2code
    - Facebook: https://www.facebook.com/su2code
 
----------------------------------------------------
-  SU2 INSTALLATION
----------------------------------------------------
 
-To build SU2 from the source code, first open a terminal and execute the ./bootstrap script provided in the root directory of the source distribution in order to set the makefiles for your local system. Then, simply run the './configure', 'make', and 'make install' commands. You can provide an install location using the prefix option to configure. Please note that more detailed instructions on the configure and build processes can be found within the INSTALL file.
+# SU2 Installation
 
-----------------------------------------------------------
-  SU2 PATH SETUP 
-----------------------------------------------------------
+## Precompiled binaries for Linux, MacOS, Windows
 
-SU2 is built using a typical configure/make/make install process. When make install is complete, please be sure to add the $SU2_HOME and $SU2_RUN environment variables, and update your $PATH with $SU2_RUN. 
+You can find precompiled binaries of the latest version on our [download page](https://su2code.github.io/download/) or under [releases](https://github.com/su2code/SU2/releases).
 
-For example, add these lines to your .bashrc file:
+## Build SU2
+The build system of SU2 is based on a combination of [meson](http://mesonbuild.com/) (as the front-end) and [ninja](https://ninja-build.org/) (as the back-end). Meson is an open source build system meant to be both extremely fast, and, even more importantly, as user friendly as possible. Ninja is a small low-level build system with a focus on speed. 
 
-- export SU2_RUN="your_prefix/bin"
-- export SU2_HOME="/path/to/SU2vX.X.X/"
-- export PATH=$PATH:$SU2_RUN
-- export PYTHONPATH=$SU2_RUN:$PYTHONPATH
+Short summary of the minimal requirements:
 
-$SU2_RUN should point to the folder where all binaries and python scripts were installed. This is the prefix you set with the --prefix option to configure. Note that the bin/ directory is automatically added to your prefix path.
+- C/C++ compiler
+- Python 3
 
-$SU2_HOME should point to the root directory of the source code distribution, i.e., /path/to/SU2vX.X.X/.
+**Note:** all other necessary build tools and dependencies are shipped with the source code or are downloaded automatically.
+
+If you have these tools installed, you can create a configuration using the `meson.py` found in the root source code folder:
+```
+./meson.py build
+```
+Use `ninja` to compile and install the code
+
+```
+./ninja -C build install
+```
+
+For more information on how to install and build SU2 on Linux, MacOS or Windows, have a look at the [documentation](https://su2code.github.io/docs_v7/).
+
+##  SU2 Path setup
+
+When installation is complete, please be sure to add the `$SU2_HOME` and `$SU2_RUN` environment variables, and update your `$PATH` with `$SU2_RUN`. 
+
+For example, add these lines to your `.bashrc` file:
+```
+export SU2_RUN="your_prefix/bin"
+export SU2_HOME="/path/to/SU2vX.X.X/"
+export PATH=$PATH:$SU2_RUN
+export PYTHONPATH=$SU2_RUN:$PYTHONPATH
+```
+
+`$SU2_RUN` should point to the folder where all binaries and python scripts were installed. This is the prefix you set with the --prefix option to meson. Note that the bin/ directory is automatically added to your prefix path.
+
+`$SU2_HOME` should point to the root directory of the source code distribution, i.e., `/path/to/SU2vX.X.X/`.
 
 Thanks for building, and happy optimizing!
 
 - The SU2 Development Team
 
-----------------------------------------------------------
-  SU2 DEVELOPERS
-----------------------------------------------------------
+
+# SU2 Developers
+
+
+We follow the popular "GitFlow" branching model for scalable development. In the SU2 repository, the master branch represents the latest stable major or minor release (7.0, 6.2.0, etc.), it should only be modified during version releases. Work that is staged for release is put into the develop branch via Pull Requests on GitHub from various "feature" branches where folks do their day-to-day work on the code. At release time, the work that has been merged into the develop branch is pushed to the master branch and tagged as a release.
 
 SU2 is being developed by individuals and organized teams all around the world. 
 
-The current SU2 release has been coordinated by the SU2 International Developers Society with selected contributions from the open-source community.
-
-The main research teams contributing to the current release are:
-- Prof. Juan J. Alonso's group at Stanford University.
-- Prof. Piero Colonna's group at Delft University of Technology.
-- Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology.
-- Prof. Alberto Guardone's group at Polytechnic University of Milan.
-- Prof. Rafael Palacios' group at Imperial College London.
-- Prof. Vincent Terrapon's group at the University of Liege.
-- Prof. Edwin van der Weide's group at the University of Twente.
-- Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.
-
-Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon, Tim Albring, and the SU2 contributors.
+A list of current contributors can be found in the AUTHORS.md file.

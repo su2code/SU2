@@ -1,26 +1,16 @@
-/*!
+﻿/*!
  * \file iteration_structure.hpp
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,7 +36,7 @@
 #include "integration_structure.hpp"
 #include "output/COutput.hpp"
 #include "numerics_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/geometry/CGeometry.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 
@@ -64,10 +54,10 @@ protected:
   unsigned short nZone;  /*!< \brief Total number of zones in the problem. */
   unsigned short nInst;  /*!< \brief Total number of instances in the problem. */
   
-  bool multizone,
-       singlezone;
+  bool multizone,  /*!< \brief Flag for multizone problems. */
+       singlezone; /*!< \brief Flag for singlezone problems. */
 
-  su2double StartTime,
+  su2double StartTime,  /*!< \brief Tracking wall time. */
             StopTime,
             UsedTime;
 
@@ -384,7 +374,7 @@ public:
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
    */
-virtual void Preprocess(COutput *output,
+  virtual void Preprocess(COutput *output,
                   CIntegration ****integration,
                   CGeometry ****geometry,
                   CSolver *****solver,
@@ -408,7 +398,7 @@ virtual void Preprocess(COutput *output,
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
-virtual void Iterate(COutput *output,
+  virtual void Iterate(COutput *output,
                CIntegration ****integration,
                CGeometry ****geometry,
                CSolver *****solver,
@@ -432,7 +422,7 @@ virtual void Iterate(COutput *output,
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
- virtual void Solve(COutput *output,
+   virtual void Solve(COutput *output,
                CIntegration ****integration,
                CGeometry ****geometry,
                CSolver *****solver,
@@ -448,7 +438,7 @@ virtual void Iterate(COutput *output,
    * \brief Updates the containers for the fluid system.
    * \param[in] ??? - Description here.
    */
-virtual void Update(COutput *output,
+  virtual void Update(COutput *output,
               CIntegration ****integration,
               CGeometry ****geometry,
               CSolver *****solver,
@@ -464,7 +454,7 @@ virtual void Update(COutput *output,
    * \brief Monitors the convergence and other metrics for the fluid system.
    * \param[in] ??? - Description here.
    */
-virtual bool Monitor(COutput *output,
+  virtual bool Monitor(COutput *output,
       CIntegration ****integration,
       CGeometry ****geometry,
       CSolver *****solver,
@@ -482,7 +472,7 @@ virtual bool Monitor(COutput *output,
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
- virtual void Postprocess(COutput *output,
+   virtual void Postprocess(COutput *output,
                    CIntegration ****integration,
                    CGeometry ****geometry,
                    CSolver *****solver,
@@ -589,7 +579,7 @@ public:
  * \class CFEMFluidIteration
  * \brief Class for driving an iteration of the finite element flow system.
  * \author T. Economon, E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CFEMFluidIteration : public CFluidIteration {
 public:
@@ -827,7 +817,7 @@ public:
  * \class CFEAIteration
  * \brief Class for driving an iteration of structural analysis.
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CFEAIteration : public CIteration {
 public:
@@ -1386,8 +1376,8 @@ class CDiscAdjFEAIteration : public CIteration {
 
 private:
 
-  CFEAIteration* fem_iteration; /*!< \brief Pointer to the mean flow iteration class. */
-  unsigned short CurrentRecording;        /*!< \brief Stores the current status of the recording. */
+  CFEAIteration* fem_iteration;     /*!< \brief Pointer to the primal iteration class. */
+  unsigned short CurrentRecording;  /*!< \brief Stores the current status of the recording. */
 
 
 public:

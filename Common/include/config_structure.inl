@@ -2,24 +2,14 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -364,7 +354,7 @@ inline su2double CConfig::GetThermalDiffusivity(void) { return Thermal_Diffusivi
 
 inline su2double CConfig::GetThermalDiffusivity_Solid(void) { return Thermal_Diffusivity_Solid; }
 
-inline su2double CConfig::GetTemperature_Freestream_Solid(void) { return Temperature_Freestream_Solid;  }
+inline su2double CConfig::GetTemperature_Initial_Solid(void) { return Temperature_Freestream_Solid;  }
 
 inline su2double CConfig::GetElasticyMod(unsigned short id_val) { return ElasticityMod[id_val]; }
 
@@ -453,8 +443,6 @@ inline su2double CConfig::GetGas_ConstantND(void) { return Gas_ConstantND; }
 inline su2double CConfig::GetMolecular_Weight(void) { return Molecular_Weight; }
 
 inline su2double CConfig::GetSpecific_Heat_Cp(void) { return Specific_Heat_Cp; }
-
-inline su2double CConfig::GetSpecific_Heat_Cp_Solid(void) { return Specific_Heat_Cp_Solid; }
 
 inline su2double CConfig::GetSpecific_Heat_CpND(void) { return Specific_Heat_CpND; }
 
@@ -990,6 +978,12 @@ inline su2double CConfig::GetmaxTurkelBeta() { return  Max_Beta_RoeTurkel; }
 
 inline unsigned short CConfig::GetKind_Gradient_Method(void) { return Kind_Gradient_Method; }
 
+inline unsigned short CConfig::GetKind_Gradient_Method_Recon(void) { return Kind_Gradient_Method_Recon; }
+
+inline bool CConfig::GetReconstructionGradientRequired(void) { return ReconstructionGradientRequired; }
+
+inline bool CConfig::GetLeastSquaresRequired(void) { return LeastSquaresRequired; }
+
 inline unsigned short CConfig::GetKind_Linear_Solver(void) { return Kind_Linear_Solver; }
 
 inline unsigned short CConfig::GetKind_Deform_Linear_Solver(void) { return Kind_Deform_Linear_Solver; }
@@ -1014,11 +1008,7 @@ inline unsigned long CConfig::GetLinear_Solver_Restart_Frequency(void) { return 
 
 inline su2double CConfig::GetLinear_Solver_Smoother_Relaxation(void) const { return Linear_Solver_Smoother_Relaxation; }
 
-inline su2double CConfig::GetRelaxation_Factor_Flow(void) { return Relaxation_Factor_Flow; }
-
 inline su2double CConfig::GetRelaxation_Factor_AdjFlow(void) { return Relaxation_Factor_AdjFlow; }
-
-inline su2double CConfig::GetRelaxation_Factor_Turb(void) { return Relaxation_Factor_Turb; }
 
 inline su2double CConfig::GetRelaxation_Factor_CHT(void) { return Relaxation_Factor_CHT; }
 
@@ -1668,10 +1658,6 @@ inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
 inline bool CConfig::GetWrt_AD_Statistics(void) { return Wrt_AD_Statistics; }
 
 inline bool CConfig::GetWrt_MeshQuality(void) { return Wrt_MeshQuality; }
-
-inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
-
-inline void CConfig::SetWrt_InletFile(bool val_wrt_inletfile) { Wrt_InletFile = val_wrt_inletfile; }
 
 inline bool CConfig::GetWrt_Slice(void) { return Wrt_Slice; }
 
