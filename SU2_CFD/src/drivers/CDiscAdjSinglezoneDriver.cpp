@@ -62,6 +62,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   /*--- Determine if the problem is a turbomachinery problem ---*/
   bool turbo = config->GetBoolTurbomachinery();
 
+  /*--- Determine if the problem is a turbomachinery problem ---*/
   bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
 
   /*--- Determine if the problem has a mesh deformation solver ---*/
@@ -71,7 +72,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   switch (config->GetKind_Solver()) {
 
-  case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+  case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:    case DISC_ADJ_RANS:
   case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
@@ -89,11 +90,12 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     
  case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_RANS:
     if (rank == MASTER_NODE)
-      cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
+      cout << "Direct iteration: TNE2 Euler/Navier-Stokes/RANS equation." << endl;
     direct_iteration = new CTNE2Iteration(config);
     direct_output = new CTNE2CompOutput(config, nDim);
     MainVariables = FLOW_CONS_VARS;
-    SecondaryVariables = MESH_COORDS;
+    if (mesh_def) SecondaryVariables = MESH_DEFORM;
+    else          SecondaryVariables = MESH_COORDS;
     break;
 
   case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
@@ -129,9 +131,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
 }
 
-CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {
-
-}
+CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {}
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
@@ -182,8 +182,8 @@ void CDiscAdjSinglezoneDriver::Run() {
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
 
     iteration->Iterate(output_container[ZONE_0], integration_container, geometry_container,
-                         solver_container, numerics_container, config_container,
-                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+                       solver_container, numerics_container, config_container,
+                       surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
     /*--- Monitor the pseudo-time ---*/
     StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
@@ -205,7 +205,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
   switch(config->GetKind_Solver())
   {
     case DISC_ADJ_EULER :     case DISC_ADJ_NAVIER_STOKES :     case DISC_ADJ_RANS :
-    case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES:
+    case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_RANS :
     case DISC_ADJ_INC_EULER : case DISC_ADJ_INC_NAVIER_STOKES : case DISC_ADJ_INC_RANS :
 
       /*--- Compute the geometrical sensitivities ---*/
@@ -389,6 +389,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     }
 
     break;
+
   case DISC_ADJ_FEM:
     switch (config->GetKind_ObjFunc()){
     case REFERENCE_GEOMETRY:

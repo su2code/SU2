@@ -331,7 +331,6 @@ void CDriver::SetContainers_Null(){
 
 }
 
-
 void CDriver::Postprocessing() {
 
   bool isBinary = config_container[ZONE_0]->GetWrt_Binary_Restart();
@@ -562,7 +561,6 @@ void CDriver::Postprocessing() {
     cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
 
 }
-
 
 void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
 
@@ -4181,7 +4179,6 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
 
 }
 
-
 void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                            CInterface*** interface){
 
@@ -4312,9 +4309,6 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
 
 }
 
-
-
-
 CDriver::~CDriver(void) {}
 
 CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, MPICommunicator, false) {
@@ -4380,7 +4374,6 @@ void CFluidDriver::StartSolver(){
 #endif
 }
 
-
 void CFluidDriver::Preprocess(unsigned long Iter) {
 
   /*--- Set the value of the external iteration and physical time. ---*/
@@ -4430,6 +4423,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
   }
 
 }
+
 void CFluidDriver::Run() {
 
   unsigned short iZone, jZone, checkConvergence;
@@ -4528,6 +4522,7 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long TimeIter) {
   }
 
 }
+
 bool CFluidDriver::Monitor(unsigned long ExtIter) {
 
   /*--- Synchronization point after a single solver iteration. Compute the
@@ -4581,11 +4576,7 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
 
 }
 
-
-void CFluidDriver::Output(unsigned long InnerIter) {
-
-}
-
+void CFluidDriver::Output(unsigned long InnerIter) {}
 
 CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_nZone,
                                              SU2_Comm MPICommunicator):
@@ -4847,11 +4838,10 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
 }
 
-CHBDriver::CHBDriver(char* confFile,
-    unsigned short val_nZone,
-    SU2_Comm MPICommunicator) : CFluidDriver(confFile,
-        val_nZone,
-        MPICommunicator) {
+CHBDriver::CHBDriver(char* confFile, unsigned short val_nZone,
+                     SU2_Comm MPICommunicator) : CFluidDriver(confFile,
+                                                              val_nZone,
+                                                              MPICommunicator) {
   unsigned short kInst;
 
   nInstHB = nInst[ZONE_0];
@@ -5680,7 +5670,6 @@ void CDiscAdjFSIDriver::Run( ) {
     config_container[ZONE_STRUCT], solver_container[ZONE_STRUCT][INST_0][MESH_0], 0, true);
 
 }
-
 
 void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
                   unsigned short ZONE_STRUCT,
@@ -6758,7 +6747,6 @@ void CDiscAdjFSIDriver::ConvergenceHistory(unsigned long IntIter,
 
 
 }
-
 
 bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
                                                  unsigned short ZONE_FLOW,

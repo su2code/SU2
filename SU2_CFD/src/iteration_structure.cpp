@@ -3422,7 +3422,7 @@ void CDiscAdjTNE2Iteration::SetDependencies(CSolver *****solver,
 
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
-  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE)  ||
+  if ((kind_recording == MESH_COORDS)         || (kind_recording == NONE)  ||
       (kind_recording == GEOMETRY_CROSS_TERM) || (kind_recording == ALL_VARIABLES)){
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
@@ -3472,7 +3472,7 @@ void CDiscAdjTNE2Iteration::RegisterOutput(CSolver *****solver, CGeometry ****ge
     solver[iZone][iInst][MESH_0][HEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
   if (interface_boundary){
-    solver[iZone][iInst][MESH_0][FLOW_SOL]->RegisterVertexTractions(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solver[iZone][iInst][MESH_0][TNE2_SOL]->RegisterVertexTractions(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
 }
@@ -3612,6 +3612,7 @@ CDiscAdjFEAIteration::CDiscAdjFEAIteration(CConfig *config) : CIteration(config)
 }
 
 CDiscAdjFEAIteration::~CDiscAdjFEAIteration(void) { }
+
 void CDiscAdjFEAIteration::Preprocess(COutput *output,
                                            CIntegration ****integration,
                                            CGeometry ****geometry,
@@ -3686,14 +3687,12 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
 
 }
 
-
-
 void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry ****geometry,
-                                               CSolver *****solver,
-                                               CConfig **config,
-                                               unsigned short val_iZone,
-                                               unsigned short val_iInst, 
-                                               int val_DirectIter) {
+                                                CSolver *****solver,
+                                                CConfig **config,
+                                                unsigned short val_iZone,
+                                                unsigned short val_iInst,
+                                                int val_DirectIter) {
   unsigned short iVar;
   unsigned long iPoint;
   bool update_geo = false;  //TODO: check
@@ -3717,19 +3716,17 @@ void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry ****geometry,
   }
 }
 
-
 void CDiscAdjFEAIteration::Iterate(COutput *output,
-                                        CIntegration ****integration,
-                                        CGeometry ****geometry,
-                                        CSolver *****solver,
-                                        CNumerics ******numerics,
-                                        CConfig **config,
-                                        CSurfaceMovement **surface_movement,
-                                        CVolumetricMovement ***volume_grid_movement,
-                                        CFreeFormDefBox*** FFDBox,
-                                        unsigned short val_iZone,
-                                        unsigned short val_iInst) {
-
+                                   CIntegration ****integration,
+                                   CGeometry ****geometry,
+                                   CSolver *****solver,
+                                   CNumerics ******numerics,
+                                   CConfig **config,
+                                   CSurfaceMovement **surface_movement,
+                                   CVolumetricMovement ***volume_grid_movement,
+                                   CFreeFormDefBox*** FFDBox,
+                                   unsigned short val_iZone,
+                                   unsigned short val_iInst) {
 
   bool dynamic = (config[val_iZone]->GetTime_Domain());
 
