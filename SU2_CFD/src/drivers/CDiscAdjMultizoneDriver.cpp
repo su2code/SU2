@@ -775,20 +775,20 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
 void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
-  bool TimeDomain = config_container[ZONE_0]->GetTime_Domain();
+  bool time_stepping = config_container[ZONE_0]->GetTime_Marching() != STEADY;
   unsigned long IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
-
   su2double seeding = 1.0;
 
-  if (TimeDomain){
+  CWindowingTools windowEvaluator = CWindowingTools();
+
+  if (time_stepping){
     if (TimeIter < IterAvg_Obj){
-      seeding = 1.0/((su2double)IterAvg_Obj);
+      seeding = windowEvaluator.GetWndWeight(config_container[ZONE_0]->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));
     }
     else{
       seeding = 0.0;
     }
   }
-
   if (rank == MASTER_NODE) {
     AD::SetDerivative(ObjFunc_Index, SU2_TYPE::GetValue(seeding));
   }
