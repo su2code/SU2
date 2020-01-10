@@ -2,24 +2,14 @@
  * \file CIncTGVSolution.cpp
  * \brief Implementations of the member functions of CIncTGVSolution.
  * \author T. Economon, E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,7 +34,7 @@ CIncTGVSolution::CIncTGVSolution(unsigned short val_nDim,
                                  unsigned short val_iMesh,
                                  CConfig*       config)
 : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-  
+    
   /*--- Disable this solution for now, as it has not been tested. ---*/
   
   SU2_MPI::Error("CIncTGVSolution not yet fully implemented/tested.",
@@ -74,17 +64,17 @@ CIncTGVSolution::CIncTGVSolution(unsigned short val_nDim,
   
   /*--- Perform some sanity and error checks for this solution here. ---*/
   
-  if((config->GetUnsteady_Simulation() != TIME_STEPPING) &&
-     (config->GetUnsteady_Simulation() != DT_STEPPING_1ST) &&
-     (config->GetUnsteady_Simulation() != DT_STEPPING_2ND))
+  if((config->GetTime_Marching() != TIME_STEPPING) &&
+     (config->GetTime_Marching() != DT_STEPPING_1ST) &&
+     (config->GetTime_Marching() != DT_STEPPING_2ND))
     SU2_MPI::Error("Unsteady mode must be selected for the incompressible Taylor Green Vortex",
                    CURRENT_FUNCTION);
   
-  if(config->GetKind_Regime() != INCOMPRESSIBLE)
+  if(Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS )
     SU2_MPI::Error("Incompressible flow equations must be selected for the incompressible Taylor Green Vortex",
                    CURRENT_FUNCTION);
   
-  if(config->GetKind_Solver() != NAVIER_STOKES)
+  if(Kind_Solver != INC_NAVIER_STOKES)
     SU2_MPI::Error("Navier Stokes equations must be selected for the incompressible Taylor Green Vortex",
                    CURRENT_FUNCTION);
   
