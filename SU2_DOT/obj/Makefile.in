@@ -397,7 +397,8 @@ su2_dot_ldadd = $(am__append_3) $(am__append_4) @su2_externals_LIBS@ \
 # always link to built dependencies from ./externals
 
 # if BUILD_MUTATIONPP
-su2_dot_cxx_flags = @su2_externals_INCLUDES@ @MUTATIONPP_CXX@
+su2_dot_cxx_flags = -std=c++11 @su2_externals_INCLUDES@ \
+	@MUTATIONPP_CXX@ $(am__empty)
 # endif
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_SOURCES = ${su2_dot_sources}
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_CXXFLAGS = ${su2_dot_cxx_flags}
