@@ -1,6 +1,5 @@
 common_include = include_directories('./')
 common_src =files(['geometry_structure_fem_part.cpp',
-           'primal_grid_structure.cpp',
            'graph_coloring_structure.cpp',
            'fem_geometry_structure.cpp',
            'fem_integration_rules.cpp',
@@ -25,6 +24,7 @@ subdir('toolboxes')
 subdir('geometry')
 subdir('geometry/elements')
 subdir('geometry/dual_grid')
+subdir('geometry/primal_grid')
 subdir('geometry/meshreader')
 
 if get_option('enable-normal')
