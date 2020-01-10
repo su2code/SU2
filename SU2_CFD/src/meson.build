@@ -98,7 +98,7 @@ su2_cfd_src += files(['solvers/CAdjEulerSolver.cpp',
                       'solvers/CTransLMSolver.cpp',
                       'solvers/CTurbSolver.cpp',
                       'solvers/CTurbSASolver.cpp',
-                      'solvers/CTurbSSTSolver.cpp])
+                      'solvers/CTurbSSTSolver.cpp'])
 
 su2_cfd_src += files(['numerics/elasticity/CFEAElasticity.cpp',
                       'numerics/elasticity/CFEALinearElasticity.cpp',
