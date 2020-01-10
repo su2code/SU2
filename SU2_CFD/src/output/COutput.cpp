@@ -1024,7 +1024,7 @@ void COutput::SetScreen_Output(CConfig *config) {
 
 void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
-    noWriting = !wrt || !WriteHistoryFile_Output(config);
+    noWriting = !wrt;
 
     /*--- Set the common output fields ---*/
 
@@ -1052,8 +1052,8 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
       CheckHistoryOutput();
 
       /*--- Open history file and print the header ---*/
-
-      PrepareHistoryFile(config);
+      if (!config->GetMultizone_Problem() || config->GetWrt_ZoneConv())
+          PrepareHistoryFile(config);
 
       total_width = nRequestedScreenFields*fieldWidth + (nRequestedScreenFields-1);
 
