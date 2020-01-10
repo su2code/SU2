@@ -49,7 +49,7 @@ extern "C" {
 #include <stdlib.h>
 #include <climits>
 
-#include "../primal_grid_structure.hpp"
+#include "primal_grid/CPrimalGrid.hpp"
 #include "dual_grid/CDualGrid.hpp"
 #include "dual_grid/CPoint.hpp"
 #include "dual_grid/CEdge.hpp"
