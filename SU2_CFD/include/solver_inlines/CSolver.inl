@@ -517,9 +517,9 @@ inline void CSolver::SetOmega_Max(su2double val_omega_max) { }
 
 inline void CSolver::Viscous_Residual(CGeometry *geometry,
                                       CSolver **solver_container,
-                                      CNumerics *numerics, CConfig *config,
-                                      unsigned short iMesh,
-                                      unsigned short iRKStep) { }
+                                      CNumerics *numerics, CConfig
+                                      *config, unsigned short iMesh,
+                                      unsigned short iRKstep) { }
 
 inline void CSolver::AddStiffMatrix(su2double ** StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3) { }
 
