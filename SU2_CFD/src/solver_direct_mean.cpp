@@ -3135,17 +3135,17 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
 void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
                                     unsigned short nVar, CGeometry *geometry, CConfig *config) {
   // Explanation of certain ROM-specific variables:
-  // TrialBasis   (POD-built reduced basis, Phi)
-  // GenCoordsY   (generalized coordinate vector, y)
-  // Solution_Ref (reference solution, w, typically a snapshot)
+  // TrialBasis   ...POD-built reduced basis, Phi
+  // GenCoordsY   ...generalized coordinate vector, y
+  // Solution_Ref ...reference solution, w, typically a snapshot
   
   std::cout << "Setting up ROM variables" << std::endl;
   
   /*--- Read data from the following three files: ---*/
   
   string phi_filename  = config->GetRom_FileName();
-  string ref_filename  = "ref_snapshot.csv"; // TODO: make a variable to import ref solution from file
-  string init_filename = "init_snapshot.csv"; // TODO: make a variable to import initial solution from file
+  string ref_filename  = config->GetRef_Snapshot_FileName(); // TODO: make a variable to import ref solution from file
+  string init_filename = config->GetInit_Snapshot_FileName(); // TODO: make a variable to import initial solution from file
   
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
@@ -5387,7 +5387,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.close();
   
   // backtracking line search to find step size:
-  double a =  0.09;
+  double a =  0.01;
   
   for (int i = 0; i < n; i++) {
     GenCoordsY[i] += a * r[i];

@@ -1689,6 +1689,16 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Automatically reorient elements that seem flipped */
   addBoolOption("REORIENT_ELEMENTS",ReorientElements, true);
 
+  /*!\par CONFIG_CATEGORY: Reduced Order Modelling specific variables  \ingroup Config */
+  /*--- Options related to reduced order modelling ---*/
+  
+  /*!\brief ROM_TESTBASIS_FILENAME\n DESCRIPTION: ROM test basis input file. \ingroup Config*/
+  addStringOption("ROM_TESTBASIS_FILENAME", Rom_FileName, string("pod.txt"));
+  /*!\brief INITIAL_SNAPSHOT_FILENAME\n DESCRIPTION: ROM initial snapshot input file. \ingroup Config*/
+  addStringOption("INITIAL_SNAPSHOT_FILENAME", Init_Snapshot_FileName, string("init_snapshot.csv"));
+  /*!\brief REF_SNAPSHOT_FILENAME\n DESCRIPTION: ROM reference snapshot input file. \ingroup Config*/
+  addStringOption("REF_SNAPSHOT_FILENAME", Ref_Snapshot_FileName, string("ref_snapshot.csv"));
+  
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
 
@@ -1727,8 +1737,6 @@ void CConfig::SetConfig_Options() {
   addStringOption("SOLUTION_FILENAME", Solution_FileName, string("solution.dat"));
   /*!\brief SOLUTION_ADJ_FILENAME\n DESCRIPTION: Restart adjoint input file. Objective function abbreviation is expected. \ingroup Config*/
   addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
-  /*!\brief ROM_TESTBASIS_FILENAME\n DESCRIPTION: ROM test basis input file. \ingroup Config*/
-  addStringOption("ROM_TESTBASIS_FILENAME", Rom_FileName, string("pod.txt"));
   /*!\brief RESTART_FLOW_FILENAME \n DESCRIPTION: Output file restart flow \ingroup Config*/
   addStringOption("RESTART_FILENAME", Restart_FileName, string("restart.dat"));
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
@@ -5347,6 +5355,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     
     if (Reduced_Model) {
       cout << "Read test basis for reduced order model computation from: " << Rom_FileName << "." << endl;
+      cout << "Read inital solution for reduced order model computation from: " << Ref_Snapshot_FileName << "." << endl;
+      cout << "Read reference solution for reduced order model computation from: " << Init_Snapshot_FileName << "." << endl;
     }
     
     if (ContinuousAdjoint)

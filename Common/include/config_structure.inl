@@ -1485,6 +1485,10 @@ inline string CConfig::GetSolution_AdjFileName(void) { return Solution_AdjFileNa
 
 inline string CConfig::GetRom_FileName(void) { return Rom_FileName; }
 
+inline string CConfig::GetRef_Snapshot_FileName(void) { return Ref_Snapshot_FileName; }
+
+inline string CConfig::GetInit_Snapshot_FileName(void) { return Init_Snapshot_FileName; }
+
 inline string CConfig::GetVolume_FileName(void) { return Volume_FileName; }
 
 inline string CConfig::GetRestart_FileName(void) { return Restart_FileName; }
