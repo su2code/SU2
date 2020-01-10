@@ -2,6 +2,7 @@ su2_def_src = ['SU2_DEF.cpp']
 if get_option('enable-normal')
 
   su2_cfd_obj = su2_cfd.extract_objects(['solvers/CSolver.cpp',
+                                        'solvers/CBaselineSolver.cpp',
                                         'CMarkerProfileReaderFVM.cpp',
                                         'output/COutput.cpp',
                                         'output/CMeshOutput.cpp',
