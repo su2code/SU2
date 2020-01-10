@@ -66,7 +66,7 @@ public:
    * \param[in] val_dim - Position to read the coordinate.
    * \return Coordinate <i>val_dim</i> of the centre of gravity.
    */
-  inline su2double GetCG(unsigned short val_dim) { return Coord_CG[val_dim]; }
+  inline su2double GetCG(unsigned short val_dim) const { return Coord_CG[val_dim]; }
 
   /*!
    * \brief Get the nodes of the edge.
@@ -74,13 +74,13 @@ public:
    * \return Index of the node that compose the edge.
    */
 
-  inline unsigned long GetNode(unsigned short val_node) { return Nodes[val_node]; }
+  inline unsigned long GetNode(unsigned short val_node) const { return Nodes[val_node]; }
 
   /*!
    * \brief Get the number of nodes of an element.
    * \return Number of nodes that set an edge (2).
    */
-  inline unsigned short GetnNodes() override { return 2; }
+  inline unsigned short GetnNodes() const override { return 2; }
 
   /*!
    * \brief Compute Volume associated to each edge.
@@ -90,7 +90,7 @@ public:
    * \param[in] val_coord_Point - Coordinates of the point that form the control volume.
    * \return Local volume associated to the edge.
    */
-  su2double GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG, su2double *val_coord_Point);
+  su2double GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG, su2double *val_coord_Point) const;
 
   /*!
    * \overload
@@ -99,7 +99,7 @@ public:
    * \param[in] val_coord_Point - Coordinates of the point that form the control volume.
    * \return Local volume associated to the edge.
    */
-  su2double GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG, su2double *val_coord_Point);
+  su2double GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG, su2double *val_coord_Point) const;
 
   /*!
    * \brief Set the face that correspond to an edge.
@@ -125,7 +125,7 @@ public:
    * \brief Copy the the normal vector of a face.
    * \param[in] val_normal - Vector where the subroutine is goint to copy the normal (dimensional).
    */
-  inline void GetNormal(su2double *val_normal) override {
+  inline void GetNormal(su2double *val_normal) const override {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       val_normal[iDim] = Normal[iDim];
   }
@@ -134,7 +134,7 @@ public:
    * \brief Get the normal to a face of the control volume asociated with an edge.
    * \return Dimensional normal vector, the modulus is the area of the face.
    */
-  inline su2double *GetNormal(void) override {  return Normal; }
+  inline su2double *GetNormal(void) const override {  return Normal; }
 
   /*!
    * \brief Initialize normal vector.

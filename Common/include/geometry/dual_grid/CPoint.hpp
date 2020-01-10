@@ -137,7 +137,7 @@ public:
    * \brief Get the value of the distance to the nearest wall.
    * \return Value of the distance to the nearest wall.
    */
-  inline su2double GetWall_Distance(void) { return Wall_Distance; }
+  inline su2double GetWall_Distance(void) const { return Wall_Distance; }
 
   /*!
    * \brief Set the value of the curvature at a surface node.
@@ -149,13 +149,13 @@ public:
    * \brief Get the value of the curvature at a surface node.
    * \return Value of the curvature.
    */
-  inline su2double GetCurvature(void) { return Curvature; }
+  inline su2double GetCurvature(void) const { return Curvature; }
 
   /*!
    * \brief Get the value of the distance to a sharp edge
    * \return Value of the distance to the nearest wall.
    */
-  inline su2double GetSharpEdge_Distance(void) { return SharpEdge_Distance; }
+  inline su2double GetSharpEdge_Distance(void) const { return SharpEdge_Distance; }
 
   /*!
    * \brief Set the number of elements that compose the control volume.
@@ -205,13 +205,13 @@ public:
    * \brief Get the adjoint values of the (geometric) coordinates.
    * \param[in] adj_sol - Adjoint values of the Coord variables.
    */
-  su2double GetAdjointSolution(unsigned short iDim);
+  su2double GetAdjointSolution(unsigned short iDim) const;
 
   /*!
    * \brief Get the coordinates of the control volume.
    * \return pointer to the coordinate of the point.
    */
-  inline bool GetFlip_Orientation(void) { return Flip_Orientation; }
+  inline bool GetFlip_Orientation(void) const { return Flip_Orientation; }
 
   /*!
    * \brief Set the coordinates for the control volume.
@@ -240,13 +240,13 @@ public:
    * \brief Get the number of elements that compose the control volume.
    * \return Number of elements that compose the control volume.
    */
-  inline unsigned short GetnElem(void) { return nElem; }
+  inline unsigned short GetnElem(void) const { return nElem; }
 
   /*!
    * \brief Get the number of points that compose the control volume.
    * \return Number of points that compose the control volume.
    */
-  inline unsigned short GetnPoint(void) { return nPoint; }
+  inline unsigned short GetnPoint(void) const { return nPoint; }
 
   /*!
    * \brief Set the elements that set the control volume.
@@ -333,7 +333,7 @@ public:
    * \brief Get the missing component of area or volume for a control volume on a periodic marker.
    * \return Periodic component of area or volume for a control volume on a periodic marker.
    */
-  inline su2double GetPeriodicVolume(void) { return Periodic_Volume; }
+  inline su2double GetPeriodicVolume(void) const { return Periodic_Volume; }
 
   /*!
    * \brief Set the missing component of area or volume for a control volume on a periodic marker.
@@ -345,13 +345,13 @@ public:
    * \brief Get the maximum cell-center to cell-center length.
    * \return The maximum cell-center to cell-center length.
    */
-  inline su2double GetMaxLength(void) {return MaxLength;}
+  inline su2double GetMaxLength(void) const {return MaxLength;}
 
   /*!
    * \brief Get information about the movement of the node.
    * \return <code>TRUE</code> if the point is going to be moved; otherwise <code>FALSE</code>.
    */
-  inline bool GetMove(void) { return Move; }
+  inline bool GetMove(void) const { return Move; }
 
   /*!
    * \brief Set if a point belong to the boundary.
@@ -375,7 +375,7 @@ public:
    * \brief Provides information about if a point belong to the boundaries.
    * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
    */
-  inline bool GetBoundary(void) { return Boundary; }
+  inline bool GetBoundary(void) const { return Boundary; }
 
   /*!
    * \brief Set if a point belong to the boundary.
@@ -399,19 +399,19 @@ public:
    * \brief Provides information about if a point belong to the physical boundaries (without MPI).
    * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
    */
-  inline bool GetPhysicalBoundary(void) { return PhysicalBoundary; }
+  inline bool GetPhysicalBoundary(void) const { return PhysicalBoundary; }
 
   /*!
    * \brief Provides information about if a point belong to the physical boundaries (without MPI).
    * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
    */
-  inline bool GetSolidBoundary(void) { return SolidBoundary; }
+  inline bool GetSolidBoundary(void) const { return SolidBoundary; }
 
   /*!
    * \brief Provides information about if a point belongs to a periodic boundary (without MPI).
    * \return <code>TRUE</code> if the point belongs to a periodic boundary; otherwise <code>FALSE</code>.
    */
-  inline bool GetPeriodicBoundary(void) { return PeriodicBoundary; }
+  inline bool GetPeriodicBoundary(void) const { return PeriodicBoundary; }
 
   /*!
    * \brief Set a color to the point that comes from the grid partitioning.
@@ -430,19 +430,19 @@ public:
    * \brief Get the number of neighbor of a point.
    * \return Number of neighbors.
    */
-  inline unsigned short GetnNeighbor(void) { return nNeighbor; }
+  inline unsigned short GetnNeighbor(void) const { return nNeighbor; }
 
   /*!
    * \brief Get the color of a point, the color indicates to which subdomain the point belong to.
    * \return Color of the point.
    */
-  inline unsigned long GetColor(void) { return color; }
+  inline unsigned long GetColor(void) const { return color; }
 
   /*!
    * \brief Get the global index in a parallel computation.
    * \return Global index in a parallel computation.
    */
-  inline unsigned long GetGlobalIndex(void) { return GlobalIndex; }
+  inline unsigned long GetGlobalIndex(void) const { return GlobalIndex; }
 
   /*!
    * \brief Set the global index in a parallel computation.
@@ -454,13 +454,13 @@ public:
    * \brief Get the volume of the control volume at time n.
    * \return Volume of the control volume at time n
    */
-  inline su2double GetVolume_n(void) { return Volume[1]; }
+  inline su2double GetVolume_n(void) const { return Volume[1]; }
 
   /*!
    * \brief Get the volume of the control volume at time n+1.
    * \return Volume of the control volume at time n+1
    */
-  inline su2double GetVolume_nM1(void) { return Volume[2]; }
+  inline su2double GetVolume_nM1(void) const { return Volume[2]; }
 
   /*!
    * \brief Set the volume of the control volume at time n.
@@ -476,19 +476,19 @@ public:
    * \brief Get the coordinates of the control volume at time n.
    * \return Coordinates of the control volume at time n.
    */
-  inline su2double *GetCoord_n(void) { return Coord_n; }
+  inline su2double *GetCoord_n(void) const { return Coord_n; }
 
   /*!
    * \brief Get the coordinates of the control volume at time n-1.
    * \return Volume of the control volume at time n-1
    */
-  inline su2double *GetCoord_n1(void) { return Coord_n1; }
+  inline su2double *GetCoord_n1(void) const { return Coord_n1; }
 
   /*!
    * \brief Get the coordinates of the control volume at time n+1.
    * \return Volume of the control volume at time n+1
    */
-  inline su2double *GetCoord_p1(void) { return Coord_p1; }
+  inline su2double *GetCoord_p1(void) const { return Coord_p1; }
 
   /*!
    * \brief Set the coordinates of the control volume at time n to the ones in <i>Coord</i>.
@@ -570,26 +570,26 @@ public:
    * \brief Get the parent control volume of an agglomerated control volume.
    * \return Index of the parent control volume.
    */
-  inline unsigned long GetParent_CV(void) { return Parent_CV; }
+  inline unsigned long GetParent_CV(void) const { return Parent_CV; }
 
   /*!
    * \brief Get the children control volume of an agglomerated control volume.
    * \param[in] val_nchildren_CV - Number of the children.
    * \return Index of the parent control volume.
    */
-  inline unsigned long GetChildren_CV(unsigned short val_nchildren_CV) {  return Children_CV[val_nchildren_CV]; }
+  inline unsigned long GetChildren_CV(unsigned short val_nchildren_CV) const {  return Children_CV[val_nchildren_CV]; }
 
   /*!
    * \brief Get information about if a control volume has been agglomerated.
    * \return <code>TRUE</code> if the point has been agglomerated; otherwise <code>FALSE</code>.
    */
-  inline bool GetAgglomerate(void) { return Agglomerate; }
+  inline bool GetAgglomerate(void) const { return Agglomerate; }
 
   /*!
    * \brief Get information about if the indirect neighbors can be agglomerated.
    * \return <code>TRUE</code> if the indirect neigbors can be agglomerated; otherwise <code>FALSE</code>.
    */
-  inline bool GetAgglomerate_Indirect(void) { return Agglomerate_Indirect; }
+  inline bool GetAgglomerate_Indirect(void) const { return Agglomerate_Indirect; }
 
   /*!
    * \brief Set information about if the indirect neighbors can be agglomerated.
@@ -601,7 +601,7 @@ public:
    * \brief Get the number of children of an agglomerated control volume.
    * \return Number of children control volume.
    */
-  inline unsigned short GetnChildren_CV(void) { return nChildren_CV; }
+  inline unsigned short GetnChildren_CV(void) const { return nChildren_CV; }
 
   /*!
    * \brief Set the number of children of an agglomerated control volume.
@@ -613,25 +613,25 @@ public:
    * \brief Get the value of the summed coordinates for implicit smoothing.
    * \return Sum of coordinates at a point.
    */
-  inline su2double *GetCoord_Sum(void) { return Coord_Sum; }
+  inline su2double *GetCoord_Sum(void) const { return Coord_Sum; }
 
   /*!
    * \brief Get the value of the old coordinates for implicit smoothing.
    * \return Old coordinates at a point.
    */
-  inline su2double *GetCoord_Old(void) { return Coord_Old; }
+  inline su2double *GetCoord_Old(void) const { return Coord_Old; }
 
   /*!
    * \brief Get the value of the grid velocity at the point.
    * \return Grid velocity at the point.
    */
-  inline su2double *GetGridVel(void) { return GridVel; }
+  inline su2double *GetGridVel(void) const { return GridVel; }
 
   /*!
    * \brief Get the value of the grid velocity gradient at the point.
    * \return Grid velocity gradient at the point.
    */
-  inline su2double **GetGridVel_Grad(void) { return GridVel_Grad; }
+  inline su2double **GetGridVel_Grad(void) const { return GridVel_Grad; }
 
   /*!
    * \brief Add the value of the coordinates to the <i>Coord_Sum</i> vector for implicit smoothing.
@@ -712,13 +712,13 @@ public:
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
-  inline void GetNormal(su2double *val_normal) override { }
+  inline void GetNormal(su2double *val_normal) const override { }
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *      definition of the function in all the derived classes).
    */
-  inline su2double *GetNormal(void) override { return 0; }
+  inline su2double *GetNormal(void) const override { return 0; }
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
@@ -730,7 +730,7 @@ public:
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
-  inline unsigned short GetnNodes() override { return 0; }
+  inline unsigned short GetnNodes() const override { return 0; }
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
@@ -766,7 +766,7 @@ public:
    * \brief Get the adjoint values of the coordinates.
    * \param[in] adj_sol - The adjoint values of the coordinates.
    */
-  inline void GetAdjointCoord(su2double *adj_coor){
+  inline void GetAdjointCoord(su2double *adj_coor) const {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       adj_coor[iDim] = SU2_TYPE::GetDerivative(Coord[iDim]);
   }
@@ -775,7 +775,7 @@ public:
    * \brief Get the adjoint values of the coordinates.
    * \param[in] adj_sol - The adjoint values of the coordinates.
    */
-  inline void GetAdjointCoord_LocalIndex(su2double *adj_coor){
+  inline void GetAdjointCoord_LocalIndex(su2double *adj_coor) const {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       adj_coor[iDim] = AD::GetDerivative(AD_InputIndex[iDim]);
   }

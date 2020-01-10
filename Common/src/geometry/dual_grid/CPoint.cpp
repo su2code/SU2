@@ -450,6 +450,6 @@ void CPoint::SetAdjointSolution(const su2double *adj_sol) {
   }
 }
 
-su2double CPoint::GetAdjointSolution(unsigned short iDim) {
+su2double CPoint::GetAdjointSolution(unsigned short iDim) const {
   return AD::GetDerivative(AD_InputIndex[iDim]);
 }
