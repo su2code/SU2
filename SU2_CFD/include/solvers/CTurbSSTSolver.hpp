@@ -211,7 +211,13 @@ public:
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetFreeStream_Solution(CConfig *config);
+  inline void SetFreeStream_Solution(CConfig *config){
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+      nodes->SetSolution(iPoint, 0, kine_Inf);
+      nodes->SetSolution(iPoint, 1, omega_Inf);
+    }
+  }
+  
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
@@ -251,13 +257,13 @@ public:
    * \brief Get the value of the turbulent kinetic energy.
    * \return Value of the turbulent kinetic energy.
    */
-  su2double GetTke_Inf(void);
+  inline su2double GetTke_Inf(void) { return kine_Inf; }
 
   /*!
    * \brief Get the value of the turbulent frequency.
    * \return Value of the turbulent frequency.
    */
-  su2double GetOmega_Inf(void);
+  inline su2double GetOmega_Inf(void) { return omega_Inf; }
 
 };
 

@@ -196,35 +196,35 @@ public:
    * \return Value of the geometrical sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_Geo(void);
+  inline su2double GetTotal_Sens_Geo() { return Total_Sens_Geo; }
   
   /*!
    * \brief Set the total Mach number sensitivity coefficient.
    * \return Value of the Mach sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_Mach(void);
+  inline su2double GetTotal_Sens_Mach() { return Total_Sens_Mach; }
   
   /*!
    * \brief Set the total angle of attack sensitivity coefficient.
    * \return Value of the angle of attack sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_AoA(void);
+  inline su2double GetTotal_Sens_AoA() { return Total_Sens_AoA; }
   
   /*!
    * \brief Set the total farfield pressure sensitivity coefficient.
    * \return Value of the farfield pressure sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_Press(void);
+  inline su2double GetTotal_Sens_Press() { return Total_Sens_Press; }
   
   /*!
    * \brief Set the total farfield temperature sensitivity coefficient.
    * \return Value of the farfield temperature sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_Temp(void);
+  inline su2double GetTotal_Sens_Temp() { return Total_Sens_Temp; }
   
   /*!
    * \author H. Kline
@@ -232,19 +232,19 @@ public:
    * \return Value of the Back sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_BPress(void);
+  inline su2double GetTotal_Sens_BPress() { return Total_Sens_BPress; }
 
   /*!
    * \brief Get the total density sensitivity coefficient.
    * \return Value of the density sensitivity.
    */
-  su2double GetTotal_Sens_Density(void);
+  inline su2double GetTotal_Sens_Density() { return Total_Sens_Density; }
 
   /*!
    * \brief Get the total velocity magnitude sensitivity coefficient.
    * \return Value of the velocity magnitude sensitivity.
    */
-  su2double GetTotal_Sens_ModVel(void);
+  inline su2double GetTotal_Sens_ModVel() { return Total_Sens_ModVel; }
 
   /*!
    * \brief Get the shape sensitivity coefficient.
@@ -252,7 +252,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the sensitivity coefficient.
    */
-  su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex);
+  inline su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
   
   /*!
    * \brief Prepare the solver for a new recording.

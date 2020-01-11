@@ -220,14 +220,25 @@ public:
   * \param[in] val_vertex - vertex index
   * \param[in] val_state  - requested state component
   */
-  su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
+  inline su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }
 
   /*!
    * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
    * \param[in] val_marker   - marker index
    * \param[in] val_vertex   - vertex index
    */
-  void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
+  inline void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex){
+    int iVar;
+  
+    for( iVar = 0; iVar < nVar+1; iVar++){
+      if( SlidingState[val_marker][val_vertex][iVar] != NULL )
+        delete [] SlidingState[val_marker][val_vertex][iVar];
+    }
+  
+    for( iVar = 0; iVar < nVar+1; iVar++)
+      SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
+  }
+  
       
   /*!
    * \brief Set the outer state for fluid interface nodes.
@@ -237,7 +248,10 @@ public:
    * \param[in] donor_index  - index of the donor node to set
    * \param[in] component    - set value
    */
-  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component);
+  inline void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){
+    SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
+  }
+  
 
   /*!
    * \brief Set the number of outer state for fluid interface nodes.
@@ -245,14 +259,14 @@ public:
    * \param[in] val_vertex - vertex index
    * \param[in] value - number of outer states
    */
-  void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
+  inline void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
 
   /*!
    * \brief Get the number of outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
    * \param[in] val_vertex - vertex index
    */
-  int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
+  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return SlidingStateNodes[val_marker][val_vertex]; }
 
   /*!
    * \brief Set custom turbulence variables at the vertex of an inlet.
@@ -261,7 +275,21 @@ public:
    * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
    * \param[in] val_turb_var - Value of the turbulence variable to be used.
    */
-  void SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var);
+  inline void SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var) {
+    /*--- Since this call can be accessed indirectly using python, do some error
+     * checking to prevent segmentation faults ---*/
+    if (val_marker >= nMarker)
+      SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
+    else if (Inlet_TurbVars == NULL || Inlet_TurbVars[val_marker] == NULL)
+      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
+    else if (val_vertex >= nVertex[val_marker])
+      SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
+    else if (val_dim >= nVar)
+      SU2_MPI::Error("Out-of-bounds index used for inlet turbulence variable.", CURRENT_FUNCTION);
+    else
+      Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
+  }
+  
 };
 
 #include "../solver_inlines/CTurbSolver.inl"

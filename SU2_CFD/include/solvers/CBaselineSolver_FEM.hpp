@@ -87,7 +87,7 @@ public:
    * \brief Get a pointer to the vector of the solution degrees of freedom.
    * \return Pointer to the vector of the solution degrees of freedom.
    */
-  su2double* GetVecSolDOFs(void);
+  inline su2double* GetVecSolDOFs(void) {return VecSolDOFs.data();}
 
 };
 

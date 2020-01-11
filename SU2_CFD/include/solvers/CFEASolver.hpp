@@ -204,7 +204,7 @@ public:
    * \param[in] indexNode - Index of the node.
    * \param[in] iDim - Dimension required.
    */
-  su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim);
+  inline su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {return geometry->node[indexNode]->GetCoord(iDim);}
   
   /*!
    * \brief Compute the stiffness matrix of the problem.
@@ -459,100 +459,100 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Value of the residual for the variable in the position <i>val_var</i>.
    */
-  su2double GetRes_FEM(unsigned short val_var);
+  inline su2double GetRes_FEM(unsigned short val_var) { return Conv_Check[val_var]; }
   
   /*!
    * \brief Provide the maximum Von Mises Stress for structural analysis.
    * \return Value of the maximum Von Mises Stress.
    */
-  su2double GetTotal_CFEA(void);
+  inline su2double GetTotal_CFEA() { return Total_CFEA; }
   
   /*!
    * \brief Retrieve the value of the objective function for a reference geometry
    * \param[out] OFRefGeom - value of the objective function.
    */
-  su2double GetTotal_OFRefGeom(void);
+  inline su2double GetTotal_OFRefGeom(void){ return Total_OFRefGeom; }
   
   /*!
    * \brief Retrieve the value of the objective function for a reference node
    * \param[out] OFRefNode - value of the objective function.
    */
-  su2double GetTotal_OFRefNode(void);
+  inline su2double GetTotal_OFRefNode(void){ return Total_OFRefNode; }
   
   /*!
    * \brief Retrieve the value of the volume fraction objective function
    * \param[out] OFVolFrac - value of the objective function.
    */
-  su2double GetTotal_OFVolFrac(void);
+  inline su2double GetTotal_OFVolFrac(void){ return Total_OFVolFrac; }
   
   /*!
    * \brief Retrieve the value of the structural compliance objective function
    * \return Value of the objective function.
    */
-  su2double GetTotal_OFCompliance(void);
+  inline su2double GetTotal_OFCompliance(void){ return Total_OFCompliance; }
 
   /*!
    * \brief Determines whether there is an element-based file or not.
    * \return Bool that defines whether the solution has an element-based file or not
    */
-  bool IsElementBased(void);
+  inline bool IsElementBased(void){ return element_based; }
 
   /*!
    * \brief Set the value of the FEA coefficient.
    * \param[in] val_cfea - Value of the FEA coefficient.
    */
-  void SetTotal_CFEA(su2double val_cfea);
+  inline void SetTotal_CFEA(su2double val_cfea) { Total_CFEA = val_cfea; }
   
   /*!
    * \brief Set the value of the objective function for a reference geometry.
    * \param[in] val_ofrefgeom - Value of the objective function for a reference geometry.
    */
-  void SetTotal_OFRefGeom(su2double val_ofrefgeom);
+  inline void SetTotal_OFRefGeom(su2double val_ofrefgeom) { Total_OFRefGeom = val_ofrefgeom; }
   
   /*!
    * \brief Set the value of the objective function for a reference node.
    * \param[in] val_ofrefnode - Value of the objective function for a reference node.
    */
-  void SetTotal_OFRefNode(su2double val_ofrefnode);
+  inline void SetTotal_OFRefNode(su2double val_ofrefnode) { Total_OFRefNode = val_ofrefnode; }
 
   /*!
    * \brief Set the value of the force coefficient history for the history file.
    * \param[in] iBGS - Number of BGS iteration.
    * \param[in] val_forcecoeff_history - Value of the force coefficient.
    */
-  void SetForceCoeff(su2double val_forcecoeff_history);
+  inline void SetForceCoeff(su2double val_forcecoeff_history) { ForceCoeff = val_forcecoeff_history; }
 
   /*!
    * \brief Set the value of the FSI residual for the history file.
    * \param[in] iBGS - Number of BGS iteration.
    * \param[in] val_FSI_residual - Value of the residual.
    */
-  void SetFSI_Residual(su2double val_FSI_residual);
+  inline void SetFSI_Residual(su2double val_FSI_residual) { FSI_Residual = val_FSI_residual; }
 
   /*!
    * \brief Set the value of the FSI residual for the history file.
    * \param[in] iBGS - Number of BGS iteration.
    * \param[in] val_FSI_residual - Value of the residual.
    */
-  void SetRelaxCoeff(su2double val_relaxcoeff_history);
+  inline void SetRelaxCoeff(su2double val_relaxcoeff_history){ RelaxCoeff = val_relaxcoeff_history;}
 
   /*!
    * \brief Get the value of the force coefficient history for the history file.
    * \param[out] val_forcecoeff_history - Value of the force coefficient.
    */
-  su2double GetForceCoeff(void);
+  inline su2double GetForceCoeff(void) { return ForceCoeff; }
 
   /*!
    * \brief Get the value of the relaxation coefficient history for the history file.
    * \param[out] val_relaxcoeff_history - Value of the relaxation coefficient.
    */
-  su2double GetRelaxCoeff(void);
+  inline su2double GetRelaxCoeff(void) { return RelaxCoeff; }
 
   /*!
    * \brief Get the value of the FSI residual for the history file.
    * \param[out] val_FSI_residual - Value of the residual.
    */
-  su2double GetFSI_Residual(void);
+  inline su2double GetFSI_Residual(void) { return FSI_Residual; }
   
   /*!
    * \brief Predictor for structural displacements based on previous iterations
@@ -641,50 +641,50 @@ public:
    * \brief Get the value of the FSI convergence.
    * \param[in] Set value of interest: 0 - Initial value, 1 - Current value.
    */
-  void SetFSI_ConvValue(unsigned short val_index, su2double val_criteria);
+  inline void SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { FSI_Conv[val_index] = val_criteria; }
   
   /*!
    * \brief Get the value of the FSI convergence.
    * \param[in]  Value of interest: 0 - Initial value, 1 - Current value.
    * \return Values to compare
    */
-  su2double GetFSI_ConvValue(unsigned short val_index);
+  inline su2double GetFSI_ConvValue(unsigned short val_index){ return FSI_Conv[val_index]; }
   
   /*!
    * \brief Retrieve the value of the dynamic Aitken relaxation factor.
    * \return Value of the dynamic Aitken relaxation factor.
    */
-  su2double GetWAitken_Dyn(void);
+  inline su2double GetWAitken_Dyn(void) { return WAitken_Dyn; }
   
   /*!
    * \brief Retrieve the value of the last Aitken relaxation factor in the previous time step.
    * \return Value of the last Aitken relaxation factor in the previous time step.
    */
-  su2double GetWAitken_Dyn_tn1(void);
+  inline su2double GetWAitken_Dyn_tn1(void) { return WAitken_Dyn_tn1; }
   
   /*!
    * \brief Set the value of the dynamic Aitken relaxation factor
    * \param[in] Value of the dynamic Aitken relaxation factor
    */
-  void SetWAitken_Dyn(su2double waitk);
+  inline void SetWAitken_Dyn(su2double waitk) { WAitken_Dyn = waitk; }
   
   /*!
    * \brief Set the value of the last Aitken relaxation factor in the current time step.
    * \param[in] Value of the last Aitken relaxation factor in the current time step.
    */
-  void SetWAitken_Dyn_tn1(su2double waitk_tn1);
+  inline void SetWAitken_Dyn_tn1(su2double waitk_tn1) { WAitken_Dyn_tn1 = waitk_tn1; }
   
   /*!
    * \brief Set the value of the load increment for nonlinear structural analysis
    * \param[in] Value of the coefficient
    */
-  void SetLoad_Increment(su2double val_loadIncrement);
+  inline void SetLoad_Increment(su2double val_loadIncrement) { loadIncrement = val_loadIncrement; }
   
   /*!
    * \brief Get the value of the load increment for nonlinear structural analysis
    * \param[in] Value of the coefficient
    */
-  su2double GetLoad_Increment(void);
+  inline su2double GetLoad_Increment(void) { return loadIncrement; }
 
   /*!
    * \brief Set a reference geometry for prestretched conditions.
@@ -698,7 +698,7 @@ public:
    * \param[in] iElem - element parameter.
    * \param[out] iElem_iDe - ID of the Dielectric Elastomer region.
    */
-  unsigned short Get_iElem_iDe(unsigned long iElem);
+  inline unsigned short Get_iElem_iDe(unsigned long iElem){ return iElem_iDe[iElem]; }
   
   /*!
    * \brief Retrieve the Mass Matrix term (to add to the Jacobian of the adjoint problem)
@@ -707,7 +707,9 @@ public:
    * \param[in] iVar - Variable i of the Mass Matrix submatrix.
    * \param[in] iVar - Variable j of the Mass Matrix submatrix.
    */
-  su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
+  inline su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar){
+    return MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar); }
+  
   
   /*!
    * \brief Load a solution from a restart file.

@@ -260,7 +260,7 @@ inline void CEulerSolver::SetTotal_CEquivArea(su2double val_cequivarea) { Total_
 
 inline void CEulerSolver::SetTotal_AeroCD(su2double val_aerocd) { Total_AeroCD = val_aerocd; }
 
-inline void CEulerSolver::SetTotal_CpDiff(su2double pressure) { Total_CpDiff = pressure; }
+inline void CEulerSolver::SetTotal_CpDiff(su2double val_pressure) { Total_CpDiff = val_pressure; }
 
 inline void CEulerSolver::SetTotal_HeatFluxDiff(su2double heat) { Total_HeatFluxDiff = heat; }
 

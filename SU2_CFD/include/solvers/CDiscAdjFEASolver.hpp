@@ -213,104 +213,104 @@ public:
    * \return Value of the total Young's modulus sensitivity
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_E(unsigned short iVal);
+  inline su2double GetTotal_Sens_E(unsigned short iVal) { return Total_Sens_E[iVal]; }
   
   /*!
    * \brief Set the total Poisson's ratio sensitivity.
    * \return Value of the Poisson's ratio sensitivity
    */
-  su2double GetTotal_Sens_Nu(unsigned short iVal);
+  inline su2double GetTotal_Sens_Nu(unsigned short iVal) { return Total_Sens_Nu[iVal]; }
   
   /*!
    * \brief Get the total sensitivity for the structural density
    * \return Value of the structural density sensitivity
    */
-  su2double GetTotal_Sens_Rho(unsigned short iVal);
+  inline su2double GetTotal_Sens_Rho(unsigned short iVal) { return Total_Sens_Rho[iVal]; }
 
   /*!
    * \brief Get the total sensitivity for the structural weight
    * \return Value of the structural weight sensitivity
    */
-  su2double GetTotal_Sens_Rho_DL(unsigned short iVal);
+  inline su2double GetTotal_Sens_Rho_DL(unsigned short iVal) { return Total_Sens_Rho_DL[iVal]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Electric Field in the region iEField (time averaged)
    */
-  su2double GetTotal_Sens_EField(unsigned short iEField);
+  inline su2double GetTotal_Sens_EField(unsigned short iEField) { return Total_Sens_EField[iEField]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the total sensitivity coefficient for the FEA DV in the region iDVFEA (time averaged)
    */
-  su2double GetTotal_Sens_DVFEA(unsigned short iDVFEA);
+  inline su2double GetTotal_Sens_DVFEA(unsigned short iDVFEA) { return Total_Sens_DV[iDVFEA]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
    */
-  su2double GetGlobal_Sens_E(unsigned short iVal);
+  inline su2double GetGlobal_Sens_E(unsigned short iVal) { return Global_Sens_E[iVal]; }
   
   /*!
    * \brief A virtual member.
    * \return Value of the Mach sensitivity for the Poisson's ratio Nu
    */
-  su2double GetGlobal_Sens_Nu(unsigned short iVal);
+  inline su2double GetGlobal_Sens_Nu(unsigned short iVal) { return Global_Sens_Nu[iVal]; }
   
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
    */
-  su2double GetGlobal_Sens_EField(unsigned short iEField);
+  inline su2double GetGlobal_Sens_EField(unsigned short iEField) { return Global_Sens_EField[iEField]; }
   
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the FEA DV in the region iDVFEA
    */
-  su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA);
+  inline su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA) { return Global_Sens_DV[iDVFEA]; }
 
   /*!
    * \brief Get the total sensitivity for the structural density
    * \return Value of the structural density sensitivity
    */
-  su2double GetGlobal_Sens_Rho(unsigned short iVal);
+  inline su2double GetGlobal_Sens_Rho(unsigned short iVal) { return Global_Sens_Rho[iVal]; }
 
   /*!
    * \brief Get the total sensitivity for the structural weight
    * \return Value of the structural weight sensitivity
    */
-  su2double GetGlobal_Sens_Rho_DL(unsigned short iVal);
+  inline su2double GetGlobal_Sens_Rho_DL(unsigned short iVal) { return Global_Sens_Rho_DL[iVal]; }
 
 
   /*!
    * \brief Get the value of the Young modulus from the adjoint solver
    * \return Value of the Young modulus from the adjoint solver
    */
-  su2double GetVal_Young(unsigned short iVal);
+  inline su2double GetVal_Young(unsigned short iVal) { return E_i[iVal]; }
   
   /*!
    * \brief Get the value of the Poisson's ratio from the adjoint solver
    * \return Value of the Poisson's ratio from the adjoint solver
    */
-  su2double GetVal_Poisson(unsigned short iVal);
+  inline su2double GetVal_Poisson(unsigned short iVal) { return Nu_i[iVal]; }
   
   /*!
    * \brief Get the value of the density from the adjoint solver, for inertial effects
    * \return Value of the density from the adjoint solver
    */
-  su2double GetVal_Rho(unsigned short iVal);
+  inline su2double GetVal_Rho(unsigned short iVal) { return Rho_i[iVal]; }
   
   /*!
    * \brief Get the value of the density from the adjoint solver, for dead loads
    * \return Value of the density for dead loads, from the adjoint solver
    */
-  su2double GetVal_Rho_DL(unsigned short iVal);
+  inline su2double GetVal_Rho_DL(unsigned short iVal) { return Rho_DL_i[iVal]; }
   
   /*!
    * \brief Get the number of variables for the Electric Field from the adjoint solver
    * \return Number of electric field variables from the adjoint solver
    */
-  unsigned short GetnEField(void);
+  inline unsigned short GetnEField(void) { return nEField; }
   
   /*!
    * \brief Read the design variables for the adjoint solver
@@ -321,19 +321,19 @@ public:
    * \brief Get the number of design variables from the adjoint solver,
    * \return Number of design variables from the adjoint solver
    */
-  unsigned short GetnDVFEA(void);
+  inline unsigned short GetnDVFEA(void) { return nDV; }
 
   /*!
    * \brief Get the value of the Electric Field from the adjoint solver
    * \return Pointer to the values of the Electric Field
    */
-  su2double GetVal_EField(unsigned short iVal);
+  inline su2double GetVal_EField(unsigned short iVal) { return EField[iVal]; }
   
   /*!
    * \brief Get the value of the design variables from the adjoint solver
    * \return Pointer to the values of the design variables
    */
-  su2double GetVal_DVFEA(unsigned short iVal);
+  inline su2double GetVal_DVFEA(unsigned short iVal) { return DV_Val[iVal]; }
   
   /*!
    * \brief Prepare the solver for a new recording.

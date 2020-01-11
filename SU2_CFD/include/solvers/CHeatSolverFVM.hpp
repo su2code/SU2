@@ -222,7 +222,7 @@ public:
    * \param[in] val_vertex        - vertex index
    * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
    */
-  su2double GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var);
+  inline su2double GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return ConjugateVar[val_marker][val_vertex][pos_var]; }
 
   /*!
    * \brief Set the conjugate heat variables.
@@ -232,7 +232,9 @@ public:
    * \param[in] relaxation factor - relaxation factor for the change of the variables
    * \param[in] val_var           - value of the variable
    */
-  void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var);
+  inline void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
+    ConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*ConjugateVar[val_marker][val_vertex][pos_var]; }
+  
 
   /*!
    * \brief Evaluate heat-flux related objectives.
@@ -246,13 +248,13 @@ public:
    * \brief Get value of the heat load (integrated heat flux).
    * \return Value of the heat load (integrated heat flux).
    */
-  su2double GetTotal_HeatFlux(void);
+  inline su2double GetTotal_HeatFlux() { return Total_HeatFlux; }
 
   /*!
    * \brief Get value of the integral-averaged temperature.
    * \return Value of the integral-averaged temperature.
    */
-  su2double GetTotal_AvgTemperature(void);
+  inline su2double GetTotal_AvgTemperature() { return Total_AverageT; }
 
   /*!
    * \brief Update the solution using an implicit solver.
@@ -300,7 +302,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the heat flux.
    */
-  su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex);  
+  inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
 
 };
 
