@@ -1,4 +1,4 @@
-/*!
+!
  * \file CIncEulerSolver.hpp
  * \brief Headers of the CIncEulerSolver class
  * \author F. Palacios, T. Economon, T. Albring
@@ -23,7 +23,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
- */
+ 
 
 #pragma once
 
@@ -1432,4 +1432,4 @@ public:
 
 };
 
-#include "../solver_inlines/CIncEulerSolver.inl"
+// #include "../solver_inlines/CIncEulerSolver.inl"
