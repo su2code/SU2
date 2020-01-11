@@ -129,9 +129,9 @@ inline su2double CIncEulerSolver::GetTotal_CpDiff() { return Total_CpDiff; }
 
 inline su2double CIncEulerSolver::GetTotal_HeatFluxDiff() { return Total_HeatFluxDiff; }
 
-inline void CIncEulerSolver::SetTotal_CpDiff(su2double pressure) { Total_CpDiff = pressure; }
+inline void CIncEulerSolver::SetTotal_CpDiff(su2double val_pressure) { Total_CpDiff = pressure; }
 
-inline void CIncEulerSolver::SetTotal_HeatFluxDiff(su2double heat) { Total_HeatFluxDiff = heat; }
+inline void CIncEulerSolver::SetTotal_HeatFluxDiff(su2double val_heat) { Total_HeatFluxDiff = heat; }
 
 inline void CIncEulerSolver::SetTotal_CD(su2double val_Total_CD) { Total_CD = val_Total_CD; }
 

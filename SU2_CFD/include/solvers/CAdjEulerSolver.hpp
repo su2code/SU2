@@ -143,20 +143,20 @@ public:
    * \brief Compute adjoint density at the infinity.
    * \return Value of the adjoint density at the infinity.
    */
-  su2double GetPsiRho_Inf(void);
+  inline su2double GetPsiRho_Inf(void) { return PsiRho_Inf; }
   
   /*!
    * \brief Compute the adjoint energy at the infinity.
    * \return Value of the adjoint energy at the infinity.
    */
-  su2double GetPsiE_Inf(void);
+  inline su2double GetPsiE_Inf(void) { return PsiE_Inf; }
   
   /*!
    * \brief Compute Phi (adjoint velocity) at the infinity.
    * \param[in] val_dim - Index of the adjoint velocity vector.
    * \return Value of the adjoint velocity vector at the infinity.
    */
-  su2double GetPhi_Inf(unsigned short val_dim);
+  inline su2double GetPhi_Inf(unsigned short val_dim) { return Phi_Inf[val_dim]; }
   
   /*!
    * \brief Compute the spatial integration using a centered scheme for the adjoint equations.
@@ -217,7 +217,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex);
+  inline su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) { return DonorAdjVar[val_marker][val_vertex]; }
   
   /*!
    * \brief Value of the characteristic variables at the boundaries.
@@ -225,7 +225,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  void SetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value);
+  inline void SetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { DonorAdjVar[val_marker][val_vertex][val_var] = val_value; }
   
   /*!
    * \brief Value of the characteristic variables at the boundaries.
@@ -233,7 +233,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  su2double GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var);
+  inline su2double GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var) { return DonorAdjVar[val_marker][val_vertex][val_var]; }
   
   /*!
    * \brief Value of the characteristic global index at the boundaries.
@@ -241,7 +241,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  unsigned long GetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex);
+  inline unsigned long GetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex) { return DonorGlobalIndex[val_marker][val_vertex]; }
   
   /*!
    * \brief Value of the characteristic global index at the boundaries.
@@ -249,7 +249,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  void SetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex, unsigned long val_index);
+  inline void SetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex, unsigned long val_index) { DonorGlobalIndex[val_marker][val_vertex] = val_index; }
   
   /*!
    * \brief Compute the sensor for higher order dissipation control in rotating problems.
@@ -503,7 +503,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the sensitivity coefficient.
    */
-  su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex);
+  inline su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
   
   /*!
    * \brief Set the shape sensitivity coefficient.
@@ -511,42 +511,42 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \param[in] val_sensitivity - Value of the sensitivity coefficient.
    */
-  void SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity);
+  inline void SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) { CSensitivity[val_marker][val_vertex] = val_sensitivity; }
   
   /*!
    * \brief Provide the total shape sensitivity coefficient.
    * \return Value of the geometrical sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_Geo(void);
+  inline su2double GetTotal_Sens_Geo() { return Total_Sens_Geo; }
   
   /*!
    * \brief Set the total Mach number sensitivity coefficient.
    * \return Value of the Mach sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_Mach(void);
+  inline su2double GetTotal_Sens_Mach() { return Total_Sens_Mach; }
   
   /*!
    * \brief Set the total angle of attack sensitivity coefficient.
    * \return Value of the angle of attack sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_AoA(void);
+  inline su2double GetTotal_Sens_AoA() { return Total_Sens_AoA; }
   
   /*!
    * \brief Set the total farfield pressure sensitivity coefficient.
    * \return Value of the farfield pressure sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_Press(void);
+  inline su2double GetTotal_Sens_Press() { return Total_Sens_Press; }
   
   /*!
    * \brief Set the total farfield temperature sensitivity coefficient.
    * \return Value of the farfield temperature sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_Temp(void);
+  inline su2double GetTotal_Sens_Temp() { return Total_Sens_Temp; }
   
   /*!
    * \author H. Kline
@@ -554,7 +554,7 @@ public:
    * \return Value of the Back sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_BPress(void);
+  inline su2double GetTotal_Sens_BPress() { return Total_Sens_BPress; }
   
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.

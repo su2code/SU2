@@ -287,7 +287,10 @@ public:
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetFreeStream_Solution(CConfig *config);
+  inline void SetFreeStream_Solution(CConfig *config) {
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) nodes->SetSolution(iPoint, 0, nu_tilde_Inf);
+  }
+  
   
   /*!
    * \brief A virtual member.
@@ -336,7 +339,7 @@ public:
    * \brief Get the value of nu tilde at the far-field.
    * \return Value of nu tilde at the far-field.
    */
-  su2double GetNuTilde_Inf(void);
+  inline su2double GetNuTilde_Inf(void) { return nu_tilde_Inf; }
 
   /*!
    * \brief Compute nu tilde from the wall functions.

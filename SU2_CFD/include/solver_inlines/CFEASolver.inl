@@ -41,7 +41,7 @@ inline bool CFEASolver::IsElementBased(void){ return element_based; }
 
 inline void CFEASolver::SetForceCoeff(su2double val_forcecoeff_history) { ForceCoeff = val_forcecoeff_history; }
 
-inline void CFEASolver::SetRelaxCoeff(su2double val_relaxecoeff_history) { RelaxCoeff = val_relaxecoeff_history; }
+inline void CFEASolver::SetRelaxCoeff(su2double val_relaxcoeff_history) { RelaxCoeff = val_relaxcoeff_history; }
 
 inline void CFEASolver::SetFSI_Residual(su2double val_FSI_residual) { FSI_Residual = val_FSI_residual; }
 

@@ -382,13 +382,13 @@ public:
    * \brief Compute the viscosity at the infinity.
    * \return Value of the viscosity at the infinity.
    */
-  su2double GetViscosity_Inf(void);
+  inline su2double GetViscosity_Inf(void) { return Viscosity_Inf; }
 
   /*!
    * \brief Get the turbulent kinetic energy at the infinity.
    * \return Value of the turbulent kinetic energy at the infinity.
    */
-  su2double GetTke_Inf(void);
+  inline su2double GetTke_Inf(void) { return Tke_Inf; }
 
   /*!
    * \brief Compute the viscous forces and all the addimensional coefficients.
@@ -402,70 +402,70 @@ public:
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  su2double GetCL_Visc(unsigned short val_marker);
+  inline su2double GetCL_Visc(unsigned short val_marker) { return CL_Visc[val_marker]; }
 
   /*!
    * \brief Get the non dimensional z moment coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  su2double GetCMz_Visc(unsigned short val_marker);
+  inline su2double GetCMz_Visc(unsigned short val_marker) { return CMz_Visc[val_marker]; }
 
   /*!
    * \brief Get the non dimensional sideforce coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the sideforce coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  su2double GetCSF_Visc(unsigned short val_marker);
+  inline su2double GetCSF_Visc(unsigned short val_marker) { return CSF_Visc[val_marker]; }
 
   /*!
    * \brief Get the non dimensional drag coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  su2double GetCD_Visc(unsigned short val_marker);
+  inline su2double GetCD_Visc(unsigned short val_marker) { return CD_Visc[val_marker]; }
 
   /*!
    * \brief Get the total non dimensional lift coefficient (viscous contribution).
    * \return Value of the lift coefficient (viscous contribution).
    */
-  su2double GetAllBound_CL_Visc(void);
+  inline su2double GetAllBound_CL_Visc() { return AllBound_CL_Visc; }
 
   /*!
    * \brief Get the total non dimensional sideforce coefficient (viscous contribution).
    * \return Value of the lift coefficient (viscous contribution).
    */
-  su2double GetAllBound_CSF_Visc(void);
+  inline su2double GetAllBound_CSF_Visc() { return AllBound_CSF_Visc; }
 
   /*!
    * \brief Get the total non dimensional drag coefficient (viscous contribution).
    * \return Value of the drag coefficient (viscous contribution).
    */
-  su2double GetAllBound_CD_Visc(void);
+  inline su2double GetAllBound_CD_Visc() { return AllBound_CD_Visc; }
 
   /*!
    * \brief Get the max Omega.
    * \return Value of the max Omega.
    */
-  su2double GetOmega_Max(void);
+  inline su2double GetOmega_Max(void) { return Omega_Max; }
 
   /*!
    * \brief Get the max Strain rate magnitude.
    * \return Value of the max Strain rate magnitude.
    */
-  su2double GetStrainMag_Max(void);
+  inline su2double GetStrainMag_Max(void) { return StrainMag_Max; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
-  void SetStrainMag_Max(su2double val_strainmag_max);
+  inline void SetStrainMag_Max(su2double val_strainmag_max) { StrainMag_Max = val_strainmag_max; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the Omega_Max
    */
-  void SetOmega_Max(su2double val_omega_max);
+  inline void SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
 
 private:
 
