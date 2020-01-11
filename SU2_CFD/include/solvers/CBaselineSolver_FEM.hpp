@@ -90,5 +90,3 @@ public:
   inline su2double* GetVecSolDOFs(void) {return VecSolDOFs.data();}
 
 };
-
-// #include "../solver_inlines/CBaselineSolver_FEM.inl"

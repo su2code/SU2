@@ -1664,5 +1664,3 @@ protected:
     if( NPad%nPadMin ) NPad += nPadMin - (NPad%nPadMin);
   }
 };
-
-// #include "../solver_inlines/CFEM_DG_EulerSolver.inl"

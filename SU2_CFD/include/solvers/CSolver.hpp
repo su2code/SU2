@@ -4610,5 +4610,3 @@ protected:
                                unsigned short nVar, 
                                CConfig        *config);
 };
-
-// #include "../solver_inlines/CSolver.inl"
