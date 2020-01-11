@@ -393,5 +393,3 @@ public:
   void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
   
 };
-
-// #include "../solver_inlines/CDiscAdjFEASolver.inl"

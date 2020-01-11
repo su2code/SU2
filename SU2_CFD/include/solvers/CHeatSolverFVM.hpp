@@ -305,5 +305,3 @@ public:
   inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
 
 };
-
-// #include "../solver_inlines/CHeatSolverFVM.inl"

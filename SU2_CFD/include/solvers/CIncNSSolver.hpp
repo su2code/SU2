@@ -478,5 +478,3 @@ public:
   inline void SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
 
 };
-
-// #include "../solver_inlines/CIncNSSolver.inl"

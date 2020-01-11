@@ -266,5 +266,3 @@ public:
   inline su2double GetOmega_Inf(void) { return omega_Inf; }
 
 };
-
-// #include "../solver_inlines/CTurbSSTSolver.inl"
