@@ -1,4 +1,4 @@
-!
+/*!
  * \file CIncEulerSolver.hpp
  * \brief Headers of the CIncEulerSolver class
  * \author F. Palacios, T. Economon, T. Albring
@@ -23,7 +23,8 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
- 
+ */
+
 
 #pragma once
 
@@ -998,7 +999,7 @@ public:
    * \brief Provide the total heat load.
    * \return Value of the heat load (viscous contribution).
    */
-  su2double GetTotal_HeatFlux(void);
+  inline su2double GetTotal_HeatFlux(void) { return Total_Heat; }
   
   /*!
    * \brief Provide the total heat load.

@@ -3946,7 +3946,7 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  inline inline virtual void Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
+  inline virtual void Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
   
   /*!
    * \brief A virtual member.
@@ -3955,7 +3955,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   
-  virtual void Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+  inline virtual void Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
   
   /*!
    * \brief A virtual member.
