@@ -1307,7 +1307,7 @@ public:
    * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
-  inline inline su2double GetTotal_HeatFluxDiff() { return Total_HeatFluxDiff; }
+  inline su2double GetTotal_HeatFluxDiff() { return Total_HeatFluxDiff; }
   
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional Near-Field pressure coefficient.
@@ -1538,7 +1538,7 @@ public:
    * \brief Provide the total heat load.
    * \return Value of the heat load (viscous contribution).
    */
-  su2double GetTotal_HeatFlux(void);
+  inline su2double GetTotal_HeatFlux(void) { return Total_Heat; }
   
   /*!
    * \brief Provide the total heat load.
@@ -2247,8 +2247,27 @@ public:
    * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
    * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
    */
-  void ComputeBackVelocity(const su2double *turboVelocity, const su2double *turboNormal, su2double *cartesianVelocity,
-                           unsigned short marker_flag, unsigned short marker_kindturb);
+  inline void ComputeBackVelocity(const su2double *turboVelocity, const su2double *turboNormal, su2double *cartesianVelocity,
+                           unsigned short marker_flag, unsigned short kind_turb){
+
+    if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
+      cartesianVelocity[0] = turboVelocity[2]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
+      cartesianVelocity[1] = turboVelocity[2]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
+      cartesianVelocity[2] = turboVelocity[0];
+    }
+    else{
+      cartesianVelocity[0] =  turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
+      cartesianVelocity[1] =  turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
+
+      if (marker_flag == INFLOW){
+        cartesianVelocity[0] *= -1.0;
+        cartesianVelocity[1] *= -1.0;
+      }
+
+      if(nDim == 3)
+        cartesianVelocity[2] = turboVelocity[2];
+    }
+  }
 
   /*!
    * \brief Provide the average density at the boundary of interest.
@@ -2475,7 +2494,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  void SetDensityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  inline void SetDensityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan) {DensityOut[inMarkerTP][valSpan] = value;}
 
   /*!
    * \brief Set outlet pressure.
@@ -2501,7 +2520,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  void SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  inline void SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){KineIn[inMarkerTP][valSpan] = value;}
   /*!
    * \brief Set inlet turbulent omega.
    * \param[in] value      - turboperformance value to set.
