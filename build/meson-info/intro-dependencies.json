@@ -1,1 +1,0 @@
-[{"name": "threads", "version": "unknown", "compile_args": ["-pthread"], "link_args": ["-pthread"]}]
