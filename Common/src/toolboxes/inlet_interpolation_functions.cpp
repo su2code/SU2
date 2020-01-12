@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
  
-
+/*
 #include "../../include/toolboxes/inlet_interpolation_functions.hpp"
 
 su2double CSolver::ONEDLINEAR_SPANWISE(vector<su2double> Inlet_Data, su2double Interp_Radius, unsigned long iRow,unsigned short index,unsigned long nColumns)
@@ -43,7 +43,7 @@ su2double CSolver::ONEDAKIMA_SPANWISE(vector<su2double> Inlet_Data, su2double In
 {
     su2double dxi, ai, bi, ci ,di ,delta, interpolated_value;
     /*--- Finding the cofficients of the third order polynomial for Akima Interpolation ---*/
-    dxi = Inlet_Data[nColumns*(iRow+1)] - Inlet_Data[nColumns*iRow];
+ /*   dxi = Inlet_Data[nColumns*(iRow+1)] - Inlet_Data[nColumns*iRow];
     ai = Inlet_Data[nColumns*iRow + index];
     bi = Get_Ai_dash(Inlet_Data, iRow, index,nColumns,nRow);
     ci = (3*Get_Pi(Inlet_Data, iRow, index,nColumns)-2*bi-Get_Ai_dash(Inlet_Data, iRow+1, index, nColumns, nRow))/dxi;
@@ -55,6 +55,7 @@ su2double CSolver::ONEDAKIMA_SPANWISE(vector<su2double> Inlet_Data, su2double In
     return interpolated_value;
 
 }
+
 
 su2double CSolver::Get_Ai_dash(vector<su2double> Inlet_Data, unsigned long iRow, unsigned short index, unsigned short nColumns, unsigned long nRow){
     //for Boundary conditions (two first and two last points require special definition, can vary for different codes)
@@ -75,3 +76,4 @@ su2double CSolver::Get_Pi(vector<su2double> Inlet_Data, unsigned long iRow, unsi
 return (Inlet_Data[nColumns*(iRow+1)+index] - Inlet_Data[nColumns*iRow+index])/(Inlet_Data[nColumns*(iRow+1)] - Inlet_Data[nColumns*iRow]);}
 
 su2double CSolver::Get_Wi(vector<su2double> Inlet_Data, unsigned long iRow,unsigned short index,unsigned short nColumns) {return fabs(Get_Pi(Inlet_Data,iRow,index,nColumns) - Get_Pi(Inlet_Data,iRow-1,index,nColumns));}
+*/
