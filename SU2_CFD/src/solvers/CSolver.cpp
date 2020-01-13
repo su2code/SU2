@@ -4938,7 +4938,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
     config->SetdCMz_dCL(dCMz_dCL_);
 
   }
-	
+  
   else {
 
     if ((config->GetdCD_dCL() != dCD_dCL_) && (rank == MASTER_NODE))
