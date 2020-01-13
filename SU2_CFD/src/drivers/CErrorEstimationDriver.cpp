@@ -931,7 +931,7 @@ void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
   }
 
   //--- apply correction to boundary metrtic
-  solver_flow->CorrectBoundAnisoMetr(geometry, config);
+  solver_flow->CorrectBoundAnisoMetr(geometry, config[ZONE_0]);
 
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
@@ -1107,7 +1107,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
   }
 
   //--- apply correction to boundary metrtic
-  solver_flow->CorrectBoundAnisoMetr(geometry, config);
+  solver_flow->CorrectBoundAnisoMetr(geometry, config[ZONE_0]);
 
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
