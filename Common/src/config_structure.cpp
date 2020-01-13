@@ -2583,6 +2583,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_HGRAD");
 
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_INV_VOL");
+
   /* END_CONFIG_OPTIONS */
 
 }

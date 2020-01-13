@@ -255,7 +255,9 @@ def amg ( config , kind='' ):
     if 'ADAP_SOURCE' in config:
         config_amg['adap_source'] = os.path.join(cwd,config['ADAP_SOURCE'])
 
-    config_amg['options'] = "-back " + config_amg['adap_back'] + ' -inv-back'
+    config_amg['options'] = "-back " + config_amg['adap_back']
+    if(config['ADAP_INV_VOL'] == 'YES'):
+        config_amg['options'] = config_amg['options'] + ' -inv-back'
     
     global_iter = 0
     
