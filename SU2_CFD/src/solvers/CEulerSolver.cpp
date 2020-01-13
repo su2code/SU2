@@ -8967,8 +8967,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
   su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
   Normal = new su2double[nDim];
-  turboNormal 	= new su2double[nDim];
-  UnitNormal 	= new su2double[nDim];
+  turboNormal   = new su2double[nDim];
+  UnitNormal    = new su2double[nDim];
 
   Velocity_i = new su2double[nDim];
   Velocity_b = new su2double[nDim];
@@ -9003,7 +9003,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
       Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
 
       /*--- Normal vector for this vertex (negate for outward convention),
-       * 		this normal is scaled with the area of the face of the element  ---*/
+       *    this normal is scaled with the area of the face of the element  ---*/
       geometry->vertex[val_marker][oldVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
@@ -9115,7 +9115,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             Density_e = FluidModel->GetDensity();
             StaticEnergy_e = FluidModel->GetStaticEnergy();
             Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-            //				if (tkeNeeded) Energy_e += GetTke_Inf();
+            // if (tkeNeeded) Energy_e += GetTke_Inf();
             break;
 
 
@@ -9456,11 +9456,11 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
   long iVertex, freq;
   unsigned short  iZone     = config->GetiZone();
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(marker_flag);
-  turboNormal 	= new su2double[nDim];
+  turboNormal   = new su2double[nDim];
   turboVelocity = new su2double[nDim];
-  Velocity_i 		= new su2double[nDim];
+  Velocity_i    = new su2double[nDim];
   deltaprim     = new su2double[nVar];
-  cj				    = new su2double[nVar];
+  cj            = new su2double[nVar];
   complex<su2double> I, cktemp_inf,cktemp_out1, cktemp_out2, expArg;
   I = complex<su2double>(0.0,1.0);
 
@@ -9627,7 +9627,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
   unsigned short Turbo_Flag;
 
   Normal                = new su2double[nDim];
-  turboNormal 	        = new su2double[nDim];
+  turboNormal           = new su2double[nDim];
   UnitNormal            = new su2double[nDim];
   turboVelocity         = new su2double[nDim];
   Velocity_i            = new su2double[nDim];
@@ -9923,7 +9923,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
       Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
 
       /*--- Normal vector for this vertex (negate for outward convention),
-       * 		this normal is scaled with the area of the face of the element  ---*/
+       *    this normal is scaled with the area of the face of the element  ---*/
       geometry->vertex[val_marker][oldVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
@@ -10107,7 +10107,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
 
             /* --- subsonic Giles implementation ---*/
             Beta_inf= I*complex<su2double>(sqrt(1.0  - AvgMach));
-            cOutjs 	= complex<su2double>(0.0,0.0);
+            cOutjs  = complex<su2double>(0.0,0.0);
             for(k=0; k < 2*kend_max+1; k++){
               freq = k - kend_max;
               if(freq >= (long)(-kend) && freq <= (long)(kend) && AverageTurboMach[0] > config->GetAverageMachLimit()){
@@ -10316,9 +10316,9 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
   delete [] Velocity_i;
   
   delete [] S_boundary;
-  delete []	delta_c;
-  delete []	deltaprim;
-  delete []	cj;
+  delete [] delta_c;
+  delete [] deltaprim;
+  delete [] cj;
   for (iVar = 0; iVar < nVar; iVar++)
   {
     delete [] R_Matrix[iVar];
@@ -13041,7 +13041,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
             TotalArea           = geometry->GetSpanArea(iMarker,iSpan);
-            AverageTurboNormal 	= geometry->GetAverageTurboNormal(iMarker,iSpan);
+            AverageTurboNormal  = geometry->GetAverageTurboNormal(iMarker,iSpan);
 
             /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
 
@@ -13071,7 +13071,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
-          AverageTurboNormal 	= geometry->GetAverageTurboNormal(iMarker,nSpanWiseSections);
+          AverageTurboNormal  = geometry->GetAverageTurboNormal(iMarker,nSpanWiseSections);
 
           /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
 
@@ -13423,7 +13423,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
             TotalArea           = geometry->GetSpanArea(iMarker,iSpan);
-            AverageTurboNormal 	= geometry->GetAverageTurboNormal(iMarker,iSpan);
+            AverageTurboNormal  = geometry->GetAverageTurboNormal(iMarker,iSpan);
             nVert               = geometry->GetnTotVertexSpan(iMarker,iSpan);
 
 

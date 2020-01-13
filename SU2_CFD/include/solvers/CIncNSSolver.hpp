@@ -28,7 +28,6 @@
 #pragma once
 
 #include "CIncEulerSolver.hpp"
-#include "../variables/CIncNSVariable.hpp"
 
 /*!
  * \class CIncNSSolver

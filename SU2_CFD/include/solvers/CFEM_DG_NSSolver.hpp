@@ -48,15 +48,15 @@ private:
   bool SGSModelUsed;       /*!< \brief Whether or not an LES Subgrid Scale model is used. */
 
   su2double
-  *CL_Visc, 	            /*!< \brief Lift coefficient (viscous contribution) for each boundary. */
+  *CL_Visc,                 /*!< \brief Lift coefficient (viscous contribution) for each boundary. */
   *CD_Visc,                 /*!< \brief Drag coefficient (viscous contribution) for each boundary. */
   *CSF_Visc,                /*!< \brief Side force coefficient (viscous contribution) for each boundary. */
-  *CMx_Visc, 	            /*!< \brief Moment x coefficient (viscous contribution) for each boundary. */
-  *CMy_Visc, 	            /*!< \brief Moment y coefficient (viscous contribution) for each boundary. */
-  *CMz_Visc,          	    /*!< \brief Moment z coefficient (viscous contribution) for each boundary. */
-  *CFx_Visc,          	    /*!< \brief Force x coefficient (viscous contribution) for each boundary. */
-  *CFy_Visc,          	    /*!< \brief Force y coefficient (viscous contribution) for each boundary. */
-  *CFz_Visc, 	            /*!< \brief Force z coefficient (viscous contribution) for each boundary. */
+  *CMx_Visc,                /*!< \brief Moment x coefficient (viscous contribution) for each boundary. */
+  *CMy_Visc,                /*!< \brief Moment y coefficient (viscous contribution) for each boundary. */
+  *CMz_Visc,                /*!< \brief Moment z coefficient (viscous contribution) for each boundary. */
+  *CFx_Visc,                /*!< \brief Force x coefficient (viscous contribution) for each boundary. */
+  *CFy_Visc,                /*!< \brief Force y coefficient (viscous contribution) for each boundary. */
+  *CFz_Visc,                /*!< \brief Force z coefficient (viscous contribution) for each boundary. */
   *CEff_Visc,               /*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
   *Surface_CL_Visc,         /*!< \brief Lift coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CD_Visc,         /*!< \brief Drag coefficient (viscous contribution) for each monitoring surface. */
@@ -72,16 +72,16 @@ private:
   *MaxHeatFlux_Visc;        /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
 
   su2double
-  AllBound_CD_Visc,           /*!< \brief Drag coefficient (viscous contribution) for all the boundaries. */
-  AllBound_CL_Visc, 	      /*!< \brief Lift coefficient (viscous contribution) for all the boundaries. */
-  AllBound_CSF_Visc,          /*!< \brief Sideforce coefficient (viscous contribution) for all the boundaries. */
-  AllBound_CMx_Visc, 	      /*!< \brief Moment x coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMy_Visc, 	      /*!< \brief Moment y coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMz_Visc, 	      /*!< \brief Moment z coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CEff_Visc, 	      /*!< \brief Efficient coefficient (Viscous contribution) for all the boundaries. */
-  AllBound_CFx_Visc, 	      /*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFy_Visc, 	      /*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFz_Visc, 	      /*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CD_Visc,         /*!< \brief Drag coefficient (viscous contribution) for all the boundaries. */
+  AllBound_CL_Visc,         /*!< \brief Lift coefficient (viscous contribution) for all the boundaries. */
+  AllBound_CSF_Visc,        /*!< \brief Sideforce coefficient (viscous contribution) for all the boundaries. */
+  AllBound_CMx_Visc,        /*!< \brief Moment x coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMy_Visc,        /*!< \brief Moment y coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMz_Visc,        /*!< \brief Moment z coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CEff_Visc,       /*!< \brief Efficient coefficient (Viscous contribution) for all the boundaries. */
+  AllBound_CFx_Visc,        /*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFy_Visc,        /*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFz_Visc,        /*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
   AllBound_HeatFlux_Visc,     /*!< \brief Heat load (viscous contribution) for all the boundaries. */
   AllBound_MaxHeatFlux_Visc;  /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   su2double StrainMag_Max,

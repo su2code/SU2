@@ -28,7 +28,6 @@
 #pragma once
 
 #include "CSolver.hpp"
-#include "../variables/CFEABoundVariable.hpp"
 
 /*! \class CFEASolver
  *  \brief Main class for defining a FEM solver for elastic structural problems.
@@ -47,43 +46,43 @@ private:
   su2double *GradN_X,
   *GradN_x;
   
-  su2double **Jacobian_c_ij;      /*!< \brief Submatrix to store the constitutive term for node ij. */
-  su2double **Jacobian_s_ij;      /*!< \brief Submatrix to store the stress contribution of node ij (diagonal). */
-  su2double **MassMatrix_ij;      /*!< \brief Submatrix to store the term ij of the mass matrix. */
+  su2double **Jacobian_c_ij;        /*!< \brief Submatrix to store the constitutive term for node ij. */
+  su2double **Jacobian_s_ij;        /*!< \brief Submatrix to store the stress contribution of node ij (diagonal). */
+  su2double **MassMatrix_ij;        /*!< \brief Submatrix to store the term ij of the mass matrix. */
 
-  su2double *Res_Ext_Surf;      /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
-  su2double *Res_Time_Cont;     /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
-  su2double *Res_FSI_Cont;      /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
+  su2double *Res_Ext_Surf;          /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
+  su2double *Res_Time_Cont;         /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
+  su2double *Res_FSI_Cont;          /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
   
-  su2double *Res_Dead_Load;     /*!< \brief Auxiliary vector to store the body load contribution to the residual */
+  su2double *Res_Dead_Load;         /*!< \brief Auxiliary vector to store the body load contribution to the residual */
   
-  su2double *solutionPredictor;  /*!< \brief Auxiliary vector to store the solution predictor */
+  su2double *solutionPredictor;     /*!< \brief Auxiliary vector to store the solution predictor */
   
-  su2double *Solution_Interm;    /*!< \brief Auxiliary vector to store the intermediate solution */
+  su2double *Solution_Interm;       /*!< \brief Auxiliary vector to store the intermediate solution */
   
-  su2double *SolRest;      /*!< \brief Auxiliary vector to restart the solution */
+  su2double *SolRest;               /*!< \brief Auxiliary vector to restart the solution */
   
-  su2double *nodeReactions;      /*!< \brief Auxiliary vector to store the reactions */
+  su2double *nodeReactions;         /*!< \brief Auxiliary vector to store the reactions */
   
-  su2double *normalVertex;       /*!< \brief Auxiliary vector to store the normals to a certain vertex */
-  su2double **stressTensor;      /*!< \brief Auxiliary matrix to rebuild the stress tensor and compute reactions */
+  su2double *normalVertex;          /*!< \brief Auxiliary vector to store the normals to a certain vertex */
+  su2double **stressTensor;         /*!< \brief Auxiliary matrix to rebuild the stress tensor and compute reactions */
   
-  unsigned long *elProperties;   /*!< \brief Auxiliary vector to read the element properties from file */
+  unsigned long *elProperties;      /*!< \brief Auxiliary vector to read the element properties from file */
 
-  unsigned short *iElem_iDe;	 /*!< \brief For DE cases, ID of the region considered for each iElem. */
+  unsigned short *iElem_iDe;        /*!< \brief For DE cases, ID of the region considered for each iElem. */
   
-  su2double a_dt[9];             /*!< \brief Integration constants. */
+  su2double a_dt[9];                /*!< \brief Integration constants. */
   
-  su2double Conv_Ref[3];        /*!< \brief Reference values for convergence check: DTOL, RTOL, ETOL */
-  su2double Conv_Check[3];      /*!< \brief Current values for convergence check: DTOL, RTOL, ETOL */
-  su2double FSI_Conv[2];        /*!< \brief Values to check the convergence of the FSI problem. */
+  su2double Conv_Ref[3];            /*!< \brief Reference values for convergence check: DTOL, RTOL, ETOL */
+  su2double Conv_Check[3];          /*!< \brief Current values for convergence check: DTOL, RTOL, ETOL */
+  su2double FSI_Conv[2];            /*!< \brief Values to check the convergence of the FSI problem. */
   
-  su2double loadIncrement;      /*!< \brief Coefficient that determines the amount of load which is applied */
+  su2double loadIncrement;          /*!< \brief Coefficient that determines the amount of load which is applied */
   
-  su2double WAitken_Dyn;        /*!< \brief Aitken's dynamic coefficient */
-  su2double WAitken_Dyn_tn1;    /*!< \brief Aitken's dynamic coefficient in the previous iteration */
+  su2double WAitken_Dyn;            /*!< \brief Aitken's dynamic coefficient */
+  su2double WAitken_Dyn_tn1;        /*!< \brief Aitken's dynamic coefficient in the previous iteration */
   
-  su2double PenaltyValue;       /*!< \brief Penalty value to maintain total stiffness constant */
+  su2double PenaltyValue;           /*!< \brief Penalty value to maintain total stiffness constant */
 
   su2double Total_OFRefGeom;        /*!< \brief Total Objective Function: Reference Geometry. */
   su2double Total_OFRefNode;        /*!< \brief Total Objective Function: Reference Node. */

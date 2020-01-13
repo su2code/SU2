@@ -28,7 +28,6 @@
 #pragma once
 
 #include "CTurbSolver.hpp"
-#include "../variables/CTurbSSTVariable.hpp"
 
 /*!
  * \class CTurbSSTSolver
@@ -165,7 +164,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-  unsigned short val_marker);
+                      unsigned short val_marker);
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -177,7 +176,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-  		unsigned short val_marker);
+                            unsigned short val_marker);
 
   /*!
    * \brief Impose the outlet boundary condition.

@@ -29,8 +29,6 @@
 #pragma once
 
 #include "CTurbSolver.hpp"
-#include "../variables/CTurbSAVariable.hpp"
-
 
 /*!
  * \class CTurbSASolver
@@ -177,7 +175,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-  		unsigned short val_marker);
+      unsigned short val_marker);
 
   /*!
    * \brief Impose the outlet boundary condition.

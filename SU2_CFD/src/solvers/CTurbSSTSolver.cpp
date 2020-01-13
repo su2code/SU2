@@ -27,7 +27,7 @@
 
 
 #include "../../include/solvers/CTurbSSTSolver.hpp"
-
+#include "../../include/variables/CTurbSSTVariable.hpp"
 
 CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
   

@@ -27,6 +27,7 @@
 
 
 #include "../../include/solvers/CAdjNSSolver.hpp"
+#include "../../include/variables/CAdjNSVariable.hpp"
 
 CAdjNSSolver::CAdjNSSolver(void) : CAdjEulerSolver() { }
 

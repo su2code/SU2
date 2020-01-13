@@ -27,6 +27,7 @@
 
 
 #include "../../include/solvers/CFEASolver.hpp"
+#include "../../include/variables/CFEABoundVariable.hpp"
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
 #include <algorithm>
 

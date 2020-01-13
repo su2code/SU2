@@ -27,6 +27,7 @@
 
 
 #include "../../include/solvers/CIncNSSolver.hpp"
+#include "../../include/variables/CIncNSVariable.hpp"
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
 
 CIncNSSolver::CIncNSSolver(void) : CIncEulerSolver() {

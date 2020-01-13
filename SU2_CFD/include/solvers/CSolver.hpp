@@ -60,8 +60,8 @@ using namespace std;
 
 class CSolver {
 protected:
-  int rank, 	  /*!< \brief MPI Rank. */
-  size;       	  /*!< \brief MPI Size. */
+  int rank,       /*!< \brief MPI Rank. */
+  size;           /*!< \brief MPI Size. */
   bool adjoint;   /*!< \brief Boolean to determine whether solver is initialized as a direct or an adjoint solver. */
   unsigned short MGLevel;        /*!< \brief Multigrid level of this solver object. */
   unsigned short IterLinSolver;  /*!< \brief Linear solver iterations. */
@@ -679,7 +679,7 @@ public:
    * \param[in] Iteration - Index of the current iteration.
    */
   inline virtual void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-							        unsigned short iMesh, unsigned long Iteration) { }
+                                  unsigned short iMesh, unsigned long Iteration) { }
 
   /*!
    * \brief A virtual member.
@@ -785,12 +785,12 @@ public:
   inline virtual void Convective_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
@@ -1141,7 +1141,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-										 CConfig *config, unsigned short val_marker) { }
+                                      CConfig *config, unsigned short val_marker) { }
 
   /*!
    * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
@@ -1151,7 +1151,7 @@ public:
    * \param[in] marker_flag - Surface marker flag where the function is applied.
    */
   inline virtual void PreprocessBC_Giles(CGeometry *geometry, CConfig *config,
-																								CNumerics *conv_numerics,unsigned short marker_flag){}
+                                        CNumerics *conv_numerics,unsigned short marker_flag){}
 
   /*!
    * \brief A virtual member.
@@ -1164,7 +1164,7 @@ public:
    */
   inline virtual void BC_Giles(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
-	
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1272,10 +1272,10 @@ public:
   inline virtual void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                       CConfig *config, unsigned short val_marker) { }
     
-	/*!
-	 * \brief Impose the symmetry boundary condition using the residual.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
+  /*!
+   * \brief Impose the symmetry boundary condition using the residual.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
