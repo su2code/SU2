@@ -7975,6 +7975,12 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   su2double rotCoord[3] = {0.0, 0.0, 0.0};
+  
+  bool pointOnAxis = false;
+  
+  bool chkSamePoint = false;
+  
+  su2double distToAxis = 0.0;
 
   /*--- Tolerance for distance-based match to report warning. ---*/
 
@@ -8183,6 +8189,17 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                            rotMatrix[2][1]*dy +
                            rotMatrix[2][2]*dz + translation[2]);
 
+            /*--- Check if the point lies on the axis of rotation. If it does, 
+             the rotated coordinate and the original coordinate are the same. ---*/
+
+            pointOnAxis = false;
+            distToAxis = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+               distToAxis = (rotCoord[iDim] - Coord_i[iDim])*(rotCoord[iDim] - Coord_i[iDim]);
+            distToAxis = sqrt(distToAxis);
+
+            if (distToAxis < epsilon) pointOnAxis = true;
+
             /*--- Our search is based on the minimum distance, so we
              initialize the distance to a large value. ---*/
 
@@ -8211,7 +8228,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                sure that we avoid the original point by checking that the
                global index values are not the same. ---*/
 
-              if ((jPointGlobal != iPointGlobal)) {
+              if ((jPointGlobal != iPointGlobal) || (pointOnAxis)) {
 
                 /*--- Compute the distance between the candidate periodic
                  point and the transformed coordinates of the owned point. ---*/
@@ -8225,10 +8242,15 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
 
                 /*--- Compare the distance against the existing minimum
                  and also perform checks just to be sure that this is an
-                 independent periodic point (even if on the same rank). ---*/
+                 independent periodic point (even if on the same rank),
+                  unless it lies on the axis of rotation. ---*/
+                
+                chkSamePoint = false;
+                chkSamePoint = (((dist < mindist) && (iProcessor != rank)) ||
+                                ((dist < mindist) && (iProcessor == rank) &&
+                                (jPoint != iPoint)));
 
-                if (((dist < mindist) && (iProcessor != rank)) ||
-                    ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
+                if (chkSamePoint || ((dist < mindist) && (pointOnAxis))) {
 
                   /*--- We have found an intermediate match. Store the
                    data for this point before continuing the search. ---*/
