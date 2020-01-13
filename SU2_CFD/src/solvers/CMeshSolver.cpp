@@ -29,7 +29,7 @@
 #include "../../../Common/include/adt_structure.hpp"
 #include "../../include/solvers/CMeshSolver.hpp"
 #include "../../include/variables/CMeshBoundVariable.hpp"
-#include "../../include/variables/CMeshElement.hpp"
+
 
 CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true) {
 

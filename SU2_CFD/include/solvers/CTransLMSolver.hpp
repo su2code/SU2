@@ -28,8 +28,6 @@
 #pragma once
 
 #include "CTurbSolver.hpp"
-#include "../variables/CTransLMVariable.hpp"
-#include "../variables/CTurbSAVariable.hpp"
 
 /*!
  * \class CTransLMSolver

@@ -28,7 +28,6 @@
 #pragma once
 
 #include "CSolver.hpp"
-#include "../variables/CDiscAdjFEAVariable.hpp"
 #include "../variables/CDiscAdjFEABoundVariable.hpp"
 
 /*!

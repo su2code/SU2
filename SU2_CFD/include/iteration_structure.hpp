@@ -32,7 +32,6 @@
 
 #include <ctime>
 
-// #include "solver_structure.hpp"
 #include "solvers/CSolver.hpp"
 #include "solvers/CFEASolver.hpp"
 #include "integration_structure.hpp"

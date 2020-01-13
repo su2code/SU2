@@ -46,11 +46,11 @@ protected:
   CFluidModel  *FluidModel; /*!< \brief fluid model used in the solver */
 
   su2double
-  Mach_Inf,	        /*!< \brief Mach number at infinity. */
-  Density_Inf,	    /*!< \brief Density at infinity. */
-  Energy_Inf,	    /*!< \brief Energy at infinity. */
+  Mach_Inf,         /*!< \brief Mach number at infinity. */
+  Density_Inf,      /*!< \brief Density at infinity. */
+  Energy_Inf,     /*!< \brief Energy at infinity. */
   Temperature_Inf,  /*!< \brief Energy at infinity. */
-  Pressure_Inf,	    /*!< \brief Pressure at infinity. */
+  Pressure_Inf,     /*!< \brief Pressure at infinity. */
   *Velocity_Inf;    /*!< \brief Flow velocity vector at infinity. */
 
   vector<su2double> ConsVarFreeStream; /*!< \brief Vector, which contains the free stream
@@ -80,7 +80,7 @@ protected:
   *Surface_CEff_Inv;  /*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each monitoring surface. */
 
   su2double
-  AllBound_CL_Inv, 	  /*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CL_Inv,    /*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CD_Inv,    /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CSF_Inv,   /*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CFx_Inv,   /*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
@@ -92,16 +92,16 @@ protected:
   AllBound_CEff_Inv;  /*!< \brief Total efficiency (Cl/Cd) (inviscid contribution) for all the boundaries. */
 
   su2double
-  Total_CL, 	   /*!< \brief Total lift coefficient for all the boundaries. */
+  Total_CL,      /*!< \brief Total lift coefficient for all the boundaries. */
   Total_CD,        /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CSF,       /*!< \brief Total sideforce coefficient for all the boundaries. */
-  Total_CFx, 	   /*!< \brief Total x force coefficient for all the boundaries. */
-  Total_CFy, 	   /*!< \brief Total y force coefficient for all the boundaries. */
-  Total_CFz, 	   /*!< \brief Total z force coefficient for all the boundaries. */
-  Total_CMx, 	   /*!< \brief Total x moment coefficient for all the boundaries. */
-  Total_CMy, 	   /*!< \brief Total y moment coefficient for all the boundaries. */
-  Total_CMz, 	   /*!< \brief Total z moment coefficient for all the boundaries. */
-  Total_CEff; 	   /*!< \brief Total efficiency coefficient for all the boundaries. */
+  Total_CFx,     /*!< \brief Total x force coefficient for all the boundaries. */
+  Total_CFy,     /*!< \brief Total y force coefficient for all the boundaries. */
+  Total_CFz,     /*!< \brief Total z force coefficient for all the boundaries. */
+  Total_CMx,     /*!< \brief Total x moment coefficient for all the boundaries. */
+  Total_CMy,     /*!< \brief Total y moment coefficient for all the boundaries. */
+  Total_CMz,     /*!< \brief Total z moment coefficient for all the boundaries. */
+  Total_CEff;      /*!< \brief Total efficiency coefficient for all the boundaries. */
 
   su2double
   *Surface_CL,         /*!< \brief Lift coefficient for each monitoring surface. */

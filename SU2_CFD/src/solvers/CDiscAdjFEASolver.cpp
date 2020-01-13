@@ -27,6 +27,7 @@
 
 
 #include "../../include/solvers/CDiscAdjFEASolver.hpp"
+#include "../../include/variables/CDiscAdjFEAVariable.hpp"
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(void) : CSolver (){
 

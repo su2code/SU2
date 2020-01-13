@@ -28,7 +28,6 @@
 #pragma once
 
 #include "CEulerSolver.hpp"
-#include "../variables/CNSVariable.hpp"
 
 /*!
  * \class CNSSolver

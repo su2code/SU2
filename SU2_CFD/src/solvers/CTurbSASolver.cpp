@@ -27,7 +27,7 @@
 
 
 #include "../../include/solvers/CTurbSASolver.hpp"
-
+#include "../../include/variables/CTurbSAVariable.hpp"
 
 CTurbSASolver::CTurbSASolver(void) : CTurbSolver() {
 

@@ -27,6 +27,7 @@
 
 
 #include "../../include/solvers/CNSSolver.hpp"
+#include "../../include/variables/CNSVariable.hpp"
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
 
 CNSSolver::CNSSolver(void) : CEulerSolver() {
@@ -149,19 +150,19 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Initialize quantities for the average process for internal flow ---*/
 
-  AverageVelocity 				    = NULL;
-  AverageTurboVelocity 				= NULL;
+  AverageVelocity                   = NULL;
+  AverageTurboVelocity              = NULL;
   OldAverageTurboVelocity           = NULL;
-  ExtAverageTurboVelocity 			= NULL;
-  AverageFlux 						= NULL;
-  SpanTotalFlux 					= NULL;
-  AveragePressure  					= NULL;
+  ExtAverageTurboVelocity           = NULL;
+  AverageFlux                       = NULL;
+  SpanTotalFlux                     = NULL;
+  AveragePressure                   = NULL;
   OldAveragePressure                = NULL;
   RadialEquilibriumPressure         = NULL;
-  ExtAveragePressure  				= NULL;
-  AverageDensity   					= NULL;
+  ExtAveragePressure                = NULL;
+  AverageDensity                    = NULL;
   OldAverageDensity                 = NULL;
-  ExtAverageDensity   				= NULL;
+  ExtAverageDensity                 = NULL;
   AverageNu                         = NULL;
   AverageKine                       = NULL;
   AverageOmega                      = NULL;
@@ -172,19 +173,19 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Initialize primitive quantities for turboperformace ---*/
 
-  DensityIn                     = NULL;
-  PressureIn                    = NULL;
-  TurboVelocityIn               = NULL;
-  DensityOut                    = NULL;
-  PressureOut                   = NULL;
-  TurboVelocityOut              = NULL;
+  DensityIn                         = NULL;
+  PressureIn                        = NULL;
+  TurboVelocityIn                   = NULL;
+  DensityOut                        = NULL;
+  PressureOut                       = NULL;
+  TurboVelocityOut                  = NULL;
 
 
   /*--- Initialize quantities for Giles BC ---*/
 
-  CkInflow                      = NULL;
-  CkOutflow1			= NULL;
-  CkOutflow2			= NULL;
+  CkInflow                          = NULL;
+  CkOutflow1                        = NULL;
+  CkOutflow2                        = NULL;
 
 
 

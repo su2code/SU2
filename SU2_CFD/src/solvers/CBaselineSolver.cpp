@@ -28,8 +28,6 @@
 
 #include "../include/solvers/CBaselineSolver.hpp"
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
-// #include "../include/variables/CBaselineVariable.hpp"
-
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
 
