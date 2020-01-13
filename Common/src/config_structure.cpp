@@ -5354,9 +5354,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
     
     if (Reduced_Model) {
-      cout << "Read test basis for reduced order model computation from: " << Rom_FileName << "." << endl;
-      cout << "Read inital solution for reduced order model computation from: " << Ref_Snapshot_FileName << "." << endl;
-      cout << "Read reference solution for reduced order model computation from: " << Init_Snapshot_FileName << "." << endl;
+      cout << "Reduced order model definitions:" << endl;
+      cout << "   Test basis file name:         " << Rom_FileName << "." << endl;
+      cout << "   Inital solution file name:    " << Ref_Snapshot_FileName << "." << endl;
+      cout << "   Reference solution file name: " << Init_Snapshot_FileName << "." << endl;
     }
     
     if (ContinuousAdjoint)
