@@ -96,7 +96,8 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = config->GetnZone();
 
-  bool rans = (config->GetKind_Solver()== INC_RANS);
+  bool rans = ((config->GetKind_Solver()== INC_RANS) ||
+               (config->GetKind_Solver()== DISC_ADJ_INC_RANS));
 
   string UnstExt, text_line;
   ifstream restart_file;
