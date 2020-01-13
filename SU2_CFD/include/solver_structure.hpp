@@ -345,6 +345,11 @@ public:
   void CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Apply a correction to the boundary metric using the volume metric.
+   */
+  void CorrectBoundAnisoMetr(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Set the solver nondimensionalization.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.

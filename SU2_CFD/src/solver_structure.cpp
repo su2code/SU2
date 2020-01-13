@@ -5651,7 +5651,6 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
         
         const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
-        /*--- If the node belong to the domain ---*/
         if (geometry->node[iPoint]->GetDomain()) {
           
           //--- Correct if any of the neighbors belong to the volume
@@ -5689,6 +5688,53 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
                   if(viscous) base_nodes->SetAnisoViscHess(iPoint, i+iMetr, hessvisc[i+iMetr]/su2double(counter+1));
                 }
               }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void CSolver::CorrectBoundAnisoMetr(CGeometry *geometry, CConfig *config) {
+  unsigned short iMetr, iMarker;
+  unsigned short nMetr = 3*(nDim-1);
+  unsigned long iVertex;
+  bool viscous = config->GetViscous();
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY ) {
+      
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        
+        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          //--- Correct if any of the neighbors belong to the volume
+          unsigned short iNeigh, counter = 0;
+          su2double metr[nMetr];
+          for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+            const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+            if(!geometry->node[jPoint]->GetBoundary()) {
+              //--- Reset hessian if first volume node detected
+              if(counter == 0) {
+                for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                  metr[iMetr] = base_nodes->GetAnisoMetr(iPoint, i+iMetr);
+                }
+              }
+              for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                metr[iMetr] += base_nodes->GetAnisoMetr(jPoint, i+iMetr);
+              }
+              counter ++;
+            }
+          }
+          if(counter > 0) {
+            for(iMetr = 0; iMetr < nMetr; iMetr++) {
+              base_nodes->SetAnisoMetr(iPoint, iMetr, metr[i+iMetr]/su2double(counter+1));
             }
           }
         }
