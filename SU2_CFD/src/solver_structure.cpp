@@ -1941,6 +1941,14 @@ void CSolver::InitiateComms(CGeometry *geometry,
       COUNT_PER_POINT  = nDim*nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case ANISO_HESSIAN:
+      COUNT_PER_POINT  = 3*(nDim-1)*nVar*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case ANISO_HESSIAN_VISC:
+      COUNT_PER_POINT  = 3*(nDim-1)*nVar*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                      CURRENT_FUNCTION);
@@ -2094,6 +2102,18 @@ void CSolver::InitiateComms(CGeometry *geometry,
               for (iVar = 0; iVar < nVar; iVar++)
                 for (jDim = 0; jDim < nDim; jDim++)
                   bufDSend[buf_offset+jDim*nVar*nDim+iVar*nDim+iDim] = base_nodes->GetAnisoViscGrad(iPoint, jDim*nVar*nDim+iVar*nDim+iDim);
+            break;
+          case ANISO_HESSIAN:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                for (jDim = 0; jDim < nDim; jDim++)
+                  bufDSend[buf_offset+jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim] = base_nodes->GetAnisoHess(iPoint, jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim);
+            break;
+          case ANISO_HESSIAN_VISC:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                for (jDim = 0; jDim < nDim; jDim++)
+                  bufDSend[buf_offset+jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim] = base_nodes->GetAnisoViscHess(iPoint, jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -2272,6 +2292,18 @@ void CSolver::CompleteComms(CGeometry *geometry,
               for (iVar = 0; iVar < nVar; iVar++)
                 for (jDim = 0; jDim < nDim; jDim++)
                   base_nodes->SetAnisoViscGrad(iPoint, jDim*nVar*nDim+iVar*nDim+iDim, bufDRecv[buf_offset+jDim*nVar*nDim+iVar*nDim+iDim]);
+            break;
+          case ANISO_HESSIAN:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                for (jDim = 0; jDim < nDim; jDim++)
+                  base_nodes->SetAnisoHess(iPoint, jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim, bufDRecv[buf_offset+jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim]);
+            break;
+          case ANISO_HESSIAN_VISC:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                for (jDim = 0; jDim < nDim; jDim++)
+                  base_nodes->SetAnisoViscHess(iPoint, jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim, bufDRecv[buf_offset+jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",

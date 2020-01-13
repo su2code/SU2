@@ -5845,6 +5845,16 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
       }
     }
   }
+
+  /*--- Communicate the Hessian values via MPI. ---*/
+  
+  InitiateComms(geometry, config, ANISO_HESSIAN);
+  CompleteComms(geometry, config, ANISO_HESSIAN);
+
+  if(viscous) {
+    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
+    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
+  }
 }
 
 void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
@@ -6313,6 +6323,16 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
         }
       }
     }
+  }
+
+  /*--- Communicate the Hessian values via MPI. ---*/
+  
+  InitiateComms(geometry, config, ANISO_HESSIAN);
+  CompleteComms(geometry, config, ANISO_HESSIAN);
+
+  if(viscous) {
+    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
+    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
   }
 }
 
