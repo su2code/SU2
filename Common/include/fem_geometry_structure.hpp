@@ -1039,18 +1039,6 @@ public:
   void SetSendReceive(CConfig *config);
 
   /*!
-   * \brief Set the value of the total number of points globally in the simulation.
-   * \param[in] val_global_npoint - Global number of points in the mesh (excluding halos).
-   */
-  void SetGlobal_nPointDomain(unsigned long val_global_npoint);
-
-  /*!
-   * \brief Retrieve total number of nodes in a simulation across all processors (excluding halos).
-   * \return Total number of nodes in a simulation across all processors (excluding halos).
-   */
-  unsigned long GetGlobal_nPointDomain() const override;
-
-  /*!
    * \brief Set the local index that correspond with the global numbering index.
    */
   void SetGlobal_to_Local_Point();
@@ -1063,8 +1051,7 @@ public:
   long GetGlobal_to_Local_Point(unsigned long val_ipoint) const override;
 
   /*!
-   * \brief Function, which carries out the preprocessing tasks
-            when wall functions are used.
+   * \brief Function, which carries out the preprocessing tasks when wall functions are used.
    * \param[in] config - Definition of the particular problem.
    */
   void WallFunctionPreprocessing(CConfig *config);
