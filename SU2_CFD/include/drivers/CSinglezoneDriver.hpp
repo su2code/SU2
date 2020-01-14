@@ -99,9 +99,9 @@ public:
   virtual bool Monitor(unsigned long TimeIter);
 
   /*!
-   * \brief gets Convergence on physical time scale
-   * \param none
-   */
+     * \brief  Returns wheter all specified windowed-time-averaged ouputs have been converged
+     * \return Boolean indicating whether the problem is converged.
+     */
   inline virtual bool GetTimeConvergence() const{
     return output_container[ZONE_0]->GetTimeConvergence();
   }
