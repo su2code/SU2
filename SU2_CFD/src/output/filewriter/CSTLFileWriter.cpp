@@ -326,7 +326,7 @@ void CSTLFileWriter::Write_Data(){
 }
 
 
-double CSTLFileWriter::GetHaloNodeValue(unsigned long global_node_number, unsigned short iVar) {
+passivedouble CSTLFileWriter::GetHaloNodeValue(unsigned long global_node_number, unsigned short iVar) {
 
   vector<unsigned long>::iterator it = lower_bound(sorted_halo_nodes.begin(), sorted_halo_nodes.end(), global_node_number);
   int offset = distance(sorted_halo_nodes.begin(), it);
