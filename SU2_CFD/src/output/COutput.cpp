@@ -133,6 +133,7 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
   nWndCauchy_Elems = config->GetWnd_Cauchy_Elems();
   wndCauchyEps     = config->GetWnd_Cauchy_Eps();
 
+  wndConvFields.reserve(config->GetnWndConv_Field());
   for (unsigned short iField = 0; iField < config->GetnWndConv_Field(); iField++){
     wndConvFields.emplace_back(config->GetWndConv_Field(iField));
   }
@@ -1596,7 +1597,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
           windowedTimeAverages[historyOutput_List[iField]].addValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
           SetHistoryOutputValue("TAVG_" + fieldIdentifier, windowedTimeAverages[fieldIdentifier].WindowedUpdate(config->GetKindWindow()));
           if (config->GetDirectDiff() != NO_DERIVATIVE) {
-            SetHistoryOutputValue("D_TAVG_" + fieldIdentifier, SU2_TYPE::GetDerivative(windowedTimeAverages[fieldIdentifier].Get()));
+            SetHistoryOutputValue("D_TAVG_" + fieldIdentifier, SU2_TYPE::GetDerivative(windowedTimeAverages[fieldIdentifier].GetVal()));
           }
         }
       }

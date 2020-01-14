@@ -151,7 +151,7 @@ protected:
 
   //! Structure to store the value of the running averages
   map<string, CWindowedAverage> windowedTimeAverages;
-  
+
   //! Structure to store the value initial residuals for relative residual computation
   std::map<string, su2double> initialResiduals;
 
@@ -426,10 +426,17 @@ public:
   bool GetConvergence() {return convergence;}
 
   /*!
-     * \brief MonitorTimeConvergence
-     * \param config, Iteration
+     * \brief  Monitor the time convergence of the specified windowed-time-averaged ouput
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] Iteration - Index of the current iteration.
+     * \return Boolean indicating whether the problem is converged.
      */
   bool MonitorTimeConvergence(CConfig *config, unsigned long Iteration);
+
+  /*!
+   * \brief Get convergence time convergence of the specified windowed-time-averaged ouput of the problem.
+   * \return Boolean indicating whether the problem is converged.
+   */
   bool GetTimeConvergence()const {return TimeConvergence;} /*! \brief Indicates, if the time loop is converged. COnvergence criterion: Windowed time average */
 
 
