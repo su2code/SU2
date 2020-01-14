@@ -492,7 +492,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         
         if (rank == MASTER_NODE) {
             (*fileWritingTable) << "Paraview Multiblock" 
-                                << fileName + CParaviewVTMFileWriter::fileExt + " -> " + vtmWriter->GetFolderName();
+                                << fileName + CParaviewVTMFileWriter::fileExt;
         }
         
         /*--- Open a block for the zone ---*/

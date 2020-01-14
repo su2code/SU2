@@ -52,29 +52,27 @@ CParaviewXMLFileWriter::~CParaviewXMLFileWriter(){
 
 void CParaviewXMLFileWriter::Write_Data(){
 
-
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
 
+  /*--- We always have 3 coords, independent of the actual value of nDim ---*/
+  
   const int NCOORDS = 3;
-  const vector<string> fieldNames = dataSorter->GetFieldNames();
-
-  unsigned short iDim = 0, nDim = dataSorter->GetnDim();
-
-  dataOffset = 0;
+  const unsigned short nDim = dataSorter->GetnDim();
+  unsigned short iDim = 0;
+  
+  /*--- Array containing the field names we want to output ---*/
+  
+  const vector<string>& fieldNames = dataSorter->GetFieldNames();
 
   unsigned long iPoint, iElem;
-
-  ofstream Paraview_File;
-
-  const int MAX_STRING_LENGTH = 255;
-  char str_buf[MAX_STRING_LENGTH], fname[100];
-
-  strcpy(fname, fileName.c_str());
+  
+  char str_buf[255];
 
   fileSize = 0.0;
-
+  dataOffset = 0;
+  
   /*--- Set a timer for the file writing. ---*/
 
 #ifndef HAVE_MPI
@@ -94,14 +92,14 @@ void CParaviewXMLFileWriter::Write_Data(){
    to write a fresh output file, so we delete any existing files and create
    a new one. ---*/
 
-  ierr = MPI_File_open(MPI_COMM_WORLD, fname,
+  ierr = MPI_File_open(MPI_COMM_WORLD, fileName.c_str(),
                        MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                        MPI_INFO_NULL, &fhw);
   if (ierr != MPI_SUCCESS)  {
     MPI_File_close(&fhw);
     if (rank == 0)
-      MPI_File_delete(fname, MPI_INFO_NULL);
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname,
+      MPI_File_delete(fileName.c_str(), MPI_INFO_NULL);
+    ierr = MPI_File_open(MPI_COMM_WORLD, fileName.c_str(),
                          MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                          MPI_INFO_NULL, &fhw);
   }
@@ -110,7 +108,7 @@ void CParaviewXMLFileWriter::Write_Data(){
 
   if (ierr) {
     SU2_MPI::Error(string("Unable to open VTK binary legacy file ") +
-                   string(fname), CURRENT_FUNCTION);
+                   string(fileName), CURRENT_FUNCTION);
   }
 #else
   fhw = fopen(fname, "wb");

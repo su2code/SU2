@@ -774,6 +774,7 @@ void CConfig::SetPointersNull(void) {
   HistoryOutput = NULL;
   VolumeOutput = NULL;
   VolumeOutputFiles = NULL;
+  ConvField = NULL;
 
   /*--- Variable initialization ---*/
   
@@ -7550,6 +7551,8 @@ CConfig::~CConfig(void) {
   if (VolumeOutput != NULL) delete [] VolumeOutput;
   if (Mesh_Box_Size != NULL) delete [] Mesh_Box_Size;
   if (VolumeOutputFiles != NULL) delete [] VolumeOutputFiles;
+  
+  if (ConvField != NULL) delete [] ConvField;
 
 }
 
