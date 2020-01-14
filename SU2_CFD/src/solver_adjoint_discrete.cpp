@@ -134,6 +134,9 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   case RUNTIME_TURB_SYS:
     SolverName = "ADJ.TURB";
     break;
+  case RUNTIME_RADIATION_SYS:
+    SolverName = "ADJ.RAD";
+    break;
   default:
     SolverName = "ADJ.SOL";
     break;
