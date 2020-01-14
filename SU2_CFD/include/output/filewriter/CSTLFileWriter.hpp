@@ -79,7 +79,7 @@ private:
    * \param[in] iVar - Variable number
    * \return Value of the halo-node variable
    */
-  double GetHaloNodeValue(unsigned long global_node_number, unsigned short iVar);
+  passivedouble GetHaloNodeValue(unsigned long global_node_number, unsigned short iVar);
 
 public:
 

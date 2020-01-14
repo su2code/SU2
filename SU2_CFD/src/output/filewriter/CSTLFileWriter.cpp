@@ -61,12 +61,6 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
   halo_nodes.clear();
   sorted_halo_nodes.clear();
 
-  /* We output a single, partitioned zone where each rank outputs one partition. */
-  vector<int> partition_owners;
-  partition_owners.reserve(size);
-  for (int iRank = 0; iRank < size; ++iRank)
-    partition_owners.push_back(iRank);
-
   /* Gather a list of nodes we refer to but are not outputting, because they are not present on this rank. */
   for (unsigned long i = 0; i < nParallel_Tria * N_POINTS_TRIANGLE; ++i)
     if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i)-1) != rank)
@@ -89,7 +83,7 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
   for(unsigned long i = 0; i < num_halo_nodes; ++i) {
     int owning_rank = dataSorter->FindProcessor(sorted_halo_nodes[i]);
     unsigned long node_number = sorted_halo_nodes[i] - dataSorter->GetNodeBegin(owning_rank);
-    neighbor_partitions[i] = owning_rank; /* Partition numbers are 1-based, i.e. start with 1! */
+    neighbor_partitions[i] = owning_rank;
     neighbor_nodes[i] = static_cast<long>(node_number);
   }
 
