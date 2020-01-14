@@ -3430,15 +3430,6 @@ void CTurbSASolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- Communicate the Hessian values via MPI. ---*/
-  
-  InitiateComms(geometry, config, ANISO_HESSIAN);
-  CompleteComms(geometry, config, ANISO_HESSIAN);
-  InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
-  CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
-
-  CorrectBoundAnisoHess(geometry, config);
-
   //--- Make positive definite matrix
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     for(iVar = 0; iVar < nVarMetr; iVar++){
@@ -3489,6 +3480,15 @@ void CTurbSASolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
       }
     }
   }
+
+  /*--- Communicate the Hessian values via MPI. ---*/
+  
+  InitiateComms(geometry, config, ANISO_HESSIAN);
+  CompleteComms(geometry, config, ANISO_HESSIAN);
+  InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
+  CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
+
+  CorrectBoundAnisoHess(geometry, config);
 }
 
 void CTurbSASolver::SetTurbGradient_L2Proj3(CGeometry *geometry, CConfig *config, CSolver *solver_flow) {
@@ -3806,15 +3806,6 @@ void CTurbSASolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- Communicate the Hessian values via MPI. ---*/
-  
-  InitiateComms(geometry, config, ANISO_HESSIAN);
-  CompleteComms(geometry, config, ANISO_HESSIAN);
-  InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
-  CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
-
-  CorrectBoundAnisoHess(geometry, config);
-
   //--- Make positive definite matrix
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
@@ -3888,6 +3879,15 @@ void CTurbSASolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
       }
     }
   }
+
+  /*--- Communicate the Hessian values via MPI. ---*/
+  
+  InitiateComms(geometry, config, ANISO_HESSIAN);
+  CompleteComms(geometry, config, ANISO_HESSIAN);
+  InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
+  CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
+
+  CorrectBoundAnisoHess(geometry, config);
 }
 
 CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
