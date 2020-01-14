@@ -108,10 +108,10 @@ void CParaviewXMLFileWriter::Write_Data(){
 
   if (ierr) {
     SU2_MPI::Error(string("Unable to open VTK binary legacy file ") +
-                   string(fileName), CURRENT_FUNCTION);
+                   fileName, CURRENT_FUNCTION);
   }
 #else
-  fhw = fopen(fname, "wb");
+  fhw = fopen(fileName.c_str(), "wb");
   /*--- Error check for opening the file. ---*/
 
   if (!fhw) {
