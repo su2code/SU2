@@ -28,7 +28,6 @@
 #include "../../../include/output/tools/CWindowingTools.hpp"
 
 //WindowingTools
-/*! \brief Returns the value of a windowing function given by fctIdx at CurTimeIdx with given endTimeIdx (i.e. endTimeIdx=nTimeIter, if one starts  windowing at time t =0.) */
 su2double CWindowingTools::GetWndWeight(WINDOW_FUNCTION windowId, unsigned long CurTimeIdx, unsigned long endTimeIdx) const{
   switch (windowId) {
     case HANN:        return HannWindow(CurTimeIdx, endTimeIdx);
@@ -70,24 +69,8 @@ CWindowedAverage::CWindowedAverage(){
   this->Reset();
 }
 
-su2double CWindowedAverage::Update(su2double valIn){
-  su2double scaling = 1. / static_cast<su2double>(count + 1);
-  val = valIn * scaling + val * (1. - scaling);
-  count++;
-  return val;
-}
-
-su2double CWindowedAverage::Get() const{
-  return val;
-}
-
-unsigned long CWindowedAverage::Count() const{
-  return count;
-}
-
 void CWindowedAverage::Reset(){
   val = 0.;
-  count = 0;
 }
 
 
@@ -95,9 +78,9 @@ void CWindowedAverage::addValue(su2double valIn, unsigned long currentIter,unsig
   if(currentIter >= startIter)values.push_back(valIn);
 }
 
-su2double CWindowedAverage::WindowedUpdate(int fctIdx){ //Computes a windowed time average (integral)
+su2double CWindowedAverage::WindowedUpdate(WINDOW_FUNCTION windowId){
   if(values.size()>0){
-    switch (fctIdx){
+    switch (windowId){
       case HANN:        val= HannWindowing();         return val;
       case HANN_SQUARE: val= HannSquaredWindowing();  return val;
       case BUMP:        val= BumpWindowing();         return val;
@@ -107,6 +90,10 @@ su2double CWindowedAverage::WindowedUpdate(int fctIdx){ //Computes a windowed ti
   return 0.0;
 }
 
+/* Definitions below are according to the window definitions in the paper of
+ * Krakos et al. : "Sensitivity analysis of limit cycle oscillations"
+ *                  by Krakos, J. A. and Wang, Q. and Hall, S. R. and Darmfoal, D. L..
+ */
 su2double CWindowedAverage::NoWindowing(){
   su2double wnd_timeAvg = 0.0;
   for(unsigned long i=0; i<values.size(); i++){

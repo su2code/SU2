@@ -783,6 +783,7 @@ void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
   if (time_stepping){
     if (TimeIter < IterAvg_Obj){
+      // Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0
       seeding = windowEvaluator.GetWndWeight(config_container[ZONE_0]->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));
     }
     else{

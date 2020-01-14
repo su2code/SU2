@@ -311,10 +311,6 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   return StopCalc;
 }
 
-bool CSinglezoneDriver::GetTimeConvergence() const{
-  return output_container[ZONE_0]->GetTimeConvergence();
-}
-
 void CSinglezoneDriver::Runtime_Options(){
 
   ifstream runtime_configfile;

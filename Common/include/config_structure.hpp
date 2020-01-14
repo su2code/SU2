@@ -5436,7 +5436,7 @@ public:
 
   /*!
    * \brief Get the Starting Iteration for the windowing approach
-   *        in Sensitivity Analysis for LCOs.
+   *        in Sensitivity Analysis for period-averaged outputs, which oscillate.
    * \return
    */
   unsigned long GetStartWindowIteration(void) const;
