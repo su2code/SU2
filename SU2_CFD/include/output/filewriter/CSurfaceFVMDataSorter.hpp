@@ -102,18 +102,6 @@ public:
     return size-1;
   }
 
-  /*!
-   * \brief Get the ending global renumbered node ID of the linear partition owned by a specific processor.
-   * \param[in] rank - the processor rank.
-   * \return The ending global renumbered node ID.
-   */
-  unsigned long GetNodeEnd(unsigned short rank) const override {
-    for (unsigned short iRank = 0; iRank < size-1; iRank++){
-      return nPoint_Recv[iRank+1]-1;
-    }
-    return nPoint_Recv[size];
-  }
-
 private:
 
   /*!

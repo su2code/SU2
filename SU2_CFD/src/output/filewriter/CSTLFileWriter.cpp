@@ -32,6 +32,7 @@
 
 const string CSTLFileWriter::fileExt = ".stl";
 
+
 CSTLFileWriter::CSTLFileWriter(vector<string> fields,
                                unsigned short nDim,
                                string fileName,
@@ -290,12 +291,12 @@ void CSTLFileWriter::Write_Data(){
   if (rank == MASTER_NODE) {
 
     /*--- For information how an ASCII .stl file is structured: https://en.wikipedia.org/wiki/STL_(file_format)  ---*/
-    /*--- Open the STL file and write the header with variable names. ---*/
+    /*--- Open the STL file and write the header line. ---*/
     Surf_file.precision(6);
     Surf_file.open(fileName.c_str(), ios::out);
     Surf_file << "solid SU2_output" << endl;
-    /*--- Loop through all of the collected data and write each node's values ---*/
 
+    /*--- Loop through all of the collected data and write each node's coordinate values. ---*/
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
       for (iElem = 0; iElem < Buffer_Recv_nTriaAll[iProcessor]; iElem++) { // loops over nLocalTriaAll
 
@@ -330,6 +331,7 @@ void CSTLFileWriter::Write_Data(){
   if(Buffer_Recv_nTriaAll != NULL) delete [] Buffer_Recv_nTriaAll;
 }
 
+
 double CSTLFileWriter::GetHaloNodeValue(unsigned long global_node_number, unsigned short iVar) {
 
   vector<unsigned long>::iterator it = lower_bound(sorted_halo_nodes.begin(), sorted_halo_nodes.end(), global_node_number);
@@ -345,6 +347,6 @@ double CSTLFileWriter::GetHaloNodeValue(unsigned long global_node_number, unsign
     }
   }
 
-  SU2_MPI::Error("Halo node not found.", CURRENT_FUNCTION);
+  SU2_MPI::Error("STL File-Writer: Halo node not found.", CURRENT_FUNCTION);
   return 0.0;
 }

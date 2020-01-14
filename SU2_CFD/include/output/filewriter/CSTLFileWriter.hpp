@@ -46,17 +46,17 @@ private:
   /*--- Fields for the first MPI::Alltoallv: Afterwards each process knows the global renumbered node ID's it has to send and to which proc to send. ---*/
   vector<unsigned long> sorted_halo_nodes; /*!< \brief Holds same data as `halo_nodes` but as a vector instead of a set. */
   vector<int> num_nodes_to_receive; /*!< \brief Number of points to receive from each process. */
-  vector<int> nodes_to_receive_displacements; /*!< \brief ... */
+  vector<int> nodes_to_receive_displacements; /*!< \brief Displacements vector for MPI::AlltoAllv command. */
   vector<unsigned long> nodes_to_send; /*!< \brief Vector of global renumbered node numbers which the current rank owns, and another rank needs for connectivity. */
   vector<int> num_nodes_to_send; /*!< \brief Number of points to to send to each process. */
-  vector<int> nodes_to_send_displacements; /*!< \brief ... */
+  vector<int> nodes_to_send_displacements; /*!< \brief Displacements vector for MPI::AlltoAllv command. */
   /*--- Fields for the second MPI::Alltoallv: Afterwards, `halo_var_data` holds the correct coordinate data of halo points of this process. ---*/
   vector<passivedouble> data_to_send; /*!< \brief Holds the halo-point coordinates for other ranks which are owned by this rank. These are communicated. */
   vector<int> num_values_to_send; /*!< \brief Number of Coord values to send to each process. */
-  vector<int> values_to_send_displacements; /*!< \brief ... */
+  vector<int> values_to_send_displacements; /*!< \brief Displacements vector for MPI::AlltoAllv command. */
   vector<passivedouble> halo_var_data; /*!< \brief Holds the halo-point coordinates for this rank received from other ranks. */
   vector<int> num_values_to_receive; /*!< \brief Number of Coord values to receive from each process. */
-  vector<int> values_to_receive_displacements; /*!< \brief ... */
+  vector<int> values_to_receive_displacements; /*!< \brief Displacements vector for MPI::AlltoAllv command. */
 
   /*--- Variables for gathering the triangle data in one array. ---*/
   unsigned long *Buffer_Recv_nTriaAll = NULL; /*!< \brief Array with number of triangles which each processor has. (Note: Quads are split into two Tris)  */
@@ -83,10 +83,7 @@ private:
 
 public:
 
-  /*!
-   * \brief File extension
-   */
-  const static string fileExt;
+  const static string fileExt; /*!< \brief File extension ".stl". */
 
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.

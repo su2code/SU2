@@ -176,7 +176,7 @@ public:
    * \param rank - the processor rank.
    * \return The ending node ID.
    */
-  virtual unsigned long GetNodeEnd (unsigned short rank) const {
+  unsigned long GetNodeEnd(unsigned short rank) const {
     return linearPartitioner->GetLastIndexOnRank(rank);
   }
 
