@@ -234,13 +234,13 @@ public:
   * \brief A virtual member.
   * \param[in] val_color - New color of the element.
   */
-  inline void SetColor(unsigned long val_color) { }
+  inline virtual void SetColor(unsigned long val_color) { }
 
   /*!
   * \brief A virtual member.
   * \return The color of the element in the partitioning.
   */
-  inline unsigned long GetColor(void) { return -1; }
+  inline virtual unsigned long GetColor(void) { return -1; }
 
   /*!
    * \brief Get the element global index in a parallel computation.
@@ -258,13 +258,13 @@ public:
    * \brief A virtual member.
    * \param[in] val_domainelement Index of the domain element which has a face shared by this boundary element.
    */
-  inline void SetDomainElement(unsigned long val_domainelement) { DomainElement = val_domainelement; }
+  inline virtual void SetDomainElement(unsigned long val_domainelement) { DomainElement = val_domainelement; }
 
   /*!
    * \brief A virtual member.
    * \return Relate the boundary element which a face of a domain element.
    */
-  inline unsigned long GetDomainElement(void) { return DomainElement; }
+  inline virtual unsigned long GetDomainElement(void) { return DomainElement; }
 
   /*!
    * \brief A pure virtual member.
@@ -364,91 +364,91 @@ public:
   * \param[out] nPointsPerFace - Number of corner points for each of the faces.
   * \param[out] faceConn       - Global IDs of the corner points of the faces.
   */
-  inline void GetCornerPointsAllFaces(unsigned short &nFaces,
-                                                   unsigned short nPointsPerFace[],
-                                                   unsigned long  faceConn[6][4]) { }
+  inline virtual void GetCornerPointsAllFaces(unsigned short &nFaces,
+                                      unsigned short nPointsPerFace[],
+                                      unsigned long  faceConn[6][4]) { }
 
   /*!
   * \brief Virtual function to make available the global ID of this element.
   * \return The global ID of this element.
   */
-  inline unsigned long GetGlobalElemID(void) { return 0; }
+  inline virtual unsigned long GetGlobalElemID(void) { return 0; }
 
   /*!
   * \brief Virtual function to make available the global offset of the solution DOFs.
   * \return The global offset of the solution DOFs.
   */
-  inline unsigned long GetGlobalOffsetDOFsSol(void) { return 0; }
+  inline virtual unsigned long GetGlobalOffsetDOFsSol(void) { return 0; }
 
   /*!
   * \brief Virtual function to make available the polynomial degree of the grid.
   * \return The polynomial degree of the grid.
   */
-  inline unsigned short GetNPolyGrid(void) { return 0; }
+  inline virtual unsigned short GetNPolyGrid(void) { return 0; }
 
   /*!
   * \brief Virtual function to make available the polynomial degree of the solution.
   * \return The polynomial degree of the solution.
   */
-  inline unsigned short GetNPolySol(void) { return 0; }
+  inline virtual unsigned short GetNPolySol(void) { return 0; }
 
   /*!
   * \brief Virtual function to make available the number of DOFs of the grid in the element.
   * \return The number of DOFs of the Grid in the element.
   */
-  inline unsigned short GetNDOFsGrid(void) { return 0; }
+  inline virtual unsigned short GetNDOFsGrid(void) { return 0; }
 
   /*!
   * \brief Virtual function to make available the number of DOFs of the solution in the element.
   * \return The number of DOFs of the solution in the element.
   */
-  inline unsigned short GetNDOFsSol(void) { return 0; }
+  inline virtual unsigned short GetNDOFsSol(void) { return 0; }
 
   /*!
   * \brief Virtual function to get whether or not the Jacobian is considered constant.
   * \return True if the Jacobian is (almost) constant and false otherwise.
   */
-  inline bool GetJacobianConsideredConstant(void) { return false; }
+  inline virtual bool GetJacobianConsideredConstant(void) { return false; }
 
   /*!
   * \brief Virtual function to set the value of JacobianConsideredConstant.
   * \param[in] val_JacobianConsideredConstant - The value to be set for JacobianConsideredConstant.
   */
-  inline void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) {}
+  inline virtual void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) {}
 
   /*!
   * \brief Virtual function to correct the offset of the global DOFs.
   * \param[in] val_offsetRank - The offset that must be added for this rank.
   */
-  inline void AddOffsetGlobalDOFs(const unsigned long val_offsetRank) {}
+  inline virtual void AddOffsetGlobalDOFs(const unsigned long val_offsetRank) {}
 
   /*!
   * \brief Virtual function to add the given donor ID to the donor elements for the wall function treatment.
   * \param[in] donorElement - Element to be added to donor elements.
   */
-  inline void AddDonorWallFunctions(const unsigned long donorElement) {}
+  inline virtual void AddDonorWallFunctions(const unsigned long donorElement) {}
 
   /*!
   * \brief Virtual function to make available the number of donor elements for the wall function treatment.
   * \return The number of donor elements.
   */
-  inline unsigned short GetNDonorsWallFunctions(void) {return 0;}
+  inline  virtual unsigned short GetNDonorsWallFunctions(void) {return 0;}
 
   /*!
   * \brief Virtual function to make available the pointer to the vector for the donor elements
            for the wall function treatment.
   * \return The pointer to the data of donorElementsWallFunctions.
   */
-  inline unsigned long *GetDonorsWallFunctions(void) {return NULL;}
+  inline virtual unsigned long *GetDonorsWallFunctions(void) {return NULL;}
 
   /*!
   * \brief Virtual function to set the global ID's of the donor elements for the wall function treatment.
   * \param[in] donorElements - Vector, which contain the donor elements.
   */
-  inline void SetDonorsWallFunctions(const vector<unsigned long> &donorElements) {}
+  inline virtual void SetDonorsWallFunctions(const vector<unsigned long> &donorElements) {}
 
   /*!
   * \brief Virtual function to remove the multiple donors for the wall function treatment.
   */
-  inline void RemoveMultipleDonorsWallFunctions(void) {}
+  inline virtual void RemoveMultipleDonorsWallFunctions(void) {}
 };

@@ -153,7 +153,7 @@ public:
   * \brief Make available the global ID of this element.
   * \return The global ID of this element.
   */
-  inline unsigned long GetGlobalElemID(void) { return elemIDGlobal; }
+  inline unsigned long GetGlobalElemID(void) override { return elemIDGlobal; }
 
   /*!
   * \brief Make available the global offset of the solution DOFs of this element.
@@ -183,25 +183,25 @@ public:
   * \brief Get the polynomial degree of the grid for this element.
   * \return The polynomial degree of the grid.
   */
-  inline unsigned short GetNPolyGrid(void) { return nPolyGrid; }
+  inline unsigned short GetNPolyGrid(void) override { return nPolyGrid; }
 
   /*!
   * \brief Get the polynomial degree of the solution for this element.
   * \return The polynomial degree of the solution.
   */
-  inline unsigned short GetNPolySol(void) { return nPolySol; }
+  inline unsigned short GetNPolySol(void) override { return nPolySol; }
 
   /*!
   * \brief Function to make available the number of DOFs of the grid in the element.
   * \return The number of DOFs of the grid in the element.
   */
-  inline unsigned short GetNDOFsGrid(void) { return nDOFsGrid; }
+  inline unsigned short GetNDOFsGrid(void) override { return nDOFsGrid; }
 
   /*!
   * \brief Function to make available the number of DOFs of the solution in the element.
   * \return The number of DOFs of the solution in the element.
   */
-  inline unsigned short GetNDOFsSol(void) { return nDOFsSol; }
+  inline unsigned short GetNDOFsSol(void) override { return nDOFsSol; }
 
   /*!
   * \brief Get all the corner points of all the faces of this element. It must be made sure
@@ -213,7 +213,7 @@ public:
   */
   void GetCornerPointsAllFaces(unsigned short &numFaces,
                                unsigned short nPointsPerFace[],
-                               unsigned long  faceConn[6][4]);
+                               unsigned long  faceConn[6][4]) override;
 
   /*!
   * \brief Static member function to get the local the corner points of all the faces
@@ -236,29 +236,29 @@ public:
   * \brief Function to get whether or not the Jacobian is considered constant.
   * \return True if the Jacobian is (almost) constant and false otherwise.
   */
-  inline bool GetJacobianConsideredConstant(void) { return JacobianConsideredConstant; }
+  inline bool GetJacobianConsideredConstant(void) override { return JacobianConsideredConstant; }
 
   /*!
   * \brief Set the color of the element.
   * \param[in] val_color - New color of the element.
   */
-  inline void SetColor(unsigned long val_color) { color = val_color; }
+  inline void SetColor(unsigned long val_color) override { color = val_color; }
 
   /*!
   * \brief Get the color of the element for the partitioning.
   * return - The color of the element in the partitioning.
   */
-  inline unsigned long GetColor(void) { return color; }
+  inline unsigned long GetColor(void) override { return color; }
 
   /*!
   * \brief Function to set the value of JacobianConsideredConstant.
   * \param[in] val_JacobianConsideredConstant - The value to be set for JacobianConsideredConstant.
   */
-  inline void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) {JacobianConsideredConstant = val_JacobianConsideredConstant;}
+  inline void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) override {JacobianConsideredConstant = val_JacobianConsideredConstant;}
 
   /*!
   * \brief Function to correct the offset of the global DOFs.
   * \param[in] val_offsetRank - The offset that must be added for this rank.
   */
-  inline void AddOffsetGlobalDOFs(const unsigned long val_offsetRank) {offsetDOFsSolGlobal += val_offsetRank;}
+  inline void AddOffsetGlobalDOFs(const unsigned long val_offsetRank) override {offsetDOFsSolGlobal += val_offsetRank;}
 };
