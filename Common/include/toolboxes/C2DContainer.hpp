@@ -31,6 +31,7 @@
 #include "../datatype_structure.hpp"
 
 #include <utility>
+#include <type_traits>
 
 /*!
  * \enum StorageType
@@ -360,6 +361,8 @@ template<typename Index_t, class Scalar_t, StorageType Store, size_t AlignSize, 
 class C2DContainer :
   public container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>
 {
+  static_assert(std::is_integral<Index_t>::value,"");
+
 private:
   using Base = container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>;
   using Base::m_data;
@@ -401,12 +404,9 @@ private:
       free(m_data);
     }
 
-    /*--- round up size to a multiple of the alignment specification if necessary ---*/
-    size_t bytes = reqSize*sizeof(Scalar_t);
-    size_t allocSize = (AlignSize==0)? bytes : ((bytes+AlignSize-1)/AlignSize)*AlignSize;
-
     /*--- request actual allocation to base class as it needs specialization ---*/
-    m_allocate(allocSize,rows,cols);
+    size_t bytes = reqSize*sizeof(Scalar_t);
+    m_allocate(bytes,rows,cols);
 
     return reqSize;
   }

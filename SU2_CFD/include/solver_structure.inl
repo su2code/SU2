@@ -1966,8 +1966,6 @@ inline su2double CSolver::Get_DV_Val(unsigned short i_DV){ return 0.0; }
 
 inline su2double CSolver::Get_val_I(void){ return 0.0; }
 
-inline su2double CSolver::Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar){ return 0.0; }
-
 inline su2double CIncEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
 inline su2double CIncEulerSolver::GetModVelocity_Inf(void) {
@@ -2286,9 +2284,6 @@ inline su2double CHeatSolverFVM::GetConjugateHeatVariable(unsigned short val_mar
 
 inline void CHeatSolverFVM::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
   ConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*ConjugateVar[val_marker][val_vertex][pos_var]; }
-
-inline su2double CFEASolver::Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar){ 
-  return MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar); }
 
 inline unsigned short CFEASolver::Get_iElem_iDe(unsigned long iElem){ return iElem_iDe[iElem]; }
 

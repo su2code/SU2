@@ -2065,82 +2065,75 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
         }
 
-        for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+        for (unsigned short iFace = 0; iFace < bound[iMarker][iElem]->GetnFaces(); iFace++){
+          iNode = bound[iMarker][iElem]->GetFaces(iFace,0);
+          jNode = bound[iMarker][iElem]->GetFaces(iFace,1);
           iPoint = bound[iMarker][iElem]->GetNode(iNode);
+          jPoint = bound[iMarker][iElem]->GetNode(jNode);
 
-          for (jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
-            jPoint = bound[iMarker][iElem]->GetNode(jNode);
+          if ((CrossProduct >= 0.0)
+              && ((AveXCoord > MinXCoord) && (AveXCoord < MaxXCoord))
+              && ((AveYCoord > MinYCoord) && (AveYCoord < MaxYCoord))
+              && ((AveZCoord > MinZCoord) && (AveZCoord < MaxZCoord))) {
 
-            /*--- CrossProduct concept is delicated because it allows triangles where only one side is divided by a plane.
-             that is going against the concept that all the triangles are divided twice  and causes probelms because
-             Xcoord_Index0.size() > Xcoord_Index1.size()! ---*/
-
-            if ((jPoint > iPoint) && (CrossProduct >= 0.0)
-                && ((AveXCoord > MinXCoord) && (AveXCoord < MaxXCoord))
-                && ((AveYCoord > MinYCoord) && (AveYCoord < MaxYCoord))
-                && ((AveZCoord > MinZCoord) && (AveZCoord < MaxZCoord))) {
-
-              Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;  Variable_P0 = 0.0;
-              Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;  Variable_P1 = 0.0;
+            Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;  Variable_P0 = 0.0;
+            Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;  Variable_P1 = 0.0;
 
 
-              for (iDim = 0; iDim < nDim; iDim++) {
-                if (original_surface == true) {
-                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
-                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
-                }
-                else {
-                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
-                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
-                }
+            for (iDim = 0; iDim < nDim; iDim++) {
+              if (original_surface == true) {
+                Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
+                Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
               }
-
-              if (FlowVariable != NULL) {
-                Variable_P0 = FlowVariable[iPoint];
-                Variable_P1 = FlowVariable[jPoint];
+              else {
+                Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
+                Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
               }
+            }
 
-              /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
+            if (FlowVariable != NULL) {
+              Variable_P0 = FlowVariable[iPoint];
+              Variable_P1 = FlowVariable[jPoint];
+            }
 
-              if (nDim == 2) {
-                Xcoord_Index0.push_back(Segment_P0[0]);                     Xcoord_Index1.push_back(Segment_P1[0]);
-                Ycoord_Index0.push_back(Segment_P0[2]);                     Ycoord_Index1.push_back(Segment_P1[2]);
-                Zcoord_Index0.push_back(Segment_P0[1]);                     Zcoord_Index1.push_back(Segment_P1[1]);
-                Variable_Index0.push_back(Variable_P0);                     Variable_Index1.push_back(Variable_P1);
-                IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); IGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
-                JGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
+            /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
+
+            if (nDim == 2) {
+              Xcoord_Index0.push_back(Segment_P0[0]);                     Xcoord_Index1.push_back(Segment_P1[0]);
+              Ycoord_Index0.push_back(Segment_P0[2]);                     Ycoord_Index1.push_back(Segment_P1[2]);
+              Zcoord_Index0.push_back(Segment_P0[1]);                     Zcoord_Index1.push_back(Segment_P1[1]);
+              Variable_Index0.push_back(Variable_P0);                     Variable_Index1.push_back(Variable_P1);
+              IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); IGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
+              JGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
+              PointIndex++;
+            }
+
+            /*--- In 3D compute the intersection ---*/
+
+            else if (nDim == 3) {
+              intersect = SegmentIntersectsPlane(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
+              if (intersect == true) {
+                if (PointIndex == 0) {
+                  Xcoord_Index0.push_back(Intersection[0]);
+                  Ycoord_Index0.push_back(Intersection[1]);
+                  Zcoord_Index0.push_back(Intersection[2]);
+                  Variable_Index0.push_back(Variable_Interp);
+                  IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex());
+                  JGlobalID_Index0.push_back(node[jPoint]->GetGlobalIndex());
+                }
+                if (PointIndex == 1) {
+                  Xcoord_Index1.push_back(Intersection[0]);
+                  Ycoord_Index1.push_back(Intersection[1]);
+                  Zcoord_Index1.push_back(Intersection[2]);
+                  Variable_Index1.push_back(Variable_Interp);
+                  IGlobalID_Index1.push_back(node[iPoint]->GetGlobalIndex());
+                  JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
+                }
                 PointIndex++;
               }
-
-              /*--- In 3D compute the intersection ---*/
-
-              else if (nDim == 3) {
-                intersect = SegmentIntersectsPlane(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
-                if (intersect == true) {
-                  if (PointIndex == 0) {
-                    Xcoord_Index0.push_back(Intersection[0]);
-                    Ycoord_Index0.push_back(Intersection[1]);
-                    Zcoord_Index0.push_back(Intersection[2]);
-                    Variable_Index0.push_back(Variable_Interp);
-                    IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex());
-                    JGlobalID_Index0.push_back(node[jPoint]->GetGlobalIndex());
-                  }
-                  if (PointIndex == 1) {
-                    Xcoord_Index1.push_back(Intersection[0]);
-                    Ycoord_Index1.push_back(Intersection[1]);
-                    Zcoord_Index1.push_back(Intersection[2]);
-                    Variable_Index1.push_back(Variable_Interp);
-                    IGlobalID_Index1.push_back(node[iPoint]->GetGlobalIndex());
-                    JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
-                  }
-                  PointIndex++;
-                }
-              }
-
             }
           }
         }
-
       }
     }
   }
@@ -3961,4 +3954,88 @@ void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
     }
   }
 
+}
+
+const CCompressedSparsePatternUL& CGeometry::GetSparsePattern(ConnectivityType type, unsigned long fillLvl)
+{
+  bool fvm = (type == ConnectivityType::FiniteVolume);
+
+  CCompressedSparsePatternUL* pattern = nullptr;
+
+  if (fillLvl == 0)
+    pattern = fvm? &finiteVolumeCSRFill0 : &finiteElementCSRFill0;
+  else
+    pattern = fvm? &finiteVolumeCSRFillN : &finiteElementCSRFillN;
+
+  if (pattern->empty()) {
+    *pattern = buildCSRPattern(*this, type, fillLvl);
+    pattern->buildDiagPtr();
+  }
+
+  return *pattern;
+}
+
+const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(void)
+{
+  if (edgeToCSRMap.empty()) {
+    if (finiteVolumeCSRFill0.empty()) {
+      finiteVolumeCSRFill0 = buildCSRPattern(*this, ConnectivityType::FiniteVolume, 0ul);
+    }
+    edgeToCSRMap = mapEdgesToSparsePattern(*this, finiteVolumeCSRFill0);
+  }
+  return edgeToCSRMap;
+}
+
+const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
+{
+  if (edgeColoring.empty()) {
+    /*--- Create a temporary sparse pattern from the edges. ---*/
+    /// TODO: Try to avoid temporary once grid information is made contiguous.
+    su2vector<unsigned long> outerPtr(nEdge+1);
+    su2vector<unsigned long> innerIdx(nEdge*2);
+
+    for(unsigned long iEdge = 0; iEdge < nEdge; ++iEdge) {
+      outerPtr(iEdge) = 2*iEdge;
+      innerIdx(iEdge*2+0) = edge[iEdge]->GetNode(0);
+      innerIdx(iEdge*2+1) = edge[iEdge]->GetNode(1);
+    }
+    outerPtr(nEdge) = 2*nEdge;
+
+    CCompressedSparsePatternUL pattern(move(outerPtr), move(innerIdx));
+
+    /*--- Color the edges. ---*/
+    edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize);
+
+    if(edgeColoring.empty())
+      SU2_MPI::Error("Edge coloring failed.", CURRENT_FUNCTION);
+  }
+  return edgeColoring;
+}
+
+const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
+{
+  if (elemColoring.empty()) {
+    /*--- Create a temporary sparse pattern from the elements. ---*/
+    /// TODO: Try to avoid temporary once grid information is made contiguous.
+    vector<unsigned long> outerPtr(nElem+1);
+    vector<unsigned long> innerIdx; innerIdx.reserve(nElem);
+
+    for(unsigned long iElem = 0; iElem < nElem; ++iElem) {
+      outerPtr[iElem] = innerIdx.size();
+
+      for(unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); ++iNode) {
+        innerIdx.push_back(elem[iElem]->GetNode(iNode));
+      }
+    }
+    outerPtr[nElem] = innerIdx.size();
+
+    CCompressedSparsePatternUL pattern(outerPtr, innerIdx);
+
+    /*--- Color the elements. ---*/
+    elemColoring = colorSparsePattern(pattern, elemColorGroupSize);
+
+    if(elemColoring.empty())
+      SU2_MPI::Error("Element coloring failed.", CURRENT_FUNCTION);
+  }
+  return elemColoring;
 }

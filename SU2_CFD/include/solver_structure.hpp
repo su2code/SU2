@@ -3743,15 +3743,6 @@ public:
   virtual su2double Get_val_I(void);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point i of the Mass Matrix.
-   * \param[in] jPoint - Point j of the Mass Matrix.
-   * \param[in] iVar - Variable i of the Mass Matrix submatrix.
-   * \param[in] iVar - Variable j of the Mass Matrix submatrix.
-   */
-  virtual su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
-  
-  /*!
    * \brief Gauss method for solving a linear system.
    * \param[in] A - Matrix Ax = b.
    * \param[in] rhs - Right hand side.
@@ -12242,15 +12233,6 @@ public:
    * \param[out] iElem_iDe - ID of the Dielectric Elastomer region.
    */
   unsigned short Get_iElem_iDe(unsigned long iElem);
-  
-  /*!
-   * \brief Retrieve the Mass Matrix term (to add to the Jacobian of the adjoint problem)
-   * \param[in] iPoint - Point i of the Mass Matrix.
-   * \param[in] jPoint - Point j of the Mass Matrix.
-   * \param[in] iVar - Variable i of the Mass Matrix submatrix.
-   * \param[in] iVar - Variable j of the Mass Matrix submatrix.
-   */
-  su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
   
   /*!
    * \brief Load a solution from a restart file.
