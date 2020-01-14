@@ -32,36 +32,36 @@
 
 class CWindowingTools{
 public:
-  /*! \brief Returns the value of a windowing function given by fctIdx at time-step CurTimeIdx with given time-frame endTimeIdx (i.e. endTimeIdx=nTimeIter, if one starts  windowing at time t =0.)
+  /*! \brief Returns the value of a windowing function given by windowId at time-step curTimeIter with given time-frame endTimeIter (i.e. endTimeIter=nTimeIter, if one starts  windowing at time t =0.)
    * \param windowId - enum specifing the used window
-   * \param CurTimeIdx - Current time iteration of the solver
-   * \param endTimeIdx - Number of time steps to average over
-   * \return Value of the window-weight-function at time CurTimeIdx with time-frame endTimeIdx
+   * \param curTimeIter - Current time iteration of the solver
+   * \param endTimeIter - Number of time steps to average over
+   * \return Value of the window-weight-function at time curTimeIter with time-frame endTimeIter
    */
-  su2double GetWndWeight(WINDOW_FUNCTION windowId, unsigned long CurTimeIdx, unsigned long endTimeIdx) const;
+  su2double GetWndWeight(WINDOW_FUNCTION windowId, unsigned long curTimeIter, unsigned long endTimeIter) const;
 
 protected:
   // Long time windows
-  /*! \brief Returns the value of the Hann-window function at time-step i with given end-time endTimeIdx.
-  * \param i - Current time iteration of the solver
-  * \param endTimeIdx - Number of time steps to average over
-  * \return Value of the window-weight-function at time CurTimeIdx with end-time endTimeIdx
+  /*! \brief Returns the value of the Hann-window function at time-step curTimeIter with given end-time endTimeIter.
+  * \param curTimeIter - Current time iteration of the solver
+  * \param endTimeIter - Number of time steps to average over
+  * \return Value of the window-weight-function at time curTimeIter with end-time endTimeIter
   */
-  su2double HannWindow(unsigned long i, unsigned long endTimeIdx) const;
+  su2double HannWindow(unsigned long curTimeIter, unsigned long endTimeIter) const;
 
-  /*! \brief Returns the value of the Hann-Square-window function at time-step i with given end-time endTimeIdx.
-  * \param i - Current time iteration of the solver
-  * \param endTimeIdx - Number of time steps to average over
-  * \return Value of the window-weight-function at time CurTimeIdx with end-time endTimeIdx
+  /*! \brief Returns the value of the Hann-Square-window function at time-step i with given end-time endTimeIter.
+  * \param curTimeIter - Current time iteration of the solver
+  * \param endTimeIter - Number of time steps to average over
+  * \return Value of the window-weight-function at time curTimeIter with end-time endTimeIter
   */
-  su2double HannSquaredWindow(unsigned long i, unsigned long endTimeIdx) const;
+  su2double HannSquaredWindow(unsigned long curTimeIter, unsigned long endTimeIter) const;
 
-  /*! \brief Returns the value of the Bump-window function at time-step i with given end-time endTimeIdx.
-  * \param i - Current time iteration of the solver
-  * \param endTimeIdx - Number of time steps to average over
-  * \return Value of the window-weight-function at time CurTimeIdx with end-time endTimeIdx
+  /*! \brief Returns the value of the Bump-window function at time-step i with given end-time endTimeIter.
+  * \param curTimeIter - Current time iteration of the solver
+  * \param endTimeIter - Number of time steps to average over
+  * \return Value of the window-weight-function at time curTimeIter with end-time endTimeIter
   */
-  su2double BumpWindow(unsigned long i, unsigned long endTimeIdx) const;
+  su2double BumpWindow(unsigned long curTimeIter, unsigned long endTimeIter) const;
 };
 
 class CWindowedAverage:CWindowingTools{
@@ -88,7 +88,7 @@ public:
   * \param currentIter - current time Iteration
   * \param startIter - iteration to start the windowed-time average.
   */
-  void addValue(su2double valIn, unsigned long currentIter,unsigned long startIter = 0);
+  void addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter = 0);
 
   /*! \brief Computes a windowed-time average of the values stored in the vector "values" using the windowing-function specified in enum windowId
    *         and stores it in "val".

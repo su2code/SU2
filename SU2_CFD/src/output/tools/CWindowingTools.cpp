@@ -28,36 +28,36 @@
 #include "../../../include/output/tools/CWindowingTools.hpp"
 
 //WindowingTools
-su2double CWindowingTools::GetWndWeight(WINDOW_FUNCTION windowId, unsigned long CurTimeIdx, unsigned long endTimeIdx) const{
+su2double CWindowingTools::GetWndWeight(WINDOW_FUNCTION windowId, unsigned long curTimeIter, unsigned long endTimeIter) const{
   switch (windowId) {
-    case HANN:        return HannWindow(CurTimeIdx, endTimeIdx);
-    case HANN_SQUARE: return HannSquaredWindow(CurTimeIdx, endTimeIdx);
-    case BUMP:        return BumpWindow(CurTimeIdx, endTimeIdx);
+    case HANN:        return HannWindow(curTimeIter, endTimeIter);
+    case HANN_SQUARE: return HannSquaredWindow(curTimeIter, endTimeIter);
+    case BUMP:        return BumpWindow(curTimeIter, endTimeIter);
     default:return 1.0;
   }
 }
-su2double CWindowingTools::HannWindow(unsigned long i, unsigned long endTimeIdx) const{
-  su2double currTime = static_cast<su2double>(i);
-  if(endTimeIdx==0) return 0; //Catch div by zero error, if window length is zero
-  su2double endTime = static_cast<su2double>(endTimeIdx);
-  su2double tau = currTime/endTime;
+su2double CWindowingTools::HannWindow(unsigned long curTimeIter, unsigned long endTimeIter) const{
+  su2double currTimeDouble = static_cast<su2double>(curTimeIter);
+  if(endTimeIter==0) return 0; //Catch div by zero error, if window length is zero
+  su2double endTimeDouble = static_cast<su2double>(endTimeIter);
+  su2double tau = currTimeDouble/endTimeDouble;
   return 1.0-cos(2*PI_NUMBER*tau);
 }
 
-su2double CWindowingTools::HannSquaredWindow(unsigned long i, unsigned long endTimeIdx) const{
-  su2double currTime = static_cast<su2double>(i);
-  if(endTimeIdx==0) return 0; //Catch div by zero error, if window length is zero
-  su2double endTime = static_cast<su2double>(endTimeIdx);
-  su2double tau = currTime/endTime;
+su2double CWindowingTools::HannSquaredWindow(unsigned long curTimeIter, unsigned long endTimeIter) const{
+  su2double currTimeDouble = static_cast<su2double>(curTimeIter);
+  if(endTimeIter==0) return 0; //Catch div by zero error, if window length is zero
+  su2double endTimeDouble = static_cast<su2double>(endTimeIter);
+  su2double tau = currTimeDouble/endTimeDouble;
   return 2.0/3.0*(1-cos(2*PI_NUMBER*tau))*(1-cos(2*PI_NUMBER*tau));
 }
 
-su2double CWindowingTools::BumpWindow(unsigned long i, unsigned long endTimeIdx) const{
-  if(i==0) return 0;
-  if(i==endTimeIdx) return 0;
-  su2double currTime = static_cast<su2double>(i);
-  su2double endTime = static_cast<su2double>(endTimeIdx);
-  su2double tau = currTime/endTime;
+su2double CWindowingTools::BumpWindow(unsigned long curTimeIter, unsigned long endTimeIter) const{
+  if(curTimeIter==0) return 0;
+  if(curTimeIter==endTimeIter) return 0;
+  su2double currTimeDouble = static_cast<su2double>(curTimeIter);
+  su2double endTimeDouble = static_cast<su2double>(endTimeIter);
+  su2double tau = currTimeDouble/endTimeDouble;
   return 1.0/0.00702986*(exp(-1/(tau-tau*tau)));
   /* 0.00702986 equals the integral of exp(-1/(tau-tau*tau)) from 0 to 1,
    * and it acts as a normalization constant */
@@ -73,9 +73,8 @@ void CWindowedAverage::Reset(){
   val = 0.;
 }
 
-
-void CWindowedAverage::addValue(su2double valIn, unsigned long currentIter,unsigned long startIter){
-  if(currentIter >= startIter)values.push_back(valIn);
+void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter){
+  if(curTimeIter >= startIter)values.push_back(valIn);
 }
 
 su2double CWindowedAverage::WindowedUpdate(WINDOW_FUNCTION windowId){
@@ -96,32 +95,32 @@ su2double CWindowedAverage::WindowedUpdate(WINDOW_FUNCTION windowId){
  */
 su2double CWindowedAverage::NoWindowing(){
   su2double wnd_timeAvg = 0.0;
-  for(unsigned long i=0; i<values.size(); i++){
-    wnd_timeAvg+=values[i];
+  for(unsigned long curTimeIter=0; curTimeIter<values.size(); curTimeIter++){
+    wnd_timeAvg+=values[curTimeIter];
   }
   return wnd_timeAvg/static_cast<su2double>(values.size());
 }
 
 su2double CWindowedAverage::HannWindowing(){
   su2double wnd_timeAvg = 0.0;
-  for(unsigned long i=0; i<values.size(); i++){
-    wnd_timeAvg+=values[i]*HannWindow(i,values.size()-1);
+  for(unsigned long curTimeIter=0; curTimeIter<values.size(); curTimeIter++){
+    wnd_timeAvg+=values[curTimeIter]*HannWindow(curTimeIter,values.size()-1);
   }
   return wnd_timeAvg/static_cast<su2double>(values.size());
 }
 
 su2double CWindowedAverage::HannSquaredWindowing(){
   su2double wnd_timeAvg = 0.0;
-  for(unsigned long i=0; i<values.size(); i++){
-    wnd_timeAvg+=values[i]*HannSquaredWindow(i,values.size()-1);
+  for(unsigned long curTimeIter=0; curTimeIter<values.size(); curTimeIter++){
+    wnd_timeAvg+=values[curTimeIter]*HannSquaredWindow(curTimeIter,values.size()-1);
   }
   return wnd_timeAvg/static_cast<su2double>(values.size());
 }
 
 su2double CWindowedAverage::BumpWindowing(){
   su2double wnd_timeAvg = 0.0;
-  for(unsigned long i=0; i<values.size(); i++){
-    wnd_timeAvg+=values[i]*BumpWindow(i,values.size()-1);
+  for(unsigned long curTimeIter=0; curTimeIter<values.size(); curTimeIter++){
+    wnd_timeAvg+=values[curTimeIter]*BumpWindow(curTimeIter,values.size()-1);
   }
   return wnd_timeAvg/static_cast<su2double>(values.size());
 }
