@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -30,14 +30,17 @@
 
 #ifdef HAVE_PASTIX
 
-#include "../config_structure.hpp"
-#include "../geometry/CGeometry.hpp"
-
 namespace PaStiX {
 extern "C" {
 #include <pastix.h>
 }
 }
+#include <vector>
+
+using namespace std;
+
+class CConfig;
+class CGeometry;
 
 /*!
  * \class CPastixWrapper
