@@ -193,10 +193,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     
     /*--- Implicit part ---*/
     
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+    Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
     
   }
   
@@ -242,10 +239,7 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     LinSysRes.SubtractBlock(iPoint, Residual);
     LinSysRes.AddBlock(jPoint, Residual);
     
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+    Jacobian.UpdateBlocks<su2double,-1>(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
     
   }
   
@@ -2057,8 +2051,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
 void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, iSpan;
-  unsigned long  oldVertex, iPoint, Point_Normal;
-  long iVertex;
+  unsigned long  oldVertex, iPoint, Point_Normal, iVertex;
   su2double *V_inlet, *V_domain, *Normal;
   su2double extAverageNu;
   Normal = new su2double[nDim];
@@ -2072,7 +2065,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
     /*--- Loop over all the vertices on this boundary marker ---*/
 
-    for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertexSpan(val_marker,iSpan); iVertex++) {
 
       /*--- find the node related to the vertex ---*/
       iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
@@ -2163,8 +2156,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, iSpan;
-  unsigned long  oldVertex, iPoint, Point_Normal;
-  long iVertex;
+  unsigned long  oldVertex, iPoint, Point_Normal, iVertex;
   su2double *V_inlet, *V_domain, *Normal;
 
   su2double rho, pressure, muLam, Factor_nu_Inf, nu_tilde;
@@ -2189,7 +2181,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
 
     /*--- Loop over all the vertices on this boundary marker ---*/
-    for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertexSpan(val_marker,iSpan); iVertex++) {
 
       /*--- find the node related to the vertex ---*/
       iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
@@ -4039,8 +4031,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
                               unsigned short val_marker) {
 
   unsigned short iVar, iSpan, iDim;
-  unsigned long  oldVertex, iPoint, Point_Normal;
-  long iVertex;
+  unsigned long  oldVertex, iPoint, Point_Normal, iVertex;
   su2double *V_inlet, *V_domain, *Normal;
   su2double extAverageKine, extAverageOmega;
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
@@ -4057,7 +4048,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
     /*--- Loop over all the vertices on this boundary marker ---*/
 
-    for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertexSpan(val_marker,iSpan); iVertex++) {
 
       /*--- find the node related to the vertex ---*/
       iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
@@ -4141,8 +4132,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
                               unsigned short val_marker) {
 
   unsigned short iVar, iSpan, iDim;
-  unsigned long  oldVertex, iPoint, Point_Normal;
-  long iVertex;
+  unsigned long  oldVertex, iPoint, Point_Normal, iVertex;
   su2double *V_inlet, *V_domain, *Normal;
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
 
@@ -4182,7 +4172,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
     omega_b = rho*kine/(muLam*viscRatio);
 
     /*--- Loop over all the vertices on this boundary marker ---*/
-    for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertexSpan(val_marker,iSpan); iVertex++) {
 
       /*--- find the node related to the vertex ---*/
       iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
