@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -62,7 +62,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
 
   /*--- Initialize the pointer for performing the BLAS functionalities. ---*/
   blasFunctions = NULL;
-  
+
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDim, unsigned short iMesh) : CSolver() {
@@ -108,7 +108,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
 
   /*--- Initialize the pointer for performing the BLAS functionalities. ---*/
   blasFunctions = NULL;
-  
+
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -257,7 +257,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
     sizeWorkArray = max(sizeWorkArray, sizePredictorADER);
   }
-  
+
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/
   SetNondimensionalization(config, iMesh, true);
@@ -267,9 +267,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
    option from the available library of verification solutions. Note
    that this is done after SetNondim(), as problem-specific initial
    parameters are needed by the solution constructors. ---*/
-  
+
   SetVerificationSolution(nDim, nVar, config);
-  
+
   /*--- Define some auxiliary vectors related to the residual ---*/
 
   Residual_RMS = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_RMS[iVar] = 1.e-35;
@@ -1113,10 +1113,10 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
     if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
     else cout << "Force coefficients computed using free-stream values." << endl;
-    
+
     stringstream NonDimTableOut, ModelTableOut;
-    stringstream Unit;  
-    
+    stringstream Unit;
+
     cout << endl;
     PrintingToolbox::CTablePrinter ModelTable(&ModelTableOut);
     ModelTableOut <<"-- Models:"<< endl;
@@ -1126,21 +1126,21 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     ModelTable.AddColumn("Fluid Model", 25);
     ModelTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
     ModelTable.PrintHeader();
-    
-    PrintingToolbox::CTablePrinter NonDimTable(&NonDimTableOut);    
+
+    PrintingToolbox::CTablePrinter NonDimTable(&NonDimTableOut);
     NonDimTable.AddColumn("Name", 22);
     NonDimTable.AddColumn("Dim. value", 14);
     NonDimTable.AddColumn("Ref. value", 14);
     NonDimTable.AddColumn("Unit", 10);
     NonDimTable.AddColumn("Non-dim. value", 14);
     NonDimTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
-    
+
     NonDimTableOut <<"-- Fluid properties:"<< endl;
-    
+
     NonDimTable.PrintHeader();
 
     if (viscous) {
-      
+
       switch(config->GetKind_ViscosityModel()){
       case CONSTANT_VISCOSITY:
         ModelTable << "CONSTANT_VISCOSITY";
@@ -1150,9 +1150,9 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
-        
+
       case SUTHERLAND:
-        ModelTable << "SUTHERLAND";        
+        ModelTable << "SUTHERLAND";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
         NonDimTable << "Ref. Viscosity" <<  config->GetMu_Ref() <<  config->GetViscosity_Ref() << Unit.str() << config->GetMu_RefND();
@@ -1167,26 +1167,26 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
-        
+
       }
       switch(config->GetKind_ConductivityModel()){
       case CONSTANT_PRANDTL:
         ModelTable << "CONSTANT_PRANDTL";
-        NonDimTable << "Prandtl (Lam.)"  << "-" << "-" << "-" << config->GetPrandtl_Lam();         
+        NonDimTable << "Prandtl (Lam.)"  << "-" << "-" << "-" << config->GetPrandtl_Lam();
         Unit.str("");
-        NonDimTable << "Prandtl (Turb.)" << "-" << "-" << "-" << config->GetPrandtl_Turb();         
+        NonDimTable << "Prandtl (Turb.)" << "-" << "-" << "-" << config->GetPrandtl_Turb();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
-        
+
       case CONSTANT_CONDUCTIVITY:
         ModelTable << "CONSTANT_CONDUCTIVITY";
         Unit << "W/m^2.K";
-        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();         
+        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
-        
+
       }
     } else {
       ModelTable << "-" << "-";
@@ -1200,7 +1200,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
     NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
     Unit.str("");
-    
+
     switch(config->GetKind_FluidModel()){
     case STANDARD_AIR:
       ModelTable << "STANDARD_AIR";
@@ -1215,7 +1215,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       ModelTable << "PR_GAS";
       break;
     }
- 
+
     if (config->GetKind_FluidModel() == VW_GAS || config->GetKind_FluidModel() == PR_GAS){
         NonDimTable << "Critical Pressure" << config->GetPressure_Critical() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_Critical() /config->GetPressure_Ref();
         Unit.str("");
@@ -1224,11 +1224,11 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         Unit.str("");
     }
     NonDimTable.PrintFooter();
-    
+
     NonDimTableOut <<"-- Initial and free-stream conditions:"<< endl;
-    
+
     NonDimTable.PrintHeader();
-    
+
     if      (config->GetSystemMeasurements() == SI) Unit << "Pa";
     else if (config->GetSystemMeasurements() == US) Unit << "psf";
     NonDimTable << "Static Pressure" << config->GetPressure_FreeStream() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_FreeStreamND();
@@ -1254,7 +1254,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     }
     NonDimTable << "Velocity Magnitude" << config->GetModVel_FreeStream() << config->GetVelocity_Ref() << Unit.str() << config->GetModVel_FreeStreamND();
     Unit.str("");
-    
+
     if (viscous) {
       NonDimTable.PrintFooter();
       if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
@@ -1276,17 +1276,17 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         Unit.str("");
       }
     }
-    
+
     NonDimTable.PrintFooter();
     NonDimTable << "Mach Number" << "-" << "-" << "-" << config->GetMach();
     if (viscous) {
-      NonDimTable << "Reynolds Number" << "-" << "-" << "-" << config->GetReynolds();      
+      NonDimTable << "Reynolds Number" << "-" << "-" << "-" << config->GetReynolds();
     }
     NonDimTable.PrintFooter();
     ModelTable.PrintFooter();
-    
+
     if (unsteady){
-      NonDimTableOut << "-- Unsteady conditions" << endl;      
+      NonDimTableOut << "-- Unsteady conditions" << endl;
       NonDimTable.PrintHeader();
       NonDimTable << "Total Time" << config->GetMax_Time() << config->GetTime_Ref() << "s" << config->GetMax_Time()/config->GetTime_Ref();
       Unit.str("");
@@ -1294,10 +1294,10 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       Unit.str("");
       NonDimTable.PrintFooter();
     }
-    
+
     cout << ModelTableOut.str();
     cout << NonDimTableOut.str();
-    
+
   }
 }
 
@@ -1870,7 +1870,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
         interpolOwnedElem[level] = true;
       if(nMatchingInternalFacesLocalElem[level+1] > nMatchingInternalFacesLocalElem[level])
        interpolOwnedElem[level] = true;
-      if(nMatchingInternalFacesWithHaloElem[level+1] > nMatchingInternalFacesWithHaloElem[level]) 
+      if(nMatchingInternalFacesWithHaloElem[level+1] > nMatchingInternalFacesWithHaloElem[level])
         interpolOwnedElem[level] = true;
       if( BCPresent[level] )
         interpolOwnedElem[level] = true;
@@ -3115,10 +3115,10 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 
     /* Loop over the owned elements. */
     for(unsigned long i=0; i<nVolElemOwned; ++i) {
-    
+
       /* Loop over the DOFs of this element. */
       for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-      
+
         /* Set the pointers to the coordinates and solution of this DOF. */
         const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
         su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
@@ -3135,7 +3135,7 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long ErrorCounter = 0;
-  
+
   /*-----------------------------------------------------------------------------*/
   /*--- Check for non-physical points. Only needed for a compressible solver. ---*/
   /*-----------------------------------------------------------------------------*/
@@ -3586,7 +3586,7 @@ void CFEM_DG_EulerSolver::Set_NewSolution(CGeometry *geometry) {
 
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
-  
+
   /* Check whether or not a time stepping scheme is used. */
   const bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
 
@@ -3734,7 +3734,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
     if (time_stepping) {
       for(unsigned long l=0; l<nVolElemOwned; ++l)
         VecDeltaTime[l] = Min_Delta_Time/volElem[l].factTimeLevel;
-      
+
       config->SetDelta_UnstTimeND(Min_Delta_Time);
     }
   }
@@ -4576,9 +4576,9 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
                   dSol[indDSol+2] += coefADER*resInt[indResInt+2];
                   dSol[indDSol+3] += coefADER*resInt[indResInt+3];
                   dSol[indDSol+4] += coefADER*resInt[indResInt+4];
-                } 
-              } 
-            } 
+                }
+              }
+            }
 
             break;
           }
@@ -4912,7 +4912,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
           divFluxInt[1] -= weightJac*sourceMan[1];
           divFluxInt[2] -= weightJac*sourceMan[2];
           divFluxInt[3] -= weightJac*sourceMan[3];
-        } 
+        }
       }
     }
   }
@@ -5193,7 +5193,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
           divFluxInt[2] -= weightJac*sourceMan[2];
           divFluxInt[3] -= weightJac*sourceMan[3];
           divFluxInt[4] -= weightJac*sourceMan[4];
-        } 
+        }
       }
     }
   }
@@ -5402,7 +5402,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig        
           divFluxInt[1] -= weightJac*sourceMan[1];
           divFluxInt[2] -= weightJac*sourceMan[2];
           divFluxInt[3] -= weightJac*sourceMan[3];
-        } 
+        }
       }
     }
   }
@@ -5638,7 +5638,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig        
           divFluxInt[2] -= weightJac*sourceMan[2];
           divFluxInt[3] -= weightJac*sourceMan[3];
           divFluxInt[4] -= weightJac*sourceMan[4];
-        } 
+        }
       }
     }
   }
@@ -5764,7 +5764,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
   /*--- Get the physical time for MMS if necessary. ---*/
   su2double time = 0.0;
   if (config->GetTime_Marching()) time = config->GetPhysicalTime();
-  
+
   /* Determine the number of elements that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
   const unsigned short nPadInput  = config->GetSizeMatMulPadding();
@@ -6064,21 +6064,21 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
           const unsigned long  lInd   = l + ll;
           for(unsigned short i=0; i<nInt; ++i) {
             const unsigned short iNPad = i*NPad;
-        
+
             /* Determine the integration weight multiplied by the Jacobian. */
             const su2double *metricTerms = volElem[lInd].metricTerms.data()
                                          + i*nMetricPerPoint;
             const su2double weightJac    = weights[i]*metricTerms[0];
-        
+
             /* Set the pointer to the coordinates in this integration point and
                call the function to compute the source terms for the manufactured
                solution. */
             const su2double *coor = volElem[lInd].coorIntegrationPoints.data() + i*nDim;
-      
+
             su2double sourceMan[5];
-        
+
             VerificationSolution->GetMMSSourceTerm(coor, time, sourceMan);
-        
+
             /*--- Subtract the source term of the manufactured solution, multiplied
                   by the appropriate weight, from the possibly earlier computed
                   source term. It is subtracted in order to be consistent with
@@ -6090,7 +6090,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
         }
       }
     }
-    
+
     /*------------------------------------------------------------------------*/
     /*--- Step 3: Compute the contribution to the residuals from the       ---*/
     /*---         integration over the volume element.                     ---*/
@@ -7326,7 +7326,7 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
                        && (config->GetTimeIter()!= 0))
                       || (config->GetTimeIter() == 1));
   if( !write_heads ) return;
-  
+
   /*--- Check if there actually is an exact solution for this
         verification case, if computed at all. ---*/
   if (VerificationSolution) {
@@ -7346,7 +7346,7 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
             DOFs, because the coordinates of the DOFs are only known in the volume element class. ---*/
       for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
-        /* Set the pointer for the solution for this element. */ 
+        /* Set the pointer for the solution for this element. */
         const unsigned long offset = nVar*volElem[l].offsetDOFsSolLocal;
         const su2double *solDOFs      = VecSolDOFs.data() + offset;
 
@@ -8670,7 +8670,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
   /*--- Get the physical time if necessary. ---*/
   su2double time = 0.0;
   if (config->GetTime_Marching()) time = config->GetPhysicalTime();
-  
+
   /*--- Loop over the requested range of surface faces. Multiple faces
         are treated simultaneously to improve the performance of the matrix
         multiplications. As a consequence, the update of the counter l
@@ -8712,13 +8712,13 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
              GetBCState to determine the actual boundary state. */
           const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
           su2double *UR   = solIntR + NPad*i + ll*nVar;
-        
+
           VerificationSolution->GetBCState(coor, time, UR);
         }
       }
     }
     else {
-    
+
       /* The user must specify the custom BC's here. */
       SU2_MPI::Error("Implement customized boundary conditions here.", CURRENT_FUNCTION);
     }
@@ -9410,7 +9410,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   /*--- Skip coordinates ---*/
 
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
-  
+
   restart_filename = config->GetFilename(restart_filename, "", val_iter);
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/

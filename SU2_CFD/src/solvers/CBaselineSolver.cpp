@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -42,7 +42,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
   /*--- Routines to access the number of variables and string names. ---*/
 
   SetOutputVariables(geometry, config);
-  
+
   /*--- Initialize a zero solution and instantiate the CVariable class. ---*/
 
   Solution = new su2double[nVar];
@@ -94,9 +94,9 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
   /*--- Read only the number of variables in the restart file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
-    
+
     /*--- Multizone problems require the number of the zone to be appended. ---*/
-    
+
     filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
 
     char fname[100];
@@ -117,7 +117,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     if (!fhw) {
       SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
-    
+
     /*--- First, read the number of variables and points. ---*/
 
     ret = fread(var_buf, sizeof(int), nVar_Buf, fhw);
@@ -134,11 +134,11 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
                      string("Note that backward compatibility for ASCII restart files is\n") +
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
-    
+
     /*--- Close the file. ---*/
 
     fclose(fhw);
-    
+
     /*--- Set the number of variables, one per field in the
      restart file (without including the PointID) ---*/
 
@@ -154,7 +154,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     unsigned long index, iChar;
     string field_buf;
     char str_buf[CGNS_STRING_SIZE];
-    
+
     /*--- All ranks open the file using MPI. ---*/
 
     ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
@@ -193,25 +193,25 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
      restart file (without including the PointID) ---*/
 
     nVar = var_buf[1];
-    
+
     /*--- Read the variable names from the file. Note that we are adopting a
      fixed length of 33 for the string length to match with CGNS. This is
      needed for when we read the strings later. ---*/
-  
+
     char *mpi_str_buf = new char[nVar*CGNS_STRING_SIZE];
     if (rank == MASTER_NODE) {
       disp = nVar_Buf*sizeof(int);
       MPI_File_read_at(fhw, disp, mpi_str_buf, nVar*CGNS_STRING_SIZE,
                        MPI_CHAR, MPI_STATUS_IGNORE);
     }
-    
+
     /*--- Broadcast the string names of the variables. ---*/
-  
+
     SU2_MPI::Bcast(mpi_str_buf, nVar*CGNS_STRING_SIZE, MPI_CHAR,
                    MASTER_NODE, MPI_COMM_WORLD);
-    
+
     fields.push_back("Point_ID");
-    
+
     for (iVar = 0; iVar < nVar; iVar++) {
       index = iVar*CGNS_STRING_SIZE;
       field_buf.append("\"");
@@ -223,16 +223,16 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
       fields.push_back(field_buf.c_str());
       field_buf.clear();
     }
-    
+
     /*--- All ranks close the file after writing. ---*/
-    
+
     MPI_File_close(&fhw);
-    
+
 #endif
   } else {
-    
+
     /*--- Multizone problems require the number of the zone to be appended. ---*/
-    
+
     filename = config->GetFilename(filename, ".csv", config->GetTimeIter());
 
     /*--- First, check that this is not a binary restart file. ---*/
@@ -309,9 +309,9 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
                      string("Note that backward compatibility for ASCII restart files is\n") +
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
-    
+
     MPI_File_close(&fhw);
-    
+
 #endif
 
     /*--- Open the restart file ---*/
@@ -323,19 +323,19 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     if (restart_file.fail()) {
       SU2_MPI::Error(string("SU2 solution file ") + filename + string(" not found"), CURRENT_FUNCTION);
     }
-    
+
     /*--- Identify the number of fields (and names) in the restart file ---*/
 
     getline (restart_file, text_line);
 
     fields = PrintingToolbox::split(text_line, ',');
-    
+
     for (unsigned short iField = 0; iField < fields.size(); iField++){
       PrintingToolbox::trim(fields[iField]);
     }
-    
+
     /*--- Close the file (the solution date is read later). ---*/
-    
+
     restart_file.close();
 
     /*--- Set the number of variables, one per field in the
@@ -354,7 +354,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   string filename;
   unsigned long index;
   unsigned short iDim, iVar;
-  bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
+  bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() );
   unsigned short iInst = config->GetiInst();
   bool steady_restart = config->GetSteadyRestart();
   unsigned short turb_model = config->GetKind_Turb_Model();
@@ -405,17 +405,17 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     iPoint_Local = geometry[iInst]->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-      
+
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
       index = counter*Restart_Vars[1];
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       nodes->SetSolution(iPoint_Local,Solution);
-     
+
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
-      
+
       if (dynamic_grid && val_update_geo) {
 
         /*--- First, remove any variables for the turbulence model that
@@ -426,11 +426,11 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         } else if (turb_model == SST) {
           index+=2;
         }
-        
+
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
         /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
-        
+
         su2double GridVel[3] = {0.0,0.0,0.0};
         if (!steady_restart) {
 
@@ -452,28 +452,28 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       /*--- Increment the overall counter for how many points have been loaded. ---*/
       counter++;
     }
-    
+
   }
 
   /*--- MPI solution ---*/
-  
+
   InitiateComms(geometry[iInst], config, SOLUTION);
   CompleteComms(geometry[iInst], config, SOLUTION);
 
   /*--- Update the geometry for flows on dynamic meshes ---*/
-  
+
   if (dynamic_grid && val_update_geo) {
-    
+
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-    
+
     geometry[iInst]->InitiateComms(geometry[iInst], config, COORDINATES);
     geometry[iInst]->CompleteComms(geometry[iInst], config, COORDINATES);
-        
+
     geometry[iInst]->InitiateComms(geometry[iInst], config, GRID_VELOCITY);
     geometry[iInst]->CompleteComms(geometry[iInst], config, GRID_VELOCITY);
 
   }
-  
+
   delete [] Coord;
 
   /*--- Delete the class memory that is used to load the restart. ---*/
@@ -525,7 +525,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
 
   /*--- Load data from the restart into correct containers. ---*/
-  
+
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
     /*--- Retrieve local index. If this node from the restart file lives

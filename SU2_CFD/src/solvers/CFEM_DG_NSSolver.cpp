@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -225,7 +225,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   const su2double RefTemp     = Temperature_Inf;
   const su2double RefDensity  = Density_Inf;
   const su2double RefHeatFlux = config->GetHeat_Flux_Ref();
-  
+
   su2double RefVel2;
   if (grid_movement) {
     const su2double Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
@@ -912,7 +912,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
 void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
-  
+
   /* Check whether or not a time stepping scheme is used. */
   const bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
 
@@ -1318,7 +1318,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
     if (time_stepping) {
       for(unsigned long l=0; l<nVolElemOwned; ++l)
         VecDeltaTime[l] = Min_Delta_Time/volElem[l].factTimeLevel;
-      
+
       config->SetDelta_UnstTimeND(Min_Delta_Time);
     }
   }
@@ -1635,7 +1635,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
           divFluxInt[1] -= weightJac*sourceMan[1];
           divFluxInt[2] -= weightJac*sourceMan[2];
           divFluxInt[3] -= weightJac*sourceMan[3];
-        } 
+        }
       }
     }
   }
@@ -2023,7 +2023,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
           divFluxInt[2] -= weightJac*sourceMan[2];
           divFluxInt[3] -= weightJac*sourceMan[3];
           divFluxInt[4] -= weightJac*sourceMan[4];
-        } 
+        }
       }
     }
   }
@@ -2415,7 +2415,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
           divFluxInt[1] -= weightJac*sourceMan[1];
           divFluxInt[2] -= weightJac*sourceMan[2];
           divFluxInt[3] -= weightJac*sourceMan[3];
-        } 
+        }
       }
     }
   }
@@ -2978,7 +2978,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
           divFluxInt[2] -= weightJac*sourceMan[2];
           divFluxInt[3] -= weightJac*sourceMan[3];
           divFluxInt[4] -= weightJac*sourceMan[4];
-        } 
+        }
       }
     }
   }
@@ -3179,7 +3179,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
   /*--- Get the physical time if necessary. ---*/
   su2double time = 0.0;
   if (config->GetTime_Marching()) time = config->GetPhysicalTime();
-  
+
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
@@ -6081,7 +6081,7 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
   /*--- Get the physical time if necessary. ---*/
   su2double time = 0.0;
   if (config->GetTime_Marching()) time = config->GetPhysicalTime();
-  
+
   /*--- Loop over the requested range of surface faces. Multiple faces
         are treated simultaneously to improve the performance of the matrix
         multiplications. As a consequence, the update of the counter l
@@ -6343,7 +6343,7 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
         su2double rhoInv = 1.0/solInt[0];
         su2double vel[]  = {0.0, 0.0, 0.0};
         for(unsigned short k=0; k<nDim; ++k) vel[k] = rhoInv*solInt[k+1];
- 
+
         su2double vel2Mag = vel[0]*vel[0] + vel[1]*vel[1] + vel[2]*vel[2];
         su2double eInt    = rhoInv*solInt[nVar-1] - 0.5*vel2Mag;
 
@@ -6369,11 +6369,11 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
 
         su2double dirTan[] = {0.0, 0.0, 0.0};
         for(unsigned short k=0; k<nDim; ++k) dirTan[k] = vel[k]/velTan;
-        
+
         /* Compute the wall shear stress and heat flux vector using
            the wall model. */
         su2double tauWall, qWall, ViscosityWall, kOverCvWall;
-        
+
         wallModel->WallShearStressAndHeatFlux(Temperature, velTan, LaminarViscosity, Pressure,
                                               Wall_HeatFlux, HeatFlux_Prescribed,
                                               Wall_Temperature, Temperature_Prescribed,

@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -3600,7 +3600,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
   /*--- Store the value of the residual. ---*/
 
   SetResLinSolver(System.GetResidual());
-  
+
 }
 
 

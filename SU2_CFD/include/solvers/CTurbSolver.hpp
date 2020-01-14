@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -61,24 +61,24 @@ protected:
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CTurbSolver(void);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CTurbSolver(void);
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CTurbSolver(CGeometry* geometry, CConfig *config);
-  
+
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -87,10 +87,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  
+
   void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                        unsigned short iMesh);
-  
+
   /*!
    * \brief Compute the viscous residuals for the turbulent equation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -102,7 +102,7 @@ public:
    */
   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-  
+
   /*!
    * \brief Impose the Symmetry Plane boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -118,7 +118,7 @@ public:
                     CNumerics      *visc_numerics,
                     CConfig        *config,
                     unsigned short val_marker) override;
-  
+
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -128,10 +128,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Wall(CGeometry      *geometry, 
-                     CSolver        **solver_container, 
-                     CNumerics      *conv_numerics, 
-                     CNumerics      *visc_numerics, 
+  void BC_Euler_Wall(CGeometry      *geometry,
+                     CSolver        **solver_container,
+                     CNumerics      *conv_numerics,
+                     CNumerics      *visc_numerics,
                      CConfig        *config,
                      unsigned short val_marker) override;
   /*!
@@ -176,7 +176,7 @@ public:
    */
   void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
                    CNumerics *numerics, CConfig *config);
- 
+
   /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -184,7 +184,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
+
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
    * \param[in] geometry - Geometric definition of the problem.
@@ -196,14 +196,14 @@ public:
    */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-  
+
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config);
-  
+
   /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -213,7 +213,7 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
-  
+
  /*!
   * \brief Get the outer state for fluid interface nodes.
   * \param[in] val_marker - marker index
@@ -229,17 +229,17 @@ public:
    */
   inline void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex){
     int iVar;
-  
+
     for( iVar = 0; iVar < nVar+1; iVar++){
       if( SlidingState[val_marker][val_vertex][iVar] != NULL )
         delete [] SlidingState[val_marker][val_vertex][iVar];
     }
-  
+
     for( iVar = 0; iVar < nVar+1; iVar++)
       SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
   }
-  
-      
+
+
   /*!
    * \brief Set the outer state for fluid interface nodes.
    * \param[in] val_marker   - marker index
@@ -251,7 +251,7 @@ public:
   inline void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){
     SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
   }
-  
+
 
   /*!
    * \brief Set the number of outer state for fluid interface nodes.
@@ -289,5 +289,5 @@ public:
     else
       Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
   }
-  
+
 };

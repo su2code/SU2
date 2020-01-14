@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -51,7 +51,7 @@ private:
   su2double Total_Sens_ModVel;   /*!< \brief Total sensitivity to inlet velocity (incompressible). */
   su2double ObjFunc_Value;       /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
-  
+
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
 
   CDiscAdjVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
@@ -62,12 +62,12 @@ private:
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CDiscAdjSolver(void);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -75,7 +75,7 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   CDiscAdjSolver(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -84,12 +84,12 @@ public:
    * \param[in] Kind_Solver - The kind of direct solver.
    */
   CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CDiscAdjSolver(void);
-  
+
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
    *        Registers all necessary variables on the tape. Called while tape is active.
@@ -97,7 +97,7 @@ public:
    * \param[in] config_container - The particular config.
    */
   void RegisterSolution(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
    *        Registers all necessary variables that are output variables on the tape.
@@ -106,7 +106,7 @@ public:
    * \param[in] config_container - The particular config.
    */
   void RegisterOutput(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Sets the adjoint values of the output of the flow (+turb.) iteration
    *         before evaluation of the tape.
@@ -114,7 +114,7 @@ public:
    * \param[in] config - The particular config.
    */
   void SetAdjoint_Output(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Sets the adjoint values of the output of the mesh deformation iteration
    *        before evaluation of the tape.
@@ -122,7 +122,7 @@ public:
    * \param[in] config - The particular config.
    */
   void SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
    *        after tape has been evaluated.
@@ -130,7 +130,7 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
@@ -138,7 +138,7 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Sets the adjoint values of the flow variables due to cross term contributions
    * \param[in] geometry - The geometrical definition of the problem.
@@ -146,7 +146,7 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
@@ -154,7 +154,7 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
@@ -162,20 +162,20 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,  CConfig *config);
-  
+
   /*!
    * \brief Register the objective function as output.
    * \param[in] geometry - The geometrical definition of the problem.
    */
   void RegisterObj_Func(CConfig *config);
-  
+
   /*!
    * \brief Set the surface sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void SetSurface_Sensitivity(CGeometry *geometry, CConfig* config);
-  
+
   /*!
    * \brief Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -183,49 +183,49 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
-  
+
   /*!
    * \brief Set the objective function.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
-  
+
   /*!
    * \brief Provide the total shape sensitivity coefficient.
    * \return Value of the geometrical sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
   inline su2double GetTotal_Sens_Geo() { return Total_Sens_Geo; }
-  
+
   /*!
    * \brief Set the total Mach number sensitivity coefficient.
    * \return Value of the Mach sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
   inline su2double GetTotal_Sens_Mach() { return Total_Sens_Mach; }
-  
+
   /*!
    * \brief Set the total angle of attack sensitivity coefficient.
    * \return Value of the angle of attack sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
   inline su2double GetTotal_Sens_AoA() { return Total_Sens_AoA; }
-  
+
   /*!
    * \brief Set the total farfield pressure sensitivity coefficient.
    * \return Value of the farfield pressure sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
   inline su2double GetTotal_Sens_Press() { return Total_Sens_Press; }
-  
+
   /*!
    * \brief Set the total farfield temperature sensitivity coefficient.
    * \return Value of the farfield temperature sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
   inline su2double GetTotal_Sens_Temp() { return Total_Sens_Temp; }
-  
+
   /*!
    * \author H. Kline
    * \brief Get the total Back pressure number sensitivity coefficient.
@@ -253,20 +253,20 @@ public:
    * \return Value of the sensitivity coefficient.
    */
   inline su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
-  
+
   /*!
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
    */
   void SetRecording(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
    */
   void SetMesh_Recording(CGeometry **geometry, CVolumetricMovement *grid_movement,
       CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -317,5 +317,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-  
+
 };
