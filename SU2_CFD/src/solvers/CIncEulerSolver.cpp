@@ -1,6 +1,6 @@
 /*!
- * \file CIncEulerSolver.cpp
- * \brief Main subroutines for solving euler incompressible flow.
+ * \file solution_direct_mean_inc.cpp
+ * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
  * \version 7.0.0 "Blackbird"
  *
@@ -1857,10 +1857,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     /*--- Store implicit contributions from the residual calculation. ---*/
     
     if (implicit) {
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-      Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-      Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
     }
   }
   
@@ -2006,10 +2003,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Set implicit Jacobians ---*/
     
     if (implicit) {
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-      Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-      Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
     }
   }
   

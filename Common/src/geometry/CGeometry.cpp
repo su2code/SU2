@@ -3955,3 +3955,87 @@ void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
   }
 
 }
+
+const CCompressedSparsePatternUL& CGeometry::GetSparsePattern(ConnectivityType type, unsigned long fillLvl)
+{
+  bool fvm = (type == ConnectivityType::FiniteVolume);
+
+  CCompressedSparsePatternUL* pattern = nullptr;
+
+  if (fillLvl == 0)
+    pattern = fvm? &finiteVolumeCSRFill0 : &finiteElementCSRFill0;
+  else
+    pattern = fvm? &finiteVolumeCSRFillN : &finiteElementCSRFillN;
+
+  if (pattern->empty()) {
+    *pattern = buildCSRPattern(*this, type, fillLvl);
+    pattern->buildDiagPtr();
+  }
+
+  return *pattern;
+}
+
+const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(void)
+{
+  if (edgeToCSRMap.empty()) {
+    if (finiteVolumeCSRFill0.empty()) {
+      finiteVolumeCSRFill0 = buildCSRPattern(*this, ConnectivityType::FiniteVolume, 0ul);
+    }
+    edgeToCSRMap = mapEdgesToSparsePattern(*this, finiteVolumeCSRFill0);
+  }
+  return edgeToCSRMap;
+}
+
+const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
+{
+  if (edgeColoring.empty()) {
+    /*--- Create a temporary sparse pattern from the edges. ---*/
+    /// TODO: Try to avoid temporary once grid information is made contiguous.
+    su2vector<unsigned long> outerPtr(nEdge+1);
+    su2vector<unsigned long> innerIdx(nEdge*2);
+
+    for(unsigned long iEdge = 0; iEdge < nEdge; ++iEdge) {
+      outerPtr(iEdge) = 2*iEdge;
+      innerIdx(iEdge*2+0) = edge[iEdge]->GetNode(0);
+      innerIdx(iEdge*2+1) = edge[iEdge]->GetNode(1);
+    }
+    outerPtr(nEdge) = 2*nEdge;
+
+    CCompressedSparsePatternUL pattern(move(outerPtr), move(innerIdx));
+
+    /*--- Color the edges. ---*/
+    edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize);
+
+    if(edgeColoring.empty())
+      SU2_MPI::Error("Edge coloring failed.", CURRENT_FUNCTION);
+  }
+  return edgeColoring;
+}
+
+const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
+{
+  if (elemColoring.empty()) {
+    /*--- Create a temporary sparse pattern from the elements. ---*/
+    /// TODO: Try to avoid temporary once grid information is made contiguous.
+    vector<unsigned long> outerPtr(nElem+1);
+    vector<unsigned long> innerIdx; innerIdx.reserve(nElem);
+
+    for(unsigned long iElem = 0; iElem < nElem; ++iElem) {
+      outerPtr[iElem] = innerIdx.size();
+
+      for(unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); ++iNode) {
+        innerIdx.push_back(elem[iElem]->GetNode(iNode));
+      }
+    }
+    outerPtr[nElem] = innerIdx.size();
+
+    CCompressedSparsePatternUL pattern(outerPtr, innerIdx);
+
+    /*--- Color the elements. ---*/
+    elemColoring = colorSparsePattern(pattern, elemColorGroupSize);
+
+    if(elemColoring.empty())
+      SU2_MPI::Error("Element coloring failed.", CURRENT_FUNCTION);
+  }
+  return elemColoring;
+}

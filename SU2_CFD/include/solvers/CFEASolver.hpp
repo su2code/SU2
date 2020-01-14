@@ -700,17 +700,6 @@ public:
   inline unsigned short Get_iElem_iDe(unsigned long iElem){ return iElem_iDe[iElem]; }
   
   /*!
-   * \brief Retrieve the Mass Matrix term (to add to the Jacobian of the adjoint problem)
-   * \param[in] iPoint - Point i of the Mass Matrix.
-   * \param[in] jPoint - Point j of the Mass Matrix.
-   * \param[in] iVar - Variable i of the Mass Matrix submatrix.
-   * \param[in] iVar - Variable j of the Mass Matrix submatrix.
-   */
-  inline su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar){
-    return MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar); }
-  
-  
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.

@@ -144,10 +144,6 @@ inline CMeshFEM_DG::CMeshFEM_DG(void) : CMeshFEM() { }
 
 inline CMeshFEM_DG::~CMeshFEM_DG(void) { }
 
-inline void CMeshFEM_DG::SetGlobal_nPointDomain(unsigned long val_global_npoint) { Global_nPointDomain =  val_global_npoint; }
-
-inline unsigned long CMeshFEM_DG::GetGlobal_nPointDomain(void) const { return Global_nPointDomain; }
-
 inline void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
   Global_to_Local_Point.clear();
   unsigned long ii = 0;
