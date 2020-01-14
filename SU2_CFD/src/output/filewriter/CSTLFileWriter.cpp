@@ -46,20 +46,10 @@ CSTLFileWriter::CSTLFileWriter(vector<string> fields,
 CSTLFileWriter::~CSTLFileWriter(){}
 
 
-void CSTLFileWriter::Write_Data(){
+void CSTLFileWriter::ReprocessElementConnectivity(){
 
-  /*--- This Write_Data routine has 3 major parts:
-    1. Prerequisite info: The parallel data-sorter distributes nodes of the primal mesh onto the processes
-    (i.e. this step is only important for parallel excecution) and not elements. For the STL file the connectivity
-    of the elements is broken/lost especially on the node-borders between processes. This information is
-    re-processed in this first (cumbersome) step.
-    2. The coordinate data for each node in a Triangle is successively written into a local array.
-    Quadrilateral surface elements are split into 2 triangles. All local arrays are gathered on the MASTER_NODE.
-    3. The MASTER_NODE only writes the data into a .stl file.
-  ---*/
-
-  /*--- 1. Re-process the element connectivity information and store that appropriatly such that
-    this information can be accessed in step 2---*/
+  /*--- Re-process the element connectivity information and store that appropriatly such that
+    this information can be accessed in step 2. It is copied from CTecplotBinaryFileWriter.cpp +162 and mildly modified. ---*/
 
   unsigned long nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
                 nParallel_Quad = dataSorter->GetnElem(QUADRILATERAL);
@@ -71,12 +61,12 @@ void CSTLFileWriter::Write_Data(){
   sorted_halo_nodes.clear();
 
   /* We output a single, partitioned zone where each rank outputs one partition. */
-  vector<int32_t> partition_owners;
+  vector<int> partition_owners;
   partition_owners.reserve(size);
-  for (int32_t iRank = 0; iRank < size; ++iRank)
+  for (int iRank = 0; iRank < size; ++iRank)
     partition_owners.push_back(iRank);
 
-  /* Gather a list of nodes we refer to but are not outputting. */
+  /* Gather a list of nodes we refer to but are not outputting, because they are not present on this rank. */
   for (unsigned long i = 0; i < nParallel_Tria * N_POINTS_TRIANGLE; ++i)
     if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i)-1) != rank)
       halo_nodes.insert(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i)-1);
@@ -92,20 +82,18 @@ void CSTLFileWriter::Write_Data(){
   /*--- We effectively tack the halo nodes onto the end of the node list for this partition.
     TecIO will later replace them with references to nodes in neighboring partitions. */
   num_halo_nodes = sorted_halo_nodes.size();
-  vector<int64_t> halo_node_local_numbers(max((size_t)1, num_halo_nodes)); /* Min size 1 to avoid crashes when we access these vectors below. */
-  vector<int32_t> neighbor_partitions(max((size_t)1, num_halo_nodes));
-  vector<int64_t> neighbor_nodes(max((size_t)1, num_halo_nodes));
+  vector<long> neighbor_partitions(max(static_cast<unsigned long>(1), num_halo_nodes));
+  vector<long>      neighbor_nodes(max(static_cast<unsigned long>(1), num_halo_nodes));
 
-  for(int64_t i = 0; i < static_cast<int64_t>(num_halo_nodes); ++i) {
-    halo_node_local_numbers[i] = dataSorter->GetNodeEnd(rank) - dataSorter->GetNodeBegin(rank) + i;
+  for(unsigned long i = 0; i < num_halo_nodes; ++i) {
     int owning_rank = dataSorter->FindProcessor(sorted_halo_nodes[i]);
     unsigned long node_number = sorted_halo_nodes[i] - dataSorter->GetNodeBegin(owning_rank);
     neighbor_partitions[i] = owning_rank; /* Partition numbers are 1-based, i.e. start with 1! */
-    neighbor_nodes[i] = static_cast<int64_t>(node_number);
+    neighbor_nodes[i] = static_cast<long>(node_number);
   }
 
   /* Gather halo node data. First, tell each rank how many nodes' worth of data we need from them. */
-  for (size_t i = 0; i < num_halo_nodes; ++i)
+  for (unsigned long i = 0; i < num_halo_nodes; ++i)
     ++num_nodes_to_receive[neighbor_partitions[i]];
   num_nodes_to_send.resize(size);
   SU2_MPI::Alltoall(&num_nodes_to_receive[0], 1, MPI_INT, &num_nodes_to_send[0], 1, MPI_INT, MPI_COMM_WORLD);
@@ -137,11 +125,11 @@ void CSTLFileWriter::Write_Data(){
 
   /* Now actually send and receive the data */
   data_to_send.resize(max(1, total_num_nodes_to_send * (int)fieldnames.size()));
-  halo_var_data.resize(max((size_t)1, fieldnames.size() * num_halo_nodes));
+  halo_var_data.resize(max(static_cast<unsigned long>(1), fieldnames.size() * num_halo_nodes));
   num_values_to_send.resize(size);
   values_to_send_displacements.resize(size);
   num_values_to_receive.resize(size);
-  size_t index = 0;
+  unsigned long index = 0;
 
   for(int iRank = 0; iRank < size; ++iRank) {
 
@@ -163,7 +151,10 @@ void CSTLFileWriter::Write_Data(){
   SU2_MPI::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
                      &halo_var_data[0], &num_values_to_receive[0], &values_to_receive_displacements[0], MPI_DOUBLE,
                      MPI_COMM_WORLD);
+}
 
+
+void CSTLFileWriter::GatherCoordData(){
   /*--- 2. Load the coordinate data succesively in an array. 3coordinates*3nodes = 9 consecutive
     su2doubles form a triangle ---*/
 
@@ -175,24 +166,20 @@ void CSTLFileWriter::Write_Data(){
    requires serializing the IO calls with barriers, which ruins
    the performance at moderate to high rank counts. ---*/
 
-  unsigned short iPoint;
+  unsigned short iPoint,
+                 iVar;
 
   unsigned long iProcessor,
                 nProcessor = size,
                 iElem,
-                MaxLocalTriaAll,
                 nLocalTria,
                 nLocalQuad,
                 nLocalTriaAll = 0,
-                *Buffer_Recv_nTriaAll = NULL,
                 global_node_number;
 
-  su2double *bufD_Send = NULL,
-            *bufD_Recv = NULL;
+  su2double *bufD_Send = NULL;
 
   vector<unsigned short> Nodelist = {0,1,3, 1,2,3}; // for Quad2Tri, assumes clockwise or counterclockwise rotation
-
-  ofstream Surf_file;
 
   /*--- Find the max number of surface vertices among all
    partitions so we can set up buffers. The master node will handle
@@ -221,7 +208,7 @@ void CSTLFileWriter::Write_Data(){
 
   /*--- Load send buffers with the local data on this rank. ---*/
   /*--- Write triangle element coordinate data into send buffer---*/
-  index = 0;
+  unsigned long index = 0;
   for (iElem = 0; iElem < nLocalTria; iElem++) {
     for (iPoint = 0; iPoint < 3; iPoint++) {
 
@@ -240,7 +227,7 @@ void CSTLFileWriter::Write_Data(){
     }//iPoint
   }//iElem
 
-  /*--Write quadrilateral element coordinate data into send buffer: 
+  /*--Write quadrilateral element coordinate data into send buffer:
     Each quad is split into two triangles after a fixed node order. ---*/
   for (iElem = 0; iElem < nLocalQuad; iElem++) {
     for (iPoint = 0; iPoint < Nodelist.size(); iPoint++) {
@@ -264,9 +251,45 @@ void CSTLFileWriter::Write_Data(){
                   bufD_Recv, static_cast<int>(MaxLocalTriaAll*3*3), MPI_DOUBLE,
                   MASTER_NODE, MPI_COMM_WORLD);
 
-  /*--- 3. The master rank alone writes the surface STL  file. ---*/
+  /*--- Free temporary memory. ---*/
+  if(bufD_Send != NULL) delete [] bufD_Send;
+}
+
+
+void CSTLFileWriter::Write_Data(){
+
+  /*--- This Write_Data routine has 3 major parts where the first two are transfered in external functions:
+    1. Prerequisite info: The parallel data-sorter distributes nodes of the primal mesh onto the processes
+    (i.e. this step is only important for parallel excecution) and not elements. For the STL file the connectivity
+    of the elements is broken/lost especially on the node-borders between processes. This information is
+    re-processed in this first (cumbersome) step.
+    2. The coordinate data for each node in a Triangle is successively written into a local array.
+    Quadrilateral surface elements are split into 2 triangles. All local arrays are gathered on the MASTER_NODE.
+    3. The MASTER_NODE only writes the data into a .stl file.
+  ---*/
+
+  /*--- 1. Re-process the element connectivity information and store that appropriatly such that
+    this information can be accessed in step 2. It is copied from CTecplotBinaryFileWriter.cpp:WriteData() l.162 and mildly modified. ---*/
+  ReprocessElementConnectivity();
+
+  /*--- 2. Load the coordinate data succesively in an array. 3coordinates*3nodes = 9 consecutive
+    su2doubles form a triangle ---*/
+  GatherCoordData();
+
+  /*--- 3. The master rank alone writes the surface STL file. ---*/
+  unsigned short iPoint,
+                 iVar;
+
+  unsigned long iProcessor,
+                nProcessor = size,
+                iElem,
+                index;
+
+  ofstream Surf_file;
+
   if (rank == MASTER_NODE) {
 
+    /*--- For information how an ASCII .stl file is structured: https://en.wikipedia.org/wiki/STL_(file_format)  ---*/
     /*--- Open the STL file and write the header with variable names. ---*/
     Surf_file.precision(6);
     Surf_file.open(fileName.c_str(), ios::out);
@@ -278,7 +301,7 @@ void CSTLFileWriter::Write_Data(){
 
         /*--- Write the coordinate data for each node in a triangle. ---*/
         /*--- Every tested software recomputes the normal anyway,
-              such that this arbitray face normal does not matter  ---*/
+              such that this arbitray face normal does not matter.  ---*/
         Surf_file << "facet normal " << 1 << " " << 2 << " " << 3 << endl;
         Surf_file << "    outer loop" << endl; // 4 leading whitespaces
 
@@ -303,7 +326,6 @@ void CSTLFileWriter::Write_Data(){
   }
 
   /*--- Free temporary memory. ---*/
-  if(bufD_Send != NULL) delete [] bufD_Send;
   if(bufD_Recv != NULL) delete [] bufD_Recv;
   if(Buffer_Recv_nTriaAll != NULL) delete [] Buffer_Recv_nTriaAll;
 }
@@ -313,7 +335,7 @@ double CSTLFileWriter::GetHaloNodeValue(unsigned long global_node_number, unsign
   vector<unsigned long>::iterator it = lower_bound(sorted_halo_nodes.begin(), sorted_halo_nodes.end(), global_node_number);
   int offset = distance(sorted_halo_nodes.begin(), it);
   int id = 0;
-  
+
   for (int iRank = 0; iRank < size; ++iRank) {
     for (int i = 0; i < num_nodes_to_receive[iRank]; i++){
       int displ = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank]*iVar;

@@ -70,7 +70,7 @@ public:
    * \param[in] iPoint - the local renumbered point ID.
    * \return Global index of a specific point.
    */
-  unsigned long GetGlobalIndex(unsigned long iPoint)  override{
+  unsigned long GetGlobalIndex(unsigned long iPoint) override{
     if (iPoint > nParallel_Poin)
       SU2_MPI::Error(string("Local renumbered iPoint ID ") + to_string(iPoint) +
                      string(" is larger than max number of nodes ") + to_string(nParallel_Poin), CURRENT_FUNCTION);
@@ -83,7 +83,7 @@ public:
    * \param[in] rank - the processor rank.
    * \return The beginning global renumbered node ID.
    */
-  unsigned long GetNodeBegin(unsigned short rank) override {
+  unsigned long GetNodeBegin(unsigned short rank) const override {
     return nPoint_Recv[rank];
   } 
 
@@ -92,7 +92,7 @@ public:
    * \param[in] iPoint - global renumbered ID of the point
    * \return The rank/processor number.
    */
-  unsigned short FindProcessor(unsigned long iPoint) override {
+  unsigned short FindProcessor(unsigned long iPoint) const override {
 
     for (unsigned short iRank = 1; iRank < size; iRank++){
       if (nPoint_Recv[iRank] > iPoint){
@@ -107,7 +107,7 @@ public:
    * \param[in] rank - the processor rank.
    * \return The ending global renumbered node ID.
    */
-  unsigned long GetNodeEnd(unsigned short rank) override {
+  unsigned long GetNodeEnd(unsigned short rank) const override {
     for (unsigned short iRank = 0; iRank < size-1; iRank++){
       return nPoint_Recv[iRank+1]-1;
     }
