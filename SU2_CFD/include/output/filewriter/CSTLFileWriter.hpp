@@ -30,24 +30,56 @@
 #include "CFileWriter.hpp"
 #include <set>
 
-
+/*!
+ * \class CSTLFileWriter
+ * \brief Class for writing STL output files.
+ * \author T. Kattmann, T. Albring
+ * \version 7.0.0 "Blackbird"
+ */
 class CSTLFileWriter final : public CFileWriter{
+private:
 
-  std::set<unsigned long> halo_nodes;
-  vector<unsigned long> sorted_halo_nodes;
+  /*--- Variables for reprocessing element connectivity. ---*/
 
-  vector<passivedouble> data_to_send;
-  vector<passivedouble> halo_var_data;
-  vector<int> num_values_to_send;
-  vector<int> values_to_send_displacements;
-  vector<int> values_to_receive_displacements;
-  vector<unsigned long> nodes_to_send;
-  vector<int> num_values_to_receive;
-  vector<int> nodes_to_send_displacements;
-  vector<int> nodes_to_receive_displacements;
-  vector<int> num_nodes_to_send;
-  size_t num_halo_nodes;
-  vector<int> num_nodes_to_receive;
+  std::set<unsigned long> halo_nodes; /*!< \brief Set of global renumbered node numbers which the current rank refers to, but does not own. Happens on process borders. Is that mutual? */
+  unsigned long num_halo_nodes; /*!< \brief Total number of halo nodes this process should receive, i.e. number it needs to acces but doesn't know the data of. */
+  /*--- Fields for the first MPI::Alltoallv: Afterwards each process knows the global renumbered node ID's it has to send and to which proc to send. ---*/
+  vector<unsigned long> sorted_halo_nodes; /*!< \brief Holds same data as `halo_nodes` but as a vector instead of a set. */
+  vector<int> num_nodes_to_receive; /*!< \brief Number of points to receive from each process. */
+  vector<int> nodes_to_receive_displacements; /*!< \brief ... */
+  vector<unsigned long> nodes_to_send; /*!< \brief Vector of global renumbered node numbers which the current rank owns, and another rank needs for connectivity. */
+  vector<int> num_nodes_to_send; /*!< \brief Number of points to to send to each process. */
+  vector<int> nodes_to_send_displacements; /*!< \brief ... */
+  /*--- Fields for the second MPI::Alltoallv: Afterwards, `halo_var_data` holds the correct coordinate data of halo points of this process. ---*/
+  vector<passivedouble> data_to_send; /*!< \brief Holds the halo-point coordinates for other ranks which are owned by this rank. These are communicated. */
+  vector<int> num_values_to_send; /*!< \brief Number of Coord values to send to each process. */
+  vector<int> values_to_send_displacements; /*!< \brief ... */
+  vector<passivedouble> halo_var_data; /*!< \brief Holds the halo-point coordinates for this rank received from other ranks. */
+  vector<int> num_values_to_receive; /*!< \brief Number of Coord values to receive from each process. */
+  vector<int> values_to_receive_displacements; /*!< \brief ... */
+
+  /*--- Variables for gathering the triangle data in one array. ---*/
+  unsigned long *Buffer_Recv_nTriaAll = NULL; /*!< \brief Array with number of triangles which each processor has. (Note: Quads are split into two Tris)  */
+  unsigned long MaxLocalTriaAll; /*!< \brief Largest Tri count of all processors.  */
+  su2double *bufD_Recv = NULL; /*!< \brief Array holding Coordinate data of all processors. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
+
+  /*!
+   * \brief Recompute Tri/Quad element connectivity between processor borders.
+   */
+  void ReprocessElementConnectivity();
+
+  /*!
+   * \brief Create an array containing all coordinate data for the surface triangles.
+   */
+  void GatherCoordData();
+
+  /*!
+   * \brief Get the halo-node value of a global renumbered Point for a specific variable.
+   * \param[in] global_node_number - global renumbered Point ID
+   * \param[in] iVar - Variable number
+   * \return Value of the halo-node variable
+   */
+  double GetHaloNodeValue(unsigned long global_node_number, unsigned short iVar);
 
 public:
 
@@ -77,14 +109,6 @@ public:
    * \brief Write sorted data to file in STL file format
    */
   void Write_Data() override;
-
-  /*!
-   * \brief Get the halo-node value of a global renumbered Point for a specific variable.
-   * \param[in] global_node_number - global renumbered Point ID
-   * \param[in] iVar - Variable number
-   * \return Value of the halo-node variable
-   */
-  double GetHaloNodeValue(unsigned long global_node_number, unsigned short iVar);
 
 };
 
