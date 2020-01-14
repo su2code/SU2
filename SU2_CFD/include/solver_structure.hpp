@@ -104,9 +104,9 @@ protected:
   unsigned short nVar,           /*!< \brief Number of variables of the problem. */
   nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */
-  nSecondaryVar,                     /*!< \brief Number of primitive variables of the problem. */
-  nSecondaryVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
-  nVarGrad,                 /*!< \brief Number of variables for deallocating the LS Cvector. */
+  nSecondaryVar,                 /*!< \brief Number of primitive variables of the problem. */
+  nSecondaryVarGrad,             /*!< \brief Number of primitive variables of the problem in the gradient computation. */
+  nVarGrad,                      /*!< \brief Number of variables for deallocating the LS Cvector. */
   nDim;                          /*!< \brief Number of dimensions of the problem. */
   unsigned long nPoint;          /*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain;   /*!< \brief Number of points of the computational grid. */
@@ -3563,6 +3563,12 @@ public:
                                    CSolver ***solver_container,
                                    CConfig *config, unsigned long ExtIter);
   
+  /*!
+   * \brief Reset Node Infty for discrete adjoint
+   */
+  virtual void ResetNodeInfty(su2double pressure_inf, su2double *massfrac_inf, su2double *mvec_inf, su2double temperature_inf,
+                              su2double temperature_ve_inf, CConfig *config){}
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9516,6 +9522,12 @@ public:
   void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
 
   /*!
+   * \brief Reset Node Infty for discrete adjoint
+   */
+  void ResetNodeInfty(su2double pressure_inf, su2double *massfrac_inf, su2double *mvec_inf, su2double temperature_inf,
+                      su2double temperature_ve_inf, CConfig *config);
+
+  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -9525,14 +9537,26 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
 
-    /*!
-     * \brief Compute the spatial integration using a centered scheme.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] numerics - Description of the numerical method.
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] iMesh - Index of the mesh in multigrid computations.
-     */
+  /*!
+   * \brief Set the freestream pressure.
+   * \param[in] Value of freestream pressure.
+   */
+  void SetPressure_Inf(su2double p_inf);
+
+  /*!
+   * \brief Set the freestream temperature.
+   * \param[in] Value of freestream temperature.
+   */
+  void SetTemperature_Inf(su2double t_inf);
+
+  /*!
+   * \brief Compute the spatial integration using a centered scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
   void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 

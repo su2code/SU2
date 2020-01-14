@@ -2016,7 +2016,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
                 bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetGradient(iPoint, iVar, iDim);
             break;
           case PRIMITIVE:
-            for (iVar = 0; iVar < nVar; iVar++)
+            for (iVar = 0; iVar < nPrimVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetPrimitive(iPoint, iVar);
             break;
           case PRIMITIVE_GRADIENT:
@@ -2182,7 +2182,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
                 base_nodes->SetGradient(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
             break;
           case PRIMITIVE:
-            for (iVar = 0; iVar < nVar; iVar++)
+            for (iVar = 0; iVar < nPrimVar; iVar++)
               base_nodes->SetPrimitive(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
           case PRIMITIVE_GRADIENT:

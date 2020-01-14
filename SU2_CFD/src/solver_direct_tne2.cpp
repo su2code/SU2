@@ -5468,6 +5468,18 @@ void CTNE2EulerSolver::SetVolume_Output(CConfig *config, CGeometry *geometry, su
 #endif
 }
 
+void CTNE2EulerSolver::ResetNodeInfty(su2double pressure_inf, su2double *massfrac_inf, su2double *mvec_inf, su2double temperature_inf,
+                                        su2double temperature_ve_inf, CConfig *config){
+  su2double check_infty;
+  if (node_infty != nullptr) delete node_infty;
+
+  node_infty = new CTNE2EulerVariable(pressure_inf, massfrac_inf, mvec_inf, temperature_inf,
+                                      temperature_ve_inf, 1, nDim, nVar,
+                                      nPrimVar, nPrimVarGrad, config);
+
+  check_infty = node_infty->SetPrimVar_Compressible(0,config);
+}
+
 CTNE2NSSolver::CTNE2NSSolver(void) : CTNE2EulerSolver() {
 
   /*--- Array initialization ---*/
@@ -5517,7 +5529,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   string filename_ = "flow";
 
   unsigned short direct_diff = config->GetDirectDiff();
-  bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_TNE2_RANS));
   bool multizone = config->GetMultizone_Problem();
 
   bool check_infty, check;

@@ -2304,6 +2304,10 @@ inline su2double CTNE2EulerSolver::GetModVelocity_Inf(void) {
 	return sqrt(Vel2);
 }
 
+inline void CTNE2EulerSolver::SetPressure_Inf(su2double p_inf) {Pressure_Inf = p_inf;}
+
+inline void CTNE2EulerSolver::SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
+
 inline su2double CTNE2EulerSolver::GetCPressure(unsigned short val_marker, unsigned long val_vertex) { return CPressure[val_marker][val_vertex]; }
 
 inline su2double CTNE2EulerSolver::GetCL_Inv(unsigned short val_marker) { return CL_Inv[val_marker]; }
