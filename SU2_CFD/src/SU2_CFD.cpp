@@ -60,7 +60,12 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   int  buffsize;
   char *buffptr;
+#ifdef HAVE_OMP
+  int provided;
+  SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+#else
   SU2_MPI::Init(&argc, &argv);
+#endif
   SU2_MPI::Buffer_attach( malloc(BUFSIZE), BUFSIZE );
   SU2_Comm MPICommunicator(MPI_COMM_WORLD);
 #else
