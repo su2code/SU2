@@ -187,6 +187,13 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     default: break;
     }
   }
+  switch(rad_model){
+  case P1_MODEL:
+    /// DESCRIPTION: Root-mean square residual of the adjoint radiative energy tilde.
+    AddHistoryOutput("BGS_ADJ_P1", "bgs[A_P1]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual  of the P1 radiative energy.",HistoryFieldType::RESIDUAL);
+    break;
+  default: break;
+  }
   /// END_GROUP
 
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.
@@ -294,6 +301,12 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
       default: break;
       }
     }
+    switch(rad_model){
+    case P1_MODEL:
+      SetHistoryOutputValue("BGS_ADJ_P1", log10(adjrad_solver->GetRes_BGS(0)));
+      break;
+    default: break;
+    }
   }
 
   SetHistoryOutputValue("SENS_GEO", adjflow_solver->GetTotal_Sens_Geo());
@@ -386,6 +399,12 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     default: break;
     }
   }
+  switch(rad_model){
+  case P1_MODEL:
+    AddVolumeOutput("RES_P1_ENERGY",  "Residual_Adjoint_Energy_P1", "RESIDUAL", "Residual of adjoint radiative energy");
+    break;
+  default: break;
+  }
   /// END_GROUP
 
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
@@ -454,7 +473,6 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
       break;
     }
   }
-
   // Radiation
   switch(rad_model){
   case P1_MODEL:
@@ -462,6 +480,7 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
     break;
   default: break;
   }
+
   // Residuals
   SetVolumeOutputValue("RES_ADJ_PRESSURE",   iPoint, Node_AdjFlow->GetSolution(iPoint, 0) - Node_AdjFlow->GetSolution_Old(iPoint, 0));
   SetVolumeOutputValue("RES_ADJ_VELOCITY-X", iPoint, Node_AdjFlow->GetSolution(iPoint, 1) - Node_AdjFlow->GetSolution_Old(iPoint, 1));
@@ -485,6 +504,12 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
     case NONE:
       break;
     }
+  }
+  switch(rad_model){
+  case P1_MODEL:
+    SetVolumeOutputValue("RES_P1_ENERGY", iPoint, Node_AdjRad->GetSolution(iPoint, 0) - Node_AdjRad->GetSolution_Old(iPoint, 0));
+    break;
+  default: break;
   }
 
   SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_AdjFlow->GetSensitivity(iPoint, 0));
