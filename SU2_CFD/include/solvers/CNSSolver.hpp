@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -99,157 +99,157 @@ private:
   su2double
   StrainMag_Max,
   Omega_Max;             /*!< \brief Maximum Strain Rate magnitude and Omega. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CNSSolver(void);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CNSSolver(void);
-  
+
   /*!
    * \brief Provide the non dimensional lift coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_CL_Visc(unsigned short val_marker) { return Surface_CL_Visc[val_marker]; }
-  
+
   /*!
    * \brief Provide the non dimensional drag coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_CD_Visc(unsigned short val_marker) { return Surface_CD_Visc[val_marker]; }
-  
+
   /*!
    * \brief Provide the non dimensional side-force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_CSF_Visc(unsigned short val_marker) { return Surface_CSF_Visc[val_marker]; }
-  
+
   /*!
    * \brief Provide the non dimensional side-force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_CEff_Visc(unsigned short val_marker) { return Surface_CEff_Visc[val_marker]; }
-  
+
   /*!
    * \brief Provide the non dimensional x force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x force coefficient on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_CFx_Visc(unsigned short val_marker) { return Surface_CFx_Visc[val_marker]; }
-  
+
   /*!
    * \brief Provide the non dimensional y force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y force coefficient on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_CFy_Visc(unsigned short val_marker) { return Surface_CFy_Visc[val_marker]; }
-  
+
   /*!
    * \brief Provide the non dimensional z force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z force coefficient on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_CFz_Visc(unsigned short val_marker) { return Surface_CFz_Visc[val_marker]; }
-  
+
   /*!
    * \brief Provide the non dimensional x moment coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_CMx_Visc(unsigned short val_marker) { return Surface_CMx_Visc[val_marker]; }
-  
+
   /*!
    * \brief Provide the non dimensional y moment coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_CMy_Visc(unsigned short val_marker) { return Surface_CMy_Visc[val_marker]; }
-  
+
   /*!
    * \brief Provide the non dimensional z moment coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_CMz_Visc(unsigned short val_marker) { return Surface_CMz_Visc[val_marker]; }
-    
+
   /*!
    * \brief Provide the buffet metric.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the buffet metric on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_Buffet_Metric(unsigned short val_marker) { return Surface_Buffet_Metric[val_marker]; }
-  
+
   /*!
    * \brief Get the inviscid contribution to the lift coefficient.
    * \return Value of the lift coefficient (inviscid contribution).
    */
   inline su2double GetAllBound_CL_Visc() { return AllBound_CL_Visc; }
-  
+
   /*!
    * \brief Get the inviscid contribution to the drag coefficient.
    * \return Value of the drag coefficient (inviscid contribution).
    */
   inline su2double GetAllBound_CD_Visc() { return AllBound_CD_Visc; }
-  
+
   /*!
    * \brief Get the inviscid contribution to the sideforce coefficient.
    * \return Value of the sideforce coefficient (inviscid contribution).
    */
   inline su2double GetAllBound_CSF_Visc() { return AllBound_CSF_Visc; }
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   inline su2double GetAllBound_CEff_Visc() { return AllBound_CEff_Visc; }
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   inline su2double GetAllBound_CMx_Visc() { return AllBound_CMx_Visc; }
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   inline su2double GetAllBound_CMy_Visc() { return AllBound_CMy_Visc; }
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   inline su2double GetAllBound_CMz_Visc() { return AllBound_CMz_Visc; }
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   inline su2double GetAllBound_CoPx_Visc() { return AllBound_CoPx_Visc; }
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   inline su2double GetAllBound_CoPy_Visc() { return AllBound_CoPy_Visc; }
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
@@ -261,37 +261,37 @@ public:
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   inline su2double GetAllBound_CFx_Visc() { return AllBound_CFx_Visc; }
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   inline su2double GetAllBound_CFy_Visc() { return AllBound_CFy_Visc; }
-  
+
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   inline su2double GetAllBound_CFz_Visc() { return AllBound_CFz_Visc; }
-    
+
   /*!
    * \brief Get the buffet metric.
    * \return Value of the buffet metric.
    */
   inline su2double GetTotal_Buffet_Metric() { return Total_Buffet_Metric; }
-  
+
   /*!
    * \brief Compute the viscosity at the infinity.
    * \return Value of the viscosity at the infinity.
    */
   inline su2double GetViscosity_Inf(void) { return Viscosity_Inf; }
-  
+
   /*!
    * \brief Get the turbulent kinetic energy at the infinity.
    * \return Value of the turbulent kinetic energy at the infinity.
    */
   inline su2double GetTke_Inf(void) { return Tke_Inf; }
-  
+
   /*!
    * \brief Compute the time step for solving the Navier-Stokes equations with turbulence model.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -302,7 +302,7 @@ public:
    */
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                     unsigned short iMesh, unsigned long Iteration);
-  
+
   /*!
    * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -313,7 +313,7 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-  
+
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -322,13 +322,13 @@ public:
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
-    
+
   /*!
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
   void Evaluate_ObjFunc(CConfig *config);
-  
+
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -339,7 +339,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).
    * \param[in] geometry - Geometrical definition of the problem.
@@ -381,36 +381,36 @@ public:
    */
   inline void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
     HeatConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*HeatConjugateVar[val_marker][val_vertex][pos_var]; }
-  
-  
+
+
   /*!
    * \brief Compute the viscous forces and all the addimensional coefficients.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void Friction_Forces(CGeometry *geometry, CConfig *config);
-    
+
   /*!
    * \brief Compute the buffet sensor.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void Buffet_Monitoring(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Get the total heat flux.
    * \param[in] val_marker - Surface marker where the heat flux is computed.
    * \return Value of the integrated heat flux (viscous contribution) on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_HF_Visc(unsigned short val_marker) { return Surface_HF_Visc[val_marker]; }
-  
+
   /*!
    * \brief Get the maximum (per surface) heat flux.
    * \param[in] val_marker - Surface marker where the heat flux is computed.
    * \return Value of the maximum heat flux (viscous contribution) on the surface <i>val_marker</i>.
    */
   inline su2double GetSurface_MaxHF_Visc(unsigned short val_marker) { return Surface_MaxHF_Visc[val_marker]; }
-  
+
   /*!
    * \brief Get the non dimensional lift coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -424,14 +424,14 @@ public:
    * \return Value of the sideforce coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
   inline su2double GetCSF_Visc(unsigned short val_marker) { return CSF_Visc[val_marker]; }
-  
+
   /*!
    * \brief Get the non dimensional drag coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
   inline su2double GetCD_Visc(unsigned short val_marker) { return CD_Visc[val_marker]; }
-  
+
   /*!
    * \brief Compute the viscous residuals.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -443,7 +443,7 @@ public:
    */
   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-  
+
   /*!
    * \brief Get the skin friction coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -451,7 +451,7 @@ public:
    * \return Value of the skin friction coefficient.
    */
   inline su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return CSkinFriction[val_marker][val_dim][val_vertex]; }
-  
+
   /*!
    * \brief Get the skin friction coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -459,7 +459,7 @@ public:
    * \return Value of the heat transfer coefficient.
    */
   inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
-  
+
   /*!
    * \brief Get the skin friction coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -467,7 +467,7 @@ public:
    * \return Value of the heat transfer coefficient.
    */
   inline su2double GetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex) { return HeatFluxTarget[val_marker][val_vertex]; }
-  
+
   /*!
    * \brief Set the value of the target Pressure coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -484,7 +484,7 @@ public:
    * \return Value of the buffet sensor.
    */
   inline su2double GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex) { return Buffet_Sensor[val_marker][val_vertex]; }
-  
+
   /*!
    * \brief Get the y plus.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -492,38 +492,38 @@ public:
    * \return Value of the y plus.
    */
   inline su2double GetYPlus(unsigned short val_marker, unsigned long val_vertex) { return YPlus[val_marker][val_vertex]; }
-  
+
   /*!
    * \brief Get the max Omega.
    * \return Value of the max Omega.
    */
   inline su2double GetOmega_Max(void) { return Omega_Max; }
-  
+
   /*!
    * \brief Get the max Strain rate magnitude.
    * \return Value of the max Strain rate magnitude.
    */
   inline su2double GetStrainMag_Max(void) { return StrainMag_Max; }
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
   inline void SetStrainMag_Max(su2double val_strainmag_max) { StrainMag_Max = val_strainmag_max; }
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the Omega_Max
    */
   inline void SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config - Definition of the particular problem.
    */
   void SetRoe_Dissipation(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -531,5 +531,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
- 
+
 };

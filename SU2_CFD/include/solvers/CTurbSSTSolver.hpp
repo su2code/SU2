@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -41,13 +41,13 @@ private:
   su2double *constants,  /*!< \brief Constants for the model. */
   kine_Inf,              /*!< \brief Free-stream turbulent kinetic energy. */
   omega_Inf;             /*!< \brief Free-stream specific dissipation. */
-  
+
 public:
   /*!
    * \brief Constructor of the class.
    */
   CTurbSSTSolver(void);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -55,12 +55,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CTurbSSTSolver(void);
-  
+
   /*!
    * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -72,7 +72,7 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-  
+
   /*!
    * \brief Computes the eddy viscosity.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -82,7 +82,7 @@ public:
    */
   void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                       unsigned short iMesh);
-  
+
   /*!
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -94,7 +94,7 @@ public:
    */
   void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                        CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -105,7 +105,7 @@ public:
    */
   void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                        CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -117,7 +117,7 @@ public:
    */
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                         unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -129,7 +129,7 @@ public:
    */
   void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                           unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the Far Field boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -141,7 +141,7 @@ public:
    */
   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                     unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -189,7 +189,7 @@ public:
    */
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
-  
+
  /*!
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
@@ -205,7 +205,7 @@ public:
    * \return A pointer to an array containing a set of constants
    */
   su2double* GetConstants();
-  
+
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
@@ -216,7 +216,7 @@ public:
       nodes->SetSolution(iPoint, 1, omega_Inf);
     }
   }
-  
+
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.

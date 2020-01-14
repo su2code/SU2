@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -67,7 +67,7 @@ protected:
 
   su2double pnorm,
   Area_Monitored; /*!< \brief Store the total area of the monitored outflow surface (used for normalization in continuous adjoint outflow conditions) */
-  
+
   su2double ACoeff, ACoeff_inc, ACoeff_old;
   bool Update_ACoeff;
 
@@ -79,12 +79,12 @@ protected:
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CAdjEulerSolver(void);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -92,12 +92,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CAdjEulerSolver(void);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -108,14 +108,14 @@ public:
    */
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                     unsigned short iMesh, unsigned long Iteration);
-  
+
   /*!
    * \brief Parallelization of Undivided Laplacian.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Parallelization of Undivided Laplacian.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -130,7 +130,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetForceProj_Vector(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
+
   /*!
    * \brief Compute the jump for the interior boundary problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -138,26 +138,26 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
+
   /*!
    * \brief Compute adjoint density at the infinity.
    * \return Value of the adjoint density at the infinity.
    */
   inline su2double GetPsiRho_Inf(void) { return PsiRho_Inf; }
-  
+
   /*!
    * \brief Compute the adjoint energy at the infinity.
    * \return Value of the adjoint energy at the infinity.
    */
   inline su2double GetPsiE_Inf(void) { return PsiE_Inf; }
-  
+
   /*!
    * \brief Compute Phi (adjoint velocity) at the infinity.
    * \param[in] val_dim - Index of the adjoint velocity vector.
    * \return Value of the adjoint velocity vector at the infinity.
    */
   inline su2double GetPhi_Inf(unsigned short val_dim) { return Phi_Inf[val_dim]; }
-  
+
   /*!
    * \brief Compute the spatial integration using a centered scheme for the adjoint equations.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -169,7 +169,7 @@ public:
    */
   void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                          unsigned short iMesh, unsigned short iRKStep);
-  
+
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -180,7 +180,7 @@ public:
    */
   void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                        unsigned short iMesh);
-  
+
   /*!
    * \brief Source term integration.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -192,7 +192,7 @@ public:
    */
   void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                        CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Source term integration.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -203,14 +203,14 @@ public:
    */
   void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                        CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Compute the undivided laplacian for the adjoint solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Value of the characteristic variables at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -218,7 +218,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   inline su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) { return DonorAdjVar[val_marker][val_vertex]; }
-  
+
   /*!
    * \brief Value of the characteristic variables at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -226,7 +226,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   inline void SetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { DonorAdjVar[val_marker][val_vertex][val_var] = val_value; }
-  
+
   /*!
    * \brief Value of the characteristic variables at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -234,7 +234,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   inline su2double GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var) { return DonorAdjVar[val_marker][val_vertex][val_var]; }
-  
+
   /*!
    * \brief Value of the characteristic global index at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -242,7 +242,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   inline unsigned long GetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex) { return DonorGlobalIndex[val_marker][val_vertex]; }
-  
+
   /*!
    * \brief Value of the characteristic global index at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -250,7 +250,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   inline void SetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex, unsigned long val_index) { DonorGlobalIndex[val_marker][val_vertex] = val_index; }
-  
+
   /*!
    * \brief Compute the sensor for higher order dissipation control in rotating problems.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -258,7 +258,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -269,7 +269,7 @@ public:
    */
   void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                        CConfig *config, unsigned short iMesh, bool Output);
-  
+
   /*!
    * \brief Impose via the residual the adjoint Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -295,7 +295,7 @@ public:
    */
   void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the near-field boundary condition using the residual.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -306,7 +306,7 @@ public:
    */
   void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Impose an actuator disk inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -318,7 +318,7 @@ public:
    */
   void BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                         CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Impose an actuator disk outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -330,7 +330,7 @@ public:
    */
   void BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                          CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Impose an actuator disk inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -358,7 +358,7 @@ public:
                     CNumerics      *visc_numerics,
                     CConfig        *config,
                     unsigned short val_marker) override;
-  
+
   /*!
    * \brief Impose the boundary condition to the far field using characteristics.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -370,7 +370,7 @@ public:
    */
   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                     unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -382,8 +382,8 @@ public:
    */
   void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                 unsigned short val_marker);
-  
-  
+
+
   /*!
    * \brief Impose the supersonic inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -394,7 +394,7 @@ public:
    */
   void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                            unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the supersonic outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -405,7 +405,7 @@ public:
    */
   void BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                             unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -417,7 +417,7 @@ public:
    */
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the engine inflow adjoint boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -429,7 +429,7 @@ public:
    */
   void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                         CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the engine exhaust boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -441,7 +441,7 @@ public:
    */
   void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                          CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Update the solution using a Runge-Kutta strategy.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -451,7 +451,7 @@ public:
    */
   void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep);
-  
+
   /*!
    * \brief Update the solution using a explicit Euler scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -459,7 +459,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
+
   /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -467,7 +467,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
+
   /*!
    * \brief Initialize the residual vectors.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -478,7 +478,7 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-  
+
   /*!
    * \brief Compute the inviscid sensitivity of the functional.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -487,7 +487,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
-  
+
   /*!
    * \brief Smooth the inviscid sensitivity of the functional.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -496,7 +496,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
-  
+
   /*!
    * \brief Get the shape sensitivity coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -504,7 +504,7 @@ public:
    * \return Value of the sensitivity coefficient.
    */
   inline su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
-  
+
   /*!
    * \brief Set the shape sensitivity coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -512,42 +512,42 @@ public:
    * \param[in] val_sensitivity - Value of the sensitivity coefficient.
    */
   inline void SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) { CSensitivity[val_marker][val_vertex] = val_sensitivity; }
-  
+
   /*!
    * \brief Provide the total shape sensitivity coefficient.
    * \return Value of the geometrical sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
   inline su2double GetTotal_Sens_Geo() { return Total_Sens_Geo; }
-  
+
   /*!
    * \brief Set the total Mach number sensitivity coefficient.
    * \return Value of the Mach sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
   inline su2double GetTotal_Sens_Mach() { return Total_Sens_Mach; }
-  
+
   /*!
    * \brief Set the total angle of attack sensitivity coefficient.
    * \return Value of the angle of attack sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
   inline su2double GetTotal_Sens_AoA() { return Total_Sens_AoA; }
-  
+
   /*!
    * \brief Set the total farfield pressure sensitivity coefficient.
    * \return Value of the farfield pressure sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
   inline su2double GetTotal_Sens_Press() { return Total_Sens_Press; }
-  
+
   /*!
    * \brief Set the total farfield temperature sensitivity coefficient.
    * \return Value of the farfield temperature sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
   inline su2double GetTotal_Sens_Temp() { return Total_Sens_Temp; }
-  
+
   /*!
    * \author H. Kline
    * \brief Get the total Back pressure number sensitivity coefficient.
@@ -555,7 +555,7 @@ public:
    *         (inviscid + viscous contribution).
    */
   inline su2double GetTotal_Sens_BPress() { return Total_Sens_BPress; }
-  
+
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -567,7 +567,7 @@ public:
    */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-  
+
   /*!
    * \brief Set the initial condition for the Euler Equations.
    * \param[in] geometry - Geometrical definition of the problem.

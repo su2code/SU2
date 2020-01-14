@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -44,12 +44,12 @@ protected:
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CBaselineSolver(void);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -70,7 +70,7 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CBaselineSolver(void);
-  
+
   /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -80,7 +80,7 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
-  
+
   /*!
    * \brief Load a FSI solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -95,5 +95,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetOutputVariables(CGeometry *geometry, CConfig *config);
-  
+
 };

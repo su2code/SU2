@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -76,7 +76,7 @@ private:
             *Total_Sens_Rho;      /*!< \brief Total sensitivity of the density (time domain). */
   su2double *Local_Sens_Rho_DL,   /*!< \brief Local sensitivity of the volume load. */
             *Global_Sens_Rho_DL,  /*!< \brief Global sensitivity of the volume load. */
-            *Total_Sens_Rho_DL;   /*!< \brief Total sensitivity of the volume load (time domain). */        
+            *Total_Sens_Rho_DL;   /*!< \brief Total sensitivity of the volume load (time domain). */
 
   bool de_effects;                /*!< \brief Determines if DE effects are considered. */
   unsigned short nEField;         /*!< \brief Number of electric field areas in the problem. */
@@ -102,12 +102,12 @@ private:
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CDiscAdjFEASolver(void);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -115,7 +115,7 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   CDiscAdjFEASolver(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -124,12 +124,12 @@ public:
    * \param[in] Kind_Solver - The kind of direct solver.
    */
   CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CDiscAdjFEASolver(void);
-  
+
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
    *        Registers all necessary variables on the tape. Called while tape is active.
@@ -137,7 +137,7 @@ public:
    * \param[in] config_container - The particular config.
    */
   void RegisterSolution(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
    *        Registers all necessary variables that are output variables on the tape.
@@ -146,7 +146,7 @@ public:
    * \param[in] config_container - The particular config.
    */
   void RegisterOutput(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Sets the adjoint values of the output of the flow (+turb.) iteration
    *         before evaluation of the tape.
@@ -154,7 +154,7 @@ public:
    * \param[in] config - The particular config.
    */
   void SetAdjoint_Output(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
    *        after tape has been evaluated.
@@ -162,7 +162,7 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Sets the adjoint values of the structural variables due to cross term contributions
    * \param[in] geometry - The geometrical definition of the problem.
@@ -170,7 +170,7 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
@@ -178,7 +178,7 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config);
-  
+
   /*!
    * \brief Register the objective function as output.
    * \param[in] geometry - The geometrical definition of the problem.
@@ -191,7 +191,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSurface_Sensitivity(CGeometry *geometry, CConfig* config);
-  
+
   /*!
    * \brief Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -199,27 +199,27 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
-  
+
   /*!
    * \brief Set the objective function.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
-  
+
   /*!
    * \brief Provide the total Young's modulus sensitivity
    * \return Value of the total Young's modulus sensitivity
    *         (inviscid + viscous contribution).
    */
   inline su2double GetTotal_Sens_E(unsigned short iVal) { return Total_Sens_E[iVal]; }
-  
+
   /*!
    * \brief Set the total Poisson's ratio sensitivity.
    * \return Value of the Poisson's ratio sensitivity
    */
   inline su2double GetTotal_Sens_Nu(unsigned short iVal) { return Total_Sens_Nu[iVal]; }
-  
+
   /*!
    * \brief Get the total sensitivity for the structural density
    * \return Value of the structural density sensitivity
@@ -249,19 +249,19 @@ public:
    * \return Value of the sensitivity coefficient for the Young Modulus E
    */
   inline su2double GetGlobal_Sens_E(unsigned short iVal) { return Global_Sens_E[iVal]; }
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the Mach sensitivity for the Poisson's ratio Nu
    */
   inline su2double GetGlobal_Sens_Nu(unsigned short iVal) { return Global_Sens_Nu[iVal]; }
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
    */
   inline su2double GetGlobal_Sens_EField(unsigned short iEField) { return Global_Sens_EField[iEField]; }
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the FEA DV in the region iDVFEA
@@ -286,31 +286,31 @@ public:
    * \return Value of the Young modulus from the adjoint solver
    */
   inline su2double GetVal_Young(unsigned short iVal) { return E_i[iVal]; }
-  
+
   /*!
    * \brief Get the value of the Poisson's ratio from the adjoint solver
    * \return Value of the Poisson's ratio from the adjoint solver
    */
   inline su2double GetVal_Poisson(unsigned short iVal) { return Nu_i[iVal]; }
-  
+
   /*!
    * \brief Get the value of the density from the adjoint solver, for inertial effects
    * \return Value of the density from the adjoint solver
    */
   inline su2double GetVal_Rho(unsigned short iVal) { return Rho_i[iVal]; }
-  
+
   /*!
    * \brief Get the value of the density from the adjoint solver, for dead loads
    * \return Value of the density for dead loads, from the adjoint solver
    */
   inline su2double GetVal_Rho_DL(unsigned short iVal) { return Rho_DL_i[iVal]; }
-  
+
   /*!
    * \brief Get the number of variables for the Electric Field from the adjoint solver
    * \return Number of electric field variables from the adjoint solver
    */
   inline unsigned short GetnEField(void) { return nEField; }
-  
+
   /*!
    * \brief Read the design variables for the adjoint solver
    */
@@ -327,13 +327,13 @@ public:
    * \return Pointer to the values of the Electric Field
    */
   inline su2double GetVal_EField(unsigned short iVal) { return EField[iVal]; }
-  
+
   /*!
    * \brief Get the value of the design variables from the adjoint solver
    * \return Pointer to the values of the design variables
    */
   inline su2double GetVal_DVFEA(unsigned short iVal) { return DV_Val[iVal]; }
-  
+
   /*!
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
@@ -390,5 +390,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-  
+
 };

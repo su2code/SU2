@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -46,24 +46,24 @@ private:
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CTemplateSolver(void);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CTemplateSolver(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CTemplateSolver(void);
-  
+
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -75,7 +75,7 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-  
+
   /*!
    * \brief Compute the time step for solving the Euler equations.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -86,7 +86,7 @@ public:
    */
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                     unsigned short iMesh, unsigned long Iteration);
-  
+
   /*!
    * \brief Compute the spatial integration using a centered scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -98,7 +98,7 @@ public:
    */
   void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-  
+
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -109,7 +109,7 @@ public:
    */
   void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                        CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Source term integration.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -121,7 +121,7 @@ public:
    */
   void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                        CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Source term integration.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -132,7 +132,7 @@ public:
    */
   void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                        CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -147,7 +147,7 @@ public:
                      CNumerics      *visc_numerics,
                      CConfig        *config,
                      unsigned short val_marker) override;
-  
+
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).
    * \param[in] geometry - Geometrical definition of the problem.
@@ -159,7 +159,7 @@ public:
    */
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                         unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the far-field boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -171,7 +171,7 @@ public:
    */
   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                     unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -183,7 +183,7 @@ public:
    */
   void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                 unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -195,7 +195,7 @@ public:
    */
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the symmetry plane boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -211,7 +211,7 @@ public:
                     CNumerics      *visc_numerics,
                     CConfig        *config,
                     unsigned short val_marker) override;
-  
+
   /*!
    * \brief Impose a custom or verification boundary condition.
    * \param[in] geometry         - Geometrical definition of the problem.
@@ -223,7 +223,7 @@ public:
    */
   void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                  CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -233,7 +233,7 @@ public:
    */
   void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep);
-  
+
   /*!
    * \brief Update the solution using the explicit Euler scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -241,7 +241,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
+
   /*!
    * \brief Update the solution using an implicit Euler scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -249,5 +249,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
+
 };

@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -40,13 +40,13 @@
 class CTurbSASolver: public CTurbSolver {
 private:
   su2double nu_tilde_Inf, nu_tilde_Engine, nu_tilde_ActDisk;
-  
+
 public:
   /*!
    * \brief Constructor of the class.
    */
   CTurbSASolver(void);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -55,12 +55,12 @@ public:
    * \param[in] FluidModel
    */
   CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CTurbSASolver(void);
-  
+
   /*!
    * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -72,7 +72,7 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -93,7 +93,7 @@ public:
    */
   void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                        CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -104,7 +104,7 @@ public:
    */
   void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                        CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -116,7 +116,7 @@ public:
    */
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                         unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -128,7 +128,7 @@ public:
    */
   void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                           unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the Far Field boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -140,7 +140,7 @@ public:
    */
   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                     unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -188,7 +188,7 @@ public:
    */
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the engine inflow boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -200,7 +200,7 @@ public:
    */
   void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                         CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the engine exhaust boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -212,7 +212,7 @@ public:
    */
   void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                          CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the interface boundary condition using the residual.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -244,7 +244,7 @@ public:
    */
   void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Impose an actuator disk inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -256,7 +256,7 @@ public:
    */
   void BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                         CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Impose an actuator disk outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -268,7 +268,7 @@ public:
    */
   void BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                          CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Impose an actuator disk inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -288,8 +288,8 @@ public:
   inline void SetFreeStream_Solution(CConfig *config) {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) nodes->SetSolution(iPoint, 0, nu_tilde_Inf);
   }
-  
-  
+
+
   /*!
    * \brief A virtual member.
    * \param[in] solver - Solver container

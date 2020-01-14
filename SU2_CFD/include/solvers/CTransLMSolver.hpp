@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -44,7 +44,7 @@ public:
    * \brief Constructor of the class.
    */
   CTransLMSolver(void);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -52,12 +52,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CTransLMSolver(void);
-  
+
   /*!
    * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -69,7 +69,7 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -79,7 +79,7 @@ public:
    */
   void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                       unsigned short iMesh);
-  
+
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -90,7 +90,7 @@ public:
    */
   void Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                        CNumerics *numerics, CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Compute the viscous residuals for the turbulent equation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -102,7 +102,7 @@ public:
    */
   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-  
+
   /*!
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -114,7 +114,7 @@ public:
    */
   void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                        CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -125,7 +125,7 @@ public:
    */
   void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                        CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -137,7 +137,7 @@ public:
    */
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                         unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the Far Field boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -149,7 +149,7 @@ public:
    */
   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                     unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -161,7 +161,7 @@ public:
    */
   void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                 unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -173,7 +173,7 @@ public:
    */
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the symmetry condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -192,7 +192,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
+
   // Another set of matrix structures for the Lm equations
   CSysMatrix<su2double> JacobianItmc;  /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   su2double *LinSysSolItmc;            /*!< \brief vector to store iterative solution of implicit linear system. */

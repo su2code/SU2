@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -38,12 +38,12 @@
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CAdjNSSolver(void);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -51,12 +51,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CAdjNSSolver(void);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -67,8 +67,8 @@ public:
    */
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                     unsigned short iMesh, unsigned long Iteration);
-  
-  
+
+
   /*!
    * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
    * \param[in] geometry - Geometrical definition of the problem.
@@ -80,7 +80,7 @@ public:
    */
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                         unsigned short val_marker);
-  
+
   /*!
    * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
    * \param[in] geometry - Geometrical definition of the problem.
@@ -91,7 +91,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-  
+
   /*!
    * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -102,7 +102,7 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-  
+
   /*!
    * \brief Compute the viscous sensitivity of the functional.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -111,7 +111,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
-  
+
   /*!
    * \brief Compute the viscous residuals for the adjoint equation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -123,7 +123,7 @@ public:
    */
   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-  
+
   /*!
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -135,5 +135,5 @@ public:
    */
   void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                        CConfig *config, unsigned short iMesh);
-  
+
 };
