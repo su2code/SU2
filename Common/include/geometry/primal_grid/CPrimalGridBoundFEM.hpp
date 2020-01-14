@@ -151,13 +151,13 @@ public:
   * \brief Get the polynomial degree of the grid for this element.
   * \return The polynomial degree of the grid.
   */
-  inline unsigned short GetNPolyGrid(void) { return nPolyGrid; }
+  inline unsigned short GetNPolyGrid(void) override { return nPolyGrid; }
 
   /*!
   * \brief Function to make available the number of DOFs of the grid in the element.
   * \return The number of DOFs of the grid in the element.
   */
-  inline unsigned short GetNDOFsGrid(void) { return nDOFsGrid; }
+  inline unsigned short GetNDOFsGrid(void) override { return nDOFsGrid; }
 
   /*!
   * \brief Get the corner points of this boundary element.
@@ -167,7 +167,7 @@ public:
   */
   void GetCornerPointsAllFaces(unsigned short &nFaces,
                                unsigned short nPointsPerFace[],
-                               unsigned long  faceConn[6][4]);
+                               unsigned long  faceConn[6][4]) override;
 
   /*!
   * \brief Static member function to get the local the corner points of all the face
@@ -188,47 +188,47 @@ public:
   * \brief Make available the global ID of this element.
   * \return The global ID of this element.
   */
-  inline unsigned long GetGlobalElemID(void) { return boundElemIDGlobal; }
+  inline unsigned long GetGlobalElemID(void) override { return boundElemIDGlobal; }
 
   /*!
   * \brief Function to get whether or not the Jacobian is considered constant.
   * \return True if the Jacobian is (almost) constant and false otherwise.
   */
-  inline bool GetJacobianConsideredConstant(void) {return JacobianConsideredConstant;}
+  inline bool GetJacobianConsideredConstant(void) override {return JacobianConsideredConstant;}
 
   /*!
   * \brief Function to set the value of JacobianConsideredConstant.
   * \param[in] val_JacobianConsideredConstant - The value to be set for JacobianConsideredConstant.
   */
-  inline void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) {JacobianConsideredConstant = val_JacobianConsideredConstant;}
+  inline void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) override {JacobianConsideredConstant = val_JacobianConsideredConstant;}
 
   /*!
   * \brief Add the given donor ID to the donor elements for the wall function treatment.
   * \param[in] donorElement - Element to be added to donor elements.
   */
-  inline void AddDonorWallFunctions(const unsigned long donorElement) {donorElementsWallFunctions.push_back(donorElement);}
+  inline void AddDonorWallFunctions(const unsigned long donorElement) override {donorElementsWallFunctions.push_back(donorElement);}
 
   /*!
   * \brief Make available the number of donor elements for the wall function treatment.
   * \return The number of donor elements.
   */
-  inline unsigned short GetNDonorsWallFunctions(void) {return donorElementsWallFunctions.size();}
+  inline unsigned short GetNDonorsWallFunctions(void) override {return donorElementsWallFunctions.size();}
 
   /*!
   * \brief Make available the pointer to the vector for the donor elements
            for the wall function treatment.
   * \return The pointer to the data of donorElementsWallFunctions.
   */
-  inline unsigned long *GetDonorsWallFunctions(void) {return donorElementsWallFunctions.data();}
+  inline unsigned long *GetDonorsWallFunctions(void) override {return donorElementsWallFunctions.data();}
 
   /*!
   * \brief Set the global ID's of the donor elements for the wall function treatment.
   * \param[in] donorElements - Vector, which contain the donor elements.
   */
-  inline void SetDonorsWallFunctions(const vector<unsigned long> &donorElements) {donorElementsWallFunctions = donorElements;}
+  inline void SetDonorsWallFunctions(const vector<unsigned long> &donorElements) override {donorElementsWallFunctions = donorElements;}
 
   /*!
   * \brief Function to remove the multiple donors for the wall function treatment.
   */
-  void RemoveMultipleDonorsWallFunctions(void);
+  void RemoveMultipleDonorsWallFunctions(void) override;
 };
