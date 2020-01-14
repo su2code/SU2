@@ -30,6 +30,7 @@
 #pragma once
 
 #include "../../Common/include/mpi_structure.hpp"
+#include "../../Common/include/omp_structure.hpp"
 
 #include <cstdlib>
 #include <iostream>

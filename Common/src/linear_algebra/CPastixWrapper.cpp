@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -28,7 +28,12 @@
 
 #ifdef HAVE_PASTIX
 
+#include "../../include/mpi_structure.hpp"
+#include "../../include/omp_structure.hpp"
+#include "../../include/config_structure.hpp"
+#include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/CPastixWrapper.hpp"
+
 #include<numeric>
 
 void CPastixWrapper::Initialize(CGeometry *geometry, CConfig *config) {
@@ -84,6 +89,8 @@ void CPastixWrapper::Initialize(CGeometry *geometry, CConfig *config) {
   iparm[IPARM_ORDERING]            = API_ORDER_PTSCOTCH;
   iparm[IPARM_INCOMPLETE]          = incomplete;
   iparm[IPARM_LEVEL_OF_FILL]       = pastix_int_t(config->GetPastixFillLvl());
+  iparm[IPARM_THREAD_COMM_MODE]    = API_THREAD_FUNNELED;
+  iparm[IPARM_THREAD_NBR]          = omp_get_max_threads();
 
   /*--- Prepare sparsity structure ---*/
 

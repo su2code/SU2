@@ -3716,15 +3716,6 @@ public:
   inline virtual su2double Get_val_I(void){ return 0.0; }
   
   /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point i of the Mass Matrix.
-   * \param[in] jPoint - Point j of the Mass Matrix.
-   * \param[in] iVar - Variable i of the Mass Matrix submatrix.
-   * \param[in] iVar - Variable j of the Mass Matrix submatrix.
-   */
-  inline virtual su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar){ return 0.0; }
-  
-  /*!
    * \brief Gauss method for solving a linear system.
    * \param[in] A - Matrix Ax = b.
    * \param[in] rhs - Right hand side.

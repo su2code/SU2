@@ -1155,8 +1155,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
 void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, iSpan;
-  unsigned long  oldVertex, iPoint, Point_Normal;
-  long iVertex;
+  unsigned long  oldVertex, iPoint, Point_Normal, iVertex;
   su2double *V_inlet, *V_domain, *Normal;
   su2double extAverageNu;
   Normal = new su2double[nDim];
@@ -1170,7 +1169,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
     /*--- Loop over all the vertices on this boundary marker ---*/
 
-    for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertexSpan(val_marker,iSpan); iVertex++) {
 
       /*--- find the node related to the vertex ---*/
       iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
@@ -1261,8 +1260,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, iSpan;
-  unsigned long  oldVertex, iPoint, Point_Normal;
-  long iVertex;
+  unsigned long  oldVertex, iPoint, Point_Normal, iVertex;
   su2double *V_inlet, *V_domain, *Normal;
 
   su2double rho, pressure, muLam, Factor_nu_Inf, nu_tilde;
@@ -1287,7 +1285,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
 
     /*--- Loop over all the vertices on this boundary marker ---*/
-    for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertexSpan(val_marker,iSpan); iVertex++) {
 
       /*--- find the node related to the vertex ---*/
       iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
