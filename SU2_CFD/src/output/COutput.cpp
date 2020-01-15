@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -451,122 +451,122 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       break;
 
     case PARAVIEW_XML:
-      
+
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
-      
+
       /*--- Load and sort the output data and connectivity. ---*/
-      
+
       volumeDataSorter->SortConnectivity(config, geometry, true);
-      
+
       /*--- Write paraview binary ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "Paraview" << fileName + CParaviewXMLFileWriter::fileExt;
       }
-      
+
       fileWriter = new CParaviewXMLFileWriter(fileName, volumeDataSorter);
-      
+
       break;
-      
+
     case PARAVIEW_BINARY:
-      
+
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
-      
+
       /*--- Load and sort the output data and connectivity. ---*/
-      
+
       volumeDataSorter->SortConnectivity(config, geometry, true);
-      
+
       /*--- Write paraview binary ---*/
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "Paraview" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
-      
+
       fileWriter = new CParaviewBinaryFileWriter(fileName, volumeDataSorter);
-      
+
       break;
-      
+
     case PARAVIEW_MULTIBLOCK:
-      {      
+      {
 
         if (fileName.empty())
           fileName = config->GetFilename(volumeFilename, "", curTimeIter);
-        
+
         /*--- Sort volume connectivity ---*/
-        
-        volumeDataSorter->SortConnectivity(config, geometry, true);  
+
+        volumeDataSorter->SortConnectivity(config, geometry, true);
 
         /*--- The file name of the multiblock file is the case name (i.e. the config file name w/o ext.) ---*/
-        
+
         fileName = config->GetUnsteady_FileName(config->GetCaseName(), curTimeIter, "");
-        
+
         /*--- Allocate the vtm file writer ---*/
-        
-        fileWriter = new CParaviewVTMFileWriter(fileName, fileName, GetHistoryFieldValue("CUR_TIME"), 
+
+        fileWriter = new CParaviewVTMFileWriter(fileName, fileName, GetHistoryFieldValue("CUR_TIME"),
                                                 config->GetiZone(), config->GetnZone());
-        
+
         /*--- We cast the pointer to its true type, to avoid virtual functions ---*/
-        
+
         CParaviewVTMFileWriter* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
-        
+
         if (rank == MASTER_NODE) {
-            (*fileWritingTable) << "Paraview Multiblock" 
+            (*fileWritingTable) << "Paraview Multiblock"
                                 << fileName + CParaviewVTMFileWriter::fileExt;
         }
-        
+
         /*--- Open a block for the zone ---*/
-        
+
         vtmWriter->StartBlock(multiZoneHeaderString);
-        
-        fileName = "Internal";   
-        
+
+        fileName = "Internal";
+
         /*--- Open a block for the internal (volume) data and add the dataset ---*/
-        
+
         vtmWriter->StartBlock(fileName);
         vtmWriter->AddDataset(fileName, fileName, volumeDataSorter);
         vtmWriter->EndBlock();
-        
+
         /*--- Open a block for the boundary ---*/
-        
+
         vtmWriter->StartBlock("Boundary");
-        
+
         /*--- Loop over all markers used in the config file ---*/
-        
+
         for (unsigned short iMarker = 0; iMarker < config->GetnMarker_CfgFile(); iMarker++){
-          
+
           /*--- Get the name of the marker ---*/
-          
+
           string markerTag = config->GetMarker_CfgFile_TagBound(iMarker);
-          
+
           /*--- If the current marker can be found on this partition store its name.
-             * Note that we have to provide a vector of markers to the sorter routine, although we only do 
+             * Note that we have to provide a vector of markers to the sorter routine, although we only do
              * one marker at a time, i.e. ::marker always contains one item. ---*/
-          
-          vector<string> marker;          
-          for (unsigned short jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++){ 
+
+          vector<string> marker;
+          for (unsigned short jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++){
 
             /*--- We want to write all markers except send-receive markers ---*/
-            
-            if (config->GetMarker_All_TagBound(jMarker) == markerTag && 
+
+            if (config->GetMarker_All_TagBound(jMarker) == markerTag &&
                 config->GetMarker_All_KindBC(jMarker) != SEND_RECEIVE){
               marker.push_back(markerTag);
             }
           }
-          
+
           /*--- Only sort if there is at least one processor that has this marker ---*/
-          
-          int globalMarkerSize = 0, localMarkerSize = marker.size(); 
+
+          int globalMarkerSize = 0, localMarkerSize = marker.size();
           SU2_MPI::Allreduce(&localMarkerSize, &globalMarkerSize, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-          
+
           if (globalMarkerSize > 0){
-            
+
             /*--- Sort connectivity of the current marker ---*/
-            
+
             surfaceDataSorter->SortConnectivity(config, geometry, marker);
             surfaceDataSorter->SortOutputData();
-            
+
             /*--- Add the dataset ---*/
-            
+
             vtmWriter->AddDataset(markerTag, markerTag, surfaceDataSorter);
 
           }
@@ -576,8 +576,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         /*--- End "Zone" block ---*/
         vtmWriter->EndBlock();
       }
-      
-      
+
+
       break;
 
     case PARAVIEW:
@@ -635,7 +635,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       fileWriter = new CParaviewBinaryFileWriter(fileName, surfaceDataSorter);
 
       break;
-      
+
     case SURFACE_PARAVIEW_XML:
 
       if (fileName.empty())
@@ -1931,7 +1931,7 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
     return false;
 
   }
-  
+
   /*--- Check if screen output should be written --- */
 
   if (!PrintOutput(curTimeIter, HistoryWrt_Freq_Time)&&
@@ -1992,15 +1992,15 @@ void COutput::SetCommonHistoryFields(CConfig *config){
 }
 
 void COutput::LoadCommonHistoryData(CConfig *config){
-  
+
   SetHistoryOutputValue("TIME_STEP", config->GetDelta_UnstTimeND()*config->GetTime_Ref());
 
   /*--- Update the current time time only if the time iteration has changed ---*/
-  
+
   if (SU2_TYPE::Int(GetHistoryFieldValue("TIME_ITER")) != curTimeIter){
-    SetHistoryOutputValue("CUR_TIME",  GetHistoryFieldValue("CUR_TIME") + GetHistoryFieldValue("TIME_STEP"));    
+    SetHistoryOutputValue("CUR_TIME",  GetHistoryFieldValue("CUR_TIME") + GetHistoryFieldValue("TIME_STEP"));
   }
-  
+
   SetHistoryOutputValue("TIME_ITER",  curTimeIter);
   SetHistoryOutputValue("INNER_ITER", curInnerIter);
   SetHistoryOutputValue("OUTER_ITER", curOuterIter);

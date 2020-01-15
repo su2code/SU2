@@ -66,14 +66,14 @@ public:
   void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) override;
 
   /*!
-   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing. 
-   * Only markers in the markerList argument will be sorted. 
+   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
+   * Only markers in the markerList argument will be sorted.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] markerList - List of markers to sort.
    */
   void SortConnectivity(CConfig *config, CGeometry *geometry, const vector<string> &markerList) override;
-  
+
   /*!
    * \brief Get the global index of a point.
    * \input iPoint - the point ID.
