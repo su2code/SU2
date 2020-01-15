@@ -212,6 +212,10 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
       break;
   }//switch
 
+  if (config->GetError_Estimate()) {
+    ComputeMetric();
+  }
+
 }
 
 void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
@@ -524,4 +528,472 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   AD::ClearAdjoints();
 
+}
+
+void CDiscaDjsinglezoNedriver::ComputeMetric() {
+
+  CSolver *solver_flow    = solver[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+          *solver_turb    = solver[ZONE_0][INST_0][MESH_0][TURB_SOL],
+          *solver_adjflow = solver[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL],
+          *solver_adjturb = solver[ZONE_0][INST_0][MESH_0][ADJTURB_SOL];
+
+  if (rank == MASTER_NODE)
+    cout << endl <<"----------------------------- Compute Metric ----------------------------" << endl;
+
+  //--- 2D
+  if(nDim == 2){
+    //--- Volume flow grad
+    if(rank == MASTER_NODE) cout << "Computing flow volume gradient via L2 Projection." << endl;
+    solver_flow->SetGradient_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
+                                     config[ZONE_0]);
+
+    //--- Volume flow Hess
+    if(rank == MASTER_NODE) cout << "Computing flow volume Hessian via L2 Projection." << endl;
+    solver_flow->SetHessian_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
+                                    config[ZONE_0]);
+
+    // //---Surface flow Hess correction
+    // if(rank == MASTER_NODE) cout << "Correcting flow surface Hessian." << endl;
+    // solver_flow->CorrectBoundAnisoHess(geometry[ZONE_0][INST_0][MESH_0], 
+    //                                    config[ZONE_0]);
+
+    //--- Volume adj grad
+    if(rank == MASTER_NODE) cout << "Computing adjoint volume gradient via L2 Projection." << endl;
+    solver_adjflow->SetGradient_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
+                                        config[ZONE_0]);
+
+    if(config[ZONE_0]->GetViscous()) {
+      //--- Volume turb grad
+      if(rank == MASTER_NODE) cout << "Computing turbulent volume gradient via L2 Projection." << endl;
+      solver_turb->SetTurbGradient_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
+                                       config[ZONE_0],
+                                       solver_flow);
+
+      //--- Volume turb Hess
+      if(rank == MASTER_NODE) cout << "Computing turbulent volume Hessian via L2 Projection." << endl;
+      solver_turb->SetHessian_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
+                                      config[ZONE_0]);
+
+      // //--- Surface turb Hess correction
+      // if(rank == MASTER_NODE) cout << "Correcting turbulent surface Hessian." << endl;
+      // solver_turb->CorrectBoundAnisoHess(geometry[ZONE_0][INST_0][MESH_0], 
+      //                                    config[ZONE_0]);
+
+      //--- Volume adj turb grad
+      if(rank == MASTER_NODE) cout << "Computing turbulent adjoint volume gradient via L2 Projection." << endl;
+      solver_adjturb->SetGradient_L2Proj2(geometry[ZONE_0][INST_0][MESH_0], 
+                                          config[ZONE_0]);
+    }
+
+    //--- Metric
+    if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
+    SumWeightedHessian2(solver_flow, solver_turb, solver_adjflow, solver_adjturb, geometry[ZONE_0][INST_0][MESH_0]);
+  }
+
+  //--- 3D
+  else{
+    //--- Volume flow grad
+    if(rank == MASTER_NODE) cout << "Computing flow volume gradient via L2 Projection." << endl;
+    solver_flow->SetGradient_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
+                                     config[ZONE_0]);
+
+    //--- Volume flow Hess
+    if(rank == MASTER_NODE) cout << "Computing flow volume Hessian via L2 Projection." << endl;
+    solver_flow->SetHessian_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
+                                    config[ZONE_0]);
+
+    // //--- Surface flow Hess correction
+    // if(rank == MASTER_NODE) cout << "Correcting flow surface Hessian." << endl;
+    // solver_flow->CorrectBoundAnisoHess(geometry[ZONE_0][INST_0][MESH_0], 
+    //                                    config[ZONE_0]);
+
+    //--- Volume adj grad
+    if(rank == MASTER_NODE) cout << "Computing adjoint volume gradient via L2 Projection." << endl;
+    solver_adjflow->SetGradient_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
+                                        config[ZONE_0]);
+
+    if(config[ZONE_0]->GetViscous()) {
+      //--- Volume turb grad
+      if(rank == MASTER_NODE) cout << "Computing turbulent volume gradient via L2 Projection." << endl;
+      solver_turb->SetTurbGradient_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
+                                       config[ZONE_0],
+                                       solver_flow);
+
+      //--- Volume turb Hess
+      if(rank == MASTER_NODE) cout << "Computing turbulent volume Hessian via L2 Projection." << endl;
+      solver_turb->SetHessian_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
+                                      config[ZONE_0]);
+
+      // //--- Surface flow Hess correction
+      // if(rank == MASTER_NODE) cout << "Correcting turbulent surface Hessian." << endl;
+      // solver_turb->CorrectBoundAnisoHess(geometry[ZONE_0][INST_0][MESH_0], 
+      //                                    config[ZONE_0]);
+
+      //--- Volume adj turb grad
+      if(rank == MASTER_NODE) cout << "Computing turbulent adjoint volume gradient via L2 Projection." << endl;
+      solver_adjturb->SetGradient_L2Proj3(geometry[ZONE_0][INST_0][MESH_0], 
+                                          config[ZONE_0]);
+    }
+
+    //--- Metric
+    if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
+    SumWeightedHessian3(solver_flow, solver_turb, solver_adjflow, solver_adjturb, geometry[ZONE_0][INST_0][MESH_0]);
+  }
+}
+
+void CDiscaDjsinglezoNedriver::SumWeightedHessian2(CSolver   *solver_flow,
+                                                 CSolver   *solver_turb,
+                                                 CSolver   *solver_adjflow,
+                                                 CSolver   *solver_adjturb,
+                                                 CGeometry *geometry) {
+
+  unsigned long iPoint, 
+                nPointDomain = geometry->GetnPointDomain();
+  unsigned short nVarMetr = solver_flow->GetnVar(), 
+                 nFluxMetr = 2;  //--- TODO: adjust size for goal (for different solvers, currently Euler) vs. feature
+  unsigned short nMetr = 3*(nDim-1);
+
+  su2double localScale = 0.0,
+            globalScale = 0.0,
+            p = config[ZONE_0]->GetAdap_Norm(),
+            eigmax = 1./(config[ZONE_0]->GetMesh_Hmin()*config[ZONE_0]->GetMesh_Hmin()),
+            eigmin = 1./(config[ZONE_0]->GetMesh_Hmax()*config[ZONE_0]->GetMesh_Hmax()),
+            outComplex = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
+
+  su2double localMinDensity = 1.E16, localMaxDensity = 0., localTotComplex = 0.;
+  su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalTotComplex = 0.;
+
+  su2double **A      = new su2double*[nDim],
+            **EigVec = new su2double*[nDim], 
+            *EigVal  = new su2double[nDim];
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    A[iDim]      = new su2double[nDim];
+    EigVec[iDim] = new su2double[nDim];
+  }
+
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    //--- perform summation of weighted mean flow Hessians
+    for (unsigned short iVar = 0; iVar < nVarMetr; ++iVar) {
+
+      for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
+        const unsigned short ig = iVar*nDim + iFlux;
+        const su2double grad = solver_adjflow->GetNodes()->GetAnisoGrad(iPoint, ig);
+
+        for (unsigned short im = 0; im < nMetr; ++im) {
+          const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
+          const su2double hess = solver_flow->GetNodes()->GetAnisoHess(iPoint, ih);
+          const su2double part = abs(grad)*hess;
+          solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
+        }
+      }
+    }
+
+    //--- add viscous Hessian terms
+    if(config[ZONE_0]->GetViscous()) {
+      //--- viscous mass flux is 0, so start with momentum
+      for (unsigned short iVar = 1; iVar < nVarMetr; ++iVar) {
+
+        for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
+          const unsigned short ig = iVar*nDim + iFlux;
+          const su2double grad = solver_adjflow->GetNodes()->GetAnisoGrad(iPoint, ig);
+
+          for (unsigned short im = 0; im < nMetr; ++im) {
+            const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
+            const su2double hess = solver_flow->GetNodes()->GetAnisoViscHess(iPoint, ih);
+            const su2double part = abs(grad)*hess;
+            solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
+          }
+        }
+      }
+
+      //--- add turbulent terms
+      const unsigned short nVarTurbMetr = solver_turb->GetnVar();
+      for (unsigned short iVar = 0; iVar < nVarTurbMetr; ++iVar) {
+
+        for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
+          const unsigned short ig = iVar*nDim + iFlux;
+          const su2double grad = solver_adjturb->GetNodes()->GetAnisoGrad(iPoint, ig);
+
+          for (unsigned short im = 0; im < nMetr; ++im) {
+            const unsigned short ih = iFlux*nVarTurbMetr*nMetr + iVar*nMetr + im;  
+            const su2double hess = solver_turb->GetNodes()->GetAnisoHess(iPoint, ih) 
+                                 + solver_turb->GetNodes()->GetAnisoViscHess(iPoint, ih);
+            const su2double part = abs(grad)*hess;
+            solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
+          }
+        }
+      }
+    }
+  }
+
+  //--- communicate the metric values via MPI, then correct boundary terms
+  
+  if(rank == MASTER_NODE) cout << "Correcting metric." << endl;
+  solver_flow->InitiateComms(geometry, config[ZONE_0], ANISO_METRIC);
+  solver_flow->CompleteComms(geometry, config[ZONE_0], ANISO_METRIC);
+  solver_flow->CorrectBoundAnisoMetr(geometry, config[ZONE_0]);
+
+  //--- set tolerance and obtain global scaling
+  for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    const su2double a = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 0);
+    const su2double b = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 1);
+    const su2double c = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 2);
+    
+    A[0][0] = a; A[0][1] = b;
+    A[1][0] = b; A[1][1] = c;
+
+    CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+
+    const su2double Vol = geometry->node[iPoint]->GetVolume();
+
+    localScale += pow(abs(EigVal[0]*EigVal[1]),p/(2.*p+nDim))*Vol;
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&localScale, &globalScale, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  globalScale = localScale;
+#endif
+
+  //--- normalize to achieve Lp metric for constraint complexity, then truncate size
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    const su2double a = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 0);
+    const su2double b = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 1);
+    const su2double c = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 2);
+    
+    A[0][0] = a; A[0][1] = b;
+    A[1][0] = b; A[1][1] = c;
+
+    CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+
+    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
+
+    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
+
+    CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[0][1]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[1][1]);
+
+    //--- compute min, max, total complexity
+    const su2double Vol = geometry->node[iPoint]->GetVolume();
+    const su2double density = sqrt(abs(EigVal[0]*EigVal[1]));
+
+    localMinDensity = min(localMinDensity, density);
+    localMaxDensity = max(localMaxDensity, density);
+    localTotComplex += density*Vol;
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&localMinDensity, &globalMinDensity, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&localMaxDensity, &globalMaxDensity, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&localTotComplex, &globalTotComplex, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  globalMinDensity = localMinDensity;
+  globalMaxDensity = localMaxDensity;
+  globalTotComplex = localTotComplex;
+#endif
+
+  if(rank == MASTER_NODE) {
+    cout << "Minimum density: " << globalMinDensity << "." << endl;
+    cout << "Maximum density: " << globalMaxDensity << "." << endl;
+    cout << "Mesh complexity: " << globalTotComplex << "." << endl;
+  }
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    delete [] A[iDim];
+    delete [] EigVec[iDim];
+  }
+  delete [] A;
+  delete [] EigVec;
+  delete [] EigVal;
+}
+
+void CDiscaDjsinglezoNedriver::SumWeightedHessian3(CSolver   *solver_flow,
+                                                 CSolver   *solver_turb,
+                                                 CSolver   *solver_adjflow,
+                                                 CSolver   *solver_adjturb,
+                                                 CGeometry *geometry) {
+
+  unsigned long iPoint, nPointDomain = geometry->GetnPointDomain();
+  unsigned short nVarMetr = solver_flow->GetnVar(), 
+                 nFluxMetr = 3;  //--- TODO: adjust size for goal (for different solvers, currently Euler) vs. feature
+  unsigned short nMetr = 3*(nDim-1);
+
+  su2double localScale = 0.0,
+            globalScale = 0.0,
+            p = config[ZONE_0]->GetAdap_Norm(),
+            eigmax = 1./(config[ZONE_0]->GetMesh_Hmin()*config[ZONE_0]->GetMesh_Hmin()),
+            eigmin = 1./(config[ZONE_0]->GetMesh_Hmax()*config[ZONE_0]->GetMesh_Hmax()),
+            outComplex = su2double(config[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
+
+  su2double localMinDensity = 1.E16, localMaxDensity = 0., localTotComplex = 0.;
+  su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalTotComplex = 0.;
+
+  su2double **A      = new su2double*[nDim],
+            **EigVec = new su2double*[nDim], 
+            *EigVal  = new su2double[nDim];
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    A[iDim]      = new su2double[nDim];
+    EigVec[iDim] = new su2double[nDim];
+  }
+
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    //--- perform summation of weighted mean flow Hessians
+    for (unsigned short iVar = 0; iVar < nVarMetr; ++iVar) {
+
+      for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
+        const unsigned short ig = iVar*nDim + iFlux;
+        const su2double grad = solver_adjflow->GetNodes()->GetAnisoGrad(iPoint, ig);
+
+        for (unsigned short im = 0; im < nMetr; ++im) {
+          const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
+          const su2double hess = solver_flow->GetNodes()->GetAnisoHess(iPoint, ih);
+          const su2double part = abs(grad)*hess;
+          solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
+        }
+      }
+    }
+
+    //--- add viscous Hessian terms
+    if(config[ZONE_0]->GetViscous()) {
+      //--- viscous mass flux is 0, so start with momentum
+      for (unsigned short iVar = 1; iVar < nVarMetr; ++iVar) {
+
+        for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
+          const unsigned short ig = iVar*nDim + iFlux;
+          const su2double grad = solver_adjflow->GetNodes()->GetAnisoGrad(iPoint, ig);
+
+          for (unsigned short im = 0; im < nMetr; ++im) {
+            const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
+            const su2double hess = solver_flow->GetNodes()->GetAnisoViscHess(iPoint, ih);
+            const su2double part = abs(grad)*hess;
+            solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
+          }
+        }
+      }
+
+      //--- add turbulent terms
+      const unsigned short nVarTurbMetr = solver_turb->GetnVar();
+      for (unsigned short iVar = 0; iVar < nVarTurbMetr; ++iVar) {
+
+        for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
+          const unsigned short ig = iVar*nDim + iFlux;
+          const su2double grad = solver_adjturb->GetNodes()->GetAnisoGrad(iPoint, ig);
+
+          for (unsigned short im = 0; im < nMetr; ++im) {
+            const unsigned short ih = iFlux*nVarTurbMetr*nMetr + iVar*nMetr + im;  
+            const su2double hess = solver_turb->GetNodes()->GetAnisoHess(iPoint, ih) 
+                                 + solver_turb->GetNodes()->GetAnisoViscHess(iPoint, ih);
+            const su2double part = abs(grad)*hess;
+            solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
+          }
+        }
+      }
+    }
+  }
+
+  //--- communicate the metric values via MPI, then correct boundary terms
+  
+  if(rank == MASTER_NODE) cout << "Correcting metric." << endl;
+  solver_flow->InitiateComms(geometry, config[ZONE_0], ANISO_METRIC);
+  solver_flow->CompleteComms(geometry, config[ZONE_0], ANISO_METRIC);
+  solver_flow->CorrectBoundAnisoMetr(geometry, config[ZONE_0]);
+
+  //--- set tolerance and obtain global scaling
+  for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    const su2double a = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 0);
+    const su2double b = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 1);
+    const su2double c = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 2);
+    const su2double d = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 3);
+    const su2double e = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 4);
+    const su2double f = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 5);
+
+    A[0][0] = a; A[0][1] = b; A[0][2] = c;
+    A[1][0] = b; A[1][1] = d; A[1][2] = e;
+    A[2][0] = c; A[2][1] = e; A[2][2] = f;
+
+    CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+
+    const su2double Vol = geometry->node[iPoint]->GetVolume();
+
+    localScale += pow(abs(EigVal[0]*EigVal[1]*EigVal[2]),p/(2.*p+nDim))*Vol;
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&localScale, &globalScale, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  globalScale = localScale;
+#endif
+
+  //--- normalize to achieve Lp metric for constraint complexity, then truncate size
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    const su2double a = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 0);
+    const su2double b = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 1);
+    const su2double c = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 2);
+    const su2double d = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 3);
+    const su2double e = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 4);
+    const su2double f = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 5);
+
+    A[0][0] = a; A[0][1] = b; A[0][2] = c;
+    A[1][0] = b; A[1][1] = d; A[1][2] = e;
+    A[2][0] = c; A[2][1] = e; A[2][2] = f;
+
+    CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+
+    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
+
+    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
+
+    CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+    //--- store lower triangle to be consistent with AMG
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[1][0]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[1][1]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 3, A[2][0]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 4, A[2][1]);
+    solver_flow->GetNodes()->SetAnisoMetr(iPoint, 5, A[2][2]);
+
+    //--- compute min, max, total complexity
+    const su2double Vol = geometry->node[iPoint]->GetVolume();
+    const su2double density = sqrt(abs(EigVal[0]*EigVal[1]*EigVal[2]));
+
+    localMinDensity = min(localMinDensity, density);
+    localMaxDensity = max(localMaxDensity, density);
+    localTotComplex += density*Vol;
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&localMinDensity, &globalMinDensity, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&localMaxDensity, &globalMaxDensity, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&localTotComplex, &globalTotComplex, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  globalMinDensity = localMinDensity;
+  globalMaxDensity = localMaxDensity;
+  globalTotComplex = localTotComplex;
+#endif
+
+  if(rank == MASTER_NODE) {
+    cout << "Minimum density: " << globalMinDensity << "." << endl;
+    cout << "Maximum density: " << globalMaxDensity << "." << endl;
+    cout << "Mesh complexity: " << globalTotComplex << "." << endl;
+  }
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    delete [] A[iDim];
+    delete [] EigVec[iDim];
+  }
+  delete [] A;
+  delete [] EigVec;
+  delete [] EigVal;
 }
