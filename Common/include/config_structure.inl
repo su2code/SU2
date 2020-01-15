@@ -2090,4 +2090,4 @@ inline unsigned short CConfig::GetnVolumeOutputFiles() {return nVolumeOutputFile
 
 inline bool CConfig::OptionIsSet(string option){ return all_options.find(option) == all_options.end();}
 
-inline string CConfig::GetCaseName(){ return caseName;}
+inline const string& CConfig::GetCaseName() const { return caseName;}
