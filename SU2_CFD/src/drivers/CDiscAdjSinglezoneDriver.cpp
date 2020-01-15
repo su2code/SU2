@@ -712,13 +712,6 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
     }
   }
 
-  // //--- communicate the metric values via MPI, then correct boundary terms
-  
-  // if(rank == MASTER_NODE) cout << "Correcting metric." << endl;
-  // solver_flow->InitiateComms(geometry, config, ANISO_METRIC);
-  // solver_flow->CompleteComms(geometry, config, ANISO_METRIC);
-  // solver_flow->CorrectBoundAnisoMetr(geometry, config);
-
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
@@ -883,13 +876,6 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian3(CSolver   *solver_flow,
       }
     }
   }
-
-  // //--- communicate the metric values via MPI, then correct boundary terms
-  
-  // if(rank == MASTER_NODE) cout << "Correcting metric." << endl;
-  // solver_flow->InitiateComms(geometry, config, ANISO_METRIC);
-  // solver_flow->CompleteComms(geometry, config, ANISO_METRIC);
-  // solver_flow->CorrectBoundAnisoMetr(geometry, config);
 
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
