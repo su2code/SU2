@@ -74,7 +74,7 @@ def adjoint( config ):
         konfig['MATH_PROBLEM']  = 'CONTINUOUS_ADJOINT'
 
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_adjoint'
-    
+
     # Run Solution
     SU2_CFD(konfig)
     
