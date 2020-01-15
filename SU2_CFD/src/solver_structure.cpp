@@ -5700,9 +5700,9 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
                     for(iMetr = 0; iMetr < nMetr; iMetr++) {
                       hess[i+iMetr] = 0.0;
                       if(viscous) hessvisc[i+iMetr] = 0.0;
+                      dist = 0.0;
                     }
                   }
-                  dist = 0.0;
                   for(iDim = 0; iDim < nDim; iDim++) {
                     const su2double coord0 = geometry->node[iPoint]->GetCoord(iDim);
                     const su2double coord1 = geometry->node[jPoint]->GetCoord(iDim);
