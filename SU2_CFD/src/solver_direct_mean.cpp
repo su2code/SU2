@@ -5792,6 +5792,17 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
     }
   }
 
+  /*--- Communicate the Hessian values via MPI. ---*/
+  
+  InitiateComms(geometry, config, ANISO_HESSIAN);
+  CompleteComms(geometry, config, ANISO_HESSIAN);
+  if(viscous) {
+    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
+    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
+  }
+
+  CorrectBoundAnisoHess(geometry, config);
+
   //--- Make positive definite matrix
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     for(iVar = 0; iVar < nVarMetr; iVar++){
@@ -5845,17 +5856,6 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
       }
     }
   }
-
-  /*--- Communicate the Hessian values via MPI. ---*/
-  
-  InitiateComms(geometry, config, ANISO_HESSIAN);
-  CompleteComms(geometry, config, ANISO_HESSIAN);
-  if(viscous) {
-    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
-    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
-  }
-
-  CorrectBoundAnisoHess(geometry, config);
 }
 
 void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
@@ -6249,6 +6249,17 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
     }
   }
 
+  /*--- Communicate the Hessian values via MPI. ---*/
+  
+  InitiateComms(geometry, config, ANISO_HESSIAN);
+  CompleteComms(geometry, config, ANISO_HESSIAN);
+  if(viscous) {
+    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
+    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
+  }
+
+  CorrectBoundAnisoHess(geometry, config);
+
   //--- Make positive definite matrix
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
@@ -6325,17 +6336,6 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
       }
     }
   }
-
-  /*--- Communicate the Hessian values via MPI. ---*/
-  
-  InitiateComms(geometry, config, ANISO_HESSIAN);
-  CompleteComms(geometry, config, ANISO_HESSIAN);
-  if(viscous) {
-    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
-    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
-  }
-
-  CorrectBoundAnisoHess(geometry, config);
 }
 
 void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
