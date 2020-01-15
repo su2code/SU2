@@ -215,6 +215,8 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
   if (config->GetError_Estimate()) {
     /*--- Compute metric for anisotropic mesh adaptation ---*/
     ComputeMetric();
+
+    output->PreprocessVolumeOutput(config);
     
     /*--- Load the data --- */
     
