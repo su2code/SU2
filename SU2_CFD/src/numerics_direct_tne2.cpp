@@ -3288,6 +3288,7 @@ void CSource_TNE2::GetKeqConstants(su2double *A, unsigned short val_Reaction,
 }
 
 void CSource_TNE2::ComputeChemistry(su2double *val_residual,
+                                    su2double *val_source,
                                     su2double **val_Jacobian_i,
                                     CConfig *config) {
 
@@ -3417,6 +3418,10 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
       }
     }
 
+    /*---Set source term ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      val_source[iVar] = val_source[iVar]+val_residual[iVar];
+
     if (implicit) {
 
       /*--- Initializing derivative variables ---*/
@@ -3538,6 +3543,7 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
 }
 
 void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
+                                        su2double *val_source,
                                         su2double **val_Jacobian_i,
                                         CConfig *config) {
 
@@ -3631,6 +3637,10 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
                                  eve_i[iSpecies]) / taus[iSpecies] * Volume;
   }
 
+  /*---Set source term ---*/
+  for (iVar = 0; iVar < nVar; iVar++)
+    val_source[iVar] = val_source[iVar]+val_residual[iVar];
+
   if (implicit) {
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 
@@ -3649,6 +3659,7 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
 }
 
 void CSource_TNE2::ComputeAxisymmetric(su2double *val_residual,
+                                       su2double *val_source,
                                        su2double **val_Jacobian,
                                        CConfig *config) {
 
@@ -3678,7 +3689,9 @@ void CSource_TNE2::ComputeAxisymmetric(su2double *val_residual,
   val_residual[nSpecies+2] = yinv*rhov*H*Volume;
   val_residual[nSpecies+3] = yinv*rhov*U_i[nSpecies+nDim+1]/rho*Volume;
 
-  if (implicit) {
+  /*---Set source term ---*/
+  for (iVar = 0; iVar < nVar; iVar++)
+    val_source[iVar] = val_source[iVar]+val_residual[iVar];  if (implicit) {
 
     /*--- Initialize ---*/
     for (iVar = 0; iVar < nVar; iVar++)

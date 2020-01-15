@@ -258,6 +258,9 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   Secondary_i = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_i[iVar] = 0.0;
   Secondary_j = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_j[iVar] = 0.0;
 
+  /*--- Define some auxiliary vectors related to the Source term evolution ---*/
+  Source      = new su2double[nVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Source[iVar] = 0.0;
+
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
   if (config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) {
     iPoint_UndLapl = new su2double [nPoint];
@@ -1464,6 +1467,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+  for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
 
   /*--- loop over interior points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1487,7 +1491,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
     /*--- Compute axisymmetric source terms (if needed) ---*/
     if (config->GetAxisymmetric()) {
-      numerics->ComputeAxisymmetric(Residual, Jacobian_i, config);
+      numerics->ComputeAxisymmetric(Residual, Source, Jacobian_i, config);
 
       /*--- Check for errors before applying source to the linear system ---*/
       err = false;
@@ -1509,7 +1513,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     }
 
     /*--- Compute the non-equilibrium chemistry ---*/
-    numerics->ComputeChemistry(Residual, Jacobian_i, config);
+    numerics->ComputeChemistry(Residual, Source, Jacobian_i, config);
 
     /*--- Check for errors before applying source to the linear system ---*/
     err = false;
@@ -1530,7 +1534,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
     /*--- Compute vibrational energy relaxation ---*/
     // NOTE: Jacobians don't account for relaxation time derivatives
-    numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
+    numerics->ComputeVibRelaxation(Residual, Source, Jacobian_i, config);
 
     /*--- Check for errors before applying source to the linear system ---*/
     err = false;
@@ -1549,6 +1553,8 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     } else
       eVib_local++;
 
+    /*---Set source term ---*/
+    nodes->SetSource(iPoint, Source);
   }
 
   /*--- Checking for NaN ---*/
@@ -6788,9 +6794,12 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
       }
     }
 
+    /*--- Initialize source vector ---*/
+    for (iVar = 0; iVar< nVar; iVar++) Source[iVar] = 0.0;
+
     /*--- Compute axisymmetric source terms (if needed) ---*/
     if (config->GetAxisymmetric()) {
-      numerics->ComputeAxisymmetric(Residual, Jacobian_i, config);
+      numerics->ComputeAxisymmetric(Residual, Source, Jacobian_i, config);
 
       /*--- Check for errors in the axisymmetric source ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -6817,7 +6826,7 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
     }
 
     /*--- Compute the non-equilibrium chemistry ---*/
-    numerics->ComputeChemistry(Residual, Jacobian_i, config);
+    numerics->ComputeChemistry(Residual, Source, Jacobian_i, config);
 
     /*--- Check for errors in the Chemical source term ---*/
     err = false;
@@ -6851,7 +6860,7 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
 
     /*--- Compute vibrational energy relaxation ---*/
     // NOTE: Jacobians don't account for relaxation time derivatives
-    numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
+    numerics->ComputeVibRelaxation(Residual, Source, Jacobian_i, config);
 
     /*--- Check for errors in the relaxation source term ---*/
     err = false;

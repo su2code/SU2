@@ -89,6 +89,8 @@ protected:
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
 
+  MatrixType Source;         /*!< \brief Source terms of the problem */
+
   MatrixType External;       /*!< \brief External (outer) contribution in discrete adjoint multizone problems. */
   MatrixType External_Old;   /*!< \brief Old external (outer) contribution in discrete adjoint multizone problems. */
 
@@ -181,6 +183,15 @@ public:
    * \param[in] solution - Value of the solution for the index <i>iVar</i>.
    */
   inline void SetSolution(unsigned long iPoint, unsigned long iVar, su2double solution) { Solution(iPoint,iVar) = solution; }
+
+  /*!
+   * \brief Set the value of the source term, all variables.
+   * \param[in] iPoint - Point index.
+   * \param[in] solution - Solution of the problem.
+   */
+  inline void SetSource(unsigned long iPoint, const su2double *source) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Source(iPoint,iVar) = source[iVar];
+  }
 
   /*!
    * \brief Add the value of the solution vector to the previous solution (incremental approach).
@@ -468,6 +479,12 @@ public:
    * \return Pointer to the solution vector.
    */
   inline su2double *GetSolution(unsigned long iPoint) { return Solution[iPoint]; }
+
+  /*!
+   * \brief Get the Source Terms of the problem.
+   * \return Pointer to the solution vector.
+   */
+  inline su2double *GetSource(unsigned long iPoint) { return Source[iPoint]; }
 
   /*!
    * \brief Get the old solution of the problem (Runge-Kutta method)

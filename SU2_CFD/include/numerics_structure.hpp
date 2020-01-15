@@ -1448,7 +1448,7 @@ public:
    * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void ComputeAxisymmetric(su2double *val_residual, su2double **val_Jacobian,
+  virtual void ComputeAxisymmetric(su2double *val_residual, su2double *val_source, su2double **val_Jacobian,
                                     CConfig *config);
 
 
@@ -1479,7 +1479,7 @@ public:
    * \param[out] val_residual - residual of the source terms
    * \param[out] val_Jacobian_i - Jacobian of the source terms
    */
-  virtual void ComputeVibRelaxation(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+  virtual void ComputeVibRelaxation(su2double *val_residual, su2double *val_source, su2double **val_Jacobian_i, CConfig *config);
   
   /*!
    * \brief Calculation of the chemistry source term
@@ -1487,7 +1487,7 @@ public:
    * \param[out] val_residual - residual of the source terms
    * \param[out] val_Jacobian_i - Jacobian of the source terms
    */
-  virtual void ComputeChemistry(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+  virtual void ComputeChemistry(su2double *val_residual, su2double *val_source, su2double **val_Jacobian_i, CConfig *config);
   
   /*!
    * \brief Calculates constants used for Keq correlation.
@@ -4728,7 +4728,7 @@ public:
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeChemistry(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+  void ComputeChemistry(su2double *val_residual, su2double *val_source, su2double **val_Jacobian_i, CConfig *config);
 
   /*!
    * \brief Calculates constants used for Keq correlation.
@@ -4744,9 +4744,9 @@ public:
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeVibRelaxation(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+  void ComputeVibRelaxation(su2double *val_residual,su2double *val_source, su2double **val_Jacobian_i, CConfig *config);
 
-  void ComputeAxisymmetric(su2double *val_residual, su2double **val_Jacobian, CConfig *config);
+  void ComputeAxisymmetric(su2double *val_residual, su2double *val_source,su2double **val_Jacobian, CConfig *config);
 };
 
 /*!
