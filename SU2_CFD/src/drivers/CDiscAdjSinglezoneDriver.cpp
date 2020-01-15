@@ -26,6 +26,7 @@
  */
 
 #include "../../include/drivers/CDiscAdjSinglezoneDriver.hpp"
+#include "../../include/output/tools/CWindowingTools.hpp"
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
@@ -270,9 +271,12 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 
+  CWindowingTools windowEvaluator = CWindowingTools();
+
   if (time_stepping){
     if (TimeIter < IterAvg_Obj){
-      seeding = 1.0/((su2double)IterAvg_Obj);
+      // Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0
+      seeding = windowEvaluator.GetWndWeight(config->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));
     }
     else{
       seeding = 0.0;
@@ -284,7 +288,6 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
   } else {
     SU2_TYPE::SetDerivative(ObjFunc, 0.0);
   }
-
 }
 
 void CDiscAdjSinglezoneDriver::SetObjFunction(){
@@ -538,4 +541,8 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   AD::ClearAdjoints();
 
+}
+
+bool CDiscAdjSinglezoneDriver::GetTimeConvergence() const{
+  return false;
 }
