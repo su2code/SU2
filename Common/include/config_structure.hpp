@@ -9360,7 +9360,7 @@ public:
    * \brief Get the name of the current case
    * \return the case name
    */
-  string GetCaseName();
+  const string& GetCaseName() const;
 };
 
 #include "config_structure.inl"
