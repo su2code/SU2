@@ -530,7 +530,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
 }
 
-void CDiscaDjsinglezoNedriver::ComputeMetric() {
+void CDiscAdjSinglezoneDriver::ComputeMetric() {
 
   CSolver *solver_flow    = solver[FLOW_SOL],
           *solver_turb    = solver[TURB_SOL],
@@ -607,7 +607,7 @@ void CDiscaDjsinglezoNedriver::ComputeMetric() {
   }
 }
 
-void CDiscaDjsinglezoNedriver::SumWeightedHessian2(CSolver   *solver_flow,
+void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
                                                  CSolver   *solver_turb,
                                                  CSolver   *solver_adjflow,
                                                  CSolver   *solver_adjturb,
@@ -780,7 +780,7 @@ void CDiscaDjsinglezoNedriver::SumWeightedHessian2(CSolver   *solver_flow,
   delete [] EigVal;
 }
 
-void CDiscaDjsinglezoNedriver::SumWeightedHessian3(CSolver   *solver_flow,
+void CDiscAdjSinglezoneDriver::SumWeightedHessian3(CSolver   *solver_flow,
                                                  CSolver   *solver_turb,
                                                  CSolver   *solver_adjflow,
                                                  CSolver   *solver_adjturb,
