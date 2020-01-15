@@ -339,7 +339,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 }
 
 void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
-  
+
   std::vector<string> markerList;
 
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){

@@ -67,8 +67,8 @@ public:
   void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) override;
 
   /*!
-   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing. 
-   * Only markers in the markerList argument will be sorted. 
+   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
+   * Only markers in the markerList argument will be sorted.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] markerList - List of markers to sort.

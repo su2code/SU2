@@ -57,22 +57,22 @@ void CParaviewXMLFileWriter::Write_Data(){
   }
 
   /*--- We always have 3 coords, independent of the actual value of nDim ---*/
-  
+
   const int NCOORDS = 3;
   const unsigned short nDim = dataSorter->GetnDim();
   unsigned short iDim = 0;
-  
+
   /*--- Array containing the field names we want to output ---*/
-  
+
   const vector<string>& fieldNames = dataSorter->GetFieldNames();
 
   unsigned long iPoint, iElem;
-  
+
   char str_buf[255];
 
   fileSize = 0.0;
   dataOffset = 0;
-  
+
   /*--- Set a timer for the file writing. ---*/
 
 #ifndef HAVE_MPI

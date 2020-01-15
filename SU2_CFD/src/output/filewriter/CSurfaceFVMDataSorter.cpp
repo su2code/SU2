@@ -1157,7 +1157,7 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
 
 }
 
-void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type, 
+void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type,
                                                     const vector<string> &markerList) {
 
   unsigned long iProcessor;
