@@ -1949,6 +1949,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
       COUNT_PER_POINT  = 3*(nDim-1)*nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case ANISO_METRIC:
+      COUNT_PER_POINT  = 3*(nDim-1);
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                      CURRENT_FUNCTION);
@@ -2115,6 +2119,9 @@ void CSolver::InitiateComms(CGeometry *geometry,
                 for (jDim = 0; jDim < nDim; jDim++)
                   bufDSend[buf_offset+jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim] = base_nodes->GetAnisoViscHess(iPoint, jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim);
             break;
+          case ANISO_METRIC:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              bufDSend[buf_offset+iDim] = base_nodes->GetAnisoMetr(iPoint, iDim);
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                            CURRENT_FUNCTION);
@@ -2304,6 +2311,10 @@ void CSolver::CompleteComms(CGeometry *geometry,
               for (iVar = 0; iVar < nVar; iVar++)
                 for (jDim = 0; jDim < nDim; jDim++)
                   base_nodes->SetAnisoViscHess(iPoint, jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim, bufDRecv[buf_offset+jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim]);
+            break;
+          case ANISO_METRIC:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              base_nodes->SetAnisoMetr(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
