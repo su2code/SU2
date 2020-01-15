@@ -241,6 +241,7 @@ def amg ( config , kind='' ):
     config_amg['hgrad']       = float(config['ADAP_HGRAD'])
     config_amg['hmax']        = float(config['ADAP_HMAX'])
     config_amg['hmin']        = float(config['ADAP_HMIN'])
+    config_amg['Lp']          = float(config['ADAP_NORM'])
     config_amg['mesh_in']     = 'current.meshb'
     config_amg['adap_source'] = ''
     
