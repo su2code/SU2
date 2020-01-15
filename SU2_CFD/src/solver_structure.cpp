@@ -2122,7 +2122,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case ANISO_METRIC:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
               bufDSend[buf_offset+iDim] = base_nodes->GetAnisoMetr(iPoint, iDim);
-              break;
+            break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                            CURRENT_FUNCTION);
