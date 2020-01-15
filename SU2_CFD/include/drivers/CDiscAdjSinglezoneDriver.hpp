@@ -127,4 +127,10 @@ public:
    */
   void SecondaryRecording(void);
 
+  /*!
+   * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
+   * \return true, if convergence criteria has been met, else false
+   */
+  bool GetTimeConvergence() const override;
+
 };

@@ -4,6 +4,7 @@ if get_option('enable-normal')
                                         'CMarkerProfileReaderFVM.cpp',
                                         'output/COutput.cpp',
                                         'output/output_structure_legacy.cpp',
+					'output/tools/CWindowingTools.cpp',
                                         'output/CBaselineOutput.cpp',
                                         'output/filewriter/CParallelDataSorter.cpp',
                                         'output/filewriter/CParallelFileWriter.cpp',
