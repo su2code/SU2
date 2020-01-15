@@ -213,7 +213,26 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
   }//switch
 
   if (config->GetError_Estimate()) {
+    /*--- Compute metric for anisotropic mesh adaptation ---*/
     ComputeMetric();
+    
+    /*--- Load the data --- */
+    
+    direct_output->Load_Data(geometry, config, solver);
+    
+    /*--- Set the filenames ---*/
+    
+    direct_output->SetVolume_Filename(config->GetVolume_FileName());
+    
+    direct_output->SetSurface_Filename(config->GetSurfCoeff_FileName());
+    
+    for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
+      unsigned short* FileFormat = config->GetVolumeOutputFiles();
+      direct_output->WriteToFile(config, geometry, FileFormat[iFile]);
+
+      /*--- For now we need ASCII restarts for AMGIO ---*/
+      direct_output->WriteToFile(config, geometry, RESTART_ASCII);
+    }
   }
 
 }
