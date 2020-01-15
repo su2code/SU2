@@ -5711,8 +5711,8 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
                   //--- Reset hessian if first volume node detected
                   if(counter == 0) {
                     for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                      hess[i+iMetr] = 0.0;
-                      if(viscous) hessvisc[i+iMetr] = 0.0;
+                      hess[i+iMetr] = base_nodes->GetAnisoHess(iPoint, i+iMetr);
+                      if(viscous) hessvisc[i+iMetr] = base_nodes->GetAnisoViscHess(iPoint, i+iMetr);
                       // dist = 0.0;
                     }
                   }
@@ -5738,8 +5738,8 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
               for(iVar = 0; iVar < nVar; iVar++){
                 const unsigned short i = iFlux*nVar*nMetr + iVar*nMetr;
                 for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                  base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]/su2double(counter));
-                  if(viscous) base_nodes->SetAnisoViscHess(iPoint, i+iMetr, hessvisc[i+iMetr]/su2double(counter));
+                  base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]/su2double(counter+1));
+                  if(viscous) base_nodes->SetAnisoViscHess(iPoint, i+iMetr, hessvisc[i+iMetr]/su2double(counter+1));
                   // base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]*distsum);
                   // if(viscous) base_nodes->SetAnisoViscHess(iPoint, i+iMetr, hessvisc[i+iMetr]*distsum);
                 }
