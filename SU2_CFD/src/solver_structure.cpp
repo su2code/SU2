@@ -5779,14 +5779,14 @@ void CSolver::CorrectBoundAnisoMetr(CGeometry *geometry, CConfig *config) {
                 }
               }
               for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                metr[iMetr] += base_nodes->GetAnisoMetr(jPoint, i+iMetr);
+                metr[iMetr] += base_nodes->GetAnisoMetr(jPoint, iMetr);
               }
               counter ++;
             }
           }
           if(counter > 0) {
             for(iMetr = 0; iMetr < nMetr; iMetr++) {
-              base_nodes->SetAnisoMetr(iPoint, iMetr, metr[i+iMetr]/su2double(counter));
+              base_nodes->SetAnisoMetr(iPoint, iMetr, metr[iMetr]/su2double(counter));
             }
           }
         }
