@@ -3430,14 +3430,14 @@ void CTurbSASolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
     }
   }
 
-  // /*--- Communicate the Hessian values via MPI. ---*/
+  /*--- Communicate the Hessian values via MPI. ---*/
   
-  // InitiateComms(geometry, config, ANISO_HESSIAN);
-  // CompleteComms(geometry, config, ANISO_HESSIAN);
-  // InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
-  // CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
+  InitiateComms(geometry, config, ANISO_HESSIAN);
+  CompleteComms(geometry, config, ANISO_HESSIAN);
+  InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
+  CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
 
-  // CorrectBoundAnisoHess(geometry, config);
+  CorrectBoundAnisoHess(geometry, config);
 
   //--- Make positive definite matrix
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
@@ -3806,14 +3806,14 @@ void CTurbSASolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
     }
   }
 
-  // /*--- Communicate the Hessian values via MPI. ---*/
+  /*--- Communicate the Hessian values via MPI. ---*/
   
-  // InitiateComms(geometry, config, ANISO_HESSIAN);
-  // CompleteComms(geometry, config, ANISO_HESSIAN);
-  // InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
-  // CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
+  InitiateComms(geometry, config, ANISO_HESSIAN);
+  CompleteComms(geometry, config, ANISO_HESSIAN);
+  InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
+  CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
 
-  // CorrectBoundAnisoHess(geometry, config);
+  CorrectBoundAnisoHess(geometry, config);
 
   //--- Make positive definite matrix
   su2double **A      = new su2double*[nDim],
