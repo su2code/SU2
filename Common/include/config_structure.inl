@@ -320,6 +320,24 @@ inline su2double CConfig::GetPhysicalTime(void) { return PhysicalTime; }
 
 inline bool CConfig::GetReorientElements(void) { return ReorientElements; }
 
+inline bool CConfig::GetSmoothGradient(void) { return SmoothGradient; }
+
+inline su2double CConfig::GetSmoothingParam(void) { return SmoothingParam; }
+
+inline su2double CConfig::GetSmoothingParamSecond(void) { return SmoothingParamSecond; }
+
+inline bool CConfig::GetSepDim(void) { return SepDim; }
+
+inline bool CConfig::GetProject2Surface(void) { return Project2Surface; }
+
+inline bool CConfig::GetSmoothOnSurface(void) { return SmoothOnSurface; }
+
+inline bool CConfig::GetDirichletSurfaceBound(void) { return DirichletSurfaceBound; }
+
+inline bool CConfig::GetSobDebugMode(void) { return DebugMode; }
+
+inline bool CConfig::GetSecOrdQuad(void) { return SecOrdQuad; }
+
 inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
 
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }
@@ -990,6 +1008,10 @@ inline unsigned short CConfig::GetKind_Deform_Linear_Solver(void) { return Kind_
 
 inline void CConfig::SetKind_Deform_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Deform_Linear_Solver_Prec = val_kind_prec; }
 
+inline unsigned short CConfig::GetKind_Grad_Linear_Solver(void) { return Kind_Grad_Linear_Solver; }
+
+inline void CConfig::SetKind_Grad_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Grad_Linear_Solver_Prec = val_kind_prec; }
+
 inline unsigned short CConfig::GetKind_Linear_Solver_Prec(void) { return Kind_Linear_Solver_Prec; }
 
 inline void CConfig::SetKind_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Linear_Solver_Prec = val_kind_prec; }
@@ -998,9 +1020,13 @@ inline su2double CConfig::GetLinear_Solver_Error(void) { return Linear_Solver_Er
 
 inline su2double CConfig::GetDeform_Linear_Solver_Error(void) { return Deform_Linear_Solver_Error; }
 
+inline su2double CConfig::GetGrad_Linear_Solver_Error(void) { return Grad_Linear_Solver_Error; }
+
 inline unsigned long CConfig::GetLinear_Solver_Iter(void) { return Linear_Solver_Iter; }
 
 inline unsigned long CConfig::GetDeform_Linear_Solver_Iter(void) { return Deform_Linear_Solver_Iter; }
+
+inline unsigned long CConfig::GetGrad_Linear_Solver_Iter(void) { return Grad_Linear_Solver_Iter; }
 
 inline unsigned short CConfig::GetLinear_Solver_ILU_n(void) { return Linear_Solver_ILU_n; }
 
@@ -1025,6 +1051,8 @@ inline unsigned short CConfig::GetKind_DiscAdj_Linear_Solver(void) { return Kind
 inline unsigned short CConfig::GetKind_DiscAdj_Linear_Prec(void) { return Kind_DiscAdj_Linear_Prec; }
 
 inline unsigned short CConfig::GetKind_Deform_Linear_Solver_Prec(void) { return Kind_Deform_Linear_Solver_Prec; }
+
+inline unsigned short CConfig::GetKind_Grad_Linear_Solver_Prec(void) { return Kind_Grad_Linear_Solver_Prec; }
 
 inline void CConfig::SetKind_AdjTurb_Linear_Prec(unsigned short val_kind_prec) { Kind_AdjTurb_Linear_Prec = val_kind_prec; }
 
@@ -1320,6 +1348,8 @@ inline string CConfig::GetMarker_HeatFlux_TagBound(unsigned short val_marker) { 
 
 inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
+inline string CConfig::GetMarker_SobolevBC_TagBound(unsigned short val_marker) { return Marker_SobolevBC[val_marker]; }
+
 inline string CConfig::GetMarker_Deform_Mesh_TagBound(unsigned short val_marker) { return Marker_Deform_Mesh[val_marker]; }
 
 inline string CConfig::GetMarker_Fluid_Load_TagBound(unsigned short val_marker) { return Marker_Fluid_Load[val_marker]; }
@@ -1363,6 +1393,8 @@ inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short 
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
 
+inline void CConfig::SetMarker_All_SobolevBC(unsigned short val_marker, unsigned short val_sobolev) { Marker_All_SobolevBC[val_marker] = val_sobolev; }
+
 inline void CConfig::SetMarker_All_Deform_Mesh(unsigned short val_marker, unsigned short val_interface) { Marker_All_Deform_Mesh[val_marker] = val_interface; }
 
 inline void CConfig::SetMarker_All_Fluid_Load(unsigned short val_marker, unsigned short val_interface) { Marker_All_Fluid_Load[val_marker] = val_interface; }
@@ -1401,6 +1433,8 @@ inline unsigned short CConfig::GetMarker_All_DV(unsigned short val_marker) { ret
 
 inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) { return Marker_All_Moving[val_marker]; }
 
+inline unsigned short CConfig::GetMarker_All_SobolevBC(unsigned short val_marker) { return Marker_All_SobolevBC[val_marker]; }
+
 inline unsigned short CConfig::GetMarker_All_Deform_Mesh(unsigned short val_marker) { return Marker_All_Deform_Mesh[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_All_Fluid_Load(unsigned short val_marker) { return Marker_All_Fluid_Load[val_marker]; }
@@ -1432,6 +1466,8 @@ inline unsigned short CConfig::GetnMarker_Monitoring(void) { return nMarker_Moni
 inline unsigned short CConfig::GetnMarker_DV(void) { return nMarker_DV; }
 
 inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; }
+
+inline unsigned short CConfig::GetnMarker_SobolevBC(void) { return nMarker_SobolevBC; }
 
 inline unsigned short CConfig::GetnMarker_PyCustom(void) { return nMarker_PyCustom; }
 

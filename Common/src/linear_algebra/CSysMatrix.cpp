@@ -264,6 +264,199 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long nPoint, unsigned long nPoi
 
 }
 
+
+// test version
+template<class ScalarType>
+void CSysMatrix<ScalarType>::InitOwnConnectivity(unsigned long nVertex,
+                            unsigned short nVar, unsigned short nEqn, unsigned long val_marker,
+                            CGeometry *geometry, CConfig *config) {
+
+  /*--- Don't delete *row_ptr, *col_ind because they are
+   asigned to the Jacobian structure. ---*/
+
+  unsigned long iVertex, *row_ptr, *col_ind, index, Elem, iVar, node;
+  unsigned short iNeigh, iElem, iNode, *nNeigh, *nNeigh_ilu;
+  vector<unsigned long>::iterator it;
+  vector<unsigned long> vneighs, vneighs_ilu;
+
+  vector<unsigned long> indexNodes;
+
+  /*--- We need to initialize those ---*/
+  nPoint = nVertex;
+  nPointDomain = nVertex;
+
+  /*--- We need the connection between vertex and node indices ---*/
+  for (iVertex = 0; iVertex < nVertex; iVertex++) {
+    indexNodes.push_back(geometry->vertex[val_marker][iVertex]->GetNode());
+  }
+
+
+  /*--- Set the ILU fill in level --*/
+
+  ilu_fill_in = config->GetLinear_Solver_ILU_n();
+
+  /*--- Compute the number of neighbors ---*/
+
+  nNeigh = new unsigned short [nVertex];
+  for (iVertex = 0; iVertex < nVertex; iVertex++) {
+
+    vneighs.clear();
+
+    /*--- Idea: loop over 3D elements since otherwise it is to expensive. but check wether the point isalso in the boundary.  ---
+      --- problem: we need some index magic to get the connection between local index, global node and vertex index.          ---
+      --- problem: we get global nodes from vertex nodes, for the inverse we need a lookup / search operation on the vector.  ---*/
+
+    for (iElem = 0; iElem < geometry->node[indexNodes[iVertex]]->GetnElem(); iElem++) {
+      Elem =  geometry->node[indexNodes[iVertex]]->GetElem(iElem);
+      for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++) {
+        node = geometry->elem[Elem]->GetNode(iNode);
+        if ( geometry->node[node]->GetVertex(val_marker) >= 0 ) {
+          it = std::find(indexNodes.begin(),indexNodes.end(),node);
+          vneighs.push_back(std::distance(indexNodes.begin(), it));
+        }
+      }
+      it = std::find(indexNodes.begin(),indexNodes.end(),indexNodes[iVertex]);
+      vneighs.push_back(std::distance(indexNodes.begin(), it));
+
+      sort(vneighs.begin(), vneighs.end());
+      it = unique(vneighs.begin(), vneighs.end());
+      vneighs.resize(it - vneighs.begin());
+      nNeigh[iVertex] = vneighs.size();
+    }
+
+  }
+
+  /*--- Create row_ptr structure, using the number of neighbors ---*/
+
+  row_ptr = new unsigned long [nVertex+1];
+  row_ptr[0] = 0;
+  for (iVertex = 0; iVertex < nVertex; iVertex++)
+    row_ptr[iVertex+1] = row_ptr[iVertex] + nNeigh[iVertex];
+  nnz = row_ptr[iVertex];
+
+  /*--- Create col_ind structure ---*/
+
+  col_ind = new unsigned long [nnz];
+  for (iVertex = 0; iVertex < nVertex; iVertex++) {
+
+    vneighs.clear();
+
+    /*--- Idea: loop over 3D elements since otherwise it is to expensive. but check wether the point isalso in the boundary.  ---*/
+    for (iElem = 0; iElem < geometry->node[indexNodes[iVertex]]->GetnElem(); iElem++) {
+      Elem =  geometry->node[indexNodes[iVertex]]->GetElem(iElem);
+      for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++) {
+        node = geometry->elem[Elem]->GetNode(iNode);
+        if ( geometry->node[node]->GetVertex(val_marker) >= 0 ) {
+          it = std::find(indexNodes.begin(),indexNodes.end(),node);
+          vneighs.push_back(std::distance(indexNodes.begin(), it));
+        }
+      }
+      it = std::find(indexNodes.begin(),indexNodes.end(),indexNodes[iVertex]);
+      vneighs.push_back(std::distance(indexNodes.begin(), it));
+
+      sort(vneighs.begin(), vneighs.end());
+      it = unique(vneighs.begin(), vneighs.end());
+      vneighs.resize(it - vneighs.begin());
+      nNeigh[iVertex] = vneighs.size();
+    }
+
+    sort(vneighs.begin(), vneighs.end());
+    it = unique(vneighs.begin(), vneighs.end());
+    vneighs.resize( it - vneighs.begin() );
+
+    index = row_ptr[iVertex];
+    for (iNeigh = 0; iNeigh < vneighs.size(); iNeigh++) {
+      col_ind[index] = vneighs[iNeigh];
+      index++;
+    }
+
+  }
+
+  /*--- Set the indices in the in the sparce matrix structure, and memory allocation ---*/
+
+  SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, config);
+
+  /*--- Generate MKL Kernels ---*/
+
+#ifdef USE_MKL
+  mkl_jit_create_dgemm( &MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar );
+  MatrixMatrixProductKernel = mkl_jit_get_dgemm_ptr( MatrixMatrixProductJitter );
+
+  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 0.0, 1 );
+  MatrixVectorProductKernelBetaZero = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaZero );
+
+  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 1.0, 1 );
+  MatrixVectorProductKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaOne );
+
+  mkl_jit_create_dgemm( &MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar, -1.0, 1, nVar, 1.0, 1 );
+  MatrixVectorProductKernelAlphaMinusOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterAlphaMinusOne );
+
+  mkl_jit_create_dgemm( &MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, 1, nVar,  1.0, nVar, nVar, 1.0, nVar );
+  MatrixVectorProductTranspKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductTranspJitterBetaOne );
+
+  mkl_ipiv = new lapack_int [ nVar ];
+#endif
+
+  /*--- Initialization matrix to zero ---*/
+
+  SetValZero();
+
+  delete [] nNeigh;
+
+  /*--- ILU(n) preconditioner with a specific sparse structure ---*/
+
+  if (ilu_fill_in != 0) {
+
+    nNeigh_ilu = new unsigned short [nVertex];
+    for (iVertex = 0; iVertex < nVertex; iVertex++) {
+
+      vneighs_ilu.clear();
+      SetNeighboursOwnConnectivity(geometry, iVertex, 0, ilu_fill_in, val_marker, indexNodes, vneighs_ilu);
+      sort(vneighs_ilu.begin(), vneighs_ilu.end());
+      it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
+      vneighs_ilu.resize(it - vneighs_ilu.begin());
+      nNeigh_ilu[iVertex] = vneighs_ilu.size();
+
+    }
+
+    row_ptr_ilu = new unsigned long [nVertex+1];
+    row_ptr_ilu[0] = 0;
+    for (iVertex = 0; iVertex < nVertex; iVertex++)
+      row_ptr_ilu[iVertex+1] = row_ptr_ilu[iVertex] + nNeigh_ilu[iVertex];
+    nnz_ilu = row_ptr_ilu[nVertex];
+
+    /*--- Create col_ind structure ---*/
+
+    col_ind_ilu = new unsigned long [nnz_ilu];
+    for (iVertex = 0; iVertex < nVertex; iVertex++) {
+
+      vneighs_ilu.clear();
+      SetNeighboursOwnConnectivity(geometry, iVertex, 0, ilu_fill_in, val_marker, indexNodes, vneighs_ilu);
+      sort(vneighs_ilu.begin(), vneighs_ilu.end());
+      it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
+      vneighs_ilu.resize( it - vneighs_ilu.begin() );
+
+      index = row_ptr_ilu[iVertex];
+      for (iNeigh = 0; iNeigh < vneighs_ilu.size(); iNeigh++) {
+        col_ind_ilu[index] = vneighs_ilu[iNeigh];
+        index++;
+      }
+
+    }
+
+    ILU_matrix = new ScalarType [nnz_ilu*nVar*nEqn];
+    for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
+
+    invM = new ScalarType [nVertex*nVar*nEqn];
+    for (iVar = 0; iVar < nVertex*nVar*nEqn; iVar++) invM[iVar] = 0.0;
+
+    delete [] nNeigh_ilu;
+
+  }
+
+}
+
+
 template<class ScalarType>
 void CSysMatrix<ScalarType>::SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level,
                                bool EdgeConnect, vector<unsigned long> & vneighs) {
@@ -291,6 +484,29 @@ void CSysMatrix<ScalarType>::SetNeighbours(CGeometry *geometry, unsigned long iP
   }
 
 }
+
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::SetNeighboursOwnConnectivity(CGeometry *geometry, unsigned long iVertex, unsigned short deep_level,
+                                                          unsigned short fill_level, unsigned long val_marker,
+                                                          vector<unsigned long> & indexNodes, vector<unsigned long> & vneighs) {
+  unsigned long Point, iElem, Elem;
+  unsigned short iNode;
+
+  for (iElem = 0; iElem < geometry->node[indexNodes[iVertex]]->GetnElem(); iElem++) {
+    Elem =  geometry->node[indexNodes[iVertex]]->GetElem(iElem);
+    for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++) {
+      Point = geometry->elem[Elem]->GetNode(iNode);
+      if ( geometry->node[Point]->GetVertex(val_marker) >= 0 ) {
+        auto it = std::find(indexNodes.begin(),indexNodes.end(),Point);
+        vneighs.push_back(std::distance(indexNodes.begin(), it));
+        if (deep_level < fill_level) SetNeighboursOwnConnectivity(geometry, Point, deep_level+1, fill_level, val_marker, indexNodes, vneighs);
+      }
+    }
+  }
+
+}
+
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, CConfig *config) {
@@ -1277,6 +1493,24 @@ void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol,
     VectorSubtraction(prod_row_vector, &f[iPoint*nVar], &res[iPoint*nVar]);
   }
 
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::printMat(ofstream &file) {
+
+  unsigned long iVar, jVar;
+  auto row=0;
+  for (auto entr=0; entr<nnz; entr++) {
+    if (entr >= row_ptr[row+1]) {
+      row++;
+    }
+    ScalarType* block = GetBlock(row, col_ind[entr]);
+    for (iVar=0; iVar < nVar; iVar++ ) {
+      for (jVar=0; jVar < nVar; jVar++ ) {
+        file << row*nVar+iVar << " " << col_ind[entr]*nVar+jVar << " " << block[iVar*nVar+jVar] << std::endl;
+      }
+    }
+  }
 }
 
 template<class ScalarType>

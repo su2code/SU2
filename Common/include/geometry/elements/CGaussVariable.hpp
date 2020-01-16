@@ -59,7 +59,15 @@ public:
   CGaussVariable(unsigned short val_iGauss, unsigned short val_nDim, unsigned short val_nNodes)
     : J_X(0.0), J_x(0.0), iGaussPoint(val_iGauss)
   {
-    GradNi_Xj.resize(val_nNodes,val_nDim) = su2double(0.0);
+
+    /* needed to increase the number of dimensions in GradNi_Xj for the surface case by 1
+     * change to a BETTER SOLUTION later
+     * 25.11. T.Dick
+     *
+     * take this over during merge, talk to Ruben about that issue
+     */
+
+    GradNi_Xj.resize(val_nNodes,val_nDim+1) = su2double(0.0);
     GradNi_xj = GradNi_Xj;
 
     Ni.resize(val_nNodes) = su2double(0.0);

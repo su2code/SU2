@@ -78,6 +78,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/elasticity/CFEM_Knowles_NearInc.cpp \
   ../src/numerics/elasticity/CFEM_IdealDE.cpp \
   ../src/numerics/elasticity/CFEM_DielectricElastomer.cpp \
+  ../src/numerics_gradient_smoothing.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \
@@ -123,6 +124,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_elasticity.cpp \
+  ../src/solver_gradient_smoothing.cpp \
   ../src/solvers/CMeshSolver.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \

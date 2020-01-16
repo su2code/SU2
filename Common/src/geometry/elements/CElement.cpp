@@ -56,6 +56,8 @@ CElement::CElement(unsigned short ngauss, unsigned short nnodes, unsigned short 
   Kt_a.resize(nNodes, nDim);
   FDL_a.resize(nNodes, nDim);
 
+  DHiDHj.resize(nDim, nDim);
+
   ClearElement();
 }
 
@@ -65,6 +67,8 @@ void CElement::ClearElement(void) {
   Kt_a.setConstant(0.0);
   FDL_a.setConstant(0.0);
   Ks_ab.setConstant(0.0);
+
+  DHiHj.setConstant(0.0);
 
   for(auto& kab_i : Kab)
     kab_i.setConstant(0.0);

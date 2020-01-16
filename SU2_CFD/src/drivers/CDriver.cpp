@@ -1295,6 +1295,11 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 
   }
 
+  /*--- Add a gradient smoothing solver if necessary ---*/
+  if (config->GetSmoothGradient()) {
+    solver[MESH_0][GRADIENT_SMOOTHING] = new CGradientSmoothingSolver(geometry[MESH_0], config);
+  }
+
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
 
   bool update_geo = true;
@@ -2709,6 +2714,15 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (config->GetDeform_Mesh())
     numerics[MESH_0][MESH_SOL][FEA_TERM] = new CFEAMeshElasticity(nDim, nDim, geometry[MESH_0]->GetnElem(), config);
 
+  /*--- If we want to apply the gradient smoothing we must initialize the numerics here ---*/
+  if(config->GetSmoothGradient()) {
+    if (config->GetSmoothOnSurface()) {
+      numerics[MESH_0][GRADIENT_SMOOTHING][GRAD_TERM] = new CGradSmoothing(nDim-1, config);
+    } else {
+      numerics[MESH_0][GRADIENT_SMOOTHING][GRAD_TERM] = new CGradSmoothing(nDim, config);
+    }
+  }
+
 }
 
 void CDriver::Numerics_Postprocessing(CNumerics *****numerics,
@@ -3207,7 +3221,9 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
    deforming meshes, and preprocessing of harmonic balance. ---*/
 
   if (!fem_solver && (config->GetGrid_Movement() ||
-                      (config->GetDirectDiff() == D_DESIGN)) && !config->GetSurface_Movement(FLUID_STRUCTURE_STATIC)) {
+                      (config->GetDirectDiff() == D_DESIGN ) ||
+                      config->GetProject2Surface() ||
+                      config->GetSmoothOnSurface()) && !config->GetSurface_Movement(FLUID_STRUCTURE_STATIC)) {
     if (rank == MASTER_NODE)
       cout << "Setting dynamic mesh structure for zone "<< iZone + 1<<"." << endl;
     grid_movement = new CVolumetricMovement(geometry[MESH_0], config);

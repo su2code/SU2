@@ -331,6 +331,50 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
 }
 
+CMatrixVectorProduct<su2double>* CVolumetricMovement::GetStiffnessMatrixVectorProduct(CGeometry *geometry, CConfig *config, bool Transpose) {
+
+  su2double MinVolume;
+
+  /*--- Initialize vector and sparse matrix ---*/
+  StiffMatrix.SetValZero();
+
+  /*--- Compute the stiffness matrix entries for all nodes/elements in the
+        mesh. FEA uses a finite element method discretization of the linear
+        elasticity equations (transfers element stiffnesses to point-to-point). ---*/
+  MinVolume = SetFEAMethodContributions_Elem(geometry, config);
+
+  CMatrixVectorProduct<su2double>* mat_vec = NULL;
+
+  /*--- Create an instance of the MatrixVectorProduct class  ---*/
+  if (!Transpose) {
+    mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
+  } else if (Transpose) {
+    mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
+  }
+
+
+  /*--- return the matrix vector product class ---*/
+  return mat_vec;
+
+}
+
+CSysMatrix<su2double>& CVolumetricMovement::GetStiffnessMatrix(CGeometry *geometry, CConfig *config) {
+
+  su2double MinVolume;
+
+  /*--- Initialize vector and sparse matrix ---*/
+  StiffMatrix.SetValZero();
+
+  /*--- Compute the stiffness matrix entries for all nodes/elements in the
+        mesh. FEA uses a finite element method discretization of the linear
+        elasticity equations (transfers element stiffnesses to point-to-point). ---*/
+  MinVolume = SetFEAMethodContributions_Elem(geometry, config);
+
+  /*--- return a pointer to the matrix ---*/
+  return StiffMatrix;
+
+}
+
 void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume, bool Screen_Output) {
   
   unsigned long iElem, ElemCounter = 0, PointCorners[8];

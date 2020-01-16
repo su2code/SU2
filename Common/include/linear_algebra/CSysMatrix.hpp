@@ -166,6 +166,17 @@ private:
   void SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level, bool EdgeConnect, vector<unsigned long> & vneighs);
 
   /*!
+   * \brief Assigns values to the sparse-matrix structure (used in Initialize).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iVertex - Base point to compute neighbours.
+   * \param[in] deep_level - Deep level for the recursive algorithm.
+   * \param[in] fill_level - ILU fill in level.
+   * \param[in] indexNodes - connection between boundary and global node indices.
+   * \param[in] vneighs - Storage the neighbours points to iPoint.
+   */
+  void SetNeighboursOwnConnectivity(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level, unsigned long val_marker, vector<unsigned long> & indexNodes, vector<unsigned long> & vneighs);
+
+  /*!
    * \brief Calculates the matrix-vector product: product = matrix*vector
    * \param[in] matrix
    * \param[in] vector
@@ -342,6 +353,17 @@ public:
    */
   void Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn,
                   bool EdgeConnect, CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Initializes sparse matrix system.
+   * \param[in] nVar - Number of variables.
+   * \param[in] nEqn - Number of equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InitOwnConnectivity(unsigned long nPoint, unsigned short nVar, unsigned short nEqn, unsigned long val_marker,
+                           CGeometry *geometry, CConfig *config);
+
 
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
@@ -630,6 +652,9 @@ public:
    * \param[out] res - Result of the product A*vec.
    */
   void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res);
+
+  // function for debugging only
+  void printMat(ofstream &file);
 
   /*!
    * \brief Factorize matrix using PaStiX.

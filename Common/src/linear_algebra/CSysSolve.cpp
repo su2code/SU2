@@ -29,12 +29,15 @@
 #include "../../include/linear_algebra/CSysSolve_b.hpp"
 
 template<class ScalarType>
-CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) : cg_ready(false), bcg_ready(false),
+CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode, const bool gradient_smooth_mode) : cg_ready(false), bcg_ready(false),
                                                                 gmres_ready(false), smooth_ready(false) {
+
   mesh_deform = mesh_deform_mode;
+  gradient_mode = gradient_smooth_mode;
   LinSysRes_ptr = NULL;
   LinSysSol_ptr = NULL;
   Residual = 0.0;
+
 }
 
 template<class ScalarType>
@@ -807,21 +810,9 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
   ScalarType SolverTol, Norm0 = 0.0;
   bool ScreenOutput;
 
-  /*--- Normal mode ---*/
-
-  if(!mesh_deform) {
-
-    KindSolver   = config->GetKind_Linear_Solver();
-    KindPrecond  = config->GetKind_Linear_Solver_Prec();
-    MaxIter      = config->GetLinear_Solver_Iter();
-    RestartIter  = config->GetLinear_Solver_Restart_Frequency();
-    SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
-    ScreenOutput = false;
-  }
-
   /*--- Mesh Deformation mode ---*/
 
-  else {
+  if(mesh_deform) {
 
     KindSolver   = config->GetKind_Deform_Linear_Solver();
     KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();
@@ -831,8 +822,31 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
     ScreenOutput = config->GetDeform_Output();
   }
 
-  /*--- Stop the recording for the linear solver ---*/
+  /*--- gradient smoothing mode ---*/
 
+  else if (gradient_mode) {
+
+    KindSolver   = config->GetKind_Grad_Linear_Solver();
+    KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
+    MaxIter      = config->GetGrad_Linear_Solver_Iter();
+    RestartIter  = config->GetLinear_Solver_Restart_Frequency();
+    SolverTol    = SU2_TYPE::GetValue(config->GetGrad_Linear_Solver_Error());
+    ScreenOutput = true;
+  }
+
+  /*--- Normal mode ---*/
+
+  else {
+
+    KindSolver   = config->GetKind_Linear_Solver();
+    KindPrecond  = config->GetKind_Linear_Solver_Prec();
+    MaxIter      = config->GetLinear_Solver_Iter();
+    RestartIter  = config->GetLinear_Solver_Restart_Frequency();
+    SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
+    ScreenOutput = false;
+  }
+
+  /*--- Stop the recording for the linear solver ---*/
   bool TapeActive = NO;
 
   if (config->GetDiscrete_Adjoint()) {
@@ -922,6 +936,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
 
     bool RequiresTranspose = !mesh_deform; // jacobian is symmetric
     if (!mesh_deform) KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
+    else if (gradient_mode) KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
     else              KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
 
     /*--- Start recording if it was stopped for the linear solver ---*/

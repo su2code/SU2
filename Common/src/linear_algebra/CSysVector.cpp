@@ -480,6 +480,19 @@ ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType
   return prod;
 }
 
+
+// changes for debugging only
+template<class ScalarType>
+void CSysVector<ScalarType>::printVec(std::ofstream& file) {
+
+  for (unsigned long i = 0; i < nElm; i++) {
+    file << (*this)[i];
+    if (i!=nElm-1) { file << std::endl; }
+  }
+}
+
+
+
 /*--- Explicit instantiations ---*/
 template class CSysVector<su2double>;
 template CSysVector<su2double> operator*(const su2double&, const CSysVector<su2double>&);

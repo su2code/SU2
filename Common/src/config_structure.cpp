@@ -491,6 +491,7 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_Analyze      = NULL;   Marker_All_Analyze       = NULL;
   Marker_CfgFile_DV           = NULL;   Marker_All_DV            = NULL;
   Marker_CfgFile_Moving       = NULL;   Marker_All_Moving        = NULL;
+  Marker_CfgFile_SobolevBC    = NULL;   Marker_All_SobolevBC     = NULL;
   Marker_CfgFile_PerBound     = NULL;   Marker_All_PerBound      = NULL;    Marker_PerBound   = NULL;
   Marker_CfgFile_Turbomachinery = NULL; Marker_All_Turbomachinery = NULL;
   Marker_CfgFile_TurbomachineryFlag = NULL; Marker_All_TurbomachineryFlag = NULL;
@@ -508,7 +509,7 @@ void CConfig::SetPointersNull(void) {
   Marker_DV                   = NULL;   Marker_Moving            = NULL;    Marker_Monitoring = NULL;
   Marker_Designing            = NULL;   Marker_GeoEval           = NULL;    Marker_Plotting   = NULL;
   Marker_Analyze              = NULL;   Marker_PyCustom          = NULL;    Marker_WallFunctions        = NULL;
-  Marker_CfgFile_KindBC       = NULL;   Marker_All_KindBC        = NULL;
+  Marker_CfgFile_KindBC       = NULL;   Marker_All_KindBC        = NULL;    Marker_SobolevBC  = NULL;
 
   Kind_WallFunctions       = NULL;
   IntInfo_WallFunctions    = NULL;
@@ -1670,6 +1671,25 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Automatically reorient elements that seem flipped */
   addBoolOption("REORIENT_ELEMENTS",ReorientElements, true);
 
+  /* DESCRIPTION: Switch to activate gradient smoothing */
+  addBoolOption("SMOOTH_GRADIENT",SmoothGradient, false);
+  /* DESCRIPTION: Epsilon of the Laplace Beltrami Operator */
+  addDoubleOption("SMOOTHING_PARAM",SmoothingParam, 1.0);
+  /* DESCRIPTION: Zeta of the identity term in the Laplace Beltrami Operator */
+  addDoubleOption("SMOOTHING_PARAM_SECOND",SmoothingParamSecond, 1.0);
+  /* DESCRIPTION: Switch to calculate dimensions separated */
+  addBoolOption("SEPARATE_DIMENSIONS",SepDim, false);
+  /* DESCRIPTION: Switch to calculate dimensions separated */
+  addBoolOption("SECOND_ORDER_INTEGRATION",SecOrdQuad, true);
+  /* DESCRIPTION: Switch to activate the projection onto the surface */
+  addBoolOption("PROJECT_TO_SURFACE",Project2Surface, false);
+  /* DESCRIPTION: Switch to activate working on the surface only */
+  addBoolOption("SMOOTH_ON_SURFACE",SmoothOnSurface, false);
+  /* DESCRIPTION: Switch to activate zero Dirichlet boundary for surface mode */
+  addBoolOption("DIRICHLET_SURFACE_BOUNDARY",DirichletSurfaceBound, false);
+  /* DESCRIPTION: Switch to activate somecode pieces for debbuging */
+  addBoolOption("DEBUG_MODE",DebugMode, false);
+
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
 
@@ -1802,6 +1822,8 @@ void CConfig::SetConfig_Options() {
   addEnumListOption("SURFACE_MOVEMENT",nKind_SurfaceMovement, Kind_SurfaceMovement, SurfaceMovement_Map);
   /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
   addStringListOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
+  /* DESCRIPTION: Marker(s) of gradient problem boundaries. */
+  addStringListOption("MARKER_SOBOLEVBC", nMarker_SobolevBC, Marker_SobolevBC);
   /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
   addDoubleOption("MACH_MOTION", Mach_Motion, 0.0);
   default_vel_inf[0] = 0.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;  
@@ -1993,6 +2015,16 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("DEFORM_LINEAR_SOLVER_ERROR", Deform_Linear_Solver_Error, 1E-14);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("DEFORM_LINEAR_SOLVER_ITER", Deform_Linear_Solver_Iter, 1000);
+
+  /*  DESCRIPTION: Linear solver for the gradient smoothing\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
+  addEnumOption("GRAD_LINEAR_SOLVER", Kind_Grad_Linear_Solver, Linear_Solver_Map, FGMRES);
+  /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
+  addEnumOption("GRAD_LINEAR_SOLVER_PREC", Kind_Grad_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
+  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
+  addDoubleOption("GRAD_LINEAR_SOLVER_ERROR", Grad_Linear_Solver_Error, 1E-14);
+  /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
+  addUnsignedLongOption("GRAD_LINEAR_SOLVER_ITER", Grad_Linear_Solver_Iter, 1000);
+
 
   /*!\par CONFIG_CATEGORY: Rotorcraft problem \ingroup Config*/
   /*--- option related to rotorcraft problems ---*/
@@ -4613,7 +4645,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
-  iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
+  iMarker_DV, iMarker_Moving, iMarker_SobolevBC, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
   iMarker_Fluid_Load, iMarker_Deform_Mesh,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
@@ -4654,11 +4686,13 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_Monitoring     = new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
   Marker_All_Designing      = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
   Marker_All_Plotting       = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
-  Marker_All_Analyze  = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
-  Marker_All_ZoneInterface   = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
+  Marker_All_Analyze        = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
+  Marker_All_ZoneInterface  = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
   Marker_All_GeoEval        = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
   Marker_All_DV             = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving         = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
+  Marker_All_SobolevBC      = new unsigned short[nMarker_All];	// Store what boundary to apply to the gradient smoothing.
+  Marker_All_Interface      = new unsigned short[nMarker_All];	// Store whether the boundary belongs to an interface.
   Marker_All_Deform_Mesh    = new unsigned short[nMarker_All];	// Store whether the boundary is deformable.
   Marker_All_Fluid_Load     = new unsigned short[nMarker_All];	// Store whether the boundary computes/applies fluid loads.
   Marker_All_PyCustom       = new unsigned short[nMarker_All];  // Store whether the boundary is Python customizable.
@@ -4680,6 +4714,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_ZoneInterface[iMarker_All]        = 0;
     Marker_All_DV[iMarker_All]                   = 0;
     Marker_All_Moving[iMarker_All]               = 0;
+    Marker_All_SobolevBC[iMarker_All]            = 0;
+    Marker_All_Interface[iMarker_All]            = 0;
     Marker_All_Deform_Mesh[iMarker_All]          = 0;
     Marker_All_Fluid_Load[iMarker_All]           = 0;
     Marker_All_PerBound[iMarker_All]             = 0;
@@ -4701,6 +4737,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_ZoneInterface        = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_DV                   = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Moving               = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_SobolevBC            = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Interface            = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Deform_Mesh          = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Fluid_Load           = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_PerBound             = new unsigned short[nMarker_CfgFile];
@@ -4720,6 +4758,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_ZoneInterface[iMarker_CfgFile]        = 0;
     Marker_CfgFile_DV[iMarker_CfgFile]                   = 0;
     Marker_CfgFile_Moving[iMarker_CfgFile]               = 0;
+    Marker_CfgFile_SobolevBC[iMarker_CfgFile]            = 0;
+    Marker_CfgFile_Interface[iMarker_CfgFile]            = 0;
     Marker_CfgFile_Deform_Mesh[iMarker_CfgFile]          = 0;
     Marker_CfgFile_Fluid_Load[iMarker_CfgFile]           = 0;
     Marker_CfgFile_PerBound[iMarker_CfgFile]             = 0;
@@ -5227,6 +5267,13 @@ void CConfig::SetMarkers(unsigned short val_software) {
         Marker_CfgFile_PyCustom[iMarker_CfgFile] = YES;
   }
 
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_SobolevBC[iMarker_CfgFile] = NO;
+    for (iMarker_SobolevBC = 0; iMarker_SobolevBC < nMarker_SobolevBC; iMarker_SobolevBC++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_SobolevBC[iMarker_SobolevBC])
+        Marker_CfgFile_SobolevBC[iMarker_CfgFile] = YES;
+  }
+
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
@@ -5240,7 +5287,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
   iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
-  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
+  iMarker_Moving, iMarker_SobolevBC, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
   iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
   
   bool fea = ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM));
@@ -6499,6 +6546,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
     BoundaryTable.PrintFooter();
   }
+
+  if (nMarker_SobolevBC != 0) {
+    BoundaryTable << "Sobolev boundary";
+    for (iMarker_SobolevBC = 0; iMarker_SobolevBC < nMarker_SobolevBC; iMarker_SobolevBC++) {
+      BoundaryTable << Marker_SobolevBC[iMarker_SobolevBC];
+      if (iMarker_SobolevBC < nMarker_SobolevBC-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
   
   if (nMarker_Fluid_InterfaceBound != 0) {
     BoundaryTable << "Fluid interface boundary";
@@ -6990,6 +7046,13 @@ unsigned short CConfig::GetMarker_CfgFile_Moving(string val_marker) {
   return Marker_CfgFile_Moving[iMarker_CfgFile];
 }
 
+unsigned short CConfig::GetMarker_CfgFile_SobolevBC(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_SobolevBC[iMarker_CfgFile];
+}
+
 unsigned short CConfig::GetMarker_CfgFile_Deform_Mesh(string val_marker) {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -7178,6 +7241,12 @@ CConfig::~CConfig(void) {
   if (Marker_CfgFile_Moving != NULL) delete[] Marker_CfgFile_Moving;
   if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
 
+  if (Marker_CfgFile_SobolevBC != NULL) delete[] Marker_CfgFile_SobolevBC;
+  if (Marker_All_SobolevBC     != NULL) delete[] Marker_All_SobolevBC;
+
+  if (Marker_CfgFile_Interface != NULL) delete[] Marker_CfgFile_Interface;
+  if (Marker_All_Interface     != NULL) delete[] Marker_All_Interface;
+
   if (Marker_CfgFile_Deform_Mesh != NULL) delete[] Marker_CfgFile_Deform_Mesh;
   if (Marker_All_Deform_Mesh     != NULL) delete[] Marker_All_Deform_Mesh;
 
@@ -7201,6 +7270,7 @@ CConfig::~CConfig(void) {
 
   if (Marker_DV!= NULL)               delete[] Marker_DV;
   if (Marker_Moving != NULL)           delete[] Marker_Moving;
+  if (Marker_SobolevBC != NULL)           delete[] Marker_SobolevBC;
   if (Marker_Monitoring != NULL)      delete[] Marker_Monitoring;
   if (Marker_Designing != NULL)       delete[] Marker_Designing;
   if (Marker_GeoEval != NULL)         delete[] Marker_GeoEval;
@@ -8131,6 +8201,10 @@ bool CConfig::GetVolumetric_Movement(){
       Kind_SU2 == SU2_DOT || 
       DirectDiff)
   { volumetric_movement = true;}
+
+  if (GetProject2Surface() || GetSmoothOnSurface())
+  { volumetric_movement=true; }
+
   return volumetric_movement;
 }
 

@@ -8418,7 +8418,7 @@ void COutputLegacy::SetBaselineResult_Files(CSolver ***solver, CGeometry ***geom
       /*--- Flags identifying the types of files to be written. ---*/
 
       bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-      if (config[iZone]->GetKind_SU2() == SU2_DOT) { Wrt_Vol = false; }
+      if (config[iZone]->GetKind_SU2() == SU2_DOT) { Wrt_Vol = true; }
       bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
 
       /*--- Get the file output format ---*/

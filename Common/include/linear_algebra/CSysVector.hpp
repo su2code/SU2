@@ -35,6 +35,7 @@
 #include <cmath>
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <string>
 #include <cstdlib>
@@ -351,6 +352,13 @@ public:
    */
   template<class T>
   void PassiveCopy(const CSysVector<T>& other);
+
+  /*!
+   * \brief Set our values (resizing if required) by copying from other, the derivative information is lost.
+   * \param[in] other - source CSysVector
+   */
+  void printVec(ofstream &file);
+
 };
 
 /*!

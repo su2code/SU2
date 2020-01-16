@@ -106,11 +106,11 @@ const unsigned int MAX_PARAMETERS = 10;		  /*!< \brief Maximum number of paramet
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;	      /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 10;		      /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
-const unsigned int MAX_TERMS = 6;		      /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
+const unsigned int MAX_SOLS = 11;		      /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+const unsigned int MAX_TERMS = 8;		      /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_TERMS_FEA = 10;        /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
-const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
+const unsigned int MAX_FE_KINDS = 7;          /*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;		      /*!< \brief No Runge-Kutta iteration. */
 
 const unsigned int OVERHEAD = 4;   /*!< \brief Overhead space above nMarker when allocating space for boundary elems (MPI + periodic). */
@@ -462,17 +462,24 @@ const int MAT_KNOWLES = 4;   /*!< \brief Position of the Knowles material model.
 const int MESH_SOL = 8;      /*!< \brief Position of the mesh solver. */
 const int ADJMESH_SOL = 9;   /*!< \brief Position of the adjoint of the mesh solver. */
 
+const int GRADIENT_SMOOTHING = 10; /*!< \brief Position of the gradient smoothing equation in the solution solver array. */
+const int GRAD_TERM = 7;  /*!< \brief Position of the gradient smoothing terms in the numerics container array. */
+
 
 /*!
  * \brief types of finite elements (in 2D or 3D)
  */
 const int EL_TRIA = 0;		/*!< \brief Elements of three nodes (2D). */
 const int EL_QUAD = 1;		/*!< \brief Elements of four nodes (2D). */
+const int EL_TRIA2 = 2;		/*!< \brief Elements of three nodes (2D), with second order gauss quadrature. */
 
 const int EL_TETRA = 0;		/*!< \brief Elements of four nodes (3D). */
 const int EL_HEXA  = 1;		/*!< \brief Elements of eight nodes (3D). */
-const int EL_PYRAM = 2;     /*!< \brief Elements of five nodes (3D). */
-const int EL_PRISM = 3;     /*!< \brief Elements of six nodes (3D). */
+
+const int EL_TETRA2 = 4;		/*!< \brief Elements of four nodes, with second order gauss quadrature (3D). */
+const int EL_PYRAM2 = 5;		/*!< \brief Elements of five nodes, with third order gauss quadrature (3D). */
+
+const int EL_LINE = 6;    /*!< \brief Elements of two nodes, with second order gauss quadrature (1D). */
 
 
 /*!

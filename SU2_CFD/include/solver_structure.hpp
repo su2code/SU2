@@ -195,6 +195,7 @@ public:
   CSysMatrix<su2double> StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
   
   CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
+
   string* OutputHeadingNames;               /*!< \brief vector of strings to store the headings for the exra variables */
 
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
@@ -203,7 +204,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CSolver(bool mesh_deform_mode = false);
+  CSolver(bool mesh_deform_mode = false, bool gradient_smooth_mode = false);
   
   /*!
    * \brief Destructor of the class.
@@ -4490,6 +4491,44 @@ public:
   virtual void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config);
 
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
+   * \param[in] numerics - the numerics for this problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ApplyGradientSmoothing(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
+   * \param[in] grid_movement - the grid movement to get the stiffness matrix from.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Transpose - wether or not we multiply by the transposed matrix.
+   *
+   */
+  virtual void MultiplyByVolumeDeformationStiffness(CGeometry *geometry, CSolver *solver, CVolumetricMovement *grid_movement, CConfig *config, bool Transpose);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
+   * \param[in] numerics - the numerics for this problem.
+   * \param[in] config - Definition of the particular problem.
+   *
+   */
+  virtual void ApplyGradientSmoothingOnSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_Surface_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config, unsigned long val_marker);
+
+  /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
    * \param[in] val_implicit_periodic - Flag controlling implicit treatment for periodic BCs.
    */
@@ -4624,6 +4663,7 @@ protected:
   void SetVerificationSolution(unsigned short nDim, 
                                unsigned short nVar, 
                                CConfig        *config);
+
 };
 
 /*!
@@ -12275,6 +12315,131 @@ public:
   void FilterElementDensities(CGeometry *geometry, CConfig *config);
 
 };
+
+
+/*! \class CGradientSmoothingSolver
+ *  \brief Main class for defining a gradient smoothing.
+ *  \author T. Dick.
+ *  \date March 25, 2019.
+ */
+class CGradientSmoothingSolver : public CSolver {
+public:
+
+  unsigned long nElement;
+
+  CElement*** element_container;  /*!< \brief Container which stores the element information. */
+
+  su2double **mZeros_Aux;         /*!< \brief Submatrix to make zeros and impose Dirichlet boundary conditions. */
+  su2double **mId_Aux;            /*!< \brief Diagonal submatrix to impose Dirichelt boundary conditions. */
+
+  unsigned short dir;             /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
+
+  CSysVector<su2double> auxVecInp; /*!< \brief Auxiliar vectors for output and debugging */
+  CSysVector<su2double> auxVecRHS; /*!< \brief Auxiliar vectors for output and debugging */
+  CSysVector<su2double> auxVecOut; /*!< \brief Auxiliar vectors for output and debugging */
+
+  CVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CGradientSmoothingSolver(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CGradientSmoothingSolver(void);
+
+  /*!
+   * \brief Main routine for applying the solver
+   */
+  void ApplyGradientSmoothing(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief Assemble the stiffness matrix
+   */
+  void Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief Calculate the RHS of the PDE
+   */
+  void Compute_Residual(CGeometry *geometry, CSolver *solver, CConfig *config);
+
+  /*!
+   * \brief Set the boundary conditions
+   */
+  void Impose_BC(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief Set Dirichlet boundary conditions
+   */
+  void BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Set Neumann boundary conditions
+   */
+  void BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Call the linear systems solver
+   */
+  void Solve_Linear_System(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Extract the solution of the linear solver and store it in the sensitivities of the discrete adjoint solver.
+   */
+  void Set_Sensitivities(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker=0);
+
+  /*!
+   * \brief Get the value of the reference coordinate to set on the element structure.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] indexNode - Index of the node.
+   * \param[in] iDim - Dimension required.
+   */
+  su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim);
+
+  /*!
+   * \brief Multiply the current sensitivities by the stiffness matrix of the adjoint mesh deformation
+   */
+  void MultiplyByVolumeDeformationStiffness(CGeometry *geometry, CSolver *solver, CVolumetricMovement *grid_movement, CConfig *config, bool Transpose);
+
+  /*!
+   * \brief Extract the sensitivities or the sensitivities on the boundary from the discrete adjoint solver
+   */
+  void SetBoundaryDerivativesForMultiplication(CGeometry *geometry, CSolver *solver, CConfig *config, bool Transpose);
+
+  /*!
+   * \brief Main routine to apply the method only on the surface
+   */
+  void ApplyGradientSmoothingOnSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker);
+
+  /*!
+   * \brief Compute the stiffness matrix of the surface mesh
+   */
+  void Compute_Surface_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config, unsigned long val_marker);
+
+  /*!
+   * \brief Compute the RHS of the PDE on the surface mesh
+   */
+  void Compute_Surface_Residual(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker);
+
+  /*!
+   * \brief Set Dirichlet boundary conditions for the surface solver
+   */
+  void BC_Surface_Dirichlet(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Extract the Coordinates of the element from geometry
+   */
+  std::vector<std::vector<su2double>> GetElementCoordinates(CGeometry *geometry, std::vector<unsigned long>& indexNode, int EL_KIND = 0);
+
+};
+
 
 /*!
  * \class CTemplateSolver
