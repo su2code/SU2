@@ -2114,9 +2114,11 @@ enum MPI_QUANTITIES {
   PRIMITIVE            = 30,  /*!< \brief Primitive variables. */
   ANISO_GRADIENT       = 31,  /*!< \brief Gradient vectors for anisotropic mesh adaptation. */
   ANISO_GRADIENT_VISC  = 32,  /*!< \brief Gradient vectors for anisotropic mesh adaptation. */
-  ANISO_HESSIAN        = 33,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
-  ANISO_HESSIAN_VISC   = 34,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
-  ANISO_METRIC         = 35   /*!< \brief Metric vectors for anisotropic mesh adaptation. */
+  ANISO_GRADIENT_SOURCE= 33,  /*!< \brief Gradient vectors for anisotropic mesh adaptation. */
+  ANISO_HESSIAN        = 34,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
+  ANISO_HESSIAN_VISC   = 35,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
+  ANISO_HESSIAN_SOURCE = 36,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
+  ANISO_METRIC         = 37   /*!< \brief Metric vectors for anisotropic mesh adaptation. */
 };
 
 /*!
