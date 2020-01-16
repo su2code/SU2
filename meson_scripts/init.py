@@ -52,7 +52,7 @@ def init_submodules(method = 'auto'):
   github_repo_meson = 'https://github.com/mesonbuild/meson'
   sha_version_ninja = '2d15b04e411229cb902332957281622119025e77'
   github_repo_ninja = 'https://github.com/ninja-build/ninja'
-  sha_version_pybeam = '3d7e5795cd5064bd0c23d1f75d1b0393f9e2ddd2'
+  sha_version_pybeam = '358f9e0fd768f2f7c2f524953f30c0d675866cce'
   github_repo_pybeam = 'https://github.com/pyBeam/pyBeam'
 
   medi_name = 'MeDiPack'
