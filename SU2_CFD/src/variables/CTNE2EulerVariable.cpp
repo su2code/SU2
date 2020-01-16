@@ -304,6 +304,14 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
     Primitive(iPoint,P_INDEX)   = val_pressure;
   }
 
+  if (config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET) {
+    AnisoMetr.resize(nPoint,3*(nDim-1)) = su2double(0.0);
+    if(config->GetViscous()) {
+      AnisoViscGrad.resize(nPoint,nDim*nVar*nDim) = su2double(0.0);
+      AnisoViscHess.resize(nPoint,3*(nDim-1)*nVar*nDim) = su2double(0.0);
+    }
+  }
+
 }
 
 void CTNE2EulerVariable::SetGradient_PrimitiveZero() {

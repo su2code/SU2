@@ -50,9 +50,10 @@ def amg ( config , kind='' ):
     #--- Check config options related to mesh adaptation
     
     adap_options = ['ADAP_SIZES', 'ADAP_SUBITE', 'ADAP_SENSOR', \
-    'ADAP_BACK', 'ADAP_HMAX', 'ADAP_HMIN', 'ADAP_HGRAD', 'ADAP_RESIDUAL_REDUCTION', 'ADAP_FLOW_ITER', 'ADAP_ADJ_ITER', 'ADAP_SOURCE','ADAP_PYTHON']
+    'ADAP_BACK', 'ADAP_HMAX', 'ADAP_HMIN', 'ADAP_HGRAD', 'ADAP_RESIDUAL_REDUCTION', 'ADAP_FLOW_ITER', 'ADAP_ADJ_ITER', 'ADAP_INV_VOL', \
+    'ADAP_SOURCE','ADAP_PYTHON']
     required_options = ['ADAP_SIZES', 'ADAP_SUBITE', \
-    'ADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME']
+    'ADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME', 'ADAP_INV_VOL']
     
     if not all (opt in config for opt in required_options):
         err = '\n\n## ERROR : Missing options: \n'
@@ -154,15 +155,20 @@ def amg ( config , kind='' ):
                 config_cfd.RESTART_ADJ_FILENAME   = current_solution_adj
                 config_cfd.SOLUTION_FILENAME      = current_solution
                 config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
-                SU2_CFD(config_cfd)
-
-                config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
                 config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, ANISOTROPIC_METRIC)"
                 config_cfd.ERROR_ESTIMATE         = 'YES'
                 config_cfd.MESH_HMAX              = config.ADAP_HMAX
                 config_cfd.MESH_HMIN              = config.ADAP_HMIN
                 config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
-                SU2_MET(config_cfd)
+                SU2_CFD(config_cfd)
+
+                # config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
+                # config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, ANISOTROPIC_METRIC)"
+                # config_cfd.ERROR_ESTIMATE         = 'YES'
+                # config_cfd.MESH_HMAX              = config.ADAP_HMAX
+                # config_cfd.MESH_HMIN              = config.ADAP_HMIN
+                # config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
+                # SU2_MET(config_cfd)
 
         except:
             sys.stdout = sav_stdout
@@ -234,6 +240,7 @@ def amg ( config , kind='' ):
     config_amg['hgrad']       = float(config['ADAP_HGRAD'])
     config_amg['hmax']        = float(config['ADAP_HMAX'])
     config_amg['hmin']        = float(config['ADAP_HMIN'])
+    config_amg['Lp']          = float(config['ADAP_NORM'])
     config_amg['mesh_in']     = 'current.meshb'
     config_amg['adap_source'] = ''
     
@@ -254,7 +261,9 @@ def amg ( config , kind='' ):
     if 'ADAP_SOURCE' in config:
         config_amg['adap_source'] = os.path.join(cwd,config['ADAP_SOURCE'])
 
-    config_amg['options'] = "-back " + config_amg['adap_back'] + ' -inv-back'
+    config_amg['options'] = "-back " + config_amg['adap_back']
+    if(config['ADAP_INV_VOL'] == 'YES'):
+        config_amg['options'] = config_amg['options'] + ' -inv-back'
     
     #--- Start adaptive loop
 
@@ -460,13 +469,16 @@ def amg ( config , kind='' ):
                     config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
                     config_cfd.RESTART_SOL            = 'NO'
                     config_cfd.ITER                   = int(adap_adj_iter[iSiz])
-                    SU2_CFD(config_cfd)
-
-                    config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
                     config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, ANISOTROPIC_METRIC)"
                     config_cfd.ERROR_ESTIMATE         = 'YES'
                     config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[iSiz])
-                    SU2_MET(config_cfd)
+                    SU2_CFD(config_cfd)
+
+                    # config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
+                    # config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, ANISOTROPIC_METRIC)"
+                    # config_cfd.ERROR_ESTIMATE         = 'YES'
+                    # config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[iSiz])
+                    # SU2_MET(config_cfd)
             
             except:
                 sys.stdout = sav_stdout

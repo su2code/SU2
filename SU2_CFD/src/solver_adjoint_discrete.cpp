@@ -1201,3 +1201,180 @@ void CDiscAdjSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 
 }
 
+void CDiscAdjSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
+
+  unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
+  unsigned short iVar, iDim, iFlux;
+  unsigned short nVarMetr = nVar, nFluxMetr = 1;
+  su2double vnx[3], vny[3];
+  su2double graTri[2];
+  su2double Crd[3][2], Sens[3][nVarMetr][nFluxMetr];
+
+  //--- note: currently only implemented for Tri
+
+  /*--- MPI solution not communicated when restart loaded, so communicate it now. ---*/
+  
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
+  for (iElem=0; iElem<nElem; ++iElem) {
+    for (unsigned short iNode=0; iNode<3; ++iNode) {
+      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+      //--- store coordinates
+      for (iDim = 0; iDim<2; ++iDim) {
+        Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
+      }
+      //--- store sensors
+      for(iVar = 0; iVar < nVarMetr; iVar++) Sens[iNode][iVar][0] = nodes->GetSolution(kNode, iVar);
+    }
+
+    //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
+    vnx[0] = Crd[1][1]-Crd[2][1];
+    vny[0] = Crd[2][0]-Crd[1][0];
+
+    vnx[1] = Crd[2][1]-Crd[0][1];
+    vny[1] = Crd[0][0]-Crd[2][0];
+
+    vnx[2] = Crd[0][1]-Crd[1][1];
+    vny[2] = Crd[1][0]-Crd[0][0];
+
+    //--- check if inward normal
+    for(unsigned short iNode = 0; iNode < 3; ++iNode) {
+      su2double CrdAvg[2] = {0.0, 0.0};
+      for(unsigned short jNode = 0; jNode < 3; ++jNode) {
+        if(iNode != jNode) {
+          CrdAvg[0] += Crd[jNode][0];
+          CrdAvg[1] += Crd[jNode][1];
+        }
+      }
+      CrdAvg[0] /= 2.;
+      CrdAvg[1] /= 2.;
+      su2double u[2] = {CrdAvg[0]-Crd[iNode][0],
+                        CrdAvg[1]-Crd[iNode][1]};
+      if((vnx[iNode]*u[0] + vny[iNode]*u[1]) > 0.) {
+        vnx[iNode] *= -1.0;
+        vny[iNode] *= -1.0;
+      }
+    }
+
+    //--- loop over conservative variables
+    for(iVar = 0; iVar < nVarMetr; iVar++){
+
+      //--- loop over directions
+      for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+
+        //--- gradient at the element ( graTri = 2*|T|*gradT ) 
+        graTri[0] = Sens[0][iVar][iFlux]*vnx[0] + Sens[1][iVar][iFlux]*vnx[1] + Sens[2][iVar][iFlux]*vnx[2];
+        graTri[1] = Sens[0][iVar][iFlux]*vny[0] + Sens[1][iVar][iFlux]*vny[1] + Sens[2][iVar][iFlux]*vny[2];
+    
+        //--- assembling
+        const unsigned short i = iFlux*nVarMetr*nDim + iVar*nDim;
+        for (unsigned short iNode=0; iNode<3; ++iNode) {
+          const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+          const su2double Area = geometry->node[kNode]->GetVolume();
+          const su2double rap = 1./(Area*6.);
+          nodes->AddAnisoGrad(kNode, i+0, graTri[0] * rap);
+          nodes->AddAnisoGrad(kNode, i+1, graTri[1] * rap);
+        }
+      }
+    }
+  }
+}
+
+void CDiscAdjSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){ }
+
+void CDiscAdjSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
+
+  unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
+  unsigned short iVar, iDim, iFlux;
+  unsigned short nVarMetr = nVar, nFluxMetr = 1;
+  su2double vnx[4], vny[4], vnz[4];
+  su2double graTet[3];
+  su2double Crd[4][3], Sens[4][nVarMetr][nFluxMetr];
+
+  //--- note: currently only implemented for Tet
+
+  /*--- MPI solution not communicated when restart loaded, so communicate it now. ---*/
+  
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
+  for (iElem=0; iElem<nElem; ++iElem) {
+    for (unsigned short iNode=0; iNode<4; ++iNode) {
+      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+      //--- store coordinates
+      for (iDim = 0; iDim<3; ++iDim) {
+        Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
+      }
+      //--- store sensors
+      for(iVar = 0; iVar < nVarMetr; iVar++) Sens[iNode][iVar][0] = nodes->GetSolution(kNode, iVar);
+    }
+
+    //--- inward face's normals : fac[0]=P1P2P3, fac[1]=P2P3P0, fac[2]=P3P0P1, fac[3]=P0P1P2
+    vnx[0] = (Crd[2][1]-Crd[1][1])*(Crd[3][2]-Crd[1][2]) - (Crd[2][2]-Crd[1][2])*(Crd[3][1]-Crd[1][1]);
+    vny[0] = (Crd[2][2]-Crd[1][2])*(Crd[3][0]-Crd[1][0]) - (Crd[2][0]-Crd[1][0])*(Crd[3][2]-Crd[1][2]);
+    vnz[0] = (Crd[2][0]-Crd[1][0])*(Crd[3][1]-Crd[1][1]) - (Crd[2][1]-Crd[1][1])*(Crd[3][0]-Crd[1][0]);
+
+    vnx[1] = (Crd[3][1]-Crd[2][1])*(Crd[0][2]-Crd[2][2]) - (Crd[3][2]-Crd[2][2])*(Crd[0][1]-Crd[2][1]);
+    vny[1] = (Crd[3][2]-Crd[2][2])*(Crd[0][0]-Crd[2][0]) - (Crd[3][0]-Crd[2][0])*(Crd[0][2]-Crd[2][2]);
+    vnz[1] = (Crd[3][0]-Crd[2][0])*(Crd[0][1]-Crd[2][1]) - (Crd[3][1]-Crd[2][1])*(Crd[0][0]-Crd[2][0]);
+
+    vnx[2] = (Crd[0][1]-Crd[3][1])*(Crd[1][2]-Crd[3][2]) - (Crd[0][2]-Crd[3][2])*(Crd[1][1]-Crd[3][1]);
+    vny[2] = (Crd[0][2]-Crd[3][2])*(Crd[1][0]-Crd[3][0]) - (Crd[0][0]-Crd[3][0])*(Crd[1][2]-Crd[3][2]);
+    vnz[2] = (Crd[0][0]-Crd[3][0])*(Crd[1][1]-Crd[3][1]) - (Crd[0][1]-Crd[3][1])*(Crd[1][0]-Crd[3][0]);
+
+    vnx[3] = (Crd[1][1]-Crd[0][1])*(Crd[2][2]-Crd[0][2]) - (Crd[1][2]-Crd[0][2])*(Crd[2][1]-Crd[0][1]);
+    vny[3] = (Crd[1][2]-Crd[0][2])*(Crd[2][0]-Crd[0][0]) - (Crd[1][0]-Crd[0][0])*(Crd[2][2]-Crd[0][2]);
+    vnz[3] = (Crd[1][0]-Crd[0][0])*(Crd[2][1]-Crd[0][1]) - (Crd[1][1]-Crd[0][1])*(Crd[2][0]-Crd[0][0]);
+
+    //--- check if inward normal
+    for(unsigned short iNode = 0; iNode < 4; ++iNode) {
+      su2double CrdAvg[3] = {0.0, 0.0, 0.0};
+      for(unsigned short jNode = 0; jNode < 4; ++jNode) {
+        if(iNode != jNode) {
+          CrdAvg[0] += Crd[jNode][0];
+          CrdAvg[1] += Crd[jNode][1];
+          CrdAvg[2] += Crd[jNode][2];
+        }
+      }
+      CrdAvg[0] /= 3.;
+      CrdAvg[1] /= 3.;
+      CrdAvg[2] /= 3.;
+      su2double u[3] = {CrdAvg[0]-Crd[iNode][0],
+                        CrdAvg[1]-Crd[iNode][1],
+                        CrdAvg[2]-Crd[iNode][2]};
+      if((vnx[iNode]*u[0] + vny[iNode]*u[1] + vnz[iNode]*u[2]) > 0.) {
+        vnx[iNode] *= -1.0;
+        vny[iNode] *= -1.0;
+        vnz[iNode] *= -1.0;
+      }
+    }
+
+    //--- loop over conservative variables
+    for(iVar = 0; iVar < nVarMetr; iVar++){
+
+      //--- loop over directions
+      for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+
+        //--- gradient at the element ( graTet = 6*|T|*gradT ) 
+        graTet[0] = Sens[0][iVar][iFlux]*vnx[0] + Sens[1][iVar][iFlux]*vnx[1] + Sens[2][iVar][iFlux]*vnx[2] + Sens[3][iVar][iFlux]*vnx[3];
+        graTet[1] = Sens[0][iVar][iFlux]*vny[0] + Sens[1][iVar][iFlux]*vny[1] + Sens[2][iVar][iFlux]*vny[2] + Sens[3][iVar][iFlux]*vny[3];
+        graTet[2] = Sens[0][iVar][iFlux]*vnz[0] + Sens[1][iVar][iFlux]*vnz[1] + Sens[2][iVar][iFlux]*vnz[2] + Sens[3][iVar][iFlux]*vnz[3];
+    
+        //--- assembling
+        const unsigned short i = iFlux*nVarMetr*nDim + iVar*nDim;
+        for (unsigned short iNode=0; iNode<4; ++iNode) {
+          const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+          const su2double Vol = geometry->node[kNode]->GetVolume();
+          const su2double rap = 1./(Vol*24.);
+          nodes->AddAnisoGrad(kNode, i+0, graTet[0] * rap);
+          nodes->AddAnisoGrad(kNode, i+1, graTet[1] * rap);
+          nodes->AddAnisoGrad(kNode, i+2, graTet[2] * rap);
+        }
+      }
+    }
+  }
+}
+
+void CDiscAdjSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){ }
+

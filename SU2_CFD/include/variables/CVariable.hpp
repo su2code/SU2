@@ -124,7 +124,11 @@ protected:
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
   MatrixType AnisoGrad;       /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */ 
+  MatrixType AnisoViscGrad;   /*!< \brief Gradient of viscous sensor used for anisotropy in mesh adaptation. */ 
+  MatrixType AnisoSourceGrad; /*!< \brief Gradient of source term sensor used for anisotropy in mesh adaptation. */ 
   MatrixType AnisoHess;       /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */ 
+  MatrixType AnisoViscHess;   /*!< \brief Hessian of viscous sensor used for anisotropy in mesh adaptation. */  
+  MatrixType AnisoSourceHess; /*!< \brief Hessian of source term sensor used for anisotropy in mesh adaptation. */  
   MatrixType AnisoMetr;       /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
 
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
@@ -580,6 +584,46 @@ public:
    */ 
   inline su2double GetAnisoGrad(unsigned long iPoint, unsigned short val_var) { return AnisoGrad(iPoint,val_var); }
 
+  /*!  
+   * \brief Set the value of the sensor gradient. 
+   * \param[in] val_var  - Index value. 
+   * \param[in] val_sens - Sensor gradient value. 
+   */ 
+  inline void SetAnisoViscGrad(unsigned long iPoint, unsigned short val_var, su2double val_sens_grad) { AnisoViscGrad(iPoint,val_var) = val_sens_grad; }
+
+   /*!  
+   * \brief Add the value of the sensor gradient. 
+   * \param[in] val_var  - Index value. 
+   * \param[in] val_sens - Sensor gradient value. 
+   */ 
+  inline void AddAnisoViscGrad(unsigned long iPoint, unsigned short val_var, su2double val_sens_grad) { AnisoViscGrad(iPoint,val_var) += val_sens_grad; }
+
+   /*!  
+   * \brief Get the value of the sensor gradient. 
+   * \param[in] val_var  - Index value. 
+   */ 
+  inline su2double GetAnisoViscGrad(unsigned long iPoint, unsigned short val_var) { return AnisoViscGrad(iPoint,val_var); }
+
+  /*!  
+   * \brief Set the value of the sensor gradient. 
+   * \param[in] val_var  - Index value. 
+   * \param[in] val_sens - Sensor gradient value. 
+   */ 
+  inline void SetAnisoSourceGrad(unsigned long iPoint, unsigned short val_var, su2double val_sens_grad) { AnisoSourceGrad(iPoint,val_var) = val_sens_grad; }
+
+   /*!  
+   * \brief Add the value of the sensor gradient. 
+   * \param[in] val_var  - Index value. 
+   * \param[in] val_sens - Sensor gradient value. 
+   */ 
+  inline void AddAnisoSourceGrad(unsigned long iPoint, unsigned short val_var, su2double val_sens_grad) { AnisoSourceGrad(iPoint,val_var) += val_sens_grad; }
+
+   /*!  
+   * \brief Get the value of the sensor gradient. 
+   * \param[in] val_var  - Index value. 
+   */ 
+  inline su2double GetAnisoSourceGrad(unsigned long iPoint, unsigned short val_var) { return AnisoSourceGrad(iPoint,val_var); }
+
    /*!  
    * \brief Set the value of the sensor Hessian.  
    * \param[in] val_var  - Index value. 
@@ -599,6 +643,46 @@ public:
    * \param[in] val_var  - Index value. 
    */ 
   inline su2double GetAnisoHess(unsigned long iPoint, unsigned short val_var) { return AnisoHess(iPoint,val_var); }
+
+  /*!  
+   * \brief Set the value of the sensor Hessian.  
+   * \param[in] val_var  - Index value. 
+   * \param[in] val_sens - Sensor Hessian value.  
+   */ 
+  inline void SetAnisoViscHess(unsigned long iPoint, unsigned short val_var, su2double val_sens_hess) { AnisoViscHess(iPoint,val_var) = val_sens_hess; }
+
+   /*!  
+   * \brief Add the value of the sensor Hessian.  
+   * \param[in] val_var  - Index value. 
+   * \param[in] val_sens - Sensor Hessian value.  
+   */ 
+  inline void AddAnisoViscHess(unsigned long iPoint, unsigned short val_var, su2double val_sens_hess) { AnisoViscHess(iPoint,val_var) += val_sens_hess; }
+
+   /*!  
+   * \brief Get the value of the sensor Hessian.  
+   * \param[in] val_var  - Index value. 
+   */ 
+  inline su2double GetAnisoViscHess(unsigned long iPoint, unsigned short val_var) { return AnisoViscHess(iPoint,val_var); }
+
+  /*!  
+   * \brief Set the value of the sensor Hessian.  
+   * \param[in] val_var  - Index value. 
+   * \param[in] val_sens - Sensor Hessian value.  
+   */ 
+  inline void SetAnisoSourceHess(unsigned long iPoint, unsigned short val_var, su2double val_sens_hess) { AnisoSourceHess(iPoint,val_var) = val_sens_hess; }
+
+   /*!  
+   * \brief Add the value of the sensor Hessian.  
+   * \param[in] val_var  - Index value. 
+   * \param[in] val_sens - Sensor Hessian value.  
+   */ 
+  inline void AddAnisoSourceHess(unsigned long iPoint, unsigned short val_var, su2double val_sens_hess) { AnisoSourceHess(iPoint,val_var) += val_sens_hess; }
+
+   /*!  
+   * \brief Get the value of the sensor Hessian.  
+   * \param[in] val_var  - Index value. 
+   */ 
+  inline su2double GetAnisoSourceHess(unsigned long iPoint, unsigned short val_var) { return AnisoSourceHess(iPoint,val_var); }
 
    /*!  
    * \brief Set the value of the metric.  
