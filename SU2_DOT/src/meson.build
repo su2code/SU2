@@ -2,8 +2,9 @@ su2_dot_src = ['SU2_DOT.cpp']
 if get_option('enable-normal')
   su2_cfd_obj = su2_cfd.extract_objects(['solver_structure.cpp',
                                         'CMarkerProfileReaderFVM.cpp',
-                                       'output/COutput.cpp',
-                                       'output/output_structure_legacy.cpp',
+                                        'output/COutput.cpp',
+                                        'output/output_structure_legacy.cpp',
+					'output/tools/CWindowingTools.cpp',
                                         'output/CBaselineOutput.cpp',
                                         'output/filewriter/CParallelDataSorter.cpp',
                                         'output/filewriter/CParallelFileWriter.cpp',
@@ -20,8 +21,8 @@ if get_option('enable-normal')
                                         'output/filewriter/CSU2FileWriter.cpp',
                                         'output/filewriter/CSU2BinaryFileWriter.cpp',
                                         'output/filewriter/CSU2MeshFileWriter.cpp',
-				       'variables/CBaselineVariable.cpp',
-				       'variables/CVariable.cpp'])
+				        'variables/CBaselineVariable.cpp',
+				        'variables/CVariable.cpp'])
 
   su2_dot = executable('SU2_DOT',
                       su2_dot_src, 
@@ -35,8 +36,9 @@ endif
 if get_option('enable-autodiff')
   su2_dot_src_ad = ['SU2_DOT.cpp']
   su2_cfd_obj_ad = su2_cfd_ad.extract_objects(['solver_structure.cpp',
-                                        'CMarkerProfileReaderFVM.cpp',
+                                       'CMarkerProfileReaderFVM.cpp',
                                        'output/COutput.cpp',
+				       'output/tools/CWindowingTools.cpp',
                                        'output/output_structure_legacy.cpp',
 				       'output/CBaselineOutput.cpp',
 				       'output/filewriter/CParallelDataSorter.cpp',
