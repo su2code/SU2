@@ -210,7 +210,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
         }
       }
 
-      /*--- Global reduction. ---*/
+      /*--- Global reduction, (re)using eps2 as the recv buffer. ---*/
 
       SU2_MPI::Allreduce(fieldMin[0], eps2.data(), nCols, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
 
