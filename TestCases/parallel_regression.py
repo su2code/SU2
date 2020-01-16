@@ -140,7 +140,7 @@ def main():
     cylinder.cfg_dir   = "navierstokes/cylinder"
     cylinder.cfg_file  = "lam_cylinder.cfg"
     cylinder.test_iter = 25
-    cylinder.test_vals = [-6.759137, -1.291223, 0.107133, 0.853339] #last 4 columns
+    cylinder.test_vals = [-6.759136, -1.291221, 0.107150, 0.853257] #last 4 columns
     cylinder.su2_exec  = "parallel_computation.py -f"
     cylinder.timeout   = 1600
     cylinder.tol       = 0.00001
