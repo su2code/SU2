@@ -192,22 +192,21 @@ void CSTLFileWriter::GatherCoordData(){
   SU2_MPI::Allreduce(&nLocalTriaAll, &max_nLocalTriaAll, 1,
                      MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
 
-  max_nLocalCoords = max_nLocalTriaAll*3*3; /*--- 9 coordinates (3 per point) in a Triangle. ---*/
 
   SU2_MPI::Gather(&nLocalTriaAll,       1, MPI_UNSIGNED_LONG,
                   Buffer_Recv_nTriaAll, 1, MPI_UNSIGNED_LONG,
                   MASTER_NODE, MPI_COMM_WORLD);
 
   /*--- Allocate buffer for send/recv of the coordinate data. Only the master rank allocates buffers for the recv. ---*/
-  bufD_Send = new su2double[max_nLocalCoords](); /* Triangle has 3 Points with 3 coords each */
+  bufD_Send = new su2double[max_nLocalTriaAll*N_POINTS_TRIANGLE*3](); /* Triangle has 3 Points with 3 coords each */
   if (rank == MASTER_NODE)
-    bufD_Recv = new su2double[nProcessor*max_nLocalCoords];
+    bufD_Recv = new su2double[nProcessor*max_nLocalTriaAll*N_POINTS_TRIANGLE*3];
 
   /*--- Load send buffers with the local data on this rank. ---*/
   /*--- Write triangle element coordinate data into send buffer---*/
   unsigned long index = 0;
   for (iElem = 0; iElem < nLocalTria; iElem++) {
-    for (iPoint = 0; iPoint < 3; iPoint++) {
+    for (iPoint = 0; iPoint < N_POINTS_TRIANGLE; iPoint++) {
 
       global_node_number = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, iPoint) - 1; // (var, GlobalPointindex)
       unsigned long local_node_number = global_node_number - dataSorter->GetNodeBegin(rank);
@@ -244,8 +243,8 @@ void CSTLFileWriter::GatherCoordData(){
   }//iElem
 
   /*--- Collective comms of the solution data and global IDs. ---*/
-  SU2_MPI::Gather(bufD_Send, static_cast<int>(max_nLocalCoords), MPI_DOUBLE,
-                  bufD_Recv, static_cast<int>(max_nLocalCoords), MPI_DOUBLE,
+  SU2_MPI::Gather(bufD_Send, static_cast<int>(max_nLocalTriaAll*N_POINTS_TRIANGLE*3), MPI_DOUBLE,
+                  bufD_Recv, static_cast<int>(max_nLocalTriaAll*N_POINTS_TRIANGLE*3), MPI_DOUBLE,
                   MASTER_NODE, MPI_COMM_WORLD);
 
   /*--- Free temporary memory. ---*/
@@ -302,9 +301,9 @@ void CSTLFileWriter::Write_Data(){
         Surf_file << "facet normal " << 1 << " " << 2 << " " << 3 << endl;
         Surf_file << "    outer loop" << endl; // 4 leading whitespaces
 
-        for(iPoint = 0; iPoint < 3; iPoint++) {
+        for(iPoint = 0; iPoint < N_POINTS_TRIANGLE; iPoint++) {
           Surf_file << "        vertex"; // 8 leading whitespaces
-          index = iProcessor*max_nLocalCoords + iElem*3*3 + iPoint*3;
+          index = iProcessor*max_nLocalTriaAll*N_POINTS_TRIANGLE*3 + iElem*N_POINTS_TRIANGLE*3 + iPoint*3;
 
           for (iVar = 0; iVar < 3; iVar++) {
             Surf_file << " " <<  bufD_Recv[index + iVar];
