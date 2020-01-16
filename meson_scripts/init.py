@@ -52,6 +52,8 @@ def init_submodules(method = 'auto'):
   github_repo_meson = 'https://github.com/mesonbuild/meson'
   sha_version_ninja = '2d15b04e411229cb902332957281622119025e77'
   github_repo_ninja = 'https://github.com/ninja-build/ninja'
+  sha_version_pybeam = '3d7e5795cd5064bd0c23d1f75d1b0393f9e2ddd2'
+  github_repo_pybeam = 'https://github.com/pyBeam/pyBeam'
 
   medi_name = 'MeDiPack'
   codi_name = 'CoDiPack'
@@ -62,6 +64,8 @@ def init_submodules(method = 'auto'):
   alt_name_codi = base_path + 'codi'
   alt_name_meson =  base_path + 'meson'
   alt_name_ninja =  base_path + 'ninja'
+  subproj_path = cur_dir + os.path.sep + 'subprojects' + os.path.sep
+  alt_name_pybeam = subproj_path + 'pyBeam'
 
   if method == 'auto':
     is_git = is_git_directory(cur_dir)
@@ -80,6 +84,7 @@ def init_submodules(method = 'auto'):
     submodule_status(alt_name_medi, sha_version_medi)
     submodule_status(alt_name_meson, sha_version_meson)
     submodule_status(alt_name_ninja, sha_version_ninja)
+    submodule_status(alt_name_pybeam, sha_version_pybeam)
   # Otherwise download the zip file from git
   else:
     download_module(codi_name, alt_name_codi, github_repo_codi, sha_version_codi)
@@ -116,11 +121,11 @@ def submodule_status(path, sha_commit):
       # Write a warning that the sha tags do not match
       sys.stderr.write('WARNING: the currently checked out submodule commit in '
                         + path + ' does not match the SHA-1 found in the index.\n')
-      sys.stderr.write('Use \'git submodule update --init '+ path + '\' to reset the module if necessary.\n')
+      sys.stderr.write('Use \'git submodule update --init --recursive '+ path + '\' to reset the module if necessary.\n')
     elif status_indicator == '-':
       # Initialize the submodule if necessary 
       print('Initialize submodule ' + path + ' using git ... ')
-      subprocess.run(['git', 'submodule', 'update', '--init', path], check = True, cwd = sys.path[0])
+      subprocess.run(['git', 'submodule', 'update', '--init',  '--recursive', path], check = True, cwd = sys.path[0])
 
     # Check that the SHA tag stored in this file matches the one stored in the git index
     cur_sha_commit = status[1:].split(' ')[0]
