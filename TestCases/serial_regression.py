@@ -542,7 +542,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-9.787554, -15.192510, 3.0092e-01, 1.9552e-02] #last 4 columns
+    contadj_naca0012.test_vals = [-9.289565, -14.563861, 0.300920, 0.019552] #last 4 columns
     contadj_naca0012.su2_exec  = "SU2_CFD"
     contadj_naca0012.new_output = True
     contadj_naca0012.timeout   = 1600
