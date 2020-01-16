@@ -7975,6 +7975,12 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   su2double rotCoord[3] = {0.0, 0.0, 0.0};
+  
+  bool pointOnAxis = false;
+  
+  bool chkSamePoint = false;
+  
+  su2double distToAxis = 0.0;
 
   /*--- Tolerance for distance-based match to report warning. ---*/
 
@@ -8183,6 +8189,17 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                            rotMatrix[2][1]*dy +
                            rotMatrix[2][2]*dz + translation[2]);
 
+            /*--- Check if the point lies on the axis of rotation. If it does, 
+             the rotated coordinate and the original coordinate are the same. ---*/
+
+            pointOnAxis = false;
+            distToAxis = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+               distToAxis = (rotCoord[iDim] - Coord_i[iDim])*(rotCoord[iDim] - Coord_i[iDim]);
+            distToAxis = sqrt(distToAxis);
+
+            if (distToAxis < epsilon) pointOnAxis = true;
+
             /*--- Our search is based on the minimum distance, so we
              initialize the distance to a large value. ---*/
 
@@ -8211,7 +8228,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                sure that we avoid the original point by checking that the
                global index values are not the same. ---*/
 
-              if ((jPointGlobal != iPointGlobal)) {
+              if ((jPointGlobal != iPointGlobal) || (pointOnAxis)) {
 
                 /*--- Compute the distance between the candidate periodic
                  point and the transformed coordinates of the owned point. ---*/
@@ -8225,10 +8242,15 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
 
                 /*--- Compare the distance against the existing minimum
                  and also perform checks just to be sure that this is an
-                 independent periodic point (even if on the same rank). ---*/
+                 independent periodic point (even if on the same rank),
+                  unless it lies on the axis of rotation. ---*/
+                
+                chkSamePoint = false;
+                chkSamePoint = (((dist < mindist) && (iProcessor != rank)) ||
+                                ((dist < mindist) && (iProcessor == rank) &&
+                                (jPoint != iPoint)));
 
-                if (((dist < mindist) && (iProcessor != rank)) ||
-                    ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
+                if (chkSamePoint || ((dist < mindist) && (pointOnAxis))) {
 
                   /*--- We have found an intermediate match. Store the
                    data for this point before continuing the search. ---*/
@@ -9638,12 +9660,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   string filename = config->GetSolution_AdjFileName();
 
   su2double AoASens;
-  unsigned short nTimeIter, iDim;
-  unsigned long iPoint, index;
+  unsigned short nTimeIter;
+  unsigned long index;
   string::size_type position;
   int counter = 0;
 
-  Sensitivity = new su2double[nPoint*nDim];
+  Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
   if (config->GetTime_Domain()) {
     nTimeIter = config->GetnTime_Iter();
@@ -9656,13 +9678,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
-
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Sensitivity[iPoint*nDim+iDim] = 0.0;
-    }
-  }
 
   iPoint_Global = 0;
 
@@ -9977,13 +9992,13 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
          offset in the buffer of data from the restart file and load it. ---*/
 
         index = counter*nFields + sens_x_idx - 1;
-        Sensitivity[iPoint_Local*nDim+0] = Restart_Data[index];
+        Sensitivity(iPoint_Local,0) = Restart_Data[index];
         index = counter*nFields + sens_y_idx - 1;
-        Sensitivity[iPoint_Local*nDim+1] = Restart_Data[index];
+        Sensitivity(iPoint_Local,1) = Restart_Data[index];
 
         if (nDim == 3){
           index = counter*nFields + sens_z_idx - 1;
-          Sensitivity[iPoint_Local*nDim+2] = Restart_Data[index];
+          Sensitivity(iPoint_Local,2) = Restart_Data[index];
         }
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
@@ -10128,11 +10143,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     iPoint_Local = GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-      Sensitivity[iPoint_Local*nDim+0] = PrintingToolbox::stod(point_line[sens_x_idx]);
-      Sensitivity[iPoint_Local*nDim+1] = PrintingToolbox::stod(point_line[sens_y_idx]);
+      Sensitivity(iPoint_Local,0) = PrintingToolbox::stod(point_line[sens_x_idx]);
+      Sensitivity(iPoint_Local,1) = PrintingToolbox::stod(point_line[sens_y_idx]);
       if (nDim == 3)
-        Sensitivity[iPoint_Local*nDim+2] = PrintingToolbox::stod(point_line[sens_z_idx]);
-
+        Sensitivity(iPoint_Local,2) = PrintingToolbox::stod(point_line[sens_z_idx]);
     }
 
   }
@@ -10187,12 +10201,7 @@ void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig *config) {
 
   /*--- Allocate space for the sensitivity and initialize. ---*/
 
-  Sensitivity = new su2double[nPoint*nDim];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Sensitivity[iPoint*nDim+iDim] = 0.0;
-    }
-  }
+  Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
   /*--- Get the filename for the unordered ASCII sensitivity file input. ---*/
 
@@ -10265,7 +10274,7 @@ void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig *config) {
           /*--- Store the sensitivities at the matched local node. ---*/
 
           for (iDim = 0; iDim < nDim; iDim++)
-            Sensitivity[pointID*nDim+iDim] = Sens_External[iDim];
+            Sensitivity(pointID,iDim) = Sens_External[iDim];
 
           /*--- Keep track of how many points we match. ---*/
 
