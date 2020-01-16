@@ -2898,9 +2898,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #endif
 
   /*--- STL_BINARY output not implelemted yet, but already a value in option_structure.hpp---*/
-  for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++)
-    if (VolumeOutputFiles[iVolumeFile] == STL_BINARY)
+  for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
+    if (VolumeOutputFiles[iVolumeFile] == STL_BINARY){
       SU2_MPI::Error(string("OUTPUT_FILES: 'STL_BINARY' output not implemented. Use 'STL' for ASCII output.\n"), CURRENT_FUNCTION);
+    }
+    if (val_nDim == 2 && (VolumeOutputFiles[iVolumeFile] == STL || VolumeOutputFiles[iVolumeFile] == STL_BINARY)) {
+      SU2_MPI::Error(string("OUTPUT_FILES: 'STL(_BINARY)' output only reasonable for 3D cases.\n"), CURRENT_FUNCTION);
+    }
+  }
 
 
   if (Kind_Solver == NAVIER_STOKES && Kind_Turb_Model != NONE){
