@@ -1170,6 +1170,7 @@ private:
   su2double Adap_Norm,               /*!< \brief Lp-norm for mesh adaptation */
             Mesh_Hmax,               /*!< \brief Maximum cell size */
             Mesh_Hmin;               /*!< \brief Minimum cell size */
+  bool Adap_Source;                  /*!< \brief Whether or not to use source terms for adaptation */
   unsigned long  Mesh_Complexity;    /*!< \brief Constraint mesh complexity */
 
   /*!
@@ -9671,6 +9672,11 @@ public:
    * \return Mesh complexity
    */
   unsigned long GetMesh_Complexity(void);
+
+  /*!
+   * \brief Get whether to use source terms in adaptation
+   */
+  bool GetAdap_Source(void);
 };
 
 #include "config_structure.inl"
