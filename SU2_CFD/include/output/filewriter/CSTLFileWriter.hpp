@@ -60,7 +60,8 @@ private:
 
   /*--- Variables for gathering the triangle data in one array. ---*/
   unsigned long *Buffer_Recv_nTriaAll = NULL; /*!< \brief Array with number of triangles which each processor has. (Note: Quads are split into two Tris)  */
-  unsigned long MaxLocalTriaAll; /*!< \brief Largest Tri count of all processors.  */
+  unsigned long max_nLocalTriaAll; /*!< \brief Largest Tri count of all processors. */
+  unsigned long max_nLocalCoords; /*!< \brief Largest coordinate count of all processors. This var is MaxLocalTriaAll*3*3. */
   su2double *bufD_Recv = NULL; /*!< \brief Array holding Coordinate data of all processors. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
 
   /*!
