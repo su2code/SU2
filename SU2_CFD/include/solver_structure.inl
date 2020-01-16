@@ -961,13 +961,6 @@ inline void CSolver::AddResMassFlux(su2double val_ResMassFlux) { }
   
 inline double CSolver::GetResMassFlux() { return 0.0; }
 
-inline void CSolver::Set_OldSolution(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    node[iPoint]->Set_OldSolution(); // The loop should be over nPoints
-                                     //  to guarantee that the boundaries are
-                                     //  well updated
-}
-
 inline void CSolver::Set_OldSolution(CGeometry *geometry) { base_nodes->Set_OldSolution(); }
 
 inline void CSolver::Set_NewSolution(CGeometry *geometry) { }

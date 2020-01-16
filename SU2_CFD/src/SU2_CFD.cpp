@@ -162,7 +162,6 @@ int main(int argc, char *argv[]) {
       } else {
         
         /*--- Instantiate the class for external aerodynamics ---*/
-        
         driver = new CFluidDriver(config_file_name, nZone, MPICommunicator);
         
       }

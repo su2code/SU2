@@ -38,6 +38,8 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   heat = config->GetEnergy_Equation();
 
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+  
+  pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
@@ -81,7 +83,8 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 
   /*--- Set the default convergence field --- */
 
-  if (convFields.empty() ) convFields.emplace_back("RMS_PRESSURE");
+  if (convFields.empty() && !pressure_based) convFields.emplace_back("RMS_PRESSURE");
+  if (convFields.empty() && pressure_based) convFields.emplace_back("RMS_VELOCITY-X");
 
 
 }
@@ -102,6 +105,8 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
   if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
+  /// DESCRIPTION: Maximum residual of the mass flux (only for pressure based).
+  if (pressure_based) AddHistoryOutput("RMS_MASSFLUX", "rms[Mf]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the mass flux.", HistoryFieldType::RESIDUAL);
 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -222,10 +227,18 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   CSolver* heat_solver = solver[HEAT_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
 
-  SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
-  SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
-  SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
-  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(3)));
+  if (pressure_based) {
+	  SetHistoryOutputValue("RMS_MASSFLUX", log10(flow_solver->GetResMassFlux()));
+	  SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(0)));
+	  SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(1)));
+	  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(2)));	  
+  } 
+  else {
+	  SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
+	  SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
+	  SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
+	  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(3)));
+  }
 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -237,10 +250,17 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     break;
   }
 
-  SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
-  SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
-  SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
-  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
+  if (pressure_based) {
+	  SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(0)));
+	  SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(1)));
+	  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_Max(2)));
+  }
+  else {
+	  SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
+	  SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
+	  SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
+	  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
+  }
 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -391,6 +411,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("RES_VELOCITY-Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
   AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
+  AddVolumeOutput("RES_MASSFLUX", "Residual_Mass_Flux", "RESIDUAL", "Residual of the mass flux");
 
   switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:
@@ -467,16 +488,23 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
 
-  SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
-  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
-  SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
-  if (nDim == 3){
-    SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
-    if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, 4));
-  } else {
-    if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, 3));
-  }
-  if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
+  if (pressure_based) {
+	  SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetPressure(iPoint));
+	  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 0));
+	  SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(iPoint, 1));
+	  if (nDim == 3) SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 2));
+  }  else {
+	  SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
+	  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
+	  SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
+	  if (nDim == 3){
+        SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
+        if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, 4));
+      } else {
+        if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, 3));
+       }
+       if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
+   }
 
   switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:

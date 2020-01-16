@@ -4097,7 +4097,6 @@ void CFluidDriver::StartSolver(){
     }
 
    /*--- Run a single iteration of the problem (fluid, elasticity, heat, ...). ---*/
-
     Run();
 
     /*--- Update the solution for dual time stepping strategy ---*/
@@ -4222,6 +4221,7 @@ void CFluidDriver::Run() {
 
     for (iZone = 0; iZone < nZone; iZone++) {
       config_container[iZone]->SetInnerIter(IntIter);
+      cout<<"Calling Iterate"<<endl;
       iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
     }
 

@@ -143,7 +143,7 @@ public:
                        CFreeFormDefBox*** FFDBox,
                        unsigned short val_iZone,
                        unsigned short val_iInst);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] output - Pointer to the COutput class.
@@ -522,7 +522,7 @@ public:
  * \brief Class for driving an iteration of the fluid system.
  * \author T. Economon
  */
-class CPBFluidIteration : public CIteration {
+class CPBFluidIteration : public CFluidIteration {
 public:
   
   /*!
@@ -575,43 +575,6 @@ public:
                    CFreeFormDefBox*** FFDBox,
                    unsigned short val_iZone,
                    unsigned short val_iInst);
-  
-  /*!
-   * \brief Updates the containers for the fluid system.
-   * \param[in] ??? - Description here.
-   */
-  void Update(COutput *output,
-                   CIntegration ****integration_container,
-                   CGeometry ****geometry_container,
-                   CSolver *****solver_container,
-                   CNumerics ******numerics_container,
-                   CConfig **config_container,
-                   CSurfaceMovement **surface_movement,
-                   CVolumetricMovement ***grid_movement,
-                   CFreeFormDefBox*** FFDBox,
-                   unsigned short val_iZone,
-                   unsigned short val_iInst);
-  
-  /*!
-   * \brief Monitors the convergence and other metrics for the fluid system.
-   * \param[in] ??? - Description here.
-   */
-  bool Monitor(COutput *output,
-      CIntegration ****integration_container,
-      CGeometry ****geometry_container,
-      CSolver *****solver_container,
-      CNumerics ******numerics_container,
-      CConfig **config_container,
-      CSurfaceMovement **surface_movement,
-      CVolumetricMovement ***grid_movement,
-      CFreeFormDefBox*** FFDBox,
-      unsigned short val_iZone,
-      unsigned short val_iInst);
-  
-  /*!
-   * \brief Outputs desired files and quantities for the fluid system.
-   */
-  void Output();
   
   /*!
    * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.

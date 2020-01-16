@@ -8224,7 +8224,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                sure that we avoid the original point by checking that the
                global index values are not the same. ---*/
               
-			  if ((jPointGlobal != iPointGlobal) || pointonAxis) {
+			  if ((jPointGlobal != iPointGlobal) || pointOnAxis) {
                 /*--- Compute the distance between the candidate periodic
                  point and the transformed coordinates of the owned point. ---*/
 

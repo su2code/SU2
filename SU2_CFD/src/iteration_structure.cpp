@@ -1046,7 +1046,7 @@ bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSol
   return fixed_cl_convergence;
 }
 
-CPBFluidIteration::CPBFluidIteration(CConfig *config) : CIteration(config) { }
+CPBFluidIteration::CPBFluidIteration(CConfig *config) : CFluidIteration(config) { }
 CPBFluidIteration::~CPBFluidIteration(void) { }
 
 void CPBFluidIteration::Preprocess(COutput *output,
@@ -1059,7 +1059,9 @@ void CPBFluidIteration::Preprocess(COutput *output,
                                     CVolumetricMovement ***grid_movement,
                                     CFreeFormDefBox*** FFDBox,
                                     unsigned short val_iZone,
-                                    unsigned short val_iInst) { }
+                                    unsigned short val_iInst) { 
+										
+										}
 
 void CPBFluidIteration::Iterate(COutput *output,
                                     CIntegration ****integration,
@@ -1072,34 +1074,29 @@ void CPBFluidIteration::Iterate(COutput *output,
                                     CFreeFormDefBox*** FFDBox,
                                     unsigned short val_iZone,
                                     unsigned short val_iInst) {
-  unsigned long IntIter, ExtIter;
-  unsigned long MassIter, nMassIter, PressureIter, nPressureIter;
-  su2double first_iter, last_iter;
+  unsigned long InnerIter, TimeIter;
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-
-  
-  bool unsteady = (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool unsteady = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) || (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
   bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
                      (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
-  ExtIter = config[val_iZone]->GetExtIter();
+  TimeIter = config[val_iZone]->GetTimeIter();
   
   /* --- Setting up iteration values depending on if this is a
    steady or an unsteady simulaiton */
   
-  if ( !unsteady ) IntIter = ExtIter;
-  else IntIter = config[val_iZone]->GetIntIter(); 
-  
+  InnerIter = config[val_iZone]->GetInnerIter();
+
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations ---*/
   
   switch( config[val_iZone]->GetKind_Solver() ) {
     case INC_EULER: 
-      config[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter); break;
+      config[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS); break;
       
     case INC_NAVIER_STOKES:
-      config[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
+      config[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS); break;
       
     case INC_RANS:
-      config[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter); break;  
+      config[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS); break;  
   }
   
   /*--- Solve the momentum equations. ---*/
@@ -1131,14 +1128,14 @@ void CPBFluidIteration::Iterate(COutput *output,
   //solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
   
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_CyclePB(geometry, solver, numerics,
-                                                                  config, FinestMesh, 0, RUNTIME_FLOW_SYS, IntIter, val_iZone,val_iInst);
+                                                                  config, FinestMesh, 0, RUNTIME_FLOW_SYS, InnerIter, val_iZone,val_iInst);
                                                                   
   if (config[val_iZone]->GetKind_Solver() == INC_RANS) {
     
     /*--- Solve the turbulence model ---*/
     
-    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
-    integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, RUNTIME_TURB_SYS, IntIter, val_iZone, val_iInst);
+    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS);
+    integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, RUNTIME_TURB_SYS, val_iZone, val_iInst);
   }
   
 
@@ -1151,103 +1148,11 @@ void CPBFluidIteration::Iterate(COutput *output,
     
   /*--- Write the convergence history ---*/
 
-  if ( unsteady && !config[val_iZone]->GetDiscrete_Adjoint() ) 
-	 output->SetConvHistory_Body(NULL, geometry, solver, config, integration, true, 0.0, val_iZone,val_iInst);
+  /*if ( unsteady && !config[val_iZone]->GetDiscrete_Adjoint() ) 
+	 output->SetConvHistory_Body(NULL, geometry, solver, config, integration, true, 0.0, val_iZone,val_iInst);*/
   
 }
 
-void CPBFluidIteration::Update(COutput *output,
-                                    CIntegration ****integration,
-                                    CGeometry ****geometry,
-                                    CSolver *****solver,
-                                    CNumerics ******numerics,
-                                    CConfig **config,
-                                    CSurfaceMovement **surface_movement,
-                                    CVolumetricMovement ***grid_movement,
-                                    CFreeFormDefBox*** FFDBox,
-                                    unsigned short val_iZone,
-                                    unsigned short val_iInst)      {
-  
-  unsigned short iMesh;
-  su2double Physical_dt, Physical_t;
-  unsigned long ExtIter = config[val_iZone]->GetExtIter();
-
-  /*--- Dual time stepping strategy ---*/
-  
-  if ((config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-    
-    /*--- Update dual time solver on all mesh levels ---*/
-    
-    for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-      integration[val_iZone][val_iInst][FLOW_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh][FLOW_SOL], config[val_iZone], iMesh);
-      integration[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(false);
-    }
-    
-    /*--- Update dual time solver for the turbulence model ---*/
-    
-    if (config[val_iZone]->GetKind_Solver() == INC_RANS)  {
-      integration[val_iZone][val_iInst][TURB_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0][TURB_SOL], config[val_iZone], MESH_0);
-      integration[val_iZone][val_iInst][TURB_SOL]->SetConvergence(false);
-    }
-    
-    /*--- Update dual time solver for the transition model ---*/
-    
-    if (config[val_iZone]->GetKind_Trans_Model() == LM) {
-      integration[val_iZone][val_iInst][TRANS_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0][TRANS_SOL], config[val_iZone], MESH_0);
-      integration[val_iZone][val_iInst][TRANS_SOL]->SetConvergence(false);
-    }
-    
-    /*--- Verify convergence criteria (based on total time) ---*/
-    
-    Physical_dt = config[val_iZone]->GetDelta_UnstTime();
-    Physical_t  = (ExtIter+1)*Physical_dt;
-    if (Physical_t >=  config[val_iZone]->GetTotal_UnstTime())
-      integration[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(true);
-    
-  }
-  
-}
-
-bool CPBFluidIteration::Monitor(COutput *output,
-    CIntegration ****integration,
-    CGeometry ****geometry,
-    CSolver *****solver,
-    CNumerics ******numerics,
-    CConfig **config,
-    CSurfaceMovement **surface_movement,
-    CVolumetricMovement ***grid_movement,
-    CFreeFormDefBox*** FFDBox,
-    unsigned short val_iZone,
-    unsigned short val_iInst)     {
-
-  bool StopCalc = false;
-  bool steady = (config[val_iZone]->GetUnsteady_Simulation() == STEADY);
-  bool output_history = false;
-
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
-  UsedTime = StopTime - StartTime;
-
-  /*--- If convergence was reached --*/
-  StopCalc = integration[val_iZone][INST_0][FLOW_SOL]->GetConvergence();
-
-  /*--- Write the convergence history for the fluid (only screen output) ---*/
-
-  /*--- The logic is right now case dependent ----*/
-  /*--- This needs to be generalized when the new output structure comes ---*/
-  output_history = (steady && !(multizone && (config[val_iZone]->GetnInner_Iter()==1)));
-
-  if (output_history) output->SetConvHistory_Body(NULL, geometry, solver, config, integration, false, UsedTime, val_iZone, INST_0);
-
-  return StopCalc;
-
-
-}
-void CPBFluidIteration::Output()      { }
 void CPBFluidIteration::Postprocess(COutput *output,
                                     CIntegration ****integration,
                                     CGeometry ****geometry,

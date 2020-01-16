@@ -61,6 +61,7 @@
 #include "variables/CBaselineVariable.hpp"
 #include "variables/CEulerVariable.hpp"
 #include "variables/CIncEulerVariable.hpp"
+#include "variables/CPBIncEulerVariable.hpp"
 #include "variables/CTurbVariable.hpp"
 #include "variables/CAdjEulerVariable.hpp"
 #include "variables/CAdjTurbVariable.hpp"
@@ -8815,6 +8816,13 @@ protected:
   unsigned long PRef_Point;    /*!< \brief Store the index of reference cell for pressure */
   bool PRef_Check;             /*!< \brief To check if a reference pressure cell is necessary */
 
+  CPBIncEulerVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+  
 public:
   
   /*!
@@ -8870,7 +8878,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
@@ -8878,7 +8886,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
   
   /*!
    * \brief Compute the limiter of the primitive variables.
@@ -12851,8 +12859,15 @@ public:
  *  \version 6.0.0 "Falcon"
  */
 class CPoissonSolverFVM : public CSolver {
-	
+protected:
   su2double **CoeffMatrix_Node;  /*!< \brief Auxiliary matrices for storing point to point coefficient matrices. */
+  
+  CPoissonVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
   

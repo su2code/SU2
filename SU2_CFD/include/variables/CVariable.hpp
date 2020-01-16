@@ -1606,6 +1606,11 @@ public:
    * \brief A virtual member.
    */
   inline virtual bool SetPressure(unsigned long iPoint, su2double Gamma, su2double turb_ke) { return false; }
+  
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual void SetPressure_val(unsigned long iPoint, su2double val_pressure) {}
 
   /*!
    * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
@@ -2767,49 +2772,49 @@ public:
 
   inline virtual su2double GetSolution_Old_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
-  inline virtual su2double GetSolution_Old_Accel(unsigned long iPoint, unsigned short iVar) {return 0.0; }
+  inline virtual su2double GetSolution_Old_Accel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
   
-  inline virtual void SetMassFluxZero() {}
+  inline virtual void SetMassFluxZero(unsigned long iPoint) {}
   
-  inline virtual void SetStrongBC() {}
+  inline virtual void SetStrongBC(unsigned long iPoint) {}
   
-  inline virtual void ResetStrongBC() {}
+  inline virtual void ResetStrongBC(unsigned long iPoint) {}
   
-  inline virtual void SetMassFlux(su2double val_MassFlux) {}
+  inline virtual void SetMassFlux(unsigned long iPoint, su2double val_MassFlux) {}
   
-  inline virtual void AddMassFlux(su2double val_MassFlux) {}
+  inline virtual void AddMassFlux(unsigned long iPoint, su2double val_MassFlux) {}
   
-  inline virtual void SubtractMassFlux(su2double val_MassFlux) {}
+  inline virtual void SubtractMassFlux(unsigned long iPoint, su2double val_MassFlux) {}
   
-  inline virtual void Set_Mom_Coeff(su2double *val_Mom_Coeff) {}
+  inline virtual void Set_Mom_Coeff(unsigned long iPoint, su2double *val_Mom_Coeff) {}
   
-  inline virtual su2double Get_Mom_Coeff(unsigned short val_Var) { return 0.0; }
+  inline virtual su2double Get_Mom_Coeff(unsigned long iPoint, unsigned short val_Var) { return 0.0; }
   
-  inline virtual su2double Get_Mom_Coeff_nb(unsigned short val_Var) { return 0.0; }
+  inline virtual su2double Get_Mom_Coeff_nb(unsigned long iPoint, unsigned short val_Var) { return 0.0; }
   
-  inline virtual void Set_Mom_Coeff_nb(su2double *val_Mom_Coeff) {}
+  inline virtual void Set_Mom_Coeff_nb(unsigned long iPoint, su2double *val_Mom_Coeff) {}
   
-  inline virtual void Add_Mom_Coeff_nb(su2double val_coeff_nb, unsigned short val_Var) {}
+  inline virtual void Add_Mom_Coeff_nb(unsigned long iPoint, su2double val_coeff_nb, unsigned short val_Var) {}
   
   inline virtual void Set_Mom_Coeff_nbZero() {}
   
   inline virtual void Set_Mom_CoeffZero() {}
   
-  inline virtual void Set_Mom_Coeff(unsigned short val_Var, su2double val_Mom_Coeff) {}
+  inline virtual void Set_Mom_Coeff(unsigned long iPoint, unsigned short val_Var, su2double val_Mom_Coeff) {}
   
-  inline virtual void Set_Mom_Coeff_nb(unsigned short val_Var, su2double val_Mom_Coeff) {}
+  inline virtual void Set_Mom_Coeff_nb(unsigned long iPoint, unsigned short val_Var, su2double val_Mom_Coeff) {}
   
-  inline virtual su2double GetMassFlux() { return 0.0; }
+  inline virtual su2double GetMassFlux(unsigned long iPoint) { return 0.0; }
   
-  inline virtual bool GetStrongBC() { return false; }
+  inline virtual bool GetStrongBC(unsigned long iPoint) { return false; }
   
-  inline virtual su2double GetPoisson_Coeff() { return 0.0; }
+  inline virtual su2double GetPoisson_Coeff(unsigned long iPoint) { return 0.0; }
   
-  inline virtual void SetPoisson_Coeff(su2double val_Poisson_Coeff) {}
+  inline virtual void SetPoisson_Coeff(unsigned long iPoint, su2double val_Poisson_Coeff) {}
   
-  inline virtual void SetSourceTerm(su2double val_SourceTerm) {}
+  inline virtual void SetSourceTerm(unsigned long iPoint, su2double val_SourceTerm) {}
   
-  inline virtual su2double GetSourceTerm() { return 0.0; }
+  inline virtual su2double GetSourceTerm(unsigned long iPoint) { return 0.0; }
 
 
   /*!

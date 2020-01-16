@@ -312,22 +312,6 @@ public:
    */
   virtual void SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
   
-  //----------------------------------------------------------------------------------------------------------------//
-  /*!
-   * \brief A virtual member.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] sol_fine - Pointer to the solution on the fine grid.
-   * \param[out] sol_coarse - Pointer to the solution on the coarse grid.
-   * \param[in] geo_fine - Geometrical definition of the fine grid.
-   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
-   */
-  virtual void SetRestricted_PoissonSource(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
-  
-  //----------------------------------------------------------------------------------------------------------------//
-
   /*! 
    * \brief A virtual member.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
@@ -728,23 +712,6 @@ public:
    * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
    */
   void SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
-  
-  
-  //----------------------------------------------------------------------------------------------------------------//
-  /*!
-   * \brief Restrict source term for Poisson(pressure-correction) equation.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] sol_fine - Pointer to the solution on the fine grid.
-   * \param[out] sol_coarse - Pointer to the solution on the coarse grid.
-   * \param[in] geo_fine - Geometrical definition of the fine grid.
-   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
-   */
-  void SetRestricted_PoissonSource(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
-  
-  //----------------------------------------------------------------------------------------------------------------//
  
 };
 

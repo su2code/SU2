@@ -13619,11 +13619,11 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
 
       /*--- Load the conservative variable states for the mean flow variables. ---*/
       if (pressure_based) {
-		  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetPressure(); iVar++;
-		  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(0); iVar++;
-		  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(1); iVar++;
+		  Local_Data[jPoint][iVar] = solver[FirstIndex]->GetNodes()->GetPressure(iPoint); iVar++;
+		  Local_Data[jPoint][iVar] = solver[FirstIndex]->GetNodes()->GetSolution(iPoint, 0); iVar++;
+		  Local_Data[jPoint][iVar] = solver[FirstIndex]->GetNodes()->GetSolution(iPoint, 1); iVar++;
 		  if (nDim == 3) {
-			  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(2); iVar++;
+			  Local_Data[jPoint][iVar] = solver[FirstIndex]->GetNodes()->GetSolution(iPoint, 2); iVar++;
 		  }
 	  }
 	  else {

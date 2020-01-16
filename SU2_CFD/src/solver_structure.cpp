@@ -2082,13 +2082,13 @@ void CSolver::InitiateComms(CGeometry *geometry,
             break;
           case MOM_COEFF:
             for (iVar = 0; iVar < nVar; iVar++)
-              bufDSend[buf_offset+iVar] = node[iPoint]->Get_Mom_Coeff(iVar);
+              bufDSend[buf_offset+iVar] = base_nodes->Get_Mom_Coeff(iPoint, iVar);
           break;
           case MASS_FLUX:
-            bufDSend[buf_offset] = node[iPoint]->GetMassFlux();
+            bufDSend[buf_offset] = base_nodes->GetMassFlux(iPoint);
           break;
           case PRESSURE_VAR:
-            bufDSend[buf_offset] = node[iPoint]->GetPrimitive(0);
+            bufDSend[buf_offset] = base_nodes->GetPrimitive(iPoint, 0);
           break;  
           case MESH_DISPLACEMENTS:
             for (iDim = 0; iDim < nDim; iDim++)
@@ -2259,13 +2259,16 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
           case MOM_COEFF:
             for (iVar = 0; iVar < nVar; iVar++) 
-              node[iPoint]->Set_Mom_Coeff(iVar, bufDRecv[buf_offset+iVar]);
+              base_nodes->Set_Mom_Coeff(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+              //node[iPoint]->Set_Mom_Coeff(iVar, bufDRecv[buf_offset+iVar]);
           break;
           case MASS_FLUX:
-            node[iPoint]->SetMassFlux(bufDRecv[buf_offset]);
+            base_nodes->SetMassFlux(iPoint, bufDRecv[buf_offset]);
+            //node[iPoint]->SetMassFlux(bufDRecv[buf_offset]);
           break;
           case PRESSURE_VAR:
-            node[iPoint]->SetPressure_val(bufDRecv[buf_offset]);
+            base_nodes->SetPressure_val(iPoint, bufDRecv[buf_offset]);
+            //node[iPoint]->SetPressure_val(bufDRecv[buf_offset]);
           break;
           case MESH_DISPLACEMENTS:
             for (iDim = 0; iDim < nDim; iDim++)

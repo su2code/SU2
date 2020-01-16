@@ -37,391 +37,170 @@
 
 #include "../../include/variables/CPBIncEulerVariable.hpp"
 
-CPBIncEulerVariable::CPBIncEulerVariable(void) : CVariable() {
-  
-  /*--- Array initialization ---*/
-  
-  Primitive = NULL;
-  PrimitiveMGCorr = NULL;
-  
-  Gradient_Primitive = NULL;
-  
-  Limiter_Primitive = NULL;
-  
-  WindGust    = NULL;
-  WindGustDer = NULL;
+CPBIncEulerVariable::CPBIncEulerVariable(su2double pressure, const su2double *velocity, unsigned long nPoint,
+                                     unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(nPoint, ndim, nvar, config),
+                                     Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
 
-  nPrimVar     = 0;
-  nPrimVarGrad = 0;
-
-  nSecondaryVar     = 0;
-  nSecondaryVarGrad = 0;
- 
-  Undivided_Laplacian = NULL;
-  
-  Mom_Coeff = NULL;
-  Mom_Coeff_nb = NULL;
- 
-}
-
-CPBIncEulerVariable::CPBIncEulerVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim,
-                               unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-  unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
-  
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool windgust = config->GetWind_Gust();
-  bool fsi = config->GetFSI_Simulation();
-
-  /*--- Array initialization ---*/
-  
-  Primitive = NULL;
-  PrimitiveMGCorr = NULL;
-  
-  Gradient_Primitive = NULL;
-  
-  Limiter_Primitive = NULL;
-  
-  WindGust    = NULL;
-  WindGustDer = NULL;
-  
-  nPrimVar     = 0;
-  nPrimVarGrad = 0;
-  
-  nSecondaryVar     = 0;
-  nSecondaryVarGrad = 0;
-
-  Undivided_Laplacian = NULL;
+  bool dual_time    = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                      (config->GetTime_Marching() == DT_STEPPING_2ND);
+  bool viscous      = config->GetViscous();
+  bool axisymmetric = config->GetAxisymmetric();
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
-  
+
   nPrimVar = nDim+4; nPrimVarGrad = nDim+2;
 
   /*--- Allocate residual structures ---*/
-  
-  Res_TruncError = new su2double [nVar];
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Res_TruncError[iVar] = 0.0;
-  }
-  
-  Mass_TruncError = 0.0;
-  
+
+  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
+
   /*--- Only for residual smoothing (multigrid) ---*/
-  
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-  
-  if (nMGSmooth > 0) {
-    Residual_Sum = new su2double [nVar];
-    Residual_Old = new su2double [nVar];
-  }
-  if (config->GetnMGLevels() > 0)
-      PrimitiveMGCorr = new su2double [nPrimVar];
-     
-  
-  /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-  
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-    Undivided_Laplacian = new su2double [nVar];
-  }
-  
-  /*--- Always allocate the slope limiter,
-   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
-  Limiter_Primitive = new su2double [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-    Limiter_Primitive[iVar] = 0.0;
-
-  Limiter = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Limiter[iVar] = 0.0;
-  
-  Solution_Max = new su2double [nPrimVarGrad];
-  Solution_Min = new su2double [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-    Solution_Max[iVar] = 0.0;
-    Solution_Min[iVar] = 0.0;
-  }
-  
-  /*--- Solution and old solution initialization ---*/
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Solution[iDim] = val_velocity[iDim];
-    Solution_Old[iDim] = val_velocity[iDim];
-  }
-
-  
-  /*--- Allocate and initialize solution for dual time strategy ---*/
-  
-  if (dual_time) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Solution_time_n[iDim] = val_velocity[iDim];
-      Solution_time_n1[iDim] = val_velocity[iDim];
+  for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+    if (config->GetMG_CorrecSmooth(iMesh) > 0) {
+      Residual_Sum.resize(nPoint,nVar);
+      Residual_Old.resize(nPoint,nVar);
+      break;
     }
   }
-    
-  /*--- Allocate vector for wind gust and wind gust derivative field ---*/
-  
-  if (windgust) {
-    WindGust = new su2double [nDim];
-    WindGustDer = new su2double [nDim+1];
-  }
 
-  /*--- Incompressible flow, primitive variables nDim+2, (P, vx, vy, vz, rho) ---*/
-  
-  Primitive = new su2double [nPrimVar];
-  
-  for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
-  
-  /*--- Assign a value for pressure here ---*/
-  Primitive[0] = val_pressure;
-
-  /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho)
-        We need P, and rho for running the adjoint problem ---*/
-  
-  Gradient_Primitive = new su2double* [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-    Gradient_Primitive[iVar] = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Gradient_Primitive[iVar][iDim] = 0.0;
-  }
-  
-  /*--- Store coefficients of momentum equation ---*/
-  Mom_Coeff = new su2double [nDim];
-  Mom_Coeff_nb = new su2double [nDim];
-  
-  strong_bc = false;
-
-}
-
-CPBIncEulerVariable::CPBIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-  unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
-  
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool windgust = config->GetWind_Gust();
-  bool fsi = config->GetFSI_Simulation();
-
-  /*--- Array initialization ---*/
-  
-  Primitive = NULL;
-  PrimitiveMGCorr = NULL;
-  
-  Gradient_Primitive = NULL;
-  
-  Limiter_Primitive = NULL;
-  
-  WindGust    = NULL;
-  WindGustDer = NULL;
-  
-  nPrimVar     = 0;
-  nPrimVarGrad = 0;
-  
-  nSecondaryVar     = 0;
-  nSecondaryVarGrad = 0;
- 
-  Undivided_Laplacian = NULL;
- 
-  /*--- Allocate and initialize the primitive variables and gradients ---*/
-  nPrimVar = nDim+4; nPrimVarGrad = nDim+2;
-  
-  /*--- Allocate residual structures ---*/
-  Res_TruncError = new su2double [nVar];
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Res_TruncError[iVar] = 0.0;
-  }
-  
-  Mass_TruncError = 0.0;
-  
-  /*--- Only for residual smoothing (multigrid) ---*/
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-  
-  if (nMGSmooth > 0) {
-    Residual_Sum = new su2double [nVar];
-    Residual_Old = new su2double [nVar];
-  }
-  
-    if (config->GetnMGLevels() > 0)
-      PrimitiveMGCorr = new su2double [nPrimVar];
-  
   /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
+
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
-    Undivided_Laplacian = new su2double [nVar];
-  
+    Undivided_Laplacian.resize(nPoint,nVar);
+
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
-  
-  Limiter_Primitive = new su2double [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-    Limiter_Primitive[iVar] = 0.0;
 
-  Limiter = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Limiter[iVar] = 0.0;
-  
-  Solution_Max = new su2double [nPrimVarGrad];
-  Solution_Min = new su2double [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-    Solution_Max[iVar] = 0.0;
-    Solution_Min[iVar] = 0.0;
-  }
-  
+  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+
+  Limiter.resize(nPoint,nVar) = su2double(0.0);
+
+  Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+
   /*--- Solution initialization ---*/
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Solution[iVar] = val_solution[iVar];
-    Solution_Old[iVar] = val_solution[iVar];
-  }
-  
-  /*--- Allocate and initializate solution for dual time strategy ---*/
-  
+
+  su2double val_solution[3] = {velocity[0], velocity[1], 0.0};
+  if(nDim==3) val_solution[3] = velocity[2];
+
+  for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      Solution(iPoint,iVar) = val_solution[iVar];
+
+  Solution_Old = Solution;
+
+  /*--- Allocate and initialize solution for dual time strategy ---*/
+
   if (dual_time) {
-    Solution_time_n = new su2double [nVar];
-    Solution_time_n1 = new su2double [nVar];
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Solution_time_n[iVar] = val_solution[iVar];
-      Solution_time_n1[iVar] = val_solution[iVar];
-    }
+    Solution_time_n = Solution;
+    Solution_time_n1 = Solution;
+  }
+
+  /*--- Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, lamMu, EddyMu) ---*/
+
+  Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
+
+  /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho),
+        Might need P and rho for running the adjoint problem in future.---*/
+
+  Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
+
+  if (config->GetReconstructionGradientRequired()) {
+    Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
   }
   
-    
-  /*--- Allocate vector for wind gust and wind gust derivative field ---*/
-  
-  if (windgust) {
-    WindGust = new su2double [nDim];
-    WindGustDer = new su2double [nDim+1];
+  if (config->GetLeastSquaresRequired()) {
+    Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
   
-  /*--- Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho) (P, vx, vy, vz, rho, lamMu, EddyMu) ---*/
+  /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
   
-  Primitive = new su2double [nPrimVar];
-  for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
+  if (axisymmetric && viscous) Grad_AuxVar.resize(nPoint,nDim);
 
-  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, rho),
-        We need P, and rho for running the adjoint problem ---*/
-  
-  Gradient_Primitive = new su2double* [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-    Gradient_Primitive[iVar] = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Gradient_Primitive[iVar][iDim] = 0.0;
-  }
-  
-  /*--- Store coefficients of momentum equation ---*/
-  Mom_Coeff = new su2double [nDim];
-  Mom_Coeff_nb = new su2double [nDim];
-  
-  strong_bc = false;
-  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 
-}
+  Velocity2.resize(nPoint) = su2double(0.0);
+  Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
+  Delta_Time.resize(nPoint) = su2double(0.0);
+  Lambda.resize(nPoint) = su2double(0.0);
+  Sensor.resize(nPoint) = su2double(0.0);
 
-CPBIncEulerVariable::~CPBIncEulerVariable(void) {
-  unsigned short iVar;
-
-  if (Primitive         != NULL) delete [] Primitive;
-  if (PrimitiveMGCorr     != NULL) delete [] PrimitiveMGCorr;
-  if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
-  if (WindGust          != NULL) delete [] WindGust;
-  if (WindGustDer       != NULL) delete [] WindGustDer;
-
-  if (Gradient_Primitive != NULL) {
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      if (Gradient_Primitive!=NULL) delete [] Gradient_Primitive[iVar];
-    delete [] Gradient_Primitive;
-  }
+  /* Under-relaxation parameter. */
+  UnderRelaxation.resize(nPoint) = su2double(1.0);
+  LocalCFL.resize(nPoint) = su2double(0.0);
   
-  if (Mom_Coeff != NULL) delete [] Mom_Coeff;
-  if (Mom_Coeff_nb != NULL) delete [] Mom_Coeff_nb;
+  /* Non-physical point (first-order) initialization. */
+  Non_Physical.resize(nPoint) = false;
+  Non_Physical_Counter.resize(nPoint) = 0;
+  
+ /*--- Store coefficients of momentum equation ---*/
+  Mom_Coeff.resize(nPoint, nDim) = su2double(0.0);
+  Mom_Coeff_nb.resize(nPoint, nDim) = su2double(0.0);
+  
+ /*--- Strong BC flag ---*/
+ strong_bc.resize(nPoint) = false;
  
-
+ MassFlux.resize(nPoint) = su2double(0.0);
 }
 
-void CPBIncEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
-  unsigned short iVar, iDim;
-  
-  for (iVar = 0; iVar < val_primvar; iVar++)
-    for (iDim = 0; iDim < nDim; iDim++)
-      Gradient_Primitive[iVar][iDim] = 0.0;
+void CPBIncEulerVariable::SetGradient_PrimitiveZero() {
+  Gradient_Primitive.storage.setConstant(0.0);
 }
 
+bool CPBIncEulerVariable::SetPrimVar(unsigned long iPoint, su2double Density_Inf,  CConfig *config) {
 
-su2double CPBIncEulerVariable::GetProjVel(su2double *val_vector) {
-  su2double ProjVel;
-  unsigned short iDim;
-  
-  ProjVel = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    ProjVel += Primitive[iDim+1]*val_vector[iDim];
-  
-  return ProjVel;
-}
+  unsigned long iVar;
+  bool check_dens = false, physical = true;
 
-bool CPBIncEulerVariable::SetPrimVar(su2double Density_Inf,  CConfig *config) {
-
-  
   /*--- Set the value of the density ---*/
   
-  SetDensity(Density_Inf);
-  
-  /*--- Set the value of the velocity and velocity^2 ---*/
-  
-  SetVelocity();
-  
-  /*--- The value of pressure is initialized in constructor. 
-   * Subsequently it will be set in CorrectPressure routine ---*/
+  check_dens = SetDensity(iPoint, Density_Inf);
 
-  
-  return true;
-  
+  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
+
+  SetVelocity(iPoint);
+
+  return physical;
+
 }
 
-CPoissonVariable::CPoissonVariable(void) : CVariable() { }
-
-CPoissonVariable::CPoissonVariable(su2double val_SourceTerm, unsigned short val_nDim,
-                                       unsigned short val_nvar,
-                                       CConfig *config) : CVariable(val_nDim,
-                                                                    val_nvar,
+CPoissonVariable::CPoissonVariable(su2double val_SourceTerm, unsigned long nPoint,
+                                   unsigned short val_nDim, unsigned short val_nVar,
+                                       CConfig *config) : CVariable(nPoint, val_nDim,
+                                                                    val_nVar,
                                                                     config) {
   unsigned short iVar,iMesh ,nMGSmooth = 0;
-  
-  Residual_Old = new su2double [nVar];
-  Residual_Sum = new su2double [nVar];
-  
-  SourceTerm = 0.0;
-  
+
   /*--- Allocate residual structures ---*/
-  
-  Res_TruncError = new su2double [nVar];
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Res_TruncError[iVar] = 0.0;
-  }
-  
+
+  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
+    
   /*--- Only for residual smoothing (multigrid) ---*/
-  
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-  
-  if (nMGSmooth > 0) {
-    Residual_Sum = new su2double [nVar];
-    Residual_Old = new su2double [nVar];
+
+  for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+    if (config->GetMG_CorrecSmooth(iMesh) > 0) {
+      Residual_Sum.resize(nPoint,nVar);
+      Residual_Old.resize(nPoint,nVar);
+      break;
+    }
   }
   
-  /*--- Initialization of variables ---*/
-  for (iVar = 0; iVar< nVar; iVar++) {
-    Solution[iVar] = 0.0;
-    Solution_Old[iVar] = 0.0;
-  }
+ /*--- Gradient related fields ---*/
+
+  Gradient.resize(nPoint,val_nVar,val_nDim,0.0);
+ 
+ /*--- Intitialize the source term of Poisson equation. ---*/
+ 
+  SourceTerm.resize(nPoint) = su2double(0.0);
   
-  strong_bc = false;
-}
+  for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      Solution(iPoint,iVar) = su2double(0.0);
 
-CPoissonVariable::~CPoissonVariable(void) {
-	
-	int   iDim;
+  Solution_Old = Solution;
+  
+  /*--- Strong BC flag ---*/
+ strong_bc.resize(nPoint) = false;
 }
-

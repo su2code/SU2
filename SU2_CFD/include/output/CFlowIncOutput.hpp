@@ -42,6 +42,7 @@ private:
   unsigned short turb_model; /*!< \brief The kind of turbulence model*/
   bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
   bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
+  bool pressure_based;       /*!< \brief Boolean indicating whether running the pressure based version*/
 
 public:
 

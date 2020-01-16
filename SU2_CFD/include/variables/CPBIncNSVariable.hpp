@@ -43,11 +43,12 @@
  * \brief Main class for defining the variables of the incompressible Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  */
-class CPBIncNSVariable : public CPBIncEulerVariable {
+class CPBIncNSVariable final : public CPBIncEulerVariable {
 private:
-  su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
-  su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
-  
+  MatrixType Vorticity;    /*!< \brief Vorticity of the fluid. */
+  VectorType StrainMag;    /*!< \brief Magnitude of rate of strain tensor. */
+
+  VectorType DES_LengthScale;
 public:
   
   /*!
@@ -56,7 +57,6 @@ public:
   CPBIncNSVariable(void);
   
   /*!
-   * \overload
    * \param[in] val_pressure - value of the pressure.
    * \param[in] val_velocity - Value of the flow velocity (initialization value).
    * \param[in] val_temperature - Value of the temperature (initialization value).
@@ -64,72 +64,75 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CPBIncNSVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
-  /*!
-   * \overload
-   * \param[in] val_solution - Pointer to the flow value (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CPBIncNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CPBIncNSVariable(su2double val_pressure, su2double *val_velocity, 
+                   unsigned long npoint, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CPBIncNSVariable(void);
-  
-  /*!
-   * \brief Set the laminar viscosity.
-   */
-  inline void SetLaminarViscosity(su2double laminarViscosity) { Primitive[nDim+2] = laminarViscosity; }
-  
-  /*!
-   * \brief Set the vorticity value.
-   */
-  bool SetVorticity(void);
-  
-  /*!
-   * \brief Set the rate of strain magnitude.
-   */
-  bool SetStrainMag(void);
-  
-  /*!
-   * \overload
-   * \param[in] eddy_visc - Value of the eddy viscosity.
-   */
-  inline void SetEddyViscosity(su2double eddy_visc) { Primitive[nDim+3] = eddy_visc; }
-  
-  /*!
-   * \brief Get the laminar viscosity of the flow.
-   * \return Value of the laminar viscosity of the flow.
-   */
-  inline su2double GetLaminarViscosity(void) { return Primitive[nDim+2]; }
-  
-  /*!
-   * \brief Get the eddy viscosity of the flow.
-   * \return The eddy viscosity of the flow.
-   */
-  inline su2double GetEddyViscosity(void) { return Primitive[nDim+3]; }
-
-  /*!
-   * \brief Get the value of the vorticity.
-   * \param[in] val_dim - Index of the dimension.
-   * \return Value of the vorticity.
-   */
-  inline su2double *GetVorticity(void) { return Vorticity; }
-  
-  /*!
-   * \brief Get the value of the magnitude of rate of strain.
-   * \return Value of the rate of strain magnitude.
-   */
-  inline su2double GetStrainMag(void) { return StrainMag; }
+  virtual ~CPBIncNSVariable() = default;
   
   /*!
    * \brief Set all the primitive variables for incompressible flows
    */
-  bool SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
+  bool SetPrimVar(unsigned long iPoint, su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
   using CVariable::SetPrimVar;
+  
+  /*!
+   * \brief Set the laminar viscosity.
+   */
+  inline void SetLaminarViscosity(unsigned long iPoint, su2double laminarViscosity) override {
+    Primitive(iPoint,nDim+2) = laminarViscosity;
+  }
+
+  /*!
+   * \brief Set the vorticity value.
+   */
+  bool SetVorticity_StrainMag() override;
+
+  /*!
+   * \overload
+   * \param[in] eddy_visc - Value of the eddy viscosity.
+   */
+  inline void SetEddyViscosity(unsigned long iPoint, su2double eddy_visc) override {
+    Primitive(iPoint,nDim+3) = eddy_visc;
+  }
+
+  /*!
+   * \brief Get the laminar viscosity of the flow.
+   * \return Value of the laminar viscosity of the flow.
+   */
+  inline su2double GetLaminarViscosity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+2); }
+
+  /*!
+   * \brief Get the eddy viscosity of the flow.
+   * \return The eddy viscosity of the flow.
+   */
+  inline su2double GetEddyViscosity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+3); }
+
+  /*!
+   * \brief Get the value of the vorticity.
+   * \return Value of the vorticity.
+   */
+  inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
+
+  /*!
+   * \brief Get the value of the magnitude of rate of strain.
+   * \return Value of the rate of strain magnitude.
+   */
+  inline su2double GetStrainMag(unsigned long iPoint) const override { return StrainMag(iPoint); }
+
+  /*!
+   * \brief Set the DES Length Scale.
+   */
+  inline void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) override {
+    DES_LengthScale(iPoint) = val_des_lengthscale;
+  }
+
+  /*!
+   * \brief Get the DES length scale
+   * \return Value of the DES length Scale.
+   */
+  inline su2double GetDES_LengthScale(unsigned long iPoint) const override { return DES_LengthScale(iPoint); }
     
 };
