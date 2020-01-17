@@ -190,6 +190,10 @@ CPoissonVariable::CPoissonVariable(su2double val_SourceTerm, unsigned long nPoin
  /*--- Gradient related fields ---*/
 
   Gradient.resize(nPoint,val_nVar,val_nDim,0.0);
+  
+  if (config->GetLeastSquaresRequired()) {
+    Rmatrix.resize(nPoint,nDim,nDim,0.0);
+  }
  
  /*--- Intitialize the source term of Poisson equation. ---*/
  
