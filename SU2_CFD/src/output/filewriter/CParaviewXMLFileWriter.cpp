@@ -87,9 +87,6 @@ void CParaviewXMLFileWriter::Write_Data(){
   /*--- Compute our local number of elements, the required storage,
    and reduce the total number of elements and storage globally. ---*/
 
-  unsigned long nTot_Line;
-  unsigned long nTot_Tria, nTot_Quad;
-  unsigned long nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
   unsigned long myElem, myElemStorage, GlobalElem, GlobalElemStorage;
 
   unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
@@ -99,31 +96,33 @@ void CParaviewXMLFileWriter::Write_Data(){
                 nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
                 nParallel_Pris = dataSorter->GetnElem(PRISM),
                 nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
+  
+  unsigned long nTot_Line = dataSorter->GetnElemGlobal(LINE),
+                nTot_Tria = dataSorter->GetnElemGlobal(TRIANGLE),
+                nTot_Quad = dataSorter->GetnElemGlobal(QUADRILATERAL),
+                nTot_Tetr = dataSorter->GetnElemGlobal(TETRAHEDRON),
+                nTot_Hexa = dataSorter->GetnElemGlobal(HEXAHEDRON),
+                nTot_Pris = dataSorter->GetnElemGlobal(PRISM),
+                nTot_Pyra = dataSorter->GetnElemGlobal(PYRAMID);
 
-  SU2_MPI::Allreduce(&nParallel_Line, &nTot_Line, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Tria, &nTot_Tria, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Quad, &nTot_Quad, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Tetr, &nTot_Tetr, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Hexa, &nTot_Hexa, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Pris, &nTot_Pris, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Pyra, &nTot_Pyra, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  myElem        = dataSorter->GetnElem();
+  
+  myElemStorage = (nParallel_Line*N_POINTS_LINE + 
+                   nParallel_Tria*N_POINTS_TRIANGLE + 
+                   nParallel_Quad*N_POINTS_QUADRILATERAL +
+                   nParallel_Tetr*N_POINTS_TETRAHEDRON +
+                   nParallel_Hexa*N_POINTS_HEXAHEDRON +
+                   nParallel_Pris*N_POINTS_PRISM +
+                   nParallel_Pyra*N_POINTS_PYRAMID);
 
-  myElem        = (nParallel_Line + nParallel_Tria + nParallel_Quad + nParallel_Tetr +
-                   nParallel_Hexa + nParallel_Pris + nParallel_Pyra);
-  myElemStorage = (nParallel_Line*2 + nParallel_Tria*3 + nParallel_Quad*4 + nParallel_Tetr*4 +
-                   nParallel_Hexa*8 + nParallel_Pris*6 + nParallel_Pyra*5);
-
-  GlobalElem        = (nTot_Line + nTot_Tria   + nTot_Quad   + nTot_Tetr   +
-                       nTot_Hexa   + nTot_Pris   + nTot_Pyra);
-  GlobalElemStorage = (nTot_Line*2 + nTot_Tria*3 + nTot_Quad*4 + nTot_Tetr*4 +
-                       nTot_Hexa*8 + nTot_Pris*6 + nTot_Pyra*5);
+  GlobalElem        =  dataSorter->GetnElemGlobal();
+  GlobalElemStorage = (nTot_Line*N_POINTS_LINE + 
+                       nTot_Tria*N_POINTS_TRIANGLE + 
+                       nTot_Quad*N_POINTS_QUADRILATERAL +
+                       nTot_Tetr*N_POINTS_TETRAHEDRON +
+                       nTot_Hexa*N_POINTS_HEXAHEDRON +
+                       nTot_Pris*N_POINTS_PRISM +
+                       nTot_Pyra*N_POINTS_PYRAMID);
 
   /* Write the ASCII XML header. Note that we use the appended format for the data,
   * which means that all data is appended at the end of the file in one binary blob.
