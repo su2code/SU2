@@ -30,7 +30,13 @@
 #include "CFileWriter.hpp"
 
 class CParaviewBinaryFileWriter final: public CFileWriter{
-
+  private:
+  
+  /*!
+   * \brief Boolean storing whether we are on a big or little endian machine
+   */
+  bool bigEndian;
+  
 public:
 
   /*!
