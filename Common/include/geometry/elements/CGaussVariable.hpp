@@ -61,7 +61,7 @@ public:
   {
 
     /* needed to increase the number of dimensions in GradNi_Xj for the surface case by 1
-     * change to a BETTER SOLUTION later
+     * TODO: change to a BETTER SOLUTION later
      * 25.11. T.Dick
      *
      * take this over during merge, talk to Ruben about that issue

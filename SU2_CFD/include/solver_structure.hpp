@@ -12436,7 +12436,7 @@ public:
   /*!
    * \brief Extract the Coordinates of the element from geometry
    */
-  std::vector<std::vector<su2double>> GetElementCoordinates(CGeometry *geometry, std::vector<unsigned long>& indexNode, int EL_KIND = 0);
+  su2activematrix GetElementCoordinates(CGeometry *geometry, std::vector<unsigned long>& indexNode, int EL_KIND = 0);
 
 };
 

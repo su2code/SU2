@@ -301,7 +301,7 @@ inline void CNumerics::SetCoord(su2double *val_coord_0, su2double *val_coord_1,
   Coord_3 = val_coord_3;  
 }
 
-inline void CNumerics::SetCoord(std::vector<std::vector<su2double>>& val_coord) {}
+inline void CNumerics::SetCoord(su2activematrix& val_coord) {}
 
 inline void CNumerics::SetGridVel(su2double *val_gridvel_i, su2double *val_gridvel_j) {
   GridVel_i = val_gridvel_i;

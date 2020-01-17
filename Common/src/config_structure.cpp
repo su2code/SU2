@@ -4692,7 +4692,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_DV             = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving         = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
   Marker_All_SobolevBC      = new unsigned short[nMarker_All];	// Store what boundary to apply to the gradient smoothing.
-  Marker_All_Interface      = new unsigned short[nMarker_All];	// Store whether the boundary belongs to an interface.
   Marker_All_Deform_Mesh    = new unsigned short[nMarker_All];	// Store whether the boundary is deformable.
   Marker_All_Fluid_Load     = new unsigned short[nMarker_All];	// Store whether the boundary computes/applies fluid loads.
   Marker_All_PyCustom       = new unsigned short[nMarker_All];  // Store whether the boundary is Python customizable.
@@ -4715,7 +4714,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_DV[iMarker_All]                   = 0;
     Marker_All_Moving[iMarker_All]               = 0;
     Marker_All_SobolevBC[iMarker_All]            = 0;
-    Marker_All_Interface[iMarker_All]            = 0;
     Marker_All_Deform_Mesh[iMarker_All]          = 0;
     Marker_All_Fluid_Load[iMarker_All]           = 0;
     Marker_All_PerBound[iMarker_All]             = 0;
@@ -4738,7 +4736,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_DV                   = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Moving               = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_SobolevBC            = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Interface            = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Deform_Mesh          = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Fluid_Load           = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_PerBound             = new unsigned short[nMarker_CfgFile];
@@ -4759,7 +4756,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_DV[iMarker_CfgFile]                   = 0;
     Marker_CfgFile_Moving[iMarker_CfgFile]               = 0;
     Marker_CfgFile_SobolevBC[iMarker_CfgFile]            = 0;
-    Marker_CfgFile_Interface[iMarker_CfgFile]            = 0;
     Marker_CfgFile_Deform_Mesh[iMarker_CfgFile]          = 0;
     Marker_CfgFile_Fluid_Load[iMarker_CfgFile]           = 0;
     Marker_CfgFile_PerBound[iMarker_CfgFile]             = 0;
@@ -7243,9 +7239,6 @@ CConfig::~CConfig(void) {
 
   if (Marker_CfgFile_SobolevBC != NULL) delete[] Marker_CfgFile_SobolevBC;
   if (Marker_All_SobolevBC     != NULL) delete[] Marker_All_SobolevBC;
-
-  if (Marker_CfgFile_Interface != NULL) delete[] Marker_CfgFile_Interface;
-  if (Marker_All_Interface     != NULL) delete[] Marker_All_Interface;
 
   if (Marker_CfgFile_Deform_Mesh != NULL) delete[] Marker_CfgFile_Deform_Mesh;
   if (Marker_All_Deform_Mesh     != NULL) delete[] Marker_All_Deform_Mesh;

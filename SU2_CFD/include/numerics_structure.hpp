@@ -588,7 +588,7 @@ public:
   /*!
    * \param[in] val_coord - vector of coordinates.
    */
-  virtual void SetCoord(std::vector<std::vector<su2double>>& val_coord);
+  virtual void SetCoord(su2activematrix& val_coord);
 
   /*!
    * \brief Set the velocity of the computational grid.
@@ -4115,14 +4115,13 @@ public:
  * \brief Class for computing the stiffness matrix of the sobolev problem
  * \ingroup Grad_Smooth
  * \author T. Dick
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CGradSmoothing : public CNumerics {
 
-    su2double **GradNi_Ref_Mat;
     su2double **val_DHiDHj;
     su2double *Ni_Vec;
-    std::vector<std::vector<su2double>> Coord;
+    su2activematrix Coord;
 
 public:
 
@@ -4149,7 +4148,7 @@ public:
   /*!
    * \brief set coordinates to a given vector
    */
-  void SetCoord(std::vector<std::vector<su2double> > &val_coord);
+  void SetCoord(su2activematrix &val_coord);
 
 };
 

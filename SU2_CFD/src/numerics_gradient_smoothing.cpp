@@ -1,8 +1,8 @@
 /*!
- * \file numerics_direct_elasticity.cpp
+ * \file numerics_gradient_smoothing.cpp
  * \brief This file contains the routines for setting the tangent matrix and residual of a sobolev gradient problem
  * \author T.Dick
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -40,7 +40,6 @@
 
 CGradSmoothing::CGradSmoothing(void) : CNumerics () {
 
-  GradNi_Ref_Mat = NULL;
   val_DHiDHj = NULL;
   Ni_Vec = NULL;
 
@@ -52,13 +51,9 @@ CGradSmoothing::CGradSmoothing(unsigned short val_nDim, CConfig *config)
   unsigned short iNode, iDim;
 
   /*--- 8 is the max number of nodes in 3D ---*/
-  GradNi_Ref_Mat = new su2double* [8];
   val_DHiDHj = new su2double* [nDim];
   for (iDim=0; iDim<nDim; iDim++) {
     val_DHiDHj[iDim] = new su2double[nDim];
-  }
-  for (iNode = 0; iNode < 8; iNode++) {
-    GradNi_Ref_Mat[iNode]   = new su2double[nDim];
   }
   Ni_Vec  = new su2double [8];
 
@@ -73,13 +68,6 @@ CGradSmoothing::~CGradSmoothing(void) {
       if (val_DHiDHj[iDim] != NULL) delete [] val_DHiDHj[iDim];
     }
     delete [] val_DHiDHj;
-  }
-
-  if (GradNi_Ref_Mat != NULL) {
-    for (iNode = 0; iNode < 8; iNode++) {
-      if (GradNi_Ref_Mat[iNode] != NULL) delete [] GradNi_Ref_Mat[iNode];
-    }
-    delete [] GradNi_Ref_Mat;
   }
 
   if (Ni_Vec != NULL) delete [] Ni_Vec;
@@ -100,7 +88,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
   su2double epsilon = config->GetSmoothingParam();
   su2double zeta = config->GetSmoothingParamSecond();
 
-  element->clearElement(true);       /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
   if (config->GetSmoothOnSurface()) {
@@ -115,12 +103,6 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
 
     Weight = element->GetWeight(iGauss);
     Jac_X = element->GetJ_X(iGauss);
-
-    for (iShape = 0; iShape < nNode; iShape++) {
-      for (iDim = 0; iDim < nDimGlobal; iDim++) {
-        GradNi_Ref_Mat[iShape][iDim] = element->GetGradNi_X(iShape,iGauss,iDim);
-      }
-    }
 
     /*
     for (iShape = 0; iShape < nNode; iShape++) {
@@ -138,7 +120,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
       for (jShape = iShape; jShape < nNode; jShape++) {
 
         for (iDim = 0; iDim < nDimGlobal; iDim++) {
-          GradNiXGradNj += GradNi_Ref_Mat[iShape][iDim]* GradNi_Ref_Mat[jShape][iDim];
+          GradNiXGradNj += element->GetGradNi_X(iShape,iGauss,iDim)*element->GetGradNi_X(jShape,iGauss,iDim);
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -189,6 +171,6 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
 
 }
 
-void CGradSmoothing::SetCoord(std::vector<std::vector<su2double>>& val_coord) {
+void CGradSmoothing::SetCoord(su2activematrix& val_coord) {
   Coord = val_coord;
 }

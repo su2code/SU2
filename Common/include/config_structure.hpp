@@ -420,6 +420,7 @@ private:
   CFLFineGrid,		           /*!< \brief CFL of the finest grid. */
   Max_DeltaTime,  		       /*!< \brief Max delta time. */
   Unst_CFL;		               /*!< \brief Unsteady CFL number. */
+  bool ReorientElements;	   /*!< \brief Flag for enabling element reorientation. */
 
   bool SmoothGradient; /*!< \brief Flag for enabling gradient smoothing. */
   su2double SmoothingParam; /*!< \brief Parameter for the Laplace part in gradient smoothing. */
@@ -431,7 +432,6 @@ private:
   bool DirichletSurfaceBound; /*!< \brief Flag for using zero Dirichlet boundary in the surface case. */
   bool DebugMode; /*!< \brief temporary flag for some debuging stuff
 
-  bool ReorientElements;	   /*!< \brief Flag for enabling element reorientation. */
   bool AddIndNeighbor;		   /*!< \brief Include indirect neighbor in the agglomeration process. */
   unsigned short nDV,		           /*!< \brief Number of design variables. */
   nObj, nObjW;                         /*! \brief Number of objective functions. */
@@ -482,6 +482,8 @@ private:
   Kind_Gradient_Method_Recon,    /*!< \brief Numerical method for computation of spatial gradients used for upwind reconstruction. */
   Kind_Deform_Linear_Solver,             /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver. */
+  Kind_Grad_Linear_Solver, /*!< Numerical method to smoothen the gradient */
+  Kind_Grad_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
   Kind_Linear_Solver,		             /*!< \brief Numerical solver for the implicit scheme. */
   Kind_Linear_Solver_FSI_Struc,	         /*!< \brief Numerical solver for the structural part in FSI problems. */
   Kind_Linear_Solver_Prec,		         /*!< \brief Preconditioner of the linear solver. */
@@ -575,10 +577,12 @@ private:
   su2double Linear_Solver_Error;		          /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;           /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		  /*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
+  su2double Grad_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the gradient smoothing. */
   su2double Linear_Solver_Smoother_Relaxation;    /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;		          /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;        /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;	  /*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
+  unsigned long Grad_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the gradient smoothing. */
   unsigned long Linear_Solver_Restart_Frequency;  /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned short Linear_Solver_ILU_n;		      /*!< \brief ILU fill=in level. */
   su2double SemiSpan;		          /*!< \brief Wing Semi span. */
@@ -679,8 +683,8 @@ private:
   nMarker_Moving,                     /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
   nMarker_PyCustom,                   /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,                         /*!< \brief Number of markers affected by the design variables. */
-  nMarker_WallFunctions;              /*!< \brief Number of markers for which wall functions must be applied. */
-  nMarker_SobolevBC,                  /*!< \brief Number of markers treaded in the gradient problem. */
+  nMarker_WallFunctions,              /*!< \brief Number of markers for which wall functions must be applied. */
+  nMarker_SobolevBC;                  /*!< \brief Number of markers treaded in the gradient problem. */
   string *Marker_Monitoring,          /*!< \brief Markers to monitor. */
   *Marker_Designing,                  /*!< \brief Markers to design. */
   *Marker_GeoEval,                    /*!< \brief Markers to evaluate geometry. */
@@ -690,8 +694,8 @@ private:
   *Marker_Moving,                     /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
   *Marker_PyCustom,                   /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,                         /*!< \brief Markers affected by the design variables. */
-  *Marker_WallFunctions;              /*!< \brief Markers for which wall functions must be applied. */
-  *Marker_SobolevBC,                  /*!< \brief Markers in the gradient solver */
+  *Marker_WallFunctions,              /*!< \brief Markers for which wall functions must be applied. */
+  *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
   unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;               /*!< \brief List of names for configuration files. */
   unsigned short  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */

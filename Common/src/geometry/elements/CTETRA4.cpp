@@ -34,10 +34,10 @@ CTETRA4::CTETRA4() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
   su2double r = ((5.0-sqrt(5.0))/20);
   su2double s = ((5.0+3*sqrt(5.0))/20);
-  GaussCoord[0][0] = r;  GaussCoord[0][1] = r; GaussCoord[0][2] = r;  GaussWeight[0] = 1.0/24.0;
-  GaussCoord[0][0] = s;  GaussCoord[0][1] = r; GaussCoord[0][2] = r;  GaussWeight[0] = 1.0/24.0;
-  GaussCoord[0][0] = r;  GaussCoord[0][1] = s; GaussCoord[0][2] = r;  GaussWeight[0] = 1.0/24.0;
-  GaussCoord[0][0] = r;  GaussCoord[0][1] = r; GaussCoord[0][2] = s;  GaussWeight[0] = 1.0/24.0;
+  GaussCoord[0][0] = r;  GaussCoord[0][1] = r; GaussCoord[0][2] = r;  GaussWeight(0) = 1.0/24.0;
+  GaussCoord[0][0] = s;  GaussCoord[0][1] = r; GaussCoord[0][2] = r;  GaussWeight(1) = 1.0/24.0;
+  GaussCoord[0][0] = r;  GaussCoord[0][1] = s; GaussCoord[0][2] = r;  GaussWeight(2) = 1.0/24.0;
+  GaussCoord[0][0] = r;  GaussCoord[0][1] = r; GaussCoord[0][2] = s;  GaussWeight(3) = 1.0/24.0;
 
   /*--- Store the values of the shape functions and their derivatives ---*/
 
@@ -50,10 +50,10 @@ CTETRA4::CTETRA4() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
     Eta = GaussCoord[iGauss][1];
     Zeta = GaussCoord[iGauss][2];
 
-    val_Ni = Xi;						  GaussPoint[iGauss]->SetNi(val_Ni,0);
-    val_Ni = Eta;						  GaussPoint[iGauss]->SetNi(val_Ni,1);
-    val_Ni = 1.0-Xi-Eta-Zeta;	GaussPoint[iGauss]->SetNi(val_Ni,2);
-    val_Ni = Zeta;					  GaussPoint[iGauss]->SetNi(val_Ni,3);
+    val_Ni = Xi;						  GaussPoint[iGauss].SetNi(val_Ni,0);
+    val_Ni = Eta;						  GaussPoint[iGauss].SetNi(val_Ni,1);
+    val_Ni = 1.0-Xi-Eta-Zeta;	GaussPoint[iGauss].SetNi(val_Ni,2);
+    val_Ni = Zeta;					  GaussPoint[iGauss].SetNi(val_Ni,3);
 
     /*--- dN/d xi, dN/d eta, dN/d zeta ---*/
 
@@ -74,7 +74,7 @@ CTETRA4::CTETRA4() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
 }
 
-su2double CTETRA4::ComputeVolume(const FrameType mode){
+su2double CTETRA4::ComputeVolume(const FrameType mode) const {
 
   unsigned short iDim;
   su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};
@@ -82,7 +82,7 @@ su2double CTETRA4::ComputeVolume(const FrameType mode){
 
   /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
         for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
-  su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
+  const su2activematrix& Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
 
   for (iDim = 0; iDim < nDim; iDim++) {
     r1[iDim] = Coord[1][iDim] - Coord[0][iDim];

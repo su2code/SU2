@@ -475,6 +475,8 @@ const int EL_TRIA2 = 2;		/*!< \brief Elements of three nodes (2D), with second o
 
 const int EL_TETRA = 0;		/*!< \brief Elements of four nodes (3D). */
 const int EL_HEXA  = 1;		/*!< \brief Elements of eight nodes (3D). */
+const int EL_PYRAM = 2;     /*!< \brief Elements of five nodes (3D). */
+const int EL_PRISM = 3;     /*!< \brief Elements of six nodes (3D). */
 
 const int EL_TETRA2 = 4;		/*!< \brief Elements of four nodes, with second order gauss quadrature (3D). */
 const int EL_PYRAM2 = 5;		/*!< \brief Elements of five nodes, with third order gauss quadrature (3D). */

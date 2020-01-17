@@ -34,8 +34,8 @@ CLINE::CLINE() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
   /*--- Gauss coordinates and weights ---*/
 
   su2double oneOnTwoSqrt3 = 0.288675134594813;
-  GaussCoord[0][0] = 0.5-oneOnTwoSqrt3;  GaussWeight[0] = 0.5;
-  GaussCoord[1][0] = 0.5+oneOnTwoSqrt3;  GaussWeight[1] = 0.5;
+  GaussCoord[0][0] = 0.5-oneOnTwoSqrt3;  GaussWeight(0) = 0.5;
+  GaussCoord[1][0] = 0.5+oneOnTwoSqrt3;  GaussWeight(1) = 0.5;
 
   /*--- Store the values of the shape functions and their derivatives ---*/
 
@@ -44,8 +44,8 @@ CLINE::CLINE() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
     Xi = GaussCoord[iGauss][0];
 
-    val_Ni = 1.0-Xi;  GaussPoint[iGauss]->SetNi(val_Ni, 0);
-    val_Ni = Xi;  GaussPoint[iGauss]->SetNi(val_Ni, 1);
+    val_Ni = 1.0-Xi;  GaussPoint[iGauss].SetNi(val_Ni, 0);
+    val_Ni = Xi;  GaussPoint[iGauss].SetNi(val_Ni, 1);
 
     /*--- dN/d xi ---*/
 
@@ -56,11 +56,11 @@ CLINE::CLINE() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
 }
 
-su2double CLINE::ComputeLength(const FrameType mode){
+su2double CLINE::ComputeLength(const FrameType mode) const {
 
   /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
         for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
-  su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
+  const su2activematrix& Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
   return fabs(Coord[1][0] - Coord[0][0]);
 
 }

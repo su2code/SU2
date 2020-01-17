@@ -81,8 +81,8 @@ protected:
   unsigned short nNodes;              /*!< \brief Number of geometric points. */
   unsigned short nDim;                /*!< \brief Number of dimension of the problem. */
 
-  su2double HiHj = 0.0;                     /*!< \brief Scalar product of 2 ansatz functions. */
-  su2activematrix DHiDHj;             /*!< \brief Scalar product of the gradients of 2 ansatz functions. */
+  su2activematrix HiHj = 0.0;                     /*!< \brief Scalar product of 2 ansatz functions. */
+  std::vector<std::vector<su2activematrix>> DHiDHj;             /*!< \brief Scalar product of the gradients of 2 ansatz functions. */
 
 
 public:
@@ -118,6 +118,12 @@ public:
    * \note The current coordinates need to be set before calling this method.
    */
   virtual void ComputeGrad_NonLinear(void) = 0;
+
+  /*!
+   * \brief Overload needed for deformed 2D elements on a surface in 3D.
+   * \note The Coord are handed down from the numerics.
+   */
+  virtual void ComputeGrad_Linear(su2activematrix& Coord) = 0;
 
   /*!
    * \brief Sets matrices to 0.
@@ -525,7 +531,7 @@ public:
    * \param[in] nodeB - index of Node b.
    * \return val - value of the scalar product of gradients of ansatz function.
    */
-  inline su2double** Get_DHiDHj(unsigned short nodeA, unsigned short nodeB) { return DHiDHj[nodeA][nodeB];}
+  inline su2activematrix& Get_DHiDHj(unsigned short nodeA, unsigned short nodeB) { return DHiDHj[nodeA][nodeB];}
 
 };
 
@@ -648,7 +654,7 @@ protected:
   }
 
   template<FrameType FRAME>
-  void ComputeGrad_impl_embedded(std::vector<std::vector<su2double>>& Coord) {
+  void ComputeGrad_impl_embedded(su2activematrix& Coord) {
 
     unsigned short iNode, iDim, iGauss;
 
@@ -758,7 +764,7 @@ public:
   /*!
    * \brief Overload needed for deformed 2D elements on a surface in 3D.
    */
-  void ComputeGrad_Linear(std::vector<std::vector<su2double>>& Coord) final { ComputeGrad_impl_embedded<REFERENCE>(std::vector<std::vector<su2double>>& Coord); }
+  void ComputeGrad_Linear(su2activematrix& Coord) final { ComputeGrad_impl_embedded<REFERENCE>(Coord); }
 
 
 };
@@ -967,7 +973,33 @@ public:
    * \param[in] mode - Type of coordinates to consider in the computation.
    * \return Area of the element.
    */
-  su2double ComputeArea(const FrameType mode = REFERENCE) const override;
+  su2double ComputeVolume(const FrameType mode = REFERENCE) const override;
+
+};
+
+/*!
+ * \class CPYRAM6
+ * \brief Pyramid element with 6 Gauss Points
+ * \author T.Dick
+ */
+class CPYRAM6 final : public CElementWithKnownSizes<6,5,3> {
+private:
+  enum : unsigned short {NGAUSS = 6};
+  enum : unsigned short {NNODE = 5};
+  enum : unsigned short {NDIM = 3};
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPYRAM6();
+
+  /*!
+   * \brief Compute the value of the volume of the element.
+   * \param[in] mode - Type of coordinates to consider in the computation.
+   * \return Volume of the element.
+   */
+  su2double ComputeVolume(const FrameType mode = REFERENCE) const override;
 
 };
 

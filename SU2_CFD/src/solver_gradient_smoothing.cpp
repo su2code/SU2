@@ -2,7 +2,7 @@
  * \file solver_gradient_smoothing.cpp
  * \brief Main subroutines for the gradient smoothing problem.
  * \author T. Dick
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -65,33 +65,33 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
   }
 
   if (nDim == 2) {
-    element_container[GRAD_TERM][EL_TRIA] = new CTRIA1(nDim, config);
-    element_container[GRAD_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+    element_container[GRAD_TERM][EL_TRIA] = new CTRIA1();
+    element_container[GRAD_TERM][EL_QUAD] = new CQUAD4();
     if (config->GetSecOrdQuad()) {
-      element_container[GRAD_TERM][EL_TRIA2] = new CTRIA3(nDim, config);
+      element_container[GRAD_TERM][EL_TRIA2] = new CTRIA3();
     }
   }
   else if (nDim == 3) {
-    element_container[GRAD_TERM][EL_TETRA] = new CTETRA1(nDim, config);
-    element_container[GRAD_TERM][EL_HEXA]  = new CHEXA8(nDim, config);
-    element_container[GRAD_TERM][EL_PYRAM] = new CPYRAM5(nDim, config);
-    element_container[GRAD_TERM][EL_PRISM] = new CPRISM6(nDim, config);
+    element_container[GRAD_TERM][EL_TETRA] = new CTETRA1();
+    element_container[GRAD_TERM][EL_HEXA]  = new CHEXA8();
+    element_container[GRAD_TERM][EL_PYRAM] = new CPYRAM5();
+    element_container[GRAD_TERM][EL_PRISM] = new CPRISM6();
     if (config->GetSecOrdQuad()) {
-      element_container[GRAD_TERM][EL_TETRA2] = new CTETRA4(nDim, config);
-      element_container[GRAD_TERM][EL_PYRAM2] = new CPYRAM6(nDim, config);
+      element_container[GRAD_TERM][EL_TETRA2] = new CTETRA4();
+      element_container[GRAD_TERM][EL_PYRAM2] = new CPYRAM6();
     }
   }
 
   /*--- for operations on surfaces we initalize the structures for nDim-1 ---*/
   if (config->GetSmoothOnSurface()) {
     if (nDim == 2) {
-      element_container[GRAD_TERM][EL_LINE] = new CLINE(nDim-1, config);
+      element_container[GRAD_TERM][EL_LINE] = new CLINE();
     }
     else if (nDim == 3) {
-      element_container[GRAD_TERM][EL_TRIA] = new CTRIA1(nDim-1, config);
-      element_container[GRAD_TERM][EL_QUAD] = new CQUAD4(nDim-1, config);
+      element_container[GRAD_TERM][EL_TRIA] = new CTRIA1();
+      element_container[GRAD_TERM][EL_QUAD] = new CQUAD4();
       if (config->GetSecOrdQuad()) {
-        element_container[GRAD_TERM][EL_TRIA2] = new CTRIA3(nDim-1, config);
+        element_container[GRAD_TERM][EL_TRIA2] = new CTRIA3();
       }
     }
   }
@@ -307,7 +307,7 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
   su2double val_Coord;
   int EL_KIND = 0;
 
-  su2double **DHiDHj = NULL;
+  su2activematrix DHiDHj;
   su2double HiHj = 0.0;
 
   unsigned short NelNodes, jNode;
@@ -336,7 +336,7 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
 
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
 
     }
@@ -375,9 +375,9 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
         } else {
 
           for (iDim = 0; iDim < nDim; iDim++) {
-            DHiDHj[iDim][iDim] += HiHj;
+            Jacobian_ij[iDim][iDim] = DHiDHj[iDim][iDim] + HiHj;
           }
-          Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], DHiDHj);
+          Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
 
         }
       }
@@ -392,16 +392,15 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
   // - check initialisation of nElem_Bound and bound
 
   unsigned long iElem, iPoint, iVertex;
-  unsigned short iNode, jNode, iDim, nNodes = 0, NelNodes;
+  unsigned short iNode, jNode, nNodes = 0, NelNodes;
   std::vector<unsigned long> indexNode(8, 0.0);
   std::vector<unsigned long> indexVertex(8, 0.0);
-  su2double val_Coord;
   int EL_KIND = 0;
 
-  su2double **DHiDHj = NULL;
+  su2activematrix DHiDHj;
   su2double HiHj = 0.0;
 
-  std::vector<std::vector<su2double>> Coord;
+  su2activematrix Coord;
 
   /*--- Loops over all the elements ---*/
 
@@ -432,18 +431,21 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
       }
     }
 
+  /*
   for (iNode=0;iNode<nNodes;iNode++) {
 
     su2double x = Get_ValCoord(geometry, indexNode[iNode], 0);
     su2double y = Get_ValCoord(geometry, indexNode[iNode], 1);
     su2double z = Get_ValCoord(geometry, indexNode[iNode], 2);
     auto meshVertexI = geometry->node[indexNode[iNode]]->GetGlobalIndex();
-    /*std::cout << "For elem " << iElem << " Point (" << x << ", " << y << ", " << z << ")" << std::endl <<
+    std::cout << "For elem " << iElem << " Point (" << x << ", " << y << ", " << z << ")" << std::endl <<
                  "local Index: " << iNode << std::endl <<
                  "global SU2 Index: " << indexNode[iNode] << std::endl <<
                  "boundary Index: "<< indexVertex[iNode] << std::endl <<
-                 "mesh Index: " << meshVertexI << std::endl;*/
-}
+                 "mesh Index: " << meshVertexI << std::endl;
+  }
+  */
+
     /*--- compute the contributions of the single elements inside the numerics container ---*/
     numerics[GRAD_TERM]->SetCoord(Coord);
     numerics[GRAD_TERM]->Compute_Tangent_Matrix(element_container[GRAD_TERM][EL_KIND], config);
@@ -458,11 +460,11 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
         DHiDHj = element_container[GRAD_TERM][EL_KIND]->Get_DHiDHj(iNode, jNode);
         HiHj = element_container[GRAD_TERM][EL_KIND]->Get_HiHj(iNode, jNode);
 
-        DHiDHj[0][0] += HiHj;
+        Jacobian_ij[0][0] = DHiDHj[0][0] + HiHj;
 
         //std::cout << iNode << ", " << jNode << ", " << indexVertex[iNode] <<", " <<indexVertex[jNode] << ", "<< DHiDHj[0][0] <<std::endl;
 
-        Jacobian.AddBlock(indexVertex[iNode], indexVertex[jNode], DHiDHj);
+        Jacobian.AddBlock(indexVertex[iNode], indexVertex[jNode], Jacobian_ij);
 
       }
     }
@@ -500,12 +502,12 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
 
       for (iDim = 0; iDim < nDim; iDim++) {
         auto val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
 
     }
 
-    element_container[GRAD_TERM][EL_KIND]->clearElement(true);       /*--- Restarts the element: avoids adding over previous results in other elements --*/
+    element_container[GRAD_TERM][EL_KIND]->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
     element_container[GRAD_TERM][EL_KIND]->ComputeGrad_Linear();
     unsigned short nGauss = element_container[GRAD_TERM][EL_KIND]->GetnGaussPoints();
 
@@ -565,7 +567,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
   std::vector<unsigned long> indexVertex(8, 0.0);
   su2double Weight, Jac_X, normalSens = 0.0, norm;
   su2double* normal = NULL;
-  std::vector<std::vector<su2double>> Coord;
+  su2activematrix Coord;
 
   for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
@@ -604,7 +606,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
       normal[iDim] = normal[iDim] / norm;
     }---*/
 
-    element_container[GRAD_TERM][EL_KIND]->clearElement(true);       /*--- Restarts the element: avoids adding over previous results in other elements --*/
+    element_container[GRAD_TERM][EL_KIND]->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
     element_container[GRAD_TERM][EL_KIND]->ComputeGrad_Linear(Coord);
     unsigned short nGauss = element_container[GRAD_TERM][EL_KIND]->GetnGaussPoints();
 
@@ -915,48 +917,48 @@ void CGradientSmoothingSolver::SetBoundaryDerivativesForMultiplication(CGeometry
 }
 
 
-std::vector<std::vector<su2double>> CGradientSmoothingSolver::GetElementCoordinates(CGeometry *geometry, std::vector<unsigned long>& indexNode, int EL_KIND) {
+su2activematrix CGradientSmoothingSolver::GetElementCoordinates(CGeometry *geometry, std::vector<unsigned long>& indexNode, int EL_KIND) {
 
-  std::vector<std::vector<su2double>> Coord;
+  su2activematrix Coord;
 
   switch (EL_KIND) {
 
   case EL_LINE:
 
+    Coord.resize(2,2);
     for(auto iNode=0; iNode<2; iNode++) {
-      Coord.push_back(std::vector<su2double>());
       for(auto iDim=0; iDim<2; iDim++) {
-        Coord[iNode].push_back( Get_ValCoord(geometry, indexNode[iNode], iDim) );
+        Coord[iNode][iDim] = Get_ValCoord(geometry, indexNode[iNode], iDim);
       }
     }
     break;
 
   case EL_TRIA:
 
+    Coord.resize(3,3);
     for(auto iNode=0; iNode<3; iNode++) {
-      Coord.push_back(std::vector<su2double>());
       for(auto iDim=0; iDim<3; iDim++) {
-        Coord[iNode].push_back( Get_ValCoord(geometry, indexNode[iNode], iDim) );
+        Coord[iNode][iDim] = Get_ValCoord(geometry, indexNode[iNode], iDim);
       }
     }
     break;
 
   case EL_TRIA2:
 
+    Coord.resize(3,3);
     for(auto iNode=0; iNode<3; iNode++) {
-      Coord.push_back(std::vector<su2double>());
       for(auto iDim=0; iDim<3; iDim++) {
-        Coord[iNode].push_back( Get_ValCoord(geometry, indexNode[iNode], iDim) );
+        Coord[iNode][iDim] = Get_ValCoord(geometry, indexNode[iNode], iDim);
       }
     }
     break;
 
   case EL_QUAD:
 
+    Coord.resize(4,3);
     for(auto iNode=0; iNode<4; iNode++) {
-      Coord.push_back(std::vector<su2double>());
       for(auto iDim=0; iDim<3; iDim++) {
-        Coord[iNode].push_back( Get_ValCoord(geometry, indexNode[iNode], iDim) );
+        Coord[iNode][iDim] = Get_ValCoord(geometry, indexNode[iNode], iDim);
       }
     }
     break;
