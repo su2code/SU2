@@ -294,8 +294,8 @@ void CSTLFileWriter::StoreCoordData(enum GEO_TYPE elemType,
 
   /*--- Write Triangle-Point-Coordinates subsequently in a local send buffer. ---*/
   for (iElem = 0; iElem < nLocalElements; iElem++) {
-    for (auto iPoint : nodeList) {
-      globalNodeNumber = dataSorter->GetElem_Connectivity(elemType, iElem, nodeList[iPoint]) - 1;
+    for (auto node : nodeList) {
+      globalNodeNumber = dataSorter->GetElem_Connectivity(elemType, iElem, node) - 1;
       localNodeNumber = globalNodeNumber - dataSorter->GetNodeBegin(rank);
 
       for (iVar = 0; iVar < 3; iVar++){

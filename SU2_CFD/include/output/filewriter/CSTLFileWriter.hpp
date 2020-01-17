@@ -64,6 +64,12 @@ private:
   su2double *buffSendCoords = NULL; /*!< \brief Array holding Coordinate data of one processor. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
   su2double *buffRecvCoords = NULL; /*!< \brief Array holding Coordinate data of all processors. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
 
+public:
+
+  const static string fileExt; /*!< \brief File extension ".stl". */
+
+private:
+
   /*!
    * \brief Recompute Tri/Quad element connectivity between processor borders.
    */
@@ -93,8 +99,6 @@ private:
   passivedouble GetHaloNodeValue(unsigned long global_node_number, unsigned short iVar);
 
 public:
-
-  const static string fileExt; /*!< \brief File extension ".stl". */
 
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
