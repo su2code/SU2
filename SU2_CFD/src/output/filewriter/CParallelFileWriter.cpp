@@ -96,8 +96,8 @@ bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBy
   
   /*--- Write binary data ---*/
 
-  bytesWritte = fwrite(data, sizeof(char), sizeInBytes, fhw);
-  fileSize += byteSize;
+  bytesWritten = fwrite(data, sizeof(char), sizeInBytes, fhw);
+  fileSize += bytesWritten;
   
   return (bytesWritten == sizeInBytes);
 #endif
@@ -128,7 +128,7 @@ bool CFileWriter::WriteMPIBinaryData(const void *data, unsigned long sizeInBytes
   
   /*--- Write the total size in bytes at the beginning of the binary data blob ---*/
   
-  bytesWritten = fwrite(&totalByteSize, sizeof(int),1, fhw);
+  bytesWritten = fwrite(data, sizeof(char), sizeInBytes, fhw);
   
   return (bytesWritten == sizeInBytes);
   
@@ -161,7 +161,7 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
   
   fileSize += bytesWritten;
   
-  return (bytesWritten == sizeInBytes);
+  return (bytesWritten == str.size()*sizeof(char));
   
 #endif
   
