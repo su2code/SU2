@@ -83,6 +83,29 @@ protected:
    * \brief The parallel data sorter
    */
   CParallelDataSorter* dataSorter;
+  
+#ifdef HAVE_MPI
+  /*!
+   * \brief The displacement that every process has in the current file view
+   */
+  MPI_Offset disp;
+
+  /*!
+   * \brief The file handle for writing
+   */
+  MPI_File fhw;
+#else
+
+  /*!
+   * \brief The displacement that every process has in the current file view
+   */
+  unsigned long disp;
+
+  /*!
+   * \brief The file handle for writing
+   */
+  FILE* fhw;
+#endif
 
 public:
   /*!
@@ -122,9 +145,52 @@ public:
 
   /*!
    * \brief Get the used time of the last file writing.
-   * \return
+   * \return The time used to write to file.
    */
   su2double Get_UsedTime() const {return usedTime;}
+  
+protected:
+  
+  /*!
+   * \brief Collectively write a binary data array distributed over all processors to file using MPI I/O.
+   * \param[in] data - Pointer to the data to write.
+   * \param sizeInBytes - The size of the data in bytes on this processor.
+   * \param totalSizeInBytes - The total size of the array accumulated over all processors.
+   * \param offset - The offset in bytes of the chunk of data the current processor owns within the global array.
+   * \return Boolean indicating whether the writing was successful.
+   */
+  bool WriteMPIBinaryDataAll(void *data, unsigned long sizeInBytes, unsigned long totalSizeInBytes, unsigned long offset);
 
+  /*!
+   * \brief Write a binary data array to a currently opened file using MPI I/O. Note: routine must be called collectively,
+   * although only one processor writes its data.
+   * \param[in] data - Pointer to the beginning of the data. Can be NULL for all processors that do not write.
+   * \param[in] sizeInBytes - The size of the data in bytes.
+   * \param[in] processor - Rank of the processor that should write its data.
+   * \return Boolean indicating whether the writing was successful.
+   */
+  bool WriteMPIBinaryData(void *data, unsigned long sizeInBytes, unsigned short processor);
+  
+  /*!
+   * \brief Write a string to a currently opened file using MPI I/O. Note: routine must be called collectively,
+   *  although only one processor writes the string.
+   * \param[in] str - The string to write to file.
+   * \param[in] processor - Rank of the processor that should the string.
+   * \return 
+   */
+  bool WriteMPIString(const std::string& str, unsigned short processor);
+  
+  /*!
+   * \brief Open a file to write using MPI I/O. Already existing file is deleted.
+   * \return Boolean indicating whether the opening was successful.
+   */
+  bool OpenMPIFile();
+  
+  /*!
+   * \brief Close a file using MPI I/O. 
+   * \return Boolean indicating whether the closing was successful.
+   */
+  bool CloseMPIFile();
+  
 };
 
