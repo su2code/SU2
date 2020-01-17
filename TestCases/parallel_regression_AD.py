@@ -172,7 +172,40 @@ def main():
     discadj_cylinder.tol       = 0.00001
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
+    
+    ##############################################################
+    ### Unsteady Disc. adj. compressible RANS Windowed Average ###
+    ##############################################################
 
+    # Turbulent Cylinder
+    discadj_cylinder           = TestCase('unsteady_cylinder_windowed_average_AD')
+    discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
+    discadj_cylinder.cfg_file  = "cylinder_Windowing_AD.cfg" 
+    discadj_cylinder.test_iter = 9
+    discadj_cylinder.test_vals = [3.003855] #last column
+    discadj_cylinder.su2_exec  = "parallel_computation.py -f"
+    discadj_cylinder.timeout   = 1600
+    discadj_cylinder.tol       = 0.00001
+    discadj_cylinder.unsteady  = True
+    test_list.append(discadj_cylinder)
+    
+    ##############################################################
+    ### Unsteady Disc. adj. compressible RANS Windowed Average ###
+    ##############################################################
+
+    # Turbulent Cylinder
+    discadj_cylinder           = TestCase('unsteady_cylinder_windowed_average')
+    discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
+    discadj_cylinder.cfg_file  = "cylinder_Windowing.cfg" 
+    discadj_cylinder.test_iter = 6
+    discadj_cylinder.test_vals = [0.202376,-0.000030, 2.688758, -0.000032, 1.0679e+00] #last 5 columns
+    discadj_cylinder.su2_exec  = "parallel_computation.py -f"
+    discadj_cylinder.timeout   = 1600
+    discadj_cylinder.tol       = 0.0001
+    discadj_cylinder.unsteady  = True
+    test_list.append(discadj_cylinder)
+    
+    
     ##########################################################################
     ### Unsteady Disc. adj. compressible RANS DualTimeStepping 1st order   ###
     ##########################################################################
@@ -229,7 +262,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-6.492475, -6.401201, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_vals = [-6.070230, -6.262517, -0.000364, -8.708700] #last 4 columns
     discadj_fea.su2_exec  = "parallel_computation.py -f"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001

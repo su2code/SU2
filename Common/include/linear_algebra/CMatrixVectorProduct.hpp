@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -25,7 +25,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 
 #pragma once
 
@@ -54,9 +54,8 @@
 template<class ScalarType>
 class CMatrixVectorProduct {
 public:
-  virtual ~CMatrixVectorProduct() = 0; ///< class destructor
-  virtual void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v)
-  const = 0; ///< matrix-vector product operation
+  virtual ~CMatrixVectorProduct() = 0;
+  virtual void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const = 0;
 };
 template<class ScalarType>
 CMatrixVectorProduct<ScalarType>::~CMatrixVectorProduct() {}
@@ -67,45 +66,37 @@ CMatrixVectorProduct<ScalarType>::~CMatrixVectorProduct() {}
  * \brief Specialization of matrix-vector product that uses CSysMatrix class
  */
 template<class ScalarType>
-class CSysMatrixVectorProduct : public CMatrixVectorProduct<ScalarType> {
+class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
 private:
-  CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the product. */
-  CGeometry* geometry;                   /*!< \brief pointer to matrix that defines the geometry. */
-  CConfig* config;                       /*!< \brief pointer to matrix that defines the config. */
-
-  /*!
-   * \brief Default constructor of the class
-   * \note This class cannot be default constructed as that would leave us with invalid pointers.
-   */
-  CSysMatrixVectorProduct();
+  const CSysMatrix<ScalarType>& matrix;  /*!< \brief pointer to matrix that defines the product. */
+  CGeometry* geometry;                   /*!< \brief geometry associated with the matrix. */
+  CConfig* config;                       /*!< \brief config of the problem. */
 
 public:
-
   /*!
    * \brief constructor of the class
    * \param[in] matrix_ref - matrix reference that will be used to define the products
    * \param[in] geometry_ref - geometry associated with the problem
    * \param[in] config_ref - config of the problem
    */
-  inline CSysMatrixVectorProduct(CSysMatrix<ScalarType> & matrix_ref,
-                                 CGeometry *geometry_ref, CConfig *config_ref) {
-    sparse_matrix = &matrix_ref;
-    geometry = geometry_ref;
-    config = config_ref;
-  }
+  inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType> & matrix_ref,
+                                 CGeometry *geometry_ref, CConfig *config_ref) :
+    matrix(matrix_ref),
+    geometry(geometry_ref),
+    config(config_ref) {}
 
   /*!
-   * \brief destructor of the class
+   * \note This class cannot be default constructed as that would leave us with invalid pointers.
    */
-  ~CSysMatrixVectorProduct() {}
+  CSysMatrixVectorProduct() = delete;
 
   /*!
    * \brief operator that defines the CSysMatrix-CSysVector product
    * \param[in] u - CSysVector that is being multiplied by the sparse matrix
    * \param[out] v - CSysVector that is the result of the product
    */
-  inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const {
-    sparse_matrix->MatrixVectorProduct(u, v, geometry, config);
+  inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const override {
+    matrix.MatrixVectorProduct(u, v, geometry, config);
   }
 };
 
@@ -115,44 +106,36 @@ public:
  * \brief Specialization of matrix-vector product that uses CSysMatrix class for transposed products
  */
 template<class ScalarType>
-class CSysMatrixVectorProductTransposed : public CMatrixVectorProduct<ScalarType> {
+class CSysMatrixVectorProductTransposed final : public CMatrixVectorProduct<ScalarType> {
 private:
-  CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the product. */
-  CGeometry* geometry;                   /*!< \brief pointer to matrix that defines the geometry. */
-  CConfig* config;                       /*!< \brief pointer to matrix that defines the config. */
-
-  /*!
-   * \brief Default constructor of the class
-   * \note This class cannot be default constructed as that would leave us with invalid pointers.
-   */
-  CSysMatrixVectorProductTransposed();
+  const CSysMatrix<ScalarType>& matrix;  /*!< \brief pointer to matrix that defines the product. */
+  CGeometry* geometry;                   /*!< \brief geometry associated with the matrix. */
+  CConfig* config;                       /*!< \brief config of the problem. */
 
 public:
-
   /*!
    * \brief constructor of the class
    * \param[in] matrix_ref - matrix reference that will be used to define the products
    * \param[in] geometry_ref - geometry associated with the problem
    * \param[in] config_ref - config of the problem
    */
-  inline CSysMatrixVectorProductTransposed(CSysMatrix<ScalarType> & matrix_ref,
-                                           CGeometry *geometry_ref, CConfig *config_ref) {
-    sparse_matrix = &matrix_ref;
-    geometry = geometry_ref;
-    config = config_ref;
-  }
+  inline CSysMatrixVectorProductTransposed(const CSysMatrix<ScalarType> & matrix_ref,
+                                           CGeometry *geometry_ref, CConfig *config_ref) :
+    matrix(matrix_ref),
+    geometry(geometry_ref),
+    config(config_ref) {}
 
   /*!
-   * \brief destructor of the class
+   * \note This class cannot be default constructed as that would leave us with invalid pointers.
    */
-  ~CSysMatrixVectorProductTransposed() {}
+  CSysMatrixVectorProductTransposed() = delete;
 
   /*!
    * \brief operator that defines the CSysMatrix-CSysVector product
    * \param[in] u - CSysVector that is being multiplied by the sparse matrix
    * \param[out] v - CSysVector that is the result of the product
    */
-  inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const {
-    sparse_matrix->MatrixVectorProductTransposed(u, v, geometry, config);
+  inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const override {
+    matrix.MatrixVectorProductTransposed(u, v, geometry, config);
   }
 };

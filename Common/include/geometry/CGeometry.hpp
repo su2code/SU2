@@ -53,6 +53,7 @@ extern "C" {
 #include "../dual_grid_structure.hpp"
 #include "../config_structure.hpp"
 #include "../geometry_structure_fem_part.hpp"
+#include "../toolboxes/graph_toolbox.hpp"
 
 using namespace std;
 
@@ -99,30 +100,42 @@ protected:
   nelem_quad_bound,             /*!< \brief Number of quads on the mesh boundaries. */
   Global_nelem_quad_bound;      /*!< \brief Total number of quads on the mesh boundaries across all processors. */
 
-  unsigned short nDim,	        /*!< \brief Number of dimension of the problem. */
-  nZone,                        /*!< \brief Number of zones in the problem. */
-  nMarker;                      /*!< \brief Number of different markers of the mesh. */
+  unsigned short nDim;	        /*!< \brief Number of dimension of the problem. */
+  unsigned short nZone;         /*!< \brief Number of zones in the problem. */
+  unsigned short nMarker;       /*!< \brief Number of different markers of the mesh. */
+  unsigned short nCommLevel;    /*!< \brief Number of non-blocking communication levels. */
 
-  unsigned short MGLevel;         /*!< \brief The mesh level index for the current geometry container. */
-  unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
+  unsigned short MGLevel;        /*!< \brief The mesh level index for the current geometry container. */
+  unsigned long Max_GlobalPoint; /*!< \brief Greater global point in the domain local structure. */
 
-  /* --- Custom boundary variables --- */
+  /*--- Boundary information. ---*/
+
+  short *Marker_All_SendRecv;   /*!< \brief MPI Marker. */
   su2double **CustomBoundaryTemperature;
   su2double **CustomBoundaryHeatFlux;
 
-public:
-  unsigned long *nElem_Bound;            /*!< \brief Number of elements of the boundary. */
-  string *Tag_to_Marker;                 /*!< \brief If you know the index of the boundary (depend of the grid definition),
-                                                     it gives you the maker (where the boundary is stored from 0 to boundaries). */
-  CPrimalGrid** elem;                    /*!< \brief Element vector (primal grid information). */
-  CPrimalGrid** face;                    /*!< \brief Face vector (primal grid information). */
-  CPrimalGrid*** bound;	                 /*!< \brief Boundary vector (primal grid information). */
-  CPoint** node;                         /*!< \brief Node vector (dual grid information). */
-  CEdge** edge;                          /*!< \brief Edge vector (dual grid information). */
-  CVertex*** vertex;                     /*!< \brief Boundary Vertex vector (dual grid information). */
-  CTurboVertex**** turbovertex;          /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
-  unsigned long *nVertex;                /*!< \brief Number of vertex for each marker. */
-  vector<bool> bound_is_straight;        /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+  /*--- Create vectors and distribute the values among the different planes queues ---*/
+
+  vector<vector<su2double> > Xcoord_plane;     /*!< \brief Vector containing x coordinates of new points appearing on a single plane */
+  vector<vector<su2double> > Ycoord_plane;     /*!< \brief Vector containing y coordinates of new points appearing on a single plane */
+  vector<vector<su2double> > Zcoord_plane;     /*!< \brief Vector containing z coordinates of new points appearing on a single plane */
+  vector<vector<su2double> > FaceArea_plane;   /*!< \brief Vector containing area/volume associated with  new points appearing on a single plane */
+  vector<vector<unsigned long> > Plane_points; /*!< \brief Vector containing points appearing on a single plane */
+
+  vector<su2double> XCoordList;	  /*!< \brief Vector containing points appearing on a single plane */
+  CPrimalGrid*** newBound;        /*!< \brief Boundary vector for new periodic elements (primal grid information). */
+  unsigned long *nNewElem_Bound;  /*!< \brief Number of new periodic elements of the boundary. */
+
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  vector<vector<unsigned long> > adj_nodes; /*!< \brief Vector of vectors holding each node's adjacency during preparation for ParMETIS. */
+  idx_t *adjacency; /*!< \brief Local adjacency array to be input into ParMETIS for partitioning (idx_t is a ParMETIS type defined in their headers). */
+  idx_t *xadj;      /*!< \brief Index array that points to the start of each node's adjacency in CSR format (needed to interpret the adjacency array).  */
+#endif
+#endif
+
+  /*--- Turbomachinery variables ---*/
+
   unsigned short *nSpanWiseSections;     /*!< \brief Number of Span wise section for each turbo marker, indexed by inflow/outflow */
   unsigned short *nSpanSectionsByMarker; /*!< \brief Number of Span wise section for each turbo marker, indexed by marker.  Needed for deallocation.*/
   unsigned short nTurboPerf;             /*!< \brief Number of Span wise section for each turbo marker. */
@@ -139,89 +152,102 @@ public:
   su2double **MinAngularCoord;           /*!< \brief Max angular pitch at each span wise section for each marker.*/
   su2double **MinRelAngularCoord;        /*!< \brief Min relative angular coord at each span wise section for each marker.*/
   su2double **TurboRadius;               /*!< \brief Radius at each span wise section for each marker.*/
-  su2double **TangGridVelIn,
-  **TangGridVelOut;                      /*!< \brief Average tangential rotational speed at each span wise section for each turbomachinery marker.*/
-  su2double **SpanAreaIn,
-  **SpanAreaOut;                         /*!< \brief Area at each span wise section for each turbomachinery marker.*/
-  su2double **TurboRadiusIn,
-  **TurboRadiusOut;                      /*!< \brief Radius at each span wise section for each turbomachinery marker*/
+  su2double **TangGridVelIn;
+  su2double **TangGridVelOut;            /*!< \brief Average tangential rotational speed at each span wise section for each turbomachinery marker.*/
+  su2double **SpanAreaIn;
+  su2double **SpanAreaOut;               /*!< \brief Area at each span wise section for each turbomachinery marker.*/
+  su2double **TurboRadiusIn;
+  su2double **TurboRadiusOut;            /*!< \brief Radius at each span wise section for each turbomachinery marker*/
 
-  unsigned short nCommLevel;             /*!< \brief Number of non-blocking communication levels. */
+  /*--- Sparsity patterns associated with the geometry. ---*/
 
-  short *Marker_All_SendRecv;            /*!< \brief MPI Marker. */
+  CCompressedSparsePatternUL
+  finiteVolumeCSRFill0,                  /*!< \brief 0-fill FVM sparsity. */
+  finiteVolumeCSRFillN,                  /*!< \brief N-fill FVM sparsity (e.g. for ILUn preconditioner). */
+  finiteElementCSRFill0,                 /*!< \brief 0-fill FEM sparsity. */
+  finiteElementCSRFillN;                 /*!< \brief N-fill FEM sparsity (e.g. for ILUn preconditioner). */
 
-  /*--- Create vectors and distribute the values among the different planes queues ---*/
-  vector<vector<su2double> > Xcoord_plane;     /*!< \brief Vector containing x coordinates of new points appearing on a single plane */
-  vector<vector<su2double> > Ycoord_plane;     /*!< \brief Vector containing y coordinates of new points appearing on a single plane */
-  vector<vector<su2double> > Zcoord_plane;     /*!< \brief Vector containing z coordinates of new points appearing on a single plane */
-  vector<vector<su2double> > FaceArea_plane;   /*!< \brief Vector containing area/volume associated with  new points appearing on a single plane */
-  vector<vector<unsigned long> > Plane_points; /*!< \brief Vector containing points appearing on a single plane */
+  CEdgeToNonZeroMapUL edgeToCSRMap;      /*!< \brief Map edges to CSR entries referenced by them (i,j) and (j,i). */
 
-  vector<su2double> XCoordList;	  /*!< \brief Vector containing points appearing on a single plane */
-  CPrimalGrid*** newBound;        /*!< \brief Boundary vector for new periodic elements (primal grid information). */
-  unsigned long *nNewElem_Bound;  /*!< \brief Number of new periodic elements of the boundary. */
+  /*--- Edge and element colorings. ---*/
+
+  CCompressedSparsePatternUL
+  edgeColoring,                          /*!< \brief Edge coloring structure for thread-based parallelization. */
+  elemColoring;                          /*!< \brief Element coloring structure for thread-based parallelization. */
+  unsigned long edgeColorGroupSize = 1;  /*!< \brief Size of the edge groups within each color. */
+  unsigned long elemColorGroupSize = 1;  /*!< \brief Size of the element groups within each color. */
+
+public:
+  /*--- Main geometric elements of the grid. ---*/
+
+  CPrimalGrid** elem;                    /*!< \brief Element vector (primal grid information). */
+  CPrimalGrid** face;                    /*!< \brief Face vector (primal grid information). */
+  CPrimalGrid*** bound;	                 /*!< \brief Boundary vector (primal grid information). */
+  CPoint** node;                         /*!< \brief Node vector (dual grid information). */
+  CEdge** edge;                          /*!< \brief Edge vector (dual grid information). */
+  CVertex*** vertex;                     /*!< \brief Boundary Vertex vector (dual grid information). */
+  CTurboVertex**** turbovertex;          /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
+  unsigned long *nVertex;                /*!< \brief Number of vertex for each marker. */
+  unsigned long *nElem_Bound;            /*!< \brief Number of elements of the boundary. */
+  string *Tag_to_Marker;                 /*!< \brief Names of boundary markers. */
+  vector<bool> bound_is_straight;        /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
 
   /*--- Partitioning-specific variables ---*/
 
-  map<unsigned long,unsigned long> Global_to_Local_Elem;  /*!< \brief Mapping of global to local index for elements. */
-  unsigned long *beg_node;                                /*!< \brief Array containing the first node on each rank due to a linear partitioning by global index. */
-  unsigned long *end_node;                                /*!< \brief Array containing the last node on each rank due to a linear partitioning by global index. */
-  unsigned long *nPointLinear;                            /*!< \brief Array containing the total number of nodes on each rank due to a linear partioning by global index. */
-  unsigned long *nPointCumulative;                        /*!< \brief Cumulative storage array containing the total number of points on all prior ranks in the linear partitioning. */
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  vector< vector<unsigned long> > adj_nodes; /*!< \brief Vector of vectors holding each node's adjacency during preparation for ParMETIS. */
-  idx_t *adjacency; /*!< \brief Local adjacency array to be input into ParMETIS for partitioning (idx_t is a ParMETIS type defined in their headers). */
-  idx_t *xadj;      /*!< \brief Index array that points to the start of each node's adjacency in CSR format (needed to interpret the adjacency array).  */
-#endif
-#endif
+  map<unsigned long,unsigned long> Global_to_Local_Elem; /*!< \brief Mapping of global to local index for elements. */
+  unsigned long *beg_node;           /*!< \brief Array containing the first node on each rank due to a linear partitioning by global index. */
+  unsigned long *end_node;           /*!< \brief Array containing the last node on each rank due to a linear partitioning by global index. */
+  unsigned long *nPointLinear;       /*!< \brief Array containing the total number of nodes on each rank due to a linear partioning by global index. */
+  unsigned long *nPointCumulative;   /*!< \brief Cumulative storage array containing the total number of points on all prior ranks in the linear partitioning. */
 
   /*--- Data structures for point-to-point MPI communications. ---*/
 
-  int countPerPoint;                  /*!< \brief Maximum number of pieces of data sent per vertex in point-to-point comms. */
-  int nP2PSend;                       /*!< \brief Number of sends during point-to-point comms. */
-  int nP2PRecv;                       /*!< \brief Number of receives during point-to-point comms. */
-  int *nPoint_P2PSend;                /*!< \brief Data structure holding number of vertices for each send in point-to-point comms. */
-  int *nPoint_P2PRecv;                /*!< \brief Data structure holding number of vertices for each recv in point-to-point comms. */
-  int *Neighbors_P2PSend;             /*!< \brief Data structure holding the ranks of the neighbors for point-to-point send comms. */
-  int *Neighbors_P2PRecv;             /*!< \brief Data structure holding the ranks of the neighbors for point-to-point recv comms. */
-  map<int, int> P2PSend2Neighbor;     /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for point-to-point send comms. */
-  map<int, int> P2PRecv2Neighbor;     /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for point-to-point recv comms. */
-  unsigned long *Local_Point_P2PSend; /*!< \brief Data structure holding the local index of all vertices to be sent in point-to-point comms. */
-  unsigned long *Local_Point_P2PRecv; /*!< \brief Data structure holding the local index of all vertices to be received in point-to-point comms. */
-  su2double *bufD_P2PRecv;            /*!< \brief Data structure for su2double point-to-point receive. */
-  su2double *bufD_P2PSend;            /*!< \brief Data structure for su2double point-to-point send. */
-  unsigned short *bufS_P2PRecv;       /*!< \brief Data structure for unsigned long point-to-point receive. */
-  unsigned short *bufS_P2PSend;       /*!< \brief Data structure for unsigned long point-to-point send. */
-  SU2_MPI::Request *req_P2PSend;      /*!< \brief Data structure for point-to-point send requests. */
-  SU2_MPI::Request *req_P2PRecv;      /*!< \brief Data structure for point-to-point recv requests. */
+  int countPerPoint;                     /*!< \brief Maximum number of pieces of data sent per vertex in point-to-point comms. */
+  int nP2PSend;                          /*!< \brief Number of sends during point-to-point comms. */
+  int nP2PRecv;                          /*!< \brief Number of receives during point-to-point comms. */
+  int *nPoint_P2PSend;                   /*!< \brief Data structure holding number of vertices for each send in point-to-point comms. */
+  int *nPoint_P2PRecv;                   /*!< \brief Data structure holding number of vertices for each recv in point-to-point comms. */
+  int *Neighbors_P2PSend;                /*!< \brief Data structure holding the ranks of the neighbors for point-to-point send comms. */
+  int *Neighbors_P2PRecv;                /*!< \brief Data structure holding the ranks of the neighbors for point-to-point recv comms. */
+  map<int, int> P2PSend2Neighbor;        /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for point-to-point send comms. */
+  map<int, int> P2PRecv2Neighbor;        /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for point-to-point recv comms. */
+  unsigned long *Local_Point_P2PSend;    /*!< \brief Data structure holding the local index of all vertices to be sent in point-to-point comms. */
+  unsigned long *Local_Point_P2PRecv;    /*!< \brief Data structure holding the local index of all vertices to be received in point-to-point comms. */
+  su2double *bufD_P2PRecv;               /*!< \brief Data structure for su2double point-to-point receive. */
+  su2double *bufD_P2PSend;               /*!< \brief Data structure for su2double point-to-point send. */
+  unsigned short *bufS_P2PRecv;          /*!< \brief Data structure for unsigned long point-to-point receive. */
+  unsigned short *bufS_P2PSend;          /*!< \brief Data structure for unsigned long point-to-point send. */
+  SU2_MPI::Request *req_P2PSend;         /*!< \brief Data structure for point-to-point send requests. */
+  SU2_MPI::Request *req_P2PRecv;         /*!< \brief Data structure for point-to-point recv requests. */
 
   /*--- Data structures for periodic communications. ---*/
 
-  int countPerPeriodicPoint;                /*!< \brief Maximum number of pieces of data sent per vertex in periodic comms. */
-  int nPeriodicSend;                        /*!< \brief Number of sends during periodic comms. */
-  int nPeriodicRecv;                        /*!< \brief Number of receives during periodic comms. */
-  int *nPoint_PeriodicSend;                 /*!< \brief Data structure holding number of vertices for each send in periodic comms. */
-  int *nPoint_PeriodicRecv;                 /*!< \brief Data structure holding number of vertices for each recv in periodic comms. */
-  int *Neighbors_PeriodicSend;              /*!< \brief Data structure holding the ranks of the neighbors for periodic send comms. */
-  int *Neighbors_PeriodicRecv;              /*!< \brief Data structure holding the ranks of the neighbors for periodic recv comms. */
-  map<int, int> PeriodicSend2Neighbor;      /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for periodic send comms. */
-  map<int, int> PeriodicRecv2Neighbor;      /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for periodic recv comms. */
-  unsigned long *Local_Point_PeriodicSend;  /*!< \brief Data structure holding the local index of all vertices to be sent in periodic comms. */
-  unsigned long *Local_Point_PeriodicRecv;  /*!< \brief Data structure holding the local index of all vertices to be received in periodic comms. */
-  unsigned long *Local_Marker_PeriodicSend; /*!< \brief Data structure holding the local index of the periodic marker for a particular vertex to be sent in periodic comms. */
-  unsigned long *Local_Marker_PeriodicRecv; /*!< \brief Data structure holding the local index of the periodic marker for a particular vertex to be received in periodic comms. */
-  su2double *bufD_PeriodicRecv;             /*!< \brief Data structure for su2double periodic receive. */
-  su2double *bufD_PeriodicSend;             /*!< \brief Data structure for su2double periodic send. */
-  unsigned short *bufS_PeriodicRecv;        /*!< \brief Data structure for unsigned long periodic receive. */
-  unsigned short *bufS_PeriodicSend;        /*!< \brief Data structure for unsigned long periodic send. */
-  SU2_MPI::Request *req_PeriodicSend;       /*!< \brief Data structure for periodic send requests. */
-  SU2_MPI::Request *req_PeriodicRecv;       /*!< \brief Data structure for periodic recv requests. */
+  int countPerPeriodicPoint;             /*!< \brief Maximum number of pieces of data sent per vertex in periodic comms. */
+  int nPeriodicSend;                     /*!< \brief Number of sends during periodic comms. */
+  int nPeriodicRecv;                     /*!< \brief Number of receives during periodic comms. */
+  int *nPoint_PeriodicSend;              /*!< \brief Data structure holding number of vertices for each send in periodic comms. */
+  int *nPoint_PeriodicRecv;              /*!< \brief Data structure holding number of vertices for each recv in periodic comms. */
+  int *Neighbors_PeriodicSend;           /*!< \brief Data structure holding the ranks of the neighbors for periodic send comms. */
+  int *Neighbors_PeriodicRecv;           /*!< \brief Data structure holding the ranks of the neighbors for periodic recv comms. */
+  map<int, int> PeriodicSend2Neighbor;   /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for periodic send comms. */
+  map<int, int> PeriodicRecv2Neighbor;   /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for periodic recv comms. */
+  unsigned long
+  *Local_Point_PeriodicSend,             /*!< \brief Data structure holding the local index of all vertices to be sent in periodic comms. */
+  *Local_Point_PeriodicRecv,             /*!< \brief Data structure holding the local index of all vertices to be received in periodic comms. */
+  *Local_Marker_PeriodicSend,            /*!< \brief Data structure holding the local index of the periodic marker for a particular vertex to be sent in periodic comms. */
+  *Local_Marker_PeriodicRecv;            /*!< \brief Data structure holding the local index of the periodic marker for a particular vertex to be received in periodic comms. */
+  su2double *bufD_PeriodicRecv;          /*!< \brief Data structure for su2double periodic receive. */
+  su2double *bufD_PeriodicSend;          /*!< \brief Data structure for su2double periodic send. */
+  unsigned short *bufS_PeriodicRecv;     /*!< \brief Data structure for unsigned long periodic receive. */
+  unsigned short *bufS_PeriodicSend;     /*!< \brief Data structure for unsigned long periodic send. */
+  SU2_MPI::Request *req_PeriodicSend;    /*!< \brief Data structure for periodic send requests. */
+  SU2_MPI::Request *req_PeriodicRecv;    /*!< \brief Data structure for periodic recv requests. */
 
-  vector<su2double> Orthogonality;          /*!< \brief Measure of dual CV orthogonality angle (0 to 90 deg., 90 being best). */
-  vector<su2double> Aspect_Ratio;           /*!< \brief Measure of dual CV aspect ratio (max face area / min face area).  */
-  vector<su2double> Volume_Ratio;           /*!< \brief Measure of dual CV volume ratio (max sub-element volume / min sub-element volume). */
+  /*--- Mesh quality metrics. ---*/
+
+  vector<su2double> Orthogonality;       /*!< \brief Measure of dual CV orthogonality angle (0 to 90 deg., 90 being best). */
+  vector<su2double> Aspect_Ratio;        /*!< \brief Measure of dual CV aspect ratio (max face area / min face area).  */
+  vector<su2double> Volume_Ratio;        /*!< \brief Measure of dual CV volume ratio (max sub-element volume / min sub-element volume). */
 
   /*!
    * \brief Constructor of the class.
@@ -348,10 +374,16 @@ public:
   inline unsigned long GetnPointDomain(void) const {return nPointDomain;}
 
   /*!
-   * \brief Get number of elements.
-   * \return Number of elements.
+   * \brief Retrieve total number of nodes in a simulation across all processors (including halos).
+   * \return Total number of nodes in a simulation across all processors (including halos).
    */
-  unsigned long GetnLine(void);
+  inline unsigned long GetGlobal_nPoint(void) const { return Global_nPoint; }
+
+  /*!
+   * \brief Retrieve total number of nodes in a simulation across all processors (excluding halos).
+   * \return Total number of nodes in a simulation across all processors (excluding halos).
+   */
+  inline unsigned long GetGlobal_nPointDomain(void) const { return Global_nPointDomain; }
 
   /*!
    * \brief Get number of elements.
@@ -504,6 +536,12 @@ public:
    * \param[in] val_npoint - Number of grid points in the domain.
    */
   inline void SetnPointDomain(unsigned long val_npoint) { nPointDomain = val_npoint; }
+
+  /*!
+   * \brief Set the value of the total number of points globally in the simulation.
+   * \param[in] val_global_npoint - Global number of points in the mesh (excluding halos).
+   */
+  void SetGlobal_nPointDomain(unsigned long val_global_npoint) { Global_nPointDomain = val_global_npoint; }
 
   /*!
    * \brief Set the number of grid elements.
@@ -1025,118 +1063,100 @@ public:
   inline virtual unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker) const { return 0; }
 
   /*!
-   * \brief A virtual member.
-   * \return Total number of nodes in a simulation across all processors (including halos).
-   */
-  inline virtual unsigned long GetGlobal_nPoint() const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Total number of nodes in a simulation across all processors (excluding halos).
-   */
-  inline virtual unsigned long GetGlobal_nPointDomain() const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_global_npoint - Global number of points in the mesh (excluding halos).
-   */
-  inline virtual void SetGlobal_nPointDomain(unsigned long val_global_npoint) {}
-
-  /*!
-   * \brief A virtual member.
+   * \brief Retrieve total number of elements in a simulation across all processors.
    * \return Total number of elements in a simulation across all processors.
    */
-  inline virtual unsigned long GetGlobal_nElem() const { return 0; }
+  inline unsigned long GetGlobal_nElem(void) const { return Global_nElem; }
 
   /*!
-   * \brief A virtual member.
+   * \brief  Retrieve total number of elements in a simulation across all processors (excluding halos).
    * \return Total number of elements in a simulation across all processors (excluding halos).
    */
-  inline virtual unsigned long GetGlobal_nElemDomain() const { return 0; }
+  inline unsigned long GetGlobal_nElemDomain(void) const { return Global_nElemDomain; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Retrieve total number of triangular elements in a simulation across all processors.
    * \return Total number of line elements in a simulation across all processors.
    */
-  inline virtual unsigned long GetGlobal_nElemLine() const { return 0; }
+  inline unsigned long GetGlobal_nElemLine(void) const { return Global_nelem_edge; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Retrieve total number of triangular elements in a simulation across all processors.
    * \return Total number of triangular elements in a simulation across all processors.
    */
-  inline virtual unsigned long GetGlobal_nElemTria() const { return 0; }
+  inline unsigned long GetGlobal_nElemTria(void) const { return Global_nelem_triangle; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Retrieve total number of quadrilateral elements in a simulation across all processors.
    * \return Total number of quadrilateral elements in a simulation across all processors.
    */
-  inline virtual unsigned long GetGlobal_nElemQuad() const { return 0; }
+  inline unsigned long GetGlobal_nElemQuad(void) const { return Global_nelem_quad; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Retrieve total number of tetrahedral elements in a simulation across all processors.
    * \return Total number of tetrahedral elements in a simulation across all processors.
    */
-  inline virtual unsigned long GetGlobal_nElemTetr() const { return 0; }
+  inline unsigned long GetGlobal_nElemTetr(void) const { return Global_nelem_tetra; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Retrieve total number of hexahedral elements in a simulation across all processors.
    * \return Total number of hexahedral elements in a simulation across all processors.
    */
-  inline virtual unsigned long GetGlobal_nElemHexa() const { return 0; }
+  inline unsigned long GetGlobal_nElemHexa(void) const { return Global_nelem_hexa; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Retrieve total number of prism elements in a simulation across all processors.
    * \return Total number of prism elements in a simulation across all processors.
    */
-  inline virtual unsigned long GetGlobal_nElemPris() const { return 0; }
+  inline unsigned long GetGlobal_nElemPris(void) const { return Global_nelem_prism; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Retrieve total number of pyramid elements in a simulation across all processors.
    * \return Total number of pyramid elements in a simulation across all processors.
    */
-  inline virtual unsigned long GetGlobal_nElemPyra() const { return 0; }
+  inline unsigned long GetGlobal_nElemPyra(void) const { return Global_nelem_pyramid; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get number of triangular elements.
    * \return Number of line elements.
    */
-  inline virtual unsigned long GetnElemLine() const { return 0; }
+  inline unsigned long GetnElemLine(void) const { return nelem_edge; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get number of triangular elements.
    * \return Number of triangular elements.
    */
-  inline virtual unsigned long GetnElemTria() const { return 0; }
+  inline unsigned long GetnElemTria(void) const { return nelem_triangle; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get number of quadrilateral elements.
    * \return Number of quadrilateral elements.
    */
-  inline virtual unsigned long GetnElemQuad() const { return 0; }
+  inline unsigned long GetnElemQuad(void) const { return nelem_quad; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get number of tetrahedral elements.
    * \return Number of tetrahedral elements.
    */
-  inline virtual unsigned long GetnElemTetr() const { return 0; }
+  inline unsigned long GetnElemTetr(void) const { return nelem_tetra; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get number of hexahedral elements.
    * \return Number of hexahedral elements.
    */
-  inline virtual unsigned long GetnElemHexa() const { return 0; }
+  inline unsigned long GetnElemHexa(void) const { return nelem_hexa; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get number of prism elements.
    * \return Number of prism elements.
    */
-  inline virtual unsigned long GetnElemPris() const { return 0; }
+  inline unsigned long GetnElemPris(void) const { return nelem_prism; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get number of pyramid elements.
    * \return Number of pyramid elements.
    */
-  inline virtual unsigned long GetnElemPyra() const { return 0; }
+  inline unsigned long GetnElemPyra(void) const { return nelem_pyramid; }
 
   /*!
    * \brief Indentify geometrical planes in the mesh
@@ -1272,164 +1292,213 @@ public:
   inline virtual void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) {}
 
   /*!
-   * \brief A virtual member.
+   * \brief Get the average normal at a specific span for a given marker in the turbomachinery reference of frame.
    * \param[in] val_marker - marker value.
    * \param[in] val_span - span value.
+   * \return The span-wise averaged turbo normal.
    */
-  inline virtual const su2double* GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span) const { return nullptr; }
+  inline const su2double* GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span) const {
+    return AverageTurboNormal[val_marker][val_span];
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get the average normal at a specific span for a given marker.
    * \param[in] val_marker - marker value.
    * \param[in] val_span - span value.
+   * \return The span-wise averaged normal.
    */
-  inline virtual const su2double* GetAverageNormal(unsigned short val_marker, unsigned short val_span) const { return nullptr; }
+  inline const su2double* GetAverageNormal(unsigned short val_marker, unsigned short val_span) const {
+    return AverageNormal[val_marker][val_span];
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get the value of the total area for each span.
    * \param[in] val_marker - marker value.
    * \param[in] val_span - span value.
+   * \return The span-wise area.
    */
-  inline virtual su2double GetSpanArea(unsigned short val_marker, unsigned short val_span) const { return 0.0; }
+  inline su2double GetSpanArea(unsigned short val_marker, unsigned short val_span) const {
+    return SpanArea[val_marker][val_span];
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get the value of the total area for each span.
    * \param[in] val_marker - marker value.
    * \param[in] val_span - span value.
+   * \return The span-wise averaged turbo normal.
    */
-  inline virtual su2double GetTurboRadius(unsigned short val_marker, unsigned short val_span) const { return 0.0; }
+  inline su2double GetTurboRadius(unsigned short val_marker, unsigned short val_span) const {
+    return TurboRadius[val_marker][val_span];
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get the value of the average tangential rotational velocity for each span.
    * \param[in] val_marker - marker value.
    * \param[in] val_span - span value.
+   * \return The span-wise averaged tangential velocity.
    */
-  inline virtual su2double GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span) const { return 0.0; }
+  inline su2double GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span) const {
+    return AverageTangGridVel[val_marker][val_span];
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get the value of the inflow tangential velocity at each span.
    * \param[in] val_marker - marker turbo-performance value.
    * \param[in] val_span - span value.
    * \return The span-wise inflow tangential velocity.
    */
-  inline virtual su2double GetTangGridVelIn(unsigned short val_marker, unsigned short val_span) const { return 0.0; }
+  inline su2double GetTangGridVelIn(unsigned short val_marker, unsigned short val_span) const {
+    return TangGridVelIn[val_marker][val_span];
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get the value of the outflow tangential velocity at each span.
    * \param[in] val_marker - marker turbo-performance value.
    * \param[in] val_span - span value.
    * \return The span-wise outflow tangential velocity.
    */
-  inline virtual su2double GetTangGridVelOut(unsigned short val_marker, unsigned short val_span) const { return 0.0; }
+  inline su2double GetTangGridVelOut(unsigned short val_marker, unsigned short val_span) const {
+    return TangGridVelOut[val_marker][val_span];
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get the value of the inflow area at each span.
    * \param[in] val_marker - marker turbo-performance value.
    * \param[in] val_span - span value.
    * \return The span-wise inflow area.
    */
-  inline virtual su2double GetSpanAreaIn(unsigned short val_marker, unsigned short val_span) const { return 0.0; }
+  inline su2double GetSpanAreaIn(unsigned short val_marker, unsigned short val_span) const {
+    return SpanAreaIn[val_marker][val_span];
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get the value of the outflow area at each span.
    * \param[in] val_marker - marker turbo-performance value.
    * \param[in] val_span - span value.
    * \return The span-wise outflow area.
    */
-  inline virtual su2double GetSpanAreaOut(unsigned short val_marker, unsigned short val_span) const { return 0.0; }
+  inline su2double GetSpanAreaOut(unsigned short val_marker, unsigned short val_span) const {
+    return SpanAreaOut[val_marker][val_span];
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get the value of the inflow radius at each span.
    * \param[in] val_marker - marker turbo-performance value.
    * \param[in] val_span - span value.
    * \return The span-wise inflow radius.
    */
-  inline virtual su2double GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span) const { return 0.0; }
+  inline su2double GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span) const {
+    return TurboRadiusIn[val_marker][val_span];
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get the value of the outflow radius at each span.
    * \param[in] val_marker - marker turbo-performance value.
    * \param[in] val_span - span value.
    * \return The span-wise outflow radius.
    */
-  inline virtual su2double GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span) const { return 0.0; }
+  inline su2double GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span) const {
+    return TurboRadiusOut[val_marker][val_span];
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Set the value of the inflow tangential velocity at each span.
    * \param[in] val_marker - marker turbo-performance value.
    * \param[in] val_span - span value.
    */
-  inline virtual void SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span) {}
+  inline void SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span) {
+    TangGridVelIn[val_marker][val_span] = value;
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Set the value of the outflow tangential velocity at each span.
    * \param[in] val_marker - marker turbo-performance value.
    * \param[in] val_span - span value.
    */
-  inline virtual void SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span) {}
+  inline void SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span) {
+    TangGridVelOut[val_marker][val_span] = value;
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Set the value of the inflow area at each span.
    * \param[in] val_marker - marker turbo-performance value.
    * \param[in] val_span - span value.
    */
-  inline virtual void SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span) {}
+  inline void SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span) {
+    SpanAreaIn[val_marker][val_span] = value;
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Set the value of the outflow area at each span.
    * \param[in] val_marker - marker turbo-performance value.
    * \param[in] val_span - span value.
    */
-  inline virtual void SetSpanAreaOut(su2double value, unsigned short val_marker, unsigned short val_span) {}
+  inline void SetSpanAreaOut(su2double value, unsigned short val_marker, unsigned short val_span) {
+    SpanAreaOut[val_marker][val_span] = value;
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Set the value of the inflow radius at each span.
    * \param[in] val_marker - marker turbo-performance value.
    * \param[in] val_span - span value.
    */
-  inline virtual void SetTurboRadiusIn(su2double value, unsigned short val_marker, unsigned short val_span) {}
+  inline void SetTurboRadiusIn(su2double value, unsigned short val_marker, unsigned short val_span) {
+    TurboRadiusIn[val_marker][val_span] = value;
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief Set the value of the outflow radius at each span.
    * \param[in] val_marker - marker turbo-performance value.
    * \param[in] val_span - span value.
    */
-  inline virtual void SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span) {}
+  inline void SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span) {
+    TurboRadiusOut[val_marker][val_span] = value;
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief A total number of vertex independently from the MPI partions.
    * \param[in] val_marker - marker value.
    * \param[in] val_span - span value.
    */
-  inline virtual unsigned long GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span) const {return 0;}
+  inline unsigned long GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span) const {
+    return nTotVertexSpan[val_marker][val_span];
+  }
 
   /*!
- * \brief A virtual member.
- * \param[in] val_marker - marker value.
- * \param[in] val_span - span value.
- */
-  inline virtual su2double GetMinAngularCoord(unsigned short val_marker, unsigned short val_span) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
+   * \brief min angular pitch independently from the MPI partions.
    * \param[in] val_marker - marker value.
    * \param[in] val_span - span value.
    */
-  inline virtual su2double GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span) const { return 0.0; }
+  inline su2double GetMinAngularCoord(unsigned short val_marker, unsigned short val_span) const {
+    return MinAngularCoord[val_marker][val_span];
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief max angular pitch independently from the MPI partions.
    * \param[in] val_marker - marker value.
    * \param[in] val_span - span value.
    */
-  inline virtual su2double GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span) const { return 0.0; }
+  inline su2double GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span) const {
+    return MaxAngularCoord[val_marker][val_span];
+  }
 
   /*!
-   * \brief A virtual member.
+   * \brief min Relatice angular coord independently from the MPI partions.
    * \param[in] val_marker - marker value.
    * \param[in] val_span - span value.
    */
-  inline virtual const su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span) const {return nullptr;}
+  inline su2double GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span) const {
+    return MinRelAngularCoord[val_marker][val_span];
+  }
+
+  /*!
+   * \brief Get the average grid velocity at a specific span for a given marker.
+   * \param[in] val_marker - marker value.
+   * \param[in] val_span - span value.
+   */
+  inline const su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span) const {
+    return AverageGridVel[val_marker][val_span];
+  }
 
   /*!
    * \brief A virtual member.
@@ -1540,6 +1609,36 @@ public:
    * \param config - Config
    */
   inline virtual void ComputeMeshQualityStatistics(CConfig *config) {}
+
+  /*!
+   * \brief Get the sparse pattern of "type" with given level of fill.
+   * \note This method builds the pattern if that has not been done yet.
+   * \param[in] type - Finite volume or finite element.
+   * \param[in] fillLvl - Level of fill of the pattern.
+   * \return Reference to the sparse pattern.
+   */
+  const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl);
+
+  /*!
+   * \brief Get the edge to sparse pattern map.
+   * \note This method builds the map and required pattern (0-fill FVM) if that has not been done yet.
+   * \return Reference to the map.
+   */
+  const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap(void);
+
+  /*!
+   * \brief Get the edge coloring.
+   * \note This method computes the coloring if that has not been done yet.
+   * \return Reference to the coloring.
+   */
+  const CCompressedSparsePatternUL& GetEdgeColoring(void);
+
+  /*!
+   * \brief Get the element coloring.
+   * \note This method computes the coloring if that has not been done yet.
+   * \return Reference to the coloring.
+   */
+  const CCompressedSparsePatternUL& GetElementColoring(void);
 
 };
 
