@@ -62,6 +62,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(unsigned long npoint,
   Limiter.resize(nPoint,nVar) = su2double(0.0);
   Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  Gradient.resize(nPoint,nVar,nDim,0.0);
 
   /*--- Define structure of the primtive variable vector ---*/
   // Primitive: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
@@ -165,6 +166,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
   /*--- Compressible flow, gradients primitive variables ---*/
 
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  Gradient.resize(nPoint,nVar,nDim,0.0);
 
   //if (config->GetReconstructionGradientRequired()) {
   //  Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
