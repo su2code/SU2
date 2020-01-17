@@ -5682,7 +5682,7 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
                   //--- Reset hessian if first volume node detected
                   if(counter == 0) {
                     for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                      hesssource[i+iMetr] = base_nodes->GetAnisSourceHess(iPoint, i+iMetr);
+                      hesssource[i+iMetr] = base_nodes->GetAnisoSourceHess(iPoint, i+iMetr);
                     }
                   }
                   for(iMetr = 0; iMetr < nMetr; iMetr++) {
