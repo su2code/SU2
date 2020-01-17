@@ -159,7 +159,7 @@ protected:
    * \param offset - The offset in bytes of the chunk of data the current processor owns within the global array.
    * \return Boolean indicating whether the writing was successful.
    */
-  bool WriteMPIBinaryDataAll(void *data, unsigned long sizeInBytes, unsigned long totalSizeInBytes, unsigned long offset);
+  bool WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBytes, unsigned long totalSizeInBytes, unsigned long offset);
 
   /*!
    * \brief Write a binary data array to a currently opened file using MPI I/O. Note: routine must be called collectively,
@@ -169,7 +169,7 @@ protected:
    * \param[in] processor - Rank of the processor that should write its data.
    * \return Boolean indicating whether the writing was successful.
    */
-  bool WriteMPIBinaryData(void *data, unsigned long sizeInBytes, unsigned short processor);
+  bool WriteMPIBinaryData(const void *data, unsigned long sizeInBytes, unsigned short processor);
   
   /*!
    * \brief Write a string to a currently opened file using MPI I/O. Note: routine must be called collectively,

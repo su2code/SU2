@@ -61,7 +61,7 @@ CFileWriter::~CFileWriter(){
 
 }
 
-bool CFileWriter::WriteMPIBinaryDataAll(void *data, unsigned long sizeInBytes,
+bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBytes,
                                         unsigned long totalSizeInBytes, unsigned long offsetInBytes){
   
 #ifdef HAVE_MPI
@@ -104,7 +104,7 @@ bool CFileWriter::WriteMPIBinaryDataAll(void *data, unsigned long sizeInBytes,
   
 }
 
-bool CFileWriter::WriteMPIBinaryData(void *data, unsigned long sizeInBytes, unsigned short processor){
+bool CFileWriter::WriteMPIBinaryData(const void *data, unsigned long sizeInBytes, unsigned short processor){
   
 #ifdef HAVE_MPI
   
