@@ -2950,7 +2950,7 @@ void CTNE2EulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config)
 
       if(source) {
         for(iVar = 0; iVar < nVar; iVar++) {
-          SensSource[iNode][iVar] = nodes->GetSource(kNode, iVar);
+          SensSource[iNode][iVar] = nodes->GetSource(kNode)[iVar];
         }
       }
     }

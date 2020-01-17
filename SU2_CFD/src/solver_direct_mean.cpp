@@ -5625,6 +5625,9 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
         //--- gradient at the element ( graTri = 2*|T|*gradT ) 
         graTri[0] = Sens[0][iVar][iFlux]*vnx[0] + Sens[1][iVar][iFlux]*vnx[1] + Sens[2][iVar][iFlux]*vnx[2];
         graTri[1] = Sens[0][iVar][iFlux]*vny[0] + Sens[1][iVar][iFlux]*vny[1] + Sens[2][iVar][iFlux]*vny[2];
+
+        graTriVisc[0] = SensVisc[0][iVar][iFlux]*vnx[0] + SensVisc[1][iVar][iFlux]*vnx[1] + SensVisc[2][iVar][iFlux]*vnx[2];
+        graTriVisc[1] = SensVisc[0][iVar][iFlux]*vny[0] + SensVisc[1][iVar][iFlux]*vny[1] + SensVisc[2][iVar][iFlux]*vny[2];
     
         //--- assembling
         const unsigned short i = iFlux*nVarMetr*nDim + iVar*nDim;
