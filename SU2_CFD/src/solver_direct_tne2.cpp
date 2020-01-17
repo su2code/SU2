@@ -2852,7 +2852,7 @@ void CTNE2EulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config)
   unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
   unsigned short iVar, iFlux, iSpecies;
   unsigned short nVarMetr = nVar, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
-  su2double density, *density, velocity[2], pressure, enthalpy;
+  su2double density, *densitys, velocity[2], pressure, enthalpy, rhoeve;
   su2double vnx[3], vny[3];
   su2double graTri[2], graTriVisc[2];
   su2double Crd[3][2], Sens[3][nVarMetr][nFluxMetr], SensVisc[3][nVarMetr][nFluxMetr], SensSource[3][nVarMetr];
