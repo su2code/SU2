@@ -1,3 +1,4 @@
+su2_cfd_include = include_directories('./')
 su2_cfd_src = files(['solver_direct_transition.cpp',
                      'solver_adjoint_turbulent.cpp',
                      'integration_structure.cpp',
@@ -31,8 +32,7 @@ su2_cfd_src = files(['solver_direct_transition.cpp',
                      'numerics_structure.cpp',
                      'numerics_template.cpp',
                      'solver_adjoint_discrete.cpp',
-                     'CMarkerProfileReaderFVM.cpp',
-                     'SU2_CFD.cpp'])
+                     'CMarkerProfileReaderFVM.cpp'])
 
 su2_cfd_src += files(['output/CAdjElasticityOutput.cpp',
                       'output/CAdjFlowCompOutput.cpp',
@@ -121,14 +121,22 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CDummyDriver.cpp'])
 
 if get_option('enable-normal')
+  su2_cfd_lib = static_library('SU2core',
+                               su2_cfd_src,
+                               install : false,
+		               dependencies : [su2_deps, common_dep],
+		               cpp_args:  [default_warning_flags, su2_cpp_args])
+  su2_cfd_dep = declare_dependency(link_with: su2_cfd_lib,
+                                   include_directories: su2_cfd_include)
   su2_cfd = executable('SU2_CFD',
-                       su2_cfd_src, 
-                       install : true, 
-                       dependencies : [su2_deps, common_dep], 
+                       'SU2_CFD.cpp',
+                       install : true,
+                       dependencies : [su2_cfd_dep, su2_deps, common_dep],
                        cpp_args:  ['-fPIC'] + [default_warning_flags, su2_cpp_args])
 endif
 
 if get_option('enable-autodiff')
+  su2_cfd_src += files(['SU2_CFD.cpp'])
   su2_cfd_ad = executable('SU2_CFD_AD',
                        su2_cfd_src,
                        install : true, 
@@ -137,6 +145,7 @@ if get_option('enable-autodiff')
 endif
 
 if get_option('enable-directdiff')
+  su2_cfd_src += files(['SU2_CFD.cpp'])
   su2_cfd_dd = executable('SU2_CFD_DIRECTDIFF',
                        su2_cfd_src,
                        install : true, 
