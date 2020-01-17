@@ -945,8 +945,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   nonPhys = false;
 
   /*--- Set temperature clipping values ---*/
-  Tmin   = 50.0; Tmax   = 8E5;
-  Tvemin = 50.0; Tvemax = 8E5;
+  Tmin   = 50.0; Tmax   = 8E4;
+  Tvemin = 50.0; Tvemax = 8E4;
 
   /*--- Set temperature algorithm paramters ---*/
   NRtol    = 1.0E-8;    // Tolerance for the Newton-Raphson method
