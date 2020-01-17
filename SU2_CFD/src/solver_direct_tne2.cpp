@@ -2993,6 +2993,9 @@ void CTNE2EulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config)
         //--- gradient at the element ( graTri = 2*|T|*gradT ) 
         graTri[0] = Sens[0][iVar][iFlux]*vnx[0] + Sens[1][iVar][iFlux]*vnx[1] + Sens[2][iVar][iFlux]*vnx[2];
         graTri[1] = Sens[0][iVar][iFlux]*vny[0] + Sens[1][iVar][iFlux]*vny[1] + Sens[2][iVar][iFlux]*vny[2];
+
+        graTriVisc[0] = SensVisc[0][iVar][iFlux]*vnx[0] + SensVisc[1][iVar][iFlux]*vnx[1] + SensVisc[2][iVar][iFlux]*vnx[2];
+        graTriVisc[1] = SensVisc[0][iVar][iFlux]*vny[0] + SensVisc[1][iVar][iFlux]*vny[1] + SensVisc[2][iVar][iFlux]*vny[2];
     
         //--- assembling
         const unsigned short i = iFlux*nVarMetr*nDim + iVar*nDim;
@@ -3009,6 +3012,20 @@ void CTNE2EulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config)
           }
         }
       }
+
+      if(source) {
+        graTriSource[0] = SensSource[0][iVar]*vnx[0] + SensSource[1][iVar]*vnx[1] + SensSource[2][iVar]*vnx[2];
+        graTriSource[1] = SensSource[0][iVar]*vny[0] + SensSource[1][iVar]*vny[1] + SensSource[2][iVar]*vny[2];
+        //--- assembling
+        const unsigned short i = iVar*nDim;
+        for (unsigned short iNode=0; iNode<3; ++iNode) {
+          const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+          const su2double Area = geometry->node[kNode]->GetVolume();
+          const su2double rap = 1./(Area*6.);
+          nodes->AddAnisoSourceGrad(kNode, i+0, graTriSource[0] * rap);
+          nodes->AddAnisoSourceGrad(kNode, i+1, graTriSource[1] * rap);
+        }
+      }
     }
   }
 
@@ -3016,7 +3033,6 @@ void CTNE2EulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config)
   
   InitiateComms(geometry, config, ANISO_GRADIENT);
   CompleteComms(geometry, config, ANISO_GRADIENT);
-
   if(viscous) {
     InitiateComms(geometry, config, ANISO_GRADIENT_VISC);
     CompleteComms(geometry, config, ANISO_GRADIENT_VISC);
@@ -3034,8 +3050,8 @@ void CTNE2EulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
   unsigned short nVarMetr = nVar, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
   unsigned short nMetr = 3;
   su2double vnx[3], vny[3];
-  su2double hesTri[3], hesTriVisc[3];
-  su2double Crd[3][2], Grad[3][2][nVarMetr][nFluxMetr], GradVisc[3][2][nVarMetr][nFluxMetr];
+  su2double hesTri[3], hesTriVisc[3], hesTriSource[3];
+  su2double Crd[3][2], Grad[3][2][nVarMetr][nFluxMetr], GradVisc[3][2][nVarMetr][nFluxMetr], GradSource[3][2][nVarMetr];
   bool viscous = config->GetViscous(), source = config->GetAdap_Source();
 
   su2double **A      = new su2double*[nDim],
@@ -3067,6 +3083,12 @@ void CTNE2EulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
             GradVisc[iNode][0][iVar][iFlux] = nodes->GetAnisoViscGrad(kNode, i+0);
             GradVisc[iNode][1][iVar][iFlux] = nodes->GetAnisoViscGrad(kNode, i+1);
           }
+        }
+
+        if(source){
+          const unsigned short i = iVar*nDim;
+          GradSource[iNode][0][iVar] = nodes->GetAnisoSourceGrad(kNode, i+0);
+          GradSource[iNode][1][iVar] = nodes->GetAnisoSourceGrad(kNode, i+1);
         }
       }
     }
@@ -3152,6 +3174,32 @@ void CTNE2EulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
           }
         }
       }
+
+      if(source){
+        hesTriSource[0] =         GradSource[0][0][iVar]*vnx[0] 
+                                + GradSource[1][0][iVar]*vnx[1] 
+                                + GradSource[2][0][iVar]*vnx[2];
+        hesTriSource[1] = 0.5 * ( GradSource[0][0][iVar]*vny[0] 
+                                + GradSource[1][0][iVar]*vny[1] 
+                                + GradSource[2][0][iVar]*vny[2]
+                                + GradSource[0][1][iVar]*vnx[0] 
+                                + GradSource[1][1][iVar]*vnx[1] 
+                                + GradSource[2][1][iVar]*vnx[2] );
+        hesTriSource[2] =         GradSource[0][1][iVar]*vny[0] 
+                                + GradSource[1][1][iVar]*vny[1] 
+                                + GradSource[2][1][iVar]*vny[2];
+      
+        //--- assembling
+        const unsigned short i = iVar*nMetr;
+        for (unsigned short iNode=0; iNode<3; ++iNode) {
+          const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+          const su2double Area = geometry->node[kNode]->GetVolume();
+          const su2double rap = 1./(Area*6.);
+          nodes->AddAnisoSourceHess(kNode, i+0, hesTriSource[0] * rap);
+          nodes->AddAnisoSourceHess(kNode, i+1, hesTriSource[1] * rap);
+          nodes->AddAnisoSourceHess(kNode, i+2, hesTriSource[2] * rap);
+        }
+      }
     }
   }
 
@@ -3220,6 +3268,32 @@ void CTNE2EulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
           nodes->SetAnisoViscHess(iPoint, i+1, A[0][1]);
           nodes->SetAnisoViscHess(iPoint, i+2, A[1][1]);
         }
+      }
+    }
+  }
+
+  if(source) {
+    for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+      //--- viscous mass flux is 0, so start with momentum
+      for(iVar = 1; iVar < nVarMetr; iVar++){
+        const unsigned short i = iVar*nMetr;
+
+        const su2double a = nodes->GetAnisoSourceHess(iPoint, i+0);
+        const su2double b = nodes->GetAnisoSourceHess(iPoint, i+1);
+        const su2double c = nodes->GetAnisoSourceHess(iPoint, i+2);
+
+        A[0][0] = a; A[0][1] = b;
+        A[1][0] = b; A[1][1] = c;
+
+        CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+
+        for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
+
+        CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+        nodes->SetAnisoSourceHess(iPoint, i+0, A[0][0]);
+        nodes->SetAnisoSourceHess(iPoint, i+1, A[0][1]);
+        nodes->SetAnisoSourceHess(iPoint, i+2, A[1][1]);
       }
     }
   }
