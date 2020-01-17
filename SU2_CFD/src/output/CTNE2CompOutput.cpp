@@ -57,7 +57,7 @@ CTNE2CompOutput::CTNE2CompOutput(CConfig *config, unsigned short nDim) : CFlowOu
     if (config->GetTime_Domain()) requestedScreenFields.emplace_back("TIME_ITER");
     if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
     requestedScreenFields.emplace_back("INNER_ITER");
-    requestedScreenFields.emplace_back("RMS_DENSITY[N2]");
+    requestedScreenFields.emplace_back("RMS_DENSITY_N2");
     requestedScreenFields.emplace_back("RMS_MOMENTUM-X");
     requestedScreenFields.emplace_back("RMS_MOMENTUM-Y");
     requestedScreenFields.emplace_back("RMS_ENERGY");
@@ -89,7 +89,7 @@ CTNE2CompOutput::CTNE2CompOutput(CConfig *config, unsigned short nDim) : CFlowOu
 
   /*--- Set the default convergence field --- */
 
-  if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY");
+  if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY_N2");
 
   if (config->GetFixed_CL_Mode()) {
     bool found = false;
@@ -112,8 +112,8 @@ void CTNE2CompOutput::SetHistoryOutputFields(CConfig *config){
 
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
-  /// DESCRIPTION: Root-mean square residual of the density.
-  AddHistoryOutput("RMS_DENSITY",    "rms[Rho]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the density.", HistoryFieldType::RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the N2 density.
+  AddHistoryOutput("RMS_DENSITY_N2",    "rms[Rho]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the N2 density.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum x-component.
   AddHistoryOutput("RMS_MOMENTUM-X", "rms[RhoU]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum x-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum y-component.
@@ -573,7 +573,7 @@ void CTNE2CompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   CSolver* turb_solver = solver[TURB_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
 
-  SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
+  SetHistoryOutputValue("RMS_DENSITY_N2", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));
   SetHistoryOutputValue("RMS_MOMENTUM-Y", log10(flow_solver->GetRes_RMS(2)));
   if (nDim == 2)

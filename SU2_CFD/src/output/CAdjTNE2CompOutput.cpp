@@ -59,7 +59,7 @@ CAdjTNE2CompOutput::CAdjTNE2CompOutput(CConfig *config, unsigned short nDim) : C
     if (config->GetTime_Domain()) requestedScreenFields.emplace_back("TIME_ITER");
     if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
     requestedScreenFields.emplace_back("INNER_ITER");
-    requestedScreenFields.emplace_back("RMS_ADJ_DENSITY");
+    requestedScreenFields.emplace_back("RMS_ADJ_DENSITY_N2");
     requestedScreenFields.emplace_back("RMS_ADJ_MOMENTUM-X");
     requestedScreenFields.emplace_back("SENS_MACH");
     requestedScreenFields.emplace_back("SENS_AOA");
@@ -95,7 +95,7 @@ CAdjTNE2CompOutput::CAdjTNE2CompOutput(CConfig *config, unsigned short nDim) : C
 
   /*--- Set the default convergence field --- */
 
-  if (convFields.empty() ) convFields.emplace_back("RMS_ADJ_DENSITY");
+  if (convFields.empty() ) convFields.emplace_back("RMS_ADJ_DENSITY_N2");
 
 }
 
@@ -104,8 +104,8 @@ CAdjTNE2CompOutput::~CAdjTNE2CompOutput(void) {}
 void CAdjTNE2CompOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
-  /// DESCRIPTION: Root-mean square residual of the adjoint density.
-  AddHistoryOutput("RMS_ADJ_DENSITY",    "rms[A_Rho]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint density.", HistoryFieldType::RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the adjoint N2 density.
+  AddHistoryOutput("RMS_ADJ_DENSITY_N2", "rms[A_Rho]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint N2 density.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint momentum x-component.
   AddHistoryOutput("RMS_ADJ_MOMENTUM-X", "rms[A_RhoU]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint momentum x-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint momentum y-component.
@@ -209,7 +209,7 @@ void CAdjTNE2CompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   CSolver* adjTNE2_solver = solver[ADJTNE2_SOL];
   CSolver* adjturb_solver = solver[ADJTURB_SOL];
 
-  SetHistoryOutputValue("RMS_ADJ_DENSITY", log10(adjTNE2_solver->GetRes_RMS(0)));
+  SetHistoryOutputValue("RMS_ADJ_DENSITY_N2", log10(adjTNE2_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_ADJ_MOMENTUM-X", log10(adjTNE2_solver->GetRes_RMS(1)));
   SetHistoryOutputValue("RMS_ADJ_MOMENTUM-Y", log10(adjTNE2_solver->GetRes_RMS(2)));
   if (geometry->GetnDim() == 3) {
