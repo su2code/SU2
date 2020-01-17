@@ -1162,7 +1162,8 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
 
             thermal_diffusivity = GetConjugateHeatVariable(iMarker, iVertex, 2)/rho_cp_solid;
 
-            if (config->GetCHT_Robin()) {
+            if ((config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX)
+                || (config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
               Tinterface        = nodes->GetSolution(iPoint,0);
               Tnormal_Conjugate = GetConjugateHeatVariable(iMarker, iVertex, 3)/Temperature_Ref;
