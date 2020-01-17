@@ -4290,7 +4290,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
-  Energy_FreeStreamND = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream;
+  Energy_FreeStreamND = Pressure_FreeStreamND/(Density_FreeStreamND*Gamma_Minus_One)+0.5*ModVel_FreeStreamND *ModVel_FreeStreamND;
 
   if (viscous) {
 
