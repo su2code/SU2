@@ -945,14 +945,14 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   nonPhys = false;
 
   /*--- Set temperature clipping values ---*/
-  Tmin   = 50.0; Tmax   = 8E4;
-  Tvemin = 50.0; Tvemax = 8E4;
+  Tmin   = 5.0; Tmax   = 5E5;
+  Tvemin = 5.0; Tvemax = 5E5;
 
   /*--- Set temperature algorithm paramters ---*/
-  NRtol    = 1.0E-6;    // Tolerance for the Newton-Raphson method
+  NRtol    = 1.0E-8;    // Tolerance for the Newton-Raphson method
   Btol     = 1.0E-4;    // Tolerance for the Bisection method
-  maxNIter = 18;        // Maximum Newton-Raphson iterations
-  maxBIter = 32;        // Maximum Bisection method iterations
+  maxNIter = 99;        // Maximum Newton-Raphson iterations
+  maxBIter = 99;        // Maximum Bisection method iterations
   scale    = 0.5;       // Scaling factor for Newton-Raphson step
 
   /*--- Read parameters from config ---*/
