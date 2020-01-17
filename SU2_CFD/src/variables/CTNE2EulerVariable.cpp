@@ -1087,6 +1087,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
       V[TVE_INDEX] = Tve;
     } else {
 
+      AD_BEGIN_PASSIVE
+
       // Assign the bounds
       Tve_o = Tvemin;
       Tve2  = Tvemax;
@@ -1113,8 +1115,17 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
         }
       }
 
+      AD_END_PASSIVE
+
+      // Recompute Eve and Cvve after search
+      if (Bconvg) {
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          val_eves[iSpecies] = CalcEve(config, Tve, iSpecies);
+          val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
+        }
+      }
       // If absolutely no convergence, then assign to the TR temperature
-      if (!Bconvg) {
+      else {
         V[TVE_INDEX] = V[T_INDEX];
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
           val_eves[iSpecies]  = CalcEve(config, V[TVE_INDEX], iSpecies);
