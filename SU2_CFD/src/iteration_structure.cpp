@@ -3463,17 +3463,17 @@ void CDiscAdjTNE2Iteration::RegisterOutput(CSolver *****solver, CGeometry ****ge
 
   /*--- Register conservative variables as output of the iteration ---*/
 
-    solver[iZone][iInst][MESH_0][TNE2_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solver[iZone][iInst][MESH_0][ADJTNE2_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
 
   }
   if (turbulent && !frozen_visc){
-    solver[iZone][iInst][MESH_0][TURB_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
   if (heat){
-    solver[iZone][iInst][MESH_0][HEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
   if (interface_boundary){
-    solver[iZone][iInst][MESH_0][TNE2_SOL]->RegisterVertexTractions(geometry[iZone][iInst][MESH_0], config[iZone]);
+    solver[iZone][iInst][MESH_0][ADJTNE2_SOL]->RegisterVertexTractions(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
 }

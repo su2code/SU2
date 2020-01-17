@@ -346,7 +346,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
       AD::RegisterInput(Mach);
       AD::RegisterInput(Alpha);
       AD::RegisterInput(Temperature);
-      AD::RegisterInput(Temperature_ve);
+      // AD::RegisterInput(Temperature_ve);
       AD::RegisterInput(Pressure);
       // delete me AD::RegisterInput(MassFrac);
     }
