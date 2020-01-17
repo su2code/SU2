@@ -100,9 +100,8 @@ void CParaviewVTMFileWriter::AddDataset(string name, string file, CParallelDataS
 
   /*--- Create an XML writer and dump data into file ---*/
 
-  CParaviewXMLFileWriter* XMLWriter = new CParaviewXMLFileWriter(fullFilename, dataSorter);
-  XMLWriter->Write_Data();
-  delete XMLWriter;
+  CParaviewXMLFileWriter XMLWriter(fullFilename, dataSorter);
+  XMLWriter.Write_Data();
 
   /*--- Add the dataset to the vtm file ---*/
 
