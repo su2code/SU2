@@ -3254,6 +3254,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Kind_Solver == EULER ||
       Kind_Solver == NAVIER_STOKES ||
       Kind_Solver == RANS ||
+      Kind_Solver == TNE2_EULER ||
+      Kind_Solver == TNE2_NAVIER_STOKES ||
+      Kind_Solver == TNE2_RANS ||
       Kind_Solver == FEM_EULER ||
       Kind_Solver == FEM_NAVIER_STOKES ||
       Kind_Solver == FEM_RANS ||

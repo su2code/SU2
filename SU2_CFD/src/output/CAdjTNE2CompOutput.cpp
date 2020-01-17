@@ -61,7 +61,7 @@ CAdjTNE2CompOutput::CAdjTNE2CompOutput(CConfig *config, unsigned short nDim) : C
     requestedScreenFields.emplace_back("INNER_ITER");
     requestedScreenFields.emplace_back("RMS_ADJ_DENSITY");
     requestedScreenFields.emplace_back("RMS_ADJ_MOMENTUM-X");
-    requestedScreenFields.emplace_back("SENS_GEO");
+    requestedScreenFields.emplace_back("SENS_MACH");
     requestedScreenFields.emplace_back("SENS_AOA");
     nRequestedScreenFields = requestedScreenFields.size();
   }
