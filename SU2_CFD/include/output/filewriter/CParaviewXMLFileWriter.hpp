@@ -42,29 +42,6 @@ private:
     UINT8
   };
 
-#ifdef HAVE_MPI
-  /*!
-   * \brief The displacement that every process has in the current file view
-   */
-  MPI_Offset disp;
-
-  /*!
-   * \brief The file handle for writing
-   */
-  MPI_File fhw;
-#else
-
-  /*!
-   * \brief The displacement that every process has in the current file view
-   */
-  unsigned long disp;
-
-  /*!
-   * \brief The file handle for writing
-   */
-  FILE* fhw;
-#endif
-
   /*!
    * \brief Boolean storing whether we are on a big or little endian machine
    */
