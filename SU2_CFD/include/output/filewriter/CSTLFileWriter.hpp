@@ -28,7 +28,6 @@
 #pragma once
 
 #include "CFileWriter.hpp"
-#include <set>
 
 /*!
  * \class CSTLFileWriter
@@ -41,7 +40,8 @@ private:
 
   /*--- Variables for reprocessing element connectivity. ---*/
 
-  std::set<unsigned long> halo_nodes; /*!< \brief Set of global renumbered node numbers which the current rank refers to, but does not own. Happens on process borders. Is that mutual? */
+  vector<unsigned long> halo_nodes; /*!< \brief Set of global renumbered node numbers which the current rank refers to via an element, but does not own. Happens on process borders.
+                                                Only one process has the 'border' element so that it is not printed twice. */
   unsigned long num_halo_nodes; /*!< \brief Total number of halo nodes this process should receive, i.e. number it needs to acces but doesn't know the data of. */
   /*--- Fields for the first MPI::Alltoallv: Afterwards each process knows the global renumbered node ID's it has to send and to which proc to send. ---*/
   vector<unsigned long> sorted_halo_nodes; /*!< \brief Holds same data as `halo_nodes` but as a vector instead of a set. */
@@ -59,9 +59,10 @@ private:
   vector<int> values_to_receive_displacements; /*!< \brief Displacements vector for MPI::AlltoAllv command. */
 
   /*--- Variables for gathering the triangle data in one array. ---*/
-  unsigned long *Buffer_Recv_nTriaAll = NULL; /*!< \brief Array with number of triangles which each processor has. (Note: Quads are split into two Tris)  */
+  unsigned long *buffRecvTriaCount = NULL; /*!< \brief Array with number of triangles which each processor has. (Note: Quads are split into two Tris)  */
   unsigned long max_nLocalTriaAll; /*!< \brief Largest Tri count of all processors. */
-  su2double *bufD_Recv = NULL; /*!< \brief Array holding Coordinate data of all processors. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
+  su2double *buffSendCoords = NULL; /*!< \brief Array holding Coordinate data of one processor. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
+  su2double *buffRecvCoords = NULL; /*!< \brief Array holding Coordinate data of all processors. 3 consecutive doubles make a point and 3 consecutive points make a Tri. */
 
   /*!
    * \brief Recompute Tri/Quad element connectivity between processor borders.
@@ -72,6 +73,16 @@ private:
    * \brief Create an array containing all coordinate data for the surface triangles.
    */
   void GatherCoordData();
+
+  /*!
+   * \brief Write element coordinate data into a send-buffer in 'triangle order' (i.e. 3 points with 3 coords consecutively).
+   * \param[in] elemType - Either TRIANGLE or QUADRILATERAL
+   * \param[in] nLocalElements - number of elements of elemType
+   * \param[in] startIndex - index to start writing into buffSendCoords
+   */
+  void StoreCoordData(enum GEO_TYPE elemType,
+                      unsigned long nLocalElements,
+                      unsigned long startIndex);
 
   /*!
    * \brief Get the halo-node value of a global renumbered Point for a specific variable.
@@ -92,7 +103,7 @@ public:
    * \param[in] fileName - The name of the file
    * \param[in] data_sorter - The parallel sorted data to write
    */
-  CSTLFileWriter(vector<string> fields,
+  CSTLFileWriter(const vector<string>& fields,
                  unsigned short nDim,
                  string fileName,
                  CParallelDataSorter* data_sorter);
