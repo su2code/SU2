@@ -6958,7 +6958,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   Pressure_Inf       = config->GetPressure_FreeStreamND();
   Temperature_Inf    = config->GetTemperature_FreeStreamND();
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStreamND();
-  MassFrac_Inf       = config->GetMassFrac_FreeStreamND();
+  MassFrac_Inf       = config->GetMassFrac_FreeStream();
   Mach_Inf           = config->GetMach();
   Viscosity_Inf      = config->GetViscosity_FreeStreamND();
   Prandtl_Lam        = config->GetPrandtl_Lam();
