@@ -3999,32 +3999,32 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Viscous contribution, commented out because serious convergence problems ---*/
-      //Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-      //visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-      //visc_numerics->SetNormal(Normal);
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+      visc_numerics->SetNormal(Normal);
 
       /*--- Conservative variables w/o reconstruction ---*/
 
-      //visc_numerics->SetPrimitive(V_domain, V_outlet);
+      visc_numerics->SetPrimitive(V_domain, V_outlet);
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-      //visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      //visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Menter's first blending function ---*/
 
-      //visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
+      visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
 
       /*--- Compute residual, and Jacobians ---*/
 
-      //visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       
       /*--- Subtract residual, and update Jacobians ---*/
 
-      //LinSysRes.SubtractBlock(iPoint, Residual);
-      //Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      LinSysRes.SubtractBlock(iPoint, Residual);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }
