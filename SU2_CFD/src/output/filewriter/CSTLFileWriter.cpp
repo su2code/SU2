@@ -38,7 +38,7 @@ CSTLFileWriter::CSTLFileWriter(const vector<string>& fields,
                                unsigned short nDim,
                                string fileName,
                                CParallelDataSorter *dataSorter) :
-                CFileWriter(std::move(fields),
+                CFileWriter(fields,
                             std::move(fileName),
                             dataSorter,
                             fileExt,
@@ -179,7 +179,7 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
 
   int total_num_nodes_to_send = nodes_to_send_displacements[size - 1] + num_nodes_to_send[size - 1];
 
-  nodes_to_send.resize(max(1, total_num_nodes_to_send));
+  nodes_to_send.resize(max<int>(1, total_num_nodes_to_send));
   /* The terminology gets a bit confusing here. We're sending the node numbers
      (sorted_halo_nodes) whose data we need to receive, and receiving
      lists of nodes whose data we need to send. */
@@ -189,7 +189,7 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
                      MPI_COMM_WORLD);
 
   /* Now actually send and receive the data */
-  data_to_send.resize(max(1, total_num_nodes_to_send * (int)fieldnames.size()));
+  data_to_send.resize(max<int>(1, total_num_nodes_to_send * (int)fieldnames.size()));
   halo_var_data.resize(max<unsigned long>(1, fieldnames.size() * num_halo_nodes));
   num_values_to_send.resize(size);
   values_to_send_displacements.resize(size);
