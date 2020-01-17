@@ -532,7 +532,8 @@ private:
   Kind_Matrix_Coloring,         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
-  Kind_BGS_RelaxMethod;				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  Kind_BGS_RelaxMethod,     /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  Kind_CHT_Coupling;        /*!< \brief Kind of coupling method used at CHT interfaces. */
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;  /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
@@ -903,7 +904,6 @@ private:
   bool Sine_Load;                 /*!< \brief option for sine load */
   su2double *SineLoad_Coeff;      /*!< \brief Stores the load coefficient */
   su2double Thermal_Diffusivity;  /*!< \brief Thermal diffusivity used in the heat solver. */
-  bool CHT_Robin;                 /*!< \brief Option for boundary condition method at CHT interfaces. */
   su2double Cyclic_Pitch,         /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;               /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;          /*!< \brief Mach number based on mesh velocity and freestream quantities. */
@@ -8985,10 +8985,10 @@ public:
   bool GetWeakly_Coupled_Heat(void);
 
   /*!
-   * \brief Get the boundary condition method for CHT.
-   * \return YES if Robin BC is used.
+   * \brief Get the CHT couling method.
+   * \return Kind of the method.
    */
-  bool GetCHT_Robin(void);
+  unsigned short GetKind_CHT_Coupling(void);
 
   /*!
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
