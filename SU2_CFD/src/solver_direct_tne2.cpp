@@ -259,7 +259,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   Secondary_j = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_j[iVar] = 0.0;
 
   /*--- Define some auxiliary vectors related to the Source term evolution ---*/
-  Source      = new su2double[nVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Source[iVar] = 0.0;
+  Source      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
 
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
   if (config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) {
