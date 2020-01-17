@@ -2260,15 +2260,12 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case MOM_COEFF:
             for (iVar = 0; iVar < nVar; iVar++) 
               base_nodes->Set_Mom_Coeff(iPoint, iVar, bufDRecv[buf_offset+iVar]);
-              //node[iPoint]->Set_Mom_Coeff(iVar, bufDRecv[buf_offset+iVar]);
           break;
           case MASS_FLUX:
             base_nodes->SetMassFlux(iPoint, bufDRecv[buf_offset]);
-            //node[iPoint]->SetMassFlux(bufDRecv[buf_offset]);
           break;
           case PRESSURE_VAR:
             base_nodes->SetPressure_val(iPoint, bufDRecv[buf_offset]);
-            //node[iPoint]->SetPressure_val(bufDRecv[buf_offset]);
           break;
           case MESH_DISPLACEMENTS:
             for (iDim = 0; iDim < nDim; iDim++)
