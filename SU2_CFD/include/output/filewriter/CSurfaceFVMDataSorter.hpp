@@ -31,9 +31,9 @@
 
 class CSurfaceFVMDataSorter final: public CParallelDataSorter{
 
-  CFVMDataSorter* volume_sorter;                    //!< Pointer to the volume sorter instance
-  //! Structure to map the local sorted point ID to the global point ID
-  map<unsigned long,unsigned long> Renumber2Global;
+  CFVMDataSorter* volume_sorter; //!< Pointer to the volume sorter instance
+  map<unsigned long,unsigned long> Renumber2Global; //! Structure to map the local sorted point ID to the global point ID
+
 public:
 
   /*!
@@ -70,12 +70,12 @@ public:
    * \param[in] iPoint - the local renumbered point ID.
    * \return Global index of a specific point.
    */
-  unsigned long GetGlobalIndex(unsigned long iPoint) override{
+  unsigned long GetGlobalIndex(unsigned long iPoint) const override{
     if (iPoint > nParallel_Poin)
       SU2_MPI::Error(string("Local renumbered iPoint ID ") + to_string(iPoint) +
                      string(" is larger than max number of nodes ") + to_string(nParallel_Poin), CURRENT_FUNCTION);
 
-    return Renumber2Global[iPoint];
+    return Renumber2Global.at(iPoint);
   }
 
   /*!

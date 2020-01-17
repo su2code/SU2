@@ -27,13 +27,14 @@
 
 #include "../../../include/output/filewriter/CSTLFileWriter.hpp"
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
-#include <iomanip> /*--- Used for ofstream.precision(int). ---*/
+#include <iomanip> // used for ofstream.precision(int)
+#include <algorithm> // used for sort(...)
 
 
 const string CSTLFileWriter::fileExt = ".stl";
 
 
-CSTLFileWriter::CSTLFileWriter(vector<string> fields,
+CSTLFileWriter::CSTLFileWriter(const vector<string>& fields,
                                unsigned short nDim,
                                string fileName,
                                CParallelDataSorter *dataSorter) :
@@ -45,6 +46,75 @@ CSTLFileWriter::CSTLFileWriter(vector<string> fields,
 
 
 CSTLFileWriter::~CSTLFileWriter(){}
+
+
+void CSTLFileWriter::Write_Data(){
+
+  /*--- This Write_Data routine has 3 major parts where the first two are transfered in external functions:
+    1. Prerequisite info: The parallel data-sorter distributes nodes of the primal mesh onto the processes
+    (i.e. this step is only important for parallel excecution) and not elements. For the STL file the connectivity
+    of the elements is broken/lost especially on the node-borders between processes. This information is
+    re-processed in this first (cumbersome) step.
+    2. The coordinate data for each node in a Triangle is successively written into a local array.
+    Quadrilateral surface elements are split into 2 triangles. All local arrays are gathered on the MASTER_NODE.
+    3. The MASTER_NODE only writes the data into a .stl file.
+  ---*/
+
+  /*--- 1. Re-process the element connectivity information and store that appropriatly such that
+    this information can be accessed in step 2. It is copied from CTecplotBinaryFileWriter.cpp:WriteData() l.162 and mildly modified. ---*/
+  ReprocessElementConnectivity();
+
+  /*--- 2. Load the coordinate data succesively in an array. 3coordinates*3nodes = 9 consecutive
+    su2doubles form a triangle ---*/
+  GatherCoordData();
+
+  /*--- 3. The master rank alone writes the surface STL file. ---*/
+  unsigned short iPoint, iVar;
+  unsigned long iProcessor, nProcessor = size, iElem, index;
+  ofstream Surf_file;
+
+  if (rank == MASTER_NODE) {
+
+    /*--- For information how an ASCII .stl file is structured: https://en.wikipedia.org/wiki/STL_(file_format)  ---*/
+    /*--- Open the STL file and write the header line. ---*/
+    Surf_file.precision(6);
+    Surf_file.open(fileName.c_str(), ios::out);
+    Surf_file << "solid SU2_output" << endl;
+
+    /*--- Loop through all of the collected data and write each node's coordinate values. ---*/
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      for (iElem = 0; iElem < buffRecvTriaCount[iProcessor]; iElem++) { // loops over nLocalTriaAll
+
+        /*--- Write the coordinate data for each node in a triangle. ---*/
+        /*--- Every tested software recomputes the normal anyway,
+              such that this arbitray face normal does not matter.  ---*/
+        Surf_file << "facet normal " << 1 << " " << 2 << " " << 3 << endl;
+        Surf_file << "    outer loop" << endl; // 4 leading whitespaces
+
+        for(iPoint = 0; iPoint < N_POINTS_TRIANGLE; iPoint++) {
+          Surf_file << "        vertex"; // 8 leading whitespaces
+          index = iProcessor*max_nLocalTriaAll*N_POINTS_TRIANGLE*3 + iElem*N_POINTS_TRIANGLE*3 + iPoint*3;
+
+          for (iVar = 0; iVar < 3; iVar++) {
+            Surf_file << " " <<  buffRecvCoords[index + iVar];
+          }
+          Surf_file << endl;
+        }//iPoint
+        Surf_file << "    endloop" << endl; // 4 leading whitespaces
+        Surf_file << "endfacet" << endl;
+      }//iElem
+    }//iProcessor
+
+    /*--- Close the file. ---*/
+    Surf_file << "endsolid SU2_output" << endl;
+    Surf_file.close();
+
+  }
+
+  /*--- Free temporary memory. ---*/
+  if(buffRecvCoords != NULL) delete [] buffRecvCoords;
+  if(buffRecvTriaCount != NULL) delete [] buffRecvTriaCount;
+}
 
 
 void CSTLFileWriter::ReprocessElementConnectivity(){
@@ -64,21 +134,21 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
   /* Gather a list of nodes we refer to but are not outputting, because they are not present on this rank. */
   for (unsigned long i = 0; i < nParallel_Tria * N_POINTS_TRIANGLE; ++i)
     if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i)-1) != rank)
-      halo_nodes.insert(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i)-1);
+      halo_nodes.push_back(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i)-1);
 
   for (unsigned long i = 0; i < nParallel_Quad * N_POINTS_QUADRILATERAL; ++i)
     if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i)-1) != rank)
-      halo_nodes.insert(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i)-1);
-
+      halo_nodes.push_back(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i)-1);
 
   /* Sorted list of halo nodes for this MPI rank. */
   sorted_halo_nodes.assign(halo_nodes.begin(), halo_nodes.end());
+  sort(sorted_halo_nodes.begin(), sorted_halo_nodes.end());
 
   /*--- We effectively tack the halo nodes onto the end of the node list for this partition.
     TecIO will later replace them with references to nodes in neighboring partitions. */
   num_halo_nodes = sorted_halo_nodes.size();
-  vector<long> neighbor_partitions(max(static_cast<unsigned long>(1), num_halo_nodes));
-  vector<long>      neighbor_nodes(max(static_cast<unsigned long>(1), num_halo_nodes));
+  vector<long> neighbor_partitions(max<unsigned long>(1, num_halo_nodes));
+  vector<long>      neighbor_nodes(max<unsigned long>(1, num_halo_nodes));
 
   for(unsigned long i = 0; i < num_halo_nodes; ++i) {
     int owning_rank = dataSorter->FindProcessor(sorted_halo_nodes[i]);
@@ -120,7 +190,7 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
 
   /* Now actually send and receive the data */
   data_to_send.resize(max(1, total_num_nodes_to_send * (int)fieldnames.size()));
-  halo_var_data.resize(max(static_cast<unsigned long>(1), fieldnames.size() * num_halo_nodes));
+  halo_var_data.resize(max<unsigned long>(1, fieldnames.size() * num_halo_nodes));
   num_values_to_send.resize(size);
   values_to_send_displacements.resize(size);
   num_values_to_receive.resize(size);
@@ -150,6 +220,7 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
 
 
 void CSTLFileWriter::GatherCoordData(){
+
   /*--- 2. Load the coordinate data succesively in an array. 3coordinates*3nodes = 9 consecutive
     su2doubles form a triangle ---*/
 
@@ -161,30 +232,17 @@ void CSTLFileWriter::GatherCoordData(){
    requires serializing the IO calls with barriers, which ruins
    the performance at moderate to high rank counts. ---*/
 
-  unsigned short iPoint,
-                 iVar;
-
-  unsigned long iProcessor,
-                nProcessor = size,
-                iElem,
-                nLocalTria,
-                nLocalQuad,
-                nLocalTriaAll = 0,
-                global_node_number;
-
-  su2double *bufD_Send = NULL;
-
-  vector<unsigned short> Nodelist = {0,1,3, 1,2,3}; // for Quad2Tri, assumes clockwise or counterclockwise rotation
+  unsigned long nProcessor = size;
 
   /*--- Find the max number of surface vertices among all
    partitions so we can set up buffers. The master node will handle
    the writing of the STL file after gathering all of the data. ---*/
 
-  nLocalTria = dataSorter->GetnElem(TRIANGLE);
-  nLocalQuad = dataSorter->GetnElem(QUADRILATERAL);
-  nLocalTriaAll = nLocalTria + nLocalQuad*2; // Quad splitted into 2 tris
+  unsigned long nLocalTria = dataSorter->GetnElem(TRIANGLE),
+                nLocalQuad = dataSorter->GetnElem(QUADRILATERAL),
+                nLocalTriaAll = nLocalTria + nLocalQuad*2; // Quad splitted into 2 tris
 
-  if (rank == MASTER_NODE) Buffer_Recv_nTriaAll = new unsigned long[nProcessor];
+  if (rank == MASTER_NODE) buffRecvTriaCount = new unsigned long[nProcessor];
 
   /*--- Communicate the maximum of local triangles on any process to each partition and the number of local vertices on each partition
    to the master node with collective calls. ---*/
@@ -193,137 +251,64 @@ void CSTLFileWriter::GatherCoordData(){
                      MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
 
 
-  SU2_MPI::Gather(&nLocalTriaAll,       1, MPI_UNSIGNED_LONG,
-                  Buffer_Recv_nTriaAll, 1, MPI_UNSIGNED_LONG,
+  SU2_MPI::Gather(&nLocalTriaAll   , 1, MPI_UNSIGNED_LONG,
+                  buffRecvTriaCount, 1, MPI_UNSIGNED_LONG,
                   MASTER_NODE, MPI_COMM_WORLD);
 
   /*--- Allocate buffer for send/recv of the coordinate data. Only the master rank allocates buffers for the recv. ---*/
-  bufD_Send = new su2double[max_nLocalTriaAll*N_POINTS_TRIANGLE*3](); /* Triangle has 3 Points with 3 coords each */
+  buffSendCoords = new su2double[max_nLocalTriaAll*N_POINTS_TRIANGLE*3]; /* Triangle has 3 Points with 3 coords each */
   if (rank == MASTER_NODE)
-    bufD_Recv = new su2double[nProcessor*max_nLocalTriaAll*N_POINTS_TRIANGLE*3];
+    buffRecvCoords = new su2double[nProcessor*max_nLocalTriaAll*N_POINTS_TRIANGLE*3];
 
-  /*--- Load send buffers with the local data on this rank. ---*/
-  /*--- Write triangle element coordinate data into send buffer---*/
-  unsigned long index = 0;
-  for (iElem = 0; iElem < nLocalTria; iElem++) {
-    for (iPoint = 0; iPoint < N_POINTS_TRIANGLE; iPoint++) {
-
-      global_node_number = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, iPoint) - 1; // (var, GlobalPointindex)
-      unsigned long local_node_number = global_node_number - dataSorter->GetNodeBegin(rank);
-
-      for (iVar = 0; iVar < 3; iVar++){
-        if (dataSorter->FindProcessor(global_node_number) == rank) {
-          bufD_Send[index] = dataSorter->GetData(iVar, local_node_number);
-        } else {
-          bufD_Send[index] = GetHaloNodeValue(global_node_number, iVar);
-        }
-
-        index++;
-      }//iVar
-    }//iPoint
-  }//iElem
-
-  /*--Write quadrilateral element coordinate data into send buffer:
-    Each quad is split into two triangles after a fixed node order. ---*/
-  for (iElem = 0; iElem < nLocalQuad; iElem++) {
-    for (iPoint = 0; iPoint < Nodelist.size(); iPoint++) {
-      global_node_number = dataSorter->GetElem_Connectivity(QUADRILATERAL,iElem,Nodelist[iPoint]) - 1; // (var, GlobalPointindex)
-      unsigned long local_node_number = global_node_number - dataSorter->GetNodeBegin(rank);
-
-      for (iVar = 0; iVar < 3; iVar++){
-        if (dataSorter->FindProcessor(global_node_number) == rank) {
-          bufD_Send[index] = dataSorter->GetData(iVar, local_node_number);
-        } else {
-          bufD_Send[index] = GetHaloNodeValue(global_node_number, iVar);
-        }
-
-        index++;
-      }//iVar
-    }//iPoint
-  }//iElem
+  StoreCoordData(TRIANGLE,      nLocalTria, 0ul);
+  StoreCoordData(QUADRILATERAL, nLocalQuad, nLocalTria*N_POINTS_TRIANGLE*3);
 
   /*--- Collective comms of the solution data and global IDs. ---*/
-  SU2_MPI::Gather(bufD_Send, static_cast<int>(max_nLocalTriaAll*N_POINTS_TRIANGLE*3), MPI_DOUBLE,
-                  bufD_Recv, static_cast<int>(max_nLocalTriaAll*N_POINTS_TRIANGLE*3), MPI_DOUBLE,
+  SU2_MPI::Gather(buffSendCoords, static_cast<int>(max_nLocalTriaAll*N_POINTS_TRIANGLE*3), MPI_DOUBLE,
+                  buffRecvCoords, static_cast<int>(max_nLocalTriaAll*N_POINTS_TRIANGLE*3), MPI_DOUBLE,
                   MASTER_NODE, MPI_COMM_WORLD);
 
   /*--- Free temporary memory. ---*/
-  if(bufD_Send != NULL) delete [] bufD_Send;
+  if(buffSendCoords != NULL) delete [] buffSendCoords;
 }
 
 
-void CSTLFileWriter::Write_Data(){
+void CSTLFileWriter::StoreCoordData(enum GEO_TYPE elemType,
+                                    unsigned long nLocalElements,
+                                    unsigned long startIndex) {
 
-  /*--- This Write_Data routine has 3 major parts where the first two are transfered in external functions:
-    1. Prerequisite info: The parallel data-sorter distributes nodes of the primal mesh onto the processes
-    (i.e. this step is only important for parallel excecution) and not elements. For the STL file the connectivity
-    of the elements is broken/lost especially on the node-borders between processes. This information is
-    re-processed in this first (cumbersome) step.
-    2. The coordinate data for each node in a Triangle is successively written into a local array.
-    Quadrilateral surface elements are split into 2 triangles. All local arrays are gathered on the MASTER_NODE.
-    3. The MASTER_NODE only writes the data into a .stl file.
-  ---*/
+  unsigned long globalNodeNumber, localNodeNumber, iElem, index = startIndex;
+  unsigned short iPoint, iVar;
 
-  /*--- 1. Re-process the element connectivity information and store that appropriatly such that
-    this information can be accessed in step 2. It is copied from CTecplotBinaryFileWriter.cpp:WriteData() l.162 and mildly modified. ---*/
-  ReprocessElementConnectivity();
-
-  /*--- 2. Load the coordinate data succesively in an array. 3coordinates*3nodes = 9 consecutive
-    su2doubles form a triangle ---*/
-  GatherCoordData();
-
-  /*--- 3. The master rank alone writes the surface STL file. ---*/
-  unsigned short iPoint,
-                 iVar;
-
-  unsigned long iProcessor,
-                nProcessor = size,
-                iElem,
-                index;
-
-  ofstream Surf_file;
-
-  if (rank == MASTER_NODE) {
-
-    /*--- For information how an ASCII .stl file is structured: https://en.wikipedia.org/wiki/STL_(file_format)  ---*/
-    /*--- Open the STL file and write the header line. ---*/
-    Surf_file.precision(6);
-    Surf_file.open(fileName.c_str(), ios::out);
-    Surf_file << "solid SU2_output" << endl;
-
-    /*--- Loop through all of the collected data and write each node's coordinate values. ---*/
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      for (iElem = 0; iElem < Buffer_Recv_nTriaAll[iProcessor]; iElem++) { // loops over nLocalTriaAll
-
-        /*--- Write the coordinate data for each node in a triangle. ---*/
-        /*--- Every tested software recomputes the normal anyway,
-              such that this arbitray face normal does not matter.  ---*/
-        Surf_file << "facet normal " << 1 << " " << 2 << " " << 3 << endl;
-        Surf_file << "    outer loop" << endl; // 4 leading whitespaces
-
-        for(iPoint = 0; iPoint < N_POINTS_TRIANGLE; iPoint++) {
-          Surf_file << "        vertex"; // 8 leading whitespaces
-          index = iProcessor*max_nLocalTriaAll*N_POINTS_TRIANGLE*3 + iElem*N_POINTS_TRIANGLE*3 + iPoint*3;
-
-          for (iVar = 0; iVar < 3; iVar++) {
-            Surf_file << " " <<  bufD_Recv[index + iVar];
-          }
-          Surf_file << endl;
-        }//iPoint
-        Surf_file << "    endloop" << endl; // 4 leading whitespaces
-        Surf_file << "endfacet" << endl;
-      }//iElem
-    }//iProcessor
-
-    /*--- Close the file. ---*/
-    Surf_file << "endsolid SU2_output" << endl;
-    Surf_file.close();
-
+  /*--- Create a node list that defines in which order the element points form a triangle. ---*/
+  vector<unsigned short> nodeList;
+  switch (elemType) {
+    case TRIANGLE:
+      nodeList.insert(nodeList.end(), {0,1,2} ); break;
+    case QUADRILATERAL:
+      /*--- Quads split into two Triangles. Assumes either clock- or counterclockwise rotation ---*/
+      nodeList.insert(nodeList.end(), {0,1,3, 1,2,3} ); break;
+    default:
+      SU2_MPI::Error("Unsupported element type for the STL writer." , CURRENT_FUNCTION); break;
   }
 
-  /*--- Free temporary memory. ---*/
-  if(bufD_Recv != NULL) delete [] bufD_Recv;
-  if(Buffer_Recv_nTriaAll != NULL) delete [] Buffer_Recv_nTriaAll;
+  /*--- Write Triangle-Point-Coordinates subsequently in a local send buffer. ---*/
+  for (iElem = 0; iElem < nLocalElements; iElem++) {
+    for (auto iPoint : nodeList) {
+      globalNodeNumber = dataSorter->GetElem_Connectivity(elemType, iElem, nodeList[iPoint]) - 1;
+      localNodeNumber = globalNodeNumber - dataSorter->GetNodeBegin(rank);
+
+      for (iVar = 0; iVar < 3; iVar++){
+        if (dataSorter->FindProcessor(globalNodeNumber) == rank) {
+          buffSendCoords[index] = dataSorter->GetData(iVar, localNodeNumber);
+        } else {
+          buffSendCoords[index] = GetHaloNodeValue(globalNodeNumber, iVar);
+        }
+
+        index++;
+      }//iVar
+    }//iPoint
+  }//iElem
 }
 
 

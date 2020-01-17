@@ -199,7 +199,7 @@ public:
    * \input iPoint - the point ID.
    * \return Global index of a specific point.
    */
-  virtual unsigned long GetGlobalIndex(unsigned long iPoint) { return 0; }
+  virtual unsigned long GetGlobalIndex(unsigned long iPoint) const { return 0; }
 
   /*!
    * \brief Get the cumulated number of points
