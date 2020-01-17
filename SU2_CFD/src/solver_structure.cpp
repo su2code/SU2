@@ -5639,7 +5639,7 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iVar, iFlux, iMetr, iMarker;
   unsigned short nMetr = 3*(nDim-1);
   unsigned long iVertex;
-  bool viscous = config->GetViscous();
+  bool viscous = config->GetViscous(), source = config->GetAdap_Source();
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
@@ -5655,13 +5655,12 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
           
           //--- Correct if any of the neighbors belong to the volume
           unsigned short iNeigh, counter = 0;
-          su2double hess[nMetr*nVar*nDim], hessvisc[nMetr*nVar*nDim];
-          // su2double dist, distsum = 0.0;
+          su2double hess[nMetr*nVar*nDim], hessvisc[nMetr*nVar*nDim], hesssource[nMetr*nVar];
           for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             if(!geometry->node[jPoint]->GetBoundary()) {
-              for(iFlux = 0; iFlux < nDim; iFlux++) {
-                for(iVar = 0; iVar < nVar; iVar++){
+              for(iVar = 0; iVar < nVar; iVar++){
+                for(iFlux = 0; iFlux < nDim; iFlux++) {              
                   const unsigned short i = iFlux*nVar*nMetr + iVar*nMetr;
 
                   //--- Reset hessian if first volume node detected
@@ -5669,37 +5668,42 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
                     for(iMetr = 0; iMetr < nMetr; iMetr++) {
                       hess[i+iMetr] = base_nodes->GetAnisoHess(iPoint, i+iMetr);
                       if(viscous) hessvisc[i+iMetr] = base_nodes->GetAnisoViscHess(iPoint, i+iMetr);
-                      // dist = 0.0;
                     }
                   }
-                  // for(iDim = 0; iDim < nDim; iDim++) {
-                  //   const su2double coord0 = geometry->node[iPoint]->GetCoord(iDim);
-                  //   const su2double coord1 = geometry->node[jPoint]->GetCoord(iDim);
-                  //   dist += (coord1-coord0)*(coord1-coord0);
-                  // }
                   for(iMetr = 0; iMetr < nMetr; iMetr++) {
                     hess[i+iMetr] += base_nodes->GetAnisoHess(jPoint, i+iMetr);
                     if(viscous) hessvisc[i+iMetr] += base_nodes->GetAnisoViscHess(jPoint, i+iMetr);
-                    // hess[i+iMetr] += base_nodes->GetAnisoHess(jPoint, i+iMetr)/dist;
-                    // if(viscous) hessvisc[i+iMetr] += base_nodes->GetAnisoViscHess(jPoint, i+iMetr)/dist;
                   }
-                  counter ++;
-                  // distsum += dist;
+                }
+
+                if(source) {
+                  const unsigned short i = iVar*nMetr;
+
+                  //--- Reset hessian if first volume node detected
+                  if(counter == 0) {
+                    for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                      hesssource[i+iMetr] = base_nodes->GetAnisSourceHess(iPoint, i+iMetr);
+                    }
+                  }
+                  for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                    hesssource[i+iMetr] += base_nodes->GetAnisoSourceHess(jPoint, i+iMetr);
+                  }
                 }
               }
+              counter ++;
             }
           }
           if(counter > 0) {
-            for(iFlux = 0; iFlux < nDim; iFlux++) {
-              for(iVar = 0; iVar < nVar; iVar++){
+            for(iVar = 0; iVar < nVar; iVar++){
+              for(iFlux = 0; iFlux < nDim; iFlux++) {            
                 const unsigned short i = iFlux*nVar*nMetr + iVar*nMetr;
                 for(iMetr = 0; iMetr < nMetr; iMetr++) {
                   base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]/su2double(counter+1));
                   if(viscous) base_nodes->SetAnisoViscHess(iPoint, i+iMetr, hessvisc[i+iMetr]/su2double(counter+1));
-                  // base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]*distsum);
-                  // if(viscous) base_nodes->SetAnisoViscHess(iPoint, i+iMetr, hessvisc[i+iMetr]*distsum);
                 }
               }
+              const unsigned short i = iVar*nMetr;
+              if(source) base_nodes->SetAnisoSourceHess(iPoint, i+iMetr, hesssource[i+iMetr]/su2double(counter+1));
             }
           }
         }
