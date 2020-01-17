@@ -5727,10 +5727,10 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
                     // hess[i+iMetr] += base_nodes->GetAnisoHess(jPoint, i+iMetr)/dist;
                     // if(viscous) hessvisc[i+iMetr] += base_nodes->GetAnisoViscHess(jPoint, i+iMetr)/dist;
                   }
-                  counter ++;
                   // distsum += dist;
                 }
               }
+              counter ++;
             }
           }
           if(counter > 0) {
