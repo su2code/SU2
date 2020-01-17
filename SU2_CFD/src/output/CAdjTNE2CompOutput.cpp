@@ -105,7 +105,7 @@ void CAdjTNE2CompOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
   /// DESCRIPTION: Root-mean square residual of the adjoint N2 density.
-  AddHistoryOutput("RMS_ADJ_DENSITY_N2", "rms[A_Rho]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint N2 density.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("RMS_ADJ_DENSITY_N2", "rms[A_Rho_N2]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint N2 density.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint momentum x-component.
   AddHistoryOutput("RMS_ADJ_MOMENTUM-X", "rms[A_RhoU]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint momentum x-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint momentum y-component.
