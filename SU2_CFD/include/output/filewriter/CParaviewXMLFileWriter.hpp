@@ -102,13 +102,6 @@ public:
 private:
 
   /*!
-   * \brief Write a string to the vtu file
-   * \param[in] str - The string to write to file
-   * \param[in] rank - The rank that should write the string
-   */
-  void WriteString(std::string str, int rankOut);
-
-  /*!
    * \brief Add a new data array definition to the vtu file.
    * \param[in] type - The vtk datatype
    * \param[in] name - The name of the array
