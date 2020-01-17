@@ -764,7 +764,7 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
     if(config->GetAdap_Source()) {
       for (unsigned short iVar = 0; iVar < nVarMetr; ++iVar) {
 
-        const su2double adj = solver_adjflow->GetNodes()->Solution(iPoint, iVar);
+        const su2double adj = solver_adjflow->GetNodes()->GetSolution(iPoint, iVar);
 
         for (unsigned short im = 0; im < nMetr; ++im) {
           const unsigned short ih = iVar*nMetr + im;  
