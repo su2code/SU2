@@ -50,13 +50,7 @@ protected:
   unsigned long nGlobal_Poin_Par;  //!< Global number of points without halos before sorting
   unsigned long nGlobal_Elem_Par;  //!< Global number of elems without halos before sorting
   unsigned long nParallel_Poin;    //!< Local number of points after sorting on this proc
-  unsigned long nParallel_Line,    //!< Local number of line elements after sorting on this proc
-  nParallel_Tria,                  //!< Local number of triangle elements after sorting on this proc
-  nParallel_Quad,                  //!< Local number of quad elements after sorting on this proc
-  nParallel_Tetr,                  //!< Local number of tetrahedral elements after sorting on this proc
-  nParallel_Hexa,                  //!< Local number of hexhedral elements after sorting on this proc
-  nParallel_Pris,                  //!< Local number of prism elements after sorting on this proc
-  nParallel_Pyra;                  //!< Local number of pyramid elements after sorting on this proc
+  
   int *Conn_Line_Par;              //!< Local connectivity of line elements after sorting on this proc
   int *Conn_Tria_Par;              //!< Local connectivity of triangle elements after sorting on this proc
   int *Conn_Quad_Par;              //!< Local connectivity of quad elements after sorting on this proc
@@ -65,6 +59,15 @@ protected:
   int *Conn_Pris_Par;              //!< Local connectivity of prism elements after sorting on this proc
   int *Conn_Pyra_Par;              //!< Local connectivity of pyramid elements after sorting on this proc
 
+  array<unsigned long, N_ELEM_TYPES> nGlobal_Elem;   //!< Global number of elements after sorting on this proc
+  array<unsigned long, N_ELEM_TYPES> nParallel_Elem; //!< Local number of elements after sorting on this proc
+  
+  /*!
+   * \brief Map that stores the index for each GEO_TYPE type where to find information
+   * in the element arrays.
+   */
+  static const map<unsigned short, unsigned short> TypeMap; 
+ 
   unsigned long nGlobalPoint_Sort; //!< Global number of points without halos after sorting
   unsigned long nLocalPoint_Sort;  //!< Local number of points without halos after sorting on this proc
 
@@ -163,7 +166,26 @@ public:
    * \input type - The type of element, ref GEO_TYPE
    * \return Local number of elements of a specific type.
    */
-  unsigned long GetnElem(GEO_TYPE type) const;
+  unsigned long GetnElem(GEO_TYPE type) const {
+    return nParallel_Elem[TypeMap.at(type)];
+  }
+  
+  /*!
+   * \brief Get the global number of elements of a specific type 
+   * \input type - The type of element, ref GEO_TYPE
+   * \return global number of elements of a specific type.
+   */
+  unsigned long GetnElemGlobal(GEO_TYPE type) const {
+    return nGlobal_Elem[TypeMap.at(type)];
+  }
+  
+  /*!
+   * \brief Get the global number of elements
+   * \return global number of elements.
+   */
+  unsigned long GetnElemGlobal() const {
+    return nGlobal_Elem_Par;
+  }
 
   /*!
    * \brief Get the connectivity of specific element.

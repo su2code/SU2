@@ -28,6 +28,16 @@
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
 #include <cassert>
 
+const map<unsigned short, unsigned short> CParallelDataSorter::TypeMap = {
+  {LINE, 0},
+  {TRIANGLE, 1},
+  {QUADRILATERAL, 2},
+  {TETRAHEDRON, 3},
+  {HEXAHEDRON, 4},
+  {PRISM, 5},
+  {PYRAMID, 6}
+};
+
 CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &valFieldNames) :
   fieldNames(std::move(valFieldNames)){
 
@@ -35,14 +45,6 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
   size = SU2_MPI::GetSize();
 
   GlobalField_Counter = this->fieldNames.size();
-
-  nParallel_Hexa = 0;
-  nParallel_Line = 0;
-  nParallel_Quad = 0;
-  nParallel_Tetr = 0;
-  nParallel_Pris = 0;
-  nParallel_Pyra = 0;
-  nParallel_Tria = 0;
 
   Conn_Line_Par = NULL;
   Conn_Hexa_Par = NULL;
@@ -70,6 +72,9 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
   nPoint_Recv = new int[size+1]();
 
   linearPartitioner = NULL;
+  
+  nParallel_Elem.fill(0);
+  nGlobal_Elem.fill(0);
 
 }
 
@@ -80,51 +85,17 @@ CParallelDataSorter::~CParallelDataSorter(){
 
   /*--- Deallocate memory for connectivity data on each processor. ---*/
 
-  if (nParallel_Line > 0 && Conn_Line_Par != NULL) delete [] Conn_Line_Par;
-  if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-  if (nParallel_Quad > 0 && Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-  if (nParallel_Tetr > 0 && Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-  if (nParallel_Hexa > 0 && Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-  if (nParallel_Pris > 0 && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-  if (nParallel_Pyra > 0 && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+  if (GetnElem(LINE) > 0          && Conn_Line_Par != NULL) delete [] Conn_Line_Par;
+  if (GetnElem(TRIANGLE) > 0      && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+  if (GetnElem(QUADRILATERAL) > 0 && Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+  if (GetnElem(TETRAHEDRON) > 0   && Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+  if (GetnElem(HEXAHEDRON) > 0    && Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+  if (GetnElem(PRISM) > 0         && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+  if (GetnElem(PYRAMID) > 0       && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
 
   if (connSend != NULL) delete [] connSend;
 
   if (dataBuffer != NULL) delete [] dataBuffer;
-}
-
-
-unsigned long CParallelDataSorter::GetnElem(GEO_TYPE type) const {
-
-  switch (type) {
-    case LINE:
-      return nParallel_Line;
-      break;
-    case TRIANGLE:
-      return nParallel_Tria;
-      break;
-    case QUADRILATERAL:
-      return nParallel_Quad;
-      break;
-    case TETRAHEDRON:
-      return nParallel_Tetr;
-      break;
-    case HEXAHEDRON:
-      return nParallel_Hexa;
-      break;
-    case PRISM:
-      return nParallel_Pris;
-      break;
-    case PYRAMID:
-      return nParallel_Pyra;
-      break;
-    default:
-      break;
-  }
-
-  SU2_MPI::Error("GEO_TYPE not found", CURRENT_FUNCTION);
-
-  return 0;
 }
 
 void CParallelDataSorter::SortOutputData() {

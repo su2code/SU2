@@ -27,6 +27,7 @@
 
 #include "../../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
+#include <numeric>
 
 CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames) :
   CParallelDataSorter(config, valFieldNames){
@@ -121,16 +122,12 @@ void CFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
   SortVolumetricConnectivity(config, geometry, HEXAHEDRON,    val_sort);
   SortVolumetricConnectivity(config, geometry, PRISM,         val_sort);
   SortVolumetricConnectivity(config, geometry, PYRAMID,       val_sort);
-
-
+  
   /*--- Reduce the total number of cells we will be writing in the output files. ---*/
 
-  unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
-#ifndef HAVE_MPI
-  nGlobal_Elem_Par = nTotal_Elem;
-#else
-  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
+  SU2_MPI::Allreduce(nParallel_Elem.data(), nGlobal_Elem.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  
+  nGlobal_Elem_Par = std::accumulate(nGlobal_Elem.begin(), nGlobal_Elem.end(), 0); 
 
   connectivitySorted = true;
 
@@ -487,40 +484,36 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
       }
     }
   }
+  
+  nParallel_Elem[TypeMap.at(Elem_Type)] = nElem_Total;
 
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
 
   switch (Elem_Type) {
     case TRIANGLE:
-      nParallel_Tria = nElem_Total;
       if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-      if (nParallel_Tria > 0) Conn_Tria_Par = Conn_Elem;
+      if (nParallel_Elem[TypeMap.at(Elem_Type)] > 0) Conn_Tria_Par = Conn_Elem;
       break;
     case QUADRILATERAL:
-      nParallel_Quad = nElem_Total;
       if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-      if (nParallel_Quad > 0) Conn_Quad_Par = Conn_Elem;
+      if (nParallel_Elem[TypeMap.at(Elem_Type)] > 0)  Conn_Quad_Par = Conn_Elem;
       break;
     case TETRAHEDRON:
-      nParallel_Tetr = nElem_Total;
       if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-      if (nParallel_Tetr > 0) Conn_Tetr_Par = Conn_Elem;
+      if (nParallel_Elem[TypeMap.at(Elem_Type)] > 0)  Conn_Tetr_Par = Conn_Elem;
       break;
     case HEXAHEDRON:
-      nParallel_Hexa = nElem_Total;
       if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-      if (nParallel_Hexa > 0) Conn_Hexa_Par = Conn_Elem;
+      if (nParallel_Elem[TypeMap.at(Elem_Type)] > 0)  Conn_Hexa_Par = Conn_Elem;
       break;
     case PRISM:
-      nParallel_Pris = nElem_Total;
       if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-      if (nParallel_Pris > 0) Conn_Pris_Par = Conn_Elem;
+      if (nParallel_Elem[TypeMap.at(Elem_Type)] > 0)  Conn_Pris_Par = Conn_Elem;
       break;
     case PYRAMID:
-      nParallel_Pyra = nElem_Total;
       if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
-      if (nParallel_Pyra > 0) Conn_Pyra_Par = Conn_Elem;
+      if (nParallel_Elem[TypeMap.at(Elem_Type)] > 0)  Conn_Pyra_Par = Conn_Elem;
       break;
     default:
       SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);

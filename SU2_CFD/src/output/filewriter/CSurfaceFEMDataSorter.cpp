@@ -27,7 +27,7 @@
 
 #include "../../../include/output/filewriter/CSurfaceFEMDataSorter.hpp"
 #include "../../../../Common/include/fem_geometry_structure.hpp"
-
+#include <numeric>
 
 CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* valVolumeSorter) :
   CParallelDataSorter(config, valVolumeSorter->GetFieldNames()){
@@ -86,6 +86,10 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   }
 
   const int VARS_PER_POINT = GlobalField_Counter;
+  
+  const unsigned long nElemLine = GetnElem(LINE);
+  const unsigned long nElemTria = GetnElem(TRIANGLE);
+  const unsigned long nElemQuad = GetnElem(QUADRILATERAL);
 
   /*---------------------------------------------------*/
   /*--- Step 1: Determine the global DOF ID's of the   */
@@ -96,21 +100,21 @@ void CSurfaceFEMDataSorter::SortOutputData() {
      DOF ID's in a vector. Subtract 1, because the stored
      connectivities are 1 based. */
   globalSurfaceDOFIDs.clear();
-  globalSurfaceDOFIDs.reserve(nParallel_Line*N_POINTS_LINE +
-                              nParallel_Tria*N_POINTS_TRIANGLE +
-                              nParallel_Quad*N_POINTS_QUADRILATERAL);
+  globalSurfaceDOFIDs.reserve(nElemLine*N_POINTS_LINE +
+                              nElemTria*N_POINTS_TRIANGLE +
+                              nElemQuad*N_POINTS_QUADRILATERAL);
 
-  for(unsigned long i=0; i<(nParallel_Line*N_POINTS_LINE); ++i) {
+  for(unsigned long i=0; i<nElemLine*N_POINTS_LINE; ++i) {
     const unsigned long globalID = Conn_Line_Par[i]-1;
     globalSurfaceDOFIDs.push_back(globalID);
   }
 
-  for(unsigned long i=0; i<(nParallel_Tria*N_POINTS_TRIANGLE); ++i) {
+  for(unsigned long i=0; i<nElemTria*N_POINTS_TRIANGLE; ++i) {
     const unsigned long globalID = Conn_Tria_Par[i]-1;
     globalSurfaceDOFIDs.push_back(globalID);
   }
 
-  for(unsigned long i=0; i<(nParallel_Quad*N_POINTS_QUADRILATERAL); ++i) {
+  for(unsigned long i=0; i<nElemQuad*N_POINTS_QUADRILATERAL; ++i) {
     const unsigned long globalID = Conn_Quad_Par[i]-1;
     globalSurfaceDOFIDs.push_back(globalID);
   }
@@ -328,13 +332,13 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   }
 
   /* Modify the locally stored surface connectivities. */
-  for(unsigned long i=0; i<(nParallel_Line*N_POINTS_LINE); ++i)
+  for(unsigned long i=0; i<nElemLine*N_POINTS_LINE; ++i)
     Conn_Line_Par[i] = mapGlobalVol2Surf.find(Conn_Line_Par[i])->second;
 
-  for(unsigned long i=0; i<(nParallel_Tria*N_POINTS_TRIANGLE); ++i)
+  for(unsigned long i=0; i<nElemTria*N_POINTS_TRIANGLE; ++i)
     Conn_Tria_Par[i] = mapGlobalVol2Surf.find(Conn_Tria_Par[i])->second;
 
-  for(unsigned long i=0; i<(nParallel_Quad*N_POINTS_QUADRILATERAL); ++i)
+  for(unsigned long i=0; i<nElemQuad*N_POINTS_QUADRILATERAL; ++i)
     Conn_Quad_Par[i] = mapGlobalVol2Surf.find(Conn_Quad_Par[i])->second;
 }
 
@@ -351,14 +355,12 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
   SortSurfaceConnectivity(config, geometry, LINE         , markerList);
   SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
   SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);
+  
+  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
 
-
-  unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
-#ifndef HAVE_MPI
-  nGlobal_Elem_Par   = nTotal_Surf_Elem;
-#else
-  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
+  SU2_MPI::Allreduce(nParallel_Elem.data(), nGlobal_Elem.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  
+  nGlobal_Elem_Par = std::accumulate(nGlobal_Elem.begin(), nGlobal_Elem.end(), 0); 
 
   connectivitySorted = true;
 
@@ -370,13 +372,11 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
   SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
   SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);
 
+  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
 
-  unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
-#ifndef HAVE_MPI
-  nGlobal_Elem_Par   = nTotal_Surf_Elem;
-#else
-  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
+  SU2_MPI::Allreduce(nParallel_Elem.data(), nGlobal_Elem.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  
+  nGlobal_Elem_Par = std::accumulate(nGlobal_Elem.begin(), nGlobal_Elem.end(), 0); 
 
   connectivitySorted = true;
 
@@ -479,22 +479,21 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
         }
       }
     }
+    
+    nParallel_Elem[TypeMap.at(Elem_Type)] = nSubElem_Local;    
 
     /*--- Store the particular global element count in the class data,
           and set the class data pointer to the connectivity array. ---*/
     switch (Elem_Type) {
       case LINE:
-        nParallel_Line = nSubElem_Local;
         if (Conn_Line_Par != NULL) delete [] Conn_Line_Par;
         Conn_Line_Par = Conn_SubElem;
         break;
       case TRIANGLE:
-        nParallel_Tria = nSubElem_Local;
         if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
         Conn_Tria_Par = Conn_SubElem;
         break;
       case QUADRILATERAL:
-        nParallel_Quad = nSubElem_Local;
         if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
         Conn_Quad_Par = Conn_SubElem;
         break;

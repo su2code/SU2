@@ -27,7 +27,7 @@
 
 #include "../../../include/output/filewriter/CSurfaceFVMDataSorter.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
-
+#include <numeric>
 
 CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometry, CFVMDataSorter* valVolumeSorter) :
   CParallelDataSorter(config, valVolumeSorter->GetFieldNames()){
@@ -69,7 +69,10 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   SU2_MPI::Status status;
   int ind;
 #endif
-
+  
+  const unsigned long nElemLine = GetnElem(LINE);
+  const unsigned long nElemTria = GetnElem(TRIANGLE);
+  const unsigned long nElemQuad = GetnElem(QUADRILATERAL);
 
   /*--- Prepare to check and communicate the nodes that each proc has
    locally from the surface connectivity. ---*/
@@ -88,7 +91,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   /*--- Loop through our local line elements and check where each
    of the grid nodes resides based on global index. ---*/
 
-  for (int ii = 0; ii < (int)nParallel_Line; ii++) {
+  for (int ii = 0; ii < (int)nElemLine; ii++) {
     for ( int jj = 0; jj < N_POINTS_LINE; jj++ ) {
 
       /*--- Get global index. Note the -1 since it was 1-based for viz. ---*/
@@ -116,7 +119,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
   for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
 
-  for (int ii = 0; ii < (int)nParallel_Tria; ii++) {
+  for (int ii = 0; ii < (int)nElemTria; ii++) {
     for ( int jj = 0; jj < N_POINTS_TRIANGLE; jj++ ) {
 
       /*--- Get global index. Note the -1 since it was 1-based for viz. ---*/
@@ -144,7 +147,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
   for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
 
-  for (int ii = 0; ii < (int)nParallel_Quad; ii++) {
+  for (int ii = 0; ii < (int)nElemQuad; ii++) {
     for ( int jj = 0; jj < N_POINTS_QUADRILATERAL; jj++ ) {
 
       /*--- Get global index. Note the -1 since it was 1-based for viz. ---*/
@@ -207,7 +210,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   /*--- Now loop back through the local connectivities for the surface
    elements and load up the global IDs for sending to their home proc. ---*/
 
-  for (int ii = 0; ii < (int)nParallel_Line; ii++) {
+  for (int ii = 0; ii < (int)nElemLine; ii++) {
     for ( int jj = 0; jj < N_POINTS_LINE; jj++ ) {
 
       /*--- Get global index. Note the -1 since it was 1-based for viz. ---*/
@@ -241,7 +244,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
   for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
 
-  for (int ii = 0; ii < (int)nParallel_Tria; ii++) {
+  for (int ii = 0; ii < (int)nElemTria; ii++) {
     for ( int jj = 0; jj < N_POINTS_TRIANGLE; jj++ ) {
 
       /*--- Get global index. Note the -1 since it was 1-based for viz. ---*/
@@ -275,7 +278,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
   for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
 
-  for (int ii = 0; ii < (int)nParallel_Quad; ii++) {
+  for (int ii = 0; ii < (int)nElemQuad; ii++) {
     for ( int jj = 0; jj < N_POINTS_QUADRILATERAL; jj++ ) {
 
       /*--- Get global index. Note the -1 since it was 1-based for viz. ---*/
@@ -736,7 +739,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   vector<unsigned long>::iterator it;
   vector<unsigned long> outliers;
 
-  for (int ii = 0; ii < (int)nParallel_Line; ii++) {
+  for (int ii = 0; ii < (int)nElemLine; ii++) {
     for ( int jj = 0; jj < N_POINTS_LINE; jj++ ) {
 
       iNode = ii*N_POINTS_LINE+jj;
@@ -757,7 +760,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
   for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
 
-  for (int ii = 0; ii < (int)nParallel_Tria; ii++) {
+  for (int ii = 0; ii < (int)nElemTria; ii++) {
     for ( int jj = 0; jj < N_POINTS_TRIANGLE; jj++ ) {
 
       iNode = ii*N_POINTS_TRIANGLE + jj;
@@ -778,7 +781,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
   for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
 
-  for (int ii = 0; ii < (int)nParallel_Quad; ii++) {
+  for (int ii = 0; ii < (int)nElemQuad; ii++) {
     for ( int jj = 0; jj < N_POINTS_QUADRILATERAL; jj++ ) {
 
       iNode = ii*N_POINTS_QUADRILATERAL+jj;
@@ -1058,20 +1061,20 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    using our completed map with the new global renumbering. Whew!! Note
    the -1 when accessing the conn from the map. ---*/
 
-  for (iElem = 0; iElem < nParallel_Line; iElem++) {
+  for (iElem = 0; iElem < nElemLine; iElem++) {
     iNode = (int)iElem*N_POINTS_LINE;
     Conn_Line_Par[iNode+0] = (int)Global2Renumber[Conn_Line_Par[iNode+0]-1];
     Conn_Line_Par[iNode+1] = (int)Global2Renumber[Conn_Line_Par[iNode+1]-1];
   }
 
-  for (iElem = 0; iElem < nParallel_Tria; iElem++) {
+  for (iElem = 0; iElem < nElemTria; iElem++) {
     iNode = (int)iElem*N_POINTS_TRIANGLE;
     Conn_Tria_Par[iNode+0] = (int)Global2Renumber[Conn_Tria_Par[iNode+0]-1];
     Conn_Tria_Par[iNode+1] = (int)Global2Renumber[Conn_Tria_Par[iNode+1]-1];
     Conn_Tria_Par[iNode+2] = (int)Global2Renumber[Conn_Tria_Par[iNode+2]-1];
   }
 
-  for (iElem = 0; iElem < nParallel_Quad; iElem++) {
+  for (iElem = 0; iElem < nElemQuad; iElem++) {
     iNode = (int)iElem*N_POINTS_QUADRILATERAL;
     Conn_Quad_Par[iNode+0] = (int)Global2Renumber[Conn_Quad_Par[iNode+0]-1];
     Conn_Quad_Par[iNode+1] = (int)Global2Renumber[Conn_Quad_Par[iNode+1]-1];
@@ -1121,13 +1124,11 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
   SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
   SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);
 
+  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
 
-  unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
-#ifndef HAVE_MPI
-  nGlobal_Elem_Par   = nTotal_Surf_Elem;
-#else
-  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
+  SU2_MPI::Allreduce(nParallel_Elem.data(), nGlobal_Elem.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  
+  nGlobal_Elem_Par = std::accumulate(nGlobal_Elem.begin(), nGlobal_Elem.end(), 0); 
 
   connectivitySorted = true;
 
@@ -1145,13 +1146,11 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
   SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
   SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);
 
+  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
 
-  unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
-#ifndef HAVE_MPI
-  nGlobal_Elem_Par   = nTotal_Surf_Elem;
-#else
-  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
+  SU2_MPI::Allreduce(nParallel_Elem.data(), nGlobal_Elem.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  
+  nGlobal_Elem_Par = std::accumulate(nGlobal_Elem.begin(), nGlobal_Elem.end(), 0); 
 
   connectivitySorted = true;
 
@@ -1516,27 +1515,26 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     }
   }
 
+  nParallel_Elem[TypeMap.at(Elem_Type)] = nElem_Total;
+
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
 
   switch (Elem_Type) {
     case LINE:
-      nParallel_Line = nElem_Total;
       if (Conn_Line_Par != NULL) delete [] Conn_Line_Par;
       Conn_Line_Par = NULL;
-      if (nParallel_Line > 0) Conn_Line_Par = Conn_Elem;
+      if (GetnElem(LINE) > 0) Conn_Line_Par = Conn_Elem;
       break;
     case TRIANGLE:
-      nParallel_Tria = nElem_Total;
       if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
       Conn_Tria_Par = NULL;
-      if (nParallel_Tria > 0) Conn_Tria_Par = Conn_Elem;
+      if (GetnElem(TRIANGLE) > 0) Conn_Tria_Par = Conn_Elem;
       break;
     case QUADRILATERAL:
-      nParallel_Quad = nElem_Total;
       if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
       Conn_Quad_Par = NULL;
-      if (nParallel_Quad > 0) Conn_Quad_Par = Conn_Elem;
+      if (GetnElem(QUADRILATERAL) > 0) Conn_Quad_Par = Conn_Elem;
       break;
     default:
       SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);

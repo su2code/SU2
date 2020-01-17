@@ -27,6 +27,7 @@
 
 #include "../../../include/output/filewriter/CFEMDataSorter.hpp"
 #include "../../../../Common/include/fem_geometry_structure.hpp"
+#include <numeric>
 
 CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames) :
   CParallelDataSorter(config, valFieldNames){
@@ -103,16 +104,12 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
   SortVolumetricConnectivity(config, geometry, PRISM        );
   SortVolumetricConnectivity(config, geometry, PYRAMID      );
 
-
   /*--- Reduce the total number of cells we will be writing in the output files. ---*/
 
-  unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
-#ifndef HAVE_MPI
-  nGlobal_Elem_Par = nTotal_Elem;
-#else
-  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
+  SU2_MPI::Allreduce(nParallel_Elem.data(), nGlobal_Elem.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  
+  nGlobal_Elem_Par = std::accumulate(nGlobal_Elem.begin(), nGlobal_Elem.end(), 0); 
+   
   connectivitySorted = true;
 
 }
@@ -213,37 +210,33 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
         Conn_SubElem[kNode] = connSubElems[k] + volElem[i].offsetDOFsSolGlobal + 1;
     }
   }
+  
+  nParallel_Elem[TypeMap.at(Elem_Type)] = nSubElem_Local;
 
   /*--- Store the particular global element count in the class data,
         and set the class data pointer to the connectivity array. ---*/
   switch (Elem_Type) {
     case TRIANGLE:
-      nParallel_Tria = nSubElem_Local;
       if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
       Conn_Tria_Par = Conn_SubElem;
       break;
     case QUADRILATERAL:
-      nParallel_Quad = nSubElem_Local;
       if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
       Conn_Quad_Par = Conn_SubElem;
       break;
     case TETRAHEDRON:
-      nParallel_Tetr = nSubElem_Local;
       if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
       Conn_Tetr_Par = Conn_SubElem;
       break;
     case HEXAHEDRON:
-      nParallel_Hexa = nSubElem_Local;
       if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
       Conn_Hexa_Par = Conn_SubElem;
       break;
     case PRISM:
-      nParallel_Pris = nSubElem_Local;
       if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
       Conn_Pris_Par = Conn_SubElem;
       break;
     case PYRAMID:
-      nParallel_Pyra = nSubElem_Local;
       if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
       Conn_Pyra_Par = Conn_SubElem;
       break;
