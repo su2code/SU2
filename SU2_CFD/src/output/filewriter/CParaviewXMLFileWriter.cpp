@@ -70,60 +70,9 @@ void CParaviewXMLFileWriter::Write_Data(){
 
   char str_buf[255];
 
-  fileSize = 0.0;
+  OpenMPIFile();
+  
   dataOffset = 0;
-
-  /*--- Set a timer for the file writing. ---*/
-
-#ifndef HAVE_MPI
-  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  startTime = MPI_Wtime();
-#endif
-
-
-  /*--- Parallel binary output using MPI I/O. ---*/
-
-  int ierr;
-
-#ifdef HAVE_MPI
-  /*--- All ranks open the file using MPI. Here, we try to open the file with
-   exclusive so that an error is generated if the file exists. We always want
-   to write a fresh output file, so we delete any existing files and create
-   a new one. ---*/
-
-  ierr = MPI_File_open(MPI_COMM_WORLD, fileName.c_str(),
-                       MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
-                       MPI_INFO_NULL, &fhw);
-  if (ierr != MPI_SUCCESS)  {
-    MPI_File_close(&fhw);
-    if (rank == 0)
-      MPI_File_delete(fileName.c_str(), MPI_INFO_NULL);
-    ierr = MPI_File_open(MPI_COMM_WORLD, fileName.c_str(),
-                         MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
-                         MPI_INFO_NULL, &fhw);
-  }
-
-  /*--- Error check opening the file. ---*/
-
-  if (ierr) {
-    SU2_MPI::Error(string("Unable to open VTK binary legacy file ") +
-                   fileName, CURRENT_FUNCTION);
-  }
-#else
-  fhw = fopen(fileName.c_str(), "wb");
-  /*--- Error check for opening the file. ---*/
-
-  if (!fhw) {
-    SU2_MPI::Error(string("Unable to open VTK binary legacy file ") +
-                   fileName, CURRENT_FUNCTION);
-  }
-#endif
-
-  /*--- Write the initial strings to the file. Only the master will
-   write the header lines, but all ranks will store the offsets. ---*/
-
-  disp = 0;
 
   /*--- Communicate the number of total points that will be
    written by each rank. After this communication, each proc knows how
@@ -181,27 +130,27 @@ void CParaviewXMLFileWriter::Write_Data(){
   */
 
   if (!bigEndian){
-    WriteString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\">\n", MASTER_NODE);
+    WriteMPIString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\">\n", MASTER_NODE);
   } else {
-    WriteString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"BigEndian\">\n", MASTER_NODE);
+    WriteMPIString("<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"BigEndian\">\n", MASTER_NODE);
   }
 
-  WriteString("<UnstructuredGrid>\n", MASTER_NODE);
+  WriteMPIString("<UnstructuredGrid>\n", MASTER_NODE);
 
   SPRINTF(str_buf, "<Piece NumberOfPoints=\"%i\" NumberOfCells=\"%i\">\n",
           SU2_TYPE::Int(GlobalPoint), SU2_TYPE::Int(GlobalElem));
 
-  WriteString(std::string(str_buf), MASTER_NODE);
-  WriteString("<Points>\n", MASTER_NODE);
+  WriteMPIString(std::string(str_buf), MASTER_NODE);
+  WriteMPIString("<Points>\n", MASTER_NODE);
   AddDataArray(VTKDatatype::FLOAT32, "", NCOORDS, myPoint*NCOORDS, GlobalPoint*NCOORDS);
-  WriteString("</Points>\n", MASTER_NODE);
-  WriteString("<Cells>\n", MASTER_NODE);
+  WriteMPIString("</Points>\n", MASTER_NODE);
+  WriteMPIString("<Cells>\n", MASTER_NODE);
   AddDataArray(VTKDatatype::INT32, "connectivity", 1, myElemStorage, GlobalElemStorage);
   AddDataArray(VTKDatatype::INT32, "offsets", 1, myElem, GlobalElem);
   AddDataArray(VTKDatatype::UINT8, "types", 1, myElem, GlobalElem);
-  WriteString("</Cells>\n", MASTER_NODE);
+  WriteMPIString("</Cells>\n", MASTER_NODE);
 
-  WriteString("<PointData>\n", MASTER_NODE);
+  WriteMPIString("<PointData>\n", MASTER_NODE);
 
   /*--- Adjust container start location to avoid point coords. ---*/
 
@@ -255,9 +204,9 @@ void CParaviewXMLFileWriter::Write_Data(){
     }
 
   }
-  WriteString("</PointData>\n", MASTER_NODE);
-  WriteString("</Piece>\n", MASTER_NODE);
-  WriteString("</UnstructuredGrid>\n", MASTER_NODE);
+  WriteMPIString("</PointData>\n", MASTER_NODE);
+  WriteMPIString("</Piece>\n", MASTER_NODE);
+  WriteMPIString("</UnstructuredGrid>\n", MASTER_NODE);
 
   int *nPoint_Snd = new int[size+1];
   int *nPoint_Cum = new int[size+1];
@@ -281,7 +230,7 @@ void CParaviewXMLFileWriter::Write_Data(){
 
   /*--- Now write all the data we have previously defined into the binary section of the file ---*/
 
-  WriteString("<AppendedData encoding=\"raw\">\n_", MASTER_NODE);
+  WriteMPIString("<AppendedData encoding=\"raw\">\n_", MASTER_NODE);
 
   /*--- Load/write the 1D buffer of point coordinates. Note that we
    always have 3 coordinate dimensions, even for 2D problems. ---*/
@@ -441,37 +390,10 @@ void CParaviewXMLFileWriter::Write_Data(){
 
   }
 
-  WriteString("</AppendedData>\n", MASTER_NODE);
-  WriteString("</VTKFile>\n", MASTER_NODE);
+  WriteMPIString("</AppendedData>\n", MASTER_NODE);
+  WriteMPIString("</VTKFile>\n", MASTER_NODE);
 
-#ifdef HAVE_MPI
-  /*--- All ranks close the file after writing. ---*/
-
-  MPI_File_close(&fhw);
-#else
-  fclose(fhw);
-#endif
-
-  /*--- Compute and store the write time. ---*/
-
-#ifndef HAVE_MPI
-  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  stopTime = MPI_Wtime();
-#endif
-  usedTime = stopTime-startTime;
-
-  /*--- Communicate the total file size for the restart ---*/
-
-#ifdef HAVE_MPI
-  su2double my_fileSize = fileSize;
-  SU2_MPI::Allreduce(&my_fileSize, &fileSize, 1,
-                     MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
-  /*--- Compute and store the bandwidth ---*/
-
-  bandwidth = fileSize/(1.0e6)/usedTime;
+  CloseMPIFile();
 
   /*--- Delete the offset counters that we needed for MPI IO. ---*/
 
@@ -481,34 +403,11 @@ void CParaviewXMLFileWriter::Write_Data(){
 
 }
 
-
-void CParaviewXMLFileWriter::WriteString(std::string str, int rankOut){
-
-#ifdef HAVE_MPI
-  /*--- Reset the file view before writing the next ASCII line for cells. ---*/
-
-  MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE,
-                    "native", MPI_INFO_NULL);
-
-  if (SU2_MPI::GetRank() == rankOut)
-    MPI_File_write_at(fhw, disp, str.c_str(), int(strlen(str.c_str())),
-                      MPI_CHAR, MPI_STATUS_IGNORE);
-  disp += strlen( str.c_str())*sizeof(char);
-  fileSize += sizeof(char)*strlen( str.c_str());
-#else
-  char str_buf[255];
-  strcpy(str_buf, str.c_str());
-  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-  fileSize += sizeof(char)*strlen(str_buf);
-#endif
-
-}
-
 void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsigned long arraySize,
                                             unsigned long globalSize, unsigned long offset){
 
 
-  unsigned long totalByteSize, byteSize;
+  int totalByteSize, byteSize;
 
   std::string typeStr;
   unsigned long typeSize;
@@ -523,52 +422,17 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
 
   totalByteSize = globalSize*typeSize;
 
-#ifdef HAVE_MPI
-
-  MPI_Datatype filetype;
-  MPI_Status status;
-
-  /*--- Write the total size in bytes at the beginning of the binary data blob ---*/
-
-  MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE,
-                    (char*)"native", MPI_INFO_NULL);
-
-  if (SU2_MPI::GetRank() == MASTER_NODE)
-    MPI_File_write_at(fhw, disp, &totalByteSize, sizeof(int),
-                      MPI_BYTE, MPI_STATUS_IGNORE);
-
-  disp += sizeof(int);
-
-  /*--- Prepare to write the actual data ---*/
-
-  MPI_Type_contiguous(int(byteSize), MPI_BYTE, &filetype);
-  MPI_Type_commit(&filetype);
-
-  /*--- Set the view for the MPI file write, i.e., describe the
- location in the file that this rank "sees" for writing its
- piece of the file. ---*/
-
-  MPI_File_set_view(fhw, disp + offset*typeSize, MPI_BYTE, filetype,
-                    (char*)"native", MPI_INFO_NULL);
-
-  /*--- Collective call for all ranks to write simultaneously. ---*/
-
-  MPI_File_write_all(fhw, data, int(byteSize), MPI_BYTE, &status);
-
-  MPI_Type_free(&filetype);
-
-  disp      += totalByteSize;
-  fileSize  += byteSize;
-#else
-  /*--- Write the total size in bytes at the beginning of the binary data blob ---*/
-
-  fwrite(&totalByteSize, sizeof(int),1, fhw);
-
-  /*--- Write binary data ---*/
-
-  fwrite(data, sizeof(char), byteSize, fhw);
-  fileSize += byteSize;
-#endif
+  /*--- Only the master node writes the total size in bytes as int32 in front of the array data ---*/
+  
+  if (!WriteMPIBinaryData(&totalByteSize, sizeof(int), MASTER_NODE)){
+    SU2_MPI::Error("Writing array size failed", CURRENT_FUNCTION);
+  }
+  
+  /*--- Collectively write all the data ---*/
+  
+  if (!WriteMPIBinaryDataAll(data, byteSize, totalByteSize, offset*typeSize)){
+    SU2_MPI::Error("Writing data array failed", CURRENT_FUNCTION);    
+  }
 }
 
 void CParaviewXMLFileWriter::AddDataArray(VTKDatatype type, string name,
@@ -602,11 +466,11 @@ void CParaviewXMLFileWriter::AddDataArray(VTKDatatype type, string name,
 
   /*--- Write the ASCII XML header information for this array ---*/
 
-  WriteString(string("<DataArray type=") + typeStr +
-              string(" Name=") + name +
-              string(" NumberOfComponents= ") + nComp +
-              string(" offset=") + offsetStr +
-              string(" format=\"appended\"/>\n"), MASTER_NODE);
+  WriteMPIString(string("<DataArray type=") + typeStr +
+                 string(" Name=") + name +
+                 string(" NumberOfComponents= ") + nComp +
+                 string(" offset=") + offsetStr +
+                 string(" format=\"appended\"/>\n"), MASTER_NODE);
 
   dataOffset += totalByteSize + sizeof(int);
 
