@@ -481,7 +481,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   Velocity_Inf       = config->GetVelocity_FreeStreamND();
   Temperature_Inf    = config->GetTemperature_FreeStreamND();
   Mach_Inf           = config->GetMach();
-  Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
+  Temperature_ve_Inf = config->GetTemperature_ve_FreeStreamND();
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
@@ -6955,10 +6955,10 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 
   /*--- Read farfield conditions from config ---*/
   Density_Inf        = config->GetDensity_FreeStreamND();
-  Pressure_Inf       = config->GetPressure_FreeStream();
-  Temperature_Inf    = config->GetTemperature_FreeStream();
-  Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
-  MassFrac_Inf       = config->GetMassFrac_FreeStream();
+  Pressure_Inf       = config->GetPressure_FreeStreamND();
+  Temperature_Inf    = config->GetTemperature_FreeStreamND();
+  Temperature_ve_Inf = config->GetTemperature_ve_FreeStreamND();
+  MassFrac_Inf       = config->GetMassFrac_FreeStreamND();
   Mach_Inf           = config->GetMach();
   Viscosity_Inf      = config->GetViscosity_FreeStreamND();
   Prandtl_Lam        = config->GetPrandtl_Lam();

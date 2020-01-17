@@ -882,6 +882,7 @@ private:
   Pressure_FreeStreamND,         /*!< \brief Farfield pressure value (external flow). */
   Pressure_ThermodynamicND,      /*!< \brief Farfield thermodynamic pressure value. */
   Temperature_FreeStreamND,      /*!< \brief Farfield temperature value (external flow). */
+  Temperature_ve_FreeStreamND,   /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   Density_FreeStreamND,          /*!< \brief Farfield density value (external flow). */
   Velocity_FreeStreamND[3],      /*!< \brief Farfield velocity values (external flow). */
   Energy_FreeStreamND,           /*!< \brief Farfield energy value (external flow). */
@@ -2042,6 +2043,12 @@ public:
    * \return Non-dimensionalized freestream temperature.
    */
   su2double GetTemperature_FreeStreamND(void);
+
+  /*!
+   * \brief Get the value of the non-dimensionalized v-e freestream temperature.
+   * \return Non-dimensionalized freestream temperature.
+   */
+  su2double GetTemperature_ve_FreeStreamND(void);
   
   /*!
    * \brief Get the value of the non-dimensionalized freestream density.
@@ -2691,6 +2698,12 @@ public:
    * \return Value of the Froude number.
    */
   void SetTemperature_FreeStreamND(su2double val_temperature_freestreamnd);
+
+  /*!
+   * \brief Set the Froude number for free surface problems.
+   * \return Value of the Froude number.
+   */
+  void SetTemperature_ve_FreeStreamND(su2double val_temperature_ve_freestreamnd);
   
   /*!
    * \brief Set the Froude number for free surface problems.

@@ -333,7 +333,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     Mach                     = config->GetMach();
     Pressure                 = config->GetPressure_FreeStreamND();
     Temperature              = config->GetTemperature_FreeStreamND();
-    su2double Temperature_ve = config->GetTemperature_ve_FreeStream();
+    su2double Temperature_ve = config->GetTemperature_ve_FreeStreamND();
     su2double *MassFrac      = config->GetMassFrac_FreeStream();
 
     su2double SoundSpeed = 0.0;

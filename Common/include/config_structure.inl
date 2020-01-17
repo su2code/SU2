@@ -550,6 +550,8 @@ inline su2double CConfig::GetPressure_ThermodynamicND(void) { return Pressure_Th
 
 inline su2double CConfig::GetTemperature_FreeStreamND(void) { return Temperature_FreeStreamND; }
 
+inline su2double CConfig::GetTemperature_ve_FreeStreamND(void) { return Temperature_ve_FreeStreamND; }
+
 inline su2double CConfig::GetDensity_FreeStreamND(void) { return Density_FreeStreamND; }
 
 inline su2double* CConfig::GetVelocity_FreeStreamND(void) { return Velocity_FreeStreamND; }
