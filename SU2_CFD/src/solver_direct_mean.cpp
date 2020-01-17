@@ -2210,7 +2210,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Temperature_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
   Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Energy_Ref= 0.0,
   Froude = 0.0, Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0,
-  Temperature_FreeStreamND = 0.0, Temperature_ve_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
+  Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0, Heat_Flux_Ref = 0.0;
@@ -2463,7 +2463,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   }
   
   Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
-  Temperature_ve_FreeStreamND = Temperature_ve_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_ve_FreeStreamND(Temperature_ve_FreeStreamND);
   
   Gas_ConstantND = config->GetGas_Constant()/Gas_Constant_Ref;    config->SetGas_ConstantND(Gas_ConstantND);
   

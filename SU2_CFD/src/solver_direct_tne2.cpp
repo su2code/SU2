@@ -4045,7 +4045,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
       Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Energy_Ref   = 0.0;
 
   su2double Pressure_FreeStreamND    = 0.0, Density_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
-      Temperature_FreeStreamND = 0.0, Gas_Constant         = 0.0, Gas_ConstantND      = 0.0,
+      Temperature_FreeStreamND = 0.0, Temperature_ve_FreeStreamND = 0.0, Gas_Constant         = 0.0, Gas_ConstantND      = 0.0,
       Viscosity_FreeStreamND   = 0.0, Tke_FreeStreamND     = 0.0,
       Total_UnstTimeND         = 0.0, Delta_UnstTimeND     = 0.0,
       Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0};
@@ -4268,6 +4268,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   }
 
   Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
+  Temperature_ve_FreeStreamND = Temperature_ve_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_ve_FreeStreamND(Temperature_ve_FreeStreamND);
   Gas_ConstantND           = config->GetGas_Constant()/Gas_Constant_Ref;          config->SetGas_ConstantND(Gas_ConstantND);
 
   ModVel_FreeStreamND = 0.0;
