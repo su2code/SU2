@@ -315,7 +315,7 @@ void CTNE2CompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("DENSITY_N2",  "Density_N2",  "SOLUTION", "Density_N2");
     AddVolumeOutput("DENSITY_N",   "Density_N",   "SOLUTION", "Density_N");
   }
-  if (nSpecies == 2){
+  if (nSpecies == 5){
     AddVolumeOutput("DENSITY_N2",  "Density_N2",  "SOLUTION", "Density_N2");
     AddVolumeOutput("DENSITY_O2",  "Density_O2",  "SOLUTION", "Density_N");
     AddVolumeOutput("DENSITY_NO",  "Density_NO",  "SOLUTION", "Density_NO");
