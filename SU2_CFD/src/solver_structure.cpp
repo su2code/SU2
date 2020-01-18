@@ -5702,8 +5702,12 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
                   if(viscous) base_nodes->SetAnisoViscHess(iPoint, i+iMetr, hessvisc[i+iMetr]/su2double(counter+1));
                 }
               }
-              const unsigned short i = iVar*nMetr;
-              if(source) base_nodes->SetAnisoSourceHess(iPoint, i+iMetr, hesssource[i+iMetr]/su2double(counter+1));
+              if(source) {
+                const unsigned short i = iVar*nMetr;
+                for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                  base_nodes->SetAnisoSourceHess(iPoint, i+iMetr, hesssource[i+iMetr]/su2double(counter+1));
+                }
+              }
             }
           }
         }
