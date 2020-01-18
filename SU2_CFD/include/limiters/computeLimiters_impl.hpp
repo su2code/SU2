@@ -79,7 +79,7 @@ void computeLimiters_impl(CSolver* solver,
   if (varEnd > MAXNVAR)
     SU2_MPI::Error("Number of variables is too large, increase MAXNVAR.", CURRENT_FUNCTION);
 
-  CLimiterDetails<LimiterKind> details;
+  CLimiterDetails<LimiterKind> limiterDetails;
 
   size_t nPointDomain = geometry.GetnPointDomain();
   size_t nPoint = geometry.GetnPoint();
@@ -113,7 +113,7 @@ void computeLimiters_impl(CSolver* solver,
 
   SU2_OMP_PARALLEL
   {
-    details.preprocess(geometry, config, varBegin, varEnd, field);
+    limiterDetails.preprocess(geometry, config, varBegin, varEnd, field);
 
     /*--- Courtesy barrier in case someone forgets preprocess is parallel. ---*/
     SU2_OMP_BARRIER
@@ -213,17 +213,17 @@ void computeLimiters_impl(CSolver* solver,
 
       /*--- Compute the geometric factor. ---*/
 
-      su2double geoFactor = details.geometricFactor(iPoint, geometry);
+      su2double geoFactor = limiterDetails.geometricFactor(iPoint, geometry);
 
       /*--- Final limiter computation for each variable, get the min limiter
        *    out of the positive/negative projections and deltas. ---*/
 
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
       {
-        su2double limMax = details.limiterFunction(iVar, projMax[iVar],
+        su2double limMax = limiterDetails.limiterFunction(iVar, projMax[iVar],
                            fieldMax(iPoint,iVar) - field(iPoint,iVar));
 
-        su2double limMin = details.limiterFunction(iVar, projMin[iVar],
+        su2double limMin = limiterDetails.limiterFunction(iVar, projMin[iVar],
                            fieldMin(iPoint,iVar) - field(iPoint,iVar));
 
         limiter(iPoint,iVar) = geoFactor * min(limMax, limMin);
