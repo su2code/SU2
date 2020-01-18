@@ -3420,7 +3420,7 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
 
     /*---Set source term ---*/
     for (iVar = 0; iVar < nVar; iVar++)
-      val_source[iVar] = val_source[iVar]+val_residual[iVar];
+      val_source[iVar] = val_source[iVar]+val_residual[iVar]/Volume;
 
     if (implicit) {
 
@@ -3639,7 +3639,7 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
 
   /*---Set source term ---*/
   for (iVar = 0; iVar < nVar; iVar++)
-    val_source[iVar] = val_source[iVar]+val_residual[iVar];
+    val_source[iVar] = val_source[iVar]+val_residual[iVar]/Volume;
 
   if (implicit) {
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -3691,7 +3691,9 @@ void CSource_TNE2::ComputeAxisymmetric(su2double *val_residual,
 
   /*---Set source term ---*/
   for (iVar = 0; iVar < nVar; iVar++)
-    val_source[iVar] = val_source[iVar]+val_residual[iVar];  if (implicit) {
+    val_source[iVar] = val_source[iVar]+val_residual[iVar]/Volume;
+
+  if (implicit) {
 
     /*--- Initialize ---*/
     for (iVar = 0; iVar < nVar; iVar++)
