@@ -86,10 +86,9 @@ CTNE2CompOutput::CTNE2CompOutput(CConfig *config, unsigned short nDim) : CFlowOu
 
   restartFilename = config->GetRestart_FileName();
 
-
   /*--- Set the default convergence field --- */
 
-  if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY_N2");
+  if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY");
 
   if (config->GetFixed_CL_Mode()) {
     bool found = false;
@@ -110,10 +109,27 @@ CTNE2CompOutput::~CTNE2CompOutput(void) {}
 
 void CTNE2CompOutput::SetHistoryOutputFields(CConfig *config){
 
+  unsigned short nSpecies = config -> GetnSpecies();
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
-  /// DESCRIPTION: Root-mean square residual of the N2 density.
-  AddHistoryOutput("RMS_DENSITY_N2", "rms[Rho_N2]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the N2 density.", HistoryFieldType::RESIDUAL);
+  if (nSpecies == 2){
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_N2",   "rms[Rho_N2]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the N2 density.", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_N",    "rms[Rho_N]",   ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the N density.", HistoryFieldType::RESIDUAL);
+  }
+  if (nSpecies == 5){
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_N2",  "rms[Rho_N2]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the N2 density.", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_O2",  "rms[Rho_O2]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the O2 density.", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_NO",  "rms[Rho_NO]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the NO density.", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_N",   "rms[Rho_N]",   ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the N density.", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_O",   "rms[Rho_O]",   ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the O density.", HistoryFieldType::RESIDUAL);
+  }
   /// DESCRIPTION: Root-mean square residual of the momentum x-component.
   AddHistoryOutput("RMS_MOMENTUM-X", "rms[RhoU]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum x-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum y-component.
@@ -122,6 +138,8 @@ void CTNE2CompOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("RMS_MOMENTUM-Z", "rms[RhoW]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the energy.
   AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the energy.
+  AddHistoryOutput("RMS_ENERGY_VE",  "rms[RhoEve]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -284,6 +302,8 @@ void CTNE2CompOutput::SetHistoryOutputFields(CConfig *config){
 
 void CTNE2CompOutput::SetVolumeOutputFields(CConfig *config){
 
+  unsigned short nSpecies = config->GetnSpecies();
+
   // Grid coordinates
   AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
   AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
@@ -291,13 +311,24 @@ void CTNE2CompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
   // Solution variables
-  AddVolumeOutput("DENSITY",    "Density",    "SOLUTION", "Density");
+  if (nSpecies == 2){
+    AddVolumeOutput("DENSITY_N2",  "Density_N2",  "SOLUTION", "Density_N2");
+    AddVolumeOutput("DENSITY_N",   "Density_N",   "SOLUTION", "Density_N");
+  }
+  if (nSpecies == 2){
+    AddVolumeOutput("DENSITY_N2",  "Density_N2",  "SOLUTION", "Density_N2");
+    AddVolumeOutput("DENSITY_O2",  "Density_O2",  "SOLUTION", "Density_N");
+    AddVolumeOutput("DENSITY_NO",  "Density_NO",  "SOLUTION", "Density_NO");
+    AddVolumeOutput("DENSITY_N",   "Density_N",   "SOLUTION", "Density_N");
+    AddVolumeOutput("DENSITY_O",   "Density_O",   "SOLUTION", "Density_O");
+  }
+
   AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION", "x-component of the momentum vector");
   AddVolumeOutput("MOMENTUM-Y", "Momentum_y", "SOLUTION", "y-component of the momentum vector");
   if (nDim == 3)
     AddVolumeOutput("MOMENTUM-Z", "Momentum_z", "SOLUTION", "z-component of the momentum vector");
   AddVolumeOutput("ENERGY",     "Energy",     "SOLUTION", "Energy");
-
+  AddVolumeOutput("ENERGY_VE",  "Energy_ve",  "SOLUTION", "Energy_ve");
   // Turbulent Residuals
   switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:
@@ -326,7 +357,7 @@ void CTNE2CompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
 
-  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+  if (config->GetKind_Solver() == TNE2_RANS || config->GetKind_Solver() == TNE2_NAVIER_STOKES){
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
 
     AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
@@ -339,7 +370,7 @@ void CTNE2CompOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
-  if (config->GetKind_Solver() == RANS) {
+  if (config->GetKind_Solver() == TNE2_RANS) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
 
@@ -348,12 +379,23 @@ void CTNE2CompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   //Residuals
-  AddVolumeOutput("RES_DENSITY", "Residual_Density", "RESIDUAL", "Residual of the density");
+  if (nSpecies == 2){
+    AddVolumeOutput("RES_DENSITY_N2", "Residual_Density_N2", "RESIDUAL", "Residual of the N2 density");
+    AddVolumeOutput("RES_DENSITY_N",  "Residual_Density_N",  "RESIDUAL", "Residual of the N density");
+  }
+  if (nSpecies == 5){
+    AddVolumeOutput("RES_DENSITY_N2", "Residual_Density_N2", "RESIDUAL", "Residual of the N2 density");
+    AddVolumeOutput("RES_DENSITY_O2", "Residual_Density_O2", "RESIDUAL", "Residual of the O2 density");
+    AddVolumeOutput("RES_DENSITY_NO", "Residual_Density_NO", "RESIDUAL", "Residual of the NO density");
+    AddVolumeOutput("RES_DENSITY_N",  "Residual_Density_N",  "RESIDUAL", "Residual of the N density");
+    AddVolumeOutput("RES_DENSITY_O",  "Residual_Density_O",  "RESIDUAL", "Residual of the O density");
+  }
   AddVolumeOutput("RES_MOMENTUM-X", "Residual_Momentum_x", "RESIDUAL", "Residual of the x-momentum component");
   AddVolumeOutput("RES_MOMENTUM-Y", "Residual_Momentum_y", "RESIDUAL", "Residual of the y-momentum component");
   if (nDim == 3)
     AddVolumeOutput("RES_MOMENTUM-Z", "Residual_Momentum_z", "RESIDUAL", "Residual of the z-momentum component");
-  AddVolumeOutput("RES_ENERGY", "Residual_Energy", "RESIDUAL", "Residual of the energy");
+  AddVolumeOutput("RES_ENERGY",    "Residual_Energy",    "RESIDUAL", "Residual of the energy");
+  AddVolumeOutput("RES_ENERGY_VE", "Residual_Energy_ve", "RESIDUAL", "Residual of the energy_ve");
 
   switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:
@@ -419,6 +461,7 @@ void CTNE2CompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   CVariable* Node_Flow = solver[TNE2_SOL]->GetNodes();
   CVariable* Node_Turb = NULL;
+  unsigned short nSpecies = config->GetnSpecies();
 
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
@@ -431,14 +474,26 @@ void CTNE2CompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
 
-  SetVolumeOutputValue("DENSITY",    iPoint, Node_Flow->GetSolution(iPoint, 0));
-  SetVolumeOutputValue("MOMENTUM-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
-  SetVolumeOutputValue("MOMENTUM-Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
+  if (nSpecies == 2){
+    SetVolumeOutputValue("DENSITY_N2",   iPoint, Node_Flow->GetSolution(iPoint, 0));
+    SetVolumeOutputValue("DENSITY_N",    iPoint, Node_Flow->GetSolution(iPoint, 1));
+  }
+  if (nSpecies == 5){
+    SetVolumeOutputValue("DENSITY_N2",   iPoint, Node_Flow->GetSolution(iPoint, 0));
+    SetVolumeOutputValue("DENSITY_O2",   iPoint, Node_Flow->GetSolution(iPoint, 1));
+    SetVolumeOutputValue("DENSITY_NO",   iPoint, Node_Flow->GetSolution(iPoint, 2));
+    SetVolumeOutputValue("DENSITY_N",    iPoint, Node_Flow->GetSolution(iPoint, 3));
+    SetVolumeOutputValue("DENSITY_O",    iPoint, Node_Flow->GetSolution(iPoint, 4));
+  }
+  SetVolumeOutputValue("MOMENTUM-X", iPoint, Node_Flow->GetSolution(iPoint, nSpecies));
+  SetVolumeOutputValue("MOMENTUM-Y", iPoint, Node_Flow->GetSolution(iPoint, nSpecies+1));
   if (nDim == 3){
-    SetVolumeOutputValue("MOMENTUM-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
-    SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(iPoint, 4));
+    SetVolumeOutputValue("MOMENTUM-Z", iPoint, Node_Flow->GetSolution(iPoint, nSpecies+2));
+    SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(iPoint, nSpecies+3));
+    SetVolumeOutputValue("ENERGY_VE",  iPoint, Node_Flow->GetSolution(iPoint, nSpecies+4));
   } else {
-    SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(iPoint, 3));
+    SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(iPoint, nSpecies+2));
+    SetVolumeOutputValue("ENERGY_VE",  iPoint, Node_Flow->GetSolution(iPoint, nSpecies+3));
   }
 
   // Turbulent Residuals
@@ -485,14 +540,27 @@ void CTNE2CompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
   }
 
-  SetVolumeOutputValue("RES_DENSITY", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, 0));
-  SetVolumeOutputValue("RES_MOMENTUM-X", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, 1));
-  SetVolumeOutputValue("RES_MOMENTUM-Y", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, 2));
+  if (nSpecies == 2) {
+    SetVolumeOutputValue("RES_DENSITY_N2", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, 0));
+    SetVolumeOutputValue("RES_DENSITY_N",  iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, 1));
+  }
+  if (nSpecies == 5) {
+    SetVolumeOutputValue("RES_DENSITY_N2", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, 0));
+    SetVolumeOutputValue("RES_DENSITY_O2", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, 1));
+    SetVolumeOutputValue("RES_DENSITY_NO", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, 2));
+    SetVolumeOutputValue("RES_DENSITY_N",  iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, 3));
+    SetVolumeOutputValue("RES_DENSITY_O",  iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, 4));
+  }
+
+  SetVolumeOutputValue("RES_MOMENTUM-X", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, nSpecies));
+  SetVolumeOutputValue("RES_MOMENTUM-Y", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, nSpecies+1));
   if (nDim == 3){
-    SetVolumeOutputValue("RES_MOMENTUM-Z", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, 3));
-    SetVolumeOutputValue("RES_ENERGY", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, 5));
+    SetVolumeOutputValue("RES_MOMENTUM-Z", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, nSpecies+2));
+    SetVolumeOutputValue("RES_ENERGY",     iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, nSpecies+3));
+    SetVolumeOutputValue("RES_ENERGY_VE",  iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, nSpecies+4));
   } else {
-    SetVolumeOutputValue("RES_ENERGY", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, 4));
+    SetVolumeOutputValue("RES_ENERGY", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, nSpecies+2));
+    SetVolumeOutputValue("RES_ENERGY_VE", iPoint, solver[TNE2_SOL]->LinSysRes.GetBlock(iPoint, nSpecies+3));
   }
 
   switch(config->GetKind_Turb_Model()){
@@ -572,15 +640,28 @@ void CTNE2CompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   CSolver* flow_solver = solver[TNE2_SOL];
   CSolver* turb_solver = solver[TURB_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
+  unsigned short nSpecies = config->GetnSpecies();
 
-  SetHistoryOutputValue("RMS_DENSITY_N2", log10(flow_solver->GetRes_RMS(0)));
-  SetHistoryOutputValue("RMS_MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));
-  SetHistoryOutputValue("RMS_MOMENTUM-Y", log10(flow_solver->GetRes_RMS(2)));
-  if (nDim == 2)
-    SetHistoryOutputValue("RMS_ENERGY", log10(flow_solver->GetRes_RMS(4)));
-  else {
-    SetHistoryOutputValue("RMS_MOMENTUM-Z", log10(flow_solver->GetRes_RMS(3)));
-    SetHistoryOutputValue("RMS_ENERGY", log10(flow_solver->GetRes_RMS(4)));
+  if (nSpecies == 2) {
+    SetHistoryOutputValue("RMS_DENSITY_N2", log10(flow_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("RMS_DENSITY_N",  log10(flow_solver->GetRes_RMS(1)));
+  }
+  if (nSpecies == 5) {
+    SetHistoryOutputValue("RMS_DENSITY_N2", log10(flow_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("RMS_DENSITY_O2", log10(flow_solver->GetRes_RMS(1)));
+    SetHistoryOutputValue("RMS_DENSITY_NO", log10(flow_solver->GetRes_RMS(2)));
+    SetHistoryOutputValue("RMS_DENSITY_N",  log10(flow_solver->GetRes_RMS(3)));
+    SetHistoryOutputValue("RMS_DENSITY_O",  log10(flow_solver->GetRes_RMS(4)));
+  }
+  SetHistoryOutputValue("RMS_MOMENTUM-X", log10(flow_solver->GetRes_RMS(nSpecies)));
+  SetHistoryOutputValue("RMS_MOMENTUM-Y", log10(flow_solver->GetRes_RMS(nSpecies+1)));
+  if (nDim == 2){
+    SetHistoryOutputValue("RMS_ENERGY",    log10(flow_solver->GetRes_RMS(nSpecies+2)));
+    SetHistoryOutputValue("RMS_ENERGY_VE", log10(flow_solver->GetRes_RMS(nSpecies+3)));
+  } else {
+    SetHistoryOutputValue("RMS_MOMENTUM-Z", log10(flow_solver->GetRes_RMS(nSpecies+2)));
+    SetHistoryOutputValue("RMS_ENERGY",     log10(flow_solver->GetRes_RMS(nSpecies+3)));
+    SetHistoryOutputValue("RMS_ENERGY_VE",  log10(flow_solver->GetRes_RMS(nSpecies+4)));
   }
 
   switch(turb_model){
