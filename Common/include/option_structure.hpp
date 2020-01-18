@@ -834,6 +834,23 @@ static const map<string, ENUM_SGS_MODEL> SGS_Model_Map = CCreateMap<string, ENUM
 ("WALE",         WALE)
 ("VREMAN",       VREMAN);
 
+
+/*!
+ * \brief types of window (weight) functions for cost functional
+ */
+enum WINDOW_FUNCTION {
+  SQUARE = 0,          /*!< \brief No weight function  (order 1)*/
+  HANN   = 1,           /*!< \brief Hann-type weight function (order 3) */
+  HANN_SQUARE  = 2,    /*!< \brief Hann-squared type weight function (order 5)*/
+  BUMP  = 3,            /*!< \brief bump type weight function (exponential order of convergence) */
+};
+
+static const map<string, WINDOW_FUNCTION> Window_Map = CCreateMap<string, WINDOW_FUNCTION>
+("SQUARE", SQUARE)
+("HANN", HANN)
+("HANN_SQUARE", HANN_SQUARE)
+("BUMP", BUMP);
+
 /*!
  * \brief types of hybrid RANS/LES models
  */
