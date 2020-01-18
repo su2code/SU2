@@ -167,4 +167,10 @@ public:
    */
   inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
 
+  /*!
+   * \brief Get the reconstruction gradient for variables at all points.
+   * \return Reference to reconstruction gradient.
+   */
+  inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+
 };
