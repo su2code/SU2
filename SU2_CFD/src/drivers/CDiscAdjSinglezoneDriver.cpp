@@ -775,16 +775,18 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
       }
 
       //--- add turbulent terms
-      const unsigned short nVarTurbMetr = solver_turb->GetnVar();
-      for (unsigned short iVar = 0; iVar < nVarTurbMetr; ++iVar) {
+      if(config->GetViscous()) {
+        const unsigned short nVarTurbMetr = solver_turb->GetnVar();
+        for (unsigned short iVar = 0; iVar < nVarTurbMetr; ++iVar) {
 
-        const su2double adj = solver_adjturb->GetNodes()->GetSolution(iPoint, iVar);
+          const su2double adj = solver_adjturb->GetNodes()->GetSolution(iPoint, iVar);
 
-        for (unsigned short im = 0; im < nMetr; ++im) {
-          const unsigned short ih = iVar*nMetr + im;  
-          const su2double hess = solver_turb->GetNodes()->GetAnisoSourceHess(iPoint, ih);
-          const su2double part = abs(adj)*hess;
-          solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
+          for (unsigned short im = 0; im < nMetr; ++im) {
+            const unsigned short ih = iVar*nMetr + im;  
+            const su2double hess = solver_turb->GetNodes()->GetAnisoSourceHess(iPoint, ih);
+            const su2double part = abs(adj)*hess;
+            solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
+          }
         }
       }
     }
