@@ -3555,7 +3555,7 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) {
 
     case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_RANS:
       if (rank == MASTER_NODE)
-        cout << "Discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
+        cout << "Discrete adjoint TNE2 Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration = new CDiscAdjTNE2Iteration(config);
       break;
 
