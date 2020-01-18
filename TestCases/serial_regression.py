@@ -951,7 +951,7 @@ def main():
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
     transonic_stator_rst.test_iter = 20
-    transonic_stator_rst.test_vals = [-5.9263, -0.08921, 5.281009, 0.0031741] #last 4 columns
+    transonic_stator_rst.test_vals = [-6.781212, -0.757588, 5.007406, 0.0029491] #last 4 columns
     transonic_stator_rst.su2_exec  = "SU2_CFD"
     transonic_stator_rst.new_output  = False
     transonic_stator_rst.timeout   = 1600

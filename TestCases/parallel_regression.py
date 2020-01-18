@@ -882,7 +882,7 @@ def main():
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
     transonic_stator_rst.test_iter = 20
-    transonic_stator_rst.test_vals = [-5.959250, -0.100774, 5.281007, 0.0031742] #last 4 columns
+    transonic_stator_rst.test_vals = [-6.797150, -0.755136, 5.007406, 0.0029491] #last 4 columns
     transonic_stator_rst.su2_exec  = "parallel_computation.py -f"
     transonic_stator_rst.timeout   = 1600
     transonic_stator_rst.new_output = False
