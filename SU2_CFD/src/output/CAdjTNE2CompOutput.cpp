@@ -381,7 +381,7 @@ void CAdjTNE2CompOutput::SetVolumeOutputFields(CConfig *config){
     /// DESCRIPTION: Residual of the N adjoint density.
     AddVolumeOutput("RES_ADJ_DENSITY_N",    "Residual_Adjoint_Density_N",   "RESIDUAL", "Residual of the N adjoint density");
   }
-  if (nSpecies == 2){
+  if (nSpecies == 5){
     /// DESCRIPTION: Residual of the N2 adjoint density.
     AddVolumeOutput("RES_ADJ_DENSITY_N2",   "Residual_Adjoint_Density_N2", "RESIDUAL", "Residual of the N2 adjoint density");
     /// DESCRIPTION: Residual of the O2 adjoint density.
