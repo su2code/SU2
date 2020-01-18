@@ -950,7 +950,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
   /*--- Set temperature algorithm paramters ---*/
   NRtol    = 1.0E-8;    // Tolerance for the Newton-Raphson method
-  Btol     = 1.0E-8;    // Tolerance for the Bisection method
+  Btol     = 1.0E-6;    // Tolerance for the Bisection method
   maxNIter = 999;        // Maximum Newton-Raphson iterations
   maxBIter = 999;        // Maximum Bisection method iterations
   scale    = 0.5;       // Scaling factor for Newton-Raphson step
@@ -1043,51 +1043,59 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     V[TVE_INDEX] = Tvemax;
   } else {
 
+    AD_BEGIN_PASSIVE
+
     /*--- Execute a Newton-Raphson root-finding method to find Tve ---*/
     // Initialize to the translational-rotational temperature
     Tve   = V[T_INDEX];
 
     // Execute the root-finding method
     NRconvg = false;
-    //    for (iIter = 0; iIter < maxNIter; iIter++) {
-    //      rhoEve_t = 0.0;
-    //      rhoCvve  = 0.0;
-    //      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    //        val_eves[iSpecies]  = CalcEve(config, Tve, iSpecies);
-    //        val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
-    //        rhoEve_t += U[iSpecies]*val_eves[iSpecies];
-    //        rhoCvve  += U[iSpecies]*val_Cvves[iSpecies];
-    //      }
-    //
-    //      // Find the root
-    //      f  = U[nSpecies+nDim+1] - rhoEve_t;
-    //      df = -rhoCvve;
-    //      Tve2 = Tve - (f/df)*scale;
-    //
-    //      // Check for nonphysical steps
-    //      if ((Tve2 < Tvemin) || (Tve2 > Tvemax))
-    //        break;
-    ////      if (Tve2 < Tvemin)
-    ////        Tve2 = Tvemin;
-    ////      else if (Tve2 > Tvemax)
-    ////        Tve2 = Tvemax;
-    //
-    //      // Check for convergence
-    //      if (fabs(Tve2 - Tve) < NRtol) {
-    //        NRconvg = true;
-    //        break;
-    //      } else {
-    //        Tve = Tve2;
-    //      }
-    //    }
+       for (iIter = 0; iIter < maxNIter; iIter++) {
+         rhoEve_t = 0.0;
+         rhoCvve  = 0.0;
+         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+           val_eves[iSpecies]  = CalcEve(config, Tve, iSpecies);
+           val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
+           rhoEve_t += U[iSpecies]*val_eves[iSpecies];
+           rhoCvve  += U[iSpecies]*val_Cvves[iSpecies];
+         }
+    
+         // Find the root
+         f  = U[nSpecies+nDim+1] - rhoEve_t;
+         df = -rhoCvve;
+         Tve2 = Tve - (f/df)*scale;
+    
+         // Check for nonphysical steps
+         if ((Tve2 < Tvemin) || (Tve2 > Tvemax))
+           break;
+    //      if (Tve2 < Tvemin)
+    //        Tve2 = Tvemin;
+    //      else if (Tve2 > Tvemax)
+    //        Tve2 = Tvemax;
+    
+         // Check for convergence
+         if (fabs(Tve2 - Tve) < NRtol) {
+           NRconvg = true;
+           break;
+         } else {
+           Tve = Tve2;
+         }
+       }
 
     // If the Newton-Raphson method has converged, assign the value of Tve.
     // Otherwise, execute a bisection root-finding method
     if (NRconvg){
+
+      AD_END_PASSIVE
+
+      // Recompute Eve and Cvve after search
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        val_eves[iSpecies]  = CalcEve(config, Tve, iSpecies);
+        val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
+      }
       V[TVE_INDEX] = Tve;
     } else {
-
-      AD_BEGIN_PASSIVE
 
       // Assign the bounds
       Tve_o = Tvemin;
