@@ -1938,6 +1938,7 @@ static const map<string, ENUM_INPUT_REF> Input_Ref_Map = CCreateMap<string, ENUM
  * \brief Vertex-based quantities exchanged during periodic marker communications.
  */
 enum PERIODIC_QUANTITIES {
+  PERIODIC_NONE       = 99,  /*!< \brief No periodic communication required. */
   PERIODIC_VOLUME     =  1,  /*!< \brief Volume communication for summing total CV (periodic only). */
   PERIODIC_NEIGHBORS  =  2,  /*!< \brief Communication of the number of neighbors for centered schemes (periodic only). */
   PERIODIC_RESIDUAL   =  3,  /*!< \brief Residual and Jacobian communication (periodic only). */
@@ -1952,9 +1953,9 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_SOL_2  = 12,  /*!< \brief Solution limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_1 = 13,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 = 14,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
-  PERIODIC_IMPLICIT   = 15,   /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+  PERIODIC_IMPLICIT   = 15,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
   PERIODIC_SOL_ULS    = 16,  /*!< \brief Solution gradient communication for unwieghted Least Squares (periodic only). */
-  PERIODIC_PRIM_ULS   = 17  /*!< \brief Primitive gradient communication for unweighted Least Squares (periodic only). */
+  PERIODIC_PRIM_ULS   = 17   /*!< \brief Primitive gradient communication for unweighted Least Squares (periodic only). */
 };
 
 /*!
