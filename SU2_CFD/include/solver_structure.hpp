@@ -145,7 +145,6 @@ protected:
   passivedouble *Restart_Data;      /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
-  su2double *Inlet_InterpolatedData; /*!< \brief Auxiliary structure for holding the interpolated data values from an inlet profile file. */
   unsigned long nMarker,                 /*!< \brief Total number of markers using the grid information. */
   *nVertex;                              /*!< \brief Store nVertex at each marker for deallocation */
 
@@ -3631,40 +3630,6 @@ public:
                         int val_iter,
                         unsigned short val_kind_solver,
                         unsigned short val_kind_marker);
-
-  su2double ONEDLINEAR_SPANWISE(vector<su2double> Inlet_Data, su2double Interp_Radius, unsigned long iRow,unsigned short index,unsigned long nColumns);
-  su2double ONEDAKIMA_SPANWISE(vector<su2double> Inlet_Data, su2double Interp_Radius, unsigned long iRow,unsigned short index,unsigned short nColumns, unsigned long nRow);
-
-  /*!
-   * \brief Get Pi (as (f(x+1)-f(x))/delta_x) for Akima interpolation for inlet file
-   * \param[in] iRow - Current matching row in inlet file for interpolation to Vertex
-   * \param[in] index - Current interpolating column in inlet file
-   */
-  su2double Get_Pi(vector<su2double> Inlet_Data, unsigned long iRow, unsigned short index, unsigned short nColumns);
-
-    /*!
-   * \brief Get the weights Wi for Akima interpolation for inlet file 
-   * \param[in] iRow - Current matching row in inlet file for interpolation to Vertex
-   * \param[in] index - Current interpolating column in inlet file
-   */
-  su2double Get_Wi(vector<su2double> Inlet_Data,unsigned long iRow,unsigned short index, unsigned short nColumns);
-
-    /*!
-   * \brief Get the weighed slope of the interval being interpolated by Akima.
-   * \param[in] iRow - Current matching row in inlet file for interpolation to Vertex
-   * \param[in] index - Current interpolating column in inlet file
-   * \param[in] jMarker - Current Marker to retrive the number of Rows for that Marker
-   */
-  su2double Get_Ai_dash(vector<su2double> Inlet_Data, unsigned long iRow, unsigned short index,unsigned short nColumns, unsigned long nRow);
-
-  /*!
-   * \brief Prints the interpolated Inlet_Values to a file.
-   * \param[in] Interpolated_Data - the container for inlet data
-   * \param[in] The number of vertex for that marker
-   * \param[in] String for that marker
-   * \param[in] Numer of columns for that marker
-   */
-  void PrintNewInletData (su2double *Inlet_InterpolatedData, unsigned long nVertex, string Marker_Tag, unsigned short nColumns);
 
   /*!
    * \brief A virtual member.

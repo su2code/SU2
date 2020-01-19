@@ -41,7 +41,7 @@
 #include "../../Common/include/toolboxes/MMS/CTGVSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
-//#include "../../Common/include/toolboxes/inlet_interpolation_functions.hpp"
+#include "../../Common/include/toolboxes/inlet_interpolation_functions.hpp"
 #include "../include/CMarkerProfileReaderFVM.hpp"
 
 
@@ -4964,78 +4964,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 }
 
-void CSolver::PrintNewInletData (su2double *Inlet_InterpolatedData, unsigned long nVertex,string Marker_Tag, unsigned short nColumns)
-{
-
-ofstream myfile;
-myfile.precision(16);
-myfile.open("Interpolated_Data_"+Marker_Tag+".dat",ios_base::out);
-
-
-if (myfile.is_open())
-{  
-            for (unsigned long iVertex = 0; iVertex < nVertex; iVertex++) {
-
-                  for  (unsigned long iVar=0; iVar < (nColumns+nDim); iVar++)
-                    {
-                      myfile<<Inlet_InterpolatedData[iVertex*(nColumns+nDim)+iVar]<<"\t";
-                    }
-                  myfile<<endl;
-                }
-        myfile.close();
-}
-  else
-    cout<<"file cannot be opened"<<endl;
-}
-
-su2double CSolver::ONEDLINEAR_SPANWISE(vector<su2double> Inlet_Data, su2double Interp_Radius, unsigned long iRow,unsigned short index,unsigned long nColumns)
-{
-    su2double slope, interpolated_value;
-
-    slope = (Inlet_Data[index+nColumns*(iRow+1)]-Inlet_Data[index+nColumns*iRow])/(Inlet_Data[nColumns*(iRow+1)]-Inlet_Data[nColumns*iRow]);
-
-    interpolated_value = slope*(Interp_Radius - Inlet_Data[nColumns*iRow]) + Inlet_Data[index+nColumns*iRow];
-
-    return interpolated_value;
-}
-
-su2double CSolver::ONEDAKIMA_SPANWISE(vector<su2double> Inlet_Data, su2double Interp_Radius, unsigned long iRow,unsigned short index,unsigned short nColumns, unsigned long nRow)
-{
-    su2double dxi, ai, bi, ci ,di ,delta, interpolated_value;
-    /*--- Finding the cofficients of the third order polynomial for Akima Interpolation ---*/
-    dxi = Inlet_Data[nColumns*(iRow+1)] - Inlet_Data[nColumns*iRow];
-    ai = Inlet_Data[nColumns*iRow + index];
-    bi = Get_Ai_dash(Inlet_Data, iRow, index,nColumns,nRow);
-    ci = (3*Get_Pi(Inlet_Data, iRow, index,nColumns)-2*bi-Get_Ai_dash(Inlet_Data, iRow+1, index, nColumns, nRow))/dxi;
-    di = (bi + Get_Ai_dash(Inlet_Data, iRow+1, index,nColumns, nRow) - 2*Get_Pi(Inlet_Data, iRow,index,nColumns))/pow(dxi,2);
-    delta = Interp_Radius - Inlet_Data[nColumns*iRow];    
-
-    interpolated_value = ai+bi*delta+ci*pow(delta,2)+di*pow(delta,3);
-
-    return interpolated_value;
-
-}
-
-su2double CSolver::Get_Ai_dash(vector<su2double> Inlet_Data, unsigned long iRow, unsigned short index, unsigned short nColumns, unsigned long nRow){
-    //for Boundary conditions (two first and two last points require special definition, can vary for different codes)
-    if(iRow == 0) {return Get_Pi(Inlet_Data, iRow,index,nColumns);}
-    else if (iRow == 1) {return (Get_Pi(Inlet_Data, iRow-1,index,nColumns)+Get_Pi(Inlet_Data, iRow,index,nColumns))/2;}
-    else if (iRow == nRow-2) {return (Get_Pi(Inlet_Data,nRow-2,index,nColumns)+Get_Pi(Inlet_Data, nRow-3,index, nColumns))/2;}
-    else if (iRow == nRow-1) {return Get_Pi(Inlet_Data, nRow-2,index,nColumns);}
-    else{
-    if((Get_Wi(Inlet_Data, iRow+1,index, nColumns)+Get_Wi(Inlet_Data, iRow-1,index,nColumns)) != 0)
-      return (Get_Wi(Inlet_Data, iRow+1,index,nColumns)*Get_Pi(Inlet_Data, iRow-1,index,nColumns) + Get_Wi(Inlet_Data, iRow-1,index,nColumns)*Get_Pi(Inlet_Data, iRow,index,nColumns))/(Get_Wi(Inlet_Data, iRow+1,index,nColumns) + Get_Wi(Inlet_Data, iRow-1,index,nColumns));
-    else
-      return ((Get_Pi(Inlet_Data, iRow-1,index,nColumns)-Get_Pi(Inlet_Data, iRow,index,nColumns))/2);
-    }
-}
-
-
-su2double CSolver::Get_Pi(vector<su2double> Inlet_Data, unsigned long iRow, unsigned short index, unsigned short nColumns) {
-return (Inlet_Data[nColumns*(iRow+1)+index] - Inlet_Data[nColumns*iRow+index])/(Inlet_Data[nColumns*(iRow+1)] - Inlet_Data[nColumns*iRow]);}
-
-su2double CSolver::Get_Wi(vector<su2double> Inlet_Data, unsigned long iRow,unsigned short index,unsigned short nColumns) {return fabs(Get_Pi(Inlet_Data,iRow,index,nColumns) - Get_Pi(Inlet_Data,iRow-1,index,nColumns));}
-
 void CSolver::LoadInletProfile(CGeometry **geometry,
                                CSolver ***solver,
                                CConfig *config,
@@ -5105,6 +5033,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   
   unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
 
+  unsigned short nColumns;
+  unsigned long nRows;
+  vector<passivedouble> Inlet_Data;
+
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
@@ -5145,16 +5077,26 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
           Marker_Counter++;
 
-          /*--- Get data for this profile. ---*/
-          
-          vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
-          
-          unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+          switch(config->GetKindInletInterpolationFunction()){
+          case(NONE):
+                //normal continuation of program
+            Inlet_Data = profileReader.GetDataForProfile(jMarker);
+            nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+            nRows = profileReader.GetNumberOfRowsInProfile(jMarker);
 
-          vector<su2double> Inlet_Values(nColumns);
+          break;
+            
+          case(ONED_LINEAR_SPANWISE || ONED_AKIMASPLINE_SPANWISE):
+            CInletInterpolation profileInterpolator(geometry, config, profile_filename, KIND_MARKER, iMarker, jMarker, nDim);
+
+            Inlet_Data = profileInterpolator.GetInterpolatedProfile();
+            nColumns = profileInterpolator.GetNumberofColumns();
+            nRows = profileInterpolator.GetNumberofVertexes();
+            
+          break;
+          }
           
-          /*--- Initializing a new container for inlet data for printing if INLET_DATA_OUT is true. ---*/
-          Inlet_InterpolatedData = new su2double[geometry[MESH_0]->nVertex[iMarker]*(nCol_InletFile)];
+          vector<su2double> Inlet_Values(nColumns);
 
             /*--- Loop through the nodes on this marker. ---*/
 
@@ -5163,14 +5105,11 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
               Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
 
-              switch(config->GetKindInletInterpolationFunction()){
-
-                case(NONE):
                 min_dist = 1e16;
 
                 /*--- Find the distance to the closest point in our inlet profile data. ---*/
                 
-                for (iRow = 0; iRow < profileReader.GetNumberOfRowsInProfile(jMarker); iRow++) {
+                for (iRow = 0; iRow < nRows; iRow++) {
 
                     /*--- Get the coords for this data point. ---*/
 
@@ -5215,101 +5154,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                     cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
                     local_failure++;
                     break;
-
                 }
-                break;
-
-                case(ONED_LINEAR_SPANWISE || ONED_AKIMASPLINE_SPANWISE):
-
-                /*---Checking if only one inlet specified*/
-                if(profileReader.GetNumberOfProfiles()>1){
-                  cout<<"No support for multiple inlet interpolations yet"<<endl;
-                  local_failure++;
-                  break;
-                }
-
-                /*--- Finding radius and theta for the specific vertex. ---*/ 
-                Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
-                Theta = atan2(Coord[1],Coord[0]);
-
-                /*--- Set the x,y,z coordinates in Inlet_Values container ---*/
-                for  (iVar=0; iVar < nDim; iVar++)
-                  Inlet_Values[iVar]=Coord[iVar];
-
-                /*--- Loop through all rows in the inlet file. ---*/
-                for (iRow = 0; iRow < profileReader.GetNumberOfRowsInProfile(jMarker); iRow++) {
-                   /*--- Find the two closest radii for the specific vertex. ---*/
-                  if (Inlet_Data[nColumns*iRow] <= Interp_Radius && Inlet_Data[nColumns*(iRow+1)] >= Interp_Radius){
-                  /*--- Loop through all columns in the inlet file except the radii---*/
-                  for (index=1; index<nColumns; index++){
-                  Point_Match = true;
-                  if (ONED_LINEAR_SPANWISE)
-                      Interpolated_Value = ONEDLINEAR_SPANWISE(Inlet_Data, Interp_Radius, iRow, index,nColumns);
-                  else if (ONED_AKIMASPLINE_SPANWISE)
-                      Interpolated_Value = ONEDAKIMA_SPANWISE(Inlet_Data, Interp_Radius, iRow, index, nColumns, profileReader.GetNumberOfRowsInProfile(jMarker));
-      
-                  /*--- If interpolating turbulence variables, shift them one index ahead ---*/
-                  if (index > nDim+1)
-                      Inlet_Values[index+(nDim-1)+1]=Interpolated_Value;
-                  else
-                      Inlet_Values[index+(nDim-1)]=Interpolated_Value;
-                  }
-                  /*--- New interpolated parameters for that Interp_Radius. ---*/
-                  Parameter1=Inlet_Values[nDim+2];
-                  Parameter2=Inlet_Values[nDim+3];
-
-                  switch(config->GetKindInletInterpolationType()){
-                  
-                    case(VR_VTHETA):
-                      unit_r=Parameter1;
-                      unit_Theta=Parameter2;
-
-                    break;
-                    
-                    case(ALPHA_PHI):
-                      Alpha=Parameter1;
-                      Phi=Parameter2;
-                      unit_m = sqrt(1/(1+pow(tan(Alpha),2)));
-
-                      unit_Theta = tan(Alpha)*unit_m;
-                      unit_r=unit_m*sin(Phi);
-
-                    break;
-                  }
-
-                  Inlet_Values[nDim+2] = unit_r*cos(Theta) - unit_Theta*sin(Theta); //for ix
-                  Inlet_Values[nDim+3] = unit_r*sin(Theta) + unit_Theta*cos(Theta); //for iy
-                  Inlet_Values[nDim+4] = sqrt(1-pow(unit_r,2)- pow(unit_Theta,2));  //for iz
-
-                  solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);                      
-              
-                  for  (iVar=0; iVar < (nColumns+nDim); iVar++)
-                    Inlet_InterpolatedData[iVertex*(nColumns+nDim)+iVar]=Inlet_Values[iVar];
-                                  
-                  }
-                }
-
-                if (Point_Match == false){
-                    unsigned long GlobalIndex = geometry[MESH_0]->node[iPoint]->GetGlobalIndex();
-                    cout<< "WARNING: Point in grid outside the inlet file radius range (extrapolation capability not yet added)" <<endl;
-                    cout<< "Point "<< GlobalIndex;
-                    cout<< std::scientific;
-                    cout << " at location: [" << Coord[0] << ", " << Coord[1] << ", Radius: "<<Interp_Radius;
-                    if (nDim ==3) error_msg << ", " << Coord[2];
-                    cout << "]" << endl;
-                    local_failure++;
-                }
-
-                else if(Point_Match == true){  
-                
-                if(config->GetPrintInlet_InterpolatedData() == true)
-                   PrintNewInletData(Inlet_InterpolatedData,geometry[MESH_0]->nVertex[iMarker],Marker_Tag, nColumns);
-                   
-                Point_Match = false;}
-
-                break;
-
-              }
             }
           }
         }

@@ -24,7 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
- /*
+
 #pragma once
 
 #include <stdio.h>
@@ -34,7 +34,52 @@
 #include <cmath>
 #include <vector>
 #include "../config_structure.hpp"
+#include "../../SU2_CFD/include/CMarkerProfileReaderFVM.hpp"
 
 using namespace std;
 
-*/
+class CInletInterpolation{
+
+    protected:
+    vector<passivedouble> InletInterpolatedData, Inlet_Data;
+    vector<su2double> Inlet_Values;
+    unsigned short nDim;
+
+    CMarkerProfileReaderFVM profileReader;
+
+    unsigned long nColumns, iPoint, iVertex, iRow, index, iRow_Akima, nRow;
+    unsigned short nCol_InletFile;
+    unsigned short iMarker, jMarker;
+    CGeometry **geometry;
+    CConfig *config;
+
+    su2double Interp_Radius, Theta ,index, *Coord;
+
+    su2double slope, interpolated_value, Parameter1, Parameter2, unit_r, unit_Theta, unit_m, Alpha, Phi;
+    su2double dxi, ai, bi, ci ,di ,delta;
+    
+    void LinearInterpolation(), AkimaInterpolation(unsigned long iRow_Akima), CorrectForInterpolationType(), SetInterpolatedData(), PrintInterpolatedData();
+    void Interpolate();
+    void GetClosestPointFromFile();
+    void SetVertex();
+
+    su2double Get_Ai_dash(unsigned long iRow_Akima), Get_Pi(unsigned long iRow_Akima), Get_Wi(unsigned long iRow_Akima);
+
+    bool Point_Match = false;
+
+    public:
+    
+    CInletInterpolation(CGeometry **geometry, CConfig *config, string profile_filename, unsigned short KIND_MARKER,unsigned short iMarker, unsigned short jMarker, unsigned short nDim);
+    ~CInletInterpolation(void);
+
+    inline vector<passivedouble> GetInterpolatedProfile()
+    {return InletInterpolatedData;}
+
+    inline unsigned long GetNumberofColumns(){
+        return nColumns+nDim;}
+
+    inline unsigned long GetNumberofVertexes(){
+        return geometry[MESH_0]->nVertex[iMarker];
+    }
+
+};
