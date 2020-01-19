@@ -4753,6 +4753,8 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   su2double rhoCvtr, rhoCvve, rho_el, RuSI, Ru;
   su2double rho, cs, P, rhoE, rhoEve, conc, Beta;
   su2double *u, *Ms, *dPdU;
+  su2double *V_domain,*V_reflected;
+  su2double *U_domain,*U_reflected;
 
   bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -4767,6 +4769,8 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   Jacobian_b = new su2double*[nVar];
   DubDu      = new su2double*[nVar];
   u          = new su2double[nDim];
+  U_reflected = new su2double[nVar];
+  V_reflected = new su2double[nPrimVar];
 
   for (iVar = 0; iVar < nVar; iVar++) {
     Jacobian_b[iVar] = new su2double[nVar];
@@ -4807,89 +4811,113 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
       turb_ke = 0.0;
       if (tkeNeeded) turb_ke=solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
 
-      /*--- Apply the flow-tangency b.c. to the convective flux ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        Residual[iSpecies] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Residual[nSpecies+iDim] = P * UnitNormal[iDim] * Area;
-      Residual[nSpecies+nDim]   = 0.0;
-      Residual[nSpecies+nDim+1] = 0.0;
+      /*--- Retrieve solution at the boundary node & allocate reflected state ---*/
+      U_domain = nodes->GetSolution(iPoint);
+      V_domain = nodes->GetPrimitive(iPoint);
+      for(iVar = 0; iVar < nVar; iVar++)
+        U_reflected[iVar] = nodes->GetSolution(iPoint, iVar);
+      for(iVar = 0; iVar < nPrimVar; iVar++)
+        V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
 
       ProjVelocity_i = nodes->GetProjVel(iPoint,UnitNormal);
       Density_i      = nodes->GetDensity(iPoint);
       for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity_i[iDim] = nodes->GetVelocity(iPoint,iDim) - ProjVelocity_i*UnitNormal[iDim];
+        V_reflected[nSpecies+2+iDim] = nodes->GetVelocity(iPoint,iDim) - 2.*ProjVelocity_i*UnitNormal[iDim];
+        U_reflected[nSpecies+iDim] = Density_i*V_reflected[nSpecies+2+iDim];
         nodes->SetSolution(iPoint,nSpecies+iDim, Density_i*Velocity_i[iDim]);
       }
-      nodes->SetVelocity(iPoint);
-      nodes->SetVelocity_Old(iPoint,Velocity_i);
 
-      /*--- Add the Reynolds stress tensor contribution ---*/
-      if (tkeNeeded) {
-        for (iDim = 0; iDim < nDim; iDim++)
-          Residual[nSpecies+iDim+1] += (2.0/3.0)*Density_b*turb_ke*NormalArea[iDim];
-      }
+      /*--- Pass conserved & primitive variables to CNumerics ---*/
+      conv_numerics->SetConservative(U_domain, U_infty);
+      conv_numerics->SetPrimitive(V_domain, V_infty);
+
+      /*--- Pass supplementary information to CNumerics ---*/
+      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint),     nodes->GetdPdU(iPoint));
+      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint),     nodes->GetdTdU(iPoint));
+      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(iPoint));
+
+      /*--- Compute the convective residual (and Jacobian) ---*/
+      // Note: This uses the specified boundary num. method specified in driver_structure.cpp
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+      // /*--- Apply the flow-tangency b.c. to the convective flux ---*/
+      // for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      //   Residual[iSpecies] = 0.0;
+      // for (iDim = 0; iDim < nDim; iDim++)
+      //   Residual[nSpecies+iDim] = P * UnitNormal[iDim] * Area;
+      // Residual[nSpecies+nDim]   = 0.0;
+      // Residual[nSpecies+nDim+1] = 0.0;
+
+      // /*--- Add the Reynolds stress tensor contribution ---*/
+      // if (tkeNeeded) {
+      //   for (iDim = 0; iDim < nDim; iDim++)
+      //     Residual[nSpecies+iDim+1] += (2.0/3.0)*Density_b*turb_ke*NormalArea[iDim];
+      // }
 
       /*--- Add value to the residual ---*/
       LinSysRes.AddBlock(iPoint, Residual);
 
-      /*--- If using implicit time-stepping, calculate b.c. contribution to Jacobian ---*/
+      /*--- Jacobian contribution for implicit integration. ---*/
       if (implicit) {
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-        /*--- Initialize Jacobian ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
+      // /*--- If using implicit time-stepping, calculate b.c. contribution to Jacobian ---*/
+      // if (implicit) {
 
-        /*--- Calculate state i ---*/
-        rho     = nodes->GetDensity(iPoint);
-        rhoCvtr = nodes->GetRhoCv_tr(iPoint);
-        rhoCvve = nodes->GetRhoCv_ve(iPoint);
-        rhoE    = nodes->GetSolution(iPoint,nSpecies+nDim);
-        rhoEve  = nodes->GetSolution(iPoint,nSpecies+nDim+1);
-        dPdU    = nodes->GetdPdU(iPoint);
-        for (iDim = 0; iDim < nDim; iDim++)
-          u[iDim] = nodes->GetVelocity(iPoint,iDim);
+      //   /*--- Initialize Jacobian ---*/
+      //   for (iVar = 0; iVar < nVar; iVar++)
+      //     for (jVar = 0; jVar < nVar; jVar++)
+      //       Jacobian_i[iVar][jVar] = 0.0;
 
-        /*--- If free electrons are present, retrieve the electron gas density ---*/
-        if (config->GetIonization()) rho_el = nodes->GetMassFraction(iPoint,nSpecies-1) * rho;
-        else                         rho_el = 0.0;
+      //   /*--- Calculate state i ---*/
+      //   rho     = nodes->GetDensity(iPoint);
+      //   rhoCvtr = nodes->GetRhoCv_tr(iPoint);
+      //   rhoCvve = nodes->GetRhoCv_ve(iPoint);
+      //   rhoE    = nodes->GetSolution(iPoint,nSpecies+nDim);
+      //   rhoEve  = nodes->GetSolution(iPoint,nSpecies+nDim+1);
+      //   dPdU    = nodes->GetdPdU(iPoint);
+      //   for (iDim = 0; iDim < nDim; iDim++)
+      //     u[iDim] = nodes->GetVelocity(iPoint,iDim);
 
-        conc = 0.0;
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          cs    = nodes->GetMassFraction(iPoint,iSpecies);
-          conc += cs * rho/Ms[iSpecies];
+      //   /*--- If free electrons are present, retrieve the electron gas density ---*/
+      //   if (config->GetIonization()) rho_el = nodes->GetMassFraction(iPoint,nSpecies-1) * rho;
+      //   else                         rho_el = 0.0;
 
-          /////// NEW //////
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Jacobian_i[nSpecies+iDim][iSpecies] = dPdU[iSpecies] * UnitNormal[iDim];
-            Jacobian_i[iSpecies][nSpecies+iDim] = cs * UnitNormal[iDim];
-          }
-        }
+      //   conc = 0.0;
+      //   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      //     cs    = nodes->GetMassFraction(iPoint,iSpecies);
+      //     conc += cs * rho/Ms[iSpecies];
 
-        Beta = Ru*conc/rhoCvtr;
+      //     /////// NEW //////
+      //     for (iDim = 0; iDim < nDim; iDim++) {
+      //       Jacobian_i[nSpecies+iDim][iSpecies] = dPdU[iSpecies] * UnitNormal[iDim];
+      //       Jacobian_i[iSpecies][nSpecies+iDim] = cs * UnitNormal[iDim];
+      //     }
+      //   }
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0; jDim < nDim; jDim++) {
-            Jacobian_i[nSpecies+iDim][nSpecies+jDim] = u[iDim]*UnitNormal[jDim]
-                + dPdU[nSpecies+jDim]*UnitNormal[iDim];
-          }
-          Jacobian_i[nSpecies+iDim][nSpecies+nDim]   = dPdU[nSpecies+nDim]  *UnitNormal[iDim];
-          Jacobian_i[nSpecies+iDim][nSpecies+nDim+1] = dPdU[nSpecies+nDim+1]*UnitNormal[iDim];
+      //   Beta = Ru*conc/rhoCvtr;
 
-          Jacobian_i[nSpecies+nDim][nSpecies+iDim]   = (rhoE+P)/rho * UnitNormal[iDim];
-          Jacobian_i[nSpecies+nDim+1][nSpecies+iDim] = rhoEve/rho   * UnitNormal[iDim];
-        }
+      //   for (iDim = 0; iDim < nDim; iDim++) {
+      //     for (jDim = 0; jDim < nDim; jDim++) {
+      //       Jacobian_i[nSpecies+iDim][nSpecies+jDim] = u[iDim]*UnitNormal[jDim]
+      //           + dPdU[nSpecies+jDim]*UnitNormal[iDim];
+      //     }
+      //     Jacobian_i[nSpecies+iDim][nSpecies+nDim]   = dPdU[nSpecies+nDim]  *UnitNormal[iDim];
+      //     Jacobian_i[nSpecies+iDim][nSpecies+nDim+1] = dPdU[nSpecies+nDim+1]*UnitNormal[iDim];
 
-        /*--- Integrate over the dual-grid area ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = Jacobian_i[iVar][jVar] * Area;
+      //     Jacobian_i[nSpecies+nDim][nSpecies+iDim]   = (rhoE+P)/rho * UnitNormal[iDim];
+      //     Jacobian_i[nSpecies+nDim+1][nSpecies+iDim] = rhoEve/rho   * UnitNormal[iDim];
+      //   }
 
-        /*--- Apply the contribution to the system ---*/
-        Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+      //   /*--- Integrate over the dual-grid area ---*/
+      //   for (iVar = 0; iVar < nVar; iVar++)
+      //     for (jVar = 0; jVar < nVar; jVar++)
+      //       Jacobian_i[iVar][jVar] = Jacobian_i[iVar][jVar] * Area;
 
-      }
+      //   /*--- Apply the contribution to the system ---*/
+      //   Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+
+      // }
     }
   }
   delete [] u;
