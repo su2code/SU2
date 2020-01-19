@@ -4824,7 +4824,7 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
 
       for (iDim = 0; iDim < nDim; iDim++){
         NormalArea[iDim] = -Normal[iDim];
-        UnitNormal[iDim] = -Normal[iDim]/Area;
+        UnitNormal[iDim] = Normal[iDim]/Area;
       }
       conv_numerics->SetNormal(NormalArea);
 
