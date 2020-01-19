@@ -223,6 +223,11 @@ inline void CNumerics::SetDistance(su2double val_dist_i, su2double val_dist_j) {
   dist_j = val_dist_j;
 }
 
+inline void CNumerics::SetRoughness(su2double val_roughness_i, su2double val_roughness_j) {
+  roughness_i = val_roughness_i;
+  roughness_j = val_roughness_j;
+}
+
 inline void CNumerics::SetAdjointVar(su2double *val_psi_i, su2double *val_psi_j) {
   Psi_i = val_psi_i;
   Psi_j = val_psi_j;

@@ -162,6 +162,7 @@ private:
   su2double Wall_Distance;            /*!< \brief Distance to the nearest wall. */
   su2double SharpEdge_Distance;       /*!< \brief Distance to a sharp edge. */
   su2double Curvature;                /*!< \brief Value of the surface curvature (SU2_GEO). */
+  su2double RoughnessHeight;          /*!< \brief Roughness of the nearest wall. */
   unsigned long GlobalIndex;          /*!< \brief Global index in the parallel simulation. */
   unsigned short nNeighbor;           /*!< \brief Number of neighbors. */
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
@@ -250,6 +251,17 @@ public:
 	 * \return Value of the distance to the nearest wall.
 	 */
 	su2double GetSharpEdge_Distance(void);
+	
+	/*!
+     * \brief Set the roughness height of the nearest wall.
+     */
+    void SetRoughnessHeight(su2double val_roughness);
+    
+    /*!
+     * \brief Get the roughness height of the nearest wall.
+     * \return Value of the roughness at the nearest wall.
+     */
+    su2double GetRoughnessHeight();
   
 	/*! 
 	 * \brief Set the number of elements that compose the control volume.

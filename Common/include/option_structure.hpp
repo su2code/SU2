@@ -1290,6 +1290,17 @@ static const map<string, ACTDISK_TYPE> ActDisk_Map = CCreateMap<string, ACTDISK_
 ("POWER", POWER);
 
 /*!
+ * \brief types of wall boundary condition - smooth or rough
+ */
+enum WALL_TYPE {
+  SMOOTH = 1,    /*!< \brief Smooth wall */
+  ROUGH = 2,   /*!< \brief Rough wall */
+};
+static const map<string, WALL_TYPE> WallType_Map = CCreateMap<string, WALL_TYPE>
+("SMOOTH", SMOOTH)
+("ROUGH", ROUGH);
+
+/*!
  * \brief types of geometric entities based on VTK nomenclature
  */
 enum GEO_TYPE {

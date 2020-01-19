@@ -314,6 +314,7 @@ private:
   su2double *Outlet_Pressure;                /*!< \brief Specified back pressures (static) for outlet boundaries. */
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
+  su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker. */
   su2double *Displ_Value;                    /*!< \brief Specified displacement for displacement boundaries. */
   su2double *Load_Value;                     /*!< \brief Specified force for load boundaries. */
   su2double *Damper_Constant;                /*!< \brief Specified constant for damper boundaries. */
@@ -565,6 +566,8 @@ private:
   *Kind_Inc_Outlet,
   *Kind_Data_Riemann,
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
+  unsigned short *Kind_Wall;       /*!< \brief Type of wall treatment. */
+  unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
   su2double Inc_Inlet_Damping;     /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
@@ -933,7 +936,8 @@ private:
   nMarkerPitching_Ampl,           /*!< \brief Number of values provided for pitching amplitude of marker. */ 
   nMarkerPitching_Phase,          /*!< \brief Number of values provided for pitching phase offset of marker. */ 
   nMarkerPlunging_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */ 
-  nMarkerPlunging_Ampl;           /*!< \brief Number of values provided for plunging amplitude of marker. */
+  nMarkerPlunging_Ampl,           /*!< \brief Number of values provided for plunging amplitude of marker. */
+  nRoughWall;                     /*!< \brief Number of rough walls. */
   su2double  *Omega_HB;           /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
   unsigned short
   nOmega_HB,                      /*!< \brief Number of frequencies in Harmonic Balance Operator. */
@@ -1034,7 +1038,8 @@ private:
   *default_ffd_axis,           /*!< \brief Default FFD axis for the COption class. */
   *default_inc_crit,           /*!< \brief Default incremental criteria array for the COption class. */
   *default_extrarelfac,        /*!< \brief Default extra relaxation factor for Giles BC in the COption class. */
-  *default_sineload_coeff;     /*!< \brief Default values for a sine load. */
+  *default_sineload_coeff,     /*!< \brief Default values for a sine load. */
+  *default_roughness;          /*!< \brief Default values for wall roughness. */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones;  /*!< \brief number of maximum span-wise sections for all zones */
@@ -5083,6 +5088,17 @@ public:
   unsigned short GetKind_ActDisk(void);
   
   /*!
+   * \brief Get the kind of wall.
+   * \return Kind of wall - smooth or rough.
+   */
+  unsigned short GetKindWall(string val_marker);
+  
+  /*!
+   * \brief Set the kind of wall - rough or smooth.
+   */
+  void SetKindWall(string val_marker, unsigned short val_kindwall);
+  
+  /*!
    * \brief Get the number of sections.
    * \return Number of sections
    */
@@ -6800,6 +6816,20 @@ public:
    * \return Pointer to the double info for the given marker.
    */
   su2double* GetWallFunction_DoubleInfo(string val_marker);
+  
+    /*!
+   * \brief Get the wall roughness height on a wall boundary (Heatflux or Isothermal).
+   * \param[in] val_index - Index corresponding to the boundary.
+   * \return The wall roughness height.
+   */
+  su2double GetWall_RoughnessHeight(string val_marker);
+  
+  /*!
+   * \brief Set the wall roughness height on a wall boundary (Heatflux or Isothermal).
+   * \param[in] val_index - Index corresponding to the boundary.
+   * \return The wall roughness height.
+   */
+  void SetWall_RoughnessHeight(string val_marker, su2double val_roughness);
   
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.

@@ -230,6 +230,10 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
       numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
     
+    /*--- Roughness heights. ---*/
+    if (config->GetKind_Turb_Model() == SA)
+      numerics->SetRoughness(geometry->node[iPoint]->GetRoughnessHeight(),geometry->node[jPoint]->GetRoughnessHeight());
+    
     /*--- Compute residual, and Jacobians ---*/
     
     numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -1279,6 +1283,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   bool transition    = (config->GetKind_Trans_Model() == LM);
   bool transition_BC = (config->GetKind_Trans_Model() == BC);
+  su2double modifiedWallDistance = 0.0;
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
@@ -1314,10 +1319,23 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Get Hybrid RANS/LES Type and set the appropriate wall distance ---*/     
     
     if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES) {
+		
+	/*--- For the SA model, wall roughness is accounted by modifying the computed wall distance 
+       *                  d_new = d + 0.03 k_s
+       *    where k_s is the equivalent sand grain roughness height that is specified in cfg file.
+       *    For smooth walls, wall roughness is zero and computed wall distance remains the same. */
+       
+      modifiedWallDistance = geometry->node[iPoint]->GetWall_Distance();
+      
+      modifiedWallDistance = modifiedWallDistance + 0.03*geometry->node[iPoint]->GetRoughnessHeight();
           
       /*--- Set distance to the surface ---*/
           
-      numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+      numerics->SetDistance(modifiedWallDistance, 0.0);
+      
+      /*--- Set the roughness of the closest wall. ---*/
+
+      numerics->SetRoughness(geometry->node[iPoint]->GetRoughnessHeight(), 0.0 );
     
     } else {
     
@@ -1381,7 +1399,16 @@ void CTurbSASolver::Source_Template(CGeometry *geometry, CSolver **solver_contai
 
 void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned long iPoint, iVertex;
-  unsigned short iVar;
+  unsigned short iVar, iDim;
+  bool rough_wall = false;
+  su2double RoughWallBC, Roughness_Height;
+  su2double *Res_Wall = new su2double [nVar];
+  su2double *Normal, Area;
+
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  Roughness_Height = config->GetWall_RoughnessHeight(Marker_Tag);
+  if (Roughness_Height > 0.0 ) rough_wall = true;
   
   /*--- The dirichlet condition is used only without wall function, otherwise the
    convergence is compromised as we are providing nu tilde values for the
@@ -1395,8 +1422,9 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
       /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
       
       if (geometry->node[iPoint]->GetDomain()) {
-        
-        /*--- Get the velocity vector ---*/
+		  
+		if (!rough_wall) { 
+        /*--- Get the solution vector ---*/
         
         for (iVar = 0; iVar < nVar; iVar++)
           Solution[iVar] = 0.0;
@@ -1407,6 +1435,28 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
         /*--- Includes 1 in the diagonal ---*/
         
         Jacobian.DeleteValsRowi(iPoint);
+	   }
+	   else {
+		   /*--- Compute dual-grid area and boundary normal ---*/
+		   
+		   Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+		   
+		   Area = 0.0;
+		   for (iDim = 0; iDim < nDim; iDim++)
+		      Area += Normal[iDim]*Normal[iDim];
+		   Area = sqrt (Area);
+		   
+		   /*--- For rough walls, the boundary condition is given by 
+		    * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
+		    * where \nu is the solution variable, $n$ is the wall normal direction 
+		    * and k_s is the equivalent sand grain roughness specified. ---*/
+		   RoughWallBC = nodes->GetSolution(iPoint,0)/(0.03*Roughness_Height);
+		   Res_Wall[0] = RoughWallBC*Area;
+		   LinSysRes.SubtractBlock(iPoint, Res_Wall);
+		   
+		   Jacobian_i[0][0] = Area/(0.03*Roughness_Height);
+		   Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
+	   }
       }
     }
   }
@@ -3671,31 +3721,77 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
   su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
+  bool rough_wall = false;
+  su2double RoughWallBC, Roughness_Height, S_R, FrictionVel, kPlus, WallShearStress;
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  
+  
+  if (config->GetKindWall(Marker_Tag) == ROUGH ) rough_wall = true;
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->node[iPoint]->GetDomain()) {
+		
+		/*--- Set wall values ---*/
       
-      /*--- distance to closest neighbor ---*/
-      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      distance = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*
-        (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
-      }
-      distance = sqrt(distance);
+         density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+         laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+		
+      if (rough_wall) {
+		  
+		  WallShearStress = solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 0)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 0);
+		  WallShearStress += solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 1)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 1);
+		  if (nDim == 3) WallShearStress += solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 2)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 2);
+		  
+		  WallShearStress = sqrt(WallShearStress);
+		  /*--- Compute non-dimensional velocity ---*/
+          FrictionVel = sqrt(fabs(WallShearStress)/density);
+
+          /*--- Compute roughness in wall units. ---*/
+          Roughness_Height = config->GetWall_RoughnessHeight(Marker_Tag);
+          kPlus = FrictionVel*Roughness_Height*density/laminar_viscosity;
+
+          /*--- Reference 1 from Sandia and Aupoix ---*/
+          if (kPlus <= 25) 
+              S_R = (50/(kPlus+EPS))*(50/(kPlus+EPS));
+          else
+              S_R = 100/(kPlus+EPS);
+
+          /*--- Reference 2 from D.C. Wilcox Turbulence Modeling for CFD ---*/
+          /*if (kPlus <= 5) 
+              S_R = (200/(kPlus+EPS))*(200/(kPlus+EPS));
+          else
+              S_R = 100/(kPlus+EPS) + ((200/(kPlus+EPS))*(200/(kPlus+EPS)) - 100/(kPlus+EPS))*exp(5-kPlus);*/
+
+
+         /*--- Modify the omega to account for a rough wall. ---*/
+          Solution[1] = FrictionVel*FrictionVel*S_R/(laminar_viscosity/density);
+
+
+		  
+		  
+	  } else {
+         /*--- distance to closest neighbor ---*/
+         jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+         distance = 0.0;
+         for (iDim = 0; iDim < nDim; iDim++) {
+           distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*
+           (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+         }
+         distance = sqrt(distance);
       
-      /*--- Set wall values ---*/
+         /*--- Set wall values ---*/
+         
+         beta_1 = constants[4];
       
-      density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-      laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
+         
+         Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
+	  }
       
-      beta_1 = constants[4];
-      
+      /*--- Only the \omega solution is modified at the wall. ---*/
       Solution[0] = 0.0;
-      Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
       
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
@@ -3707,7 +3803,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
-      
     }
   }
   

@@ -571,7 +571,7 @@ void CConfig::SetPointersNull(void) {
   Inlet_Velocity            = NULL;     Inflow_Mach                 = NULL;     Inflow_Pressure       = NULL;
   Exhaust_Pressure          = NULL;     Outlet_Pressure             = NULL;     Isothermal_Temperature= NULL;
   Heat_Flux                 = NULL;     Displ_Value                 = NULL;     Load_Value            = NULL;
-  FlowLoad_Value            = NULL;
+  FlowLoad_Value            = NULL;     Roughness_Height            = NULL;
 
   ElasticityMod             = NULL;     PoissonRatio                = NULL;     MaterialDensity       = NULL;
 
@@ -825,6 +825,7 @@ void CConfig::SetConfig_Options() {
   default_sineload_coeff     = new su2double[3];
   default_nacelle_location   = new su2double[5];
   default_wrt_freq             = new su2double[3];
+  default_roughness          = new su2double[1];
   
   /*--- All temperature polynomial fits for the fluid models currently
    assume a quartic form (5 coefficients). For example,
@@ -1281,6 +1282,11 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
+  /*!\brief WALL_TYPE \n DESCRIPTION: List of wall types - SMOOTH or ROUGH (All walls are SMOOTH by default). List length must match number of wall markers or shouldn't appear at all. \ingroup Config*/
+  addEnumListOption("WALL_TYPE", nWall_Types, Kind_Wall, WallType_Map);
+  /*!\brief Wall roughness height default value = 0 (smooth). \ingroup Config */
+  default_roughness[0] = 0.0;  //default_roughness[1] = 0.0;
+  addDoubleListOption("WALL_ROUGHNESS", nRoughWall, Roughness_Height);
   /*!\brief MARKER_ENGINE_INFLOW  \n DESCRIPTION: Engine inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_ENGINE_INFLOW", nMarker_EngineInflow, Marker_EngineInflow, EngineInflow_Target);
@@ -4353,6 +4359,55 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
     }
   }
+  
+                            /*--- Wall roughness handling begins here ---*/
+  /*--- Check that if the wall roughness array are compatible and set deafult values if needed. ---*/
+
+  if ((nMarker_HeatFlux > 0) || (nMarker_Isothermal > 0)) {
+    /*--- If the config option is not declared, then assume smooth walls and set roughness to zero. ---*/
+    if (nWall_Types != nMarker_HeatFlux + nMarker_Isothermal) {
+      /*--- If this option is not used at all, assume all walls are smooth and set roughness height to zero. ---*/
+      if (nWall_Types == 0) {
+		  if (Roughness_Height != NULL) Roughness_Height = NULL;
+		  Roughness_Height = new su2double [nWall_Types];
+		  if (Kind_Wall != NULL) Kind_Wall = NULL;
+		  Kind_Wall = new unsigned short [nWall_Types];
+		  for (unsigned short iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
+			  Roughness_Height[iMarker] = 0.0;
+			  Kind_Wall[iMarker] = 1;
+		  }
+		  for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++) {
+			  Roughness_Height[nMarker_HeatFlux + iMarker] = 0.0;
+			  Kind_Wall[nMarker_HeatFlux + iMarker] = 1;
+		  }
+	  }
+	  else
+	  SU2_MPI::Error("Mismatch in number of wall markers. Specify type of wall for all markers (even if smooth).", CURRENT_FUNCTION);
+    } else {
+		if (nRoughWall != nWall_Types)
+		     SU2_MPI::Error("Mismatch in number of roughness height definition and wall type definition.", CURRENT_FUNCTION);
+		else {
+			su2double *temp_rough;
+			unsigned short *temp_kindrough;
+			temp_rough = new su2double [nWall_Types];
+			temp_kindrough = new unsigned short [nWall_Types];
+			for (unsigned short iMarker = 0; iMarker < nWall_Types; iMarker++) {
+				temp_rough[iMarker] = Roughness_Height[iMarker];
+				temp_kindrough[iMarker] = Kind_Wall[iMarker];
+			}
+			for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
+			  Roughness_Height[iMarker] = temp_rough[iMarker];
+			  Kind_Wall[iMarker] = temp_kindrough[iMarker];
+		  }
+		  for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++) {
+			  Roughness_Height[nMarker_HeatFlux + iMarker] = temp_rough[nMarker_HeatFlux + iMarker];
+			  Kind_Wall[nMarker_HeatFlux + iMarker] = temp_kindrough[nMarker_HeatFlux + iMarker];
+		  }
+		}
+	}
+
+  }
+                     /*--- Wall roughness handling ends here. ---*/ 
   
   /*--- Handle default options for topology optimization ---*/
   
@@ -7432,6 +7487,7 @@ CConfig::~CConfig(void) {
   if (Load_Sine_Amplitude != NULL)    delete[] Load_Sine_Amplitude;
   if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
   if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
+  if (Roughness_Height != NULL)    delete[] Roughness_Height;
 
   /*--- related to periodic boundary conditions ---*/
   
@@ -8598,6 +8654,49 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) {
   }
 
   return Heat_Flux[iMarker_HeatFlux];
+}
+
+unsigned short CConfig::GetKindWall(string val_marker) {
+  unsigned short iMarker;
+  short flag = -1;
+  for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
+    if (Marker_HeatFlux[iMarker] == val_marker) {
+		flag = iMarker;
+		break;
+	}
+  if (flag == -1)
+   for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
+    if (Marker_Isothermal[iMarker] == val_marker) {
+		flag = iMarker;
+		break;
+	}
+  if (flag == -1) return 1;
+  else return Kind_Wall[flag];
+}
+
+void CConfig::SetWall_RoughnessHeight(string val_marker, su2double val_roughness) {
+	//Roughness_Height[val_marker] = val_roughness;
+}
+
+su2double CConfig::GetWall_RoughnessHeight(string val_marker) {
+  unsigned short iMarker = 0;
+  short          flag = -1;
+
+  if (nMarker_HeatFlux > 0 || nMarker_Isothermal > 0) {
+  for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
+    if (Marker_HeatFlux[iMarker] == val_marker) {
+		flag = iMarker;
+		break;
+	}
+  if (flag == -1) {
+	  for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
+      if (Marker_Isothermal[iMarker] == val_marker) {
+		flag = iMarker;
+		break;
+	}
+  }	
+  }
+  return Roughness_Height[flag];
 }
 
 unsigned short CConfig::GetWallFunction_Treatment(string val_marker) {

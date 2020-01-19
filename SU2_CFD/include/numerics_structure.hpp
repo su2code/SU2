@@ -240,6 +240,8 @@ public:
   su2double StrainMag_i, StrainMag_j;      /*!< \brief Strain rate magnitude. */
   su2double Dissipation_i, Dissipation_j;  /*!< \brief Dissipation. */
   su2double Dissipation_ij;
+  su2double roughness_i,                   /*!< \brief Roughness of the wall nearest to point i. */
+  roughness_j;                             /*!< \brief Roughness of the wall nearest to point j. */
     
   su2double *l, *m;
 
@@ -559,6 +561,13 @@ public:
    * \param[in] val_dist_j - Value of of the distance from point j to the nearest wall.
    */
   void SetDistance(su2double val_dist_i, su2double val_dist_j);
+  
+  /*!
+   * \brief Set the value of the roughness from the nearest wall.
+   * \param[in] val_dist_i - Value of of the roughness of the nearest wall from point i 
+   * \param[in] val_dist_j - Value of of the roughness of the nearest wall from point j 
+   */
+  void SetRoughness(su2double val_roughness_i, su2double val_roughness_j);
   
   /*!
    * \brief Set coordinates of the points.
@@ -4147,6 +4156,7 @@ private:
   su2double sigma;
   su2double cb2;
   su2double cw1;
+  su2double cr1;
   unsigned short iDim;
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
@@ -4156,6 +4166,7 @@ private:
   bool incompressible;
   bool rotating_frame;
   bool transition;
+  bool roughwall;
   su2double gamma_BC;
   su2double intermittency;
   su2double Production, Destruction, CrossProduction;

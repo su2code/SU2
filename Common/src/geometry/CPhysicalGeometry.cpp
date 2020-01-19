@@ -5186,11 +5186,20 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
       unsigned short markerID;
       unsigned long  elemID;
       int            rankID;
-      su2double      dist;
+      su2double      dist, roughness;
+      string         Marker_Tag;
 
       WallADT.DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
                                    elemID, rankID);
+      
       node[iPoint]->SetWall_Distance(dist);
+      
+      /*--- Use the markerID to find the corresponding wall roughness height. ---*/
+	  
+	  Marker_Tag = config->GetMarker_All_TagBound(markerID);
+	  roughness = config->GetWall_RoughnessHeight(Marker_Tag);
+
+      node[iPoint]->SetRoughnessHeight(roughness);
     }
   }
 
