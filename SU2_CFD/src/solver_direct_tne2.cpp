@@ -4815,6 +4815,12 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
       Residual[nSpecies+nDim]   = 0.0;
       Residual[nSpecies+nDim+1] = 0.0;
 
+      ProjVelocity_i = nodes->GetProjVel(iPoint,UnitNormal);
+      for (iDim = 0; iDim < nDim; iDim++)
+        Velocity_b[iDim] = nodes->GetVelocity(iPoint,iDim) - ProjVelocity_i*UnitNormal[iDim];
+
+      nodes->SetVelocity(iPoint, Velocity_b);
+
       /*--- Add the Reynolds stress tensor contribution ---*/
       if (tkeNeeded) {
         for (iDim = 0; iDim < nDim; iDim++)
