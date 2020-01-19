@@ -277,39 +277,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Initialize the value of the total gradient for the forward mode ---*/
   Total_ForwardGradient = 0.0;
 
-  if (config->GetDirectDiff() == D_YOUNG ||
-      config->GetDirectDiff() == D_POISSON ||
-      config->GetDirectDiff() == D_RHO ||
-      config->GetDirectDiff() == D_RHO_DL ||
-      config->GetDirectDiff() == D_EFIELD ||
-      config->GetDirectDiff() == D_MACH ||
-      config->GetDirectDiff() == D_PRESSURE){
-
-    /*--- Header of the temporary output file ---*/
-    ofstream myfile_res;
-
-    if (config->GetDirectDiff() == D_YOUNG) myfile_res.open ("Output_Direct_Diff_E.txt");
-    if (config->GetDirectDiff() == D_POISSON) myfile_res.open ("Output_Direct_Diff_Nu.txt");
-    if (config->GetDirectDiff() == D_RHO) myfile_res.open ("Output_Direct_Diff_Rho.txt");
-    if (config->GetDirectDiff() == D_RHO_DL) myfile_res.open ("Output_Direct_Diff_Rho_DL.txt");
-    if (config->GetDirectDiff() == D_EFIELD) myfile_res.open ("Output_Direct_Diff_EField.txt");
-
-    if (config->GetDirectDiff() == D_MACH) myfile_res.open ("Output_Direct_Diff_Mach.txt");
-    if (config->GetDirectDiff() == D_PRESSURE) myfile_res.open ("Output_Direct_Diff_Pressure.txt");
-
-    myfile_res << "Objective Function " << "\t";
-
-    if (dynamic) myfile_res << "O. Function Averaged " << "\t";
-
-    myfile_res << "Sensitivity Local" << "\t";
-
-    myfile_res << "Sensitivity Averaged" << "\t";
-
-    myfile_res << endl;
-
-    myfile_res.close();
-
-  }
+  OutputForwardModeGradient(config, true, 0.0, 0.0, 0.0, 0.0);
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
   if (config->GetMultizone_Residual()){
@@ -3029,275 +2997,211 @@ void CFEASolver::Update_StructSolution(CGeometry **fea_geometry,
 
 }
 
+void CFEASolver::OutputForwardModeGradient(CConfig *config, bool newFile,
+                                           su2double fun, su2double fun_avg,
+                                           su2double der, su2double der_avg) const {
+  if (rank != MASTER_NODE) return;
+
+  bool dynamic = config->GetTime_Domain();
+
+  string fileSuffix, varName;
+
+  switch (config->GetDirectDiff()) {
+    case D_YOUNG:
+      fileSuffix = "E";
+      varName = "Young's modulus";
+      break;
+    case D_POISSON:
+      fileSuffix = "Nu";
+      varName = "Poisson's ratio";
+      break;
+    case D_RHO:
+      fileSuffix = "Rho";
+      varName = "structural density";
+      break;
+    case D_RHO_DL:
+      fileSuffix = "Rho_DL";
+      varName = "dead weight";
+      break;
+    case D_EFIELD:
+      fileSuffix = "EField";
+      varName = "electric field";
+      break;
+    case D_MACH:
+      fileSuffix = "Mach";
+      varName = "Mach number";
+      break;
+    case D_PRESSURE:
+      fileSuffix = "Pressure";
+      varName = "freestream pressure";
+      break;
+    default:
+      return;
+      break;
+  }
+
+  ofstream myfile_res;
+
+  if (newFile) {
+    myfile_res.open(string("Output_Direct_Diff_")+fileSuffix+string(".txt"));
+
+    myfile_res << "Objective Function" << "\t";
+    if (dynamic)
+      myfile_res << "O. Function Averaged" << "\t";
+    myfile_res << "Sensitivity Local" << "\t";
+    myfile_res << "Sensitivity Averaged" << endl;
+    return;
+  }
+
+  myfile_res.open(string("Output_Direct_Diff_")+fileSuffix+string(".txt"), ios::app);
+  myfile_res.precision(15);
+
+  myfile_res << scientific << fun << "\t";
+  if (dynamic)
+    myfile_res << scientific << fun_avg << "\t";
+  myfile_res << scientific << der << "\t";
+  myfile_res << scientific << der_avg << endl;
+
+  cout << "Objective function: " << fun << ". Global derivative of the "
+       << varName << ": " << Total_ForwardGradient << "." << endl;
+
+}
 
 void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config){
 
-  unsigned short iVar;
-  unsigned long iPoint;
-  unsigned long nTotalPoint = 1;
-
-  bool dynamic = (config->GetTime_Domain());
-
+  bool fsi = config->GetFSI_Simulation();
+  bool dynamic = config->GetTime_Domain();
   unsigned long TimeIter = config->GetTimeIter();
 
-  su2double reference_geometry = 0.0, current_solution = 0.0;
+  su2double objective_function = 0.0;
 
-  bool fsi = config->GetFSI_Simulation();
+  SU2_OMP(parallel for schedule(static,omp_chunk_size) reduction(+:objective_function))
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-  su2double objective_function = 0.0, objective_function_reduce = 0.0;
-  su2double weight_OF = 1.0;
-
-  su2double objective_function_averaged = 0.0;
-
-  SU2_MPI::Allreduce(&nPointDomain, &nTotalPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-
-  weight_OF = config->GetRefGeom_Penalty() / nTotalPoint;
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-
-    for (iVar = 0; iVar < nVar; iVar++){
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 
       /*--- Retrieve the value of the reference geometry ---*/
-      reference_geometry = nodes->GetReference_Geometry(iPoint,iVar);
+      su2double reference_geometry = nodes->GetReference_Geometry(iPoint,iVar);
 
       /*--- Retrieve the value of the current solution ---*/
-      current_solution = nodes->GetSolution(iPoint,iVar);
+      su2double current_solution = nodes->GetSolution(iPoint,iVar);
 
       /*--- The objective function is the sum of the difference between solution and difference, squared ---*/
-      objective_function += weight_OF * (current_solution - reference_geometry)*(current_solution - reference_geometry);
+      objective_function += pow(current_solution - reference_geometry, 2);
     }
 
   }
 
-  SU2_MPI::Allreduce(&objective_function, &objective_function_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-  Total_OFRefGeom = objective_function_reduce + PenaltyValue;
+  SU2_MPI::Allreduce(&objective_function, &Total_OFRefGeom, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  Total_OFRefGeom *= config->GetRefGeom_Penalty() / geometry->GetGlobal_nPointDomain();
+  Total_OFRefGeom += PenaltyValue;
 
   Global_OFRefGeom += Total_OFRefGeom;
-  objective_function_averaged = Global_OFRefGeom / (TimeIter + 1.0 + EPS);
+  su2double objective_function_averaged = Global_OFRefGeom / (TimeIter + 1.0 + EPS);
 
-  bool direct_diff = ((config->GetDirectDiff() == D_YOUNG) ||
-                      (config->GetDirectDiff() == D_POISSON) ||
-                      (config->GetDirectDiff() == D_RHO) ||
-                      (config->GetDirectDiff() == D_RHO_DL) ||
-                      (config->GetDirectDiff() == D_EFIELD) ||
-                      (config->GetDirectDiff() == D_MACH) ||
-                      (config->GetDirectDiff() == D_PRESSURE));
+  /// TODO: Temporary output files for the objective function. Will be integrated in the output once it is refactored.
 
-  if ((direct_diff) && (rank == MASTER_NODE)){
+  if (rank != MASTER_NODE) return;
 
-    ofstream myfile_res;
+  if (config->GetDirectDiff() != NO_DERIVATIVE) {
 
-    if (config->GetDirectDiff() == D_YOUNG) myfile_res.open ("Output_Direct_Diff_E.txt", ios::app);
-    if (config->GetDirectDiff() == D_POISSON) myfile_res.open ("Output_Direct_Diff_Nu.txt", ios::app);
-    if (config->GetDirectDiff() == D_RHO) myfile_res.open ("Output_Direct_Diff_Rho.txt", ios::app);
-    if (config->GetDirectDiff() == D_RHO_DL) myfile_res.open ("Output_Direct_Diff_Rho_DL.txt", ios::app);
-    if (config->GetDirectDiff() == D_EFIELD) myfile_res.open ("Output_Direct_Diff_EField.txt", ios::app);
+    /*--- Forward mode AD results. ---*/
 
-    if (config->GetDirectDiff() == D_MACH) myfile_res.open ("Output_Direct_Diff_Mach.txt");
-    if (config->GetDirectDiff() == D_PRESSURE) myfile_res.open ("Output_Direct_Diff_Pressure.txt");
+    su2double local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefGeom);
 
-    myfile_res.precision(15);
+    if (fsi) Total_ForwardGradient  = local_forward_gradient;
+    else     Total_ForwardGradient += local_forward_gradient;
 
-    myfile_res << scientific << Total_OFRefGeom << "\t";
+    su2double averaged_gradient = Total_ForwardGradient / (TimeIter + 1.0);
 
-    if (dynamic) myfile_res << scientific << objective_function_averaged << "\t";
-
-    su2double local_forward_gradient = 0.0;
-    su2double averaged_gradient = 0.0;
-
-    local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefGeom);
-
-    if (fsi) {
-      Total_ForwardGradient = local_forward_gradient;
-      averaged_gradient     = Total_ForwardGradient / (TimeIter + 1.0);
-    }
-    else {
-      Total_ForwardGradient += local_forward_gradient;
-      averaged_gradient      = Total_ForwardGradient / (TimeIter + 1.0);
-    }
-
-    myfile_res << scientific << local_forward_gradient << "\t";
-
-    myfile_res << scientific << averaged_gradient << "\t";
-
-    myfile_res << endl;
-
-    myfile_res.close();
-
-    if (config->GetDirectDiff() == D_YOUNG)   cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Young Modulus: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_POISSON) cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Poisson's ratio: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_RHO)     cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the structural density: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_RHO_DL)  cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the dead weight: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_EFIELD)  cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the electric field: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_MACH)    cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Mach number: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_PRESSURE) cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the freestream Pressure: " << Total_ForwardGradient << "." << endl;
+    OutputForwardModeGradient(config, false, Total_OFRefGeom, objective_function_averaged,
+                              local_forward_gradient, averaged_gradient);
   }
-  else
-  {
-
-      // TODO: Temporary output file for the objective function. Will be integrated in the output once is refurbished.
-   if (rank == MASTER_NODE){
-      cout << "Objective function: " << Total_OFRefGeom << "." << endl;
-      ofstream myfile_res;
-      myfile_res.open ("of_refgeom.dat");
-      myfile_res.precision(15);
-      if (dynamic) myfile_res << scientific << objective_function_averaged << endl;
-      else myfile_res << scientific << Total_OFRefGeom << endl;
-      myfile_res.close();
-      if (fsi){
-        ofstream myfile_his;
-        myfile_his.open ("history_refgeom.dat",ios::app);
-        myfile_his.precision(15);
-        myfile_his << scientific << Total_OFRefGeom << endl;
-        myfile_his.close();
-      }
+  else {
+    cout << "Objective function: " << Total_OFRefGeom << "." << endl;
+    ofstream myfile_res;
+    myfile_res.open ("of_refgeom.dat");
+    myfile_res.precision(15);
+    if (dynamic) myfile_res << scientific << objective_function_averaged << endl;
+    else myfile_res << scientific << Total_OFRefGeom << endl;
+    myfile_res.close();
+    if (fsi) {
+      ofstream myfile_his;
+      myfile_his.open ("history_refgeom.dat",ios::app);
+      myfile_his.precision(15);
+      myfile_his << scientific << Total_OFRefGeom << endl;
+      myfile_his.close();
     }
-
   }
 
 }
 
 void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config){
 
+  bool fsi = config->GetFSI_Simulation();
   bool dynamic = config->GetTime_Domain();
-
   unsigned long TimeIter = config->GetTimeIter();
 
-  su2double reference_geometry = 0.0, current_solution = 0.0;
-
-  bool fsi = config->GetFSI_Simulation();
-
-  su2double objective_function = 0.0, objective_function_reduce = 0.0;
-  su2double distance_sq = 0.0 ;
-  su2double weight_OF = 1.0;
-
-  su2double objective_function_averaged = 0.0;
-
-  /*--- TEMPORARY, for application in dynamic TestCase ---*/
-  su2double difX = 0.0, difX_reduce = 0.0;
-  su2double difY = 0.0, difY_reduce = 0.0;
-
-  weight_OF = config->GetRefNode_Penalty();
+  su2double dist[3] = {0.0, 0.0, 0.0}, dist_reduce[3];
 
   /*--- Convert global point index to local. ---*/
   long iPoint = geometry->GetGlobal_to_Local_Point(config->GetRefNode_ID());
 
   if (iPoint >= 0) {
-
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-
-      /*--- Retrieve the value of the reference geometry ---*/
-      reference_geometry = config->GetRefNode_Displacement(iVar);
-
-      /*--- Retrieve the value of the current solution ---*/
-      current_solution = nodes->GetSolution(iPoint,iVar);
-
-      /*--- The objective function is the sum of the difference between solution and difference, squared ---*/
-      distance_sq +=  (current_solution - reference_geometry)*(current_solution - reference_geometry);
+    if (geometry->node[iPoint]->GetDomain()) {
+      for (unsigned short iVar = 0; iVar < nVar; ++iVar)
+        dist[iVar] = nodes->GetSolution(iPoint,iVar) - config->GetRefNode_Displacement(iVar);
     }
-
-    objective_function = weight_OF * sqrt(distance_sq);
-
-    difX = nodes->GetSolution(iPoint,0) - config->GetRefNode_Displacement(0);
-    difY = nodes->GetSolution(iPoint,1) - config->GetRefNode_Displacement(1);
-
   }
 
-  SU2_MPI::Allreduce(&objective_function, &objective_function_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&difX, &difX_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&difY, &difY_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(dist, dist_reduce, 3, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-  Total_OFRefNode = objective_function_reduce + PenaltyValue;
+  Total_OFRefNode = 0.0;
+  for (unsigned short iVar = 0; iVar < 3; ++iVar)
+    Total_OFRefNode += pow(dist_reduce[iVar],2);
+
+  Total_OFRefNode = config->GetRefNode_Penalty()*sqrt(Total_OFRefNode) + PenaltyValue;
 
   Global_OFRefNode += Total_OFRefNode;
-  objective_function_averaged = Global_OFRefNode / (TimeIter + 1.0 + EPS);
+  su2double objective_function_averaged = Global_OFRefNode / (TimeIter + 1.0 + EPS);
 
-  bool direct_diff = ((config->GetDirectDiff() == D_YOUNG) ||
-                      (config->GetDirectDiff() == D_POISSON) ||
-                      (config->GetDirectDiff() == D_RHO) ||
-                      (config->GetDirectDiff() == D_RHO_DL) ||
-                      (config->GetDirectDiff() == D_EFIELD) ||
-                      (config->GetDirectDiff() == D_MACH) ||
-                      (config->GetDirectDiff() == D_PRESSURE));
+  /// TODO: Temporary output files for the objective function. Will be integrated in the output once it is refactored.
 
-  if ((direct_diff) && (rank == MASTER_NODE)){
+  if (rank != MASTER_NODE) return;
 
+  if (config->GetDirectDiff() != NO_DERIVATIVE) {
+
+    /*--- Forward mode AD results. ---*/
+
+    su2double local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefNode);
+
+    if (fsi) Total_ForwardGradient  = local_forward_gradient;
+    else     Total_ForwardGradient += local_forward_gradient;
+
+    su2double averaged_gradient = Total_ForwardGradient / (TimeIter + 1.0);
+
+    OutputForwardModeGradient(config, false, Total_OFRefNode, objective_function_averaged,
+                              local_forward_gradient, averaged_gradient);
+  }
+  else {
+    cout << "Objective function: " << Total_OFRefNode << "." << endl;
     ofstream myfile_res;
-
-    if (config->GetDirectDiff() == D_YOUNG) myfile_res.open ("Output_Direct_Diff_E.txt", ios::app);
-    if (config->GetDirectDiff() == D_POISSON) myfile_res.open ("Output_Direct_Diff_Nu.txt", ios::app);
-    if (config->GetDirectDiff() == D_RHO) myfile_res.open ("Output_Direct_Diff_Rho.txt", ios::app);
-    if (config->GetDirectDiff() == D_RHO_DL) myfile_res.open ("Output_Direct_Diff_Rho_DL.txt", ios::app);
-    if (config->GetDirectDiff() == D_EFIELD) myfile_res.open ("Output_Direct_Diff_EField.txt", ios::app);
-
-    if (config->GetDirectDiff() == D_MACH) myfile_res.open ("Output_Direct_Diff_Mach.txt");
-    if (config->GetDirectDiff() == D_PRESSURE) myfile_res.open ("Output_Direct_Diff_Pressure.txt");
-
+    myfile_res.open ("of_refnode.dat");
     myfile_res.precision(15);
-
-    myfile_res << scientific << Total_OFRefNode << "\t";
-
-    if (dynamic) myfile_res << scientific << objective_function_averaged << "\t";
-
-    su2double local_forward_gradient = 0.0;
-    su2double averaged_gradient = 0.0;
-
-    local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefNode);
-
-    if (fsi) {
-      Total_ForwardGradient = local_forward_gradient;
-      averaged_gradient     = Total_ForwardGradient / (TimeIter + 1.0);
-    }
-    else {
-      Total_ForwardGradient += local_forward_gradient;
-      averaged_gradient      = Total_ForwardGradient / (TimeIter + 1.0);
-    }
-
-    myfile_res << scientific << local_forward_gradient << "\t";
-
-    myfile_res << scientific << averaged_gradient << "\t";
-
-    myfile_res << scientific << difX_reduce << "\t";
-    myfile_res << scientific << difY_reduce << "\t";
-
-    myfile_res << endl;
-
+    if (dynamic) myfile_res << scientific << objective_function_averaged << endl;
+    else myfile_res << scientific << Total_OFRefNode << endl;
     myfile_res.close();
 
-    if (config->GetDirectDiff() == D_YOUNG)   cout << "Objective function: " << Total_OFRefNode << ". Global derivative of the Young Modulus: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_POISSON) cout << "Objective function: " << Total_OFRefNode << ". Global derivative of the Poisson's ratio: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_RHO)     cout << "Objective function: " << Total_OFRefNode << ". Global derivative of the structural density: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_RHO_DL)  cout << "Objective function: " << Total_OFRefNode << ". Global derivative of the dead weight: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_EFIELD)  cout << "Objective function: " << Total_OFRefNode << ". Global derivative of the electric field: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_MACH)    cout << "Objective function: " << Total_OFRefNode << ". Global derivative of the Mach number: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_PRESSURE) cout << "Objective function: " << Total_OFRefNode << ". Global derivative of the freestream Pressure: " << Total_ForwardGradient << "." << endl;
-  }
-  else
-  {
-
-    // TODO: Temporary output file for the objective function. Will be integrated in the output once is refurbished.
-    if (rank == MASTER_NODE){
-      cout << "Objective function: " << Total_OFRefNode << "." << endl;
-      ofstream myfile_res;
-      myfile_res.open ("of_refnode.dat");
-      myfile_res.precision(15);
-      if (dynamic) myfile_res << scientific << objective_function_averaged << endl;
-      else myfile_res << scientific << Total_OFRefNode << endl;
-      myfile_res.close();
-
-      ofstream myfile_his;
-      myfile_his.open ("history_refnode.dat",ios::app);
-      myfile_his.precision(15);
-      myfile_his << TimeIter << "\t";
-      myfile_his << scientific << Total_OFRefNode << "\t";
-      myfile_his << scientific << objective_function_averaged << "\t";
-      myfile_his << scientific << difX_reduce << "\t";
-      myfile_his << scientific << difY_reduce << endl;
-      myfile_his.close();
-
-    }
-
+    ofstream myfile_his;
+    myfile_his.open ("history_refnode.dat",ios::app);
+    myfile_his.precision(15);
+    myfile_his << TimeIter << "\t";
+    myfile_his << scientific << Total_OFRefNode << "\t";
+    myfile_his << scientific << objective_function_averaged << "\t";
+    myfile_his << scientific << dist_reduce[0] << "\t";
+    myfile_his << scientific << dist_reduce[1] << "\t";
+    myfile_his << scientific << dist_reduce[2] << endl;
+    myfile_his.close();
   }
 
 }
@@ -3333,8 +3237,9 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_contain
   else
     Total_OFVolFrac = integral/total_volume;
 
-  // TODO: Temporary output file for the objective function. Will be integrated in the output once is refurbished.
-  if (rank == MASTER_NODE){
+  /// TODO: Temporary output files for the objective function. Will be integrated in the output once it is refactored.
+
+  if (rank == MASTER_NODE) {
     cout << "Objective function: " << Total_OFVolFrac << "." << endl;
 
     ofstream myfile_res;
@@ -3393,7 +3298,8 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
 
   SU2_MPI::Allreduce(&compliance, &Total_OFCompliance, 1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 
-  // TODO: Temporary output file for the objective function. Will be integrated in the output once refurbished.
+  /// TODO: Temporary output files for the objective function. Will be integrated in the output once it is refactored.
+
   if (rank == MASTER_NODE) {
     cout << "Objective function: " << Total_OFCompliance << "." << endl;
 

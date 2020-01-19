@@ -1859,21 +1859,21 @@ static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMa
  */
 enum ENUM_DIRECTDIFF_VAR {
   NO_DERIVATIVE = 0,
-  D_MACH = 1,         /*!< \brief Derivative with respect to the mach number */
-  D_AOA = 2,		  /*!< \brief Derivative with respect to the angle of attack */
-  D_PRESSURE = 3,     /*!< \brief Derivative with respect to the freestream pressure */
-  D_TEMPERATURE = 4,  /*!< \brief Derivative with respect to the freestream temperature */
-  D_DENSITY = 5,      /*!< \brief Derivative with respect to the freestream density */
-  D_TURB2LAM = 6,     /*!< \brief Derivative with respect to the turb2lam */
-  D_SIDESLIP = 7,     /*!< \brief Derivative with respect to the sideslip angle */
-  D_VISCOSITY = 8,    /*!< \brief Derivative with respect to the viscosity */
-  D_REYNOLDS = 9,     /*!< \brief Derivative with respect to the reynolds number */
-  D_DESIGN = 10,      /*!< \brief Derivative with respect to the design?? */
-  D_YOUNG = 11,       /*!< \brief Derivative with respect to the Young's Modulus */
-  D_POISSON = 12,
-  D_RHO = 13,
-  D_RHO_DL = 14,
-  D_EFIELD = 15
+  D_MACH = 1,         /*!< \brief Derivative w.r.t. the Mach number */
+  D_AOA = 2,          /*!< \brief Derivative w.r.t. the angle of attack */
+  D_PRESSURE = 3,     /*!< \brief Derivative w.r.t. the freestream pressure */
+  D_TEMPERATURE = 4,  /*!< \brief Derivative w.r.t. the freestream temperature */
+  D_DENSITY = 5,      /*!< \brief Derivative w.r.t. the freestream density */
+  D_TURB2LAM = 6,     /*!< \brief Derivative w.r.t. the turb2lam */
+  D_SIDESLIP = 7,     /*!< \brief Derivative w.r.t. the sideslip angle */
+  D_VISCOSITY = 8,    /*!< \brief Derivative w.r.t. the viscosity */
+  D_REYNOLDS = 9,     /*!< \brief Derivative w.r.t. the reynolds number */
+  D_DESIGN = 10,      /*!< \brief Derivative w.r.t. the design?? */
+  D_YOUNG = 11,       /*!< \brief Derivative w.r.t. the Young's modulus */
+  D_POISSON = 12,     /*!< \brief Derivative w.r.t. the Poisson's ratio */
+  D_RHO = 13,         /*!< \brief Derivative w.r.t. the solid density (inertial) */
+  D_RHO_DL = 14,      /*!< \brief Derivative w.r.t. the density for dead loads */
+  D_EFIELD = 15       /*!< \brief Derivative w.r.t. the electric field */
 };
 static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<string, ENUM_DIRECTDIFF_VAR>
 ("NONE", NO_DERIVATIVE)
