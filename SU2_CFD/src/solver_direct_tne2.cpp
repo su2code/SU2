@@ -4859,6 +4859,8 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
       conv_numerics->SetdPdU(nodes->GetdPdU(iPoint),     nodes->GetdPdU(iPoint));
       conv_numerics->SetdTdU(nodes->GetdTdU(iPoint),     nodes->GetdTdU(iPoint));
       conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(iPoint));
+      conv_numerics->SetEve(nodes->GetEve(iPoint),       nodes->GetEve(iPoint));
+      conv_numerics->SetCvve(nodes->GetCvve(iPoint),     nodes->GetCvve(iPoint));
 
       /*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in driver_structure.cpp
