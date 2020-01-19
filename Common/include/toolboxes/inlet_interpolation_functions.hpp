@@ -53,7 +53,7 @@ class CInletInterpolation{
     CGeometry **geometry;
     CConfig *config;
 
-    su2double Interp_Radius, Theta ,index, *Coord;
+    su2double Interp_Radius, Theta, *Coord;
 
     su2double slope, interpolated_value, Parameter1, Parameter2, unit_r, unit_Theta, unit_m, Alpha, Phi;
     su2double dxi, ai, bi, ci ,di ,delta;
