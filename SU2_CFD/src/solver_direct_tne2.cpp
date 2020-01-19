@@ -4826,9 +4826,10 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
         NormalArea[iDim] = -Normal[iDim];
         UnitNormal[iDim] = -Normal[iDim]/Area;
       }
+      conv_numerics->SetNormal(NormalArea);
 
-      /*--- Retrieve the pressure on the vertex ---*/
-      P   = nodes->GetPressure(iPoint);
+      // /*--- Retrieve the pressure on the vertex ---*/
+      // P   = nodes->GetPressure(iPoint);
 
       /*--- Compute the residual ---*/
       turb_ke = 0.0;
