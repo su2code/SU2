@@ -4777,6 +4777,29 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
     DubDu[iVar] = new su2double[nVar];
   }
 
+  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+  conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+  conv_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+  conv_numerics->SetPIndex      ( nodes->GetPIndex()       );
+  conv_numerics->SetTIndex      ( nodes->GetTIndex()       );
+  conv_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+  conv_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+  conv_numerics->SetHIndex      ( nodes->GetHIndex()       );
+  conv_numerics->SetAIndex      ( nodes->GetAIndex()       );
+  conv_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+  conv_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+
+  visc_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+  visc_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+  visc_numerics->SetPIndex      ( nodes->GetPIndex()       );
+  visc_numerics->SetTIndex      ( nodes->GetTIndex()       );
+  visc_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+  visc_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+  visc_numerics->SetHIndex      ( nodes->GetHIndex()       );
+  visc_numerics->SetAIndex      ( nodes->GetAIndex()       );
+  visc_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+  visc_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+
   /*--- Load parameters from the config class ---*/
   Ms = config->GetMolar_Mass();
 
