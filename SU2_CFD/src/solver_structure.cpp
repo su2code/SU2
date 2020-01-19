@@ -5092,6 +5092,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             Inlet_Data = profileInterpolator.GetInterpolatedProfile();
             nColumns = profileInterpolator.GetNumberofColumns();
             nRows = profileInterpolator.GetNumberofVertexes();
+
+            profileInterpolator.~CInletInterpolation();
             
           break;
           }
