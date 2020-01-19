@@ -4860,6 +4860,7 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
       /*--- Jacobian contribution for implicit integration. ---*/
       if (implicit) {
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      }
 
       // /*--- If using implicit time-stepping, calculate b.c. contribution to Jacobian ---*/
       // if (implicit) {
