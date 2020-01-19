@@ -4824,12 +4824,12 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
       for (iDim = 0; iDim < nDim; iDim++) {
         V_reflected[nSpecies+2+iDim] = nodes->GetVelocity(iPoint,iDim) - 2.*ProjVelocity_i*UnitNormal[iDim];
         U_reflected[nSpecies+iDim] = Density_i*V_reflected[nSpecies+2+iDim];
-        nodes->SetSolution(iPoint,nSpecies+iDim, Density_i*Velocity_i[iDim]);
+        // nodes->SetSolution(iPoint,nSpecies+iDim, Density_i*Velocity_i[iDim]);
       }
 
       /*--- Pass conserved & primitive variables to CNumerics ---*/
-      conv_numerics->SetConservative(U_domain, U_infty);
-      conv_numerics->SetPrimitive(V_domain, V_infty);
+      conv_numerics->SetConservative(U_domain, U_reflected);
+      conv_numerics->SetPrimitive(V_domain, V_reflected);
 
       /*--- Pass supplementary information to CNumerics ---*/
       conv_numerics->SetdPdU(nodes->GetdPdU(iPoint),     nodes->GetdPdU(iPoint));
