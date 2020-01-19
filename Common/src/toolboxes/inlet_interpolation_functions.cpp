@@ -202,3 +202,5 @@ su2double CInletInterpolation::Get_Pi(unsigned long iRow_Akima) {
 return (Inlet_Data[nColumns*(iRow_Akima+1)+index] - Inlet_Data[nColumns*iRow_Akima+index])/(Inlet_Data[nColumns*(iRow_Akima+1)] - Inlet_Data[nColumns*iRow_Akima]);}
 
 su2double CInletInterpolation::Get_Wi(unsigned long iRow_Akima) {return fabs(Get_Pi(iRow_Akima) - Get_Pi(iRow_Akima-1));}
+
+CInletInterpolation::~CInletInterpolation(void){};
