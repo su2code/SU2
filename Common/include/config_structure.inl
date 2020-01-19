@@ -2,24 +2,14 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1469,6 +1459,10 @@ inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat
 
 inline unsigned short CConfig::GetTabular_FileFormat(void) { return Tab_FileFormat; }
 
+inline unsigned long CConfig::GetStartWindowIteration(void) const{return StartWindowIteration; }
+
+inline WINDOW_FUNCTION  CConfig::GetKindWindow(void) const{return static_cast<WINDOW_FUNCTION>(Kind_WindowFct); }
+
 inline unsigned short CConfig::GetActDisk_Jump(void) { return ActDisk_Jump; }
 
 inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
@@ -2061,6 +2055,18 @@ inline su2double CConfig::GetMeshBoxLength(unsigned short val_iDim) { return Mes
 inline su2double CConfig::GetMeshBoxOffset(unsigned short val_iDim) { return Mesh_Box_Offset[val_iDim]; }
 
 inline string CConfig::GetConv_Field(unsigned short iField){ return ConvField[iField]; }
+
+inline string CConfig::GetWndConv_Field(unsigned short iField) const { return WndConvField[iField]; }
+
+inline unsigned short CConfig::GetWnd_Cauchy_Elems(void) const { return Wnd_Cauchy_Elems; }
+
+inline su2double CConfig::GetWnd_Cauchy_Eps(void) const { return Wnd_Cauchy_Eps; }
+
+inline unsigned long CConfig::GetWnd_StartConv_Iter(void) const { return Wnd_StartConv_Iter; }
+
+inline bool CConfig::GetWnd_Cauchy_Crit(void) const {return Wnd_Cauchy_Crit;}
+
+inline unsigned short CConfig::GetnWndConv_Field() const{ return nWndConvField; }
 
 inline unsigned short CConfig::GetnConv_Field(){ return nConvField; }
 

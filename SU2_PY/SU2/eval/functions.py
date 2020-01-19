@@ -3,30 +3,20 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -256,19 +246,33 @@ def aerodynamics( config, state=None ):
          'TARGET_HEATFLUX' in files ) :
         pull.append( files['TARGET_HEATFLUX'] )
 
+
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
         with redirect_output(log_direct):     
             
             # # RUN DIRECT SOLUTION # #
             info = su2run.direct(config)
-            su2io.restart2solution(config,info)
+
+
+
+            konfig = copy.deepcopy(config)
+            ''' 
+            If the time convergence criterion was activated, we have less time iterations. 
+            Store the changed values of TIME_ITER, ITER_AVERAGE_OBJ and UNST_ADJOINT_ITER in
+            info.WND_CAUCHY_DATA'''
+            if konfig.get('WINDOW_CAUCHY_CRIT', 'NO') == 'YES' and konfig.TIME_MARCHING != 'NO':  # Tranfer Convergence Data, if necessary
+                konfig['TIME_ITER']         = info.WND_CAUCHY_DATA['TIME_ITER']
+                konfig['ITER_AVERAGE_OBJ']  = info.WND_CAUCHY_DATA['ITER_AVERAGE_OBJ']
+                konfig['UNST_ADJOINT_ITER'] = info.WND_CAUCHY_DATA['UNST_ADJOINT_ITER']
+
+            su2io.restart2solution(konfig,info)
             state.update(info)
             
             # direct files to push
             name = info.FILES['DIRECT']
-            name = su2io.expand_zones(name,config)
-            name = su2io.expand_time(name,config)
+            name = su2io.expand_zones(name,konfig)
+            name = su2io.expand_time(name,konfig)
             push.extend(name)
             
             # equivarea files to push
@@ -287,7 +291,7 @@ def aerodynamics( config, state=None ):
                 push.append(info.FILES['FLOW_META'])
                 
     #: with output redirection
-    su2io.update_persurface(config,state)
+    su2io.update_persurface(konfig,state)
     # return output 
     funcs = su2util.ordered_bunch()
     for key in su2io.historyOutFields:

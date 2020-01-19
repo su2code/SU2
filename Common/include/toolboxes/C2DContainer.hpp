@@ -2,24 +2,14 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,6 +31,7 @@
 #include "../datatype_structure.hpp"
 
 #include <utility>
+#include <type_traits>
 
 /*!
  * \enum StorageType
@@ -370,12 +361,16 @@ template<typename Index_t, class Scalar_t, StorageType Store, size_t AlignSize, 
 class C2DContainer :
   public container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>
 {
+  static_assert(std::is_integral<Index_t>::value,"");
+
 private:
   using Base = container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>;
   using Base::m_data;
   using Base::m_allocate;
 public:
   using Base::size;
+  using Index = Index_t;
+  using Scalar = Scalar_t;
 
 private:
   /*!
@@ -411,12 +406,9 @@ private:
       free(m_data);
     }
 
-    /*--- round up size to a multiple of the alignment specification if necessary ---*/
-    size_t bytes = reqSize*sizeof(Scalar_t);
-    size_t allocSize = (AlignSize==0)? bytes : ((bytes+AlignSize-1)/AlignSize)*AlignSize;
-
     /*--- request actual allocation to base class as it needs specialization ---*/
-    m_allocate(allocSize,rows,cols);
+    size_t bytes = reqSize*sizeof(Scalar_t);
+    m_allocate(bytes,rows,cols);
 
     return reqSize;
   }
@@ -495,6 +487,70 @@ public:
   }
 };
 
+
+/*!
+ * \class C2DDummyLastView
+ * \brief Helper class, adds dummy trailing dimension to a reference of a
+ *        vector object making it a dummy matrix.
+ * \note The constness of the object is derived from the template type, but
+ *       we allways keep a reference, never a copy of the associated vector.
+ */
+template<class T>
+struct C2DDummyLastView
+{
+  using Index = typename T::Index;
+  using Scalar = typename T::Scalar;
+
+  T& data;
+
+  C2DDummyLastView() = delete;
+
+  C2DDummyLastView(T& ref) : data(ref) {}
+
+  template<class U = T,
+           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
+  Scalar& operator() (Index i, Index) noexcept
+  {
+    return data(i);
+  }
+
+  const Scalar& operator() (Index i, Index) const noexcept
+  {
+    return data(i);
+  }
+};
+
+/*!
+ * \class C3DDummyMiddleView
+ * \brief Helper class, adds dummy middle dimension to a reference of a
+ *        matrix object making it a dummy 3D array.
+ * \note The constness of the object is derived from the template type, but
+ *       we allways keep a reference, never a copy of the associated matrix.
+ */
+template<class T>
+struct C3DDummyMiddleView
+{
+  using Index = typename T::Index;
+  using Scalar = typename T::Scalar;
+
+  T& data;
+
+  C3DDummyMiddleView() = delete;
+
+  C3DDummyMiddleView(T& ref) : data(ref) {}
+
+  template<class U = T,
+           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
+  Scalar& operator() (Index i, Index, Index k) noexcept
+  {
+    return data(i,k);
+  }
+
+  const Scalar& operator() (Index i, Index, Index k) const noexcept
+  {
+    return data(i,k);
+  }
+};
 
 /*!
  * \brief Useful typedefs with default template parameters

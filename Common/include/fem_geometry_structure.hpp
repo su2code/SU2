@@ -3,18 +3,14 @@
  * \brief Headers of the main subroutines for creating the geometrical structure for the FEM solver.
  *        The subroutines and functions are in the <i>fem_geometry_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Project Website: https://su2code.github.io
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +28,11 @@
 
 #pragma once
 
-#include "geometry_structure.hpp"
+#include "geometry/CGeometry.hpp"
+#include "fem_standard_element.hpp"
+#ifdef HAVE_CGNS
+#include "fem_cgns_elements.hpp"
+#endif
 #include "wall_model.hpp"
 #include "blas_structure.hpp"
 
@@ -41,7 +41,7 @@ using namespace std;
 /*!
  * \class CLong3T
  * \brief Help class used to store three longs as one entity.
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CLong3T {
 public:
@@ -71,7 +71,7 @@ private:
  * \class CReorderElements
  * \brief Class, used to reorder the owned elements after the partitioning.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CReorderElements {
 public:
@@ -163,7 +163,7 @@ private:
  * \brief Functor, used for a different sorting of the faces than the < operator
  *        of CFaceOfElement.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CVolumeElementFEM;   // Forward declaration to avoid problems.
 class CSortFaces {
@@ -204,7 +204,7 @@ private:
  * \brief Functor, used for a different sorting of the faces than the < operator
  *        of CSurfaceElementFEM.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CSurfaceElementFEM;   // Forward declaration to avoid problems.
 class CSortBoundaryFaces {
@@ -232,7 +232,7 @@ public:
  * \class CVolumeElementFEM
  * \brief Class to store a volume element for the FEM solver.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CVolumeElementFEM {
 public:
@@ -336,7 +336,7 @@ public:
  * \class CPointFEM
  * \brief Class to a point for the FEM solver.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CPointFEM {
 public:
@@ -388,7 +388,7 @@ private:
  * \class CInternalFaceElementFEM
  * \brief Class to store an internal face for the FEM solver.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CInternalFaceElementFEM {
 public:
@@ -459,7 +459,7 @@ private:
  * \class CSurfaceElementFEM
  * \brief Class to store a surface element for the FEM solver.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CSurfaceElementFEM {
 public:
@@ -548,7 +548,7 @@ private:
  * \class CBoundaryFEM
  * \brief Class to store a boundary for the FEM solver.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CBoundaryFEM {
 public:
@@ -581,7 +581,7 @@ public:
  * \class CMeshFEM
  * \brief Base class for the FEM solver.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CMeshFEM: public CGeometry {
 protected:
@@ -855,7 +855,7 @@ protected:
  * \class CMeshFEM_DG
  * \brief Class which contains all the variables for the DG FEM solver.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CMeshFEM_DG: public CMeshFEM {
 protected:
@@ -1039,18 +1039,6 @@ public:
   void SetSendReceive(CConfig *config);
 
   /*!
-   * \brief Set the value of the total number of points globally in the simulation.
-   * \param[in] val_global_npoint - Global number of points in the mesh (excluding halos).
-   */
-  void SetGlobal_nPointDomain(unsigned long val_global_npoint);
-
-  /*!
-   * \brief Retrieve total number of nodes in a simulation across all processors (excluding halos).
-   * \returns Total number of nodes in a simulation across all processors (excluding halos).
-   */
-  unsigned long GetGlobal_nPointDomain();
-
-  /*!
    * \brief Set the local index that correspond with the global numbering index.
    */
   void SetGlobal_to_Local_Point();
@@ -1058,13 +1046,12 @@ public:
   /*!
    * \brief Get the local index that correspond with the global numbering index.
    * \param[in] val_ipoint - Global point.
-   * \returns Local index that correspond with the global index, -1 if not found on the current rank.
+   * \return Local index that correspond with the global index, -1 if not found on the current rank.
    */
-  long GetGlobal_to_Local_Point(unsigned long val_ipoint);
+  long GetGlobal_to_Local_Point(unsigned long val_ipoint) const override;
 
   /*!
-   * \brief Function, which carries out the preprocessing tasks
-            when wall functions are used.
+   * \brief Function, which carries out the preprocessing tasks when wall functions are used.
    * \param[in] config - Definition of the particular problem.
    */
   void WallFunctionPreprocessing(CConfig *config);

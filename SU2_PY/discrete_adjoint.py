@@ -3,30 +3,20 @@
 ## \file discrete_adjoint.py
 #  \brief Python script for doing the discrete adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -35,7 +25,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import os, sys
+import os, sys, copy
 from optparse import OptionParser
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
@@ -60,20 +50,20 @@ def main():
                       help="Validate the gradient using direct diff. mode", metavar="VALIDATION")
     parser.add_option("-z", "--zones", dest="nzones", default="1",
                       help="Number of Zones", metavar="ZONES")
-    
+
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
     options.step        = float( options.step )
     options.compute     = options.compute.upper() == 'TRUE'
     options.validate    = options.validate.upper() == 'TRUE'
     options.nzones      = int( options.nzones )
-    
+
     discrete_adjoint( options.filename    ,
                       options.partitions  ,
                       options.compute     ,
                       options.step        ,
                       options.nzones       )
-        
+
 #: def main()
 
 
@@ -86,7 +76,6 @@ def discrete_adjoint( filename           ,
                       compute     = True ,
                       step        = 1e-4 ,
                       nzones      = 1     ):
-    
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
@@ -94,10 +83,10 @@ def discrete_adjoint( filename           ,
 
     # State
     state = SU2.io.State()
-    
+
     # Force CSV output in order to compute gradients
     config.WRT_CSV_SOL = 'YES'
-    
+
 
     config['GRADIENT_METHOD'] = 'DISCRETE_ADJOINT'
 
@@ -107,25 +96,36 @@ def discrete_adjoint( filename           ,
         state.find_files(config)
     else:
         state.FILES.MESH = config.MESH_FILENAME
-    
+
+    # Tranfer Convergence Data, if necessary
+    konfig = copy.deepcopy(config)
+
     # Direct Solution
     if compute:
-        info = SU2.run.direct(config) 
+        info = SU2.run.direct(config)
         state.update(info)
-        SU2.io.restart2solution(config,state)
-    
+        # Update konfig
+        konfig = copy.deepcopy(config)
+
+        if konfig.get('WINDOW_CAUCHY_CRIT', 'NO') == 'YES' and konfig.TIME_MARCHING != 'NO':
+            konfig['TIME_ITER'] = info.WND_CAUCHY_DATA['TIME_ITER']
+            konfig['ITER_AVERAGE_OBJ'] = info.WND_CAUCHY_DATA['ITER_AVERAGE_OBJ']
+            konfig['UNST_ADJOINT_ITER'] = info.WND_CAUCHY_DATA['UNST_ADJOINT_ITER']
+
+        SU2.io.restart2solution(konfig,state)
+
     # Adjoint Solution
 
-    # Run all-at-once 
+    # Run all-at-once
     if compute:
-        info = SU2.run.adjoint(config)
+        info = SU2.run.adjoint(konfig)
         state.update(info)
-        SU2.io.restart2solution(config,state)
-    
+        SU2.io.restart2solution(konfig,state)
+
     # Gradient Projection
-    info = SU2.run.projection(config,step)
+    info = SU2.run.projection(konfig,step)
     state.update(info)
-    
+
     return state
 
 #: continuous_adjoint()

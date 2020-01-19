@@ -5,24 +5,14 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,7 +47,7 @@
 #include "numerics_structure.hpp"
 #include "sgs_model.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/geometry/CGeometry.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/linear_algebra/CSysMatrix.hpp"
 #include "../../Common/include/linear_algebra/CSysVector.hpp"
@@ -3745,15 +3735,6 @@ public:
   virtual su2double Get_val_I(void);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point i of the Mass Matrix.
-   * \param[in] jPoint - Point j of the Mass Matrix.
-   * \param[in] iVar - Variable i of the Mass Matrix submatrix.
-   * \param[in] iVar - Variable j of the Mass Matrix submatrix.
-   */
-  virtual su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
-  
-  /*!
    * \brief Gauss method for solving a linear system.
    * \param[in] A - Matrix Ax = b.
    * \param[in] rhs - Right hand side.
@@ -4710,7 +4691,7 @@ public:
  * \class CBaselineSolver_FEM
  * \brief Main class for defining a baseline solution from a restart file for the DG-FEM solver output.
  * \author T. Economon.
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CBaselineSolver_FEM : public CSolver {
 protected:
@@ -6888,7 +6869,8 @@ public:
    * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
    * \param[in] density_miz - value of the mixed-out avaraged density.
    */
-  void MixedOut_Average (CConfig *config, su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
+  void MixedOut_Average (CConfig *config, su2double val_init_pressure, const su2double *val_Averaged_Flux,
+                         const su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
 
   /*!
    * \brief It gathers into the master node average quantities at inflow and outflow needed for turbomachinery analysis.
@@ -6903,7 +6885,8 @@ public:
    * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
    * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
    */
-  void ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
+  void ComputeTurboVelocity(const su2double *cartesianVelocity, const su2double *turboNormal, su2double *turboVelocity,
+                            unsigned short marker_flag, unsigned short marker_kindturb);
 
   /*!
    * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
@@ -6911,7 +6894,8 @@ public:
    * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
    * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
    */
-  void ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
+  void ComputeBackVelocity(const su2double *turboVelocity, const su2double *turboNormal, su2double *cartesianVelocity,
+                           unsigned short marker_flag, unsigned short marker_kindturb);
 
   /*!
    * \brief Provide the average density at the boundary of interest.
@@ -12230,15 +12214,6 @@ public:
   unsigned short Get_iElem_iDe(unsigned long iElem);
   
   /*!
-   * \brief Retrieve the Mass Matrix term (to add to the Jacobian of the adjoint problem)
-   * \param[in] iPoint - Point i of the Mass Matrix.
-   * \param[in] jPoint - Point j of the Mass Matrix.
-   * \param[in] iVar - Variable i of the Mass Matrix submatrix.
-   * \param[in] iVar - Variable j of the Mass Matrix submatrix.
-   */
-  su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
-  
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -13167,7 +13142,7 @@ public:
  * \brief Main class for defining the Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
@@ -14796,7 +14771,7 @@ protected:
  * \brief Main class for defining the Navier-Stokes Discontinuous Galerkin finite element flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CFEM_DG_NSSolver : public CFEM_DG_EulerSolver {
 private:

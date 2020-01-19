@@ -1,25 +1,15 @@
 /*!
- * \file vector_structure.cpp
+ * \file CSysVector.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author F. Palacios, J. Hicken
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,400 +26,62 @@
  */
 
 #include "../../include/linear_algebra/CSysVector.hpp"
+#include "../../include/mpi_structure.hpp"
+#include "../../include/omp_structure.hpp"
+#include "../../include/toolboxes/allocation_toolbox.hpp"
+
+/*!
+ * \brief OpenMP worksharing construct used in CSysVector for loops.
+ * \note The loop will only run in parallel if methods are called from a
+ * parallel region (if not the results will still be correct).
+ * Static schedule to reduce overhead, chunk size determined at initialization.
+ * "nowait" clause is safe when calling CSysVector methods after each other
+ * as the loop size is the same. Methods of other classes that operate on a
+ * CSysVector and do not have the same work scheduling must use a
+ * SU2_OMP_BARRIER before using the vector.
+ */
+#define PARALLEL_FOR SU2_OMP(for schedule(static,omp_chunk_size) nowait)
 
 template<class ScalarType>
 CSysVector<ScalarType>::CSysVector(void) {
 
-  nElm = 0; nElmDomain = 0;
-  nBlk = 0; nBlkDomain = 0;
-  nVar = 0;
-  
-  vec_val = NULL;
+  vec_val = nullptr;
   nElm = 0;
   nElmDomain = 0;
   nVar = 0;
-  nBlk = 0;
-  nBlkDomain = 0;
-
+  omp_chunk_size = OMP_MAX_SIZE;
+  dotRes = 0.0;
 }
 
 template<class ScalarType>
-CSysVector<ScalarType>::CSysVector(const unsigned long & size, const ScalarType & val) {
+void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numBlkDomain,
+                                        unsigned long numVar, const ScalarType* val, bool valIsArray) {
 
-  nElm = size; nElmDomain = size;
-  nBlk = nElm; nBlkDomain = nElmDomain;
-  nVar = 1;
+  /*--- Assert that this method is only called by one thread. ---*/
+  assert(omp_get_thread_num()==0 && "Only the master thread is allowed to initialize the vector.");
 
-  /*--- Check for invalid size, then allocate memory and initialize values ---*/
-  if ( (nElm >= ULONG_MAX) ) {
-    char buf[100];
-    SPRINTF(buf, "Invalid input: size = %lu", size );
-    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
+  if ((nElm != numBlk*numVar) && (vec_val != nullptr)) {
+    MemoryAllocation::aligned_free(vec_val);
+    vec_val = nullptr;
   }
 
-  vec_val = new ScalarType[nElm];
-  for (unsigned int i = 0; i < nElm; i++)
-    vec_val[i] = val;
-
-#ifdef HAVE_MPI
-  unsigned long nElmLocal = (unsigned long)nElm;
-  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
-}
-
-template<class ScalarType>
-CSysVector<ScalarType>::CSysVector(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar,
-                       const ScalarType & val) {
-
-  nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
-  nBlk = numBlk; nBlkDomain = numBlkDomain;
+  nElm = numBlk*numVar;
+  nElmDomain = numBlkDomain*numVar;
   nVar = numVar;
 
-  /*--- Check for invalid input, then allocate memory and initialize values ---*/
-  if ( nElm >= ULONG_MAX ) {
-    char buf[100];
-    SPRINTF(buf, "invalid input: numBlk, numVar = %lu, %u", numBlk, numVar );
-    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
+  omp_chunk_size = computeStaticChunkSize(nElm, omp_get_max_threads(), OMP_MAX_SIZE);
+
+  if (vec_val == nullptr)
+    vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm*sizeof(ScalarType));
+
+  if(val != nullptr) {
+    if(!valIsArray) {
+      for(auto i=0ul; i<nElm; i++) vec_val[i] = *val;
+    }
+    else {
+      for(auto i=0ul; i<nElm; i++) vec_val[i] = val[i];
+    }
   }
-
-  vec_val = new ScalarType[nElm];
-  for (unsigned int i = 0; i < nElm; i++)
-    vec_val[i] = val;
-
-#ifdef HAVE_MPI
-  unsigned long nElmLocal = (unsigned long)nElm;
-  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
-}
-
-template<class ScalarType>
-CSysVector<ScalarType>::CSysVector(const CSysVector<ScalarType> & u) {
-
-  /*--- Copy size information, allocate memory, and initialize values ---*/
-  nElm = u.nElm; nElmDomain = u.nElmDomain;
-  nBlk = u.nBlk; nBlkDomain = u.nBlkDomain;
-  nVar = u.nVar;
-
-  vec_val = new ScalarType[nElm];
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] = u.vec_val[i];
-
-#ifdef HAVE_MPI
-  nElmGlobal = u.nElmGlobal;
-#endif
-
-}
-
-template<class ScalarType>
-CSysVector<ScalarType>::CSysVector(const unsigned long & size, const ScalarType* u_array) {
-
-  nElm = size; nElmDomain = size;
-  nBlk = nElm; nBlkDomain = nElmDomain;
-  nVar = 1;
-
-  /*--- Check for invalid size, then allocate memory and initialize values ---*/
-  if ( nElm >= ULONG_MAX ) {
-    char buf[100];
-    SPRINTF(buf, "Invalid input: size = %lu", size );
-    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
-  }
-
-  vec_val = new ScalarType[nElm];
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] = u_array[i];
-
-#ifdef HAVE_MPI
-  unsigned long nElmLocal = (unsigned long)nElm;
-  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
-}
-
-template<class ScalarType>
-CSysVector<ScalarType>::CSysVector(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar,
-                       const ScalarType* u_array) {
-
-  nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
-  nBlk = numBlk; nBlkDomain = numBlkDomain;
-  nVar = numVar;
-
-  /*--- check for invalid input, then allocate memory and initialize values ---*/
-  if ( nElm >= ULONG_MAX ) {
-    char buf[100];
-    SPRINTF(buf, "invalid input: numBlk, numVar = %lu, %u", numBlk, numVar );
-    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
-  }
-
-  vec_val = new ScalarType[nElm];
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] = u_array[i];
-
-#ifdef HAVE_MPI
-  unsigned long nElmLocal = (unsigned long)nElm;
-  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
-}
-
-template<class ScalarType>
-CSysVector<ScalarType>::~CSysVector() {
-  delete [] vec_val;
-
-  nElm = 0; nElmDomain = 0;
-  nBlk = 0; nBlkDomain = 0;
-  nVar = 0;
-
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::Initialize(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar, const ScalarType & val) {
-
-  nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
-  nBlk = numBlk; nBlkDomain = numBlkDomain;
-  nVar = numVar;
-
-  /*--- Check for invalid input, then allocate memory and initialize values ---*/
-  if ( nElm >= ULONG_MAX ) {
-    char buf[100];
-    SPRINTF(buf, "invalid input: numBlk, numVar = %lu, %u", numBlk, numVar );
-    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
-  }
-
-  vec_val = new ScalarType[nElm];
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] = val;
-
-#ifdef HAVE_MPI
-  unsigned long nElmLocal = (unsigned long)nElm;
-  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::Equals_AX(const ScalarType & a, CSysVector<ScalarType> & x) {
-  /*--- check that *this and x are compatible ---*/
-  if (nElm != x.nElm) {
-    cerr << "CSysVector::Equals_AX(): " << "sizes do not match";
-    throw(-1);
-  }
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] = a * x.vec_val[i];
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::Plus_AX(const ScalarType & a, CSysVector<ScalarType> & x) {
-  /*--- check that *this and x are compatible ---*/
-  if (nElm != x.nElm) {
-    SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
-  }
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] += a * x.vec_val[i];
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::Equals_AX_Plus_BY(const ScalarType & a, CSysVector<ScalarType> & x, const ScalarType & b, CSysVector<ScalarType> & y) {
-  /*--- check that *this, x and y are compatible ---*/
-  if ((nElm != x.nElm) || (nElm != y.nElm)) {
-    SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
-  }
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] = a * x.vec_val[i] + b * y.vec_val[i];
-}
-
-template<class ScalarType>
-CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(const CSysVector<ScalarType> & u) {
-
-  /*--- check if self-assignment, otherwise perform deep copy ---*/
-  if (this == &u) return *this;
-
-  /*--- determine if (re-)allocation is needed ---*/
-  if (nElm != u.nElm && vec_val != NULL) {delete [] vec_val; vec_val = NULL;}
-  if (vec_val == NULL) vec_val = new ScalarType[u.nElm];
-
-  /*--- copy ---*/
-  nElm = u.nElm;
-  nElmDomain = u.nElmDomain;
-  nBlk = u.nBlk;
-  nBlkDomain = u.nBlkDomain;
-  nVar = u.nVar;
-
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] = u.vec_val[i];
-
-#ifdef HAVE_MPI
-  nElmGlobal = u.nElmGlobal;
-#endif
-
-  return *this;
-}
-
-template<class ScalarType>
-CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(const ScalarType & val) {
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] = val;
-  return *this;
-}
-
-template<class ScalarType>
-CSysVector<ScalarType> CSysVector<ScalarType>::operator+(const CSysVector<ScalarType> & u) const {
-
-  /*--- Use copy constructor and compound addition-assignment ---*/
-  CSysVector<ScalarType> sum(*this);
-  sum += u;
-  return sum;
-}
-
-template<class ScalarType>
-CSysVector<ScalarType> & CSysVector<ScalarType>::operator+=(const CSysVector<ScalarType> & u) {
-
-  /*--- Check for consistent sizes, then add elements ---*/
-  if (nElm != u.nElm) {
-    SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
-  }
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] += u.vec_val[i];
-  return *this;
-}
-
-template<class ScalarType>
-CSysVector<ScalarType> CSysVector<ScalarType>::operator-(const CSysVector<ScalarType> & u) const {
-
-  /*--- Use copy constructor and compound subtraction-assignment ---*/
-  CSysVector<ScalarType> diff(*this);
-  diff -= u;
-  return diff;
-}
-
-template<class ScalarType>
-CSysVector<ScalarType> & CSysVector<ScalarType>::operator-=(const CSysVector<ScalarType> & u) {
-
-  /*--- Check for consistent sizes, then subtract elements ---*/
-  if (nElm != u.nElm) {
-    SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
-  }
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] -= u.vec_val[i];
-  return *this;
-}
-
-template<class ScalarType>
-CSysVector<ScalarType> CSysVector<ScalarType>::operator*(const ScalarType & val) const {
-
-  /*--- use copy constructor and compound scalar
-   multiplication-assignment ---*/
-  CSysVector<ScalarType> prod(*this);
-  prod *= val;
-  return prod;
-}
-
-template<class ScalarType>
-CSysVector<ScalarType> operator*(const ScalarType & val, const CSysVector<ScalarType> & u) {
-
-  /*--- use copy constructor and compound scalar
-   multiplication-assignment ---*/
-  CSysVector<ScalarType> prod(u);
-  prod *= val;
-  return prod;
-}
-
-template<class ScalarType>
-CSysVector<ScalarType> & CSysVector<ScalarType>::operator*=(const ScalarType & val) {
-
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] *= val;
-  return *this;
-}
-
-template<class ScalarType>
-CSysVector<ScalarType> CSysVector<ScalarType>::operator/(const ScalarType & val) const {
-
-  /*--- use copy constructor and compound scalar
-   division-assignment ---*/
-  CSysVector quotient(*this);
-  quotient /= val;
-  return quotient;
-}
-
-template<class ScalarType>
-CSysVector<ScalarType> & CSysVector<ScalarType>::operator/=(const ScalarType & val) {
-
-  for (unsigned long i = 0; i < nElm; i++)
-    vec_val[i] /= val;
-  return *this;
-}
-
-template<class ScalarType>
-ScalarType CSysVector<ScalarType>::norm() const {
-
-  /*--- just call dotProd on this*, then sqrt ---*/
-  ScalarType val = dotProd(*this, *this);
-  if (val < 0.0) {
-    SU2_MPI::Error("Inner product of CSysVector is negative", CURRENT_FUNCTION);
-  }
-  return sqrt(val);
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::CopyToArray(ScalarType* u_array) {
-
-  for (unsigned long i = 0; i < nElm; i++)
-    u_array[i] = vec_val[i];
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::AddBlock(unsigned long val_ipoint, ScalarType *val_residual) {
-  unsigned short iVar;
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    vec_val[val_ipoint*nVar+iVar] += val_residual[iVar];
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::SubtractBlock(unsigned long val_ipoint, ScalarType *val_residual) {
-  unsigned short iVar;
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    vec_val[val_ipoint*nVar+iVar] -= val_residual[iVar];
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::SetBlock(unsigned long val_ipoint, ScalarType *val_residual) {
-  unsigned short iVar;
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    vec_val[val_ipoint*nVar+iVar] = val_residual[iVar];
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::SetBlock(unsigned long val_ipoint, unsigned short val_var, ScalarType val_residual) {
-
-  vec_val[val_ipoint*nVar+val_var] = val_residual;
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::SetBlock_Zero(unsigned long val_ipoint) {
-  unsigned short iVar;
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    vec_val[val_ipoint*nVar+iVar] = 0.0;
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::SetBlock_Zero(unsigned long val_ipoint, unsigned short val_var) {
-    vec_val[val_ipoint*nVar+val_var] = 0.0;
-}
-
-template<class ScalarType>
-ScalarType CSysVector<ScalarType>::GetBlock(unsigned long val_ipoint, unsigned short val_var) {
-  return vec_val[val_ipoint*nVar + val_var];
-}
-
-template<class ScalarType>
-ScalarType *CSysVector<ScalarType>::GetBlock(unsigned long val_ipoint) {
-  return &vec_val[val_ipoint*nVar];
 }
 
 template<class ScalarType>
@@ -442,66 +94,175 @@ void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
   /*--- check if self-assignment, otherwise perform deep copy ---*/
   if ((const void*)this == (const void*)&other) return;
 
-  /*--- determine if (re-)allocation is needed ---*/
-  if (nElm != other.GetLocSize() && vec_val != NULL) {
-    delete [] vec_val;
-    vec_val = NULL;
-  }
+  SU2_OMP_MASTER
+  Initialize(other.GetNBlk(), other.GetNBlkDomain(), other.GetNVar(), nullptr, true);
+  SU2_OMP_BARRIER
 
-  /*--- copy ---*/
-  nElm = other.GetLocSize();
-  nElmDomain = other.GetNElmDomain();
-  nBlk = other.GetNBlk();
-  nBlkDomain = other.GetNBlkDomain();
-  nVar = other.GetNVar();
-
-  if (vec_val == NULL)
-    vec_val = new ScalarType[nElm];
-
-  for (unsigned long i = 0; i < nElm; i++)
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++)
     vec_val[i] = SU2_TYPE::GetValue(other[i]);
-
-#ifdef HAVE_MPI
-  nElmGlobal = other.GetSize();
-#endif
 }
 
 template<class ScalarType>
-ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType> & v) {
+CSysVector<ScalarType>::~CSysVector() {
 
-  /*--- check for consistent sizes ---*/
-  if (u.nElm != v.nElm) {
-    SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
-  }
+  if (vec_val != nullptr)
+    MemoryAllocation::aligned_free(vec_val);
+}
 
-  /*--- find local inner product and, if a parallel run, sum over all
-   processors (we use nElemDomain instead of nElem) ---*/
-  ScalarType loc_prod = 0.0;
-  for (unsigned long i = 0; i < u.nElmDomain; i++)
-    loc_prod += u.vec_val[i]*v.vec_val[i];
-  ScalarType prod = 0.0;
+template<class ScalarType>
+void CSysVector<ScalarType>::Equals_AX(ScalarType a, const CSysVector<ScalarType> & x) {
+
+  assert(nElm == x.nElm && "Sizes do not match");
+
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] = a * x.vec_val[i];
+}
+
+template<class ScalarType>
+void CSysVector<ScalarType>::Plus_AX(ScalarType a, const CSysVector<ScalarType> & x) {
+
+  assert(nElm == x.nElm && "Sizes do not match");
+
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] += a * x.vec_val[i];
+}
+
+template<class ScalarType>
+void CSysVector<ScalarType>::Equals_AX_Plus_BY(ScalarType a, const CSysVector<ScalarType> & x,
+                                               ScalarType b, const CSysVector<ScalarType> & y) {
+  assert(nElm == x.nElm && nElm == y.nElm && "Sizes do not match");
+
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++)
+    vec_val[i] = a * x.vec_val[i] + b * y.vec_val[i];
+}
+
+template<class ScalarType>
+CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(const CSysVector<ScalarType> & u) {
+
+  assert(nElm == u.nElm && "Sizes do not match");
+
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] = u.vec_val[i];
+
+  return *this;
+}
+
+template<class ScalarType>
+CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(ScalarType val) {
+
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] = val;
+
+  return *this;
+}
+
+template<class ScalarType>
+CSysVector<ScalarType> & CSysVector<ScalarType>::operator+=(const CSysVector<ScalarType> & u) {
+
+  assert(nElm == u.nElm && "Sizes do not match");
+
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] += u.vec_val[i];
+
+  return *this;
+}
+
+template<class ScalarType>
+CSysVector<ScalarType> & CSysVector<ScalarType>::operator-=(const CSysVector<ScalarType> & u) {
+
+  assert(nElm == u.nElm && "Sizes do not match");
+
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] -= u.vec_val[i];
+
+  return *this;
+}
+
+template<class ScalarType>
+CSysVector<ScalarType> & CSysVector<ScalarType>::operator*=(ScalarType val) {
+
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] *= val;
+
+  return *this;
+}
+
+template<class ScalarType>
+CSysVector<ScalarType> & CSysVector<ScalarType>::operator/=(ScalarType val) {
+
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) vec_val[i] /= val;
+
+  return *this;
+}
+
+template<class ScalarType>
+void CSysVector<ScalarType>::CopyToArray(ScalarType* u_array) const {
+
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElm; i++) u_array[i] = vec_val[i];
+}
+
+template<class ScalarType>
+ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
+#if !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
+
+  /*--- All threads get the same "view" of the vectors and shared variable. ---*/
+  SU2_OMP_BARRIER
+  dotRes = 0.0;
+  SU2_OMP_BARRIER
+
+  /*--- Reduction over all threads in this mpi rank using the shared variable. ---*/
+  ScalarType sum = 0.0;
+
+  PARALLEL_FOR
+  for(auto i=0ul; i<nElmDomain; ++i)
+    sum += vec_val[i]*u.vec_val[i];
+
+  SU2_OMP(atomic)
+  dotRes += sum;
+
+  /*--- Wait for all atomic updates. ---*/
+  SU2_OMP_BARRIER
 
 #ifdef HAVE_MPI
-  SelectMPIWrapper<ScalarType>::W::Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  /*--- Reduce across all mpi ranks, only master thread communicates. ---*/
+  SU2_OMP_MASTER
+  {
+    sum = dotRes;
+    SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  }
+  /*--- Make view of result consistent across threads. ---*/
+  SU2_OMP_BARRIER
+#endif // MPI
+#else // CODI_TYPE
+  /*--- Compatible version, no OMP reductions, no atomics, master does everything. ---*/
+  SU2_OMP_BARRIER
+  SU2_OMP_MASTER
+  {
+    ScalarType sum = 0.0;
+    for(auto i=0ul; i<nElmDomain; ++i)
+      sum += vec_val[i]*u.vec_val[i];
+#ifdef HAVE_MPI
+    /*--- Reduce across all mpi ranks. ---*/
+    SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
-  prod = loc_prod;
-#endif
-
-  return prod;
+    dotRes = sum;
+#endif // MPI
+  }
+  SU2_OMP_BARRIER
+#endif // CODI
+  return dotRes;
 }
 
 /*--- Explicit instantiations ---*/
 template class CSysVector<su2double>;
-template CSysVector<su2double> operator*(const su2double&, const CSysVector<su2double>&);
 template void CSysVector<su2double>::PassiveCopy(const CSysVector<su2double>&);
-template su2double dotProd<su2double>(const CSysVector<su2double> & u, const CSysVector<su2double> & v);
-
-template class CSysVector<unsigned long>;
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysVector<passivedouble>;
-template CSysVector<passivedouble> operator*(const passivedouble&, const CSysVector<passivedouble>&);
 template void CSysVector<su2double>::PassiveCopy(const CSysVector<passivedouble>&);
 template void CSysVector<passivedouble>::PassiveCopy(const CSysVector<su2double>&);
-template passivedouble dotProd<passivedouble>(const CSysVector<passivedouble> & u, const CSysVector<passivedouble> & v);
 #endif

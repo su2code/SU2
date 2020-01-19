@@ -3,30 +3,20 @@
 ## \file state.py
 #  \brief python package for state 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -100,6 +90,10 @@ def State_Factory(state=None,config=None):
         HISTORY:
             DIRECT: {ITERATION=[1.0, 2.0, 3.0, (...)
             ADJOINT_DRAG: {ITERATION=[1.0, 2.0, 3.0, (...)
+        WND_CAUCHY_DATA:
+            TIME_ITER
+            UNST_ADJOINT_ITER
+            ITER_AVERAGE_OBJ
 
     """   
     
@@ -113,12 +107,16 @@ def State_Factory(state=None,config=None):
     
     NewClass = State()
     
-    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY']:
+    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY','WND_CAUCHY_DATA']:
         NewClass[key] = ordered_bunch()
             
     if config:
         NewClass.find_files(config)
-            
+        # WND_Convergence Data
+        NewClass['WND_CAUCHY_DATA'] = {'TIME_ITER': config['TIME_ITER'],
+                                       'UNST_ADJOINT_ITER': config['UNST_ADJOINT_ITER'],
+                                       'ITER_AVERAGE_OBJ': config['ITER_AVERAGE_OBJ']}
+
     return NewClass
 
 

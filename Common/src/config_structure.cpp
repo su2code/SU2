@@ -2,24 +2,14 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1502,6 +1492,17 @@ void CConfig::SetConfig_Options() {
   /*!\brief CONV_FIELD\n DESCRIPTION: Output field to monitor \n Default: depends on solver \ingroup Config*/
   addStringListOption("CONV_FIELD", nConvField, ConvField);
 
+  /*!\brief CONV_WINDOW_STARTITER\n DESCRIPTION: Iteration number after START_ITER_WND  to begin convergence monitoring\n DEFAULT: 15 \ingroup Config*/
+  addUnsignedLongOption("CONV_WINDOW_STARTITER", Wnd_StartConv_Iter, 15);
+  /*!\brief CONV_WINDOW_CAUCHY_ELEMS\n DESCRIPTION: Number of elements to apply the criteria. \n DEFAULT 100 \ingroup Config*/
+  addUnsignedShortOption("CONV_WINDOW_CAUCHY_ELEMS", Wnd_Cauchy_Elems, 100);
+  /*!\brief CONV_WINDOW_CAUCHY_EPS\n DESCRIPTION: Epsilon to control the series convergence \n DEFAULT: 1e-3 \ingroup Config*/
+  addDoubleOption("CONV_WINDOW_CAUCHY_EPS", Wnd_Cauchy_Eps, 1E-3);
+  /*!\brief WINDOW_CAUCHY_CRIT \n DESCRIPTION: Determines, if the cauchy convergence criterion should be used for windowed time averaged objective functions*/
+  addBoolOption("WINDOW_CAUCHY_CRIT",Wnd_Cauchy_Crit, false);
+  /*!\brief CONV_WINDOW_FIELD
+   * \n DESCRIPTION: Output fields  for the Cauchy criterium for the TIME iteration. The criterium is applied to the windowed time average of the chosen funcion. */
+  addStringListOption("CONV_WINDOW_FIELD",nWndConvField, WndConvField);
   /*!\par CONFIG_CATEGORY: Multi-grid \ingroup Config*/
   /*--- Options related to Multi-grid ---*/
 
@@ -2424,6 +2425,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Writing surface solution file frequency for dual time */
   addUnsignedLongOption("WRT_SURF_FREQ_DUALTIME", Wrt_Surf_Freq_DualTime, 1);
 
+  /* DESCRIPTION: Starting Iteration for windowing approach */
+  addUnsignedLongOption("WINDOW_START_ITER", StartWindowIteration, 0);
+
+  /* DESCRIPTION: Window (weight) function for the cost-functional in the reverse sweep */
+  addEnumOption("WINDOW_FUNCTION", Kind_WindowFct,Window_Map, SQUARE);
+
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
@@ -2750,7 +2757,7 @@ void CConfig::SetHeader(unsigned short val_software){
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 6.2.0  \"Falcon\"                           |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.0  \"Blackbird\"                        |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -2764,22 +2771,12 @@ void CConfig::SetHeader(unsigned short val_software){
     cout << "|                                                                       |" << endl;
     //cout << "|   Local date and time: " << dt << "                      |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| The current SU2 release has been coordinated by the                   |" << endl;
-    cout << "| SU2 International Developers Society <www.su2devsociety.org>          |" << endl;
-    cout << "| with selected contributions from the open-source community.           |" << endl;
+    cout << "| SU2 Project Website: https://su2code.github.io                        |" << endl;
+    cout << "|                                                                       |" << endl;
+    cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
+    cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| The main research teams contributing to the current release are:      |" << endl;
-    cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
-    cout << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
-    cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
-    cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
-    cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
-    cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
-    cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
-    cout << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
-    cout << "|                      Tim Albring, and the SU2 contributors.           |" << endl;
+    cout << "| Copyright 2012-2019, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -6321,6 +6318,19 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Residual minimum value: 1e" << MinLogResidual << "." << endl;
     cout << "Cauchy series min. value: " << Cauchy_Eps << "." << endl;
     cout << "Number of Cauchy elements: " << Cauchy_Elems << "." << endl;
+    if(Cauchy_Elems <1){
+      SU2_MPI::Error(to_string(Cauchy_Elems) + string(" Cauchy elements are no viable input. Please check your configuration file."), CURRENT_FUNCTION);
+    }
+    cout << "Begin windowed time average at iteration " << Wnd_StartConv_Iter << "." << endl;
+
+    if(Wnd_Cauchy_Crit){
+      cout << "Begin time convergence monitoring at iteration " << Wnd_StartConv_Iter + StartWindowIteration << "." << endl;
+      cout << "Time cauchy series min. value: " << Wnd_Cauchy_Eps << "." << endl;
+      cout << "Number of Cauchy elements: " << Wnd_Cauchy_Elems << "." << endl;
+      if(Wnd_Cauchy_Elems <1){
+        SU2_MPI::Error(to_string(Wnd_Cauchy_Elems) +string(" Cauchy elements are no viable input. Please check your configuration file."), CURRENT_FUNCTION);
+      }
+    }
   }
 
   if (val_software == SU2_MSH) {
@@ -9483,6 +9493,12 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
     if (config_container[iZone]->GetMultizone_Mesh() != GetMultizone_Mesh()){
       SU2_MPI::Error("Option MULTIZONE_MESH must be the same in all zones.", CURRENT_FUNCTION);
     }
+    if(config_container[iZone]->GetWnd_Cauchy_Crit() == true){
+      SU2_MPI::Error("Option WINDOW_CAUCHY_CRIT must be deactivated for multizone problems.", CURRENT_FUNCTION);
+    }
+  }
+  if(driver_config->GetWnd_Cauchy_Crit() == true){
+    SU2_MPI::Error("Option WINDOW_CAUCHY_CRIT must be deactivated for multizone problems.", CURRENT_FUNCTION);
   }
 
   /*--- Set the Restart iter for time dependent problems ---*/

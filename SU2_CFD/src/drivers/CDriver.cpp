@@ -2,24 +2,14 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,6 +27,10 @@
 
 #include "../../include/drivers/CDriver.hpp"
 #include "../../include/definition_structure.hpp"
+
+#include "../../../Common/include/geometry/CDummyGeometry.hpp"
+#include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
+#include "../../../Common/include/geometry/CMultiGridGeometry.hpp"
 
 #include "../../include/numerics/elasticity/CFEALinearElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEAMeshElasticity.hpp"
@@ -3633,7 +3627,7 @@ void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CS
            rotating reference frame. ---*/
 
         for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
-          geometry[iMGlevel]->SetRotationalVelocity(config, iZone, true);
+          geometry[iMGlevel]->SetRotationalVelocity(config, true);
           geometry[iMGlevel]->SetShroudVelocity(config);
         }
 
@@ -3651,7 +3645,7 @@ void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CS
         /*--- Set the translational velocity on all grid levels. ---*/
 
         for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
-          geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config, iZone, true);
+          geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config, true);
 
         break;
 
@@ -4184,6 +4178,19 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
 
 void CFluidDriver::Output(unsigned long InnerIter) {
 
+  for (iZone = 0; iZone < nZone; iZone++) {
+    const auto inst = config_container[iZone]->GetiInst();
+
+    for (iInst = 0; iInst < nInst[iZone]; ++iInst) {
+      config_container[iZone]->SetiInst(iInst);
+      output_container[iZone]->SetResult_Files(geometry_container[iZone][iInst][MESH_0],
+                                               config_container[iZone],
+                                               solver_container[iZone][iInst][MESH_0],
+                                               InnerIter, StopCalc);
+    }
+    config_container[iZone]->SetiInst(inst);
+  }
+
 }
 
 
@@ -4350,7 +4357,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
             cout << endl << " Updated rotating frame grid velocities";
             cout << " for zone " << iZone << "." << endl;
           }
-          geometry_container[iZone][INST_0][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone, print);
+          geometry_container[iZone][INST_0][MESH_0]->SetRotationalVelocity(config_container[iZone], print);
           geometry_container[iZone][INST_0][MESH_0]->SetShroudVelocity(config_container[iZone]);
         }
       }

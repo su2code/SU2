@@ -2,24 +2,14 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #include "../include/solver_structure.hpp"
 #include "../include/variables/CHeatFVMVariable.hpp"
@@ -529,38 +520,35 @@ void CHeatSolverFVM::Centered_Residual(CGeometry *geometry, CSolver **solver_con
 
     nVarFlow = solver_container[FLOW_SOL]->GetnVar();
 
-      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-        /*--- Points in edge ---*/
-        iPoint = geometry->edge[iEdge]->GetNode(0);
-        jPoint = geometry->edge[iEdge]->GetNode(1);
-        numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+      /*--- Points in edge ---*/
+      iPoint = geometry->edge[iEdge]->GetNode(0);
+      jPoint = geometry->edge[iEdge]->GetNode(1);
+      numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-        /*--- Primitive variables w/o reconstruction ---*/
-        V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-        V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
+      /*--- Primitive variables w/o reconstruction ---*/
+      V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
 
-        Temp_i = nodes->GetSolution(iPoint,0);
-        Temp_j = nodes->GetSolution(jPoint,0);
+      Temp_i = nodes->GetSolution(iPoint,0);
+      Temp_j = nodes->GetSolution(jPoint,0);
 
-        numerics->SetUndivided_Laplacian(nodes->GetUndivided_Laplacian(iPoint), nodes->GetUndivided_Laplacian(jPoint));
-        numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+      numerics->SetUndivided_Laplacian(nodes->GetUndivided_Laplacian(iPoint), nodes->GetUndivided_Laplacian(jPoint));
+      numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
 
-        numerics->SetPrimitive(V_i, V_j);
-        numerics->SetTemperature(Temp_i, Temp_j);
+      numerics->SetPrimitive(V_i, V_j);
+      numerics->SetTemperature(Temp_i, Temp_j);
 
-        numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
-        LinSysRes.AddBlock(iPoint, Residual);
-        LinSysRes.SubtractBlock(jPoint, Residual);
+      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.SubtractBlock(jPoint, Residual);
 
-        /*--- Implicit part ---*/
+      /*--- Implicit part ---*/
 
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-        Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-        Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-        Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
-      }
+      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
+    }
   }
 }
 
@@ -580,83 +568,80 @@ void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 
     nVarFlow = solver_container[FLOW_SOL]->GetnVar();
 
-      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-        /*--- Points in edge ---*/
-        iPoint = geometry->edge[iEdge]->GetNode(0);
-        jPoint = geometry->edge[iEdge]->GetNode(1);
-        numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+      /*--- Points in edge ---*/
+      iPoint = geometry->edge[iEdge]->GetNode(0);
+      jPoint = geometry->edge[iEdge]->GetNode(1);
+      numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-        /*--- Primitive variables w/o reconstruction ---*/
-        V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-        V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
+      /*--- Primitive variables w/o reconstruction ---*/
+      V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
 
-        Temp_i_Grad = nodes->GetGradient(iPoint);
-        Temp_j_Grad = nodes->GetGradient(jPoint);
-        numerics->SetConsVarGradient(Temp_i_Grad, Temp_j_Grad);
+      Temp_i_Grad = nodes->GetGradient(iPoint);
+      Temp_j_Grad = nodes->GetGradient(jPoint);
+      numerics->SetConsVarGradient(Temp_i_Grad, Temp_j_Grad);
 
-        Temp_i = nodes->GetSolution(iPoint,0);
-        Temp_j = nodes->GetSolution(jPoint,0);
+      Temp_i = nodes->GetSolution(iPoint,0);
+      Temp_j = nodes->GetSolution(jPoint,0);
 
-        /* Second order reconstruction */
-        if (muscl) {
+      /* Second order reconstruction */
+      if (muscl) {
 
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
-              Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
-            }
-
-            Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(iPoint);
-            Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(jPoint);
-            Temp_i_Grad = nodes->GetGradient_Reconstruction(iPoint);
-            Temp_j_Grad = nodes->GetGradient_Reconstruction(jPoint);
-
-            /*Loop to correct the flow variables*/
-            for (iVar = 0; iVar < nVarFlow; iVar++) {
-
-              /*Apply the Gradient to get the right temperature value on the edge */
-              Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++) {
-                  Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-                  Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-              }
-
-              Primitive_Flow_i[iVar] = V_i[iVar] + Project_Grad_i;
-              Primitive_Flow_j[iVar] = V_j[iVar] + Project_Grad_j;
-            }
-
-            /* Correct the temperature variables */
-            Project_Temp_i_Grad = 0.0; Project_Temp_j_Grad = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-                Project_Temp_i_Grad += Vector_i[iDim]*Temp_i_Grad[0][iDim];
-                Project_Temp_j_Grad += Vector_j[iDim]*Temp_j_Grad[0][iDim];
-            }
-
-            Temp_i_Corrected = Temp_i + Project_Temp_i_Grad;
-            Temp_j_Corrected = Temp_j + Project_Temp_j_Grad;
-
-            numerics->SetPrimitive(Primitive_Flow_i, Primitive_Flow_j);
-            numerics->SetTemperature(Temp_i_Corrected, Temp_j_Corrected);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
+          Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
         }
 
-        else {
+        Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(iPoint);
+        Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(jPoint);
+        Temp_i_Grad = nodes->GetGradient_Reconstruction(iPoint);
+        Temp_j_Grad = nodes->GetGradient_Reconstruction(jPoint);
 
-          numerics->SetPrimitive(V_i, V_j);
-          numerics->SetTemperature(Temp_i, Temp_j);
+        /*Loop to correct the flow variables*/
+        for (iVar = 0; iVar < nVarFlow; iVar++) {
+
+          /*Apply the Gradient to get the right temperature value on the edge */
+          Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+              Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+              Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+          }
+
+          Primitive_Flow_i[iVar] = V_i[iVar] + Project_Grad_i;
+          Primitive_Flow_j[iVar] = V_j[iVar] + Project_Grad_j;
         }
 
-        numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
-        LinSysRes.AddBlock(iPoint, Residual);
-        LinSysRes.SubtractBlock(jPoint, Residual);
-
-        /*--- Implicit part ---*/
-
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-        Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-        Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-        Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+        /* Correct the temperature variables */
+        Project_Temp_i_Grad = 0.0; Project_Temp_j_Grad = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+            Project_Temp_i_Grad += Vector_i[iDim]*Temp_i_Grad[0][iDim];
+            Project_Temp_j_Grad += Vector_j[iDim]*Temp_j_Grad[0][iDim];
         }
+
+        Temp_i_Corrected = Temp_i + Project_Temp_i_Grad;
+        Temp_j_Corrected = Temp_j + Project_Temp_j_Grad;
+
+        numerics->SetPrimitive(Primitive_Flow_i, Primitive_Flow_j);
+        numerics->SetTemperature(Temp_i_Corrected, Temp_j_Corrected);
+      }
+
+      else {
+
+        numerics->SetPrimitive(V_i, V_j);
+        numerics->SetTemperature(Temp_i, Temp_j);
+      }
+
+      numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.SubtractBlock(jPoint, Residual);
+
+      /*--- Implicit part ---*/
+
+      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
+    }
   }
 
 }

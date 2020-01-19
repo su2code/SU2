@@ -3,30 +3,20 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.2.0 "Falcon"
+#  \version 7.0.0 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -317,7 +307,7 @@ def update_persurface(config, state):
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
 
-def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_avg=0 ):
+def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_avg=0, wnd_fct = 'SQUARE' ):
     """ values = read_aerodynamics(historyname, special_cases=[])
         read aerodynamic function values from history file
         
@@ -336,30 +326,28 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
         if this_objfun in history_data:
             if historyOutFields[this_objfun]['TYPE'] == 'COEFFICIENT' or historyOutFields[this_objfun]['TYPE'] == 'D_COEFFICIENT':
                 Func_Values[this_objfun] = history_data[this_objfun] 
-    
-    # for unsteady cases, average time-accurate objective function values
-    if 'TIME_MARCHING' in special_cases and not final_avg:
-        for key,value in Func_Values.items():
-            Func_Values[key] = sum(value)/len(value)
-         
-    # average the final iterations   
-    elif final_avg:
-        for key,value in Func_Values.iteritems():
-            # only the last few iterations
-            i_fin = min([final_avg,len(value)])
-            value = value[-i_fin:]
-            Func_Values[key] = sum(value)/len(value)
-    
-    # otherwise, keep only last value
+
+    if 'TIME_MARCHING' in special_cases:
+        # for unsteady cases, average time-accurate objective function values
+        for key, value in Func_Values.items():
+            if historyOutFields[key]['TYPE'] == 'COEFFICIENT':
+                if not history_data.get('TAVG_'+ key):
+                    raise KeyError('Key ' + historyOutFields['TAVG_'+ key]['HEADER'] + ' was not found in history output.')
+                Func_Values[key] = history_data['TAVG_'+ key][-1]
+            elif historyOutFields[key]['TYPE'] == 'D_COEFFICIENT':
+                if not history_data.get('TAVG_' + key):
+                    raise KeyError('Key ' + historyOutFields['TAVG_' + key]['HEADER'] + ' was not found in history output.')
+                Func_Values[key] = history_data['TAVG_' + key][-1]
     else:
-        for key,value in Func_Values.iteritems():
+        # in steady cases take only last value.
+        for key, value in Func_Values.iteritems():
+            if not history_data.get(key):
+                raise KeyError('Key ' + historyOutFields[key]['HEADER'] + ' was not found in history output.')
             Func_Values[key] = value[-1]
-                    
+
     return Func_Values
-    
+
 #: def read_aerodynamics()
-
-
 
 # -------------------------------------------------------------------
 #  Get Objective Function Sign
@@ -976,34 +964,34 @@ def make_link(src,dst):
         Windows links currently unsupported, will copy file instead
     """
     
-    assert os.path.exists(src) , 'source file does not exist \n%s' % src
-    
-    if os.name == 'nt':
-        # can't make a link in windows, need to look for other options
-        if os.path.exists(dst): os.remove(dst)
-        shutil.copy(src,dst)
-    
-    else:
-        # find real file, incase source itself is a link
-        src = os.path.realpath(src) 
-        
-        # normalize paths
-        src = os.path.normpath(src)
-        dst = os.path.normpath(dst)        
-        
-        # check for self referencing
-        if src == dst: return        
-        
-        # find relative folder path
-        srcfolder = os.path.join( os.path.split(src)[0] ) + '/'
-        dstfolder = os.path.join( os.path.split(dst)[0] ) + '/'
-        srcfolder = os.path.relpath(srcfolder,dstfolder)
-        src = os.path.join( srcfolder, os.path.split(src)[1] )
-        
-        # make unix link
-        if os.path.exists(dst): os.remove(dst)
-        os.symlink(src,dst)
-    
+    if os.path.exists(src): # , 'source file does not exist \n%s' % src
+
+        if os.name == 'nt':
+            # can't make a link in windows, need to look for other options
+            if os.path.exists(dst): os.remove(dst)
+            shutil.copy(src,dst)
+
+        else:
+            # find real file, incase source itself is a link
+            src = os.path.realpath(src)
+
+            # normalize paths
+            src = os.path.normpath(src)
+            dst = os.path.normpath(dst)
+
+            # check for self referencing
+            if src == dst: return
+
+            # find relative folder path
+            srcfolder = os.path.join( os.path.split(src)[0] ) + '/'
+            dstfolder = os.path.join( os.path.split(dst)[0] ) + '/'
+            srcfolder = os.path.relpath(srcfolder,dstfolder)
+            src = os.path.join( srcfolder, os.path.split(src)[1] )
+
+            # make unix link
+            if os.path.exists(dst): os.remove(dst)
+            os.symlink(src,dst)
+
 def restart2solution(config,state={}):
     """ restart2solution(config,state={})
         moves restart file to solution file, 
@@ -1032,9 +1020,11 @@ def restart2solution(config,state={}):
         # expand unsteady time
         restarts  = expand_time(restarts,config)
         solutions = expand_time(solutions,config)
+
         # move
         for res,sol in zip(restarts,solutions):
-            shutil.move( res , sol )
+            if os.path.exists(res):
+                shutil.move( res , sol )
         # update state
         if state: 
             state.FILES.DIRECT = solution
@@ -1065,6 +1055,7 @@ def restart2solution(config,state={}):
         # expand unsteady time
         restarts  = expand_time(restarts,config)
         solutions = expand_time(solutions,config)
+
         # move
         for res,sol in zip(restarts,solutions):
             shutil.move( res , sol )
