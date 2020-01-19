@@ -139,6 +139,18 @@ protected:
    */
   void Compute_IntegrationConstants(CConfig *config);
 
+  /*!
+   * \brief Write the forward mode gradient to file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] newFile - If true, start file from scratch, else append values.
+   * \param[in] fun - Value of the objective function.
+   * \param[in] fun_avg - Time-averaged value of the objective function.
+   * \param[in] der - Value of the derivative.
+   * \param[in] der_avg - Time-averaged value of the derivative.
+   */
+  void OutputForwardModeGradient(CConfig *config, bool newFile, su2double fun,
+                                 su2double fun_avg, su2double der, su2double der_avg) const;
+
 public:
 
   CSysVector<su2double> TimeRes_Aux;    /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
