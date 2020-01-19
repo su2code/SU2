@@ -145,10 +145,6 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   
 }
 
-void CEulerVariable::SetGradient_PrimitiveZero() {
-  Gradient_Primitive.storage.setConstant(0.0);
-}
-
 bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
   bool RightVol = true;
