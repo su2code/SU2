@@ -45,6 +45,7 @@ CInletInterpolation::CInletInterpolation(CGeometry **geometry, CConfig *config,s
 
 }
 
+CInletInterpolation::~CInletInterpolation(void){}
 
 void CInletInterpolation::Interpolate()
 {
@@ -203,4 +204,3 @@ return (Inlet_Data[nColumns*(iRow_Akima+1)+index] - Inlet_Data[nColumns*iRow_Aki
 
 su2double CInletInterpolation::Get_Wi(unsigned long iRow_Akima) {return fabs(Get_Pi(iRow_Akima) - Get_Pi(iRow_Akima-1));}
 
-CInletInterpolation::~CInletInterpolation(void){};
