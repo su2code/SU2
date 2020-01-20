@@ -3380,6 +3380,25 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
     kfb = Cf * exp(eta*log(Thb)) * exp(-theta/Thb);
     kb  = kfb / Keq;
 
+    /*--- Rxn rate derivatives ---*/
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      alphak[iSpecies] = 0;
+      betak[iSpecies]  = 0;
+    }
+
+    for (ii = 0; ii < 3; ii++) {
+
+      /*--- Products ---*/
+      iSpecies = RxnMap[iReaction][1][ii];
+      if (iSpecies != nSpecies)
+        betak[iSpecies]++;
+
+      /*--- Reactants ---*/
+      iSpecies = RxnMap[iReaction][0][ii];
+      if (iSpecies != nSpecies)
+        alphak[iSpecies]++;
+    }
+
     /*--- Determine production & destruction of each species ---*/
     fwdRxn = 1.0;
     bkwRxn = 1.0;
@@ -3387,13 +3406,16 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
 
       /*--- Reactants ---*/
       iSpecies = RxnMap[iReaction][0][ii];
-      if ( iSpecies != nSpecies)
-        fwdRxn *= 0.001*U_i[iSpecies]/Ms[iSpecies];
+      if ( iSpecies != nSpecies) {
+        // fwdRxn *= 0.001*U_i[iSpecies]/Ms[iSpecies];
+        fwdRxn *= pow(0.001*U_i[iSpecies]/Ms[iSpecies],alphak[iSpecies]);
+      }
 
       /*--- Products ---*/
       jSpecies = RxnMap[iReaction][1][ii];
       if (jSpecies != nSpecies) {
-        bkwRxn *= 0.001*U_i[jSpecies]/Ms[jSpecies];
+        // bkwRxn *= 0.001*U_i[jSpecies]/Ms[jSpecies];
+        bkwRxn *= pow(0.001*U_i[iSpecies]/Ms[iSpecies],betak[iSpecies]);
       }
     }
     fwdRxn = 1000.0 * kf * fwdRxn;
