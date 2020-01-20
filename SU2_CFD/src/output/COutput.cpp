@@ -562,10 +562,10 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       
     case STL:
 
-     if (fileName.empty())
-       fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (fileName.empty())
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
-       /*--- Load and sort the output data and connectivity. ---*/
+      /*--- Load and sort the output data and connectivity. ---*/
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
