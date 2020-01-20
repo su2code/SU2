@@ -189,7 +189,7 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
                      MPI_COMM_WORLD);
 
   /* Now actually send and receive the data */
-  data_to_send.resize(max<int>(1, total_num_nodes_to_send * (int)fieldnames.size()));
+  data_to_send.resize(max<unsigned long>(1, total_num_nodes_to_send * fieldnames.size()));
   halo_var_data.resize(max<unsigned long>(1, fieldnames.size() * num_halo_nodes));
   num_values_to_send.resize(size);
   values_to_send_displacements.resize(size);
