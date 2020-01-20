@@ -3834,12 +3834,11 @@ public:
 	/*!
 	 * \brief Compute the flow residual using a Lax method.
 	 * \param[out] val_resconv - Pointer to the convective residual.
-	 * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
 	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeResidual(su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+	void ComputeResidual(su2double *val_resconv, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                          CConfig *config);
 };
 

@@ -1904,7 +1904,6 @@ CCentLax_TNE2::~CCentLax_TNE2(void) {
 }
 
 void CCentLax_TNE2::ComputeResidual(su2double *val_resconv,
-                                    su2double *val_resvisc,
                                     su2double **val_Jacobian_i,
                                     su2double **val_Jacobian_j,
                                     CConfig *config) {
@@ -1945,7 +1944,6 @@ void CCentLax_TNE2::ComputeResidual(su2double *val_resconv,
   /*--- Compute inviscid residual ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     val_resconv[iVar] = ProjFlux[iVar];
-    val_resvisc[iVar] = 0.0;
   }
 
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
@@ -1982,7 +1980,7 @@ void CCentLax_TNE2::ComputeResidual(su2double *val_resconv,
 
   /*--- Compute viscous part of the residual ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_resvisc[iVar] = Epsilon_0*Diff_U[iVar]*StretchingFactor*MeanLambda;
+    val_resconv[iVar] += Epsilon_0*Diff_U[iVar]*StretchingFactor*MeanLambda;
   }
 
   if (implicit) {
