@@ -16668,14 +16668,19 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
       There = nodes->GetTemperature(Point_Normal);
       Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
 
-      if ((config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX)
-          || (config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+      if ((config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX) ||
+          (config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+
+        /*--- Compute wall temperature from both temperatures ---*/
 
         HF_FactorHere = thermal_conductivity*config->GetViscosity_Ref()/dist_ij;
         HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 2);
+
         Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
       }
       else {
+
+        /*--- (Directly) Set wall temperature to conjugate temperature. ---*/
 
         Twall = Tconjugate;
         dTdn = -(There - Twall)/dist_ij;

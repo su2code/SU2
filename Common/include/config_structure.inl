@@ -1917,7 +1917,7 @@ inline bool CConfig::GetJacobian_Spatial_Discretization_Only(void) {return Jacob
 
 inline bool CConfig::GetWeakly_Coupled_Heat(void) { return Weakly_Coupled_Heat; }
 
-inline unsigned short CConfig::GetKind_CHT_Coupling(void) { return Kind_CHT_Coupling; }
+inline unsigned short CConfig::GetKind_CHT_Coupling(void) const { return Kind_CHT_Coupling; }
 
 inline bool CConfig::GetIntegrated_HeatFlux(void) { return Integrated_HeatFlux; }
 

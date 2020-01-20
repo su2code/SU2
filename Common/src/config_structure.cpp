@@ -2270,7 +2270,7 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: CHT interface coupling methods */
   /*  Options: NO, YES \ingroup Config */
-  addEnumOption("KIND_CHT_COUPLING", Kind_CHT_Coupling, CHT_Coupling_Map, DIRECT_TEMPERATURE_ROBIN_HEATFLUX);
+  addEnumOption("CHT_COUPLING_METHOD", Kind_CHT_Coupling, CHT_Coupling_Map, DIRECT_TEMPERATURE_ROBIN_HEATFLUX);
 
   /* DESCRIPTION: Thermal diffusivity constant */
   addDoubleOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
