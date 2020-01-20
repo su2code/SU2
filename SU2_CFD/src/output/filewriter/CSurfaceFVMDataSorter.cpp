@@ -174,12 +174,8 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    all processors. After this communication, each proc knows how
    many nodes it will receive from each other processor. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
                     &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nElem_Recv[1] = nElem_Send[1];
-#endif
 
   /*--- Prepare to send. First check how many
    messages we will be sending and receiving. Here we also put
@@ -428,12 +424,8 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
   for (int ii=1; ii < size+1; ii++) nPoint_Send[ii]= (int)nLocalPoint;
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
                     &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nPoint_Recv[1] = nPoint_Send[1];
-#endif
 
   /*--- Go to cumulative storage format to compute the offsets. ---*/
 
@@ -464,12 +456,8 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   /*--- Reduce the total number of surf points we have. This will be
    needed for writing the surface solution files later. ---*/
 
-#ifndef HAVE_MPI
-  nGlobal_Poin_Par = nParallel_Poin;
-#else
   SU2_MPI::Allreduce(&nLocalPoint, &nGlobalPoint, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
 
   /*--- Now that we know every proc's global offset for the number of
    surface points, we can create the new global numbering. Here, we
@@ -535,12 +523,8 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    all processors. After this communication, each proc knows how
    many cells it will receive from each other processor. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
                     &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nElem_Recv[1] = nElem_Send[1];
-#endif
 
   /*--- Prepare to send. First check how many
    messages we will be sending and receiving. Here we also put
@@ -840,13 +824,9 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    all processors. After this communication, each proc knows how
    many cells it will receive from each other processor. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
                     &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nElem_Recv[1] = nElem_Send[1];
-#endif
-
+  
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
    the counters into cumulative storage format to make the
@@ -1255,12 +1235,8 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
    all processors. After this communication, each proc knows how
    many cells it will receive from each other processor. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
                     &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nElem_Recv[1] = nElem_Send[1];
-#endif
 
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put

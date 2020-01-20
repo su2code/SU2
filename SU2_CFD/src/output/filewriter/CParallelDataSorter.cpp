@@ -261,12 +261,8 @@ void CParallelDataSorter::SortOutputData() {
 
   /*--- Reduce the total number of points we will write in the output files. ---*/
 
-#ifndef HAVE_MPI
-  nGlobal_Poin_Par = nParallel_Poin;
-#else
   SU2_MPI::Allreduce(&nLocalPoint, &nGlobalPoint, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
 
   /*--- Free temporary memory from communications ---*/
 
@@ -301,12 +297,8 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
    all processors. After this communication, each proc knows how
    many cells it will receive from each other processor. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
                     &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nPoint_Recv[1] = nPoint_Send[1];
-#endif
 
   /*--- Prepare to send coordinates. First check how many
    messages we will be sending and receiving. Here we also put

@@ -57,12 +57,8 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
     }
   }
 
-#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalPointBeforeSort, &nGlobalPointBeforeSort, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  nGlobalPoint_Sort = nLocalPoint_Sort;
-#endif
 
   /*--- Create the linear partitioner --- */
 
@@ -157,12 +153,8 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   /* Communicate nDOFSend using Alltoall. */
   vector<unsigned long> nDOFRecv(size);
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(nDOFSend.data(), 1, MPI_UNSIGNED_LONG,
                     nDOFRecv.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#else
-  nDOFRecv[rank] = nDOFSend[rank];
-#endif
 
   /* Determine the number of messages this rank will receive. */
   int nRankRecv = 0;
@@ -245,12 +237,8 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 
   /*--- Reduce the total number of surf points we have. This will be
         needed for writing the surface solution files later. ---*/
-#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalPoint, &nGlobalPoint, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  nGlobal_Poin_Par = nParallel_Poin;
-#endif
 
   /*-------------------------------------------------------------------*/
   /*--- Step 3: Modify the surface connectivities, such that only   ---*/

@@ -238,12 +238,8 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    all processors. After this communication, each proc knows how
    many cells it will receive from each other processor. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
                     &(nElem_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nElem_Recv[1] = nElem_Send[1];
-#endif
 
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put

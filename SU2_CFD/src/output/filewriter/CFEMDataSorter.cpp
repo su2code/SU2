@@ -61,12 +61,8 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vecto
     }
   }
 
-#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalPointBeforeSort, &nGlobalPointBeforeSort, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  nGlobalPoint_Sort = nLocalPoint_Sort;
-#endif
 
   /*--- Create a linear partition --- */
 
