@@ -4829,10 +4829,10 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
       Area = sqrt (Area);
 
       for (iDim = 0; iDim < nDim; iDim++){
-        NormalArea[iDim] = -Normal[iDim];
-        UnitNormal[iDim] = Normal[iDim]/Area;
+        Normal[iDim]     = -Normal[iDim];
+        UnitNormal[iDim] = -Normal[iDim]/Area;
       }
-      conv_numerics->SetNormal(NormalArea);
+      conv_numerics->SetNormal(Normal);
 
       // /*--- Retrieve the pressure on the vertex ---*/
       // P   = nodes->GetPressure(iPoint);
