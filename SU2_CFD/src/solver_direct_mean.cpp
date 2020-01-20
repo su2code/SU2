@@ -16677,6 +16677,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
         HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 2);
 
         Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
+        dTdn = -(There - Twall)/dist_ij;
       }
       else {
 

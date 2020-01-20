@@ -8546,7 +8546,6 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
           Jacobian.DeleteValsRowi(total_index);
         }
       }
-
     }
   }
 }
