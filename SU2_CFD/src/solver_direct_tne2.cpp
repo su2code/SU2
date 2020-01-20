@@ -4959,11 +4959,155 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   delete [] u;
 }
 
+// void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_container,
+//                                     CNumerics *conv_numerics, CNumerics *visc_numerics,
+//                                     CConfig *config, unsigned short val_marker) {
+//   unsigned short iDim;
+//   unsigned long iVertex, iPoint, Point_Normal;
+
+//   su2double *V_infty, *V_domain;
+//   su2double *U_domain,*U_infty;
+
+//   /*--- Set booleans from configuration parameters ---*/
+//   bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+//   bool viscous  = config->GetViscous();
+//   //bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
+//   //                   (config->GetKind_Solver() == DISC_ADJ_RANS))
+//   //                  && (config->GetKind_Turb_Model() == SST));
+
+//   /*--- Allocate arrays ---*/
+//   su2double *Normal = new su2double[nDim];
+
+//   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+//   conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+//   conv_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+//   conv_numerics->SetPIndex      ( nodes->GetPIndex()       );
+//   conv_numerics->SetTIndex      ( nodes->GetTIndex()       );
+//   conv_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+//   conv_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+//   conv_numerics->SetHIndex      ( nodes->GetHIndex()       );
+//   conv_numerics->SetAIndex      ( nodes->GetAIndex()       );
+//   conv_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+//   conv_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+
+//   visc_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
+//   visc_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
+//   visc_numerics->SetPIndex      ( nodes->GetPIndex()       );
+//   visc_numerics->SetTIndex      ( nodes->GetTIndex()       );
+//   visc_numerics->SetTveIndex    ( nodes->GetTveIndex()     );
+//   visc_numerics->SetVelIndex    ( nodes->GetVelIndex()     );
+//   visc_numerics->SetHIndex      ( nodes->GetHIndex()       );
+//   visc_numerics->SetAIndex      ( nodes->GetAIndex()       );
+//   visc_numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
+//   visc_numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
+
+//   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
+//   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+//     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+//     if (geometry->node[iPoint]->GetDomain()) {
+
+//       /*--- Retrieve index of the closest interior node ---*/
+//       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+//       /*--- Pass boundary node normal to CNumerics ---*/
+//       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+//       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+//       conv_numerics->SetNormal(Normal);
+
+//       /*--- Retrieve solution at the boundary node & free-stream ---*/
+//       U_domain = nodes->GetSolution(iPoint);
+//       V_domain = nodes->GetPrimitive(iPoint);
+//       U_infty  = node_infty->GetSolution(0);
+//       V_infty  = node_infty->GetPrimitive(0);
+
+//       /*--- Pass conserved & primitive variables to CNumerics ---*/
+//       conv_numerics->SetConservative(U_domain, U_infty);
+//       conv_numerics->SetPrimitive(V_domain, V_infty);
+
+//       /*--- Pass supplementary information to CNumerics ---*/
+//       conv_numerics->SetdPdU(nodes->GetdPdU(iPoint),     node_infty->GetdPdU(0));
+//       conv_numerics->SetdTdU(nodes->GetdTdU(iPoint),     node_infty->GetdTdU(0));
+//       conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
+
+//       /*--- Compute the convective residual (and Jacobian) ---*/
+//       // Note: This uses the specified boundary num. method specified in driver_structure.cpp
+//       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+//       /*--- Apply contribution to the linear system ---*/
+//       LinSysRes.AddBlock(iPoint, Residual);
+//       if (implicit)
+//         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+//       /*--- Viscous contribution ---*/
+//       if (viscous) {
+//         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+//                                 geometry->node[Point_Normal]->GetCoord() );
+//         visc_numerics->SetNormal(Normal);
+
+//         /*--- Primitive variables, and gradient ---*/
+//         visc_numerics->SetConservative(nodes->GetSolution(iPoint),
+//                                        node_infty->GetSolution(0) );
+//         visc_numerics->SetConsVarGradient(nodes->GetGradient(iPoint),
+//                                           node_infty->GetGradient(0) );
+//         visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+//                                     node_infty->GetPrimitive(0) );
+//         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+//                                           node_infty->GetGradient_Primitive(0) );
+
+//         /*--- Pass supplementary information to CNumerics ---*/
+//         visc_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
+//         visc_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_infty->GetdTdU(0));
+//         visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
+
+//         /*--- Species diffusion coefficients ---*/
+//         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
+//                                          node_infty->GetDiffusionCoeff(0) );
+
+//         /*--- Laminar viscosity ---*/
+//         visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
+//                                            node_infty->GetLaminarViscosity(0) );
+
+//         /*--- Thermal conductivity ---*/
+//         visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
+//                                               node_infty->GetThermalConductivity(0));
+
+//         /*--- Vib-el. thermal conductivity ---*/
+//         visc_numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
+//                                                  node_infty->GetThermalConductivity_ve(0) );
+
+//         /*--- Compute and update residual ---*/
+//         visc_numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+//         LinSysRes.SubtractBlock(iPoint, Res_Visc);
+//         if (implicit) {
+//           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//         }
+//       }
+//     }
+//   }
+
+//   /*--- Free locally allocated memory ---*/
+//   delete [] Normal;
+// }
+
 void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_container,
                                     CNumerics *conv_numerics, CNumerics *visc_numerics,
                                     CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
+
+  su2double *GridVel;
+  su2double Area, UnitNormal[3] = {0.0,0.0,0.0};
+  su2double Density, Pressure, Temperature, Energy,  Velocity[3] = {0.0,0.0,0.0};
+  su2double Density_Bound, Pressure_Bound, Vel_Bound[3] = {0.0,0.0,0.0};
+  su2double Density_Infty, Pressure_Infty, Vel_Infty[3] = {0.0,0.0,0.0};
+  su2double SoundSpeed, Entropy, Velocity2, Vn;
+  su2double SoundSpeed_Bound, Entropy_Bound, Vel2_Bound, Vn_Bound;
+  su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
+  su2double RiemannPlus, RiemannMinus;
+
+  su2double Alpha, Beta, *Mvec_Inf;
 
   su2double *V_infty, *V_domain;
   su2double *U_domain,*U_infty;
@@ -4977,6 +5121,23 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
   /*--- Allocate arrays ---*/
   su2double *Normal = new su2double[nDim];
+
+  U_infty = new su2double[nVar];
+  V_infty = new su2double[nPrimVar];
+
+  /*--- Vectorize free stream Mach number based on AoA & AoS ---*/
+  Mvec_Inf = new su2double[nDim];
+  Alpha    = config->GetAoA()*PI_NUMBER/180.0;
+  Beta     = config->GetAoS()*PI_NUMBER/180.0;
+  if (nDim == 2) {
+    Mvec_Inf[0] = cos(Alpha)*Mach_Inf;
+    Mvec_Inf[1] = sin(Alpha)*Mach_Inf;
+  }
+  if (nDim == 3) {
+    Mvec_Inf[0] = cos(Alpha)*cos(Beta)*Mach_Inf;
+    Mvec_Inf[1] = sin(Beta)*Mach_Inf;
+    Mvec_Inf[2] = sin(Alpha)*cos(Beta)*Mach_Inf;
+  }
 
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
   conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
@@ -5019,17 +5180,153 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       /*--- Retrieve solution at the boundary node & free-stream ---*/
       U_domain = nodes->GetSolution(iPoint);
       V_domain = nodes->GetPrimitive(iPoint);
-      U_infty  = node_infty->GetSolution(0);
-      V_infty  = node_infty->GetPrimitive(0);
+
+      /*--- Construct solution state at infinity for compressible flow by
+         using Riemann invariants, and then impose a weak boundary condition
+         by computing the flux using this new state for U. See CFD texts by
+         Hirsch or Blazek for more detail. Adapted from an original
+         implementation in the Stanford University multi-block (SUmb) solver
+         in the routine bcFarfield.f90 written by Edwin van der Weide,
+         last modified 06-12-2005. First, compute the unit normal at the
+         boundary nodes. ---*/
+
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt(Area);
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = Normal[iDim]/Area;
+
+      /*--- Store primitive variables (density, velocities, velocity squared,
+         energy, pressure, and sound speed) at the boundary node, and set some
+         other quantities for clarity. Project the current flow velocity vector
+         at this boundary node into the local normal direction, i.e. compute
+         v_bound.n.  ---*/
+
+      Density_Bound = V_domain[nSpecies+nDim+3];
+      Vel2_Bound = 0.0; Vn_Bound = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Vel_Bound[iDim] = V_domain[nSpecies+2+nDim];
+        Vel2_Bound     += Vel_Bound[iDim]*Vel_Bound[iDim];
+        Vn_Bound       += Vel_Bound[iDim]*UnitNormal[iDim];
+      }
+      Pressure_Bound   = nodes->GetPressure(iPoint);
+      SoundSpeed_Bound = nodes->GetSoundSpeed(iPoint);
+      Entropy_Bound    = pow(Density_Bound, Gamma)/Pressure_Bound;
+
+      /*--- Store the primitive variable state for the freestream. Project
+         the freestream velocity vector into the local normal direction,
+         i.e. compute v_infty.n. ---*/
+
+      Density_Infty = node_infty->GetDensity();
+      Vel2_Infty = 0.0; Vn_Infty = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Vel_Infty[iDim] = node_infty->GetVelocity(iDim);
+        Vel2_Infty     += Vel_Infty[iDim]*Vel_Infty[iDim];
+        Vn_Infty       += Vel_Infty[iDim]*UnitNormal[iDim];
+      }
+      Pressure_Infty   = node_infty->GetPressure();
+      SoundSpeed_Infty = node_infty->GetSoundSpeed();
+      Entropy_Infty    = pow(Density_Infty, Gamma)/Pressure_Infty;
+
+      /*--- Adjust the normal freestream velocity for grid movement ---*/
+
+      Qn_Infty = Vn_Infty;
+      if (dynamic_grid) {
+        GridVel = geometry->node[iPoint]->GetGridVel();
+        for (iDim = 0; iDim < nDim; iDim++)
+          Qn_Infty -= GridVel[iDim]*UnitNormal[iDim];
+      }
+
+      /*--- Compute acoustic Riemann invariants: R = u.n +/- 2c/(gamma-1).
+         These correspond with the eigenvalues (u+c) and (u-c), respectively,
+         which represent the acoustic waves. Positive characteristics are
+         incoming, and a physical boundary condition is imposed (freestream
+         state). This occurs when either (u.n+c) > 0 or (u.n-c) > 0. Negative
+         characteristics are leaving the domain, and numerical boundary
+         conditions are required by extrapolating from the interior state
+         using the Riemann invariants. This occurs when (u.n+c) < 0 or
+         (u.n-c) < 0. Note that grid movement is taken into account when
+         checking the sign of the eigenvalue. ---*/
+
+      /*--- Check whether (u.n+c) is greater or less than zero ---*/
+
+      if (Qn_Infty > -SoundSpeed_Infty) {
+        /*--- Subsonic inflow or outflow ---*/
+        RiemannPlus = Vn_Bound + 2.0*SoundSpeed_Bound/Gamma_Minus_One;
+      } else {
+        /*--- Supersonic inflow ---*/
+        RiemannPlus = Vn_Infty + 2.0*SoundSpeed_Infty/Gamma_Minus_One;
+      }
+
+      /*--- Check whether (u.n-c) is greater or less than zero ---*/
+
+      if (Qn_Infty > SoundSpeed_Infty) {
+        /*--- Supersonic outflow ---*/
+        RiemannMinus = Vn_Bound - 2.0*SoundSpeed_Bound/Gamma_Minus_One;
+      } else {
+        /*--- Subsonic outflow ---*/
+        RiemannMinus = Vn_Infty - 2.0*SoundSpeed_Infty/Gamma_Minus_One;
+      }
+
+      /*--- Compute a new value for the local normal velocity and speed of
+         sound from the Riemann invariants. ---*/
+
+      Vn = 0.5 * (RiemannPlus + RiemannMinus);
+      SoundSpeed = 0.25 * (RiemannPlus - RiemannMinus)*Gamma_Minus_One;
+
+      /*--- Construct the primitive variable state at the boundary for
+         computing the flux for the weak boundary condition. The values
+         that we choose to construct the solution (boundary or freestream)
+         depend on whether we are at an inflow or outflow. At an outflow, we
+         choose boundary information (at most one characteristic is incoming),
+         while at an inflow, we choose infinity values (at most one
+         characteristic is outgoing). ---*/
+
+      if (Qn_Infty > 0.0)   {
+        /*--- Outflow conditions ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          Velocity[iDim] = Vel_Bound[iDim] + (Vn-Vn_Bound)*UnitNormal[iDim];
+        Entropy = Entropy_Bound;
+      } else  {
+        /*--- Inflow conditions ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          Velocity[iDim] = Vel_Infty[iDim] + (Vn-Vn_Infty)*UnitNormal[iDim];
+        Entropy = Entropy_Infty;
+      }
+
+      /*--- Recompute the primitive variables. ---*/
+
+      Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
+      Velocity2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Velocity2 += Velocity[iDim]*Velocity[iDim];
+      }
+      Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
+      Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
+      if (tkeNeeded) Energy += GetTke_Inf();
+
+      /*--- Store new primitive state for computing the flux. ---*/
+
+      CTNE2EulerVariable *node_bc = new CTNE2EulerVariable(Pressure, MassFrac_Inf, Mvec_Inf, Temperature,
+                                                           Temperature_ve_Inf, 1, nDim, nVar,
+                                                           nPrimVar, nPrimVarGrad, config);
+
+      node_bc->Cons2PrimVar(config, node_bc->GetSolution(0), node_bc->GetPrimitive(0),
+                            node_bc->GetdPdU(0), node_bc->GetdTdU(0), node_bc->GetdTvedU(0), 
+                            node_bc->GetEve(0), node_bc->GetCvve(0));
+
 
       /*--- Pass conserved & primitive variables to CNumerics ---*/
-      conv_numerics->SetConservative(U_domain, U_infty);
-      conv_numerics->SetPrimitive(V_domain, V_infty);
+      conv_numerics->SetConservative(U_domain, node_bc->GetSolution(0));
+      conv_numerics->SetPrimitive(V_domain, node_bc->GetPrimitive(0));
 
       /*--- Pass supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint),     node_infty->GetdPdU(0));
-      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint),     node_infty->GetdTdU(0));
-      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
+      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint),     node_bc->GetdPdU(0));
+      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint),     node_bc->GetdTdU(0));
+      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_bc->GetdTvedU(0));
+      conv_numerics->SetEve(nodes->GetEve(iPoint),       node_bc->GetEve(0));
+      conv_numerics->SetCvve(nodes->GetCvve(iPoint),     node_bc->GetCvve(0));
 
       /*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in driver_structure.cpp
@@ -7081,7 +7378,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   /*--- Create a CVariable that stores the free-stream values ---*/
   node_infty = new CTNE2NSVariable(Pressure_Inf, MassFrac_Inf,
                                    Mvec_Inf, Temperature_Inf,
-                                   Temperature_ve_Inf, nPoint, nDim, nVar,
+                                   Temperature_ve_Inf, 1, nDim, nVar,
                                    nPrimVar, nPrimVarGrad, config);
   check_infty = node_infty->SetPrimVar_Compressible(iPoint, config);
 
@@ -7090,8 +7387,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
     Velocity_Inf[iDim] = node_infty->GetVelocity(iPoint, iDim);
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    nodes = new CTNE2NSVariable(Pressure_Inf, MassFrac_Inf,
+  nodes = new CTNE2NSVariable(Pressure_Inf, MassFrac_Inf,
                                        Mvec_Inf, Temperature_Inf,
                                        Temperature_ve_Inf, nPoint, nDim, nVar,
                                        nPrimVar, nPrimVarGrad, config);
