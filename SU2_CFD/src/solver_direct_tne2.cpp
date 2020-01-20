@@ -5107,7 +5107,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
   su2double RiemannPlus, RiemannMinus;
 
-  su2double Alpha, Beta, *Mvec_Inf;
+  su2double Alpha, Beta, *Mvec, *Mvec_Inf;
   su2double *Ys;
 
   su2double *V_infty, *V_domain;
@@ -5126,6 +5126,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   Ys = new su2double[nSpecies];
 
   /*--- Vectorize free stream Mach number based on AoA & AoS ---*/
+  Mvec     = new su2double[nDim];
   Mvec_Inf = new su2double[nDim];
   Alpha    = config->GetAoA()*PI_NUMBER/180.0;
   Beta     = config->GetAoS()*PI_NUMBER/180.0;
@@ -5312,6 +5313,9 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
         for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
           Ys[iSpecies] = MassFrac_Inf[iSpecies];
         }
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Mvec[iDim] = Velocity[iDim]/SoundSpeed;
+        }
       }
       // Supersonic outflow
       // All values set to interior
@@ -5322,11 +5326,15 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
           Velocity2 += V_domain[nSpecies+2+iDim]*V_domain[nSpecies+2+iDim];
         }
         Pressure = V_domain[nSpecies+nDim+2];
+        SoundSpeed = V_domain[nSpecies+nDim+5];
         Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
         Temperature = V_domain[nSpecies];
         Temperature_ve = V_domain[nSpecies+1];
         for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
           Ys[iSpecies] = V_domain[iSpecies]/Density;
+        }
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Mvec[iDim] = V_domain[nSpecies+2+iDim]/SoundSpeed;
         }
       }
       // Supersonic inflow
@@ -5346,6 +5354,9 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
         for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
           Ys[iSpecies] = MassFrac_Inf[iSpecies];
         }
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Mvec[iDim] = Mvec_Inf[iDim];
+        }
       }
       // Subsonic inflow
       // TODO: check these (mainly Tve)
@@ -5361,6 +5372,9 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
         Temperature_ve = Temperature_ve_Inf;
         for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
           Ys[iSpecies] = V_domain[iSpecies]/Density;
+        }
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Mvec[iDim] = Velocity[iDim]/SoundSpeed;
         }
       }
       if (tkeNeeded) Energy += GetTke_Inf();
