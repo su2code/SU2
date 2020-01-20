@@ -8988,7 +8988,7 @@ public:
    * \brief Get the CHT couling method.
    * \return Kind of the method.
    */
-  unsigned short GetKind_CHT_Coupling(void);
+  unsigned short GetKind_CHT_Coupling(void) const;
 
   /*!
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
