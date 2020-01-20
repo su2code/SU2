@@ -826,7 +826,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
   bool van_albada       = config->GetKind_SlopeLimit_TNE2() == VAN_ALBADA_EDGE;
   bool nonPhys;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+  for (iPoint = 0; iPoint < nPointDomain; iPoint ++) {
 
     /*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
     nonPhys = nodes->SetPrimVar_Compressible(iPoint, config);
