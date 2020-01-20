@@ -5123,6 +5123,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
   U_infty = new su2double[nVar];
   V_infty = new su2double[nPrimVar];
+  Ys = new su2double[nSpecies];
 
   /*--- Vectorize free stream Mach number based on AoA & AoS ---*/
   Mvec_Inf = new su2double[nDim];
