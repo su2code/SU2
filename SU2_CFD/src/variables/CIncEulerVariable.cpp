@@ -130,10 +130,6 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   
 }
 
-void CIncEulerVariable::SetGradient_PrimitiveZero() {
-  Gradient_Primitive.storage.setConstant(0.0);
-}
-
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
   unsigned long iVar;
