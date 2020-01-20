@@ -1277,7 +1277,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 
       /*--- Retrieve gradient information & limiter ---*/
       GradU_i = nodes->GetGradient(iPoint);
-      GradU_j = nodes->GetGradient(iPoint);
+      GradU_j = nodes->GetGradient(jPoint);
 
       // These are not currently used
       //GradV_i = node[iPoint]->GetGradient_Primitive();
