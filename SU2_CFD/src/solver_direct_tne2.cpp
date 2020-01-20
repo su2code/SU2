@@ -1200,7 +1200,9 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 
   su2double *U_i, *U_j, *V_i, *V_j;
   su2double **GradU_i, **GradU_j;
+  su2double **GradV_i, **GradV_j;
   su2double ProjGradU_i, ProjGradU_j;
+  su2double ProjGradV_i, ProjGradV_j;
   su2double *Limiter_i, *Limiter_j;
   su2double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
   su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
@@ -1280,8 +1282,8 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       // GradU_j = nodes->GetGradient(jPoint);
 
       /*---+++ Primitive variable reconstruction & limiting +++---*/
-      GradV_i = node[iPoint]->GetGradient_Primitive();
-      GradV_j = node[jPoint]->GetGradient_Primitive();
+      GradV_i = nodes->GetGradient_Primitive(iPoint);
+      GradV_j = nodes->GetGradient_Primitive(jPoint);
 
       if (limiter) {
         Limiter_i = nodes->GetLimiter_Primitive(iPoint);
@@ -1317,28 +1319,28 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       
              // Vib.-el. energy
              for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-               Eve_i[iSpecies] = node[iPoint]->CalcEve(config, Primitive_i[TVE_INDEX], iSpecies);
-               Eve_j[iSpecies] = node[jPoint]->CalcEve(config, Primitive_j[TVE_INDEX], iSpecies);
-               Cvve_i[iSpecies] = node[iPoint]->CalcCvve(Primitive_i[TVE_INDEX], config, iSpecies);
-               Cvve_j[iSpecies] = node[jPoint]->CalcCvve(Primitive_j[TVE_INDEX], config, iSpecies);
+               Eve_i[iSpecies] = nodes->CalcEve(config, Primitive_i[TVE_INDEX], iSpecies);
+               Eve_j[iSpecies] = nodes->CalcEve(config, Primitive_j[TVE_INDEX], iSpecies);
+               Cvve_i[iSpecies] = nodes->CalcCvve(Primitive_i[TVE_INDEX], config, iSpecies);
+               Cvve_j[iSpecies] = nodes->CalcCvve(Primitive_j[TVE_INDEX], config, iSpecies);
              }
       
              // Recalculate derivatives of pressure
              // NOTE: We need to pass the vib-el. energy, but it is only used when
              //       ionized species are present, so, for now, we just load it with
              //       the value at i or j, and come back later when ionized is ready.
-             node[iPoint]->CalcdPdU(Primitive_i, Eve_i, config, dPdU_i);
-             node[jPoint]->CalcdPdU(Primitive_j, Eve_j, config, dPdU_j);
+             nodes->CalcdPdU(Primitive_i, Eve_i, config, dPdU_i);
+             nodes->CalcdPdU(Primitive_j, Eve_j, config, dPdU_j);
       
              // Recalculate temperature derivatives
-             node[iPoint]->CalcdTdU(Primitive_i, config, dTdU_i);
-             node[jPoint]->CalcdTdU(Primitive_j, config, dTdU_j);
+             nodes->CalcdTdU(Primitive_i, config, dTdU_i);
+             nodes->CalcdTdU(Primitive_j, config, dTdU_j);
       
              // Recalculate Tve derivatives
              // Note: Species vib.-el. energies are required for species density
              //       terms.  For now, just pass the values at i and j and hope it works
-             node[iPoint]->CalcdTvedU(Primitive_i, Eve_i, config, dTvedU_i);
-             node[jPoint]->CalcdTvedU(Primitive_j, Eve_j, config, dTvedU_j);
+             nodes->CalcdTvedU(Primitive_i, Eve_i, config, dTvedU_i);
+             nodes->CalcdTvedU(Primitive_j, Eve_j, config, dTvedU_j);
            }
            numerics->SetPrimitive   (Primitive_i, Primitive_j);
            numerics->SetConservative(U_i, U_j);
