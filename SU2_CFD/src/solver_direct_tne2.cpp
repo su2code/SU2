@@ -5381,7 +5381,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
       /*--- Store new primitive state for computing the flux. ---*/
 
-      CTNE2EulerVariable *node_bc = new CTNE2EulerVariable(Pressure, Ys, Mvec_Inf, Temperature,
+      CTNE2EulerVariable *node_bc = new CTNE2EulerVariable(Pressure, Ys, Mvec, Temperature,
                                                            Temperature_ve, 1, nDim, nVar,
                                                            nPrimVar, nPrimVarGrad, config);
 
