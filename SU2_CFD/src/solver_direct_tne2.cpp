@@ -845,6 +845,10 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
   }
 
   /*--- Allowing for Primitive Variables to be passed ---*/
+  if(ErrorCounter > 0) {
+    InitiateComms(geometry, config, SOLUTION);
+    CompleteComms(geometry, config, SOLUTION);
+  }
   InitiateComms(geometry, config, PRIMITIVE);
   CompleteComms(geometry, config, PRIMITIVE);
 
