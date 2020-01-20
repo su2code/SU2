@@ -4755,6 +4755,7 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   su2double *u, *Ms, *dPdU;
   su2double *V_domain,*V_reflected;
   su2double *U_domain,*U_reflected;
+  su2double *dPdU_reflected, *dTdU_reflected, *dTvedU_reflected;
 
   bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -4769,8 +4770,13 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   Jacobian_b = new su2double*[nVar];
   DubDu      = new su2double*[nVar];
   u          = new su2double[nDim];
+
   U_reflected = new su2double[nVar];
   V_reflected = new su2double[nPrimVar];
+
+  dPdU_reflected   = new su2double[nVar];
+  dTdU_reflected   = new su2double[nVar];
+  dTvedU_reflected = new su2double[nVar];
 
   for (iVar = 0; iVar < nVar; iVar++) {
     Jacobian_b[iVar] = new su2double[nVar];
@@ -4850,15 +4856,18 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
         U_reflected[nSpecies+iDim] = Density_i*V_reflected[nSpecies+2+iDim];
         // nodes->SetSolution(iPoint,nSpecies+iDim, Density_i*Velocity_i[iDim]);
       }
+      nodes->CalcdPdU(  V_reflected, nodes->GetEve(iPoint), config, dPdU_reflected  );
+      nodes->CalcdTdU(  V_reflected, config, dTdU_reflected  );
+      nodes->CalcdTvedU(V_reflected, nodes->GetEve(iPoint), config, dTvedU_reflected);
 
       /*--- Pass conserved & primitive variables to CNumerics ---*/
       conv_numerics->SetConservative(U_domain, U_reflected);
       conv_numerics->SetPrimitive(V_domain, V_reflected);
 
       /*--- Pass supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint),     nodes->GetdPdU(iPoint));
-      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint),     nodes->GetdTdU(iPoint));
-      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(iPoint));
+      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint),     dPdU_reflected);
+      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint),     dTdU_reflected);
+      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), dTvedU_reflected);
       conv_numerics->SetEve(nodes->GetEve(iPoint),       nodes->GetEve(iPoint));
       conv_numerics->SetCvve(nodes->GetCvve(iPoint),     nodes->GetCvve(iPoint));
 
