@@ -826,7 +826,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
   bool van_albada       = config->GetKind_SlopeLimit_TNE2() == VAN_ALBADA_EDGE;
   bool nonPhys;
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint ++) {
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Initialize the non-physical points vector ---*/
     
@@ -845,12 +845,12 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
   }
 
   /*--- Allowing for Primitive Variables to be passed ---*/
-  if(ErrorCounter > 0) {
-    InitiateComms(geometry, config, SOLUTION);
-    CompleteComms(geometry, config, SOLUTION);
-  }
-  InitiateComms(geometry, config, PRIMITIVE);
-  CompleteComms(geometry, config, PRIMITIVE);
+  // if(ErrorCounter > 0) {
+  //   InitiateComms(geometry, config, SOLUTION);
+  //   CompleteComms(geometry, config, SOLUTION);
+  // }
+  // InitiateComms(geometry, config, PRIMITIVE);
+  // CompleteComms(geometry, config, PRIMITIVE);
 
   /*--- Upwind second order reconstruction ---*/
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
