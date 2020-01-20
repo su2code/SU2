@@ -258,7 +258,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
     ElemColoring[iColor].indices = coloring.innerIdx(iColor);
   }
 
-  ColorGroupSize = 1; /// TODO: This needs to come from geometry or config
+  ColorGroupSize = geometry->GetElementColorGroupSize();
 
   omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
 #endif
