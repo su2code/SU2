@@ -1285,12 +1285,12 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       /*---+++ Conserved variable reconstruction & limiting +++---*/
 
       /*--- Retrieve gradient information & limiter ---*/
-      // GradU_i = nodes->GetGradient(iPoint);
-      // GradU_j = nodes->GetGradient(jPoint);
+      GradU_i = nodes->GetGradient(iPoint);
+      GradU_j = nodes->GetGradient(jPoint);
 
       /*---+++ Primitive variable reconstruction & limiting +++---*/
-      GradV_i = nodes->GetGradient_Primitive(iPoint);
-      GradV_j = nodes->GetGradient_Primitive(jPoint);
+      // GradV_i = nodes->GetGradient_Primitive(iPoint);
+      // GradV_j = nodes->GetGradient_Primitive(jPoint);
 
       if (limiter) {
         Limiter_i = nodes->GetLimiter_Primitive(iPoint);
@@ -1298,98 +1298,99 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       }
 
       /*--- Reconstruct conserved variables at the edge interface ---*/
-      // for (iVar = 0; iVar < nVar; iVar++) {
-      //   ProjGradU_i = 0.0; ProjGradU_j = 0.0;
-      //   for (iDim = 0; iDim < nDim; iDim++) {
-      //     ProjGradU_i += Vector_i[iDim]*GradU_i[iVar][iDim];
-      //     ProjGradU_j += Vector_j[iDim]*GradU_j[iVar][iDim];
-      //   }
-      //   if (limiter) {
-      //     Conserved_i[iVar] = U_i[iVar] + lim_i*ProjGradU_i;
-      //     Conserved_j[iVar] = U_j[iVar] + lim_j*ProjGradU_j;
-      //   }
-      //   else {
-      //     Conserved_i[iVar] = U_i[iVar] + ProjGradU_i;
-      //     Conserved_j[iVar] = U_j[iVar] + ProjGradU_j;
-      //   }
-      // }
+      for (iVar = 0; iVar < nVar; iVar++) {
+        ProjGradU_i = 0.0; ProjGradU_j = 0.0;
+        Non_Physical = nodes->GetNon_Physical(iPoint)*nodes->GetNon_Physical(jPoint);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          ProjGradU_i += Vector_i[iDim]*GradU_i[iVar][iDim];
+          ProjGradU_j += Vector_j[iDim]*GradU_j[iVar][iDim];
+        }
+        if (limiter) {
+          Conserved_i[iVar] = U_i[iVar] + Limiter_i*ProjGradU_i;
+          Conserved_j[iVar] = U_j[iVar] + Limiter_j*ProjGradU_j;
+        }
+        else {
+          Conserved_i[iVar] = U_i[iVar] + ProjGradU_i;
+          Conserved_j[iVar] = U_j[iVar] + ProjGradU_j;
+        }
+      }
 
-      /*--- Calculate corresponding primitive reconstructed variables ---*/
-           for (iVar = 0; iVar < nPrimVar; iVar++) {
-             ProjGradV_i = 0.0; ProjGradV_j = 0.0;
-             Non_Physical = nodes->GetNon_Physical(iPoint)*nodes->GetNon_Physical(jPoint);
-             for (iDim = 0; iDim < nDim; iDim++) {
-               ProjGradV_i += Vector_i[iDim]*GradV_i[iVar][iDim]*Non_Physical;
-               ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim]*Non_Physical;
-             }
-             if(limiter) {
-               Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*ProjGradV_i;
-               Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*ProjGradV_j;
-             }
-             else {
-               Primitive_i[iVar] = V_i[iVar] + ProjGradV_i;
-               Primitive_j[iVar] = V_j[iVar] + ProjGradV_j;
-             }
+      // /*--- Calculate corresponding primitive reconstructed variables ---*/
+      //      for (iVar = 0; iVar < nPrimVar; iVar++) {
+      //        ProjGradV_i = 0.0; ProjGradV_j = 0.0;
+      //        Non_Physical = nodes->GetNon_Physical(iPoint)*nodes->GetNon_Physical(jPoint);
+      //        for (iDim = 0; iDim < nDim; iDim++) {
+      //          ProjGradV_i += Vector_i[iDim]*GradV_i[iVar][iDim]*Non_Physical;
+      //          ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim]*Non_Physical;
+      //        }
+      //        if(limiter) {
+      //          Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*ProjGradV_i;
+      //          Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*ProjGradV_j;
+      //        }
+      //        else {
+      //          Primitive_i[iVar] = V_i[iVar] + ProjGradV_i;
+      //          Primitive_j[iVar] = V_j[iVar] + ProjGradV_j;
+      //        }
       
-             // Vib.-el. energy
-             for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-               Eve_i[iSpecies] = nodes->CalcEve(config, Primitive_i[TVE_INDEX], iSpecies);
-               Eve_j[iSpecies] = nodes->CalcEve(config, Primitive_j[TVE_INDEX], iSpecies);
-               Cvve_i[iSpecies] = nodes->CalcCvve(Primitive_i[TVE_INDEX], config, iSpecies);
-               Cvve_j[iSpecies] = nodes->CalcCvve(Primitive_j[TVE_INDEX], config, iSpecies);
-             }
+      //        // Vib.-el. energy
+      //        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      //          Eve_i[iSpecies] = nodes->CalcEve(config, Primitive_i[TVE_INDEX], iSpecies);
+      //          Eve_j[iSpecies] = nodes->CalcEve(config, Primitive_j[TVE_INDEX], iSpecies);
+      //          Cvve_i[iSpecies] = nodes->CalcCvve(Primitive_i[TVE_INDEX], config, iSpecies);
+      //          Cvve_j[iSpecies] = nodes->CalcCvve(Primitive_j[TVE_INDEX], config, iSpecies);
+      //        }
       
-             // Recalculate derivatives of pressure
-             // NOTE: We need to pass the vib-el. energy, but it is only used when
-             //       ionized species are present, so, for now, we just load it with
-             //       the value at i or j, and come back later when ionized is ready.
-             nodes->CalcdPdU(Primitive_i, Eve_i, config, dPdU_i);
-             nodes->CalcdPdU(Primitive_j, Eve_j, config, dPdU_j);
+      //        // Recalculate derivatives of pressure
+      //        // NOTE: We need to pass the vib-el. energy, but it is only used when
+      //        //       ionized species are present, so, for now, we just load it with
+      //        //       the value at i or j, and come back later when ionized is ready.
+      //        nodes->CalcdPdU(Primitive_i, Eve_i, config, dPdU_i);
+      //        nodes->CalcdPdU(Primitive_j, Eve_j, config, dPdU_j);
       
-             // Recalculate temperature derivatives
-             nodes->CalcdTdU(Primitive_i, config, dTdU_i);
-             nodes->CalcdTdU(Primitive_j, config, dTdU_j);
+      //        // Recalculate temperature derivatives
+      //        nodes->CalcdTdU(Primitive_i, config, dTdU_i);
+      //        nodes->CalcdTdU(Primitive_j, config, dTdU_j);
       
-             // Recalculate Tve derivatives
-             // Note: Species vib.-el. energies are required for species density
-             //       terms.  For now, just pass the values at i and j and hope it works
-             nodes->CalcdTvedU(Primitive_i, Eve_i, config, dTvedU_i);
-             nodes->CalcdTvedU(Primitive_j, Eve_j, config, dTvedU_j);
-           }
-           numerics->SetPrimitive   (Primitive_i, Primitive_j);
-           numerics->SetConservative(U_i,         U_j);
-           numerics->SetdPdU        (dPdU_i,      dPdU_j);
-           numerics->SetdTdU        (dTdU_i,      dTdU_j);
-           numerics->SetdTvedU      (dTvedU_i,    dTvedU_j);
-           numerics->SetEve         (Eve_i,       Eve_j);
-           numerics->SetCvve        (Cvve_i,      Cvve_j);
+      //        // Recalculate Tve derivatives
+      //        // Note: Species vib.-el. energies are required for species density
+      //        //       terms.  For now, just pass the values at i and j and hope it works
+      //        nodes->CalcdTvedU(Primitive_i, Eve_i, config, dTvedU_i);
+      //        nodes->CalcdTvedU(Primitive_j, Eve_j, config, dTvedU_j);
+      //      }
+      //      numerics->SetPrimitive   (Primitive_i, Primitive_j);
+      //      numerics->SetConservative(U_i,         U_j);
+      //      numerics->SetdPdU        (dPdU_i,      dPdU_j);
+      //      numerics->SetdTdU        (dTdU_i,      dTdU_j);
+      //      numerics->SetdTvedU      (dTvedU_i,    dTvedU_j);
+      //      numerics->SetEve         (Eve_i,       Eve_j);
+      //      numerics->SetCvve        (Cvve_i,      Cvve_j);
 
 
-      // chk_err_i = nodes->Cons2PrimVar(config, Conserved_i, Primitive_i,
-      //                                        dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
-      // chk_err_j = nodes->Cons2PrimVar(config, Conserved_j, Primitive_j,
-      //                                        dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
+      chk_err_i = nodes->Cons2PrimVar(config, Conserved_i, Primitive_i,
+                                             dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
+      chk_err_j = nodes->Cons2PrimVar(config, Conserved_j, Primitive_j,
+                                             dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
 
 
-      // /*--- Check for physical solutions in the reconstructed values ---*/
-      // // Note: If non-physical, revert to first order
-      // if ( chk_err_i || chk_err_j) {
-      //   numerics->SetPrimitive   (V_i, V_j);
-      //   numerics->SetConservative(U_i, U_j);
-      //   numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
-      //   numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
-      //   numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
-      //   numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
-      //   numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-      // } else {
-      //   numerics->SetConservative(Conserved_i, Conserved_j);
-      //   numerics->SetPrimitive   (Primitive_i, Primitive_j);
-      //   numerics->SetdPdU  (dPdU_i,   dPdU_j  );
-      //   numerics->SetdTdU  (dTdU_i,   dTdU_j  );
-      //   numerics->SetdTvedU(dTvedU_i, dTvedU_j);
-      //   numerics->SetEve   (Eve_i,    Eve_j   );
-      //   numerics->SetCvve  (Cvve_i,   Cvve_j  );
-      // }
+      /*--- Check for physical solutions in the reconstructed values ---*/
+      // Note: If non-physical, revert to first order
+      if ( chk_err_i || chk_err_j) {
+        numerics->SetPrimitive   (V_i, V_j);
+        numerics->SetConservative(U_i, U_j);
+        numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
+        numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
+        numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
+        numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
+        numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
+      } else {
+        numerics->SetConservative(Conserved_i, Conserved_j);
+        numerics->SetPrimitive   (Primitive_i, Primitive_j);
+        numerics->SetdPdU  (dPdU_i,   dPdU_j  );
+        numerics->SetdTdU  (dTdU_i,   dTdU_j  );
+        numerics->SetdTvedU(dTvedU_i, dTvedU_j);
+        numerics->SetEve   (Eve_i,    Eve_j   );
+        numerics->SetCvve  (Cvve_i,   Cvve_j  );
+      }
 
     } else {
 
