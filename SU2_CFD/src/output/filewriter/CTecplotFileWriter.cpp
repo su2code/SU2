@@ -63,7 +63,6 @@ void CTecplotFileWriter::Write_Data(){
 
   /*--- Reduce the total number of each element. ---*/
 
-  unsigned long nTot_Line, nTot_Tria, nTot_Quad, nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
   unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
                 nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
                 nParallel_Quad = dataSorter->GetnElem(QUADRILATERAL),
@@ -71,24 +70,14 @@ void CTecplotFileWriter::Write_Data(){
                 nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
                 nParallel_Pris = dataSorter->GetnElem(PRISM),
                 nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nParallel_Line, &nTot_Line, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Tria, &nTot_Tria, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Quad, &nTot_Quad, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Tetr, &nTot_Tetr, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Hexa, &nTot_Hexa, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Pris, &nTot_Pris, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Pyra, &nTot_Pyra, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  nTot_Line      = nParallel_Line;
-
-  nTot_Tria = nParallel_Tria;
-  nTot_Quad = nParallel_Quad;
-  nTot_Tetr = nParallel_Tetr;
-  nTot_Hexa = nParallel_Hexa;
-  nTot_Pris = nParallel_Pris;
-  nTot_Pyra = nParallel_Pyra;
-#endif
+  
+  unsigned long nTot_Line = dataSorter->GetnElemGlobal(LINE),
+                nTot_Tria = dataSorter->GetnElemGlobal(TRIANGLE),
+                nTot_Quad = dataSorter->GetnElemGlobal(QUADRILATERAL),
+                nTot_Tetr = dataSorter->GetnElemGlobal(TETRAHEDRON),
+                nTot_Hexa = dataSorter->GetnElemGlobal(HEXAHEDRON),
+                nTot_Pris = dataSorter->GetnElemGlobal(PRISM),
+                nTot_Pyra = dataSorter->GetnElemGlobal(PYRAMID);
 
   /*--- Open Tecplot ASCII file and write the header. ---*/
 
