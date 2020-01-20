@@ -1211,11 +1211,10 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 
 
   /*--- Set booleans based on config settings ---*/
-  bool implicit 	= (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  bool muscl    	= (config->GetMUSCL_TNE2() && (iMesh == MESH_0));
+  bool implicit   	= (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  bool muscl    	  = (config->GetMUSCL_TNE2() && (iMesh == MESH_0));
   bool disc_adjoint = config->GetDiscrete_Adjoint();
-  bool limiter      = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) &&
-                       !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter      = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool chk_err_i, chk_err_j, err;
 
   /*--- Allocate arrays ---*/
@@ -1314,8 +1313,14 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
                ProjGradV_i += Vector_i[iDim]*GradV_i[iVar][iDim];
                ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim];
              }
-             Primitive_i[iVar] = V_i[iVar] + lim_ij*ProjGradV_i;
-             Primitive_j[iVar] = V_j[iVar] + lim_ij*ProjGradV_j;
+             if(limiter) {
+               Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*ProjGradV_i;
+               Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*ProjGradV_j;
+             }
+             else {
+               Primitive_i[iVar] = V_i[iVar] + ProjGradV_i;
+               Primitive_j[iVar] = V_j[iVar] + ProjGradV_j;
+             }
       
              // Vib.-el. energy
              for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
