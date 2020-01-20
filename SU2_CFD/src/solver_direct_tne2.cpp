@@ -5115,9 +5115,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   /*--- Set booleans from configuration parameters ---*/
   bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool viscous  = config->GetViscous();
-  //bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
-  //                   (config->GetKind_Solver() == DISC_ADJ_RANS))
-  //                  && (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   /*--- Allocate arrays ---*/
   su2double *Normal = new su2double[nDim];
@@ -5221,12 +5219,12 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       Density_Infty = node_infty->GetDensity();
       Vel2_Infty = 0.0; Vn_Infty = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        Vel_Infty[iDim] = node_infty->GetVelocity(iDim);
+        Vel_Infty[iDim] = node_infty->GetVelocity(0, iDim);
         Vel2_Infty     += Vel_Infty[iDim]*Vel_Infty[iDim];
         Vn_Infty       += Vel_Infty[iDim]*UnitNormal[iDim];
       }
-      Pressure_Infty   = node_infty->GetPressure();
-      SoundSpeed_Infty = node_infty->GetSoundSpeed();
+      Pressure_Infty   = node_infty->GetPressure(0);
+      SoundSpeed_Infty = node_infty->GetSoundSpeed(0);
       Entropy_Infty    = pow(Density_Infty, Gamma)/Pressure_Infty;
 
       /*--- Adjust the normal freestream velocity for grid movement ---*/
