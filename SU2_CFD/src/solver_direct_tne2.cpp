@@ -5398,10 +5398,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
                                                            Temperature_ve, 1, nDim, nVar,
                                                            nPrimVar, nPrimVarGrad, config);
 
-      node_bc->Cons2PrimVar(config, node_bc->GetSolution(0), node_bc->GetPrimitive(0),
-                            node_bc->GetdPdU(0), node_bc->GetdTdU(0), node_bc->GetdTvedU(0), 
-                            node_bc->GetEve(0), node_bc->GetCvve(0));
-
+      const bool check_bc = node_bc->SetPrimVar_Compressible(0,config);
 
       /*--- Pass conserved & primitive variables to CNumerics ---*/
       conv_numerics->SetConservative(U_domain, node_bc->GetSolution(0));
