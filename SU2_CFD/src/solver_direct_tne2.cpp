@@ -5216,7 +5216,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
          the freestream velocity vector into the local normal direction,
          i.e. compute v_infty.n. ---*/
 
-      Density_Infty = node_infty->GetDensity();
+      Density_Infty = node_infty->GetDensity(0);
       Vel2_Infty = 0.0; Vn_Infty = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         Vel_Infty[iDim] = node_infty->GetVelocity(0, iDim);
