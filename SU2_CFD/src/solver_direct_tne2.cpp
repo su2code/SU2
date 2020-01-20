@@ -1348,12 +1348,12 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
              nodes->CalcdTvedU(Primitive_j, Eve_j, config, dTvedU_j);
            }
            numerics->SetPrimitive   (Primitive_i, Primitive_j);
-           numerics->SetConservative(U_i, U_j);
-           numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
-           numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
-           numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
-           numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
-           numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
+           numerics->SetConservative(U_i,         U_j);
+           numerics->SetdPdU        (dPdU_i,      dPdU_j);
+           numerics->SetdTdU        (dTdU_i,      dTdU_j);
+           numerics->SetdTvedU      (dTvedU_i,    dTvedU_j);
+           numerics->SetEve         (Eve_i,       Eve_j);
+           numerics->SetCvve        (Cvve_i,      Cvve_j);
 
 
       // chk_err_i = nodes->Cons2PrimVar(config, Conserved_i, Primitive_i,
@@ -5353,7 +5353,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       }
       // Supersonic inflow
       // All values set to freestream
-      else if (Qn_Infty < 0 && Mach_Inf > 0) {
+      else if (Qn_Infty <= 0 && Mach_Inf > 0) {
         Density = node_infty->GetDensity(0);
         Velocity2 = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
