@@ -828,9 +828,16 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint ++) {
 
+    /*--- Initialize the non-physical points vector ---*/
+    
+    nodes->SetNon_Physical(iPoint,false);
+
     /*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
     nonPhys = nodes->SetPrimVar_Compressible(iPoint, config);
-    if (nonPhys) ErrorCounter++;
+    if (nonPhys) {
+      nodes->SetNon_Physical(iPoint,true);
+      ErrorCounter++;
+    }
 
     /*--- Initialize the convective residual vector ---*/
     LinSysRes.SetBlock_Zero(iPoint);
@@ -1208,6 +1215,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
   su2double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
   su2double lim_i, lim_j;
+  su2double Non_Physical = 1.0;
 
 
   /*--- Set booleans based on config settings ---*/
@@ -1309,9 +1317,10 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       /*--- Calculate corresponding primitive reconstructed variables ---*/
            for (iVar = 0; iVar < nPrimVar; iVar++) {
              ProjGradV_i = 0.0; ProjGradV_j = 0.0;
+             Non_Physical = nodes->GetNon_Physical(iPoint)*nodes->GetNon_Physical(jPoint);
              for (iDim = 0; iDim < nDim; iDim++) {
-               ProjGradV_i += Vector_i[iDim]*GradV_i[iVar][iDim];
-               ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim];
+               ProjGradV_i += Vector_i[iDim]*GradV_i[iVar][iDim]*Non_Physical;
+               ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim]*Non_Physical;
              }
              if(limiter) {
                Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*ProjGradV_i;
@@ -7463,7 +7472,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
                                    Mvec_Inf, Temperature_Inf,
                                    Temperature_ve_Inf, 1, nDim, nVar,
                                    nPrimVar, nPrimVarGrad, config);
-  check_infty = node_infty->SetPrimVar_Compressible(iPoint, config);
+  check_infty = node_infty->SetPrimVar_Compressible(0, config);
 
   Velocity_Inf = new su2double[nDim];
   for (iDim = 0; iDim < nDim; iDim++)
