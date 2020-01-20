@@ -84,27 +84,6 @@ void CParaviewBinaryFileWriter::Write_Data(){
   GlobalPoint = dataSorter->GetnPointsGlobal();
   myPoint     = dataSorter->GetnPoints();
 
-
-  int *nPoint_Snd = new int[size+1];
-  int *nPoint_Cum = new int[size+1];
-
-  nPoint_Snd[0] = 0; nPoint_Cum[0] = 0;
-  for (int ii=1; ii < size; ii++) {
-    nPoint_Snd[ii] = myPoint; nPoint_Cum[ii] = 0;
-  }
-  nPoint_Snd[size] = myPoint; nPoint_Cum[size] = 0;
-
-  /*--- Communicate the local counts to all ranks for building offsets. ---*/
-
-  SU2_MPI::Alltoall(&(nPoint_Snd[1]), 1, MPI_INT,
-                    &(nPoint_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
-
-  /*--- Put the counters into cumulative storage format. ---*/
-
-  for (int ii = 0; ii < size; ii++) {
-    nPoint_Cum[ii+1] += nPoint_Cum[ii];
-  }
-
   SPRINTF(str_buf, "POINTS %i float\n", SU2_TYPE::Int(GlobalPoint));
   
   WriteMPIString(string(str_buf), MASTER_NODE);
@@ -147,82 +126,29 @@ void CParaviewBinaryFileWriter::Write_Data(){
                 nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
                 nParallel_Pris = dataSorter->GetnElem(PRISM),
                 nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
-  
-  unsigned long nTot_Line = dataSorter->GetnElemGlobal(LINE),
-                nTot_Tria = dataSorter->GetnElemGlobal(TRIANGLE),
-                nTot_Quad = dataSorter->GetnElemGlobal(QUADRILATERAL),
-                nTot_Tetr = dataSorter->GetnElemGlobal(TETRAHEDRON),
-                nTot_Hexa = dataSorter->GetnElemGlobal(HEXAHEDRON),
-                nTot_Pris = dataSorter->GetnElemGlobal(PRISM),
-                nTot_Pyra = dataSorter->GetnElemGlobal(PYRAMID);
 
-  myElem        = dataSorter->GetnElem();
-  
-  myElemStorage = (nParallel_Line*N_POINTS_LINE + 
-                   nParallel_Tria*N_POINTS_TRIANGLE + 
-                   nParallel_Quad*N_POINTS_QUADRILATERAL +
-                   nParallel_Tetr*N_POINTS_TETRAHEDRON +
-                   nParallel_Hexa*N_POINTS_HEXAHEDRON +
-                   nParallel_Pris*N_POINTS_PRISM +
-                   nParallel_Pyra*N_POINTS_PYRAMID);
+  myElem            = dataSorter->GetnElem();
+  myElemStorage     = dataSorter->GetnElemConn();
+  GlobalElem        = dataSorter->GetnElemGlobal();
+  GlobalElemStorage = dataSorter->GetnElemConnGlobal();
 
-  GlobalElem        =  dataSorter->GetnElemGlobal();
-  GlobalElemStorage = (nTot_Line*N_POINTS_LINE + 
-                       nTot_Tria*N_POINTS_TRIANGLE + 
-                       nTot_Quad*N_POINTS_QUADRILATERAL +
-                       nTot_Tetr*N_POINTS_TETRAHEDRON +
-                       nTot_Hexa*N_POINTS_HEXAHEDRON +
-                       nTot_Pris*N_POINTS_PRISM +
-                       nTot_Pyra*N_POINTS_PYRAMID);
-
-  /*--- Communicate the number of total cells/storage that will be
-   written by each rank. After this communication, each proc knows how
-   many cells will be written before its location in the file and the
-   offsets can be correctly set. ---*/
-
-  int *nElem_Snd = new int[size+1]; int *nElemStorage_Snd = new int[size+1];
-  int *nElem_Cum = new int[size+1]; int *nElemStorage_Cum = new int[size+1];
-
-  nElem_Snd[0] = 0; nElemStorage_Snd[0] = 0;
-  nElem_Cum[0] = 0; nElemStorage_Cum[0] = 0;
-  for (int ii=1; ii < size; ii++) {
-    nElem_Snd[ii] = myElem; nElemStorage_Snd[ii] = myElemStorage;
-    nElem_Cum[ii] = 0;      nElemStorage_Cum[ii] = 0;
-  }
-  nElem_Snd[size] = myElem; nElemStorage_Snd[size] = myElemStorage;
-  nElem_Cum[size] = 0;      nElemStorage_Cum[size] = 0;
-
-  /*--- Communicate the local counts to all ranks for building offsets. ---*/
-
-  SU2_MPI::Alltoall(&(nElem_Snd[1]), 1, MPI_INT,
-                    &(nElem_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
-
-  SU2_MPI::Alltoall(&(nElemStorage_Snd[1]), 1, MPI_INT,
-                    &(nElemStorage_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
-
-  /*--- Put the counters into cumulative storage format. ---*/
-
-  for (int ii = 0; ii < size; ii++) {
-    nElem_Cum[ii+1]        += nElem_Cum[ii];
-    nElemStorage_Cum[ii+1] += nElemStorage_Cum[ii];
-  }
-  
   SPRINTF(str_buf, "\nCELLS %i %i\n", SU2_TYPE::Int(GlobalElem),
-          SU2_TYPE::Int(GlobalElemStorage));
+          SU2_TYPE::Int(GlobalElemStorage+GlobalElem));
   WriteMPIString(str_buf, MASTER_NODE);
   
   /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
 
-  vector<int> connBuf(myElemStorage);
-  unsigned long iStorage = 0, iElemID = 0;
+  vector<int> connBuf(myElemStorage + myElem);
+  unsigned long iStorage = 0;
   unsigned short iNode = 0;
 
   auto copyToBuffer = [&](GEO_TYPE type, unsigned long nElem, unsigned short nPoints){
     for (iElem = 0; iElem < nElem; iElem++) {
+      connBuf[iStorage+0] = nPoints;
       for (iNode = 0; iNode < nPoints; iNode++){
-        connBuf[iStorage+iNode] = int(dataSorter->GetElem_Connectivity(type, iElem, iNode)-1);
+        connBuf[iStorage+iNode+1] = int(dataSorter->GetElem_Connectivity(type, iElem, iNode)-1);
       }
-      iStorage += nPoints;
+      iStorage += nPoints + 1;
     }
   };
  
@@ -234,12 +160,17 @@ void CParaviewBinaryFileWriter::Write_Data(){
   copyToBuffer(PRISM,         nParallel_Pris, N_POINTS_PRISM);
   copyToBuffer(PYRAMID,       nParallel_Pyra, N_POINTS_PYRAMID);
 
-  if (!bigEndian) SwapBytes((char *)connBuf.data(), sizeof(int), myElemStorage);  
+  if (!bigEndian) SwapBytes((char *)connBuf.data(), sizeof(int), myElemStorage+myElem);  
   
-  WriteMPIBinaryDataAll(connBuf.data(), 
-                        myElemStorage*sizeof(int),
-                        GlobalElemStorage*sizeof(int), 
-                        nElemStorage_Cum[rank]*sizeof(int));
+  /*--- Compute various data sizes --- */
+  
+  sizeInBytesPerPoint = sizeof(int);
+  sizeInBytesLocal    = sizeInBytesPerPoint*(myElemStorage + myElem);
+  sizeInBytesGlobal   = sizeInBytesPerPoint*(GlobalElemStorage + GlobalElem);
+  offsetInBytes       = sizeInBytesPerPoint*
+                        (dataSorter->GetnElemConnCumulative(rank) + dataSorter->GetnElemCumulative(rank));
+  
+  WriteMPIBinaryDataAll(connBuf.data(), sizeInBytesLocal, sizeInBytesGlobal, offsetInBytes);
     
   SPRINTF (str_buf, "\nCELL_TYPES %i\n", SU2_TYPE::Int(GlobalElem));
   WriteMPIString(str_buf, MASTER_NODE);
@@ -258,12 +189,19 @@ void CParaviewBinaryFileWriter::Write_Data(){
   std::fill(typeIter, typeIter+nParallel_Pyra, PYRAMID);       typeIter += nParallel_Pyra;
   
   if (!bigEndian) SwapBytes((char *)typeBuf.data(), sizeof(int), myElem);
+  
+  /*--- Compute various data sizes --- */
+  
+  sizeInBytesPerPoint = sizeof(int);
+  sizeInBytesLocal    = sizeInBytesPerPoint*myElem;
+  sizeInBytesGlobal   = sizeInBytesPerPoint*GlobalElem;
+  offsetInBytes       = sizeInBytesPerPoint*dataSorter->GetnElemCumulative(rank);
 
-  WriteMPIBinaryDataAll(typeBuf.data(),
-                        myElem*sizeof(int),
-                        GlobalElem*sizeof(int),
-                        nElem_Cum[rank]*sizeof(int));
+  WriteMPIBinaryDataAll(typeBuf.data(), sizeInBytesLocal, sizeInBytesGlobal, offsetInBytes);
 
+  SPRINTF (str_buf, "\nPOINT_DATA %i\n", SU2_TYPE::Int(GlobalPoint));
+  WriteMPIString(str_buf, MASTER_NODE);
+  
   /*--- Adjust container start location to avoid point coords. ---*/
 
   unsigned short varStart = 2;
@@ -326,13 +264,23 @@ void CParaviewBinaryFileWriter::Write_Data(){
       if (!bigEndian)
         SwapBytes((char *)dataBufferFloat.data(), sizeof(float), myPoint*NCOORDS);
 
-      WriteMPIBinaryDataAll(dataBufferFloat.data(),
-                            myPoint*NCOORDS*sizeof(float),
-                            GlobalPoint*NCOORDS*sizeof(float), 
-                            nPoint_Cum[rank]*NCOORDS*sizeof(float));
+      /*--- Compute various data sizes --- */
+      
+      sizeInBytesPerPoint = sizeof(float)*NCOORDS;
+      sizeInBytesLocal    = sizeInBytesPerPoint*myPoint;
+      sizeInBytesGlobal   = sizeInBytesPerPoint*GlobalPoint;
+      offsetInBytes       = sizeInBytesPerPoint*dataSorter->GetnPointCumulative(rank);
+      
+      WriteMPIBinaryDataAll(dataBufferFloat.data(), sizeInBytesLocal, sizeInBytesGlobal, offsetInBytes);
+
       VarCounter++;
 
     } else if (output_variable) {
+      
+      SPRINTF (str_buf, "\nSCALARS %s float 1\n", fieldname.c_str());
+      WriteMPIString(str_buf, MASTER_NODE);
+      WriteMPIString("LOOKUP_TABLE default\n", MASTER_NODE);
+      
       /*--- For now, create a temp 1D buffer to load up the data for writing.
        This will be replaced with a derived data type most likely. ---*/
 
@@ -344,11 +292,14 @@ void CParaviewBinaryFileWriter::Write_Data(){
       if (!bigEndian)
         SwapBytes((char *)dataBufferFloat.data(), sizeof(float), myPoint);
       
-      WriteMPIBinaryDataAll(dataBufferFloat.data(),
-                            myPoint*sizeof(float),
-                            GlobalPoint*sizeof(float), 
-                            nPoint_Cum[rank]*sizeof(float));
+      /*--- Compute various data sizes --- */
       
+      sizeInBytesPerPoint = sizeof(float);
+      sizeInBytesLocal    = sizeInBytesPerPoint*myPoint;
+      sizeInBytesGlobal   = sizeInBytesPerPoint*GlobalPoint;
+      offsetInBytes       = sizeInBytesPerPoint*dataSorter->GetnPointCumulative(rank);
+  
+      WriteMPIBinaryDataAll(dataBufferFloat.data(), sizeInBytesLocal, sizeInBytesGlobal, offsetInBytes);
 
       VarCounter++;
     }
@@ -356,12 +307,6 @@ void CParaviewBinaryFileWriter::Write_Data(){
   }
 
   CloseMPIFile();
-
-  /*--- Delete the offset counters that we needed for MPI IO. ---*/
-
-  delete [] nElem_Snd;        delete [] nElem_Cum;
-  delete [] nElemStorage_Snd; delete [] nElemStorage_Cum;
-  delete [] nPoint_Snd;       delete [] nPoint_Cum;
 
 }
 

@@ -96,33 +96,11 @@ void CParaviewXMLFileWriter::Write_Data(){
                 nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
                 nParallel_Pris = dataSorter->GetnElem(PRISM),
                 nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
-  
-  unsigned long nTot_Line = dataSorter->GetnElemGlobal(LINE),
-                nTot_Tria = dataSorter->GetnElemGlobal(TRIANGLE),
-                nTot_Quad = dataSorter->GetnElemGlobal(QUADRILATERAL),
-                nTot_Tetr = dataSorter->GetnElemGlobal(TETRAHEDRON),
-                nTot_Hexa = dataSorter->GetnElemGlobal(HEXAHEDRON),
-                nTot_Pris = dataSorter->GetnElemGlobal(PRISM),
-                nTot_Pyra = dataSorter->GetnElemGlobal(PYRAMID);
 
-  myElem        = dataSorter->GetnElem();
-  
-  myElemStorage = (nParallel_Line*N_POINTS_LINE + 
-                   nParallel_Tria*N_POINTS_TRIANGLE + 
-                   nParallel_Quad*N_POINTS_QUADRILATERAL +
-                   nParallel_Tetr*N_POINTS_TETRAHEDRON +
-                   nParallel_Hexa*N_POINTS_HEXAHEDRON +
-                   nParallel_Pris*N_POINTS_PRISM +
-                   nParallel_Pyra*N_POINTS_PYRAMID);
-
-  GlobalElem        =  dataSorter->GetnElemGlobal();
-  GlobalElemStorage = (nTot_Line*N_POINTS_LINE + 
-                       nTot_Tria*N_POINTS_TRIANGLE + 
-                       nTot_Quad*N_POINTS_QUADRILATERAL +
-                       nTot_Tetr*N_POINTS_TETRAHEDRON +
-                       nTot_Hexa*N_POINTS_HEXAHEDRON +
-                       nTot_Pris*N_POINTS_PRISM +
-                       nTot_Pyra*N_POINTS_PYRAMID);
+  myElem            = dataSorter->GetnElem();
+  myElemStorage     = dataSorter->GetnElemConn();
+  GlobalElem        = dataSorter->GetnElemGlobal();
+  GlobalElemStorage = dataSorter->GetnElemConnGlobal();
 
   /* Write the ASCII XML header. Note that we use the appended format for the data,
   * which means that all data is appended at the end of the file in one binary blob.
@@ -207,26 +185,6 @@ void CParaviewXMLFileWriter::Write_Data(){
   WriteMPIString("</Piece>\n", MASTER_NODE);
   WriteMPIString("</UnstructuredGrid>\n", MASTER_NODE);
 
-  int *nPoint_Snd = new int[size+1];
-  int *nPoint_Cum = new int[size+1];
-
-  nPoint_Snd[0] = 0; nPoint_Cum[0] = 0;
-  for (int ii=1; ii < size; ii++) {
-    nPoint_Snd[ii] = int(myPoint); nPoint_Cum[ii] = 0;
-  }
-  nPoint_Snd[size] = int(myPoint); nPoint_Cum[size] = 0;
-
-  /*--- Communicate the local counts to all ranks for building offsets. ---*/
-
-  SU2_MPI::Alltoall(&(nPoint_Snd[1]), 1, MPI_INT,
-                    &(nPoint_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
-
-  /*--- Put the counters into cumulative storage format. ---*/
-
-  for (int ii = 0; ii < size; ii++) {
-    nPoint_Cum[ii+1] += nPoint_Cum[ii];
-  }
-
   /*--- Now write all the data we have previously defined into the binary section of the file ---*/
 
   WriteMPIString("<AppendedData encoding=\"raw\">\n_", MASTER_NODE);
@@ -246,39 +204,8 @@ void CParaviewXMLFileWriter::Write_Data(){
     }
   }
 
-  WriteDataArray(dataBufferFloat.data(), VTKDatatype::FLOAT32, NCOORDS*myPoint, GlobalPoint*NCOORDS, nPoint_Cum[rank]*NCOORDS);
-
-  /*--- Communicate the number of total cells/storage that will be
-   written by each rank. After this communication, each proc knows how
-   many cells will be written before its location in the file and the
-   offsets can be correctly set. ---*/
-
-  int *nElem_Snd = new int[size+1]; int *nElemStorage_Snd = new int[size+1];
-  int *nElem_Cum = new int[size+1]; int *nElemStorage_Cum = new int[size+1];
-
-  nElem_Snd[0] = 0; nElemStorage_Snd[0] = 0;
-  nElem_Cum[0] = 0; nElemStorage_Cum[0] = 0;
-  for (int ii=1; ii < size; ii++) {
-    nElem_Snd[ii] = int(myElem); nElemStorage_Snd[ii] = int(myElemStorage);
-    nElem_Cum[ii] = 0;      nElemStorage_Cum[ii] = 0;
-  }
-  nElem_Snd[size] = int(myElem); nElemStorage_Snd[size] = int(myElemStorage);
-  nElem_Cum[size] = 0;      nElemStorage_Cum[size] = 0;
-
-  /*--- Communicate the local counts to all ranks for building offsets. ---*/
-
-  SU2_MPI::Alltoall(&(nElem_Snd[1]), 1, MPI_INT,
-                    &(nElem_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
-
-  SU2_MPI::Alltoall(&(nElemStorage_Snd[1]), 1, MPI_INT,
-                    &(nElemStorage_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
-
-  /*--- Put the counters into cumulative storage format. ---*/
-
-  for (int ii = 0; ii < size; ii++) {
-    nElem_Cum[ii+1]        += nElem_Cum[ii];
-    nElemStorage_Cum[ii+1] += nElemStorage_Cum[ii];
-  }
+  WriteDataArray(dataBufferFloat.data(), VTKDatatype::FLOAT32, NCOORDS*myPoint, GlobalPoint*NCOORDS,
+                 dataSorter->GetnPointCumulative(rank)*NCOORDS);
 
   /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
 
@@ -293,7 +220,7 @@ void CParaviewXMLFileWriter::Write_Data(){
         connBuf[iStorage+iNode] = int(dataSorter->GetElem_Connectivity(type, iElem, iNode)-1);
       }
       iStorage += nPoints;
-      offsetBuf[iElemID++] = int(iStorage + nElemStorage_Cum[rank]);
+      offsetBuf[iElemID++] = int(iStorage + dataSorter->GetnElemConnCumulative(rank));
     }
   };
 
@@ -305,8 +232,9 @@ void CParaviewXMLFileWriter::Write_Data(){
   copyToBuffer(PRISM,         nParallel_Pris, N_POINTS_PRISM);
   copyToBuffer(PYRAMID,       nParallel_Pyra, N_POINTS_PYRAMID);
 
-  WriteDataArray(connBuf.data(), VTKDatatype::INT32, myElemStorage, GlobalElemStorage, nElemStorage_Cum[rank]);
-  WriteDataArray(offsetBuf.data(), VTKDatatype::INT32, myElem, GlobalElem, nElem_Cum[rank]);
+  WriteDataArray(connBuf.data(), VTKDatatype::INT32, myElemStorage, GlobalElemStorage,
+                 dataSorter->GetnElemConnCumulative(rank));
+  WriteDataArray(offsetBuf.data(), VTKDatatype::INT32, myElem, GlobalElem, dataSorter->GetnElemCumulative(rank));
 
   /*--- Load/write the cell type for all elements in the file. ---*/
 
@@ -321,7 +249,7 @@ void CParaviewXMLFileWriter::Write_Data(){
   std::fill(typeIter, typeIter+nParallel_Pris, PRISM);         typeIter += nParallel_Pris;
   std::fill(typeIter, typeIter+nParallel_Pyra, PYRAMID);       typeIter += nParallel_Pyra;
 
-  WriteDataArray(typeBuf.data(), VTKDatatype::UINT8, myElem, GlobalElem, nElem_Cum[rank]);
+  WriteDataArray(typeBuf.data(), VTKDatatype::UINT8, myElem, GlobalElem, dataSorter->GetnElemCumulative(rank));
 
   /*--- Loop over all variables that have been registered in the output. ---*/
 
@@ -367,7 +295,8 @@ void CParaviewXMLFileWriter::Write_Data(){
         }
       }
 
-      WriteDataArray(dataBufferFloat.data(), VTKDatatype::FLOAT32, myPoint*NCOORDS, GlobalPoint*NCOORDS, nPoint_Cum[rank]*NCOORDS);
+      WriteDataArray(dataBufferFloat.data(), VTKDatatype::FLOAT32, myPoint*NCOORDS, GlobalPoint*NCOORDS, 
+                     dataSorter->GetnPointCumulative(rank)*NCOORDS);
 
       VarCounter++;
 
@@ -382,7 +311,8 @@ void CParaviewXMLFileWriter::Write_Data(){
         dataBufferFloat[iPoint] = val;
       }
 
-      WriteDataArray(dataBufferFloat.data(), VTKDatatype::FLOAT32, myPoint, GlobalPoint, nPoint_Cum[rank]);
+      WriteDataArray(dataBufferFloat.data(), VTKDatatype::FLOAT32, myPoint, GlobalPoint,
+                     dataSorter->GetnPointCumulative(rank));
 
       VarCounter++;
     }
@@ -393,12 +323,6 @@ void CParaviewXMLFileWriter::Write_Data(){
   WriteMPIString("</VTKFile>\n", MASTER_NODE);
 
   CloseMPIFile();
-
-  /*--- Delete the offset counters that we needed for MPI IO. ---*/
-
-  delete [] nElem_Snd;        delete [] nElem_Cum;
-  delete [] nElemStorage_Snd; delete [] nElemStorage_Cum;
-  delete [] nPoint_Snd;       delete [] nPoint_Cum;
 
 }
 
