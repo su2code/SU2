@@ -1166,13 +1166,12 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     numerics->SetLambda(nodes->GetLambda(iPoint), nodes->GetLambda(jPoint));
 
     /*--- Compute residuals, and Jacobians ---*/
-    numerics->ComputeResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
+    numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
-      if ((Res_Conv[iVar] != Res_Conv[iVar]) ||
-          (Res_Visc[iVar] != Res_Visc[iVar])   )
+      if (Res_Conv[iVar] != Res_Conv[iVar])
         err = true;
     if (implicit)
       for (iVar = 0; iVar < nVar; iVar++)
@@ -1185,8 +1184,6 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     if (!err) {
       LinSysRes.AddBlock(iPoint, Res_Conv);
       LinSysRes.SubtractBlock(jPoint, Res_Conv);
-      LinSysRes.AddBlock(iPoint, Res_Visc);
-      LinSysRes.SubtractBlock(jPoint, Res_Visc);
       if (implicit) {
         Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
         Jacobian.AddBlock(iPoint,jPoint,Jacobian_j);
