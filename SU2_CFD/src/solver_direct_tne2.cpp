@@ -5364,7 +5364,6 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
         Energy = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
         Temperature = Density*SoundSpeed*SoundSpeed/Gamma;
         Temperature_ve = node_infty->GetTemperature_ve(0);
-        Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
         for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
           Ys[iSpecies] = MassFrac_Inf[iSpecies];
         }
