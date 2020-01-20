@@ -3415,7 +3415,7 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
       jSpecies = RxnMap[iReaction][1][ii];
       if (jSpecies != nSpecies) {
         // bkwRxn *= 0.001*U_i[jSpecies]/Ms[jSpecies];
-        bkwRxn *= pow(0.001*U_i[iSpecies]/Ms[iSpecies],betak[iSpecies]);
+        bkwRxn *= pow(0.001*U_i[jSpecies]/Ms[jSpecies],betak[jSpecies]);
       }
     }
     fwdRxn = 1000.0 * kf * fwdRxn;
