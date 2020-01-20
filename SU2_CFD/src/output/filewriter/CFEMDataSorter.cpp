@@ -57,12 +57,12 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vecto
       const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
       globalID.push_back(globalIndex);
 
-      nLocalPoint_Sort++;
+      nLocalPointBeforeSort++;
     }
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalPoint_Sort, &nGlobalPoint_Sort, 1,
+  SU2_MPI::Allreduce(&nLocalPointBeforeSort, &nGlobalPointBeforeSort, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
   nGlobalPoint_Sort = nLocalPoint_Sort;
@@ -70,7 +70,7 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vecto
 
   /*--- Create a linear partition --- */
 
-  linearPartitioner = new CLinearPartitioner(nGlobalPoint_Sort, 0);
+  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
 
   /*--- Prepare the send buffers ---*/
 
@@ -103,13 +103,9 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
   SortVolumetricConnectivity(config, geometry, HEXAHEDRON   );
   SortVolumetricConnectivity(config, geometry, PRISM        );
   SortVolumetricConnectivity(config, geometry, PYRAMID      );
-
-  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
-
-  SU2_MPI::Allreduce(nParallel_Elem.data(), nGlobal_Elem.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  
-  nGlobal_Elem_Par = std::accumulate(nGlobal_Elem.begin(), nGlobal_Elem.end(), 0); 
    
+  SetTotalElements();
+  
   connectivitySorted = true;
 
 }
@@ -211,7 +207,7 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
     }
   }
   
-  nParallel_Elem[TypeMap.at(Elem_Type)] = nSubElem_Local;
+  nLocalPerElem[TypeMap.at(Elem_Type)] = nSubElem_Local;
 
   /*--- Store the particular global element count in the class data,
         and set the class data pointer to the connectivity array. ---*/

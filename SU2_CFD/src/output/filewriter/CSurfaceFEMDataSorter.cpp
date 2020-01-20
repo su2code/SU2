@@ -53,12 +53,12 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
     /* Count up the number of local points we have for allocating storage. */
 
     for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
-      nLocalPoint_Sort++;
+      nLocalPointBeforeSort++;
     }
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalPoint_Sort, &nGlobalPoint_Sort, 1,
+  SU2_MPI::Allreduce(&nLocalPointBeforeSort, &nGlobalPointBeforeSort, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
   nGlobalPoint_Sort = nLocalPoint_Sort;
@@ -66,7 +66,7 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
 
   /*--- Create the linear partitioner --- */
 
-  linearPartitioner = new CLinearPartitioner(nGlobalPoint_Sort, 0);
+  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
 
 }
 
@@ -226,17 +226,17 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   globalSurfaceDOFIDs.erase(lastEntry, globalSurfaceDOFIDs.end());
 
   /* Allocate the memory for Parallel_Surf_Data. */
-  nParallel_Poin = globalSurfaceDOFIDs.size();
+  nLocalPoint = globalSurfaceDOFIDs.size();
 
   if (passiveDoubleBuffer != NULL){
     delete [] passiveDoubleBuffer;
   }
 
-  passiveDoubleBuffer = new passivedouble[nParallel_Poin*VARS_PER_POINT];
+  passiveDoubleBuffer = new passivedouble[nLocalPoint*VARS_PER_POINT];
 
   /* Determine the local index of the global surface DOFs and
      copy the data into Parallel_Surf_Data. */
-  for(unsigned long i=0; i<nParallel_Poin; ++i) {
+  for(unsigned long i=0; i<nLocalPoint; ++i) {
     const unsigned long ii = globalSurfaceDOFIDs[i] - linearPartitioner->GetCumulativeSizeBeforeRank(rank);
 
     for(int jj=0; jj<VARS_PER_POINT; jj++)
@@ -246,7 +246,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   /*--- Reduce the total number of surf points we have. This will be
         needed for writing the surface solution files later. ---*/
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1,
+  SU2_MPI::Allreduce(&nLocalPoint, &nGlobalPoint, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
   nGlobal_Poin_Par = nParallel_Poin;
@@ -262,7 +262,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 #ifdef HAVE_MPI
   vector<unsigned long> nSurfaceDOFsRanks(size);
 
-  SU2_MPI::Allgather(&nParallel_Poin, 1, MPI_UNSIGNED_LONG,
+  SU2_MPI::Allgather(&nLocalPoint, 1, MPI_UNSIGNED_LONG,
                      nSurfaceDOFsRanks.data(), 1, MPI_UNSIGNED_LONG,
                      MPI_COMM_WORLD);
 
@@ -272,7 +272,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   /* Create the map from the global volume numbering to the new global
      surface numbering. */
   map<unsigned long, unsigned long> mapGlobalVol2Surf;
-  for(unsigned long i=0; i<nParallel_Poin; ++i)
+  for(unsigned long i=0; i<nLocalPoint; ++i)
     mapGlobalVol2Surf[globalSurfaceDOFIDs[i]] = offsetSurfaceDOFs + i;
 
 
@@ -356,11 +356,7 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
   SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
   SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);
   
-  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
-
-  SU2_MPI::Allreduce(nParallel_Elem.data(), nGlobal_Elem.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  
-  nGlobal_Elem_Par = std::accumulate(nGlobal_Elem.begin(), nGlobal_Elem.end(), 0); 
+  SetTotalElements();
 
   connectivitySorted = true;
 
@@ -372,11 +368,7 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
   SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
   SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);
 
-  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
-
-  SU2_MPI::Allreduce(nParallel_Elem.data(), nGlobal_Elem.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  
-  nGlobal_Elem_Par = std::accumulate(nGlobal_Elem.begin(), nGlobal_Elem.end(), 0); 
+  SetTotalElements();
 
   connectivitySorted = true;
 
@@ -480,7 +472,7 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
       }
     }
     
-    nParallel_Elem[TypeMap.at(Elem_Type)] = nSubElem_Local;    
+    nLocalPerElem[TypeMap.at(Elem_Type)] = nSubElem_Local;    
 
     /*--- Store the particular global element count in the class data,
           and set the class data pointer to the connectivity array. ---*/
