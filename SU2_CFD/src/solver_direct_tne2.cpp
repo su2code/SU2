@@ -5094,12 +5094,12 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
 void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_container,
                                     CNumerics *conv_numerics, CNumerics *visc_numerics,
                                     CConfig *config, unsigned short val_marker) {
-  unsigned short iDim;
+  unsigned short iDim, iSpecies;
   unsigned long iVertex, iPoint, Point_Normal;
 
   su2double *GridVel;
   su2double Area, UnitNormal[3] = {0.0,0.0,0.0};
-  su2double Density, Pressure, Temperature, Energy,  Velocity[3] = {0.0,0.0,0.0};
+  su2double Density, Pressure, Temperature, Temperature_ve, Energy,  Velocity[3] = {0.0,0.0,0.0};
   su2double Density_Bound, Pressure_Bound, Vel_Bound[3] = {0.0,0.0,0.0};
   su2double Density_Infty, Pressure_Infty, Vel_Infty[3] = {0.0,0.0,0.0};
   su2double SoundSpeed, Entropy, Velocity2, Vn;
@@ -5108,6 +5108,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   su2double RiemannPlus, RiemannMinus;
 
   su2double Alpha, Beta, *Mvec_Inf;
+  su2double *Ys;
 
   su2double *V_infty, *V_domain;
   su2double *U_domain,*U_infty;
@@ -5295,20 +5296,78 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
       /*--- Recompute the primitive variables. ---*/
 
-      Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
-      Velocity2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity2 += Velocity[iDim]*Velocity[iDim];
+      // Subsonic outflow
+      // TODO: check these (mainly Tve)
+      if (Qn_Infty > 0 && Mach_Inf < 0) {
+        Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
+        Velocity2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity2 += Velocity[iDim]*Velocity[iDim];
+        }
+        Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
+        Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
+        Temperature = Density*SoundSpeed*SoundSpeed/Gamma;
+        Temperature_ve = V_domain[nSpecies+1];
+        for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
+          Ys[iSpecies] = MassFrac_Inf[iSpecies];
+        }
       }
-      Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
-      Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      Temperature = Density*SoundSpeed*SoundSpeed/Gamma;
+      // Supersonic outflow
+      // All values set to interior
+      else if (Qn_Infty > 0 && Mach_Inf > 0) {
+        Density = V_domain[nSpecies+nDim+3];
+        Velocity2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity2 += V_domain[nSpecies+2+iDim]*V_domain[nSpecies+2+iDim];
+        }
+        Pressure = V_domain[nSpecies+nDim+2];
+        Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
+        Temperature = V_domain[nSpecies];
+        Temperature_ve = V_domain[nSpecies+1];
+        for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
+          Ys[iSpecies] = V_domain[iSpecies]/Density;
+        }
+      }
+      // Supersonic inflow
+      // All values set to freestream
+      else if (Qn_Infty < 0 && Mach_Inf > 0) {
+        Density = node_infty->GetDensity(0);
+        Velocity2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity2 += Vel_Infty[iDim]*Vel_Infty[iDim];
+        }
+        Pressure = node_infty->GetPressure(0);
+        SoundSpeed = node_infty->GetSoundSpeed(0);
+        Energy = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
+        Temperature = Density*SoundSpeed*SoundSpeed/Gamma;
+        Temperature_ve = node_infty->GetTemperature_ve(0);
+        Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
+        for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
+          Ys[iSpecies] = MassFrac_Inf[iSpecies];
+        }
+      }
+      // Subsonic inflow
+      // TODO: check these (mainly Tve)
+      else {
+        Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
+        Velocity2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity2 += Velocity[iDim]*Velocity[iDim];
+        }
+        Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
+        Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
+        Temperature = Density*SoundSpeed*SoundSpeed/Gamma;
+        Temperature_ve = Temperature_ve_Inf;
+        for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
+          Ys[iSpecies] = V_domain[iSpecies]/Density;
+        }
+      }
       if (tkeNeeded) Energy += GetTke_Inf();
 
       /*--- Store new primitive state for computing the flux. ---*/
 
-      CTNE2EulerVariable *node_bc = new CTNE2EulerVariable(Pressure, MassFrac_Inf, Mvec_Inf, Temperature,
-                                                           Temperature_ve_Inf, 1, nDim, nVar,
+      CTNE2EulerVariable *node_bc = new CTNE2EulerVariable(Pressure, Ys, Mvec_Inf, Temperature,
+                                                           Temperature_ve, 1, nDim, nVar,
                                                            nPrimVar, nPrimVarGrad, config);
 
       node_bc->Cons2PrimVar(config, node_bc->GetSolution(0), node_bc->GetPrimitive(0),
