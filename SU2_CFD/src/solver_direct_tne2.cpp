@@ -5302,6 +5302,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
+      Temperature = Density*SoundSpeed*SoundSpeed/Gamma;
       if (tkeNeeded) Energy += GetTke_Inf();
 
       /*--- Store new primitive state for computing the flux. ---*/
