@@ -1196,7 +1196,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   unsigned long iEdge, iPoint, jPoint, counter_local=0, counter_global=0;
   unsigned long InnerIter = config->GetInnerIter();
   unsigned short RHO_INDEX, RHOS_INDEX, P_INDEX, TVE_INDEX;
-  unsigned short iDim, iVar, jVar;
+  unsigned short iDim, iVar, jVar, iSpecies;
 
   su2double *U_i, *U_j, *V_i, *V_j;
   su2double **GradU_i, **GradU_j;
