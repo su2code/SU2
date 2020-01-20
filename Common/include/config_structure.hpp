@@ -82,8 +82,16 @@ private:
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   su2double* Obj_ChainRuleCoeff;  /*!< \brief Array defining objective function for adjoint problem based on
                                               chain rule in terms of gradient w.r.t. density, velocity, pressure */
-  string* ConvField;              /*!< \brief Field used for convergence check.*/
-  unsigned short nConvField;      /*!< \brief Number of fields used to monitor convergence.*/
+  string* ConvField;                 /*!< \brief Field used for convergence check.*/
+
+  string* WndConvField;               /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
+  unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
+  unsigned short nWndConvField;      /*!< \brief Number of fields used to monitor time convergence.*/
+  unsigned short Wnd_Cauchy_Elems;   /*!< \brief Number of elements to evaluate in the time iteration  for convergence of the time average of the unsteady (single zone)´ flow problem.  */
+  su2double Wnd_Cauchy_Eps;          /*!< \brief Epsilon used for the convergence of the time average of the unsteady (single zone)´ flow problem. */
+  unsigned long Wnd_StartConv_Iter;  /*!< \brief Start convergence criteria at this iteration after Start_Iter_Wnd. */
+  bool Wnd_Cauchy_Crit;         /*!< \brief True => Cauchy criterion is used for time average objective function in unsteady flows. */
+
   bool MG_AdjointFlow;              /*!< \brief MG with the adjoint flow problem */
   su2double* SubsonicEngine_Cyl;    /*!< \brief Coordinates of the box subsonic region */
   su2double* SubsonicEngine_Values; /*!< \brief Values of the box subsonic region */
@@ -723,7 +731,7 @@ private:
   unsigned short Mesh_FileFormat;	  /*!< \brief Mesh input format. */
   unsigned short Tab_FileFormat;	  /*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	      /*!< \brief Format of the output files. */
-
+  unsigned long StartWindowIteration;  /*!< \brief Starting Iteration for long time Windowing apporach . */
   bool CFL_Adapt;        /*!< \brief Adaptive CFL number. */
   bool HB_Precondition;  /*< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,	 /*!< \brief Reference area for coefficient computation. */
@@ -1002,6 +1010,7 @@ private:
   FullTape;                              /*!< \brief Full tape mode for coupled discrete adjoints. */
   unsigned long Wrt_Surf_Freq_DualTime;	 /*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
+  unsigned short Kind_WindowFct  ;    /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   bool QCR;                    /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
@@ -5444,6 +5453,19 @@ public:
   string GetConv_FileName(void);
 
   /*!
+   * \brief Get the Starting Iteration for the windowing approach
+   *        in Sensitivity Analysis for period-averaged outputs, which oscillate.
+   * \return
+   */
+  unsigned long GetStartWindowIteration(void) const;
+
+  /*!
+   * \brief Get Index of the window function used as weight in the cost functional
+   * \return
+   */
+  WINDOW_FUNCTION GetKindWindow(void) const;
+
+  /*!
    * \brief Get the name of the file with the forces breakdown of the problem.
    * \return Name of the file with forces breakdown of the problem.
    */
@@ -9296,15 +9318,55 @@ public:
   */
   string GetVolumeOutput_Field(unsigned short iField);
 
-  /*
+  /*!
   * \brief Get the convergence fields for monitoring
   * \param[in] iField - Index of the field
   * return Field name for monitoring convergence
   */
   string GetConv_Field(unsigned short iField);
   
-  /*
-  * \brief Get the number of convergence monitoring fields.
+
+  /*!
+   * \brief Get functional that is going to be used to evaluate the convergence of the windowed time average of the unsteady problem.
+   * \param[in] iField - Index of the field
+   * \return Field name for monitoring convergence
+   */
+  string GetWndConv_Field(unsigned short iField) const;
+
+  /*!
+   * \brief Get the number of iterations that are considered in the Cauchy convergence criteria for the windowed time average of the unsteady problem.
+   * \return Number of elements in the Cauchy criteria windowed time average of the unsteady problem.
+   */
+  unsigned short GetWnd_Cauchy_Elems(void) const;
+
+  /*!
+   * \brief Get the value of convergence criteria for the Cauchy method for the time averaged
+   *        windowed objective functions for unsteady flows
+   * \return Value of the convergence criteria.
+   */
+  su2double GetWnd_Cauchy_Eps(void) const;
+
+  /*!
+   * \brief Get the number of iterations that are not considered in the convergence criteria for the windowed average output function
+   * \return Number of iterations before starting with the convergence criteria for the windowed average output function.
+   */
+  unsigned long  GetWnd_StartConv_Iter(void) const;
+
+  /*!
+   * \brief Get the boolean value, whether the the Cauchy method for the time averaged
+   *        windowed objective functions for unsteady flows is used or not.
+   * \return Boolean value, if the criterion is used.
+   */
+  bool GetWnd_Cauchy_Crit(void) const;
+
+  /*!
+  * \brief Get the number of convergence monitoring fields for time convergence monitoring.
+  * return Number of convergence monitoring fields.
+  */
+  unsigned short GetnWndConv_Field() const;
+
+  /*!
+  * \brief Get the number of convergence monitoring fields for inner convergence monitoring.
   * return Number of convergence monitoring fields.
   */
   unsigned short GetnConv_Field();  

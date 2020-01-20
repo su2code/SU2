@@ -4180,6 +4180,19 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
 
 void CFluidDriver::Output(unsigned long InnerIter) {
 
+  for (iZone = 0; iZone < nZone; iZone++) {
+    const auto inst = config_container[iZone]->GetiInst();
+
+    for (iInst = 0; iInst < nInst[iZone]; ++iInst) {
+      config_container[iZone]->SetiInst(iInst);
+      output_container[iZone]->SetResult_Files(geometry_container[iZone][iInst][MESH_0],
+                                               config_container[iZone],
+                                               solver_container[iZone][iInst][MESH_0],
+                                               InnerIter, StopCalc);
+    }
+    config_container[iZone]->SetiInst(inst);
+  }
+
 }
 
 

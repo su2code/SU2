@@ -64,6 +64,11 @@
 inline constexpr int omp_get_max_threads(void) {return 1;}
 
 /*!
+ * \brief Number of threads in current team.
+ */
+inline constexpr int omp_get_num_threads(void) {return 1;}
+
+/*!
  * \brief Index of current thread, akin to MPI rank.
  */
 inline constexpr int omp_get_thread_num(void) {return 0;}

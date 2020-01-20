@@ -4,6 +4,7 @@ if get_option('enable-normal')
   su2_cfd_obj = su2_cfd.extract_objects(['solver_structure.cpp',
                                         'CMarkerProfileReaderFVM.cpp',
                                         'output/COutput.cpp',
+					'output/tools/CWindowingTools.cpp',
                                         'output/CMeshOutput.cpp',
                                         'output/output_structure_legacy.cpp',
                                         'variables/CBaselineVariable.cpp',

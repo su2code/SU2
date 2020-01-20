@@ -166,13 +166,46 @@ def main():
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder.cfg" 
     discadj_cylinder.test_iter = 9
-    discadj_cylinder.test_vals = [3.746900, -1.544893, -8.3447e-03, 1.3808e-05] #last 4 columns
+    discadj_cylinder.test_vals = [3.746909, -1.544883, -0.008321, 0.000014] #last 4 columns
     discadj_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_cylinder.timeout   = 1600
     discadj_cylinder.tol       = 0.00001
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
+    
+    ##############################################################
+    ### Unsteady Disc. adj. compressible RANS Windowed Average ###
+    ##############################################################
 
+    # Turbulent Cylinder
+    discadj_cylinder           = TestCase('unsteady_cylinder_windowed_average_AD')
+    discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
+    discadj_cylinder.cfg_file  = "cylinder_Windowing_AD.cfg" 
+    discadj_cylinder.test_iter = 9
+    discadj_cylinder.test_vals = [3.004406] #last column
+    discadj_cylinder.su2_exec  = "parallel_computation.py -f"
+    discadj_cylinder.timeout   = 1600
+    discadj_cylinder.tol       = 0.00001
+    discadj_cylinder.unsteady  = True
+    test_list.append(discadj_cylinder)
+    
+    ##############################################################
+    ### Unsteady Disc. adj. compressible RANS Windowed Average ###
+    ##############################################################
+
+    # Turbulent Cylinder
+    discadj_cylinder           = TestCase('unsteady_cylinder_windowed_average')
+    discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
+    discadj_cylinder.cfg_file  = "cylinder_Windowing.cfg" 
+    discadj_cylinder.test_iter = 6
+    discadj_cylinder.test_vals = [0.202376,-0.000030, 2.688758, -0.000032, 1.0679e+00] #last 5 columns
+    discadj_cylinder.su2_exec  = "parallel_computation.py -f"
+    discadj_cylinder.timeout   = 1600
+    discadj_cylinder.tol       = 0.0001
+    discadj_cylinder.unsteady  = True
+    test_list.append(discadj_cylinder)
+    
+    
     ##########################################################################
     ### Unsteady Disc. adj. compressible RANS DualTimeStepping 1st order   ###
     ##########################################################################
@@ -182,7 +215,7 @@ def main():
     discadj_DT_1ST_cylinder.cfg_dir   = "disc_adj_rans/cylinder_DT_1ST"
     discadj_DT_1ST_cylinder.cfg_file  = "cylinder.cfg"
     discadj_DT_1ST_cylinder.test_iter = 9
-    discadj_DT_1ST_cylinder.test_vals = [3.698165, -1.607052, -2.2503e-03, 2.7212e-05] #last 4 columns
+    discadj_DT_1ST_cylinder.test_vals = [3.698168, -1.607050, -0.002159, 0.000028] #last 4 columns
     discadj_DT_1ST_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_DT_1ST_cylinder.timeout   = 1600
     discadj_DT_1ST_cylinder.tol       = 0.00001
@@ -214,7 +247,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg" 
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, -1.927296, -1.401205] #last 4 columns
+    discadj_trans_stator.test_vals = [79.000000, -1.927271, -1.401487] #last 4 columns
     discadj_trans_stator.su2_exec  = "parallel_computation.py -f"
     discadj_trans_stator.timeout   = 1600
     discadj_trans_stator.tol       = 0.00001

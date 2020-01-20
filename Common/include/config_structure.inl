@@ -1461,6 +1461,10 @@ inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat
 
 inline unsigned short CConfig::GetTabular_FileFormat(void) { return Tab_FileFormat; }
 
+inline unsigned long CConfig::GetStartWindowIteration(void) const{return StartWindowIteration; }
+
+inline WINDOW_FUNCTION  CConfig::GetKindWindow(void) const{return static_cast<WINDOW_FUNCTION>(Kind_WindowFct); }
+
 inline unsigned short CConfig::GetActDisk_Jump(void) { return ActDisk_Jump; }
 
 inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
@@ -2092,6 +2096,18 @@ inline su2double CConfig::GetMeshBoxLength(unsigned short val_iDim) { return Mes
 inline su2double CConfig::GetMeshBoxOffset(unsigned short val_iDim) { return Mesh_Box_Offset[val_iDim]; }
 
 inline string CConfig::GetConv_Field(unsigned short iField){ return ConvField[iField]; }
+
+inline string CConfig::GetWndConv_Field(unsigned short iField) const { return WndConvField[iField]; }
+
+inline unsigned short CConfig::GetWnd_Cauchy_Elems(void) const { return Wnd_Cauchy_Elems; }
+
+inline su2double CConfig::GetWnd_Cauchy_Eps(void) const { return Wnd_Cauchy_Eps; }
+
+inline unsigned long CConfig::GetWnd_StartConv_Iter(void) const { return Wnd_StartConv_Iter; }
+
+inline bool CConfig::GetWnd_Cauchy_Crit(void) const {return Wnd_Cauchy_Crit;}
+
+inline unsigned short CConfig::GetnWndConv_Field() const{ return nWndConvField; }
 
 inline unsigned short CConfig::GetnConv_Field(){ return nConvField; }
 

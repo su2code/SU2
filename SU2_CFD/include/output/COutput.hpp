@@ -37,7 +37,7 @@
 #include <vector>
 
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
-#include "../../../Common/include/toolboxes/signal_processing_toolbox.hpp"
+#include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
 
 class CGeometry;
@@ -150,7 +150,7 @@ protected:
   bool headerNeeded;                                    //!< Boolean that stores whether a screen header is needed
 
   //! Structure to store the value of the running averages
-  map<string, Signal_Processing::RunningAverage> runningAverages;
+  map<string, CWindowedAverage> windowedTimeAverages;
 
   //! Structure to store the value initial residuals for relative residual computation
   std::map<string, su2double> initialResiduals;
@@ -228,6 +228,18 @@ protected:
 
   su2double rhoResNew,    /*!< New value of the residual for adaptive CFL routine. */
   rhoResOld;              /*!< Old value of the residual for adaptive CFL routine. */
+
+  /*----------------------------- Time Convergence monitoring ----------------------------*/
+  vector<string> wndConvFields;                /*!< \brief Name of the field to be monitored for convergence. */
+  vector<vector<su2double> > WndCauchy_Serie;  /*!< \brief Complete Cauchy serial. */
+  unsigned long nWndCauchy_Elems;              /*!< \brief Total number of cauchy elems to monitor */
+  su2double wndCauchyEps;                      /*!< \brief Defines the threshold when to stop the solver. */
+
+  vector<su2double> WndOld_Func;  /*!< \brief Old value of the objective function (the function which is monitored). */
+  vector<su2double> WndNew_Func;  /*!< \brief Current value of the objective function (the function which is monitored). */
+  su2double WndCauchy_Func;       /*!< \brief Current value of the convergence indicator at one iteration. */
+  su2double WndCauchy_Value;      /*!< \brief Summed value of the convergence indicator. */
+  bool TimeConvergence;   /*!< \brief To indicate, if the windowed time average of the time loop has converged*/
 
 public:
 
@@ -418,6 +430,21 @@ public:
    * \return Boolean indicating whether the problem is converged.
    */
   bool GetConvergence() {return convergence;}
+
+  /*!
+     * \brief  Monitor the time convergence of the specified windowed-time-averaged ouput
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] Iteration - Index of the current iteration.
+     * \return Boolean indicating whether the problem is converged.
+     */
+  bool MonitorTimeConvergence(CConfig *config, unsigned long Iteration);
+
+  /*!
+   * \brief Get convergence time convergence of the specified windowed-time-averaged ouput of the problem.
+   * \return Boolean indicating whether the problem is converged.
+   */
+  bool GetTimeConvergence()const {return TimeConvergence;} /*! \brief Indicates, if the time loop is converged. COnvergence criterion: Windowed time average */
+
 
   /*!
    * \brief Set the value of the convergence flag.
