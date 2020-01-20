@@ -2540,10 +2540,10 @@ void CTNE2EulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *co
         for (iVar = 0; iVar < nPrimVarGrad; iVar++)
           PrimVar_Vertex[iVar] = nodes->GetPrimitive(iPoint, iVar);
 
-        /*--- Modify species density to mass concentration ---*/
-        rho_i = nodes->GetPrimVar(RHO_INDEX);
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          PrimVar_Vertex[RHOS_INDEX+iSpecies] = PrimVar_Vertex[RHOS_INDEX+iSpecies]/rho_i;
+        // /*--- Modify species density to mass concentration ---*/
+        // rho_i = nodes->GetPrimVar(RHO_INDEX);
+        // for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        //   PrimVar_Vertex[RHOS_INDEX+iSpecies] = PrimVar_Vertex[RHOS_INDEX+iSpecies]/rho_i;
 
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         for (iVar = 0; iVar < nPrimVarGrad; iVar++)
