@@ -1633,11 +1633,23 @@ public:
   const CCompressedSparsePatternUL& GetEdgeColoring(void);
 
   /*!
+   * \brief Get the group size used in edge coloring.
+   * \return Group size.
+   */
+  inline unsigned long GetEdgeColorGroupSize(void) const { return edgeColorGroupSize; }
+
+  /*!
    * \brief Get the element coloring.
    * \note This method computes the coloring if that has not been done yet.
    * \return Reference to the coloring.
    */
   const CCompressedSparsePatternUL& GetElementColoring(void);
+
+  /*!
+   * \brief Get the group size used in element coloring.
+   * \return Group size.
+   */
+  inline unsigned long GetElementColorGroupSize(void) const { return elemColorGroupSize; }
 
 };
 
