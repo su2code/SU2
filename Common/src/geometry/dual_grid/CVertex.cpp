@@ -131,14 +131,6 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
 
 }
 
-void CVertex::AddNormal(su2double *val_face_normal) {
-
-  unsigned short i;
-  for( i = 0; i < nDim; i++ )
-    Normal[i] += val_face_normal[i];
-
-}
-
 void CVertex::Allocate_DonorInfo(void){
 
   if( Donor_Points != NULL )  delete [] Donor_Points;
