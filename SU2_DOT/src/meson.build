@@ -60,10 +60,10 @@ if get_option('enable-autodiff')
                                               'variables/CVariable.cpp'])
 
   su2_dot_ad = executable('SU2_DOT_AD',
-                     su2_dot_src_ad, 
-                     install: true,
-		     dependencies: [su2_deps, codi_dep, commonAD_dep], 
-		     objects : su2_cfd_obj_ad,
-		     cpp_args : [default_warning_flags, su2_cpp_args, codi_rev_args])
+                          su2_dot_src_ad, 
+                          install: true,
+                          dependencies: [su2_deps, codi_dep, commonAD_dep], 
+		                      objects : su2_cfd_obj_ad,
+		                      cpp_args : [default_warning_flags, su2_cpp_args, codi_rev_args])
 
 endif
