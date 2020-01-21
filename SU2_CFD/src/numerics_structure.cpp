@@ -2378,12 +2378,12 @@ void CNumerics::CreateBasis(su2double *val_Normal) {
     /*--- Multiply Normal by [0 -1; 1 0] rotation matrix ---*/
     l[0] = -val_Normal[1];
     l[1] = val_Normal[0];
-    l[2] = 0.0;
+    // l[2] = 0.0;
 
     /*--- Set m matrix to zero ---*/
     m[0] = 0.0;
     m[1] = 0.0;
-    m[2] = 0.0;
+    // m[2] = 0.0;
 
     /*--- Normalize ---*/
     modl = 0.0;
