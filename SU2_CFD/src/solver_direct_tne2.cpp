@@ -1326,6 +1326,9 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
         numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
         numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
         numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
+        if(chk_err_i && !chk_err_j) cout << "Non-physical reconstruction at " << iPoint << "." << endl;
+        if(chk_err_j && !chk_err_i) cout << "Non-physical reconstruction at " << jPoint << "." << endl;
+        if(chk_err_i && chk_err_j) cout << "Non-physical reconstruction at (" << iPoint << ", " << jPoint << ")." << endl;
       } else {
         numerics->SetConservative(Conserved_i, Conserved_j);
         numerics->SetPrimitive   (Primitive_i, Primitive_j);
