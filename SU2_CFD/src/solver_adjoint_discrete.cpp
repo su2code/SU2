@@ -258,10 +258,10 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   direct_solver->GetNodes()->RegisterSolution(input, push_index);
 
   if (time_n_needed)
-    direct_solver->GetNodes()->RegisterSolution_time_n();
+    direct_solver->GetNodes()->RegisterSolution_time_n(push_index);
 
   if (time_n1_needed)
-    direct_solver->GetNodes()->RegisterSolution_time_n1();
+    direct_solver->GetNodes()->RegisterSolution_time_n1(push_index);
 }
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
@@ -472,7 +472,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     /*--- Extract the adjoint solution ---*/
 
-    if(config->GetMultizone_Problem()) {
+    if(multizone) {
       direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
     }
     else {
@@ -489,7 +489,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
       /*--- Extract the adjoint solution at time n ---*/
 
-      if(config->GetMultizone_Problem()) {
+      if(multizone) {
         direct_solver->GetNodes()->GetAdjointSolution_time_n_LocalIndex(iPoint,Solution);
       }
       else {
@@ -506,7 +506,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
       /*--- Extract the adjoint solution at time n-1 ---*/
 
-      if(config->GetMultizone_Problem()) {
+      if(multizone) {
         direct_solver->GetNodes()->GetAdjointSolution_time_n1_LocalIndex(iPoint,Solution);
       }
       else {
@@ -593,7 +593,7 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 
 //  unsigned short iVar;
   unsigned long iPoint;
-
+  bool multizone = config->GetMultizone_Problem();
   /*--- Set Residuals to zero ---*/
 
 //  for (iVar = 0; iVar < nVar; iVar++){
@@ -609,7 +609,7 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 
     /*--- Extract the adjoint solution ---*/
 
-    if (config->GetMultizone_Problem())
+    if (multizone)
       geometry->node[iPoint]->GetAdjointCoord_LocalIndex(Solution_Geometry);
     else
       geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
@@ -663,12 +663,16 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *conf
 
   unsigned short iVar;
   unsigned long iPoint;
+  bool multizone = config->GetMultizone_Problem();
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
     /*--- Extract the adjoint solution ---*/
 
+    if (multizone)
     direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
+    else
+      direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
 
     for (iVar = 0; iVar < nVar; iVar++) nodes->SetCross_Term_Derivative(iPoint,iVar, Solution[iVar]);
 
@@ -680,13 +684,13 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CCon
 
   unsigned short iDim;
   unsigned long iPoint;
-
+  bool multizone = config->GetMultizone_Problem();
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
     /*--- Extract the adjoint solution ---*/
 
-    if (config->GetMultizone_Problem())
+    if (multizone)
       geometry->node[iPoint]->GetAdjointCoord_LocalIndex(Solution_Geometry);
     else
       geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
@@ -701,13 +705,13 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,
 
   unsigned short iDim;
   unsigned long iPoint;
-
+  bool multizone = config->GetMultizone_Problem();
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
     /*--- Extract the adjoint solution ---*/
 
-    if (config->GetMultizone_Problem())
+    if (multizone)
       geometry->node[iPoint]->GetAdjointCoord_LocalIndex(Solution_Geometry);
     else
       geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
@@ -724,7 +728,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST ||
                     config->GetTime_Marching() == DT_STEPPING_2ND);
   bool fsi = config->GetFSI_Simulation();
-
+  bool multizone = config->GetMultizone_Problem();
   unsigned short iVar;
   unsigned long iPoint;
 
@@ -742,7 +746,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
       }
     }
-    if(config->GetMultizone_Problem()) {
+    if(multizone) {
       direct_solver->GetNodes()->SetAdjointSolution_LocalIndex(iPoint,Solution);
     }
     else {
@@ -791,7 +795,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConf
   unsigned long iPoint;
   unsigned short iDim;
   su2double *Coord, Sensitivity, eps;
-
+  bool multizone = config->GetMultizone_Problem();
   bool time_stepping = (config->GetTime_Marching() != STEADY);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -799,7 +803,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConf
 
     for (iDim = 0; iDim < nDim; iDim++) {
 
-      if(config->GetMultizone_Problem()) {
+      if(multizone) {
         Sensitivity = geometry->node[iPoint]->GetAdjointSolution(iDim);
       }
       else {

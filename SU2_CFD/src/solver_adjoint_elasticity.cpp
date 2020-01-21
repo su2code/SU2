@@ -643,7 +643,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
     /*--- Extract the adjoint solution ---*/
 
-    if(config->GetMultizone_Problem()) {
+    if(multizone) {
       direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
     }
     else {
@@ -669,7 +669,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Extract the adjoint acceleration solution u'' ---*/
 
-    if(config->GetMultizone_Problem()) {
+    if(multizone) {
       direct_solver->GetNodes()->GetAdjointSolution_Accel_LocalIndex(iPoint,Solution_Accel);
     }
     else {
@@ -690,7 +690,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
       /*--- Extract the adjoint velocity solution u'' ---*/
-      if(config->GetMultizone_Problem()) {
+      if(multizone) {
         direct_solver->GetNodes()->GetAdjointSolution_Vel_LocalIndex(iPoint,Solution_Vel);
       }
       else {
@@ -707,7 +707,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
       /*--- Extract the adjoint solution at time n ---*/
-      if(config->GetMultizone_Problem()) {
+      if(multizone) {
         direct_solver->GetNodes()->GetAdjointSolution_time_n_LocalIndex(iPoint,Solution);
       }
       else {
@@ -723,7 +723,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
       /*--- Extract the adjoint acceleration solution u'' at time n ---*/
-      if(config->GetMultizone_Problem()) {
+      if(multizone) {
         direct_solver->GetNodes()->GetAdjointSolution_Accel_time_n_LocalIndex(iPoint,Solution_Accel);
       }
       else {
@@ -740,7 +740,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
       /*--- Extract the adjoint velocity solution u' at time n ---*/
-      if(config->GetMultizone_Problem()) {
+      if(multizone) {
         direct_solver->GetNodes()->GetAdjointSolution_Vel_time_n_LocalIndex(iPoint,Solution_Vel);
       }
       else {
@@ -933,12 +933,16 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *c
 
   unsigned short iVar;
   unsigned long iPoint;
-
+  bool multizone = config->GetMultizone_Problem();
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
     /*--- Extract the adjoint solution ---*/
-
+    if(multizone) {
     direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
+    }
+    else {
+      direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
+    }    
 
     for (iVar = 0; iVar < nVar; iVar++) nodes->SetCross_Term_Derivative(iPoint,iVar, Solution[iVar]);
 
@@ -950,14 +954,18 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
 
   unsigned short iVar;
   unsigned long iPoint;
-  
+  bool multizone = config->GetMultizone_Problem();
   su2double relax = config->GetAitkenStatRelax();
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
     /*--- Extract the adjoint solution ---*/
-
+    if(multizone) {
     direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
+    }
+    else {
+      direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
+    }
     
     /*--- Relax and set the solution ---*/
     
@@ -973,6 +981,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
 void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config){
 
   bool time_domain = config->GetTime_Domain();
+  bool multizone = config->GetMultizone_Problem();
   unsigned short iVar;
 
   for (iVar = 0; iVar < nMPROP; iVar++){
@@ -1006,7 +1015,7 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CC
 
       su2double Sensitivity;
 
-      if(config->GetMultizone_Problem()) {
+      if(multizone) {
         Sensitivity = geometry->node[iPoint]->GetAdjointSolution(iDim);
       }
       else {

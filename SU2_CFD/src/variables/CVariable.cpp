@@ -76,6 +76,8 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
     if (config->GetTime_Domain()) {
       AD_Time_n_InputIndex.resize(nPoint,nVar) = -1;
       AD_Time_n_OutputIndex.resize(nPoint,nVar) = -1;
+      AD_Time_n1_InputIndex.resize(nPoint,nVar) = -1;
+      AD_Time_n1_OutputIndex.resize(nPoint,nVar) = -1;
       AD_Vel_InputIndex.resize(nPoint,nVar) = -1;
       AD_Vel_OutputIndex.resize(nPoint,nVar) = -1;
       AD_Vel_Time_n_InputIndex.resize(nPoint,nVar) = -1;
@@ -136,14 +138,30 @@ void CVariable::RegisterSolution(bool input, bool push_index) {
   }
 }
 
-void CVariable::RegisterSolution_time_n() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n(iPoint,iVar));
+void CVariable::RegisterSolution_time_n(bool push_index) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
+      if(push_index) {
+          AD::RegisterInput(Solution_time_n(iPoint,iVar));
+        }
+      else {
+        AD::RegisterInput(Solution_time_n(iPoint,iVar), false);
+        AD::SetIndex(AD_Time_n_InputIndex(iPoint,iVar), Solution_time_n(iPoint,iVar));
+      }
+    }
+  }
 }
 
-void CVariable::RegisterSolution_time_n1() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n1(iPoint,iVar));
+void CVariable::RegisterSolution_time_n1(bool push_index) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
+      if(push_index) {
+        AD::RegisterInput(Solution_time_n1(iPoint,iVar));
+      }
+      else {
+        AD::RegisterInput(Solution_time_n1(iPoint,iVar), false);
+        AD::SetIndex(AD_Time_n1_InputIndex(iPoint,iVar), Solution_time_n1(iPoint,iVar));
+      }
+    }
+  }
 }

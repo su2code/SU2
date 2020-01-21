@@ -2648,12 +2648,12 @@ public:
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
    */
-  void RegisterSolution_time_n();
+  void RegisterSolution_time_n(bool push_index);
 
   /*!
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
-  void RegisterSolution_time_n1();
+  void RegisterSolution_time_n1(bool push_index);
 
   /*!
    * \brief Set the adjoint values of the solution.
