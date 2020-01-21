@@ -3749,8 +3749,8 @@ public:
    * \param[in] val_Marker - Surface that is being monitored.
    * \param[in] displacements - solution of typical section wing model.
    */
-
-  void SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su2double Cm, CConfig *config, unsigned short val_Marker, vector<su2double>& displacements);
+  void SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su2double Cm,
+                                    CConfig *config, unsigned short val_Marker, vector<su2double>& displacements);
 
   /*!
    * \brief A virtual member.
@@ -3863,40 +3863,11 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Set_Prestretch(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Set_ElementProperties(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] CurrentTime - Current time step.
    * \param[in] RampTime - Time for application of the ramp.*
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config) { return 0.0; }
-
-  /*!
-   * \brief A virtual member, get the value of the reference coordinate to set on the element structure.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] indexNode - Index of the node.
-   * \param[in] iDim - Dimension required.
-   */
-  inline virtual su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {return 0.0;}
 
   /*!
    * \brief A virtual member.
@@ -3913,7 +3884,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
-
 
   /*!
    * \brief A virtual member.
@@ -3955,7 +3925,6 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-
   inline virtual void Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
 
   /*!
@@ -3965,22 +3934,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Solve_System(CGeometry *geometry, CConfig *config) { }
-
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Compute_IntegrationConstants(CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -4109,7 +4062,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                           CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {}
+                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {}
 
   /*!
    * \brief A virtual member.
@@ -4126,7 +4079,6 @@ public:
    * \param[in] val_marker - Surface marker where the average is evaluated.
    */
   inline virtual void PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
-
 
   /*!
    * \brief virtual member.
@@ -4206,7 +4158,6 @@ public:
    * \return Value of the Average Omega on the surface <i>val_marker</i>.
    */
   inline virtual su2double GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan) { return 0.0; }
-
 
   /*!
    * \brief A virtual member.
@@ -4501,7 +4452,6 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-
   inline void InitVertexTractionContainer(CGeometry *geometry, CConfig *config){
 
     unsigned long iVertex;
@@ -4521,7 +4471,6 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-
   inline void InitVertexTractionAdjointContainer(CGeometry *geometry, CConfig *config){
 
     unsigned long iVertex;
@@ -4549,8 +4498,9 @@ public:
    * \param[in] iVertex  - Index of the relevant vertex
    * \param[in] iDim     - Dimension
    */
-  inline su2double GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
-                                      unsigned short iDim){ return VertexTraction[iMarker][iVertex][iDim]; }
+  inline su2double GetVertexTractions(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
+    return VertexTraction[iMarker][iVertex][iDim];
+  }
 
   /*!
    * \brief Register the vertex tractions as output.
