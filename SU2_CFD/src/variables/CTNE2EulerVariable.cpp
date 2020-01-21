@@ -908,6 +908,7 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *
   nonPhys = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint],
                          dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   if (nonPhys) {
+    cout << "Non-physical at " << iPoint << "." << endl;
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
     bkup = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint],
@@ -981,6 +982,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
       V[RHOS_INDEX+iSpecies] = 1E-20;
       U[iSpecies]            = 1E-20;
       nonPhys                = true;
+      cout << "Non-physical rho_" << iSpecies << "." << endl;
     } else
       V[RHOS_INDEX+iSpecies] = U[iSpecies];
     V[RHO_INDEX]            += U[iSpecies];
@@ -1017,10 +1019,12 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     V[T_INDEX] = Tmin;
     nonPhys = true;
     errT    = true;
+    cout << "Non-physical T (<Tmin)." << endl;
   } else if (V[T_INDEX] > Tmax){
     V[T_INDEX] = Tmax;
     nonPhys = true;
     errT    = true;
+    cout << "Non-physical T (>Tmax)." << endl;
   }
 
 
@@ -1037,10 +1041,12 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     errTve       = true;
     nonPhys      = true;
     V[TVE_INDEX] = Tvemin;
+    cout << "Non-physical Tve (<Tvemin)." << endl;
   } else if (rhoEve > rhoEve_max) {
     errTve       = true;
     nonPhys      = true;
     V[TVE_INDEX] = Tvemax;
+    cout << "Non-physical Tve (>Tvemax)." << endl;
   } else {
 
     AD_BEGIN_PASSIVE
@@ -1180,6 +1186,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   if (V[P_INDEX] < 0.0) {
     V[P_INDEX] = 1E-20;
     nonPhys = true;
+    cout << "Non-physical P." << endl;
   }
 
   /*--- Partial derivatives of pressure and temperature ---*/
@@ -1201,6 +1208,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   if (radical2 < 0.0) {
     nonPhys = true;
     V[A_INDEX] = EPS;
+    cout << "Non-physical a." << endl;
   }
 
 
