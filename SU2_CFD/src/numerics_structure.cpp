@@ -239,7 +239,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     Diffusion_Coeff_j = new su2double[nSpecies];
     unsigned short nPrimVar     = nSpecies+nDim+8;
     unsigned short nPrimVarGrad = nSpecies+nDim+8;
-    cout << "delete me: ln242" << endl;
     unsigned long nPoint = 1;
     var = new CTNE2EulerVariable(nPoint, nDim, nVar, nPrimVar, nPrimVarGrad, config);
   }
