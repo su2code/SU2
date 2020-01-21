@@ -3524,10 +3524,10 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
         if (iSpecies != nSpecies) {
           for (iVar = 0; iVar < nVar; iVar++) {
             val_Jacobian_i[iSpecies][iVar] +=
-                Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+                Ms[iSpecies] * (betak[iSpecies]-alphak[iSpecies]) * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
                                  -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
             val_Jacobian_i[nEve][iVar] +=
-                Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+                Ms[iSpecies] * (betak[iSpecies]-alphak[iSpecies]) * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
                                  -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
                 * eve_i[iSpecies] * Volume;
           }
@@ -3543,17 +3543,17 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
         if (iSpecies != nSpecies) {
           for (iVar = 0; iVar < nVar; iVar++) {
             val_Jacobian_i[iSpecies][iVar] -=
-                Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+                Ms[iSpecies] * (betak[iSpecies]-alphak[iSpecies]) * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
                                  -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
             val_Jacobian_i[nEve][iVar] -=
-                Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+                Ms[iSpecies] * (betak[iSpecies]-alphak[iSpecies]) * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
                                  -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
                 * eve_i[iSpecies] * Volume;
 
           }
 
           for (jVar = 0; jVar < nVar; jVar++) {
-            val_Jacobian_i[nEve][jVar] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+            val_Jacobian_i[nEve][jVar] -= Ms[iSpecies] * (betak[iSpecies]-alphak[iSpecies]) * (fwdRxn-bkwRxn)
                 * Cvve_i[iSpecies] * dTvedU_i[jVar] * Volume;
           }
         } // != nSpecies
