@@ -138,7 +138,6 @@ public:
    */
   inline unsigned short GetnNeighbor_Elements(void) override { return nNeighbor_Elements; }
 
-
   /*!
    * \brief Change the orientation of an element.
    */

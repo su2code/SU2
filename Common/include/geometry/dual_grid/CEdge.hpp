@@ -134,7 +134,7 @@ public:
    * \brief Get the normal to a face of the control volume asociated with an edge.
    * \return Dimensional normal vector, the modulus is the area of the face.
    */
-  inline su2double *GetNormal(void) const override {  return Normal; }
+  inline su2double *GetNormal(void) override {  return Normal; }
 
   /*!
    * \brief Initialize normal vector.
@@ -149,7 +149,7 @@ public:
    * \param[in] val_face_normal - Vector to initialize the normal vector.
    * \return Value of the normal vector.
    */
-  inline void SetNormal(su2double *val_face_normal) override {
+  inline void SetNormal(const su2double *val_face_normal) override {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Normal[iDim]=val_face_normal[iDim];
   }
@@ -158,7 +158,7 @@ public:
    * \brief Add a vector to the normal vector.
    * \param[in] val_face_normal - Vector to add to the normal vector.
    */
-  inline void AddNormal(su2double *val_face_normal) override {
+  inline void AddNormal(const su2double *val_face_normal) override {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Normal[iDim] += val_face_normal[iDim];
   }
@@ -173,6 +173,6 @@ public:
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
-  inline void SetCoord(su2double *val_coord) override { }
+  inline void SetCoord(const su2double *val_coord) override { }
 
 };

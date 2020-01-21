@@ -119,7 +119,7 @@ public:
    * \brief For parallel computation, its indicates if a point must be computed or not.
    * \return <code>TRUE</code> if the node belong to the physical domain; otherwise <code>FALSE</code>.
    */
-  inline bool GetDomain(void) { return Domain; }
+  inline bool GetDomain(void) const { return Domain; }
 
   /*!
    * \brief Set the value of the distance to the nearest wall.
@@ -174,7 +174,7 @@ public:
    * \param[in] val_dim - Number of dimensions of the problem.
    * \return Coordinate that correspond with <i>val_dim</i>.
    */
-  inline su2double GetCoord(unsigned short val_dim) { return Coord[val_dim]; }
+  inline su2double GetCoord(unsigned short val_dim) const { return Coord[val_dim]; }
 
   /*!
    * \brief Get the coordinates of the control volume.
@@ -231,7 +231,7 @@ public:
    * \overload
    * \param[in] val_coord - Coordinate of the point.
    */
-  inline void SetCoord(su2double *val_coord) override {
+  inline void SetCoord(const su2double *val_coord) override {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Coord[iDim]=val_coord[iDim];
   }
@@ -291,28 +291,28 @@ public:
    * \param[in] val_elem - Position where the element is stored.
    * \return Index of the element.
    */
-  inline unsigned long GetElem(unsigned short val_elem) { return Elem[val_elem]; }
+  inline unsigned long GetElem(unsigned short val_elem) const { return Elem[val_elem]; }
 
   /*!
    * \brief Get all the points that compose the control volume.
    * \param[in] val_point - Position where the point is stored.
    * \return Index of the point.
    */
-  inline unsigned long GetPoint(unsigned short val_point) { return Point[val_point]; }
+  inline unsigned long GetPoint(unsigned short val_point) const { return Point[val_point]; }
 
   /*!
    * \brief Get all the edges that compose the control volume.
    * \param[in] val_edge - Position where the edge is stored.
    * \return Index of the edge.
    */
-  inline long GetEdge(unsigned short val_edge) { return Edge[val_edge]; }
+  inline long GetEdge(unsigned short val_edge) const { return Edge[val_edge]; }
 
   /*!
    * \brief Get the vertex that compose the control volume for a marker.
    * \param[in] val_marker - Position where the vertex is stored.
    * \return Index of the vertex.
    */
-  inline long GetVertex(unsigned short val_marker) {
+  inline long GetVertex(unsigned short val_marker) const {
     if (Boundary) return Vertex[val_marker];
     else return -1;
   }
@@ -327,7 +327,7 @@ public:
    * \brief Get area or volume of the control volume.
    * \return Area or volume of the control volume.
    */
-  inline su2double GetVolume(void) { return Volume[0]; }
+  inline su2double GetVolume(void) const { return Volume[0]; }
 
   /*!
    * \brief Get the missing component of area or volume for a control volume on a periodic marker.
@@ -476,19 +476,19 @@ public:
    * \brief Get the coordinates of the control volume at time n.
    * \return Coordinates of the control volume at time n.
    */
-  inline su2double *GetCoord_n(void) const { return Coord_n; }
+  inline su2double *GetCoord_n(void) { return Coord_n; }
 
   /*!
    * \brief Get the coordinates of the control volume at time n-1.
    * \return Volume of the control volume at time n-1
    */
-  inline su2double *GetCoord_n1(void) const { return Coord_n1; }
+  inline su2double *GetCoord_n1(void) { return Coord_n1; }
 
   /*!
    * \brief Get the coordinates of the control volume at time n+1.
    * \return Volume of the control volume at time n+1
    */
-  inline su2double *GetCoord_p1(void) const { return Coord_p1; }
+  inline su2double *GetCoord_p1(void) { return Coord_p1; }
 
   /*!
    * \brief Set the coordinates of the control volume at time n to the ones in <i>Coord</i>.
@@ -613,31 +613,31 @@ public:
    * \brief Get the value of the summed coordinates for implicit smoothing.
    * \return Sum of coordinates at a point.
    */
-  inline su2double *GetCoord_Sum(void) const { return Coord_Sum; }
+  inline su2double *GetCoord_Sum(void) { return Coord_Sum; }
 
   /*!
    * \brief Get the value of the old coordinates for implicit smoothing.
    * \return Old coordinates at a point.
    */
-  inline su2double *GetCoord_Old(void) const { return Coord_Old; }
+  inline su2double *GetCoord_Old(void) { return Coord_Old; }
 
   /*!
    * \brief Get the value of the grid velocity at the point.
    * \return Grid velocity at the point.
    */
-  inline su2double *GetGridVel(void) const { return GridVel; }
+  inline su2double *GetGridVel(void) { return GridVel; }
 
   /*!
    * \brief Get the value of the grid velocity gradient at the point.
    * \return Grid velocity gradient at the point.
    */
-  inline su2double **GetGridVel_Grad(void) const { return GridVel_Grad; }
+  inline su2double **GetGridVel_Grad(void) { return GridVel_Grad; }
 
   /*!
    * \brief Add the value of the coordinates to the <i>Coord_Sum</i> vector for implicit smoothing.
    * \param[in] val_coord_sum - Value of the coordinates to add.
    */
-  inline void AddCoord_Sum(su2double *val_coord_sum) {
+  inline void AddCoord_Sum(const su2double *val_coord_sum) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Coord_Sum[iDim] += val_coord_sum[iDim];
   }
@@ -654,7 +654,7 @@ public:
    * \brief Set the value of the vector <i>Coord_Old</i> for implicit smoothing.
    * \param[in] val_coord_old - Value of the coordinates.
    */
-  inline void SetCoord_Old(su2double *val_coord_old) {
+  inline void SetCoord_Old(const su2double *val_coord_old) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Coord_Old[iDim] = val_coord_old[iDim];
   }
@@ -679,7 +679,7 @@ public:
    * \brief Set the value of the grid velocity at the point.
    * \param[in] val_gridvel - Value of the grid velocity.
    */
-  inline void SetGridVel(su2double *val_gridvel) {
+  inline void SetGridVel(const su2double *val_gridvel) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       GridVel[iDim] = val_gridvel[iDim];
   }
@@ -718,13 +718,13 @@ public:
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *      definition of the function in all the derived classes).
    */
-  inline su2double *GetNormal(void) const override { return 0; }
+  inline su2double *GetNormal(void) override { return nullptr; }
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
-  inline void SetNormal(su2double *val_face_normal) override { }
+  inline void SetNormal(const su2double *val_face_normal) override { }
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
@@ -742,13 +742,13 @@ public:
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
-  inline void AddNormal(su2double *val_face_normal) override { }
+  inline void AddNormal(const su2double *val_face_normal) override { }
 
   /*!
    * \brief Set the adjoint values of the coordinates.
    * \param[in] adj_sol - The adjoint values of the coordinates.
    */
-  inline void SetAdjointCoord(su2double *adj_coor){
+  inline void SetAdjointCoord(const su2double *adj_coor){
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       SU2_TYPE::SetDerivative(Coord[iDim], SU2_TYPE::GetValue(adj_coor[iDim]));
   }
@@ -757,7 +757,7 @@ public:
    * \brief Set the adjoint values of the coordinates.
    * \param[in] adj_sol - The adjoint values of the coordinates.
    */
-  inline void SetAdjointCoord_LocalIndex(su2double *adj_coor){
+  inline void SetAdjointCoord_LocalIndex(const su2double *adj_coor){
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       AD::SetDerivative(AD_OutputIndex[iDim], SU2_TYPE::GetValue(adj_coor[iDim]));
   }

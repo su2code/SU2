@@ -65,7 +65,7 @@ public:
    * \brief set Normal in the turbomachinery frame of reference.
    * \param[in] val_normal - normal vector.
    */
-  inline void SetTurboNormal(su2double *val_normal ){
+  inline void SetTurboNormal(const su2double *val_normal) {
     unsigned short iDim;
     for(iDim= 0; iDim < nDim; iDim++)
       TurboNormal[iDim] = val_normal[iDim];
@@ -86,7 +86,7 @@ public:
    * \brief Copy the the turbo normal vector of a face.
    * \param[in] val_normal - Vector where the subroutine is goint to copy the normal (dimensionaless).
    */
-  inline void GetTurboNormal(su2double *val_normal) {
+  inline void GetTurboNormal(su2double *val_normal) const {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       val_normal[iDim] = TurboNormal[iDim];
   }
@@ -95,7 +95,7 @@ public:
    * \brief Get the turbo normal to a face where turboperformance are computed .
    * \return Dimensionaless normal vector, the modulus is the area of the face.
    */
-  inline su2double *GetTurboNormal(void) const { return TurboNormal; }
+  inline su2double *GetTurboNormal(void) { return TurboNormal; }
 
   /*!
    * \brief set vertex value not ordered.
@@ -111,12 +111,12 @@ public:
   /*!
    * \brief set global index for ordered span-wise turbovertex.
    */
-  inline void SetGlobalVertexIndex(int globalindex){ GlobalIndex = globalindex;}
+  inline void SetGlobalVertexIndex(int globalindex) { GlobalIndex = globalindex;}
 
   /*!
    * \brief get global index for ordered span-wise turbovertex.
    */
-  inline int GetGlobalVertexIndex(void)const {return GlobalIndex;}
+  inline int GetGlobalVertexIndex(void) const {return GlobalIndex;}
  
   /*!
    * \brief set angular coord.

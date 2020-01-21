@@ -352,103 +352,102 @@ public:
   /*!
    * \brief A pure virtual member.
    * \param[in] val_node - Local index of a node.
-   * \param[in] val_index - Local (to the neighbor nodes of <i>val_node</i>) index of the nodes that
-   are neighbor to val_node.
+   * \param[in] val_index - Local (to the neighbor nodes of <i>val_node</i>) index of the nodes that are neighbor to val_node.
    * \return Local index of the nodes that are neighbor to <i>val_node</i>.
    */
   virtual unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) = 0;
 
   /*!
-  * \brief Virtual function, that must be overwritten by the derived class, if needed.
-  * \param[out] nFaces         - Number of faces of this element.
-  * \param[out] nPointsPerFace - Number of corner points for each of the faces.
-  * \param[out] faceConn       - Global IDs of the corner points of the faces.
-  */
+   * \brief Virtual function, that must be overwritten by the derived class, if needed.
+   * \param[out] nFaces         - Number of faces of this element.
+   * \param[out] nPointsPerFace - Number of corner points for each of the faces.
+   * \param[out] faceConn       - Global IDs of the corner points of the faces.
+   */
   inline virtual void GetCornerPointsAllFaces(unsigned short &nFaces,
                                       unsigned short nPointsPerFace[],
                                       unsigned long  faceConn[6][4]) { }
 
   /*!
-  * \brief Virtual function to make available the global ID of this element.
-  * \return The global ID of this element.
-  */
+   * \brief Virtual function to make available the global ID of this element.
+   * \return The global ID of this element.
+   */
   inline virtual unsigned long GetGlobalElemID(void) { return 0; }
 
   /*!
-  * \brief Virtual function to make available the global offset of the solution DOFs.
-  * \return The global offset of the solution DOFs.
-  */
+   * \brief Virtual function to make available the global offset of the solution DOFs.
+   * \return The global offset of the solution DOFs.
+   */
   inline virtual unsigned long GetGlobalOffsetDOFsSol(void) { return 0; }
 
   /*!
-  * \brief Virtual function to make available the polynomial degree of the grid.
-  * \return The polynomial degree of the grid.
-  */
+   * \brief Virtual function to make available the polynomial degree of the grid.
+   * \return The polynomial degree of the grid.
+   */
   inline virtual unsigned short GetNPolyGrid(void) { return 0; }
 
   /*!
-  * \brief Virtual function to make available the polynomial degree of the solution.
-  * \return The polynomial degree of the solution.
-  */
+   * \brief Virtual function to make available the polynomial degree of the solution.
+   * \return The polynomial degree of the solution.
+   */
   inline virtual unsigned short GetNPolySol(void) { return 0; }
 
   /*!
-  * \brief Virtual function to make available the number of DOFs of the grid in the element.
-  * \return The number of DOFs of the Grid in the element.
-  */
+   * \brief Virtual function to make available the number of DOFs of the grid in the element.
+   * \return The number of DOFs of the Grid in the element.
+   */
   inline virtual unsigned short GetNDOFsGrid(void) { return 0; }
 
   /*!
-  * \brief Virtual function to make available the number of DOFs of the solution in the element.
-  * \return The number of DOFs of the solution in the element.
-  */
+   * \brief Virtual function to make available the number of DOFs of the solution in the element.
+   * \return The number of DOFs of the solution in the element.
+   */
   inline virtual unsigned short GetNDOFsSol(void) { return 0; }
 
   /*!
-  * \brief Virtual function to get whether or not the Jacobian is considered constant.
-  * \return True if the Jacobian is (almost) constant and false otherwise.
-  */
+   * \brief Virtual function to get whether or not the Jacobian is considered constant.
+   * \return True if the Jacobian is (almost) constant and false otherwise.
+   */
   inline virtual bool GetJacobianConsideredConstant(void) { return false; }
 
   /*!
-  * \brief Virtual function to set the value of JacobianConsideredConstant.
-  * \param[in] val_JacobianConsideredConstant - The value to be set for JacobianConsideredConstant.
-  */
+   * \brief Virtual function to set the value of JacobianConsideredConstant.
+   * \param[in] val_JacobianConsideredConstant - The value to be set for JacobianConsideredConstant.
+   */
   inline virtual void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) {}
 
   /*!
-  * \brief Virtual function to correct the offset of the global DOFs.
-  * \param[in] val_offsetRank - The offset that must be added for this rank.
-  */
+   * \brief Virtual function to correct the offset of the global DOFs.
+   * \param[in] val_offsetRank - The offset that must be added for this rank.
+   */
   inline virtual void AddOffsetGlobalDOFs(const unsigned long val_offsetRank) {}
 
   /*!
-  * \brief Virtual function to add the given donor ID to the donor elements for the wall function treatment.
-  * \param[in] donorElement - Element to be added to donor elements.
-  */
+   * \brief Virtual function to add the given donor ID to the donor elements for the wall function treatment.
+   * \param[in] donorElement - Element to be added to donor elements.
+   */
   inline virtual void AddDonorWallFunctions(const unsigned long donorElement) {}
 
   /*!
-  * \brief Virtual function to make available the number of donor elements for the wall function treatment.
-  * \return The number of donor elements.
-  */
+   * \brief Virtual function to make available the number of donor elements for the wall function treatment.
+   * \return The number of donor elements.
+   */
   inline  virtual unsigned short GetNDonorsWallFunctions(void) {return 0;}
 
   /*!
-  * \brief Virtual function to make available the pointer to the vector for the donor elements
-           for the wall function treatment.
-  * \return The pointer to the data of donorElementsWallFunctions.
-  */
+   * \brief Virtual function to make available the pointer to the vector for the donor elements
+            for the wall function treatment.
+   * \return The pointer to the data of donorElementsWallFunctions.
+   */
   inline virtual unsigned long *GetDonorsWallFunctions(void) {return NULL;}
 
   /*!
-  * \brief Virtual function to set the global ID's of the donor elements for the wall function treatment.
-  * \param[in] donorElements - Vector, which contain the donor elements.
-  */
+   * \brief Virtual function to set the global ID's of the donor elements for the wall function treatment.
+   * \param[in] donorElements - Vector, which contain the donor elements.
+   */
   inline virtual void SetDonorsWallFunctions(const vector<unsigned long> &donorElements) {}
 
   /*!
-  * \brief Virtual function to remove the multiple donors for the wall function treatment.
-  */
+   * \brief Virtual function to remove the multiple donors for the wall function treatment.
+   */
   inline virtual void RemoveMultipleDonorsWallFunctions(void) {}
 };
