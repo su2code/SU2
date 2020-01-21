@@ -1318,26 +1318,40 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 
       /*--- Check for physical solutions in the reconstructed values ---*/
       // Note: If non-physical, revert to first order
-      if ( chk_err_i || chk_err_j) {
-        numerics->SetPrimitive   (V_i, V_j);
-        numerics->SetConservative(U_i, U_j);
-        numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
-        numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
-        numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
-        numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
-        numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-        if(chk_err_i && !chk_err_j) cout << "Non-physical reconstruction at " << iPoint << "." << endl;
-        if(chk_err_j && !chk_err_i) cout << "Non-physical reconstruction at " << jPoint << "." << endl;
-        if(chk_err_i && chk_err_j) cout << "Non-physical reconstruction at (" << iPoint << ", " << jPoint << ")." << endl;
-      } else {
-        numerics->SetConservative(Conserved_i, Conserved_j);
-        numerics->SetPrimitive   (Primitive_i, Primitive_j);
-        numerics->SetdPdU  (dPdU_i,   dPdU_j  );
-        numerics->SetdTdU  (dTdU_i,   dTdU_j  );
-        numerics->SetdTvedU(dTvedU_i, dTvedU_j);
-        numerics->SetEve   (Eve_i,    Eve_j   );
-        numerics->SetCvve  (Cvve_i,   Cvve_j  );
+      if ( chk_err_i ) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Conserved_i[iVar] = U_i[iVar];
+          dPdU_i[iVar]      = nodes->GetdPdU(iPoint)[iVar];
+          dTdU_i[iVar]      = nodes->GetdTdU(iPoint)[iVar];
+          dTvedU_i[iVar]    = nodes->GetdTvedU(iPoint)[iVar];
+        }
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          Eve_i[iSpecies]  = nodes->GetEve(iPoint)[iSpecies];
+          Cvve_i[iSpecies] = nodes->GetCvve(iPoint)[iSpecies];
+        }
+        for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_i[iVar] = V_i[iVar];
       }
+      if ( chk_err_j ) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Conserved_j[iVar] = U_j[iVar];
+          dPdU_j[iVar]      = nodes->GetdPdU(jPoint)[iVar];
+          dTdU_j[iVar]      = nodes->GetdTdU(jPoint)[iVar];
+          dTvedU_j[iVar]    = nodes->GetdTvedU(jPoint)[iVar];
+        }
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          Eve_j[iSpecies]  = nodes->GetEve(jPoint)[iSpecies];
+          Cvve_j[iSpecies] = nodes->GetCvve(jPoint)[iSpecies];
+        }
+        for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = V_j[iVar];
+      }
+
+      numerics->SetConservative(Conserved_i, Conserved_j);
+      numerics->SetPrimitive   (Primitive_i, Primitive_j);
+      numerics->SetdPdU  (dPdU_i,   dPdU_j  );
+      numerics->SetdTdU  (dTdU_i,   dTdU_j  );
+      numerics->SetdTvedU(dTvedU_i, dTvedU_j);
+      numerics->SetEve   (Eve_i,    Eve_j   );
+      numerics->SetCvve  (Cvve_i,   Cvve_j  );
 
     } else {
 
