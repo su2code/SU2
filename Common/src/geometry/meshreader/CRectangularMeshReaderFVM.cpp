@@ -27,7 +27,7 @@
  */
 
 #include "../include/toolboxes/CLinearPartitioner.hpp"
-#include "../include/CRectangularMeshReaderFVM.hpp"
+#include "../include/geometry/meshreader/CRectangularMeshReaderFVM.hpp"
 
 CRectangularMeshReaderFVM::CRectangularMeshReaderFVM(CConfig        *val_config,
                                                      unsigned short val_iZone,

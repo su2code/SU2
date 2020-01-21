@@ -59,7 +59,7 @@ public:
    * \input iPoint - the point ID.
    * \return Global index of a specific point.
    */
-  unsigned long GetGlobalIndex(unsigned long iPoint) override{
+  unsigned long GetGlobalIndex(unsigned long iPoint) const override{
     return linearPartitioner->GetFirstIndexOnRank(rank) + iPoint;
   }
 

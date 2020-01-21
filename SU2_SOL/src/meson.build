@@ -15,6 +15,7 @@ if get_option('enable-normal')
                                         'output/filewriter/CFVMDataSorter.cpp',
                                         'output/filewriter/CSurfaceFVMDataSorter.cpp',
                                         'output/filewriter/CCSVFileWriter.cpp',
+                                        'output/filewriter/CSTLFileWriter.cpp',
                                         'output/filewriter/CTecplotFileWriter.cpp',
                                         'output/filewriter/CTecplotBinaryFileWriter.cpp',
                                         'output/filewriter/CParaviewFileWriter.cpp',
