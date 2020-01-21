@@ -4,6 +4,7 @@ if get_option('enable-normal')
   su2_cfd_obj = su2_cfd.extract_objects(['solver_structure.cpp',
                                         'CMarkerProfileReaderFVM.cpp',
                                         'output/COutput.cpp',
+					'output/tools/CWindowingTools.cpp',
                                         'output/CMeshOutput.cpp',
                                         'output/output_structure_legacy.cpp',
                                         'variables/CBaselineVariable.cpp',
@@ -19,6 +20,7 @@ if get_option('enable-normal')
                                         'output/filewriter/CTecplotFileWriter.cpp',
                                         'output/filewriter/CTecplotBinaryFileWriter.cpp',
                                         'output/filewriter/CCSVFileWriter.cpp',
+                                        'output/filewriter/CSTLFileWriter.cpp',
                                         'output/filewriter/CSU2FileWriter.cpp',
                                         'output/filewriter/CSU2BinaryFileWriter.cpp',
                                         'output/filewriter/CSU2MeshFileWriter.cpp'])
