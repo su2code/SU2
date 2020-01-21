@@ -1048,9 +1048,9 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
     /*--- Execute a Newton-Raphson root-finding method to find Tve ---*/
     // Initialize to the translational-rotational temperature
-    // Tve   = V[T_INDEX];
-    // Initialize to previous Tve
-    Tve   = V[TVE_INDEX];
+    Tve   = V[T_INDEX];
+    // // Initialize to previous Tve
+    // Tve   = V[TVE_INDEX];
 
     // Execute the root-finding method
     NRconvg = false;
