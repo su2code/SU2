@@ -353,6 +353,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
   
   /*--- Set maximum residual to zero ---*/
   
@@ -373,6 +374,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
     Delta = Vol / ((nodes->GetLocalCFL(iPoint)/solver_container[FLOW_SOL]->GetNodes()->GetLocalCFL(iPoint))*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
+    if (pressure_based) Delta = Vol/(config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
     Jacobian.AddVal2Diag(iPoint, Delta);
     
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/

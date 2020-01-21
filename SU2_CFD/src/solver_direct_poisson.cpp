@@ -550,6 +550,7 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       nodes->AddSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
+      //cout<<iPoint<<"\t"<<Jacobian.GetBlock(iPoint,iPoint,iVar,iVar)<<"\t"<<LinSysSol[iPoint*nVar+iVar]<<endl;
      }
   }
 

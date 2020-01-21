@@ -1883,8 +1883,8 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
         Primitive_j[iVar] = V_j[iVar];
       }
 
-      if (print) cout<<iPoint<<"\t"<<jPoint<<"\t"<<Primitive_i[1]<<"\t"<<Primitive_i[2]<<"\t"<<Primitive_j[1]<<"\t"<<Primitive_j[2]<<endl;
-      if (print) cout<<iPoint<<"\t"<<jPoint<<"\t"<<Gradient_i[1][0]<<"\t"<<Gradient_i[1][1]<<"\t"<<Gradient_j[1][0]<<"\t"<<Gradient_j[1][1]<<endl;
+      //cout<<iPoint<<"\t"<<jPoint<<"\t"<<Primitive_i[1]<<"\t"<<Primitive_i[2]<<"\t"<<Primitive_j[1]<<"\t"<<Primitive_j[2]<<endl;
+      //cout<<iPoint<<"\t"<<jPoint<<"\t"<<Gradient_i[1][0]<<"\t"<<Gradient_i[1][1]<<"\t"<<Gradient_j[1][0]<<"\t"<<Gradient_j[1][1]<<endl;
      
       numerics->SetPrimitive(Primitive_i, Primitive_j);
       
@@ -3626,7 +3626,7 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-	//cout<<iPoint<<"\t"<<nodes->GetDelta_Time(iPoint);
+	//cout<<iPoint<<"\t"<<nodes->GetDelta_Time(iPoint)<<"\t"<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1);
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
@@ -3708,8 +3708,8 @@ void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_contai
 		  }
 	  }
 	  for (iVar = 0; iVar < nVar; iVar++) {
-		  Mom_Coeff[iVar] = Mom_Coeff[iVar] - nodes->Get_Mom_Coeff_nb(iPoint, iVar) - Vol/delT;
-		  //Mom_Coeff[iVar] = Mom_Coeff[iVar] - nodes->Get_Mom_Coeff_nb(iPoint, iVar);
+		  //Mom_Coeff[iVar] = Mom_Coeff[iVar] - nodes->Get_Mom_Coeff_nb(iPoint, iVar) - Vol/delT;
+		  Mom_Coeff[iVar] = Mom_Coeff[iVar] - nodes->Get_Mom_Coeff_nb(iPoint, iVar);
 		  Mom_Coeff[iVar] = nodes->GetDensity(iPoint)*Vol/Mom_Coeff[iVar];
 		  Mom_Coeff[iVar] = K_c*Mom_Coeff[iVar];
 	  }
@@ -4260,6 +4260,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 	  AddResMassFlux(nodes->GetMassFlux(iPoint)*nodes->GetMassFlux(iPoint));
+	  //cout<<iPoint<<"\t"<<nodes->GetMassFlux(iPoint)<<endl;
   } 
   
   InitiateComms(geometry, config, MASS_FLUX);
@@ -4329,7 +4330,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   unsigned long iEdge, iPoint, jPoint, iMarker, iVertex, Point_Normal, iNeigh, pVar = 0;
   unsigned short iDim, iVar, KindBC, nVar_Poisson = 1;
   su2double **vel_corr, vel_corr_i, vel_corr_j, vel_corr_avg, *alpha_p, dummy;
-  su2double Edge_Vec[3], dist_ij_2, proj_vector_ij, Vol, delT, RelaxationFactorFlow = 1.0;
+  su2double Edge_Vec[3], dist_ij_2, proj_vector_ij, Vol, delT, RelaxationFactorFlow = 0.5;
   su2double *Normal, Area, Vel, Vel_Mag,rho,*Coeff,**Grad_i,**Grad_j;
   su2double *Pressure_Correc, Current_Pressure, factor, *Flow_Dir,*Pressure_Correc_2; 
   su2double MassFlux_Part, Poissonval_j, Poissonval_i, Correction, small = 1E-6, ur;
@@ -4341,10 +4342,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   Normal = new su2double [nDim];
   alpha_p = new su2double [nPointDomain];
   
-  /*--- Allocate corrections ---/
-  Pressure_Correc = new su2double* [nPointDomain];
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) 
-    Pressure_Correc[iPoint] = new su2double [nVar_Poisson];*/
+  /*--- Allocate corrections ---*/
   Pressure_Correc = new su2double [nPointDomain];
   
   vel_corr = new su2double* [nPointDomain];
@@ -4476,17 +4474,20 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   }
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+	  //cout<<iPoint<<"\t";
 	 /*--- Velocity corrections ---*/
 	  for (iVar = 0; iVar < nVar; iVar++) {
            Vel = nodes->GetVelocity(iPoint,iVar);
            Vel = Vel - vel_corr[iPoint][iVar];
-           nodes->SetSolution(iPoint,iVar,Vel);           
+           nodes->SetSolution(iPoint,iVar,Vel);
+           //cout<<Vel<<"\t";
 		}
 		nodes->SetVelocity(iPoint);
 		/*--- Pressure corrections ---*/
 		Current_Pressure = nodes->GetPressure(iPoint);
 		Current_Pressure += alpha_p[iPoint]*(Pressure_Correc[iPoint] - PCorr_Ref);
 		nodes->SetPressure_val(iPoint,Current_Pressure);
+		//cout<<Pressure_Correc[iPoint]<<"\t"<<Current_Pressure<<endl;
    }
      
    /*--- Communicate updated velocities and pressure ---*/
@@ -6241,6 +6242,8 @@ unsigned long iPoint, ErrorCounter = 0;
     StrainMag_Max = max(StrainMag_Max, StrainMag);
     Omega_Max = max(Omega_Max, Omega);
     
+    nodes->ResetStrongBC(iPoint);
+    
   }
   
   /*--- Initialize the Jacobian matrices ---*/
@@ -6570,9 +6573,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
     }
     else {
       nodes->SetDelta_Time(iPoint, 0.0);
-    }
-    
-    
+    }   
   }
   
   /*--- Compute the max and the min dt (in parallel) ---*/
