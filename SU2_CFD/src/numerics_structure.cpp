@@ -46,10 +46,10 @@ CNumerics::CNumerics(void) {
   U_n   = NULL;
   U_nM1 = NULL;
   U_nP1 = NULL;
- 
+
   Proj_Flux_Tensor  = NULL;
   Flux_Tensor       = NULL;
- 
+
   tau    = NULL;
   delta  = NULL;
   delta3 = NULL;
@@ -98,7 +98,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   l = NULL;
   m = NULL;
 
-  MeanReynoldsStress  = NULL; 
+  MeanReynoldsStress  = NULL;
   MeanPerturbedRSM    = NULL;
   A_ij                = NULL;
   Eig_Vec             = NULL;
@@ -107,8 +107,8 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Corners             = NULL;
   Eig_Val             = NULL;
   Barycentric_Coord   = NULL;
-  New_Coord           = NULL;    
- 
+  New_Coord           = NULL;
+
   nDim = val_nDim;
   nVar = val_nVar;
   Gamma = config->GetGamma();
@@ -239,6 +239,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     Diffusion_Coeff_j = new su2double[nSpecies];
     unsigned short nPrimVar     = nSpecies+nDim+8;
     unsigned short nPrimVarGrad = nSpecies+nDim+8;
+    cout << "delete me: ln242" << endl;
     unsigned long nPoint = 1;
     var = new CTNE2EulerVariable(nPoint, nDim, nVar, nPrimVar, nPrimVarGrad, config);
   }
@@ -248,7 +249,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   if (using_uq){
     MeanReynoldsStress  = new su2double* [3];
     MeanPerturbedRSM    = new su2double* [3];
-    A_ij                = new su2double* [3];          
+    A_ij                = new su2double* [3];
     newA_ij             = new su2double* [3];
     Eig_Vec             = new su2double* [3];
     New_Eig_Vec         = new su2double* [3];
@@ -436,7 +437,7 @@ CNumerics::~CNumerics(void) {
 }
 
 void CNumerics::GetInviscidFlux(su2double val_density, su2double *val_velocity,
-    su2double val_pressure, su2double val_enthalpy) {
+                                su2double val_pressure, su2double val_enthalpy) {
   if (nDim == 3) {
     Flux_Tensor[0][0] = val_density*val_velocity[0];
     Flux_Tensor[1][0] = Flux_Tensor[0][0]*val_velocity[0]+val_pressure;
@@ -477,8 +478,8 @@ void CNumerics::GetInviscidProjFlux(su2double *val_density,
                                     su2double *val_normal,
                                     su2double *val_Proj_Flux) {
   
-    su2double rhou, rhov, rhow;
-    
+  su2double rhou, rhov, rhow;
+
   if (nDim == 2) {
     
     rhou = (*val_density)*val_velocity[0];
@@ -494,7 +495,7 @@ void CNumerics::GetInviscidProjFlux(su2double *val_density,
     val_Proj_Flux[2] += (rhov*val_velocity[1]+(*val_pressure))*val_normal[1];
     val_Proj_Flux[3] += rhov*(*val_enthalpy)*val_normal[1];
     
-  } 
+  }
   else {
     
     rhou = (*val_density)*val_velocity[0];
@@ -555,114 +556,61 @@ void CNumerics::GetInviscidProjFlux(su2double *val_U,
     /*--- iDim = 0 (x-direction) ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_Proj_Flux[iSpecies]  = (rhos[iSpecies]*u) * val_normal[0];
-		val_Proj_Flux[nSpecies]    = (rho*u*u + P)      * val_normal[0];
-		val_Proj_Flux[nSpecies+1]  = (rho*u*v)          * val_normal[0];
-		val_Proj_Flux[nSpecies+2]  = (rho*u*H)          * val_normal[0];
+    val_Proj_Flux[nSpecies]    = (rho*u*u + P)      * val_normal[0];
+    val_Proj_Flux[nSpecies+1]  = (rho*u*v)          * val_normal[0];
+    val_Proj_Flux[nSpecies+2]  = (rho*u*H)          * val_normal[0];
     val_Proj_Flux[nSpecies+3]  = (rhoEve*u)         * val_normal[0];
 
     /*---- iDim = 1 (y-direction) ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_Proj_Flux[iSpecies] += (rhos[iSpecies]*v) * val_normal[1];
-		val_Proj_Flux[nSpecies]   += (rho*v*u)          * val_normal[1];
-		val_Proj_Flux[nSpecies+1] += (rho*v*v + P)      * val_normal[1];
-		val_Proj_Flux[nSpecies+2] += (rho*v*H)          * val_normal[1];
+    val_Proj_Flux[nSpecies]   += (rho*v*u)          * val_normal[1];
+    val_Proj_Flux[nSpecies+1] += (rho*v*v + P)      * val_normal[1];
+    val_Proj_Flux[nSpecies+2] += (rho*v*H)          * val_normal[1];
     val_Proj_Flux[nSpecies+3] += (rhoEve*v)         * val_normal[1];
-	}
-	else {
+  }
+  else {
 
     /*--- iDim = 0 (x-direction) ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_Proj_Flux[iSpecies]  = (rhos[iSpecies]*u) * val_normal[0];
-		val_Proj_Flux[nSpecies]    = (rho*u*u + P)      * val_normal[0];
-		val_Proj_Flux[nSpecies+1]  = (rho*u*v)          * val_normal[0];
-		val_Proj_Flux[nSpecies+2]  = (rho*u*w)          * val_normal[0];
-		val_Proj_Flux[nSpecies+3]  = (rho*u*H)          * val_normal[0];
+    val_Proj_Flux[nSpecies]    = (rho*u*u + P)      * val_normal[0];
+    val_Proj_Flux[nSpecies+1]  = (rho*u*v)          * val_normal[0];
+    val_Proj_Flux[nSpecies+2]  = (rho*u*w)          * val_normal[0];
+    val_Proj_Flux[nSpecies+3]  = (rho*u*H)          * val_normal[0];
     val_Proj_Flux[nSpecies+4]  = (rhoEve*u)         * val_normal[0];
 
     /*--- iDim = 0 (y-direction) ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_Proj_Flux[iSpecies] += (rhos[iSpecies]*v) * val_normal[1];
-		val_Proj_Flux[nSpecies]   += (rho*v*u)          * val_normal[1];
-		val_Proj_Flux[nSpecies+1] += (rho*v*v + P)      * val_normal[1];
-		val_Proj_Flux[nSpecies+2] += (rho*v*w)          * val_normal[1];
-		val_Proj_Flux[nSpecies+3] += (rho*v*H)          * val_normal[1];
+    val_Proj_Flux[nSpecies]   += (rho*v*u)          * val_normal[1];
+    val_Proj_Flux[nSpecies+1] += (rho*v*v + P)      * val_normal[1];
+    val_Proj_Flux[nSpecies+2] += (rho*v*w)          * val_normal[1];
+    val_Proj_Flux[nSpecies+3] += (rho*v*H)          * val_normal[1];
     val_Proj_Flux[nSpecies+4] += (rhoEve*v)         * val_normal[1];
 
     /*--- iDim = 0 (z-direction) ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_Proj_Flux[iSpecies] += (rhos[iSpecies]*w) * val_normal[2];
-		val_Proj_Flux[nSpecies]   += (rho*w*u)          * val_normal[2];
-		val_Proj_Flux[nSpecies+1] += (rho*w*v)          * val_normal[2];
-		val_Proj_Flux[nSpecies+2] += (rho*w*w + P)      * val_normal[2];
-		val_Proj_Flux[nSpecies+3] += (rho*w*H)          * val_normal[2];
+    val_Proj_Flux[nSpecies]   += (rho*w*u)          * val_normal[2];
+    val_Proj_Flux[nSpecies+1] += (rho*w*v)          * val_normal[2];
+    val_Proj_Flux[nSpecies+2] += (rho*w*w + P)      * val_normal[2];
+    val_Proj_Flux[nSpecies+3] += (rho*w*H)          * val_normal[2];
     val_Proj_Flux[nSpecies+4] += (rhoEve*w)         * val_normal[2];
-	}
-
-  //	if (nDim == 2) {
-  //		rhou = rho*val_velocity[0];
-  //		rhov = rho*val_velocity[1];
-  //
-  //    /*--- iDim = 0 (x-direction) ---*/
-  //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  //      val_Proj_Flux[iSpecies] = rhou * (val_density[iSpecies]/rho) * val_normal[0];
-  //		val_Proj_Flux[nSpecies]   = (rhou * val_velocity[0] + (*val_pressure)) * val_normal[0];
-  //		val_Proj_Flux[nSpecies+1] = rhou * val_velocity[1] * val_normal[0];
-  //		val_Proj_Flux[nSpecies+2] = rhou * (*val_enthalpy) * val_normal[0];
-  //    val_Proj_Flux[nSpecies+3] = rhou * (*val_energy_ve) * val_normal[0];
-  //
-  //    /*---- iDim = 1 (y-direction) ---*/
-  //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  //      val_Proj_Flux[iSpecies] += rhov * (val_density[iSpecies]/rho) * val_normal[1];
-  //		val_Proj_Flux[nSpecies]   += rhov * val_velocity[0] * val_normal[1];
-  //		val_Proj_Flux[nSpecies+1] += (rhov * val_velocity[1] + (*val_pressure)) * val_normal[1];
-  //		val_Proj_Flux[nSpecies+2] += rhov * (*val_enthalpy) * val_normal[1];
-  //    val_Proj_Flux[nSpecies+3] += rhov * (*val_energy_ve) * val_normal[1];
-  //	}
-  //	else {
-  //		rhou = (*val_density)*val_velocity[0];
-  //		rhov = (*val_density)*val_velocity[1];
-  //		rhow = (*val_density)*val_velocity[2];
-  //
-  //    /*--- iDim = 0 (x-direction) ---*/
-  //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  //      val_Proj_Flux[iSpecies] = rhou * (val_density[iSpecies]/rho) * val_normal[0];
-  //		val_Proj_Flux[nSpecies]   = (rhou * val_velocity[0] + (*val_pressure)) * val_normal[0];
-  //		val_Proj_Flux[nSpecies+1] = rhou * val_velocity[1] * val_normal[0];
-  //		val_Proj_Flux[nSpecies+2] = rhou * val_velocity[2] * val_normal[0];
-  //		val_Proj_Flux[nSpecies+3] = rhou * (*val_enthalpy) * val_normal[0];
-  //    val_Proj_Flux[nSpecies+4] = rhou * (*val_energy_ve) * val_normal[0];
-  //
-  //    /*--- iDim = 0 (y-direction) ---*/
-  //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  //      val_Proj_Flux[iSpecies] += rhov * (val_density[iSpecies]/rho) * val_normal[1];
-  //		val_Proj_Flux[nSpecies]   += rhov * val_velocity[0] * val_normal[1];
-  //		val_Proj_Flux[nSpecies+1] += (rhov * val_velocity[1] + (*val_pressure)) * val_normal[1];
-  //		val_Proj_Flux[nSpecies+2] += rhov * val_velocity[2] * val_normal[1];
-  //		val_Proj_Flux[nSpecies+3] += rhov * (*val_enthalpy) * val_normal[1];
-  //    val_Proj_Flux[nSpecies+4] += rhov * (*val_energy_ve) * val_normal[1];
-  //
-  //    /*--- iDim = 0 (z-direction) ---*/
-  //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  //      val_Proj_Flux[iSpecies] += rhow * (val_density[iSpecies]/rho) * val_normal[2];
-  //		val_Proj_Flux[nSpecies]   += rhow * val_velocity[0] * val_normal[2];
-  //		val_Proj_Flux[nSpecies+1] += rhow * val_velocity[1] * val_normal[2];
-  //		val_Proj_Flux[nSpecies+2] += (rhow * val_velocity[2] + (*val_pressure)) * val_normal[2];
-  //		val_Proj_Flux[nSpecies+3] += rhow * (*val_enthalpy) * val_normal[2];
-  //    val_Proj_Flux[nSpecies+4] += rhow * (*val_energy_ve) * val_normal[2];
-  //	}
+  }
 
   delete [] rhos;
 }
 
 void CNumerics::GetInviscidIncProjFlux(su2double *val_density,
-                                           su2double *val_velocity,
-                                           su2double *val_pressure,
-                                           su2double *val_betainc2,
-                                           su2double *val_enthalpy,
-                                           su2double *val_normal,
-                                           su2double *val_Proj_Flux) {
+                                       su2double *val_velocity,
+                                       su2double *val_pressure,
+                                       su2double *val_betainc2,
+                                       su2double *val_enthalpy,
+                                       su2double *val_normal,
+                                       su2double *val_Proj_Flux) {
   su2double rhou, rhov, rhow;
-    
+
   if (nDim == 2) {
     rhou = (*val_density)*val_velocity[0];
     rhov = (*val_density)*val_velocity[1];
@@ -691,7 +639,7 @@ void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_energ
                                    su2double *val_normal, su2double val_scale,
                                    su2double **val_Proj_Jac_Tensor) {
   AD_BEGIN_PASSIVE
-  unsigned short iDim, jDim;
+      unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
   
   sqvel = 0.0; proj_vel = 0.0;
@@ -726,11 +674,11 @@ void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_energ
 
 
 void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_enthalpy,
-    su2double *val_chi, su2double *val_kappa,
-    su2double *val_normal, su2double val_scale,
-    su2double **val_Proj_Jac_Tensor) {
+                                   su2double *val_chi, su2double *val_kappa,
+                                   su2double *val_normal, su2double val_scale,
+                                   su2double **val_Proj_Jac_Tensor) {
   AD_BEGIN_PASSIVE
-  unsigned short iDim, jDim;
+      unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
 
   sqvel = 0.0; proj_vel = 0.0;
@@ -838,9 +786,9 @@ void CNumerics::GetInviscidProjJac(su2double *val_U,    su2double *val_V,
 }
 
 void CNumerics::GetInviscidIncProjJac(su2double *val_density, su2double *val_velocity, su2double *val_betainc2, su2double *val_cp, su2double *val_temperature, su2double *val_dRhodT, su2double *val_normal,
-    su2double val_scale, su2double **val_Proj_Jac_Tensor) {
+                                      su2double val_scale, su2double **val_Proj_Jac_Tensor) {
   AD_BEGIN_PASSIVE
-  unsigned short iDim;
+      unsigned short iDim;
   su2double proj_vel;
 
   proj_vel = 0.0;
@@ -1051,7 +999,7 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
 }
 
 void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
-    su2double *val_soundspeed, su2double *val_enthalpy, su2double *val_chi, su2double *val_kappa, su2double *val_normal, su2double **val_p_tensor) {
+                           su2double *val_soundspeed, su2double *val_enthalpy, su2double *val_chi, su2double *val_kappa, su2double *val_normal, su2double **val_p_tensor) {
 
   su2double sqvel, rhooc, zeta;
   //su2double rhoxc, c2;
@@ -1127,7 +1075,7 @@ void CNumerics::GetPMatrix(su2double *U, su2double *V, su2double *val_dPdU,
 
   // P matrix is equivalent to the L matrix in Gnoffo
   unsigned short iSpecies, iDim, iVar, jVar;
- 	su2double sqvel, rho, a, a2, eve;
+  su2double sqvel, rho, a, a2, eve;
   su2double vU, vV, vW;
 
   /*--- Initialize the P matrix to zero ---*/
@@ -1149,10 +1097,42 @@ void CNumerics::GetPMatrix(su2double *U, su2double *V, su2double *val_dPdU,
   a  = V[A_INDEX];
   a2 = V[A_INDEX]*V[A_INDEX];
 
-	if(nDim == 2) {
-		cout << "P matrix not implemented for 2-D Flows!!" << endl;
-	}
-	else {
+  if(nDim == 2) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      val_p_tensor[iSpecies][iSpecies]   += 1.0/a2;
+      val_p_tensor[iSpecies][nSpecies]   += 0.0;
+      val_p_tensor[iSpecies][nSpecies+1] += V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
+      val_p_tensor[iSpecies][nSpecies+2] += V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
+      val_p_tensor[iSpecies][nSpecies+3] += 0.0;
+
+      val_p_tensor[nSpecies][iSpecies]   += V[VEL_INDEX]   / a2;
+      val_p_tensor[nSpecies+1][iSpecies] += V[VEL_INDEX+1] / a2;
+      val_p_tensor[nSpecies+2][iSpecies] += (val_dPdU[nSpecies+nDim]*sqvel-val_dPdU[iSpecies])
+          / (val_dPdU[nSpecies+nDim]*a2);
+      val_p_tensor[nSpecies+3][iSpecies] += 0.0;
+    }
+
+    val_p_tensor[nSpecies][nSpecies]     += l[0];
+    val_p_tensor[nSpecies][nSpecies+1]   += (V[VEL_INDEX]+a*val_normal[0]) / (2.0*a2);
+    val_p_tensor[nSpecies][nSpecies+2]   += (V[VEL_INDEX]-a*val_normal[0]) / (2.0*a2);
+    val_p_tensor[nSpecies][nSpecies+3]   += 0.0;
+
+    val_p_tensor[nSpecies+1][nSpecies]   += l[1];
+    val_p_tensor[nSpecies+1][nSpecies+1] += (V[VEL_INDEX+1]+a*val_normal[1]) / (2.0*a2);
+    val_p_tensor[nSpecies+1][nSpecies+2] += (V[VEL_INDEX+1]-a*val_normal[1]) / (2.0*a2);
+    val_p_tensor[nSpecies+1][nSpecies+3] += 0.0;
+
+    val_p_tensor[nSpecies+2][nSpecies]   += vV;
+    val_p_tensor[nSpecies+2][nSpecies+1] += ((V[H_INDEX])+a*vU) / (2.0*a2);
+    val_p_tensor[nSpecies+2][nSpecies+2] += ((V[H_INDEX])-a*vU) / (2.0*a2);
+    val_p_tensor[nSpecies+2][nSpecies+3] += -val_dPdU[nSpecies+nDim+1] / (val_dPdU[nSpecies+nDim]*a2);
+
+    val_p_tensor[nSpecies+3][nSpecies]   += 0.0;
+    val_p_tensor[nSpecies+3][nSpecies+1] += eve / (2.0*a2);
+    val_p_tensor[nSpecies+3][nSpecies+2] += eve / (2.0*a2);
+    val_p_tensor[nSpecies+3][nSpecies+3] += 1.0 / a2;
+  }
+  else {
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       val_p_tensor[iSpecies][iSpecies]   = 1.0/a2;
@@ -1166,11 +1146,11 @@ void CNumerics::GetPMatrix(su2double *U, su2double *V, su2double *val_dPdU,
       val_p_tensor[nSpecies+1][iSpecies] = V[VEL_INDEX+1] / a2;
       val_p_tensor[nSpecies+2][iSpecies] = V[VEL_INDEX+2] / a2;
       val_p_tensor[nSpecies+3][iSpecies] = (val_dPdU[nSpecies+3]*sqvel-val_dPdU[iSpecies])
-                                         / (val_dPdU[nSpecies+3]*a2);
+          / (val_dPdU[nSpecies+3]*a2);
       val_p_tensor[nSpecies+4][iSpecies] = 0.0;
     }
 
-		val_p_tensor[nSpecies][nSpecies]     = l[0];
+    val_p_tensor[nSpecies][nSpecies]     = l[0];
     val_p_tensor[nSpecies][nSpecies+1]   = m[0];
     val_p_tensor[nSpecies][nSpecies+2]   = (V[VEL_INDEX]+a*val_normal[0]) / (2.0*a2);
     val_p_tensor[nSpecies][nSpecies+3]   = (V[VEL_INDEX]-a*val_normal[0]) / (2.0*a2);
@@ -1199,11 +1179,11 @@ void CNumerics::GetPMatrix(su2double *U, su2double *V, su2double *val_dPdU,
     val_p_tensor[nSpecies+4][nSpecies+2] = eve / (2.0*a2);
     val_p_tensor[nSpecies+4][nSpecies+3] = eve / (2.0*a2);
     val_p_tensor[nSpecies+4][nSpecies+4] = 1.0 / a2;
-	}
+  }
 }
 
 void CNumerics::GetPMatrix_inv(su2double *val_density, su2double *val_velocity,
-    su2double *val_soundspeed, su2double *val_normal, su2double **val_invp_tensor) {
+                               su2double *val_soundspeed, su2double *val_normal, su2double **val_invp_tensor) {
   
   su2double rhoxc, c2, gm1, k0orho, k1orho, gm1_o_c2, gm1_o_rhoxc, sqvel;
 
@@ -1278,7 +1258,7 @@ void CNumerics::GetPMatrix_inv(su2double *val_density, su2double *val_velocity,
 }
 
 void CNumerics::GetPMatrix_inv(su2double **val_invp_tensor, su2double *val_density, su2double *val_velocity,
-    su2double *val_soundspeed, su2double *val_chi, su2double *val_kappa, su2double *val_normal) {
+                               su2double *val_soundspeed, su2double *val_chi, su2double *val_kappa, su2double *val_normal) {
 
   su2double rhoxc, c2, k0orho, k1orho, sqvel, k_o_c2, k_o_rhoxc, dp_drho;
 
@@ -1374,59 +1354,94 @@ void CNumerics::GetPMatrix_inv(su2double *U, su2double *V, su2double *val_dPdU,
   a  = V[A_INDEX];
   a2 = V[A_INDEX]*V[A_INDEX];
 
-	if (nDim == 3) {
+  if (nDim == 2) {
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-        val_invp_tensor[iSpecies][jSpecies] = -(V[RHOS_INDEX+iSpecies]/rho) * val_dPdU[jSpecies];
+        val_invp_tensor[iSpecies][jSpecies] += -(V[RHOS_INDEX+iSpecies]/rho) * val_dPdU[jSpecies];
       }
-      val_invp_tensor[iSpecies][iSpecies]  += a2;
-      val_invp_tensor[iSpecies][nSpecies]   = val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * (V[RHOS_INDEX+iSpecies]/rho);
-      val_invp_tensor[iSpecies][nSpecies+1] = val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * (V[RHOS_INDEX+iSpecies]/rho);
-      val_invp_tensor[iSpecies][nSpecies+2] = val_dPdU[nSpecies+nDim] * V[VEL_INDEX+2] * (V[RHOS_INDEX+iSpecies]/rho);
-      val_invp_tensor[iSpecies][nSpecies+3] = -val_dPdU[nSpecies+nDim] * (V[RHOS_INDEX+iSpecies]/rho);
-      val_invp_tensor[iSpecies][nSpecies+4] = -val_dPdU[nSpecies+nDim+1] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][iSpecies]   += a2;
+      val_invp_tensor[iSpecies][nSpecies]   += val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+1] += val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+2] += -val_dPdU[nSpecies+nDim] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+3] += -val_dPdU[nSpecies+nDim+1] * (V[RHOS_INDEX+iSpecies]/rho);
 
-      val_invp_tensor[nSpecies][iSpecies]   = -vV;
-      val_invp_tensor[nSpecies+1][iSpecies] = -vW;
-      val_invp_tensor[nSpecies+2][iSpecies] = val_dPdU[iSpecies] - vU*a;
-      val_invp_tensor[nSpecies+3][iSpecies] = val_dPdU[iSpecies] + vU*a;
-      val_invp_tensor[nSpecies+4][iSpecies] = -eve * val_dPdU[iSpecies];
+      val_invp_tensor[nSpecies][iSpecies]   += -vV;
+      val_invp_tensor[nSpecies+1][iSpecies] += val_dPdU[iSpecies] - vU*a;
+      val_invp_tensor[nSpecies+2][iSpecies] += val_dPdU[iSpecies] + vU*a;
+      val_invp_tensor[nSpecies+3][iSpecies] += -eve * val_dPdU[iSpecies];
     }
 
-    val_invp_tensor[nSpecies][nSpecies]     = l[0];
-    val_invp_tensor[nSpecies][nSpecies+1]   = l[1];
-    val_invp_tensor[nSpecies][nSpecies+2]   = l[2];
-    val_invp_tensor[nSpecies][nSpecies+3]   = 0.0;
-    val_invp_tensor[nSpecies][nSpecies+4]   = 0.0;
+    val_invp_tensor[nSpecies][nSpecies]     += l[0];
+    val_invp_tensor[nSpecies][nSpecies+1]   += l[1];
+    val_invp_tensor[nSpecies][nSpecies+2]   += 0.0;
+    val_invp_tensor[nSpecies][nSpecies+3]   += 0.0;
 
-    val_invp_tensor[nSpecies+1][nSpecies]   = m[0];
-    val_invp_tensor[nSpecies+1][nSpecies+1] = m[1];
-    val_invp_tensor[nSpecies+1][nSpecies+2] = m[2];
-    val_invp_tensor[nSpecies+1][nSpecies+3] = 0.0;
-    val_invp_tensor[nSpecies+1][nSpecies+4] = 0.0;
+    val_invp_tensor[nSpecies+1][nSpecies]   += a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
+    val_invp_tensor[nSpecies+1][nSpecies+1] += a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
+    val_invp_tensor[nSpecies+1][nSpecies+2] += val_dPdU[nSpecies+nDim];
+    val_invp_tensor[nSpecies+1][nSpecies+3] += val_dPdU[nSpecies+nDim+1];
 
-    val_invp_tensor[nSpecies+2][nSpecies]   = a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
-    val_invp_tensor[nSpecies+2][nSpecies+1] = a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
-    val_invp_tensor[nSpecies+2][nSpecies+2] = a*val_normal[2] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+2];
-    val_invp_tensor[nSpecies+2][nSpecies+3] = val_dPdU[nSpecies+nDim];
-    val_invp_tensor[nSpecies+2][nSpecies+4] = val_dPdU[nSpecies+nDim+1];
+    val_invp_tensor[nSpecies+2][nSpecies]   += -a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
+    val_invp_tensor[nSpecies+2][nSpecies+1] += -a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
+    val_invp_tensor[nSpecies+2][nSpecies+2] += val_dPdU[nSpecies+nDim];
+    val_invp_tensor[nSpecies+2][nSpecies+3] += val_dPdU[nSpecies+nDim+1];
 
-    val_invp_tensor[nSpecies+3][nSpecies]   = -a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
-    val_invp_tensor[nSpecies+3][nSpecies+1] = -a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
-    val_invp_tensor[nSpecies+3][nSpecies+2] = -a*val_normal[2] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+2];
-    val_invp_tensor[nSpecies+3][nSpecies+3] = val_dPdU[nSpecies+nDim];
-    val_invp_tensor[nSpecies+3][nSpecies+4] = val_dPdU[nSpecies+nDim+1];
+    val_invp_tensor[nSpecies+3][nSpecies]   += val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * eve;
+    val_invp_tensor[nSpecies+3][nSpecies+1] += val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * eve;
+    val_invp_tensor[nSpecies+3][nSpecies+2] += -val_dPdU[nSpecies+nDim] * eve;
+    val_invp_tensor[nSpecies+3][nSpecies+3] += a2 - val_dPdU[nSpecies+nDim+1]*eve;
 
-    val_invp_tensor[nSpecies+4][nSpecies]   = val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * eve;
-    val_invp_tensor[nSpecies+4][nSpecies+1] = val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * eve;
-    val_invp_tensor[nSpecies+4][nSpecies+2] = val_dPdU[nSpecies+nDim] * V[VEL_INDEX+2] * eve;
-    val_invp_tensor[nSpecies+4][nSpecies+3] = -val_dPdU[nSpecies+nDim] * eve;
-    val_invp_tensor[nSpecies+4][nSpecies+4] = a2 - val_dPdU[nSpecies+nDim+1]*eve;
+  } else {
+
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+        val_invp_tensor[iSpecies][jSpecies] += -(V[RHOS_INDEX+iSpecies]/rho) * val_dPdU[jSpecies];
+      }
+      val_invp_tensor[iSpecies][iSpecies]   += a2;
+      val_invp_tensor[iSpecies][nSpecies]   += val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+1] += val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+2] += val_dPdU[nSpecies+nDim] * V[VEL_INDEX+2] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+3] += -val_dPdU[nSpecies+nDim] * (V[RHOS_INDEX+iSpecies]/rho);
+      val_invp_tensor[iSpecies][nSpecies+4] += -val_dPdU[nSpecies+nDim+1] * (V[RHOS_INDEX+iSpecies]/rho);
+
+      val_invp_tensor[nSpecies][iSpecies]   += -vV;
+      val_invp_tensor[nSpecies+1][iSpecies] += -vW;
+      val_invp_tensor[nSpecies+2][iSpecies] += val_dPdU[iSpecies] - vU*a;
+      val_invp_tensor[nSpecies+3][iSpecies] += val_dPdU[iSpecies] + vU*a;
+      val_invp_tensor[nSpecies+4][iSpecies] += -eve * val_dPdU[iSpecies];
+    }
+
+    val_invp_tensor[nSpecies][nSpecies]     += l[0];
+    val_invp_tensor[nSpecies][nSpecies+1]   += l[1];
+    val_invp_tensor[nSpecies][nSpecies+2]   += l[2];
+    val_invp_tensor[nSpecies][nSpecies+3]   += 0.0;
+    val_invp_tensor[nSpecies][nSpecies+4]   += 0.0;
+
+    val_invp_tensor[nSpecies+1][nSpecies]   += m[0];
+    val_invp_tensor[nSpecies+1][nSpecies+1] += m[1];
+    val_invp_tensor[nSpecies+1][nSpecies+2] += m[2];
+    val_invp_tensor[nSpecies+1][nSpecies+3] += 0.0;
+    val_invp_tensor[nSpecies+1][nSpecies+4] += 0.0;
+
+    val_invp_tensor[nSpecies+2][nSpecies]   += a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
+    val_invp_tensor[nSpecies+2][nSpecies+1] += a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
+    val_invp_tensor[nSpecies+2][nSpecies+2] += a*val_normal[2] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+2];
+    val_invp_tensor[nSpecies+2][nSpecies+3] += val_dPdU[nSpecies+nDim];
+    val_invp_tensor[nSpecies+2][nSpecies+4] += val_dPdU[nSpecies+nDim+1];
+
+    val_invp_tensor[nSpecies+3][nSpecies]   += -a*val_normal[0] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX];
+    val_invp_tensor[nSpecies+3][nSpecies+1] += -a*val_normal[1] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+1];
+    val_invp_tensor[nSpecies+3][nSpecies+2] += -a*val_normal[2] - val_dPdU[nSpecies+nDim]*V[VEL_INDEX+2];
+    val_invp_tensor[nSpecies+3][nSpecies+3] += val_dPdU[nSpecies+nDim];
+    val_invp_tensor[nSpecies+3][nSpecies+4] += val_dPdU[nSpecies+nDim+1];
+
+    val_invp_tensor[nSpecies+4][nSpecies]   += val_dPdU[nSpecies+nDim] * V[VEL_INDEX] * eve;
+    val_invp_tensor[nSpecies+4][nSpecies+1] += val_dPdU[nSpecies+nDim] * V[VEL_INDEX+1] * eve;
+    val_invp_tensor[nSpecies+4][nSpecies+2] += val_dPdU[nSpecies+nDim] * V[VEL_INDEX+2] * eve;
+    val_invp_tensor[nSpecies+4][nSpecies+3] += -val_dPdU[nSpecies+nDim] * eve;
+    val_invp_tensor[nSpecies+4][nSpecies+4] += a2 - val_dPdU[nSpecies+nDim+1]*eve;
   }
-	if(nDim == 2) {
-		cout << "InvP matrix not implemented for 2D flows!!!!" << endl;
-	}
 }
 
 void CNumerics::GetinvRinvPe(su2double Beta2, su2double val_enthalpy,
@@ -1626,7 +1641,7 @@ void CNumerics::GetRMatrix(su2double val_soundspeed, su2double val_density, su2d
     R_Matrix[4][3] = 0.5;
     R_Matrix[4][4] = 0.5;
 
-}
+  }
 
 }
 
@@ -1754,7 +1769,7 @@ void CNumerics::InvMatrix3D(su2double **matrix, su2double **invMatrix){
 
   invDet = 1 /
       (- matrix[0][2]*matrix[1][1]*matrix[2][0] + matrix[0][1]*matrix[1][2]*matrix[2][0] + matrix[0][2]*matrix[1][0]*matrix[2][1] -
-         matrix[0][0]*matrix[1][2]*matrix[2][1] - matrix[0][1]*matrix[1][0]*matrix[2][2] + matrix[0][0]*matrix[1][1]*matrix[2][2]);
+      matrix[0][0]*matrix[1][2]*matrix[2][1] - matrix[0][1]*matrix[1][0]*matrix[2][2] + matrix[0][0]*matrix[1][1]*matrix[2][2]);
 
   invMatrix[0][0] = invDet*( - matrix[1][2]*matrix[2][1] + matrix[1][1]*matrix[2][2] );
   invMatrix[0][1] = invDet*( + matrix[0][2]*matrix[2][1] - matrix[0][1]*matrix[2][2] );
@@ -1775,13 +1790,13 @@ void CNumerics::InvMatrix4D(su2double **matrix, su2double **invMatrix){
 
   invDet = 1 /
       (matrix[0][3]*matrix[1][2]*matrix[2][1]*matrix[3][0] - matrix[0][2]*matrix[1][3]*matrix[2][1]*matrix[3][0] - matrix[0][3]*matrix[1][1]*matrix[2][2]*matrix[3][0] +
-          matrix[0][1]*matrix[1][3]*matrix[2][2]*matrix[3][0] + matrix[0][2]*matrix[1][1]*matrix[2][3]*matrix[3][0] - matrix[0][1]*matrix[1][2]*matrix[2][3]*matrix[3][0] -
-          matrix[0][3]*matrix[1][2]*matrix[2][0]*matrix[3][1] + matrix[0][2]*matrix[1][3]*matrix[2][0]*matrix[3][1] + matrix[0][3]*matrix[1][0]*matrix[2][2]*matrix[3][1] -
-          matrix[0][0]*matrix[1][3]*matrix[2][2]*matrix[3][1] - matrix[0][2]*matrix[1][0]*matrix[2][3]*matrix[3][1] + matrix[0][0]*matrix[1][2]*matrix[2][3]*matrix[3][1] +
-          matrix[0][3]*matrix[1][1]*matrix[2][0]*matrix[3][2] - matrix[0][1]*matrix[1][3]*matrix[2][0]*matrix[3][2] - matrix[0][3]*matrix[1][0]*matrix[2][1]*matrix[3][2] +
-          matrix[0][0]*matrix[1][3]*matrix[2][1]*matrix[3][2] + matrix[0][1]*matrix[1][0]*matrix[2][3]*matrix[3][2] - matrix[0][0]*matrix[1][1]*matrix[2][3]*matrix[3][2] -
-          matrix[0][2]*matrix[1][1]*matrix[2][0]*matrix[3][3] + matrix[0][1]*matrix[1][2]*matrix[2][0]*matrix[3][3] + matrix[0][2]*matrix[1][0]*matrix[2][1]*matrix[3][3] -
-          matrix[0][0]*matrix[1][2]*matrix[2][1]*matrix[3][3] - matrix[0][1]*matrix[1][0]*matrix[2][2]*matrix[3][3] + matrix[0][0]*matrix[1][1]*matrix[2][2]*matrix[3][3]);
+      matrix[0][1]*matrix[1][3]*matrix[2][2]*matrix[3][0] + matrix[0][2]*matrix[1][1]*matrix[2][3]*matrix[3][0] - matrix[0][1]*matrix[1][2]*matrix[2][3]*matrix[3][0] -
+      matrix[0][3]*matrix[1][2]*matrix[2][0]*matrix[3][1] + matrix[0][2]*matrix[1][3]*matrix[2][0]*matrix[3][1] + matrix[0][3]*matrix[1][0]*matrix[2][2]*matrix[3][1] -
+      matrix[0][0]*matrix[1][3]*matrix[2][2]*matrix[3][1] - matrix[0][2]*matrix[1][0]*matrix[2][3]*matrix[3][1] + matrix[0][0]*matrix[1][2]*matrix[2][3]*matrix[3][1] +
+      matrix[0][3]*matrix[1][1]*matrix[2][0]*matrix[3][2] - matrix[0][1]*matrix[1][3]*matrix[2][0]*matrix[3][2] - matrix[0][3]*matrix[1][0]*matrix[2][1]*matrix[3][2] +
+      matrix[0][0]*matrix[1][3]*matrix[2][1]*matrix[3][2] + matrix[0][1]*matrix[1][0]*matrix[2][3]*matrix[3][2] - matrix[0][0]*matrix[1][1]*matrix[2][3]*matrix[3][2] -
+      matrix[0][2]*matrix[1][1]*matrix[2][0]*matrix[3][3] + matrix[0][1]*matrix[1][2]*matrix[2][0]*matrix[3][3] + matrix[0][2]*matrix[1][0]*matrix[2][1]*matrix[3][3] -
+      matrix[0][0]*matrix[1][2]*matrix[2][1]*matrix[3][3] - matrix[0][1]*matrix[1][0]*matrix[2][2]*matrix[3][3] + matrix[0][0]*matrix[1][1]*matrix[2][2]*matrix[3][3]);
 
   invMatrix[0][0] = invDet*(- matrix[1][3]*matrix[2][2]*matrix[3][1] + matrix[1][2]*matrix[2][3]*matrix[3][1] + matrix[1][3]*matrix[2][1]*matrix[3][2] - matrix[1][1]*matrix[2][3]*matrix[3][2] - matrix[1][2]*matrix[2][1]*matrix[3][3] + matrix[1][1]*matrix[2][2]*matrix[3][3]) ;
   invMatrix[0][1] = invDet*(  matrix[0][3]*matrix[2][2]*matrix[3][1] - matrix[0][2]*matrix[2][3]*matrix[3][1] - matrix[0][3]*matrix[2][1]*matrix[3][2] + matrix[0][1]*matrix[2][3]*matrix[3][2] + matrix[0][2]*matrix[2][1]*matrix[3][3] - matrix[0][1]*matrix[2][2]*matrix[3][3]) ;
@@ -1814,7 +1829,7 @@ void CNumerics::GetCharJump(su2double val_soundspeed, su2double val_density, su2
   if (nDim == 2) {
     delta_char[0] = -cc*delta_prim[0] + delta_prim[3];
     delta_char[1] = rhoc*delta_prim[2];
-    delta_char[2] = rhoc*delta_prim[1] + delta_prim[3];																	;
+    delta_char[2] = rhoc*delta_prim[1] + delta_prim[3];                                 ;
     delta_char[3] = -rhoc*delta_prim[1] + delta_prim[3];
   }else {
     delta_char[0] = -cc*delta_prim[0] + delta_prim[4];
@@ -1826,7 +1841,7 @@ void CNumerics::GetCharJump(su2double val_soundspeed, su2double val_density, su2
 }
 
 void CNumerics::GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* Lambda, su2double *val_normal,
-    su2double **val_absPeJac) {
+                                   su2double **val_absPeJac) {
 
   su2double lam1, lam2, lam3, lam4;
   lam1 = Lambda[0]; lam2 = Lambda[1]; lam3 = Lambda[2]; lam4 = Lambda[3];
@@ -1893,7 +1908,7 @@ void CNumerics::GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s
 }
 
 void CNumerics::GetJacInviscidLambda_fabs(su2double *val_velocity, su2double val_soundspeed,
-    su2double *val_normal, su2double *val_Lambda_Vector) {
+                                          su2double *val_normal, su2double *val_Lambda_Vector) {
   su2double ProjVelocity = 0;
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -1924,8 +1939,8 @@ void CNumerics::GetAdjViscousFlux_Jac(su2double Pressure_i, su2double Pressure_j
                                       su2double **val_Jacobian_jj, bool implicit) {
   
   su2double Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz,
-  Sigma_xx5, Sigma_yy5, Sigma_zz5, Sigma_xy5, Sigma_xz5,
-  Sigma_yz5, Sigma_5, eta_xx, eta_yy, eta_zz, eta_xy, eta_xz, eta_yz;
+      Sigma_xx5, Sigma_yy5, Sigma_zz5, Sigma_xy5, Sigma_xz5,
+      Sigma_yz5, Sigma_5, eta_xx, eta_yy, eta_zz, eta_xy, eta_xz, eta_yz;
   su2double dSigmaxx_phi1, dSigmayy_phi1, dSigmazz_phi1, dSigmaxy_phi1, dSigmaxz_phi1, dSigmayz_phi1;
   su2double dSigmaxx_phi2, dSigmayy_phi2, dSigmazz_phi2, dSigmaxy_phi2, dSigmaxz_phi2, dSigmayz_phi2;
   su2double dSigmaxx_phi3, dSigmayy_phi3, dSigmazz_phi3, dSigmaxy_phi3, dSigmaxz_phi3, dSigmayz_phi3;
@@ -1953,10 +1968,10 @@ void CNumerics::GetAdjViscousFlux_Jac(su2double Pressure_i, su2double Pressure_j
     eta_xy = Sigma_xy + Sigma_xy5; eta_xz = Sigma_xz + Sigma_xz5; eta_yz = Sigma_yz + Sigma_yz5;
     
     val_residual_i[0] = - (Velocity_i[0] * Normal[0] * eta_xx  + Velocity_i[1] * Normal[1] * eta_yy + Velocity_i[2] * Normal[2] * eta_zz
-                           + (Velocity_i[0] * Normal[1] + Velocity_i[1] * Normal[0]) * eta_xy
-                           + (Velocity_i[0] * Normal[2] + Velocity_i[2] * Normal[0]) * eta_xz
-                           + (Velocity_i[2] * Normal[1] + Velocity_i[1] * Normal[2]) * eta_yz
-                           - (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * Sigma_5);
+        + (Velocity_i[0] * Normal[1] + Velocity_i[1] * Normal[0]) * eta_xy
+        + (Velocity_i[0] * Normal[2] + Velocity_i[2] * Normal[0]) * eta_xz
+        + (Velocity_i[2] * Normal[1] + Velocity_i[1] * Normal[2]) * eta_yz
+        - (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * Sigma_5);
     
     val_residual_i[1] = (eta_xx * Normal[0] + eta_xy * Normal[1] + eta_xz * Normal[2] - Velocity_i[0] * Sigma_5);
     val_residual_i[2] = (eta_xy * Normal[0] + eta_yy * Normal[1] + eta_yz * Normal[2] - Velocity_i[1] * Sigma_5);
@@ -1996,17 +2011,17 @@ void CNumerics::GetAdjViscousFlux_Jac(su2double Pressure_i, su2double Pressure_j
       
       val_Jacobian_ii[0][0] = 0;
       val_Jacobian_ii[0][1] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi1 + Velocity_i[1]*Normal[1]*dSigmayy_phi1 + Velocity_i[2]*Normal[2]*dSigmazz_phi1
-                                + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi1
-                                + (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi1
-                                + (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi1 );
+          + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi1
+          + (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi1
+          + (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi1 );
       val_Jacobian_ii[0][2] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi2 + Velocity_i[1]*Normal[1]*dSigmayy_phi2 + Velocity_i[2]*Normal[2]*dSigmazz_phi2
-                                + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi2
-                                + (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi2
-                                + (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi2 );
+          + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi2
+          + (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi2
+          + (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi2 );
       val_Jacobian_ii[0][3] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi3 + Velocity_i[1]*Normal[1]*dSigmayy_phi3 + Velocity_i[2]*Normal[2]*dSigmazz_phi3
-                                + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi3
-                                + (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi3
-                                + (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi3 );
+          + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi3
+          + (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi3
+          + (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi3 );
       val_Jacobian_ii[0][4] = (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * dSigma5_psi5;
       
       val_Jacobian_ii[1][0] = 0;
@@ -2057,10 +2072,10 @@ void CNumerics::GetAdjViscousFlux_Jac(su2double Pressure_i, su2double Pressure_j
     eta_xy = Sigma_xy + Sigma_xy5; eta_xz = Sigma_xz + Sigma_xz5; eta_yz = Sigma_yz + Sigma_yz5;
     
     val_residual_j[0] = - (Velocity_j[0] * Normal[0] * eta_xx  + Velocity_j[1] * Normal[1] * eta_yy + Velocity_j[2] * Normal[2] * eta_zz
-                           + (Velocity_j[0] * Normal[1] + Velocity_j[1] * Normal[0]) * eta_xy
-                           + (Velocity_j[0] * Normal[2] + Velocity_j[2] * Normal[0]) * eta_xz
-                           + (Velocity_j[2] * Normal[1] + Velocity_j[1] * Normal[2]) * eta_yz
-                           - (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * Sigma_5);
+        + (Velocity_j[0] * Normal[1] + Velocity_j[1] * Normal[0]) * eta_xy
+        + (Velocity_j[0] * Normal[2] + Velocity_j[2] * Normal[0]) * eta_xz
+        + (Velocity_j[2] * Normal[1] + Velocity_j[1] * Normal[2]) * eta_yz
+        - (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * Sigma_5);
     val_residual_j[1] = (eta_xx * Normal[0] + eta_xy * Normal[1] + eta_xz * Normal[2] - Velocity_j[0] * Sigma_5);
     val_residual_j[2] = (eta_xy * Normal[0] + eta_yy * Normal[1] + eta_yz * Normal[2] - Velocity_j[1] * Sigma_5);
     val_residual_j[3] = (eta_xz * Normal[0] + eta_yz * Normal[1] + eta_zz * Normal[2] - Velocity_j[2] * Sigma_5);
@@ -2099,17 +2114,17 @@ void CNumerics::GetAdjViscousFlux_Jac(su2double Pressure_i, su2double Pressure_j
       
       val_Jacobian_jj[0][0] = 0;
       val_Jacobian_jj[0][1] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi1 + Velocity_j[1]*Normal[1]*dSigmayy_phi1 + Velocity_j[2]*Normal[2]*dSigmazz_phi1
-                                + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi1
-                                + (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi1
-                                + (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi1 );
+          + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi1
+          + (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi1
+          + (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi1 );
       val_Jacobian_jj[0][2] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi2 + Velocity_j[1]*Normal[1]*dSigmayy_phi2 + Velocity_j[2]*Normal[2]*dSigmazz_phi2
-                                + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi2
-                                + (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi2
-                                + (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi2 );
+          + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi2
+          + (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi2
+          + (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi2 );
       val_Jacobian_jj[0][3] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi3 + Velocity_j[1]*Normal[1]*dSigmayy_phi3 + Velocity_j[2]*Normal[2]*dSigmazz_phi3
-                                + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi3
-                                + (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi3
-                                + (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi3 );
+          + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi3
+          + (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi3
+          + (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi3 );
       val_Jacobian_jj[0][4] = (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * dSigma5_psi5;
       
       val_Jacobian_jj[1][0] = 0;
@@ -2156,8 +2171,8 @@ void CNumerics::GetAdjViscousFlux_Jac(su2double Pressure_i, su2double Pressure_j
     eta_xx = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_xy = Sigma_xy + Sigma_xy5;
     
     val_residual_i[0] = - (Velocity_i[0] * Normal[0] * eta_xx  + Velocity_i[1] * Normal[1] * eta_yy
-                           + (Velocity_i[0] * Normal[1] + Velocity_i[1] * Normal[0]) * eta_xy
-                           - (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * Sigma_5);
+        + (Velocity_i[0] * Normal[1] + Velocity_i[1] * Normal[0]) * eta_xy
+        - (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * Sigma_5);
     val_residual_i[1] = (eta_xx * Normal[0] + eta_xy * Normal[1] - Velocity_i[0] * Sigma_5);
     val_residual_i[2] = (eta_xy * Normal[0] + eta_yy * Normal[1] - Velocity_i[1] * Sigma_5);
     val_residual_i[3] = (Sigma_5);
@@ -2181,9 +2196,9 @@ void CNumerics::GetAdjViscousFlux_Jac(su2double Pressure_i, su2double Pressure_j
       val_Jacobian_ii[0][0] = 0;
       
       val_Jacobian_ii[0][1] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi1 + Velocity_i[1]*Normal[1]*dSigmayy_phi1
-                                + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi1 );
+          + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi1 );
       val_Jacobian_ii[0][2] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi2 + Velocity_i[1]*Normal[1]*dSigmayy_phi2
-                                + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi2 );
+          + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi2 );
       val_Jacobian_ii[0][3] = (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * dSigma5_psi5;
       
       val_Jacobian_ii[1][0] = 0;
@@ -2217,8 +2232,8 @@ void CNumerics::GetAdjViscousFlux_Jac(su2double Pressure_i, su2double Pressure_j
     eta_xx = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_xy = Sigma_xy + Sigma_xy5;
     
     val_residual_j[0] = - (Velocity_j[0] * Normal[0] * eta_xx  + Velocity_j[1] * Normal[1] * eta_yy
-                           + (Velocity_j[0] * Normal[1] + Velocity_j[1] * Normal[0]) * eta_xy
-                           - (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * Sigma_5);
+        + (Velocity_j[0] * Normal[1] + Velocity_j[1] * Normal[0]) * eta_xy
+        - (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * Sigma_5);
     val_residual_j[1] = (eta_xx * Normal[0] + eta_xy * Normal[1]  - Velocity_j[0] * Sigma_5);
     val_residual_j[2] = (eta_xy * Normal[0] + eta_yy * Normal[1]  - Velocity_j[1] * Sigma_5);
     val_residual_j[3] = (Sigma_5);
@@ -2239,9 +2254,9 @@ void CNumerics::GetAdjViscousFlux_Jac(su2double Pressure_i, su2double Pressure_j
       
       val_Jacobian_jj[0][0] = 0;
       val_Jacobian_jj[0][1] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi1 + Velocity_j[1]*Normal[1]*dSigmayy_phi1
-                                + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi1 );
+          + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi1 );
       val_Jacobian_jj[0][2] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi2 + Velocity_j[1]*Normal[1]*dSigmayy_phi2
-                                + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi2 );
+          + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi2 );
       val_Jacobian_jj[0][3] = (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * dSigma5_psi5;
       
       val_Jacobian_jj[1][0] = 0;
@@ -2264,7 +2279,7 @@ void CNumerics::GetAdjViscousFlux_Jac(su2double Pressure_i, su2double Pressure_j
           val_Jacobian_ji[iVar][jVar] = -val_Jacobian_jj[iVar][jVar];
     }
   }
- 
+
 }
 
 void CNumerics::GetPrimitive2Conservative (su2double *val_Mean_PrimVar, su2double *val_Mean_SecVar, su2double **val_Jac_PC) {
@@ -2299,58 +2314,58 @@ void CNumerics::GetPrimitive2Conservative (su2double *val_Mean_PrimVar, su2doubl
   /*--- Primitives to conservatives Jacobian matrix : (T, vx, vy, vz, rho) --> (u1, u2, u3, u4, u5) ---*/
   if (nDim == 2) {
 
-  val_Jac_PC[0][0] = dTdrho_e - e/rho*dTde_rho + 0.5*dTde_rho*sqvel/rho;
-  val_Jac_PC[0][1] = -1/rho*dTde_rho*vx;
-  val_Jac_PC[0][2] = -1/rho*dTde_rho*vy;
-  val_Jac_PC[0][3] = 1/rho*dTde_rho;
+    val_Jac_PC[0][0] = dTdrho_e - e/rho*dTde_rho + 0.5*dTde_rho*sqvel/rho;
+    val_Jac_PC[0][1] = -1/rho*dTde_rho*vx;
+    val_Jac_PC[0][2] = -1/rho*dTde_rho*vy;
+    val_Jac_PC[0][3] = 1/rho*dTde_rho;
 
-  val_Jac_PC[1][0] = -vx/rho;
-  val_Jac_PC[1][1] = 1/rho;
-  val_Jac_PC[1][2] = 0.0;
-  val_Jac_PC[1][3] = 0.0;
+    val_Jac_PC[1][0] = -vx/rho;
+    val_Jac_PC[1][1] = 1/rho;
+    val_Jac_PC[1][2] = 0.0;
+    val_Jac_PC[1][3] = 0.0;
 
-  val_Jac_PC[2][0] = -vy/rho;
-  val_Jac_PC[2][1] = 0.0;
-  val_Jac_PC[2][2] = 1/rho;
-  val_Jac_PC[2][3] = 0.0;
+    val_Jac_PC[2][0] = -vy/rho;
+    val_Jac_PC[2][1] = 0.0;
+    val_Jac_PC[2][2] = 1/rho;
+    val_Jac_PC[2][3] = 0.0;
 
-  val_Jac_PC[3][0] = 1.0;
-  val_Jac_PC[3][1] = 0.0;
-  val_Jac_PC[3][2] = 0.0;
-  val_Jac_PC[3][3] = 0.0;
+    val_Jac_PC[3][0] = 1.0;
+    val_Jac_PC[3][1] = 0.0;
+    val_Jac_PC[3][2] = 0.0;
+    val_Jac_PC[3][3] = 0.0;
 
   }
   else {
 
-  val_Jac_PC[0][0] = dTdrho_e - e/rho*dTde_rho + 0.5*dTde_rho*sqvel/rho;
-  val_Jac_PC[0][1] = -1/rho*dTde_rho*vx;
-  val_Jac_PC[0][2] = -1/rho*dTde_rho*vy;
-  val_Jac_PC[0][3] = -1/rho*dTde_rho*vz;
-  val_Jac_PC[0][4] = 1/rho*dTde_rho;
+    val_Jac_PC[0][0] = dTdrho_e - e/rho*dTde_rho + 0.5*dTde_rho*sqvel/rho;
+    val_Jac_PC[0][1] = -1/rho*dTde_rho*vx;
+    val_Jac_PC[0][2] = -1/rho*dTde_rho*vy;
+    val_Jac_PC[0][3] = -1/rho*dTde_rho*vz;
+    val_Jac_PC[0][4] = 1/rho*dTde_rho;
 
-  val_Jac_PC[1][0] = -vx/rho;
-  val_Jac_PC[1][1] = 1/rho;
-  val_Jac_PC[1][2] = 0.0;
-  val_Jac_PC[1][3] = 0.0;
-  val_Jac_PC[1][4] = 0.0;
+    val_Jac_PC[1][0] = -vx/rho;
+    val_Jac_PC[1][1] = 1/rho;
+    val_Jac_PC[1][2] = 0.0;
+    val_Jac_PC[1][3] = 0.0;
+    val_Jac_PC[1][4] = 0.0;
 
-  val_Jac_PC[2][0] = -vy/rho;
-  val_Jac_PC[2][1] = 0.0;
-  val_Jac_PC[2][2] = 1/rho;
-  val_Jac_PC[2][3] = 0.0;
-  val_Jac_PC[2][4] = 0.0;
+    val_Jac_PC[2][0] = -vy/rho;
+    val_Jac_PC[2][1] = 0.0;
+    val_Jac_PC[2][2] = 1/rho;
+    val_Jac_PC[2][3] = 0.0;
+    val_Jac_PC[2][4] = 0.0;
 
-  val_Jac_PC[3][0] = -vz/rho;
-  val_Jac_PC[3][1] = 0.0;
-  val_Jac_PC[3][2] = 0.0;
-  val_Jac_PC[3][3] = 1/rho;
-  val_Jac_PC[3][4] = 0.0;
+    val_Jac_PC[3][0] = -vz/rho;
+    val_Jac_PC[3][1] = 0.0;
+    val_Jac_PC[3][2] = 0.0;
+    val_Jac_PC[3][3] = 1/rho;
+    val_Jac_PC[3][4] = 0.0;
 
-  val_Jac_PC[4][0] = 1.0;
-  val_Jac_PC[4][1] = 0.0;
-  val_Jac_PC[4][2] = 0.0;
-  val_Jac_PC[4][3] = 0.0;
-  val_Jac_PC[4][4] = 0.0;
+    val_Jac_PC[4][0] = 1.0;
+    val_Jac_PC[4][1] = 0.0;
+    val_Jac_PC[4][2] = 0.0;
+    val_Jac_PC[4][3] = 0.0;
+    val_Jac_PC[4][4] = 0.0;
 
   }
 }
@@ -2358,35 +2373,58 @@ void CNumerics::GetPrimitive2Conservative (su2double *val_Mean_PrimVar, su2doubl
 void CNumerics::CreateBasis(su2double *val_Normal) {
   unsigned short iDim;
   su2double modm, modl;
-  
-  /*--- Define l as a vector in the plane normal to the supplied vector ---*/
-  l[0] = 0.0;
-  l[1] = -val_Normal[2];
-  l[2] = val_Normal[1];
-  
-  /*--- Check for the zero vector and re-assign if needed ---*/
-  if (l[0] == 0.0 && l[1] == 0.0 && l[2] == 0.0) {
-    l[0] = -val_Normal[2];
-    l[1] = 0.0;
-    l[2] = val_Normal[0];
-  }
-  
-  /*--- Take vector product of n * l to make m ---*/
-  m[0] = val_Normal[1]*l[2] - val_Normal[2]*l[1];
-  m[1] = val_Normal[2]*l[0] - val_Normal[0]*l[2];
-  m[2] = val_Normal[0]*l[1] - val_Normal[1]*l[0];
-  
-  /*--- Normalize ---*/
-  modm =0 ; modl = 0;
-  for (iDim =0 ; iDim < nDim; iDim++) {
-    modm += m[iDim]*m[iDim];
-    modl += l[iDim]*l[iDim];
-  }
-  modm = sqrt(modm);
-  modl = sqrt(modl);
-  for (iDim =0 ; iDim < nDim; iDim++) {
-    l[iDim] = l[iDim]/modl;
-    m[iDim] = m[iDim]/modm;
+
+  if (nDim == 2){
+
+    /*--- Multiply Normal by [0 -1; 1 0] rotation matrix ---*/
+    l[0] = -val_Normal[1];
+    l[1] = val_Normal[0];
+    l[2] = 0.0;
+
+    /*--- Set m matrix to zero ---*/
+    m[0] = 0.0;
+    m[1] = 0.0;
+    m[2] = 0.0;
+
+    /*--- Normalize ---*/
+    modl = 0.0;
+    for (iDim = 0; iDim <nDim; iDim ++)
+      modl += l[iDim]*l[iDim];
+    modl = sqrt(modl);
+    for (iDim =0; iDim<nDim; iDim++)
+      l[iDim] = l[iDim]/modl;
+
+
+  } else {
+    /*--- Define l as a vector in the plane normal to the supplied vector ---*/
+    l[0] = 0.0;
+    l[1] = -val_Normal[2];
+    l[2] = val_Normal[1];
+
+    /*--- Check for the zero vector and re-assign if needed ---*/
+    if (l[0] == 0.0 && l[1] == 0.0 && l[2] == 0.0) {
+      l[0] = -val_Normal[2];
+      l[1] = 0.0;
+      l[2] = val_Normal[0];
+    }
+
+    /*--- Take vector product of n * l to make m ---*/
+    m[0] = val_Normal[1]*l[2] - val_Normal[2]*l[1];
+    m[1] = val_Normal[2]*l[0] - val_Normal[0]*l[2];
+    m[2] = val_Normal[0]*l[1] - val_Normal[1]*l[0];
+
+    /*--- Normalize ---*/
+    modm =0 ; modl = 0;
+    for (iDim =0 ; iDim < nDim; iDim++) {
+      modm += m[iDim]*m[iDim];
+      modl += l[iDim]*l[iDim];
+    }
+    modm = sqrt(modm);
+    modl = sqrt(modl);
+    for (iDim =0 ; iDim < nDim; iDim++) {
+      l[iDim] = l[iDim]/modl;
+      m[iDim] = m[iDim]/modm;
+    }
   }
 }
 
@@ -2516,7 +2554,7 @@ void CNumerics::EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2dou
 
 void CNumerics::tred2(su2double **V, su2double *d, su2double *e, unsigned short n) {
 
-/* Author:
+  /* Author:
 
  * Original FORTRAN77 version by Smith, Boyle, Dongarra, Garbow, Ikebe,
  * Klema, Moler.
@@ -2616,7 +2654,7 @@ void CNumerics::tred2(su2double **V, su2double *d, su2double *e, unsigned short 
         f = d[j];
         g = e[j];
         for (k = j; k <= i-1; k++) {
-            V[k][j] -= (f * e[k] + g * d[k]);
+          V[k][j] -= (f * e[k] + g * d[k]);
         }
         d[j] = V[i-1][j];
         V[i][j] = 0.0;
@@ -2659,7 +2697,7 @@ void CNumerics::tred2(su2double **V, su2double *d, su2double *e, unsigned short 
 
 void CNumerics::tql2(su2double **V, su2double *d, su2double *e, unsigned short n) {
 
-/* Author:
+  /* Author:
 
  * Original FORTRAN77 version by Smith, Boyle, Dongarra, Garbow, Ikebe,
  * Klema, Moler.
@@ -2793,9 +2831,9 @@ void CNumerics::tql2(su2double **V, su2double *d, su2double *e, unsigned short n
       d[k] = d[i];
       d[i] = p;
       for (j = 0; j < n; j++) {
-          p = V[j][i];
-          V[j][i] = V[j][k];
-          V[j][k] = p;
+        p = V[j][i];
+        V[j][i] = V[j][k];
+        V[j][k] = p;
       }
     }
   }
