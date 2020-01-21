@@ -4330,7 +4330,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   unsigned long iEdge, iPoint, jPoint, iMarker, iVertex, Point_Normal, iNeigh, pVar = 0;
   unsigned short iDim, iVar, KindBC, nVar_Poisson = 1;
   su2double **vel_corr, vel_corr_i, vel_corr_j, vel_corr_avg, *alpha_p, dummy;
-  su2double Edge_Vec[3], dist_ij_2, proj_vector_ij, Vol, delT, RelaxationFactorFlow = 0.5;
+  su2double Edge_Vec[3], dist_ij_2, proj_vector_ij, Vol, delT;
   su2double *Normal, Area, Vel, Vel_Mag,rho,*Coeff,**Grad_i,**Grad_j;
   su2double *Pressure_Correc, Current_Pressure, factor, *Flow_Dir,*Pressure_Correc_2; 
   su2double MassFlux_Part, Poissonval_j, Poissonval_i, Correction, small = 1E-6, ur;
@@ -4369,8 +4369,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 			vel_corr[iPoint][iVar] = Coeff_Mom*(solver_container[POISSON_SOL]->GetNodes()->GetGradient(iPoint,0,iVar));
 			factor += Jacobian.GetBlock(iPoint, iPoint, iVar, iVar);
 	  }
-	  //alpha_p[iPoint] = config->GetRelaxation_Factor_Flow()*(Vol/delT) / (factor);
-	  alpha_p[iPoint] = RelaxationFactorFlow*(Vol/delT) / (factor);
+	  alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow()*(Vol/delT) / (factor);
    }   
    
   /*--- Reassign strong boundary conditions ---*/

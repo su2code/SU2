@@ -1460,6 +1460,8 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
   /* DESCRIPTION: Relaxation factor for iterative linear smoothers (SMOOTHER_ILU/JACOBI/LU-SGS/LINELET) */
   addDoubleOption("LINEAR_SOLVER_SMOOTHER_RELAXATION", Linear_Solver_Smoother_Relaxation, 1.0);
+  /* DESCRIPTION: Relaxation of the pressure based flow corrections */
+  addDoubleOption("RELAXATION_FACTOR_PBFLOW", Relaxation_Factor_PBFlow, 0.3);
   /* DESCRIPTION: Relaxation of the flow equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */
