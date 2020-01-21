@@ -67,7 +67,7 @@ public:
    * \brief A pure virtual member.
    * \param[in] val_coord - Coordinate of the point.
    */
-  virtual void SetCoord(su2double *val_coord) = 0;
+  virtual void SetCoord(const su2double *val_coord) = 0;
 
   /*!
    * \brief A pure virtual member.
@@ -88,20 +88,20 @@ public:
 
   /*!
    * \brief A pure virtual member.
-   * \param[in] val_normal - Coordinates of the normal.
+   * \param[out] val_normal - Coordinates of the normal.
    */
   virtual void GetNormal(su2double *val_normal) const = 0;
 
   /*!
    * \brief A pure virtual member.
    */
-  virtual su2double *GetNormal(void) const = 0;
+  virtual su2double *GetNormal(void) = 0;
 
   /*!
    * \brief A pure virtual member.
    * \param[in] val_face_normal - Coordinates of the normal.
    */
-  virtual void SetNormal(su2double *val_face_normal) = 0;
+  virtual void SetNormal(const su2double *val_face_normal) = 0;
 
   /*!
    * \brief A pure virtual member.
@@ -117,5 +117,5 @@ public:
    * \brief A pure virtual member.
    * \param[in] val_face_normal - Normal vector to be added.
    */
-  virtual void AddNormal(su2double *val_face_normal) = 0;
+  virtual void AddNormal(const su2double *val_face_normal) = 0;
 };

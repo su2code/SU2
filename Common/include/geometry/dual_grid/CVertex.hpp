@@ -111,7 +111,7 @@ public:
    * \brief Get the normal to a face of the control volume asociated with a vertex.
    * \return Dimensional normal vector, the modulus is the area of the face.
    */
-  inline su2double *GetNormal(void) const override { return Normal; }
+  inline su2double *GetNormal(void) override { return Normal; }
 
   /*!
    * \brief Initialize normal vector.
@@ -144,7 +144,7 @@ public:
    * \param[in] val_face_normal - Vector to initialize the normal vector.
    * \return Value of the normal vector.
    */
-  inline void SetNormal(su2double *val_face_normal) override {
+  inline void SetNormal(const su2double *val_face_normal) override {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Normal[iDim]=val_face_normal[iDim];
   }
@@ -153,13 +153,13 @@ public:
    * \brief Add a vector to the normal vector.
    * \param[in] val_face_normal - Vector to add to the normal vector.
    */
-  void AddNormal(su2double *val_face_normal) override;
+  void AddNormal(const su2double *val_face_normal) override;
 
   /*!
    * \brief Set the value of the coordinate variation due to a surface modification.
    * \param[in] val_varcoord - Variation of the coordinate.
    */
-  inline void SetVarCoord(su2double *val_varcoord) {
+  inline void SetVarCoord(const su2double *val_varcoord) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       VarCoord[iDim] = val_varcoord[iDim];
   }
@@ -168,7 +168,7 @@ public:
    * \brief Add the value of the coordinate variation due to a surface modification.
    * \param[in] val_varcoord - Variation of the coordinate.
    */
-  inline void AddVarCoord(su2double *val_varcoord) {
+  inline void AddVarCoord(const su2double *val_varcoord) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       VarCoord[iDim] += val_varcoord[iDim];
   }
@@ -424,13 +424,13 @@ public:
    * \brief Get the rotation variation
    * \return  - pointer to the vector defining the rotation
    */
-  inline su2double *GetVarRot(void) const { return VarRot;}
+  inline su2double *GetVarRot(void) { return VarRot;}
 
   /*!
    * \brief Set the rotation variation
    * \return  - pointer to the vector defining the rotation
    */
-  inline void SetVarRot(su2double* val) {
+  inline void SetVarRot(const su2double* val) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       VarRot[iDim] = val[iDim];
   }
