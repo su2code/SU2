@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../solver_structure.hpp"
+#include "CSolver.hpp"
 
 /*!
  * \class CFEASolver

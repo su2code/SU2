@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/geometry/primal_grid/CPrimalGridFEM.hpp"
+#include "../../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 
 CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
                                unsigned short val_nPolyGrid,    unsigned short val_nPolySol,

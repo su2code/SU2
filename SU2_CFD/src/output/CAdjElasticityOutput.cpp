@@ -29,7 +29,7 @@
 #include "../../include/output/CAdjElasticityOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../include/solver_structure.hpp"
+#include "../../include/solvers/CSolver.hpp"
 
 CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
 
