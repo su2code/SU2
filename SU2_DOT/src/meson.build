@@ -5,6 +5,7 @@ if get_option('enable-normal')
                                         'CMarkerProfileReaderFVM.cpp',
                                         'output/COutput.cpp',
                                         'output/output_structure_legacy.cpp',
+					'output/tools/CWindowingTools.cpp',
                                         'output/CBaselineOutput.cpp',
                                         'output/filewriter/CParallelDataSorter.cpp',
                                         'output/filewriter/CParallelFileWriter.cpp',
@@ -38,6 +39,7 @@ if get_option('enable-autodiff')
                                               'solvers/CBaselineSolver.cpp',
                                               'CMarkerProfileReaderFVM.cpp',
                                               'output/COutput.cpp',
+                                              'output/tools/CWindowingTools.cpp',
                                               'output/output_structure_legacy.cpp',
                                               'output/CBaselineOutput.cpp',
                                               'output/filewriter/CParallelDataSorter.cpp',
@@ -60,8 +62,8 @@ if get_option('enable-autodiff')
   su2_dot_ad = executable('SU2_DOT_AD',
                      su2_dot_src_ad, 
                      install: true,
-         dependencies: [su2_deps, codi_dep, commonAD_dep], 
-         objects : su2_cfd_obj_ad,
-         cpp_args : [default_warning_flags, su2_cpp_args, codi_rev_args])
+		     dependencies: [su2_deps, codi_dep, commonAD_dep], 
+		     objects : su2_cfd_obj_ad,
+		     cpp_args : [default_warning_flags, su2_cpp_args, codi_rev_args])
 
 endif
