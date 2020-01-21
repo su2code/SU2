@@ -1,7 +1,7 @@
 /*!
- * \file CPyramide.hpp
+ * \file CPyramid.hpp
  * \brief Headers of the main subroutines for storing the primal grid structure.
- *        The subroutines and functions are in the <i>CPyramide.cpp</i> file.
+ *        The subroutines and functions are in the <i>CPyramid.cpp</i> file.
  * \author F. Palacios
  * \version 7.0.0 "Blackbird"
  *
