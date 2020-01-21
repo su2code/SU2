@@ -75,7 +75,7 @@ def direct ( config ):
 
     # Run Solution
     SU2_CFD(konfig)
-    
+
     # multizone cases
     multizone_cases = su2io.get_multizone(konfig)
 
@@ -83,8 +83,7 @@ def direct ( config ):
     konfig['SOLUTION_FILENAME'] = konfig['RESTART_FILENAME']
     if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
         konfig['SOLUTION_FILENAME'] = konfig['RESTART_FILENAME']
-    su2merge(konfig)
-    
+
     # filenames
     plot_format      = konfig.get('TABULAR_FORMAT', 'CSV')
     plot_extension   = su2io.get_extension(plot_format)
@@ -93,10 +92,12 @@ def direct ( config ):
     
     # averaging final iterations
     final_avg = config.get('ITER_AVERAGE_OBJ',0)
+    # get chosen windowing function, default is square
+    wnd_fct = config.get('WINDOW_FUNCTION', 'SQUARE')
 
     # get history and objectives
     history      = su2io.read_history( history_filename , config.NZONES)
-    aerodynamics = su2io.read_aerodynamics( history_filename , config.NZONES, special_cases, final_avg )
+    aerodynamics = su2io.read_aerodynamics( history_filename , config.NZONES, special_cases, final_avg, wnd_fct )
     
     # update super config
     config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
@@ -112,5 +113,18 @@ def direct ( config ):
     if 'INV_DESIGN_HEATFLUX' in special_cases:
         info.FILES.TARGET_HEATFLUX = 'TargetHeatFlux.dat'
     info.HISTORY.DIRECT = history
-    
+
+    '''If WINDOW_CAUCHY_CRIT is activated and the time marching converged before the final time has been reached, 
+       store the information for the adjoint run'''
+    if config.get('WINDOW_CAUCHY_CRIT', 'NO') == 'YES' and config.TIME_MARCHING != 'NO':
+        konfig['TIME_ITER'] = int(info.HISTORY.DIRECT.Time_Iter[-1] + 1)  # update the last iteration
+        if konfig['UNST_ADJOINT_ITER'] > konfig['TIME_ITER']:
+            konfig['ITER_AVERAGE_OBJ'] = max(0,konfig['ITER_AVERAGE_OBJ'] -(konfig['UNST_ADJOINT_ITER']-konfig['TIME_ITER']))
+            konfig['UNST_ADJOINT_ITER'] = konfig['TIME_ITER']
+
+        info['WND_CAUCHY_DATA'] = {'TIME_ITER': konfig['TIME_ITER'], 'UNST_ADJOINT_ITER': konfig['UNST_ADJOINT_ITER'],
+                                   'ITER_AVERAGE_OBJ': konfig['ITER_AVERAGE_OBJ']}
+
+    su2merge(konfig)
+
     return info
