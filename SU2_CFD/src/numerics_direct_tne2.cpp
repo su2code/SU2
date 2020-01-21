@@ -3424,15 +3424,15 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
       /*--- Products ---*/
       iSpecies = RxnMap[iReaction][1][ii];
       if (iSpecies != nSpecies) {
-        val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
-        val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
+        val_residual[iSpecies] += Ms[iSpecies] * (betak[iSpecies]-alphak[iSpecies]) * (fwdRxn-bkwRxn) * Volume;
+        val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (betak[iSpecies]-alphak[iSpecies]) * (fwdRxn-bkwRxn)
             * eve_i[iSpecies] * Volume;
       }
 
       /*--- Reactants ---*/
       iSpecies = RxnMap[iReaction][0][ii];
       if (iSpecies != nSpecies) {
-        val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
+        val_residual[iSpecies] -= Ms[iSpecies] * (betak[iSpecies]-alphak[iSpecies]) * (fwdRxn-bkwRxn) * Volume;
         val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
             * eve_i[iSpecies] * Volume;
       }
