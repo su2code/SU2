@@ -153,7 +153,10 @@ public:
    * \brief Add a vector to the normal vector.
    * \param[in] val_face_normal - Vector to add to the normal vector.
    */
-  void AddNormal(const su2double *val_face_normal) override;
+  inline void AddNormal(const su2double *val_face_normal) override {
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      Normal[iDim] += val_face_normal[iDim];
+  }
 
   /*!
    * \brief Set the value of the coordinate variation due to a surface modification.
@@ -183,7 +186,7 @@ public:
    * \brief Set the value of the cartesian coordinate for the vertex.
    * \param[in] val_coord - Value of the cartesian coordinate.
    */
-  inline void SetCoord(su2double *val_coord) override {
+  inline void SetCoord(const su2double *val_coord) override {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       CartCoord[iDim] = val_coord[iDim];
   }
