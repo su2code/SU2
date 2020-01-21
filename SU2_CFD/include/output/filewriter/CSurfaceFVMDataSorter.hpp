@@ -95,7 +95,7 @@ public:
   unsigned short FindProcessor(unsigned long iPoint) const override {
 
     for (unsigned short iRank = 1; iRank < size; iRank++){
-      if (nPoint_Recv[iRank] > iPoint){
+      if (nPoint_Recv[iRank] > static_cast<int>(iPoint)){
         return iRank - 1;
       }
     }

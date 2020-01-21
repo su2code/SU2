@@ -35,7 +35,7 @@
   #include "cgnslib.h"
 #endif
 
-#include "primal_grid_structure.hpp"
+#include "geometry/primal_grid/CPrimalGridFEM.hpp"
 
 /* Forward declaration of CBoundaryFace to avoid problems. */
 class CBoundaryFace;

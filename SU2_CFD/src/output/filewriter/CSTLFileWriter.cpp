@@ -278,7 +278,6 @@ void CSTLFileWriter::StoreCoordData(enum GEO_TYPE elemType,
                                     unsigned long startIndex) {
 
   unsigned long globalNodeNumber, localNodeNumber, iElem, index = startIndex;
-  unsigned short iPoint, iVar;
 
   /*--- Create a node list that defines in which order the element points form a triangle. ---*/
   vector<unsigned short> nodeList;
@@ -298,7 +297,7 @@ void CSTLFileWriter::StoreCoordData(enum GEO_TYPE elemType,
       globalNodeNumber = dataSorter->GetElem_Connectivity(elemType, iElem, node) - 1;
       localNodeNumber = globalNodeNumber - dataSorter->GetNodeBegin(rank);
 
-      for (iVar = 0; iVar < 3; iVar++){
+      for (auto iVar = 0; iVar < 3; iVar++){
         if (dataSorter->FindProcessor(globalNodeNumber) == rank) {
           buffSendCoords[index] = dataSorter->GetData(iVar, localNodeNumber);
         } else {
@@ -307,7 +306,7 @@ void CSTLFileWriter::StoreCoordData(enum GEO_TYPE elemType,
 
         index++;
       }//iVar
-    }//iPoint
+    }//node
   }//iElem
 }
 
