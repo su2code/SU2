@@ -5270,10 +5270,9 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       /*--- Recompute the primitive variables. ---*/
 
       if (Qn_Infty > 0){
-        Mach_Bound = sqrt(Vel2_Bound)/SoundSpeed_Bound;
         // Subsonic outflow
         // TODO: check these (mainly Tve)
-        if (Mach_Bound <= 1.0) {
+        if (Qn_Infty <= SoundSpeed_Infty) {
           Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
           Velocity2 = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -5314,7 +5313,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       else {
         // Supersonic inflow
         // All values set to freestream
-        if (Mach_Inf > 1.0) {
+        if (Qn_Infty < -SoundSpeed_Infty) {
           Density = node_infty->GetDensity(0);
           Velocity2 = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
