@@ -5276,7 +5276,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      Temperature = Density*SoundSpeed*SoundSpeed/Gamma;
+      Temperature = Pressure/(Gas_Constant*Density);
       // TODO: Fix these later!
       Temperature_ve = Temperature_ve_Inf;
       for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
@@ -5297,7 +5297,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       //     }
       //     Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       //     Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      //     Temperature = Density*SoundSpeed*SoundSpeed/Gamma;
+      //     Temperature = Pressure/(Gas_Constant*Density);
       //     Temperature_ve = V_domain[nSpecies+1];
       //     for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
       //       Ys[iSpecies] = MassFrac_Inf[iSpecies];
@@ -5339,7 +5339,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       //     Pressure = node_infty->GetPressure(0);
       //     SoundSpeed = node_infty->GetSoundSpeed(0);
       //     Energy = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      //     Temperature = Density*SoundSpeed*SoundSpeed/Gamma;
+      //     Temperature = Pressure/(Gas_Constant*Density);
       //     Temperature_ve = node_infty->GetTemperature_ve(0);
       //     for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
       //       Ys[iSpecies] = MassFrac_Inf[iSpecies];
