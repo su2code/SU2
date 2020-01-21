@@ -27,7 +27,7 @@
  */
 
 #include "../include/toolboxes/CLinearPartitioner.hpp"
-#include "../include/CBoxMeshReaderFVM.hpp"
+#include "../include/geometry/meshreader/CBoxMeshReaderFVM.hpp"
 
 CBoxMeshReaderFVM::CBoxMeshReaderFVM(CConfig        *val_config,
                                      unsigned short val_iZone,
