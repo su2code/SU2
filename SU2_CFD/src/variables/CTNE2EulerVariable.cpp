@@ -951,8 +951,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   /*--- Set temperature algorithm paramters ---*/
   NRtol    = 1.0E-8;    // Tolerance for the Newton-Raphson method
   Btol     = 1.0E-6;    // Tolerance for the Bisection method
-  maxNIter = 9999;        // Maximum Newton-Raphson iterations
-  maxBIter = 9999;        // Maximum Bisection method iterations
+  maxNIter = 999;        // Maximum Newton-Raphson iterations
+  maxBIter = 999;        // Maximum Bisection method iterations
   scale    = 0.5;       // Scaling factor for Newton-Raphson step
 
   /*--- Read parameters from config ---*/
@@ -980,7 +980,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     if (U[iSpecies] < 0.0) {
       V[RHOS_INDEX+iSpecies] = 1E-20;
       U[iSpecies]            = 1E-20;
-      // nonPhys                = true;
+      nonPhys                = true;
     } else
       V[RHOS_INDEX+iSpecies] = U[iSpecies];
     V[RHO_INDEX]            += U[iSpecies];
