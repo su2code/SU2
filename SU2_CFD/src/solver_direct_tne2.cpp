@@ -5262,7 +5262,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
         for (iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = Vel_Bound[iDim] + (Vn-Vn_Bound)*UnitNormal[iDim];
         Entropy = Entropy_Bound;
-        Temperature_ve = V_Domain[nSpecies+1];
+        Temperature_ve = V_domain[nSpecies+1];
         for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
           Ys[iSpecies] = V_domain[iSpecies]/V_domain[nSpecies+nDim+3];
         }
