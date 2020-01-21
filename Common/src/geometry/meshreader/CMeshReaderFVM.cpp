@@ -26,7 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/CMeshReaderFVM.hpp"
+#include "../include/geometry/meshreader/CMeshReaderFVM.hpp"
 
 CMeshReaderFVM::CMeshReaderFVM(CConfig        *val_config,
                                unsigned short val_iZone,

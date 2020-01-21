@@ -27,7 +27,7 @@
  */
 
 #include "../include/toolboxes/CLinearPartitioner.hpp"
-#include "../include/CSU2ASCIIMeshReaderFVM.hpp"
+#include "../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
 
 CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig        *val_config,
                                                unsigned short val_iZone,
