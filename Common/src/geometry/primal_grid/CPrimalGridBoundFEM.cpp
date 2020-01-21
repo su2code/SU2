@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
+#include "../../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 
 CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
                                          unsigned long         val_domainElementID,
