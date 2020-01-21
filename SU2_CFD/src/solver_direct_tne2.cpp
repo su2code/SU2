@@ -5084,6 +5084,8 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   su2double *V_infty, *V_domain;
   su2double *U_domain,*U_infty;
 
+  su2double Gas_Constant = config->GetGas_ConstantND();
+
   /*--- Set booleans from configuration parameters ---*/
   bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool viscous  = config->GetViscous();
