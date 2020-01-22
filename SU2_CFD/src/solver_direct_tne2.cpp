@@ -5305,7 +5305,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      for(iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+      for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         Temperature += Pressure*Ms[iSpecies]/(Ru*Density*Ys[iSpecies]);
       // TODO: Fix these later!
       for (iDim = 0; iDim < nDim; iDim++) {
