@@ -243,7 +243,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh) final;
 
   /*!
    * \brief Compute the pressure at the infinity.
@@ -316,8 +316,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Value of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration);
+  void SetTime_Step(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned long Iteration) override;
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.
@@ -328,8 +331,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  void Centered_Residual(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *numerics,
+                        CConfig *config,
+                        unsigned short iMesh,
+                        unsigned short iRKStep) final;
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
@@ -339,8 +346,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh);
+  void Upwind_Residual(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CNumerics *numerics,
+                      CConfig *config,
+                      unsigned short iMesh) final;
 
   /*!
    * \brief Source term integration.
@@ -374,7 +384,13 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+  void Preprocessing(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned short iRKStep,
+                    unsigned short RunTime_EqSystem,
+                    bool Output) override;
 
   /*!
    * \brief A virtual member.
@@ -383,7 +399,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
+  void Postprocessing(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CConfig *config,
+                      unsigned short iMesh) final;
 
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
@@ -400,7 +419,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
@@ -425,28 +444,28 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Compute the undivided laplacian for the solution, except the energy equation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Compute the max eigenvalue.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
+  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  void Evaluate_ObjFunc(CConfig *config);
+  void Evaluate_ObjFunc(CConfig *config) final;
 
   /*!
    * \author: T. Kattmann
@@ -474,8 +493,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                    CConfig *config, unsigned short val_marker);
+  void BC_Far_Field(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CNumerics *conv_numerics,
+                    CNumerics *visc_numerics,
+                    CConfig *config,
+                    unsigned short val_marker) final;
 
   /*!
    * \brief Impose the symmetry boundary condition using the residual.
@@ -491,7 +514,7 @@ public:
                     CNumerics      *conv_numerics,
                     CNumerics      *visc_numerics,
                     CConfig        *config,
-                    unsigned short val_marker) override;
+                    unsigned short val_marker) final;
 
   /*!
    * \brief Impose a subsonic inlet boundary condition.
@@ -537,7 +560,11 @@ public:
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-   void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
+   void BC_Fluid_Interface(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *conv_numerics,
+                          CNumerics *visc_numerics,
+                          CConfig *config) final;
 
   /*!
    * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
@@ -546,8 +573,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
-                   CNumerics *numerics, CConfig *config);
+  void BC_Periodic(CGeometry *geometry,
+                  CSolver **solver_container,
+                  CNumerics *numerics,
+                  CConfig *config) final;
 
   /*!
    * \brief compare to values.
@@ -1240,8 +1269,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+  void SetResidual_DualTime(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CConfig *config,
+                            unsigned short iRKStep,
+                            unsigned short iMesh,
+                            unsigned short RunTime_EqSystem) final;
 
   /*!
    * \brief Load a solution from a restart file.

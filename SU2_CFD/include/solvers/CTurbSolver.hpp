@@ -88,8 +88,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
 
-  void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                       unsigned short iMesh);
+  void Upwind_Residual(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *numerics,
+                       CConfig *config,
+                       unsigned short iMesh) override;
 
   /*!
    * \brief Compute the viscous residuals for the turbulent equation.
@@ -142,8 +145,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                     unsigned short val_marker);
+  void BC_Riemann(CGeometry *geometry,
+                  CSolver **solver_container,
+                  CNumerics *conv_numerics,
+                  CNumerics *visc_numerics,
+                  CConfig *config,
+                  unsigned short val_marker) final;
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -153,8 +160,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                     unsigned short val_marker);
+  void BC_TurboRiemann(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *conv_numerics,
+                       CNumerics *visc_numerics,
+                       CConfig *config,
+                       unsigned short val_marker) final;
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -164,8 +175,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                     unsigned short val_marker);
+  void BC_Giles(CGeometry *geometry,
+                CSolver **solver_container,
+                CNumerics *conv_numerics,
+                CNumerics *visc_numerics,
+                CConfig *config,
+                unsigned short val_marker) final;
 
   /*!
    * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
@@ -174,8 +189,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
-                   CNumerics *numerics, CConfig *config);
+  void BC_Periodic(CGeometry *geometry,
+                   CSolver **solver_container,
+                   CNumerics *numerics,
+                   CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit solver.
@@ -194,8 +211,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+  void SetResidual_DualTime(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CConfig *config,
+                            unsigned short iRKStep,
+                            unsigned short iMesh,
+                            unsigned short RunTime_EqSystem) final;
 
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.

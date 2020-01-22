@@ -78,8 +78,13 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
-                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+  void Preprocessing(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned short iRKStep,
+                    unsigned short RunTime_EqSystem,
+                    bool Output) final;
 
   /*!
    * \brief A virtual member.
@@ -88,8 +93,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                        unsigned short iMesh);
+  void Postprocessing(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CConfig *config,
+                      unsigned short iMesh) final;
 
   /*!
    * \brief Load a solution from a restart file.
@@ -118,7 +125,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.
@@ -129,9 +136,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-
+  void Centered_Residual(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *numerics,
+                        CConfig *config,
+                        unsigned short iMesh,
+                        unsigned short iRKStep) final;
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -140,8 +150,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                       unsigned short iMesh);
+  void Upwind_Residual(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CNumerics *numerics,
+                      CConfig *config,
+                      unsigned short iMesh) final;
 
   /*!
    * \brief Compute the viscous residuals for the turbulent equation.
@@ -156,7 +169,7 @@ public:
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 
-  void Set_Heatflux_Areas(CGeometry *geometry, CConfig *config);
+  void Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).
@@ -167,8 +180,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                         unsigned short val_marker);
+  void BC_Isothermal_Wall(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *conv_numerics,
+                          CNumerics *visc_numerics,
+                          CConfig *config,
+                          unsigned short val_marker) final;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -179,8 +196,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                          unsigned short val_marker);
+  void BC_HeatFlux_Wall(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) final;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -272,8 +293,11 @@ public:
    */
   void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
-  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iMesh, unsigned long Iteration);
+  void SetTime_Step(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned long Iteration) final;
 
   /*!
    * \brief Set the initial condition for the FEM structural problem.
@@ -293,8 +317,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+  void SetResidual_DualTime(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CConfig *config,
+                            unsigned short iRKStep,
+                            unsigned short iMesh,
+                            unsigned short RunTime_EqSystem) final;
 
   /*!
    * \brief Get the heat flux.
