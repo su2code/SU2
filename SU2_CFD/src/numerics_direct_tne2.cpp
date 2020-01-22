@@ -3663,7 +3663,7 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
       rhos = V_i[RHOS_INDEX+iSpecies];
       for (iVar = 0; iVar < nVar; iVar++) {
         val_Jacobian_i[nEv][iVar] += dRdTau *
-                                     (1.5*PI_NUMBER*Ms[iSpecies]*N)/(1E-20*(5E4*5E4))*sqrt(T)*dTdU_i[iVar];
+                                     1.5/(1E-20*(5E4*5E4)*N*sqrt((8.0*Ru)/(PI_NUMBER*Ms[iSpecies])))*sqrt(T)*dTdU_i[iVar];
       }
       /*--- (dR/dtau)(dtau/dtauP)(dtauP/drhos) ---*/
       Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*Ms[iSpecies]));
