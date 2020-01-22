@@ -168,7 +168,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
   Gradient.resize(nPoint,nVar,nDim,0.0);
 
-  if (config->GetLeastSquaresRequired()) {
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
    Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
 
