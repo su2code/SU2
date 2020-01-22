@@ -49,8 +49,13 @@ extern "C" {
 #include <stdlib.h>
 #include <climits>
 
-#include "../primal_grid_structure.hpp"
-#include "../dual_grid_structure.hpp"
+#include "primal_grid/CPrimalGrid.hpp"
+#include "dual_grid/CDualGrid.hpp"
+#include "dual_grid/CPoint.hpp"
+#include "dual_grid/CEdge.hpp"
+#include "dual_grid/CVertex.hpp"
+#include "dual_grid/CTurboVertex.hpp"
+
 #include "../config_structure.hpp"
 #include "../geometry_structure_fem_part.hpp"
 #include "../toolboxes/graph_toolbox.hpp"

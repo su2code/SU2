@@ -247,8 +247,9 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 
   /* Determine the offset for my surface DOFs. */
   unsigned long offsetSurfaceDOFs = 0;
+  
+  nSurfaceDOFsRanks.resize(size, 0);
 #ifdef HAVE_MPI
-  vector<unsigned long> nSurfaceDOFsRanks(size);
 
   SU2_MPI::Allgather(&nLocalPoint, 1, MPI_UNSIGNED_LONG,
                      nSurfaceDOFsRanks.data(), 1, MPI_UNSIGNED_LONG,

@@ -420,7 +420,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    global numbering for the surface points. ---*/
 
   int *nPoint_Send = new int[size+1](); nPoint_Send[0] = 0;
-  int *nPoint_Recv = new int[size+1](); nPoint_Recv[0] = 0;
+  nPoint_Recv = new int[size+1](); nPoint_Recv[0] = 0;
 
   for (int ii=1; ii < size+1; ii++) nPoint_Send[ii]= (int)nLocalPoint;
 
@@ -1080,7 +1080,6 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   delete [] nElem_Flag;
   delete [] Local_Halo;
   delete [] nPoint_Send;
-  delete [] nPoint_Recv;
 
 }
 
