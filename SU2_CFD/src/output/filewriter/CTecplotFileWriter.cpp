@@ -100,7 +100,7 @@ void CTecplotFileWriter::Write_Data(){
       Tecplot_File << "STRANDID="<<SU2_TYPE::Int(timeIter+1)<<", SOLUTIONTIME="<< timeIter*timeStep <<", ";
     }
 
-    Tecplot_File << "NODES= "<< dataSorter->GetnPointsGlobal() <<", ELEMENTS= "<< dataSorter->GetnElem();
+    Tecplot_File << "NODES= "<< dataSorter->GetnPointsGlobal() <<", ELEMENTS= "<< dataSorter->GetnElemGlobal();
 
     if (dataSorter->GetnDim() == 3){
       if ((nTot_Quad > 0 || nTot_Tria > 0) && (nTot_Hexa + nTot_Pris + nTot_Pyra + nTot_Tetr == 0)){
