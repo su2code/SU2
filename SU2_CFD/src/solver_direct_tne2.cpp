@@ -5403,7 +5403,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       }
       nodes->CalcdPdU(  node_bc->GetPrimitive(0), node_bc->GetEve(0), config, node_bc->GetdPdU(0)  );
       nodes->CalcdTdU(  node_bc->GetPrimitive(0), config, node_bc->GetdTdU(0)  );
-      nodes->CalcdTvedU(node_bc->GetPrimitive(0), node_bc->GetEve(0), node_bc->GetdTvedU(0));
+      nodes->CalcdTvedU(node_bc->GetPrimitive(0), node_bc->GetEve(0), config, node_bc->GetdTvedU(0));
 
       /*--- Pass conserved & primitive variables to CNumerics ---*/
       conv_numerics->SetConservative(U_domain, node_bc->GetSolution(0));
