@@ -29,10 +29,20 @@
 #include "../../include/adt_structure.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
-#include "../../include/CSU2ASCIIMeshReaderFVM.hpp"
-#include "../../include/CCGNSMeshReaderFVM.hpp"
-#include "../../include/CRectangularMeshReaderFVM.hpp"
-#include "../../include/CBoxMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CRectangularMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CBoxMeshReaderFVM.hpp"
+
+#include "../../include/geometry/primal_grid/CPrimalGrid.hpp"
+#include "../../include/geometry/primal_grid/CLine.hpp"
+#include "../../include/geometry/primal_grid/CTriangle.hpp"
+#include "../../include/geometry/primal_grid/CQuadrilateral.hpp"
+#include "../../include/geometry/primal_grid/CTetrahedron.hpp"
+#include "../../include/geometry/primal_grid/CHexahedron.hpp"
+#include "../../include/geometry/primal_grid/CPyramid.hpp"
+#include "../../include/geometry/primal_grid/CPrism.hpp"
+#include "../../include/geometry/primal_grid/CVertexMPI.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>
