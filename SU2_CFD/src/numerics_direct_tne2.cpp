@@ -3669,7 +3669,7 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
       Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*Ms[iSpecies]));
       sig_s = 1E-20*(5E4*5E4)/(T*T);
       val_Jacobian_i[nEv][iSpecies] += dRdTau *
-                                       (-1./(Cs*sig_s*N*N*Ms[iSpecies]));
+                                       (-1.*AVOGAD_CONSTANT/(Cs*sig_s*N*N*Ms[iSpecies]));
 
       /*--- tauMW terms ---*/
       num   = 0.0;
