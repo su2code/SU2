@@ -5276,40 +5276,68 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
          while at an inflow, we choose infinity values (at most one
          characteristic is outgoing). ---*/
 
-      if (Qn_Infty > 0.0)   {
-        /*--- Outflow conditions ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = Vel_Bound[iDim] + (Vn-Vn_Bound)*UnitNormal[iDim];
-        Entropy = Entropy_Bound;
-        Temperature_ve = V_domain[nSpecies+1];
-        for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
-          Ys[iSpecies] = V_domain[iSpecies]/V_domain[nSpecies+nDim+3];
-        }
-      } else  {
-        /*--- Inflow conditions ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = Vel_Infty[iDim] + (Vn-Vn_Infty)*UnitNormal[iDim];
-        Entropy = Entropy_Infty;
-        Temperature_ve = Temperature_ve_Inf;
-        for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
-          Ys[iSpecies] = MassFrac_Inf[iSpecies];
-        }
-      }
+      // if (Qn_Infty > 0.0)   {
+      //   /*--- Outflow conditions ---*/
+      //   for (iDim = 0; iDim < nDim; iDim++)
+      //     Velocity[iDim] = Vel_Bound[iDim] + (Vn-Vn_Bound)*UnitNormal[iDim];
+      //   Entropy = Entropy_Bound;
+      //   Temperature_ve = V_domain[nSpecies+1];
+      //   for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
+      //     Ys[iSpecies] = V_domain[iSpecies]/V_domain[nSpecies+nDim+3];
+      //   }
+      // } else  {
+      //   /*--- Inflow conditions ---*/
+      //   for (iDim = 0; iDim < nDim; iDim++)
+      //     Velocity[iDim] = Vel_Infty[iDim] + (Vn-Vn_Infty)*UnitNormal[iDim];
+      //   Entropy = Entropy_Infty;
+      //   Temperature_ve = Temperature_ve_Inf;
+      //   for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
+      //     Ys[iSpecies] = MassFrac_Inf[iSpecies];
+      //   }
+      // }
 
       /*--- Recompute the primitive variables. ---*/
 
-      Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
-      Velocity2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity2 += Velocity[iDim]*Velocity[iDim];
-      }
-      Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
-      Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        Temperature += Pressure*Ms[iSpecies]/(Ru*Density*Ys[iSpecies]);
-      // TODO: Fix these later!
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Mvec[iDim] = Velocity[iDim]/SoundSpeed;
+      // Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
+      // Velocity2 = 0.0;
+      // for (iDim = 0; iDim < nDim; iDim++) {
+      //   Velocity2 += Velocity[iDim]*Velocity[iDim];
+      // }
+      // Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
+      // Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
+      // for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      //   Temperature += Pressure*Ms[iSpecies]/(Ru*Density*Ys[iSpecies]);
+      // // TODO: Fix these later!
+      // for (iDim = 0; iDim < nDim; iDim++) {
+      //   Mvec[iDim] = Velocity[iDim]/SoundSpeed;
+      // }
+      /*--- For now, assume supersonic everywhere... ---*/
+      if (Qn_Infty > 0.0)   {
+        /*--- Outflow conditions ---*/
+        Density = V_domain[nSpecies+nDim+3];
+        Pressure = V_domain[nSpecies+nDim+2];
+        SoundSpeed = V_domain[nSpecies+nDim+5];
+        Temperature = V_domain[nSpecies];
+        Temperature_ve = V_domain[nSpecies+1];
+        for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
+          Ys[iSpecies] = V_domain[iSpecies]/Density;
+        }
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Mvec[iDim] = V_domain[nSpecies+2+iDim]/SoundSpeed;
+        }
+      } else  {
+        /*--- Inflow conditions ---*/
+        Density = node_infty->GetDensity(0);
+        Pressure = node_infty->GetPressure(0);
+        SoundSpeed = node_infty->GetSoundSpeed(0);
+        Temperature = node_infty->GetTemperature(0);
+        Temperature_ve = node_infty->GetTemperature_ve(0);
+        for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
+          Ys[iSpecies] = MassFrac_Inf[iSpecies];
+        }
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Mvec[iDim] = Mvec_Inf[iDim];
+        }
       }
 
       // if (Qn_Infty > 0){
