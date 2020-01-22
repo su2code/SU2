@@ -3657,17 +3657,18 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
 
     /*--- Relaxation time derivatives ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      const su2double dRdTau = -rhos*(estar[iSpecies]-eve_i[iSpecies])/(pow(taus[iSpecies], 2.0));
       /*--- tauP terms ---*/
       /*--- (dR/dtau)(dtau/dtauP)(dtauP/dT)(dT/dU) ---*/
       rhos = V_i[RHOS_INDEX+iSpecies];
       for (iVar = 0; iVar < nVar; iVar++) {
-        val_Jacobian_i[nEv][iVar] -= rhos*(estar[iSpecies]-eve_i[iSpecies])/(pow(taus[iSpecies], 2.0)) * Volume *
+        val_Jacobian_i[nEv][iVar] += dRdTau * Volume *
                                       (1.5*PI_NUMBER*Ms[iSpecies]*N)/(1E-20*(5E4*5E4))*sqrt(T)*dTdU_i[iVar];
       }
       /*--- (dR/dtau)(dtau/dtauP)(dtauP/drhos) ---*/
       Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*Ms[iSpecies]));
       sig_s = 1E-20*(5E4*5E4)/(T*T);
-      val_Jacobian_i[nEv][iSpecies] -= rhos*(estar[iSpecies]-eve_i[iSpecies])/(pow(taus[iSpecies], 2.0)) * Volume *
+      val_Jacobian_i[nEv][iSpecies] += dRdTau * Volume *
                                        (-1./(Cs*sig_s*N*N*Ms[iSpecies]));
 
       /*--- tauMW terms ---*/
@@ -3687,10 +3688,10 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
         const su2double dTauSRdT = -tau_sr[iSpecies][jSpecies]*(1./3.)*A_sr*pow(T, -4./3.);
         for (iVar = 0; iVar < nVar; iVar++) {
           /*--- (dR/dtauMW)(dtau/dtauMW)(dtauMW/dtausp)(dtausp/dP)(dP/dU) ---*/
-          val_Jacobian_i[nEv][iSpecies] -= rhos*(estar[iSpecies]-eve_i[iSpecies])/(pow(taus[iSpecies], 2.0)) * Volume *
+          val_Jacobian_i[nEv][iSpecies] += dRdTau * Volume *
                                            dTauMWdTauSR*dTauSRdP*dPdU_i[iVar];
           /*--- (dR/dtauMW)(dtau/dtauMW)(dtauMW/dtausp)(dtausp/dT)(dT/dU) ---*/
-          val_Jacobian_i[nEv][iSpecies] -= rhos*(estar[iSpecies]-eve_i[iSpecies])/(pow(taus[iSpecies], 2.0)) * Volume *
+          val_Jacobian_i[nEv][iSpecies] += dRdTau * Volume *
                                            dTauMWdTauSR*dTauSRdT*dTdU_i[iVar];
         }
       }
