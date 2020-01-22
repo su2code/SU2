@@ -5101,7 +5101,9 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   su2double *V_infty, *V_domain;
   su2double *U_domain,*U_infty;
 
-  su2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double *Ms  = config->GetMolar_Mass();
+  const su2double RuSI = UNIVERSAL_GAS_CONSTANT;
+  const su2double Ru   = 1000.0*RuSI;
 
   /*--- Set booleans from configuration parameters ---*/
   bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -5303,7 +5305,8 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      Temperature = Pressure/(Gas_Constant*Density);
+      for(iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+        Temperature += Pressure*Ms[iSpecies]/(Ru*Density*Ys[iSpecies]);
       // TODO: Fix these later!
       for (iDim = 0; iDim < nDim; iDim++) {
         Mvec[iDim] = Velocity[iDim]/SoundSpeed;
