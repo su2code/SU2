@@ -801,7 +801,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Detect a wrong solution file. ---*/
 
-    if (counter < nPointDomain) {
+    if (counter != nPointDomain) {
       SU2_MPI::Error(string("The solution file ") + filename_n + string(" doesn't match with the mesh file!\n") +
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
     }
