@@ -168,13 +168,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
   Gradient.resize(nPoint,nVar,nDim,0.0);
 
-  //if (config->GetReconstructionGradientRequired()) {
-  //  Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
-  //}
-
-  //if (config->GetLeastSquaresRequired()) {
-  //  Rmatrix.resize(nPoint,nDim,nDim,0.0);
-  //}
+  if (config->GetLeastSquaresRequired()) {
+   Rmatrix.resize(nPoint,nDim,nDim,0.0);
+  }
 
   //if (config->GetMultizone_Problem())
   //  Set_BGSSolution_k();

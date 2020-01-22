@@ -76,18 +76,18 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   /*--- Determine if source term required ---*/
 
-  if (cold_flow){
-    if (config->GetTimeIter()<config->GetStartConv_Iter()){source = false;}
-    if ((config->GetTimeIter() < Source_Iter)                        &&
-        (log10(solver_container[MESH_0]->GetRes_RMS(0)) > Res_Mag)  &&
-        (GetOrderResReduction() < Res_Red)) {
-      source = false;
-    }
-    if (source == true){
-      config ->SetCFL(0,(config->GetCFL(0)*config->GetCFLRedCoeff_Chem()));
-      config->SetCOLD_FLOW(false);
-    }
-  }
+  // if (cold_flow){
+  //   if (config->GetTimeIter()<config->GetStartConv_Iter()){source = false;}
+  //   if ((config->GetTimeIter() < Source_Iter)                        &&
+  //       (log10(solver_container[MESH_0]->GetRes_RMS(0)) > Res_Mag)  &&
+  //       (GetOrderResReduction() < Res_Red)) {
+  //     source = false;
+  //   }
+  //   if (source == true){
+  //     config ->SetCFL(0,(config->GetCFL(0)*config->GetCFLRedCoeff_Chem()));
+  //     config->SetCOLD_FLOW(false);
+  //   }
+  // }
 
   /*--- Compute inviscid residuals ---*/
   
