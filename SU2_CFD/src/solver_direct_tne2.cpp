@@ -5398,8 +5398,12 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       CTNE2EulerVariable *node_bc = new CTNE2EulerVariable(Pressure, Ys, Mvec, Temperature,
                                                            Temperature_ve, 1, nDim, nVar,
                                                            nPrimVar, nPrimVarGrad, config);
-
-      const bool check_bc = node_bc->SetPrimVar_Compressible(0,config);
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        nodes->CalcEve(config, Temperature_ve, iSpecies);
+      }
+      nodes->CalcdPdU(  node_bc->GetPrimitive(0), node_bc->GetEve(0), config, node_bc->GetdPdU(0)  );
+      nodes->CalcdTdU(  node_bc->GetPrimitive(0), config, node_bc->GetdTdU(0)  );
+      nodes->CalcdTvedU(node_bc->GetPrimitive(0), node_bc->GetEve(0), node_bc->GetdTvedU(0));
 
       /*--- Pass conserved & primitive variables to CNumerics ---*/
       conv_numerics->SetConservative(U_domain, node_bc->GetSolution(0));
@@ -6734,6 +6738,9 @@ void CTNE2EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
   solver[MESH_0][TNE2_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][TNE2_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TNE2_SYS, false);
 
+  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
+    nodes->SetSolution_Old(iPoint, nodes->GetSolution(iPoint));
+  }
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
