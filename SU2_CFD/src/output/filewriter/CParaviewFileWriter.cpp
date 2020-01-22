@@ -109,7 +109,6 @@ void CParaviewFileWriter::Write_Data(){
 
   /*--- Reduce the total number of each element. ---*/
 
-  unsigned long nTot_Line, nTot_Tria, nTot_Quad, nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
   unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
                 nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
                 nParallel_Quad = dataSorter->GetnElem(QUADRILATERAL),
@@ -117,31 +116,13 @@ void CParaviewFileWriter::Write_Data(){
                 nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
                 nParallel_Pris = dataSorter->GetnElem(PRISM),
                 nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
-#ifdef HAVE_MPI
-  SU2_MPI::Reduce(&nParallel_Line, &nTot_Line, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Reduce(&nParallel_Tria, &nTot_Tria, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Reduce(&nParallel_Quad, &nTot_Quad, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Reduce(&nParallel_Tetr, &nTot_Tetr, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Reduce(&nParallel_Hexa, &nTot_Hexa, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Reduce(&nParallel_Pris, &nTot_Pris, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Reduce(&nParallel_Pyra, &nTot_Pyra, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  nTot_Line      = nParallel_Line;
-
-  nTot_Tria = nParallel_Tria;
-  nTot_Quad = nParallel_Quad;
-  nTot_Tetr = nParallel_Tetr;
-  nTot_Hexa = nParallel_Hexa;
-  nTot_Pris = nParallel_Pris;
-  nTot_Pyra = nParallel_Pyra;
-#endif
 
   if (rank == MASTER_NODE) {
 
     /*--- Write the header ---*/
-    nGlobal_Elem_Storage = nTot_Line*3 + nTot_Tria*4 + nTot_Quad*5 + nTot_Tetr*5 + nTot_Hexa*9 + nTot_Pris*7 + nTot_Pyra*6;
+    nGlobal_Elem_Storage = dataSorter->GetnElemGlobal() + dataSorter->GetnElemConnGlobal();
 
-    Paraview_File << "\nCELLS " << dataSorter->GetnElem() << "\t" << nGlobal_Elem_Storage << "\n";
+    Paraview_File << "\nCELLS " << dataSorter->GetnElemGlobal() << "\t" << nGlobal_Elem_Storage << "\n";
 
   }
 
@@ -226,7 +207,7 @@ void CParaviewFileWriter::Write_Data(){
   if (rank == MASTER_NODE) {
 
     /*--- Write the header ---*/
-    Paraview_File << "\nCELL_TYPES " << dataSorter->GetnElem() << "\n";
+    Paraview_File << "\nCELL_TYPES " << dataSorter->GetnElemGlobal() << "\n";
 
   }
 

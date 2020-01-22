@@ -101,7 +101,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
 
   num_nodes = static_cast<int64_t>(dataSorter->GetnPointsGlobal());
-  num_cells = static_cast<int64_t>(dataSorter->GetnElem());
+  num_cells = static_cast<int64_t>(dataSorter->GetnElemGlobal());
   if (dataSorter->GetnDim() == 3){
     if ((nTot_Quad > 0 || nTot_Tria > 0) && (nTot_Hexa + nTot_Pris + nTot_Pyra + nTot_Tetr == 0)){
       zone_type = ZONETYPE_FEQUADRILATERAL;

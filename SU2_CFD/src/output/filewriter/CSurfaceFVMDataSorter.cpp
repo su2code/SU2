@@ -1099,6 +1099,8 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
    across all processors based on the global index of the grid nodes. ---*/
 
   /*--- Sort volumetric grid connectivity. ---*/
+  
+  nLocalPerElem.fill(0);
 
   SortSurfaceConnectivity(config, geometry, LINE         , markerList);
   SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
@@ -1118,6 +1120,8 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
 
   /*--- Sort volumetric grid connectivity. ---*/
 
+  nLocalPerElem.fill(0);
+  
   SortSurfaceConnectivity(config, geometry, LINE         , markerList);
   SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
   SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);

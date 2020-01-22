@@ -116,6 +116,8 @@ void CFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
    In these routines, we sort the connectivity into a linear partitioning
    across all processors based on the global index of the grid nodes. ---*/
 
+  nLocalPerElem.fill(0);
+  
   SortVolumetricConnectivity(config, geometry, TRIANGLE,      val_sort);
   SortVolumetricConnectivity(config, geometry, QUADRILATERAL, val_sort);
   SortVolumetricConnectivity(config, geometry, TETRAHEDRON,   val_sort);

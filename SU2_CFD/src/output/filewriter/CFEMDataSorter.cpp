@@ -92,6 +92,8 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
    across all processors based on the global index of the grid nodes. ---*/
 
   /*--- Sort volumetric grid connectivity. ---*/
+  
+  nLocalPerElem.fill(0);
 
   SortVolumetricConnectivity(config, geometry, TRIANGLE     );
   SortVolumetricConnectivity(config, geometry, QUADRILATERAL);
