@@ -3678,7 +3678,6 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
         mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
         A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
         B_sr   = 0.015 * pow(mu, 0.25);
-        tau_sr[iSpecies][jSpecies] = 101325.0/P * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
         num   += X[jSpecies];
         denom += X[jSpecies] / tau_sr[iSpecies][jSpecies];
       }
