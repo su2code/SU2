@@ -3414,7 +3414,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
        offset in the buffer of data from the restart file and load it. ---*/
 
       const auto index = counter*Restart_Vars[1] + skipVars;
-      const su2double* Sol = &Restart_Data[index];
+      const passivedouble* Sol = &Restart_Data[index];
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         nodes->SetSolution(iPoint_Local, iVar, Sol[iVar]);
