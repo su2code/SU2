@@ -1105,7 +1105,8 @@ void CUpwSca_TurbSST::FinishResidualCalc(su2double *val_residual,
 
 CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim,
                                    unsigned short val_nVar,
-                                   su2double *constants, bool correct_grad,
+                                   const su2double *constants,
+                                   bool correct_grad,
                                    CConfig *config)
  : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) {
   
@@ -1161,7 +1162,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(su2double *val_residual, su2double **J
   
 }
 
-CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double *constants,
+CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const su2double *constants,
                                                    su2double val_kine_Inf, su2double val_omega_Inf, CConfig *config)
   : CNumerics(val_nDim, val_nVar, config) {
   
