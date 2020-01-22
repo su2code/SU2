@@ -1113,7 +1113,9 @@ static const map<string, ENUM_DVFEA> DVFEA_Map = CCreateMap<string, ENUM_DVFEA>
 ("ELECTRIC_FIELD", ELECTRIC_FIELD);
 
 /*!
- * \brief Kinds of coupling methods at CHT interfaces
+ * \brief Kinds of coupling methods at CHT interfaces.
+ * The first (temperature) part determines the BC method on the fluid side, the second (heatflux) part determines
+ * the BC method on the solid side of the CHT interface.
  */
 enum ENUM_CHT_COUPLING {
   DIRECT_TEMPERATURE_NEUMANN_HEATFLUX = 0,
