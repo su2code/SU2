@@ -5429,12 +5429,15 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       CTNE2EulerVariable *node_bc = new CTNE2EulerVariable(Pressure, Ys, Mvec, Temperature,
                                                            Temperature_ve, 1, nDim, nVar,
                                                            nPrimVar, nPrimVarGrad, config);
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        node_bc->GetEve(0)[iSpecies] = nodes->CalcEve(config, Temperature_ve, iSpecies);
-      }
-      nodes->CalcdPdU(  node_bc->GetPrimitive(0), node_bc->GetEve(0), config, node_bc->GetdPdU(0)  );
-      nodes->CalcdTdU(  node_bc->GetPrimitive(0), config, node_bc->GetdTdU(0)  );
-      nodes->CalcdTvedU(node_bc->GetPrimitive(0), node_bc->GetEve(0), config, node_bc->GetdTvedU(0));
+
+      /*--- Calculate dPdU, dTdU, dTvedU, and some other primitives ---*/
+      const bool check_bc = node_bc->SetPrimVar_Compressible(0,config);
+      // for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      //   node_bc->GetEve(0)[iSpecies] = nodes->CalcEve(config, Temperature_ve, iSpecies);
+      // }
+      // nodes->CalcdPdU(  node_bc->GetPrimitive(0), node_bc->GetEve(0), config, node_bc->GetdPdU(0)  );
+      // nodes->CalcdTdU(  node_bc->GetPrimitive(0), config, node_bc->GetdTdU(0)  );
+      // nodes->CalcdTvedU(node_bc->GetPrimitive(0), node_bc->GetEve(0), config, node_bc->GetdTvedU(0));
 
       /*--- Pass conserved & primitive variables to CNumerics ---*/
       conv_numerics->SetConservative(U_domain, node_bc->GetSolution(0));
