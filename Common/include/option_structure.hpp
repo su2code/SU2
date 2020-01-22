@@ -386,7 +386,7 @@ enum ENUM_REGIME {
  * \brief different non-dimensional modes
  */
 enum ENUM_KIND_NONDIM {
-  DIMENSIONAL = 0,			    /*!< \brief Dimensional simulation (compressible or incompressible). */
+  DIMENSIONAL = 0,              /*!< \brief Dimensional simulation (compressible or incompressible). */
   FREESTREAM_PRESS_EQ_ONE = 1,  /*!< \brief Non-dimensional compressible simulation with freestream pressure equal to 1.0. */
   FREESTREAM_VEL_EQ_MACH = 2,   /*!< \brief Non-dimensional compressible simulation with freestream velocity equal to Mach number. */
   FREESTREAM_VEL_EQ_ONE = 3,    /*!< \brief Non-dimensional compressible simulation with freestream pressure equal to 1.0. */
@@ -416,43 +416,43 @@ static const map<string, ENUM_MEASUREMENTS> Measurements_Map = CCreateMap<string
  * \brief different types of systems
  */
 enum RUNTIME_TYPE {
-  RUNTIME_FLOW_SYS = 2,			/*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
-  RUNTIME_TURB_SYS = 3,			/*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_ADJPOT_SYS = 5,		/*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
-  RUNTIME_ADJFLOW_SYS = 6,		/*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
-  RUNTIME_ADJTURB_SYS = 7,		/*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
-  RUNTIME_MULTIGRID_SYS = 14,   /*!< \brief Full Approximation Storage Multigrid system of equations. */
-  RUNTIME_FEA_SYS = 20,		    /*!< \brief One-physics case, the code is solving the FEA equation. */
-  RUNTIME_ADJFEA_SYS = 30,		/*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
-  RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
-  RUNTIME_ADJHEAT_SYS = 31,     /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
-  RUNTIME_TRANS_SYS = 22,		/*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_FLOW_SYS = 2,       /*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
+  RUNTIME_TURB_SYS = 3,       /*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_ADJPOT_SYS = 5,     /*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
+  RUNTIME_ADJFLOW_SYS = 6,    /*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
+  RUNTIME_ADJTURB_SYS = 7,    /*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
+  RUNTIME_MULTIGRID_SYS = 14, /*!< \brief Full Approximation Storage Multigrid system of equations. */
+  RUNTIME_FEA_SYS = 20,       /*!< \brief One-physics case, the code is solving the FEA equation. */
+  RUNTIME_ADJFEA_SYS = 30,    /*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
+  RUNTIME_HEAT_SYS = 21,      /*!< \brief One-physics case, the code is solving the heat equation. */
+  RUNTIME_ADJHEAT_SYS = 31,   /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
+  RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
 };
 
-const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
-const int ADJFLOW_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
+const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
+const int ADJFLOW_SOL = 1;  /*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
 
-const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solver container array. */
-const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+const int TURB_SOL = 2;     /*!< \brief Position of the turbulence model solution in the solver container array. */
+const int ADJTURB_SOL = 3;  /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 
-const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
-const int HEAT_SOL = 5;		/*!< \brief Position of the heat equation in the solution solver array. */
+const int TRANS_SOL = 4;    /*!< \brief Position of the transition model solution in the solver container array. */
+const int HEAT_SOL = 5;     /*!< \brief Position of the heat equation in the solution solver array. */
 const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array. */
 
-const int FEA_SOL = 0;		/*!< \brief Position of the FEA equation in the solution solver array. */
-const int ADJFEA_SOL = 1;	/*!< \brief Position of the FEA adjoint equation in the solution solver array. */
+const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
+const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
 
-const int TEMPLATE_SOL = 0;  /*!< \brief Position of the template solution. */
+const int TEMPLATE_SOL = 0; /*!< \brief Position of the template solution. */
 
-const int CONV_TERM = 0;	       /*!< \brief Position of the convective terms in the numerics container array. */
+const int CONV_TERM = 0;           /*!< \brief Position of the convective terms in the numerics container array. */
 const int VISC_TERM = 1;           /*!< \brief Position of the viscous terms in the numerics container array. */
 const int SOURCE_FIRST_TERM = 2;   /*!< \brief Position of the first source term in the numerics container array. */
 const int SOURCE_SECOND_TERM = 3;  /*!< \brief Position of the second source term in the numerics container array. */
 const int CONV_BOUND_TERM = 4;     /*!< \brief Position of the convective boundary terms in the numerics container array. */
 const int VISC_BOUND_TERM = 5;     /*!< \brief Position of the viscous boundary terms in the numerics container array. */
 
-const int FEA_TERM = 0;			/*!< \brief Position of the finite element analysis terms in the numerics container array. */
-const int DE_TERM = 1;			/*!< \brief Position of the dielectric terms in the numerics container array. */
+const int FEA_TERM = 0;      /*!< \brief Position of the finite element analysis terms in the numerics container array. */
+const int DE_TERM = 1;       /*!< \brief Position of the dielectric terms in the numerics container array. */
 
 const int MAT_NHCOMP  = 2;   /*!< \brief Position of the Neo-Hookean compressible material model. */
 const int MAT_IDEALDE = 3;   /*!< \brief Position of the Ideal-DE material model. */
@@ -465,22 +465,22 @@ const int ADJMESH_SOL = 9;   /*!< \brief Position of the adjoint of the mesh sol
 /*!
  * \brief types of finite elements (in 2D or 3D)
  */
-const int EL_TRIA = 0;		/*!< \brief Elements of three nodes (2D). */
-const int EL_QUAD = 1;		/*!< \brief Elements of four nodes (2D). */
+const int EL_TRIA = 0;    /*!< \brief Elements of three nodes (2D). */
+const int EL_QUAD = 1;    /*!< \brief Elements of four nodes (2D). */
 
-const int EL_TETRA = 0;		/*!< \brief Elements of four nodes (3D). */
-const int EL_HEXA  = 1;		/*!< \brief Elements of eight nodes (3D). */
-const int EL_PYRAM = 2;     /*!< \brief Elements of five nodes (3D). */
-const int EL_PRISM = 3;     /*!< \brief Elements of six nodes (3D). */
+const int EL_TETRA = 0;   /*!< \brief Elements of four nodes (3D). */
+const int EL_HEXA  = 1;   /*!< \brief Elements of eight nodes (3D). */
+const int EL_PYRAM = 2;   /*!< \brief Elements of five nodes (3D). */
+const int EL_PRISM = 3;   /*!< \brief Elements of six nodes (3D). */
 
 
 /*!
  * \brief types of mathematical problem to solve
  */
 enum ENUM_MATH_PROBLEM {
-  DIRECT = 0,		       /*!< \brief Direct problem */
-  CONTINUOUS_ADJOINT = 1,  /*!< \brief Continuous adjoint problem */
-  DISCRETE_ADJOINT = 2     /*!< \brief AD-based discrete adjoint problem. */
+  DIRECT = 0,               /*!< \brief Direct problem */
+  CONTINUOUS_ADJOINT = 1,   /*!< \brief Continuous adjoint problem */
+  DISCRETE_ADJOINT = 2      /*!< \brief AD-based discrete adjoint problem. */
 };
 static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
 ("DIRECT", DIRECT)

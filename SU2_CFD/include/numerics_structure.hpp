@@ -3827,7 +3827,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
-                   su2double* constants, bool correct_grad, CConfig *config);
+                   const su2double* constants, bool correct_grad, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -4717,7 +4717,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double* constants,
+  CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const su2double* constants,
                            su2double val_kine_Inf, su2double val_omega_Inf, CConfig *config);
   
   /*!
