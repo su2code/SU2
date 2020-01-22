@@ -1892,33 +1892,19 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   su2double *constants = NULL;
   su2double kine_Inf = 0.0, omega_Inf = 0.0;
 
-  bool
-  euler, adj_euler,
-  ns, adj_ns,
-  turbulent, adj_turb,
-  fem_euler, fem_ns, fem_turbulent,
-  spalart_allmaras, neg_spalart_allmaras, menter_sst,
-  fem,
-  heat_fvm,
-  transition,
-  template_solver;
-  bool e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
-
   bool compressible = false;
   bool incompressible = false;
   bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
   bool roe_low_dissipation = config->GetKind_RoeLowDiss() != NO_ROELOWDISS;
 
   /*--- Initialize some useful booleans ---*/
-  euler            = false; ns     = false; turbulent     = false;
-  fem_euler        = false; fem_ns = false; fem_turbulent = false;
-  adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
-  heat_fvm         = false;
-  fem              = false;
-  spalart_allmaras = false; neg_spalart_allmaras = false; menter_sst       = false;
-  transition       = false;
-  template_solver  = false;
-  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  bool euler, ns, turbulent, adj_euler, adj_ns, adj_turb, fem, fem_euler, fem_ns, fem_turbulent;
+  bool spalart_allmaras, neg_spalart_allmaras, e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras, menter_sst;
+  bool heat_fvm, transition, template_solver;
+
+  euler = ns = turbulent = adj_euler = adj_ns = adj_turb = fem = fem_euler = fem_ns = fem_turbulent = false;
+  spalart_allmaras = neg_spalart_allmaras = e_spalart_allmaras = comp_spalart_allmaras = e_comp_spalart_allmaras = menter_sst = false;
+  heat_fvm = transition = template_solver = false;
 
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
