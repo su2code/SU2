@@ -117,7 +117,7 @@ def amg ( config , kind='' ):
     config_cfd.WRT_BINARY_RESTART  = "NO"
     config_cfd.READ_BINARY_RESTART = "NO"
 
-    config_cfd.VOLUME_OUTPUT = "(COORDINATES, SOLUTION)"
+    config_cfd.VOLUME_OUTPUT = "(COORDINATES, SOLUTION, PRIMITIVE)"
         
     current_mesh     = "Initial_mesh"
     current_solution = "Initial_solution"
@@ -444,7 +444,7 @@ def amg ( config , kind='' ):
                 config_cfd.CONV_FILENAME     = "ite%d_history" % (global_iter)
                 config_cfd.SOLUTION_FILENAME = current_solution_ini
                 config_cfd.RESTART_FILENAME  = current_solution
-                config_cfd.VOLUME_OUTPUT     = "(COORDINATES, SOLUTION)"
+                config_cfd.VOLUME_OUTPUT     = "(COORDINATES, SOLUTION, PRIMITIVE)"
                 config_cfd.ERROR_ESTIMATE    = 'NO'
                 config_cfd.MATH_PROBLEM      = 'DIRECT'
                 config_cfd.RESTART_SOL       = 'YES'
