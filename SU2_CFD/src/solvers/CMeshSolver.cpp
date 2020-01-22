@@ -113,7 +113,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     ElemColoring[iColor].indices = coloring.innerIdx(iColor);
   }
 
-  ColorGroupSize = 1; /// TODO: This needs to come from geometry or config
+  ColorGroupSize = geometry->GetElementColorGroupSize();
 
   omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
 #endif
@@ -628,60 +628,46 @@ void CMeshSolver::SetDualTime_Mesh(void){
 
 void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
-  /*--- Restart the solution from file information ---*/
-  unsigned short iDim;
-  unsigned long index;
-
-  su2double curr_coord, displ;
-
-  string UnstExt, text_line;
-  ifstream restart_file;
-
-  string restart_filename = config->GetSolution_FileName();
-
-  int counter = 0;
-  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-
-  restart_filename = config->GetFilename(restart_filename, "", val_iter);
-
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
+  string filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+
   if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
   } else {
-    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
   }
 
   /*--- Load data from the restart into correct containers. ---*/
-  counter = 0;
-  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+  unsigned long iPoint_Global, counter = 0;
+
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
-    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+    auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
-    if (iPoint_Local > -1) {
+    if (iPoint_Local >= 0) {
 
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[1];
-      for (iDim = 0; iDim < nDim; iDim++){
+      auto index = counter*Restart_Vars[1];
+
+      for (unsigned short iDim = 0; iDim < nDim; iDim++){
         /*--- Update the coordinates of the mesh ---*/
-        curr_coord = Restart_Data[index+iDim];
+        su2double curr_coord = Restart_Data[index+iDim];
         /// TODO: "Double deformation" in multizone adjoint if this is set here?
         ///       In any case it should not be needed as deformation is called before other solvers
         ///geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, curr_coord);
 
         /*--- Store the displacements computed as the current coordinates
          minus the coordinates of the reference mesh file ---*/
-        displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
+        su2double displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
         nodes->SetSolution(iPoint_Local, iDim, displ);
       }
-      iPoint_Global_Local++;
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
       counter++;
@@ -691,12 +677,8 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-  if (rbuf_NotMatching != 0) {
-    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
+  if (counter != nPointDomain) {
+    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
@@ -728,34 +710,25 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Store the boundary displacements at the Bound_Disp variable. ---*/
 
-  unsigned short iMarker;
-  unsigned long iVertex, iNode;
-
-  su2double VarCoord[3] = {0.0, 0.0, 0.0};
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if (config->GetMarker_All_Deform_Mesh(iMarker) == YES) {
 
-      for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+      for (unsigned long iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
-        /*--- Get node index ---*/
-        iNode = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+        /*--- Get node index. ---*/
+        auto iNode = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- Store it into the current displacement.  ---*/
-        for (iDim = 0; iDim < nDim; iDim++){
-          VarCoord[iDim] = nodes->GetSolution(iNode,iDim);
-        }
-
-        nodes->SetBound_Disp(iNode,VarCoord);
+        /*--- Set boundary solution. ---*/
+        nodes->SetBound_Disp(iNode, nodes->GetSolution(iNode));
       }
     }
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != nullptr) { delete [] Restart_Vars; Restart_Vars = nullptr; }
-  if (Restart_Data != nullptr) { delete [] Restart_Data; Restart_Data = nullptr; }
+  delete [] Restart_Vars; Restart_Vars = nullptr;
+  delete [] Restart_Data; Restart_Data = nullptr;
 
 }
 
@@ -766,14 +739,6 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
   string filename = config->GetSolution_FileName();
-
-  /*--- Auxiliary variables for storing the coordinates ---*/
-  su2double curr_coord, displ;
-
-  /*--- Variables for reading the restart files ---*/
-  unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
@@ -801,30 +766,32 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     }
 
     /*--- Load data from the restart into correct containers. ---*/
-    int counter = 0;
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    unsigned long iPoint_Global, counter = 0;
+
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
 
       /*--- Retrieve local index. If this node from the restart file lives
        on the current processor, we will load and instantiate the vars. ---*/
 
-      long iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+      auto iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
-      if (iPoint_Local > -1) {
+      if (iPoint_Local >= 0) {
 
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        unsigned long index = counter*Restart_Vars[1];
-        for (unsigned short iDim = 0; iDim < nDim; iDim++){
-          curr_coord = Restart_Data[index+iDim];
-          displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local,iDim);
+        auto index = counter*Restart_Vars[1];
+
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          su2double curr_coord = Restart_Data[index+iDim];
+          su2double displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local,iDim);
 
           if(iStep==1)
             nodes->Set_Solution_time_n(iPoint_Local, iDim, displ);
           else
             nodes->Set_Solution_time_n1(iPoint_Local, iDim, displ);
         }
-        iPoint_Global_Local++;
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
@@ -832,24 +799,21 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     }
 
-    /*--- Detect a wrong solution file ---*/
+    /*--- Detect a wrong solution file. ---*/
 
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-    if (rbuf_NotMatching != 0) {
+    if (counter < nPointDomain) {
       SU2_MPI::Error(string("The solution file ") + filename_n + string(" doesn't match with the mesh file!\n") +
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
     }
 
     /*--- Delete the class memory that is used to load the restart. ---*/
 
-    if (Restart_Vars != nullptr) { delete [] Restart_Vars; Restart_Vars = nullptr; }
-    if (Restart_Data != nullptr) { delete [] Restart_Data; Restart_Data = nullptr; }
+    delete [] Restart_Vars; Restart_Vars = nullptr;
+    delete [] Restart_Data; Restart_Data = nullptr;
 
     InitiateComms(geometry, config, CommType);
     CompleteComms(geometry, config, CommType);
-  }
+
+  } // iStep
 
 }

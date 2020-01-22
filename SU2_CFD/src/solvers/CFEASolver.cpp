@@ -3379,35 +3379,17 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
 void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
-  unsigned short iVar, nSolVar;
-  unsigned long index;
-
-  string filename;
-
-  bool dynamic = (config->GetTime_Domain());
-  bool fluid_structure = config->GetFSI_Simulation();
-  bool discrete_adjoint = config->GetDiscrete_Adjoint();
-
-  if (dynamic) nSolVar = 3 * nVar;
-  else nSolVar = nVar;
-
-  su2double *Sol = new su2double[nSolVar];
+  const bool dynamic = (config->GetTime_Domain());
+  const bool fluid_structure = config->GetFSI_Simulation();
+  const bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
   /*--- Skip coordinates ---*/
 
-  unsigned short skipVars = geometry[MESH_0]->GetnDim();
-
-  /*--- Restart the solution from file information ---*/
-
-  filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
-
-  /*--- Read all lines in the restart file ---*/
-
-  int counter = 0;
-  long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+  const auto skipVars = geometry[MESH_0]->GetnDim();
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  string filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   if (config->GetRead_Binary_Restart()) {
     Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
@@ -3417,40 +3399,40 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Load data from the restart into correct containers. ---*/
 
-  counter = 0;
-  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+  unsigned long iPoint_Global, counter = 0;
+
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
-    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+    auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
-    if (iPoint_Local > -1) {
+    if (iPoint_Local >= 0) {
 
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nSolVar; iVar++) Sol[iVar] = Restart_Data[index+iVar];
+      const auto index = counter*Restart_Vars[1] + skipVars;
+      const su2double* Sol = &Restart_Data[index];
 
-      for (iVar = 0; iVar < nVar; iVar++) {
-        nodes->SetSolution(iPoint_Local,iVar, Sol[iVar]);
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        nodes->SetSolution(iPoint_Local, iVar, Sol[iVar]);
         if (dynamic) {
-          nodes->Set_Solution_time_n(iPoint_Local,iVar, Sol[iVar]);
-          nodes->SetSolution_Vel(iPoint_Local,iVar, Sol[iVar+nVar]);
-          nodes->SetSolution_Vel_time_n(iPoint_Local,iVar, Sol[iVar+nVar]);
-          nodes->SetSolution_Accel(iPoint_Local,iVar, Sol[iVar+2*nVar]);
-          nodes->SetSolution_Accel_time_n(iPoint_Local,iVar, Sol[iVar+2*nVar]);
+          nodes->Set_Solution_time_n(iPoint_Local, iVar, Sol[iVar]);
+          nodes->SetSolution_Vel(iPoint_Local, iVar, Sol[iVar+nVar]);
+          nodes->SetSolution_Vel_time_n(iPoint_Local, iVar, Sol[iVar+nVar]);
+          nodes->SetSolution_Accel(iPoint_Local, iVar, Sol[iVar+2*nVar]);
+          nodes->SetSolution_Accel_time_n(iPoint_Local, iVar, Sol[iVar+2*nVar]);
         }
         if (fluid_structure && !dynamic) {
-          nodes->SetSolution_Pred(iPoint_Local,iVar, Sol[iVar]);
-          nodes->SetSolution_Pred_Old(iPoint_Local,iVar, Sol[iVar]);
+          nodes->SetSolution_Pred(iPoint_Local, iVar, Sol[iVar]);
+          nodes->SetSolution_Pred_Old(iPoint_Local, iVar, Sol[iVar]);
         }
         if (fluid_structure && discrete_adjoint){
-          nodes->SetSolution_Old(iPoint_Local,iVar, Sol[iVar]);
+          nodes->SetSolution_Old(iPoint_Local, iVar, Sol[iVar]);
         }
       }
-      iPoint_Global_Local++;
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
       counter++;
@@ -3458,18 +3440,14 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   }
 
-  /*--- Detect a wrong solution file ---*/
+  /*--- Detect a wrong solution file. ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-  if (rbuf_NotMatching != 0) {
+  if (counter != nPointDomain) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
-  /*--- MPI. If dynamic, we also need to communicate the old solution ---*/
+  /*--- MPI. If dynamic, we also need to communicate the old solution. ---*/
 
   solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
   solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
@@ -3486,13 +3464,10 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
     solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
   }
 
-  delete [] Sol;
-
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != nullptr) delete [] Restart_Vars;
-  if (Restart_Data != nullptr) delete [] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
+  delete [] Restart_Vars; Restart_Vars = nullptr;
+  delete [] Restart_Data; Restart_Data = nullptr;
 
 }
 
