@@ -347,7 +347,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh) final;
 
   /*!
    * \brief Compute the pressure at the infinity.
@@ -413,8 +413,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Value of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration);
+  void SetTime_Step(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned long Iteration) override;
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.
@@ -425,8 +428,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  void Centered_Residual(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CNumerics *numerics,
+                         CConfig *config,
+                         unsigned short iMesh,
+                         unsigned short iRKStep) final;
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
@@ -436,8 +443,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh);
+  void Upwind_Residual(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *numerics,
+                       CConfig *config,
+                       unsigned short iMesh) final;
 
   /*!
    * \brief Compute the extrapolated quantities, for MUSCL upwind 2nd reconstruction,
@@ -478,7 +488,13 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+  void Preprocessing(CGeometry *geometry,
+                     CSolver **solver_container,
+                     CConfig *config,
+                     unsigned short iMesh,
+                     unsigned short iRKStep,
+                     unsigned short RunTime_EqSystem,
+                     bool Output) override;
 
   /*!
    * \brief A virtual member.
@@ -487,7 +503,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
+  void Postprocessing(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CConfig *config,
+                      unsigned short iMesh) final;
 
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
@@ -504,7 +523,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Compute Ducros Sensor for Roe Dissipation.
@@ -512,7 +531,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config);
+  void SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
@@ -537,7 +556,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
@@ -551,35 +570,35 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Compute the max eigenvalue.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
+  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Parallelization of Undivided Laplacian.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config);
+  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Parallelization of Undivided Laplacian.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
+  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  void Evaluate_ObjFunc(CConfig *config);
+  void Evaluate_ObjFunc(CConfig *config) override;
 
   /*!
    * \author: T. Kattmann
@@ -608,8 +627,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                    CConfig *config, unsigned short val_marker);
+  void BC_Far_Field(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CNumerics *conv_numerics,
+                    CNumerics *visc_numerics,
+                    CConfig *config,
+                    unsigned short val_marker) final;
 
   /*!
    * \brief Impose the symmetry boundary condition using the residual.
@@ -625,7 +648,7 @@ public:
                     CNumerics      *conv_numerics,
                     CNumerics      *visc_numerics,
                     CConfig        *config,
-                    unsigned short val_marker) override;
+                    unsigned short val_marker) final;
 
  /*!
   * \brief Impose the interface state across sliding meshes.
@@ -635,7 +658,11 @@ public:
   * \param[in] visc_numerics - Description of the numerical method.
   * \param[in] config - Definition of the particular problem.
   */
-  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
+  void BC_Fluid_Interface(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *conv_numerics,
+                          CNumerics *visc_numerics,
+                          CConfig *config) final;
 
   /*!
    * \brief Impose the engine inflow boundary condition.
@@ -646,8 +673,12 @@ public:
     * \param[in] config - Definition of the particular problem.
     * \param[in] val_marker - Surface marker where the boundary condition is applied.
     */
-  void BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                        CConfig *config, unsigned short val_marker);
+  void BC_ActDisk_Inlet(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) final;
 
   /*!
    * \brief Impose the engine exhaust boundary condition.
@@ -658,20 +689,30 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                         CConfig *config, unsigned short val_marker);
+  void BC_ActDisk_Outlet(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CNumerics *conv_numerics,
+                         CNumerics *visc_numerics,
+                         CConfig *config,
+                         unsigned short val_marker) final;
 
   /*!
-   * \brief Impose the engine inflow boundary condition.
-    * \param[in] geometry - Geometrical definition of the problem.
-    * \param[in] solver_container - Container vector with all the solutions.
-    * \param[in] conv_numerics - Description of the numerical method.
-    * \param[in] visc_numerics - Description of the numerical method.
-    * \param[in] config - Definition of the particular problem.
-    * \param[in] val_marker - Surface marker where the boundary condition is applied.
-    */
-  void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
+   * \brief Impose an actuator disk inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] val_inlet_surface - Boolean for whether val_marker is an inlet
+   */
+  void BC_ActDisk(CGeometry *geometry,
+                  CSolver **solver_container,
+                  CNumerics *conv_numerics,
+                  CNumerics *visc_numerics,
+                  CConfig *config,
+                  unsigned short val_marker,
+                  bool val_inlet_surface) final;
 
   /*!
    * \brief Impose the interface boundary condition using the residual.
@@ -680,8 +721,11 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
+  void BC_Interface_Boundary(CGeometry *geometry,
+                             CSolver **solver_container,
+                             CNumerics *numerics,
+                             CConfig *config,
+                             unsigned short val_marker) final;
 
   /*!
    * \brief Impose the near-field boundary condition using the residual.
@@ -689,8 +733,11 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
+  void BC_NearField_Boundary(CGeometry *geometry,
+                             CSolver **solver_container,
+                             CNumerics *numerics,
+                             CConfig *config,
+                             unsigned short val_marker) final;
 
   /*!
    * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
@@ -699,8 +746,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
-                   CNumerics *numerics, CConfig *config);
+  void BC_Periodic(CGeometry *geometry,
+                   CSolver **solver_container,
+                   CNumerics *numerics,
+                   CConfig *config) final;
 
   /*!
    * \brief Impose the dirichlet boundary condition using the residual.
@@ -709,8 +758,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short val_marker);
+  void BC_Dirichlet(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short val_marker) final;
 
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -723,8 +774,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Riemann(CGeometry *geometry, CSolver **solver_container,
-                  CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  void BC_Riemann(CGeometry *geometry,
+                  CSolver **solver_container,
+                  CNumerics *conv_numerics,
+                  CNumerics *visc_numerics,
+                  CConfig *config,
+                  unsigned short val_marker) final;
 
 
   /*!
@@ -736,8 +791,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container,
-      CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  void BC_TurboRiemann(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *conv_numerics,
+                       CNumerics *visc_numerics,
+                       CConfig *config,
+                       unsigned short val_marker) final;
 
   /*!
    * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
@@ -746,7 +805,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] marker_flag - Surface marker flag where the function is applied.
    */
-  void PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics,  unsigned short marker_flag);
+  void PreprocessBC_Giles(CGeometry *geometry,
+                          CConfig *config,
+                          CNumerics *conv_numerics,
+                          unsigned short marker_flag) final;
 
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -759,8 +821,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Giles(CGeometry *geometry, CSolver **solver_container,
-                        CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  void BC_Giles(CGeometry *geometry,
+                CSolver **solver_container,
+                CNumerics *conv_numerics,
+                CNumerics *visc_numerics,
+                CConfig *config,
+                unsigned short val_marker) final;
 
 
   /*!
@@ -851,7 +917,7 @@ public:
    * \brief Set the new solution variables to the current solution value for classical RK.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  inline void Set_NewSolution(CGeometry *geometry) { nodes->SetSolution_New(); }
+  inline void Set_NewSolution(CGeometry *geometry) final { nodes->SetSolution_New(); }
 
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.
@@ -2079,8 +2145,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+  void SetResidual_DualTime(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CConfig *config,
+                            unsigned short iRKStep,
+                            unsigned short iMesh,
+                            unsigned short RunTime_EqSystem) final;
 
   /*!
    * \brief Load a solution from a restart file.

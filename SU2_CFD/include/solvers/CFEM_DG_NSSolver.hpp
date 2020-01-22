@@ -114,8 +114,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Value of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration);
+  void SetTime_Step(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned long Iteration) final;
 
   /*!
    * \brief Compute the artificial viscosity for shock capturing in DG.
@@ -186,7 +189,7 @@ public:
                      const CSurfaceElementFEM *surfElem,
                      su2double                *resFaces,
                      CNumerics                *conv_numerics,
-                     su2double                *workArray);
+                     su2double                *workArray) final;
 
   /*!
    * \brief Impose the far-field boundary condition.
@@ -206,7 +209,7 @@ public:
                     const CSurfaceElementFEM *surfElem,
                     su2double                *resFaces,
                     CNumerics                *conv_numerics,
-                    su2double                *workArray);
+                    su2double                *workArray) final;
 
   /*!
    * \brief Impose the symmetry boundary condition using the residual.
@@ -226,7 +229,7 @@ public:
                     const CSurfaceElementFEM *surfElem,
                     su2double                *resFaces,
                     CNumerics                *conv_numerics,
-                    su2double                *workArray);
+                    su2double                *workArray) final;
 
  /*!
    * \brief Impose the supersonic outlet boundary condition.
@@ -268,7 +271,7 @@ public:
                 su2double                *resFaces,
                 CNumerics                *conv_numerics,
                 unsigned short           val_marker,
-                su2double                *workArray);
+                su2double                *workArray) override;
 
   /*!
    * \brief Impose the outlet boundary condition.
@@ -312,7 +315,7 @@ public:
                         su2double                *resFaces,
                         CNumerics                *conv_numerics,
                         unsigned short           val_marker,
-                        su2double                *workArray);
+                        su2double                *workArray) final;
 
   /*!
    * \brief Impose an isothermal condition at the wall.
@@ -334,7 +337,7 @@ public:
                           su2double                *resFaces,
                           CNumerics                *conv_numerics,
                           unsigned short           val_marker,
-                          su2double                *workArray);
+                          su2double                *workArray) final;
 
   /*!
    * \brief Impose the boundary condition using characteristic reconstruction.
@@ -356,7 +359,7 @@ public:
                   su2double                *resFaces,
                   CNumerics                *conv_numerics,
                   unsigned short           val_marker,
-                  su2double                *workArray);
+                  su2double                *workArray) final;
 
   /*!
    * \brief Impose the user customized boundary condition.

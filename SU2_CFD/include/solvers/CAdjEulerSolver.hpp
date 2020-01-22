@@ -106,22 +106,25 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Index of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration);
+  void SetTime_Step(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned long Iteration) override;
 
   /*!
    * \brief Parallelization of Undivided Laplacian.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
+  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Parallelization of Undivided Laplacian.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config);
+  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Created the force projection vector for adjoint boundary conditions.
@@ -167,8 +170,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short iMesh, unsigned short iRKStep);
+  void Centered_Residual(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *numerics,
+                        CConfig *config,
+                        unsigned short iMesh,
+                        unsigned short iRKStep) final;
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
@@ -178,8 +185,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                       unsigned short iMesh);
+  void Upwind_Residual(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CNumerics *numerics,
+                      CConfig *config,
+                      unsigned short iMesh) final;
 
   /*!
    * \brief Source term integration.
@@ -209,7 +219,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Value of the characteristic variables at the boundaries.
@@ -257,7 +267,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
@@ -293,8 +303,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
+  void BC_Interface_Boundary(CGeometry *geometry,
+                             CSolver **solver_container,
+                             CNumerics *numerics,
+                             CConfig *config,
+                             unsigned short val_marker) final;
 
   /*!
    * \brief Impose the near-field boundary condition using the residual.
@@ -304,8 +317,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
+  void BC_NearField_Boundary(CGeometry *geometry,
+                             CSolver **solver_container,
+                             CNumerics *numerics,
+                             CConfig *config,
+                             unsigned short val_marker) final;
 
   /*!
    * \brief Impose an actuator disk inlet boundary condition.
@@ -316,8 +332,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                        CConfig *config, unsigned short val_marker);
+  void BC_ActDisk_Inlet(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) final;
 
   /*!
    * \brief Impose an actuator disk outlet boundary condition.
@@ -328,8 +348,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                         CConfig *config, unsigned short val_marker);
+  void BC_ActDisk_Outlet(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) final;
 
   /*!
    * \brief Impose an actuator disk inlet boundary condition.
@@ -339,9 +363,15 @@ public:
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] val_inlet_surface - Boolean for whether val_marker is an inlet
    */
-  void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
+  void BC_ActDisk(CGeometry *geometry,
+                  CSolver **solver_container,
+                  CNumerics *conv_numerics,
+                  CNumerics *visc_numerics,
+                  CConfig *config,
+                  unsigned short val_marker,
+                  bool val_inlet_surface) final;
 
   /*!
    * \brief Impose via the residual the adjoint symmetry boundary condition.
@@ -357,7 +387,7 @@ public:
                     CNumerics      *conv_numerics,
                     CNumerics      *visc_numerics,
                     CConfig        *config,
-                    unsigned short val_marker) override;
+                    unsigned short val_marker) final;
 
   /*!
    * \brief Impose the boundary condition to the far field using characteristics.
@@ -368,8 +398,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                    unsigned short val_marker);
+  void BC_Far_Field(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CNumerics *conv_numerics,
+                    CNumerics *visc_numerics,
+                    CConfig *config,
+                    unsigned short val_marker) final;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -477,7 +511,13 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+  void Preprocessing(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned short iRKStep,
+                    unsigned short RunTime_EqSystem,
+                    bool Output) override;
 
   /*!
    * \brief Compute the inviscid sensitivity of the functional.
@@ -565,8 +605,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+  void SetResidual_DualTime(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CConfig *config,
+                            unsigned short iRKStep,
+                            unsigned short iMesh,
+                            unsigned short RunTime_EqSystem) final;
 
   /*!
    * \brief Set the initial condition for the Euler Equations.

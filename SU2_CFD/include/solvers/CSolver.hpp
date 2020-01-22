@@ -195,7 +195,7 @@ public:
    * \brief Allow outside access to the nodes of the solver, containing conservatives, primitives, etc.
    * \return Nodes of the solver.
    */
-  inline CVariable* GetNodes() {
+  inline CVariable* GetNodes() const {
     assert(base_nodes!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
     return base_nodes;
   }
@@ -295,97 +295,85 @@ public:
    * \brief Get information whether the initialization is an adjoint solver or not.
    * \return <code>TRUE</code> means that it is an adjoint solver.
    */
-  inline bool GetAdjoint(void) { return adjoint; }
+  inline bool GetAdjoint(void) const { return adjoint; }
 
   /*!
    * \brief Compute the pressure at the infinity.
    * \return Value of the pressure at the infinity.
    */
-  inline virtual CFluidModel* GetFluidModel(void) { return NULL;}
+  inline virtual CFluidModel* GetFluidModel(void) const { return NULL;}
 
   /*!
    * \brief Get number of linear solver iterations.
    * \return Number of linear solver iterations.
    */
-  inline unsigned short GetIterLinSolver(void) { return IterLinSolver; }
+  inline unsigned short GetIterLinSolver(void) const { return IterLinSolver; }
 
   /*!
    * \brief Get the final linear solver residual.
    * \return Value of final linear solver residual.
    */
-  inline su2double GetResLinSolver(void) { return ResLinSolver; }
+  inline su2double GetResLinSolver(void) const { return ResLinSolver; }
 
   /*!
    * \brief Get the value of the maximum delta time.
    * \return Value of the maximum delta time.
    */
-  inline su2double GetMax_Delta_Time(void) { return Max_Delta_Time; }
+  inline su2double GetMax_Delta_Time(void) const { return Max_Delta_Time; }
 
   /*!
    * \brief Get the value of the minimum delta time.
    * \return Value of the minimum delta time.
    */
-  inline su2double GetMin_Delta_Time(void) { return Min_Delta_Time; }
-
-  /*!
-   * \brief Get the value of the maximum delta time.
-   * \return Value of the maximum delta time.
-   */
-  inline virtual su2double GetMax_Delta_Time(unsigned short val_Species) { return 0.0; }
-
-  /*!
-   * \brief Get the value of the minimum delta time.
-   * \return Value of the minimum delta time.
-   */
-  inline virtual su2double GetMin_Delta_Time(unsigned short val_Species) { return 0.0; }
+  inline su2double GetMin_Delta_Time(void) const { return Min_Delta_Time; }
 
   /*!
    * \brief Get the value of the maximum local CFL number.
    * \return Value of the maximum local CFL number.
    */
-  inline su2double GetMax_CFL_Local(void) { return Max_CFL_Local; }
+  inline su2double GetMax_CFL_Local(void) const { return Max_CFL_Local; }
 
   /*!
    * \brief Get the value of the minimum local CFL number.
    * \return Value of the minimum local CFL number.
    */
-  inline su2double GetMin_CFL_Local(void) { return Min_CFL_Local; }
+  inline su2double GetMin_CFL_Local(void) const { return Min_CFL_Local; }
 
   /*!
    * \brief Get the value of the average local CFL number.
    * \return Value of the average local CFL number.
    */
-  inline su2double GetAvg_CFL_Local(void) { return Avg_CFL_Local; }
+  inline su2double GetAvg_CFL_Local(void) const { return Avg_CFL_Local; }
 
   /*!
    * \brief Get the number of variables of the problem.
    */
-  inline unsigned short GetnVar(void) { return nVar; }
+  inline unsigned short GetnVar(void) const { return nVar; }
 
   /*!
    * \brief Get the number of variables of the problem.
    */
-  inline unsigned short GetnPrimVar(void) { return nPrimVar; }
+  inline unsigned short GetnPrimVar(void) const { return nPrimVar; }
 
   /*!
    * \brief Get the number of variables of the problem.
    */
-  inline unsigned short GetnPrimVarGrad(void) { return nPrimVarGrad; }
+  inline unsigned short GetnPrimVarGrad(void) const { return nPrimVarGrad; }
 
   /*!
    * \brief Get the number of variables of the problem.
    */
-  inline unsigned short GetnSecondaryVar(void) { return nSecondaryVar; }
+  inline unsigned short GetnSecondaryVar(void) const { return nSecondaryVar; }
 
   /*!
    * \brief Get the number of variables of the problem.
    */
-  inline unsigned short GetnSecondaryVarGrad(void) { return nSecondaryVarGrad; }
+  inline unsigned short GetnSecondaryVarGrad(void) const { return nSecondaryVarGrad; }
 
   /*!
    * \brief Get the number of variables of the problem.
    */
-  inline unsigned short GetnOutputVariables(void) { return nOutputVariables; }
+  inline unsigned short GetnOutputVariables(void) const { return nOutputVariables; }
 
   /*!
    * \brief A virtual member.
@@ -396,8 +384,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  inline virtual void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
-                                     unsigned short iMesh, unsigned short RunTime_EqSystem) { }
+  inline virtual void SetResidual_DualTime(CGeometry *geometry, 
+                                           CSolver **solver_container, 
+                                           CConfig *config, 
+                                           unsigned short iRKStep,
+                                           unsigned short iMesh, 
+                                           unsigned short RunTime_EqSystem) { }
 
   /*!
    * \brief Set the maximal residual, this is useful for the convergence history.
@@ -418,7 +410,7 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
-  inline su2double GetRes_RMS(unsigned short val_var) { return Residual_RMS[val_var]; }
+  inline su2double GetRes_RMS(unsigned short val_var) const { return Residual_RMS[val_var]; }
 
   /*!
    * \brief Set the maximal residual, this is useful for the convergence history.
@@ -434,14 +426,14 @@ public:
    * \param[in] val_point - Value of the point index for the max residual.
    * \param[in] val_coord - Location (x, y, z) of the max residual point.
    */
-  inline void AddRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point, su2double* val_coord) {
-    if (val_residual > Residual_Max[val_var]) {
-    Residual_Max[val_var] = val_residual;
-    Point_Max[val_var] = val_point;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Point_Max_Coord[val_var][iDim] = val_coord[iDim];
-    }
-  }
+  // inline void AddRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point, su2double* val_coord) {
+  //   if (val_residual > Residual_Max[val_var]) {
+  //   Residual_Max[val_var] = val_residual;
+  //   Point_Max[val_var] = val_point;
+  //   for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  //     Point_Max_Coord[val_var][iDim] = val_coord[iDim];
+  //   }
+  // }
 
 
   /*!
@@ -466,7 +458,7 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
-  inline su2double GetRes_Max(unsigned short val_var) { return Residual_Max[val_var]; }
+  inline su2double GetRes_Max(unsigned short val_var) const { return Residual_Max[val_var]; }
 
   /*!
    * \brief Set the residual for BGS subiterations.
@@ -487,7 +479,7 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
-  inline su2double GetRes_BGS(unsigned short val_var) { return Residual_BGS[val_var]; }
+  inline su2double GetRes_BGS(unsigned short val_var) const { return Residual_BGS[val_var]; }
 
   /*!
    * \brief Set the maximal residual for BGS subiterations.
@@ -503,7 +495,7 @@ public:
    * \param[in] val_point - Value of the point index for the max residual.
    * \param[in] val_coord - Location (x, y, z) of the max residual point.
    */
-  inline void AddRes_Max_BGS(unsigned short val_var, su2double val_residual, unsigned long val_point, su2double* val_coord) {
+  inline void AddRes_Max_BGS(unsigned short val_var, su2double val_residual, unsigned long val_point, const su2double* val_coord) {
     if (val_residual > Residual_Max_BGS[val_var]) {
     Residual_Max_BGS[val_var] = val_residual;
     Point_Max_BGS[val_var] = val_point;
@@ -518,49 +510,42 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
-  inline su2double GetRes_Max_BGS(unsigned short val_var) { return Residual_Max_BGS[val_var]; }
+  inline su2double GetRes_Max_BGS(unsigned short val_var) const { return Residual_Max_BGS[val_var]; }
 
   /*!
    * \brief Get the residual for FEM structural analysis.
    * \param[in] val_var - Index of the variable.
    * \return Value of the residual for the variable in the position <i>val_var</i>.
    */
-  inline virtual su2double GetRes_FEM(unsigned short val_var) { return 0.0; }
+  inline virtual su2double GetRes_FEM(unsigned short val_var) const { return 0.0; }
 
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
-  inline unsigned long GetPoint_Max(unsigned short val_var) { return Point_Max[val_var]; }
+  inline unsigned long GetPoint_Max(unsigned short val_var) const { return Point_Max[val_var]; }
 
   /*!
    * \brief Get the location of the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
    * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
-  inline su2double* GetPoint_Max_Coord(unsigned short val_var) { return Point_Max_Coord[val_var]; }
+  inline su2double* GetPoint_Max_Coord(unsigned short val_var) const { return Point_Max_Coord[val_var]; }
 
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
-  inline unsigned long GetPoint_Max_BGS(unsigned short val_var) { return Point_Max_BGS[val_var]; }
+  inline unsigned long GetPoint_Max_BGS(unsigned short val_var) const { return Point_Max_BGS[val_var]; }
 
   /*!
    * \brief Get the location of the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
    * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
-  inline su2double* GetPoint_Max_Coord_BGS(unsigned short val_var) { return Point_Max_Coord_BGS[val_var]; }
-
-    /*!
-   * \brief Set the value of the RMS residual respective solution.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetResidual_Solution(CGeometry *geometry, CConfig *config);
+  inline su2double* GetPoint_Max_Coord_BGS(unsigned short val_var) const { return Point_Max_Coord_BGS[val_var]; }
 
   /*!
    * \brief Set Value of the residual due to the Geometric Conservation Law (GCL) for steady rotating frame problems.
@@ -678,8 +663,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Index of the current iteration.
    */
-  inline virtual void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                  unsigned short iMesh, unsigned long Iteration) { }
+  inline virtual void SetTime_Step(CGeometry *geometry,
+                                   CSolver **solver_container,
+                                   CConfig *config,
+                                   unsigned short iMesh,
+                                   unsigned long Iteration) { }
 
   /*!
    * \brief A virtual member.
@@ -690,9 +678,9 @@ public:
    * \param[out]    syncTimeReached - Whether or not the synchronization time is reached.
    */
   inline virtual void CheckTimeSynchronization(CConfig         *config,
-                                              const su2double TimeSync,
-                                              su2double       &timeEvolved,
-                                              bool            &syncTimeReached) {}
+                                               const su2double TimeSync,
+                                               su2double       &timeEvolved,
+                                               bool            &syncTimeReached) {}
 
   /*!
    * \brief A virtual member.
@@ -703,8 +691,8 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   inline virtual void ProcessTaskList_DG(CGeometry *geometry,  CSolver **solver_container,
-                                        CNumerics **numerics, CConfig *config,
-                                        unsigned short iMesh) {}
+                                         CNumerics **numerics, CConfig *config,
+                                         unsigned short iMesh) {}
 
   /*!
    * \brief A virtual member.
@@ -715,8 +703,8 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   inline virtual void ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
-                                               CNumerics **numerics, CConfig *config,
-                                               unsigned short iMesh, unsigned short RunTime_EqSystem) {}
+                                                CNumerics **numerics, CConfig *config,
+                                                unsigned short iMesh, unsigned short RunTime_EqSystem) {}
 
   /*!
    * \brief A virtual member.
@@ -727,8 +715,8 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   inline virtual void ComputeSpatialJacobian(CGeometry *geometry,  CSolver **solver_container,
-                                            CNumerics **numerics, CConfig *config,
-                                            unsigned short iMesh, unsigned short RunTime_EqSystem) {}
+                                             CNumerics **numerics, CConfig *config,
+                                             unsigned short iMesh, unsigned short RunTime_EqSystem) {}
 
   /*!
    * \brief A virtual member.
@@ -737,8 +725,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                      unsigned short iMesh) { }
+  inline virtual void Postprocessing(CGeometry *geometry,
+                                     CSolver **solver_container,
+                                     CConfig *config,
+                                     unsigned short iMesh) { }
 
   /*!
    * \brief A virtual member, overloaded.
@@ -748,8 +738,11 @@ public:
    *
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,  CNumerics **numerics,
-                      unsigned short iMesh) { }
+  inline virtual void Postprocessing(CGeometry *geometry,
+                                     CSolver **solver_container,
+                                     CConfig *config,
+                                     CNumerics **numerics,
+                                     unsigned short iMesh) { }
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -759,8 +752,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  inline virtual void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
+  inline virtual void Centered_Residual(CGeometry *geometry,
+                                        CSolver **solver_container,
+                                        CNumerics *numerics,
+                                        CConfig *config,
+                                        unsigned short iMesh,
+                                        unsigned short iRKStep) { }
 
   /*!
    * \brief A virtual member.
@@ -770,8 +767,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                     CConfig *config, unsigned short iMesh) { }
+  inline virtual void Upwind_Residual(CGeometry *geometry,
+                                      CSolver **solver_container,
+                                      CNumerics *numerics,
+                                      CConfig *config,
+                                      unsigned short iMesh) { }
 
   /*!
    * \brief A virtual member.
@@ -782,8 +782,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  inline virtual void Convective_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                       CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
+  inline virtual void Convective_Residual(CGeometry *geometry,
+                                          CSolver **solver_container,
+                                          CNumerics *numerics,
+                                          CConfig *config,
+                                          unsigned short iMesh,
+                                          unsigned short iRKStep) { }
 
   /*!
    * \brief A virtual member.
@@ -794,7 +798,13 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  inline virtual void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) { }
+  inline virtual void Preprocessing(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CConfig *config,
+                                    unsigned short iMesh,
+                                    unsigned short iRKStep,
+                                    unsigned short RunTime_EqSystem,
+                                    bool Output) { }
 
   /*!
    * \brief A virtual member overloaded.
@@ -806,7 +816,14 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  inline virtual void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) { }
+  inline virtual void Preprocessing(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CConfig *config,
+                                    CNumerics **numerics,
+                                    unsigned short iMesh,
+                                    unsigned long Iteration,
+                                    unsigned short RunTime_EqSystem,
+                                    bool Output) { }
 
   /*!
    * \brief A virtual member.
@@ -877,11 +894,11 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_Euler_Wall(CGeometry      *geometry,
-                                   CSolver        **solver_container,
-                                   CNumerics      *conv_numerics,
-                                   CNumerics      *visc_numerics,
-                                   CConfig        *config,
-                                   unsigned short val_marker) { }
+                                    CSolver        **solver_container,
+                                    CNumerics      *conv_numerics,
+                                    CNumerics      *visc_numerics,
+                                    CConfig        *config,
+                                    unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -980,8 +997,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                           CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Interface_Boundary(CGeometry *geometry, 
+                                            CSolver **solver_container,
+                                            CNumerics *numerics,
+                                            CConfig *config,
+                                            unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -991,8 +1011,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                           CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_NearField_Boundary(CGeometry *geometry,
+                                            CSolver **solver_container, 
+                                            CNumerics *numerics,
+                                            CConfig *config,
+                                            unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1001,52 +1024,40 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config) { }
+  inline virtual void BC_Periodic(CGeometry *geometry,
+                                  CSolver **solver_container,
+                                  CNumerics *numerics,
+                                  CConfig *config) { }
 
   /*!
-  * \brief Impose the interface state across sliding meshes.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] conv_numerics - Description of the numerical method.
-  * \param[in] visc_numerics - Description of the numerical method.
-  * \param[in] config - Definition of the particular problem.
-  */
-  inline virtual void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+   * \brief Impose the interface state across sliding meshes.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void BC_Fluid_Interface(CGeometry *geometry,
+                                         CSolver **solver_container,
+                                         CNumerics *conv_numerics,
+                                         CNumerics *visc_numerics,
                                          CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                      CConfig *config, unsigned short val_marker) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                       CConfig *config, unsigned short val_marker) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                CConfig *config, unsigned short val_marker, bool val_inlet_surface) { }
+  inline virtual void BC_ActDisk_Inlet(CGeometry *geometry,
+                                       CSolver **solver_container,
+                                       CNumerics *conv_numerics,
+                                       CNumerics *visc_numerics,
+                                       CConfig *config,
+                                       unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1057,7 +1068,30 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_ActDisk_Outlet(CGeometry *geometry,
+                                        CSolver **solver_container,
+                                        CNumerics *conv_numerics,
+                                        CNumerics *visc_numerics,
+                                        CConfig *config,
+                                        unsigned short val_marker) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] val_inlet_surface - Boolean for whether val_marker is an inlet
+   */
+  inline virtual void BC_ActDisk(CGeometry *geometry,
+                                 CSolver **solver_container,
+                                 CNumerics *conv_numerics,
+                                 CNumerics *visc_numerics,
+                                 CConfig *config,
+                                 unsigned short val_marker,
+                                 bool val_inlet_surface) { }
 
   /*!
    * \brief A virtual member.
@@ -1068,28 +1102,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                  unsigned short val_marker) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                      CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Isothermal_Wall(CGeometry *geometry,
+                                         CSolver **solver_container,
+                                         CNumerics *conv_numerics,
+                                         CNumerics *visc_numerics,
+                                         CConfig *config,
+                                         unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1100,8 +1118,40 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                    CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_HeatFlux_Wall(CGeometry *geometry,
+                                       CSolver **solver_container,
+                                       CNumerics *conv_numerics,
+                                       CNumerics *visc_numerics,
+                                       CConfig *config,
+                                       unsigned short val_marker) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  inline virtual void BC_Dirichlet(CGeometry *geometry,
+                                   CSolver **solver_container,
+                                   CConfig *config,
+                                   unsigned short val_marker) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  inline virtual void BC_Far_Field(CGeometry *geometry,
+                                   CSolver **solver_container,
+                                   CNumerics *conv_numerics,
+                                   CNumerics *visc_numerics,
+                                   CConfig *config,
+                                   unsigned short val_marker) { }
 
   /*!
    * \brief Impose via the residual the Euler boundary condition.
@@ -1113,11 +1163,11 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_Sym_Plane(CGeometry      *geometry,
-                            CSolver        **solver_container,
-                            CNumerics      *conv_numerics,
-                            CNumerics      *visc_numerics,
-                            CConfig        *config,
-                            unsigned short val_marker) { }
+                                   CSolver        **solver_container,
+                                   CNumerics      *conv_numerics,
+                                   CNumerics      *visc_numerics,
+                                   CConfig        *config,
+                                   unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1128,8 +1178,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                     CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Riemann(CGeometry *geometry,
+                                 CSolver **solver_container,
+                                 CNumerics *conv_numerics,
+                                 CNumerics *visc_numerics,
+                                 CConfig *config,
+                                 unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1140,8 +1194,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                      CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_TurboRiemann(CGeometry *geometry,
+                                      CSolver **solver_container,
+                                      CNumerics *conv_numerics,
+                                      CNumerics *visc_numerics,
+                                      CConfig *config,
+                                      unsigned short val_marker) { }
 
   /*!
    * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
@@ -1150,8 +1208,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] marker_flag - Surface marker flag where the function is applied.
    */
-  inline virtual void PreprocessBC_Giles(CGeometry *geometry, CConfig *config,
-                                        CNumerics *conv_numerics,unsigned short marker_flag){}
+  inline virtual void PreprocessBC_Giles(CGeometry *geometry,
+                                         CConfig *config,
+                                         CNumerics *conv_numerics,
+                                         unsigned short marker_flag) { }
 
   /*!
    * \brief A virtual member.
@@ -1162,8 +1222,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Giles(CGeometry *geometry, CSolver **solver_container,
-                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Giles(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CNumerics *conv_numerics,
+                               CNumerics *visc_numerics,
+                               CConfig *config,
+                               unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.

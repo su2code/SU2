@@ -403,13 +403,13 @@ public:
             solution. Used for Runge-Kutta type schemes.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void Set_OldSolution(CGeometry *geometry);
+  void Set_OldSolution(CGeometry *geometry) final;
 
   /*!
    * \brief Set the new solution to the current solution for classical RK.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void Set_NewSolution(CGeometry *geometry);
+  void Set_NewSolution(CGeometry *geometry) final;
 
   /*!
    * \brief Function to compute the time step for solving the Euler equations.
@@ -419,8 +419,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Value of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration);
+  void SetTime_Step(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned long Iteration) override;
 
   /*!
    * \brief Function, which checks whether or not the time synchronization point is reached
@@ -434,7 +437,7 @@ public:
   void CheckTimeSynchronization(CConfig         *config,
                                 const su2double TimeSync,
                                 su2double       &timeEvolved,
-                                bool            &syncTimeReached);
+                                bool            &syncTimeReached) final;
 
   /*!
    * \brief Function, which processes the list of tasks to be executed by
@@ -447,7 +450,7 @@ public:
    */
   void ProcessTaskList_DG(CGeometry *geometry,  CSolver **solver_container,
                           CNumerics **numerics, CConfig *config,
-                          unsigned short iMesh);
+                          unsigned short iMesh) final;
 
   /*!
    * \brief Function, to carry out the space time integration for ADER
@@ -460,7 +463,7 @@ public:
    */
   void ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                  CNumerics **numerics, CConfig *config,
-                                 unsigned short iMesh, unsigned short RunTime_EqSystem);
+                                 unsigned short iMesh, unsigned short RunTime_EqSystem) final;
 
   /*!
    * \brief Function, which controls the computation of the spatial Jacobian.
@@ -472,7 +475,7 @@ public:
    */
   void ComputeSpatialJacobian(CGeometry *geometry,  CSolver **solver_container,
                               CNumerics **numerics, CConfig *config,
-                              unsigned short iMesh, unsigned short RunTime_EqSystem);
+                              unsigned short iMesh, unsigned short RunTime_EqSystem) final;
 
   /*!
    * \brief Function, which determines the values of the tolerances in
@@ -613,8 +616,13 @@ public:
                         stepping algorithm, if appropriate.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                     unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output);
+  void Preprocessing(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned short iRKStep,
+                    unsigned short RunTime_EqSystem,
+                    bool Output) final;
 
   /*!
    * \brief
@@ -623,7 +631,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
+  void Postprocessing(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CConfig *config,
+                      unsigned short iMesh) final;
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition. It is a
@@ -775,14 +786,14 @@ public:
    * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
    * \param[out] workArray     - Work array.
    */
-  inline virtual void BC_HeatFlux_Wall(CConfig                  *config,
-                                                  const unsigned long      surfElemBeg,
-                                                  const unsigned long      surfElemEnd,
-                                                  const CSurfaceElementFEM *surfElem,
-                                                  su2double                *resFaces,
-                                                  CNumerics                *conv_numerics,
-                                                  unsigned short           val_marker,
-                                                  su2double                *workArray) {}
+  inline virtual void BC_HeatFlux_Wall(CConfig *config,
+                                      const unsigned long      surfElemBeg,
+                                      const unsigned long      surfElemEnd,
+                                      const CSurfaceElementFEM *surfElem,
+                                      su2double                *resFaces,
+                                      CNumerics                *conv_numerics,
+                                      unsigned short           val_marker,
+                                      su2double                *workArray) {}
   using CSolver::BC_HeatFlux_Wall;
 
   /*!
@@ -799,14 +810,14 @@ public:
    * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
    * \param[out] workArray     - Work array.
    */
-  inline virtual void BC_Isothermal_Wall(CConfig                  *config,
-                                                    const unsigned long      surfElemBeg,
-                                                    const unsigned long      surfElemEnd,
-                                                    const CSurfaceElementFEM *surfElem,
-                                                    su2double                *resFaces,
-                                                    CNumerics                *conv_numerics,
-                                                    unsigned short           val_marker,
-                                                    su2double                *workArray) {}
+  inline virtual void BC_Isothermal_Wall(CConfig *config,
+                                        const unsigned long      surfElemBeg,
+                                        const unsigned long      surfElemEnd,
+                                        const CSurfaceElementFEM *surfElem,
+                                        su2double                *resFaces,
+                                        CNumerics                *conv_numerics,
+                                        unsigned short           val_marker,
+                                        su2double                *workArray) {}
   using CSolver::BC_Isothermal_Wall;
 
   /*!
