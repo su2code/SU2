@@ -5399,7 +5399,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
                                                            Temperature_ve, 1, nDim, nVar,
                                                            nPrimVar, nPrimVarGrad, config);
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        nodes->CalcEve(config, Temperature_ve, iSpecies);
+        node_bc->GetEve(0)[iSpecies] = nodes->CalcEve(config, Temperature_ve, iSpecies);
       }
       nodes->CalcdPdU(  node_bc->GetPrimitive(0), node_bc->GetEve(0), config, node_bc->GetdPdU(0)  );
       nodes->CalcdTdU(  node_bc->GetPrimitive(0), config, node_bc->GetdTdU(0)  );
