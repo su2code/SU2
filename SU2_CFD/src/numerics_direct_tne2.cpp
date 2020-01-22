@@ -3675,13 +3675,12 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
       num   = 0.0;
       denom = 0.0;
       for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-        mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
-        A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
-        B_sr   = 0.015 * pow(mu, 0.25);
         num   += X[jSpecies];
         denom += X[jSpecies] / tau_sr[iSpecies][jSpecies];
       }
       for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+        mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
+        A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
         const su2double dTauMWdTauSR = num/pow(denom, 2.0)*Ms[jSpecies]/tau_sr[iSpecies][jSpecies];
         const su2double dTauSRdP = -tau_sr[iSpecies][jSpecies]/P;
         const su2double dTauSRdT = -tau_sr[iSpecies][jSpecies]*(1./3.)*A_sr*pow(T, -4./3.);
