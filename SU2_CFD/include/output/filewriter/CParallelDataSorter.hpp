@@ -241,14 +241,18 @@ public:
    * \input rank - the processor rank.
    * \return The beginning node ID.
    */
-  unsigned long GetNodeBegin(unsigned short rank) const {return linearPartitioner->GetFirstIndexOnRank(rank);}
+  virtual unsigned long GetNodeBegin(unsigned short rank) const {
+    return linearPartitioner->GetFirstIndexOnRank(rank);
+  }
 
   /*!
    * \brief Ending node ID of the linear partition owned by a specific processor.
-   * \input rank - the processor rank.
+   * \param rank - the processor rank.
    * \return The ending node ID.
    */
-  unsigned long GetNodeEnd(unsigned short rank) const {return linearPartitioner->GetLastIndexOnRank(rank);}
+  unsigned long GetNodeEnd(unsigned short rank) const {
+    return linearPartitioner->GetLastIndexOnRank(rank);
+  }
 
   /*!
    * \brief Get the value of the linear partitioned data.
@@ -269,14 +273,14 @@ public:
    * \input iPoint - the point ID.
    * \return Global index of a specific point.
    */
-  virtual unsigned long GetGlobalIndex(unsigned long iPoint) const {return 0;}
+  virtual unsigned long GetGlobalIndex(unsigned long iPoint) const { return 0; }
 
   /*!
    * \brief Get the cumulated number of points
    * \input rank - the processor rank.
    * \return The cumulated number of points up to certain processor rank.
    */
-  unsigned long GetnPointCumulative(unsigned short rank) const {return linearPartitioner->GetCumulativeSizeBeforeRank(rank);}
+  virtual unsigned long GetnPointCumulative(unsigned short rank) const {return linearPartitioner->GetCumulativeSizeBeforeRank(rank);}
 
   /*!
    * \brief Get the linear number of points
@@ -308,6 +312,15 @@ public:
   }
 
   /*!
+   * \brief Get the Processor ID a Point belongs to.
+   * \param[in] iPoint - global renumbered ID of the point
+   * \return The rank/processor number.
+   */
+  virtual unsigned short FindProcessor(unsigned long iPoint) const {
+    return linearPartitioner->GetRankContainingIndex(iPoint);
+  }
+
+  /*!
    * \brief Get the vector containing the names of the output fields
    * \return Vector of strings containing the field names
    */
@@ -327,5 +340,5 @@ public:
    * \brief Set the total number of elements after sorting individual element types
    */
   void SetTotalElements();
-  
+
 };

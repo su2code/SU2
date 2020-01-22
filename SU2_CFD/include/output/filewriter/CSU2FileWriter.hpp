@@ -1,5 +1,5 @@
 /*!
- * \file CCSVFileWriter.hpp
+ * \file CSU2FileWriter.hpp
  * \brief Headers fo the CSV file writer class.
  * \author T. Albring
  * \version 7.0.0 "Blackbird"

@@ -51,8 +51,6 @@ public:
 
   /*!
    * \brief Write sorted data to file in paraview file format
-   * \param[in] - The name of the file
-   * \param[in] - The parallel sorted data to write
    */
   void Write_Data() override;
 

@@ -32,8 +32,7 @@
 class CSurfaceFVMDataSorter final: public CParallelDataSorter{
 
   CFVMDataSorter* volumeSorter;                    //!< Pointer to the volume sorter instance
-  //! Structure to map the local sorted point ID to the global point ID
-  map<unsigned long,unsigned long> Renumber2Global;
+  map<unsigned long,unsigned long> Renumber2Global; //! Structure to map the local sorted point ID to the global point ID
 public:
 
   /*!
@@ -76,14 +75,50 @@ public:
 
   /*!
    * \brief Get the global index of a point.
-   * \input iPoint - the point ID.
+   * \param[in] iPoint - the local renumbered point ID.
    * \return Global index of a specific point.
    */
   unsigned long GetGlobalIndex(unsigned long iPoint) const override{
+    if (iPoint > nLocalPoint)
+      SU2_MPI::Error(string("Local renumbered iPoint ID ") + to_string(iPoint) +
+                     string(" is larger than max number of nodes ") + to_string(nLocalPoint), CURRENT_FUNCTION);
+
     return Renumber2Global.at(iPoint);
   }
 
+  /*!
+   * \brief Get the beginning global renumbered node ID of the linear partition owned by a specific processor.
+   * \param[in] rank - the processor rank.
+   * \return The beginning global renumbered node ID.
+   */
+  unsigned long GetNodeBegin(unsigned short rank) const override {
+    return nPoint_Recv[rank];
+  } 
 
+  /*!
+   * \brief Get the Processor ID a Point belongs to.
+   * \param[in] iPoint - global renumbered ID of the point
+   * \return The rank/processor number.
+   */
+  unsigned short FindProcessor(unsigned long iPoint) const override {
+
+    for (unsigned short iRank = 1; iRank < size; iRank++){
+      if (nPoint_Recv[iRank] > static_cast<int>(iPoint)){
+        return iRank - 1;
+      }
+    }
+    return size-1;
+  }
+
+  /*!
+   * \brief Get the cumulated number of points
+   * \input rank - the processor rank.
+   * \return The cumulated number of points up to certain processor rank.
+   */
+  unsigned long GetnPointCumulative(unsigned short rank) const override {
+    return GetNodeBegin(rank);
+  }
+  
 private:
 
   /*!

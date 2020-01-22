@@ -34,7 +34,8 @@ class CSurfaceFEMDataSorter final: public CParallelDataSorter{
   CFEMDataSorter* volumeSorter;                  //!< Pointer to the volume sorter instance
    //! Structure to map the local sorted point ID to the global point ID
   std::vector<unsigned long> globalSurfaceDOFIDs;
-
+  vector<unsigned long> nSurfaceDOFsRanks;
+  
 public:
 
   /*!
@@ -83,7 +84,43 @@ public:
   unsigned long GetGlobalIndex(unsigned long iPoint) const override {
     return globalSurfaceDOFIDs[iPoint];
   }
+  
+  /*!
+    * \brief Get the beginning global renumbered node ID of the linear partition owned by a specific processor.
+    * \param[in] rank - the processor rank.
+    * \return The beginning global renumbered node ID.
+    */
+   unsigned long GetNodeBegin(unsigned short rank) const override {
+     unsigned long offsetSurfaceDOFs = 0;
+     for(int i=0; i<rank; ++i) offsetSurfaceDOFs += nSurfaceDOFsRanks[i];
+     return offsetSurfaceDOFs;
+   } 
 
+   /*!
+    * \brief Get the Processor ID a Point belongs to.
+    * \param[in] iPoint - global renumbered ID of the point
+    * \return The rank/processor number.
+    */
+   unsigned short FindProcessor(unsigned long iPoint) const override {
+     unsigned long offsetSurfaceDOFs = nSurfaceDOFsRanks[0];     
+     for (unsigned short iRank = 1; iRank < size; iRank++){
+       if (offsetSurfaceDOFs > iPoint){
+         return iRank - 1;
+       }
+       offsetSurfaceDOFs += nSurfaceDOFsRanks[iRank];
+     }
+     return size-1;
+   }
+   
+   /*!
+    * \brief Get the cumulated number of points
+    * \input rank - the processor rank.
+    * \return The cumulated number of points up to certain processor rank.
+    */
+   unsigned long GetnPointCumulative(unsigned short rank) const override {
+     return GetNodeBegin(rank);
+   }
+   
 private:
 
   /*!

@@ -27,7 +27,7 @@
  */
 
 #include "../include/toolboxes/CLinearPartitioner.hpp"
-#include "../include/CCGNSMeshReaderFVM.hpp"
+#include "../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
 
 CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(CConfig        *val_config,
                                        unsigned short val_iZone,
