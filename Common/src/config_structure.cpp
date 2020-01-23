@@ -2886,7 +2886,28 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     VolumeOutputFiles[1] = PARAVIEW_BINARY;
     VolumeOutputFiles[2] = SURFACE_PARAVIEW_BINARY;
   }
-  
+
+  /*--- Check if SU2 was build with TecIO support, as that is required for Tecplot Binary output. ---*/
+#ifndef HAVE_TECIO
+  for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++){
+    if (VolumeOutputFiles[iVolumeFile] == TECPLOT_BINARY ||
+        VolumeOutputFiles[iVolumeFile] == SURFACE_TECPLOT_BINARY) {
+      SU2_MPI::Error(string("Tecplot binary file requested in option OUTPUT_FILES but SU2 was built without TecIO support.\n"), CURRENT_FUNCTION);
+    }
+  }
+#endif
+
+  /*--- STL_BINARY output not implelemted yet, but already a value in option_structure.hpp---*/
+  for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
+    if (VolumeOutputFiles[iVolumeFile] == STL_BINARY){
+      SU2_MPI::Error(string("OUTPUT_FILES: 'STL_BINARY' output not implemented. Use 'STL' for ASCII output.\n"), CURRENT_FUNCTION);
+    }
+    if (val_nDim == 2 && (VolumeOutputFiles[iVolumeFile] == STL || VolumeOutputFiles[iVolumeFile] == STL_BINARY)) {
+      SU2_MPI::Error(string("OUTPUT_FILES: 'STL(_BINARY)' output only reasonable for 3D cases.\n"), CURRENT_FUNCTION);
+    }
+  }
+
+
   if (Kind_Solver == NAVIER_STOKES && Kind_Turb_Model != NONE){
     SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= NAVIER_STOKES", CURRENT_FUNCTION);
   }
@@ -2899,15 +2920,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Kind_Solver == INC_RANS && Kind_Turb_Model == NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
   }
-
-#ifndef HAVE_TECIO
-  for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++){
-    if (VolumeOutputFiles[iVolumeFile] == TECPLOT_BINARY ||
-        VolumeOutputFiles[iVolumeFile] == SURFACE_TECPLOT_BINARY) {
-      SU2_MPI::Error(string("Tecplot binary file requested in option OUTPUT_FILES but SU2 was built without TecIO support.\n"), CURRENT_FUNCTION);
-    }
-  }
-#endif
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
    definition for the wall founctions ---*/

@@ -31,8 +31,8 @@
 
 #include <string.h>
 
-#include "mpi_structure.hpp"
-#include "config_structure.hpp"
+#include "../../mpi_structure.hpp"
+#include "../../config_structure.hpp"
 
 /*!
  * \class CMeshReaderFVM

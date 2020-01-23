@@ -26,6 +26,15 @@
  */
 
 #include "../include/grid_adaptation_structure.hpp"
+#include "../include/geometry/primal_grid/CPrimalGrid.hpp"
+#include "../include/geometry/primal_grid/CLine.hpp"
+#include "../include/geometry/primal_grid/CTriangle.hpp"
+#include "../include/geometry/primal_grid/CQuadrilateral.hpp"
+#include "../include/geometry/primal_grid/CTetrahedron.hpp"
+#include "../include/geometry/primal_grid/CHexahedron.hpp"
+#include "../include/geometry/primal_grid/CPyramid.hpp"
+#include "../include/geometry/primal_grid/CPrism.hpp"
+#include "../include/geometry/primal_grid/CVertexMPI.hpp"
 #include <math.h>
 
 CGridAdaptation::CGridAdaptation(CGeometry *geometry, CConfig *config) {

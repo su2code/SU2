@@ -1512,21 +1512,24 @@ static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
  * \brief type of solution output file formats
  */
 enum ENUM_OUTPUT {
-  TECPLOT = 1,  		         /*!< \brief Tecplot format for the solution output. */
-  TECPLOT_BINARY = 2,            /*!< \brief Tecplot binary format for the solution output. */
-  SURFACE_TECPLOT = 3,  	     /*!< \brief Tecplot format for the solution output. */
-  SURFACE_TECPLOT_BINARY = 4,    /*!< \brief Tecplot binary format for the solution output. */
-  CSV = 5,			             /*!< \brief Comma-separated values format for the solution output. */
-  SURFACE_CSV = 6,			     /*!< \brief Comma-separated values format for the solution output. */
-  PARAVIEW = 7,  		         /*!< \brief Paraview ASCII format for the solution output. */
-  PARAVIEW_BINARY = 8,           /*!< \brief Paraview binary format for the solution output. */
-  SURFACE_PARAVIEW = 9,  	     /*!< \brief Paraview ASCII format for the solution output. */
-  SURFACE_PARAVIEW_BINARY = 10,  /*!< \brief Paraview binary format for the solution output. */
-  MESH      = 11,                /*!< \brief SU2 mesh format. */
-  RESTART_BINARY = 12,           /*!< \brief SU2 binary restart format. */
-  RESTART_ASCII = 13,            /*!< \brief SU2 ASCII restart format. */
-  CGNS = 14                      /*!< \brief CGNS format. */
+  TECPLOT                 = 1,  /*!< \brief Tecplot format for the solution output. */
+  TECPLOT_BINARY          = 2,  /*!< \brief Tecplot binary format for the solution output. */
+  SURFACE_TECPLOT         = 3,  /*!< \brief Tecplot format for the solution output. */
+  SURFACE_TECPLOT_BINARY  = 4,  /*!< \brief Tecplot binary format for the solution output. */
+  CSV                     = 5,  /*!< \brief Comma-separated values format for the solution output. */
+  SURFACE_CSV             = 6,  /*!< \brief Comma-separated values format for the solution output. */
+  PARAVIEW                = 7,  /*!< \brief Paraview ASCII format for the solution output. */
+  PARAVIEW_BINARY         = 8,  /*!< \brief Paraview binary format for the solution output. */
+  SURFACE_PARAVIEW        = 9,  /*!< \brief Paraview ASCII format for the solution output. */
+  SURFACE_PARAVIEW_BINARY = 10, /*!< \brief Paraview binary format for the solution output. */
+  MESH                    = 11, /*!< \brief SU2 mesh format. */
+  RESTART_BINARY          = 12, /*!< \brief SU2 binary restart format. */
+  RESTART_ASCII           = 13, /*!< \brief SU2 ASCII restart format. */
+  CGNS                    = 14, /*!< \brief CGNS format. */
+  STL                     = 15, /*!< \brief STL ASCII format for surface solution output. */
+  STL_BINARY              = 16  /*!< \brief STL binary format for surface solution output. Not implemented yet. */
 };
+
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
 ("TECPLOT_ASCII", TECPLOT)
 ("TECPLOT", TECPLOT_BINARY)
@@ -1540,7 +1543,9 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("SURFACE_PARAVIEW", SURFACE_PARAVIEW_BINARY)
 ("RESTART_ASCII", RESTART_ASCII)
 ("RESTART", RESTART_BINARY)
-("CGNS", CGNS);
+("CGNS", CGNS)
+("STL", STL)
+("STL_BINARY", STL_BINARY);
 
 /*!
  * \brief type of solution output file formats
@@ -1950,6 +1955,7 @@ static const map<string, ENUM_INPUT_REF> Input_Ref_Map = CCreateMap<string, ENUM
  * \brief Vertex-based quantities exchanged during periodic marker communications.
  */
 enum PERIODIC_QUANTITIES {
+  PERIODIC_NONE       = 99,  /*!< \brief No periodic communication required. */
   PERIODIC_VOLUME     =  1,  /*!< \brief Volume communication for summing total CV (periodic only). */
   PERIODIC_NEIGHBORS  =  2,  /*!< \brief Communication of the number of neighbors for centered schemes (periodic only). */
   PERIODIC_RESIDUAL   =  3,  /*!< \brief Residual and Jacobian communication (periodic only). */
@@ -1964,9 +1970,9 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_SOL_2  = 12,  /*!< \brief Solution limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_1 = 13,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 = 14,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
-  PERIODIC_IMPLICIT   = 15,   /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+  PERIODIC_IMPLICIT   = 15,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
   PERIODIC_SOL_ULS    = 16,  /*!< \brief Solution gradient communication for unwieghted Least Squares (periodic only). */
-  PERIODIC_PRIM_ULS   = 17  /*!< \brief Primitive gradient communication for unweighted Least Squares (periodic only). */
+  PERIODIC_PRIM_ULS   = 17   /*!< \brief Primitive gradient communication for unweighted Least Squares (periodic only). */
 };
 
 /*!
