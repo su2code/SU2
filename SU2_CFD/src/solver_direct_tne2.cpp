@@ -7427,7 +7427,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 
   Velocity_Inf = new su2double[nDim];
   for (iDim = 0; iDim < nDim; iDim++)
-    Velocity_Inf[iDim] = node_infty->GetVelocity(iPoint, iDim);
+    Velocity_Inf[iDim] = node_infty->GetVelocity(0, iDim);
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
   nodes = new CTNE2NSVariable(Pressure_Inf, MassFrac_Inf,
@@ -8449,10 +8449,10 @@ void CTNE2NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   /*--- Get reference values from the freestream node. ---*/
   RefVel2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_Inf[iDim] = node_infty->GetVelocity(1,iDim);
+    Velocity_Inf[iDim] = node_infty->GetVelocity(0,iDim);
     RefVel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
   }
-  RefDensity  = node_infty->GetDensity(1);
+  RefDensity  = node_infty->GetDensity(0);
 
   factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
 
