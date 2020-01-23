@@ -878,6 +878,12 @@ public:
                              CConfig        *config,
                              unsigned short val_marker);
 
+  virtual void BC_Euler_Wall_old(CGeometry *geometry, 
+                                 CSolver **solver_container,
+                                 CNumerics *numerics, 
+                                 CConfig *config, 
+                                 unsigned short val_marker) { };
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -5313,6 +5319,12 @@ public:
                      CNumerics      *visc_numerics, 
                      CConfig        *config,
                      unsigned short val_marker) override;
+
+  void BC_Euler_Wall_old(CGeometry *geometry, 
+                         CSolver **solver_container,
+                         CNumerics *numerics, 
+                         CConfig *config, 
+                         unsigned short val_marker) override;
   
   /*!
    * \brief Impose the far-field boundary condition using characteristics.

@@ -2052,8 +2052,20 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             numerics[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
 
           /*--- Definition of the boundary condition method ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config, false);
+          for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+            if(config->GetMUSCL_AdjFlow()) {
+                cout << "CONV_BOUND_TERM = CCentJST_Flow" << endl;
+                numerics[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CCentJST_Flow(nDim, nVar_Flow, config);
+            } else {
+              if(config->GetVisualize_Volume_Def()) { //VISUALIZE_VOLUME_DEF= YES
+                cout << "CONV_BOUND_TERM = CUpwRoe_Flow" << endl;
+                numerics[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config, false);
+              } else { //VISUALIZE_VOLUME_DEF= NO
+                cout << "CONV_BOUND_TERM = CCentJST_Flow_BC" << endl;
+                numerics[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CCentJST_Flow_BC(nDim, nVar_Flow, config);
+              }//if Visualize_Volume_Def
+            }//if USCL_AdjFlow
+          }//for iMGlevel
 
         }
         if (incompressible) {

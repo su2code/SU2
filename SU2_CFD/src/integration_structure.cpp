@@ -104,7 +104,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     KindBC = config->GetMarker_All_KindBC(iMarker);
     switch (KindBC) {
       case EULER_WALL:
-        solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        if(config->GetVisualize_Surface_Def()){ //VISUALIZE_SURFACE_DEF= YES
+          solver_container[MainSolver]->BC_Euler_Wall_old(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        } else { //VISUALIZE_SURFACE_DEF= NO
+          solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        }
         break;
       case ACTDISK_INLET:
         solver_container[MainSolver]->BC_ActDisk_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);

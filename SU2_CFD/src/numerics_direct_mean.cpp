@@ -261,6 +261,29 @@ bool CCentJST_Flow::SetPreaccInVars(void) {
   return true;
 }
 
+
+CCentJST_Flow_BC::CCentJST_Flow_BC(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+               CCentBase_Flow(val_nDim, val_nVar, config) {
+
+  /*--- Artifical dissipation parameters ---*/
+  Param_p = 0.3;
+  Param_Kappa_2 = config->GetKappa_2nd_Flow();
+  Param_Kappa_4 = config->GetKappa_4th_Flow();
+
+}
+
+CCentJST_Flow_BC::~CCentJST_Flow_BC(void) { }
+
+void CCentJST_Flow_BC::DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j) { }
+
+bool CCentJST_Flow_BC::SetPreaccInVars(void) {
+  AD::StartPreacc();
+  AD::SetPreaccIn(Sensor_i);  AD::SetPreaccIn(Und_Lapl_i, nVar);
+  AD::SetPreaccIn(Sensor_j);  AD::SetPreaccIn(Und_Lapl_j, nVar);
+  return true;
+}
+
+
 CCentJST_KE_Flow::CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
                   CCentBase_Flow(val_nDim, val_nVar, config) {
 
