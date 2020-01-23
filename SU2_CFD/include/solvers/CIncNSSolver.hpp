@@ -189,91 +189,91 @@ public:
    * \brief Get the inviscid contribution to the lift coefficient.
    * \return Value of the lift coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CL_Visc() { return AllBound_CL_Visc; }
+  inline su2double GetAllBound_CL_Visc() const final { return AllBound_CL_Visc; }
 
   /*!
    * \brief Get the inviscid contribution to the drag coefficient.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CD_Visc() { return AllBound_CD_Visc; }
+  inline su2double GetAllBound_CD_Visc() const final { return AllBound_CD_Visc; }
 
   /*!
    * \brief Get the inviscid contribution to the sideforce coefficient.
    * \return Value of the sideforce coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CSF_Visc() { return AllBound_CSF_Visc; }
+  inline su2double GetAllBound_CSF_Visc() const final { return AllBound_CSF_Visc; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CEff_Visc() { return AllBound_CEff_Visc; }
+  inline su2double GetAllBound_CEff_Visc() const final { return AllBound_CEff_Visc; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CMx_Visc() { return AllBound_CMx_Visc; }
+  inline su2double GetAllBound_CMx_Visc() const final { return AllBound_CMx_Visc; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CMy_Visc() { return AllBound_CMy_Visc; }
+  inline su2double GetAllBound_CMy_Visc() const final { return AllBound_CMy_Visc; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CMz_Visc() { return AllBound_CMz_Visc; }
+  inline su2double GetAllBound_CMz_Visc() const final { return AllBound_CMz_Visc; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CoPx_Visc() { return AllBound_CoPx_Visc; }
+  inline su2double GetAllBound_CoPx_Visc() const final { return AllBound_CoPx_Visc; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CoPy_Visc() { return AllBound_CoPy_Visc; }
+  inline su2double GetAllBound_CoPy_Visc() const final { return AllBound_CoPy_Visc; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CoPz_Visc() { return AllBound_CoPz_Visc; }
+  inline su2double GetAllBound_CoPz_Visc() const final { return AllBound_CoPz_Visc; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CFx_Visc() { return AllBound_CFx_Visc; }
+  inline su2double GetAllBound_CFx_Visc() const final { return AllBound_CFx_Visc; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CFy_Visc() { return AllBound_CFy_Visc; }
+  inline su2double GetAllBound_CFy_Visc() const final { return AllBound_CFy_Visc; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CFz_Visc() { return AllBound_CFz_Visc; }
+  inline su2double GetAllBound_CFz_Visc() const final { return AllBound_CFz_Visc; }
 
   /*!
    * \brief Compute the viscosity at the infinity.
    * \return Value of the viscosity at the infinity.
    */
-  inline su2double GetViscosity_Inf(void) { return Viscosity_Inf; }
+  inline su2double GetViscosity_Inf(void) const final { return Viscosity_Inf; }
 
   /*!
    * \brief Get the turbulent kinetic energy at the infinity.
    * \return Value of the turbulent kinetic energy at the infinity.
    */
-  inline su2double GetTke_Inf(void) { return Tke_Inf; }
+  inline su2double GetTke_Inf(void) const final { return Tke_Inf; }
 
   /*!
    * \brief Compute the time step for solving the Navier-Stokes equations with turbulence model.
@@ -313,7 +313,7 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
+  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) final;
 
   /*!
    * \brief Impose a no-slip condition.
@@ -453,7 +453,11 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the skin friction coefficient.
    */
-  inline su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return CSkinFriction[val_marker][val_dim][val_vertex]; }
+  inline su2double GetCSkinFriction(unsigned short val_marker,
+                                    unsigned long val_vertex,
+                                    unsigned short val_dim) const final {
+    return CSkinFriction[val_marker][val_dim][val_vertex];
+  }
 
   /*!
    * \brief Get the skin friction coefficient.
@@ -461,7 +465,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the heat transfer coefficient.
    */
-  inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
+  inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) const final {
+    return HeatFlux[val_marker][val_vertex];
+  }
 
   /*!
    * \brief Get the skin friction coefficient.
@@ -469,7 +475,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the heat transfer coefficient.
    */
-  inline su2double GetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex) { return HeatFluxTarget[val_marker][val_vertex]; }
+  inline su2double GetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex) const final {
+    return HeatFluxTarget[val_marker][val_vertex];
+  }
 
   /*!
    * \brief Set the value of the target Pressure coefficient.
@@ -477,7 +485,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline void SetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_heat) { HeatFluxTarget[val_marker][val_vertex] = val_heat; }
+  inline void SetHeatFluxTarget(unsigned short val_marker,
+                                unsigned long val_vertex,
+                                su2double val_heat) final { HeatFluxTarget[val_marker][val_vertex] = val_heat; }
 
   /*!
    * \brief Get the y plus.
@@ -485,30 +495,32 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the y plus.
    */
-  inline su2double GetYPlus(unsigned short val_marker, unsigned long val_vertex) { return YPlus[val_marker][val_vertex]; }
+  inline su2double GetYPlus(unsigned short val_marker, unsigned long val_vertex) const final {
+    return YPlus[val_marker][val_vertex];
+  }
 
   /*!
    * \brief Get the max Omega.
    * \return Value of the max Omega.
    */
-  inline su2double GetOmega_Max(void) { return Omega_Max; }
+  inline su2double GetOmega_Max(void) const final { return Omega_Max; }
 
   /*!
    * \brief Get the max Strain rate magnitude.
    * \return Value of the max Strain rate magnitude.
    */
-  inline su2double GetStrainMag_Max(void) { return StrainMag_Max; }
+  inline su2double GetStrainMag_Max(void) const final { return StrainMag_Max; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
-  inline void SetStrainMag_Max(su2double val_strainmag_max) { StrainMag_Max = val_strainmag_max; }
+  inline void SetStrainMag_Max(su2double val_strainmag_max) final { StrainMag_Max = val_strainmag_max; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the Omega_Max
    */
-  inline void SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
+  inline void SetOmega_Max(su2double val_omega_max) final { Omega_Max = val_omega_max; }
 
 };

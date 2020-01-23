@@ -253,7 +253,7 @@ public:
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  inline void SetFreeStream_Solution(CConfig *config){
+  inline void SetFreeStream_Solution(CConfig *config) final {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
       nodes->SetSolution(iPoint, 0, kine_Inf);
       nodes->SetSolution(iPoint, 1, omega_Inf);
@@ -267,7 +267,9 @@ public:
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
-  void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+  void SetInletAtVertex(su2double *val_inlet,
+                        unsigned short iMarker,
+                        unsigned long iVertex) final;
 
   /*!
    * \brief Get the set of value imposed at an inlet.
@@ -283,7 +285,7 @@ public:
                              unsigned short val_kind_marker,
                              string val_marker,
                              CGeometry *geometry,
-                             CConfig *config);
+                             CConfig *config) const final;
   /*!
    * \brief Set a uniform inlet profile
    *
@@ -293,18 +295,18 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+  void SetUniformInlet(CConfig* config, unsigned short iMarker) final;
 
   /*!
    * \brief Get the value of the turbulent kinetic energy.
    * \return Value of the turbulent kinetic energy.
    */
-  inline su2double GetTke_Inf(void) { return kine_Inf; }
+  inline su2double GetTke_Inf(void) const final { return kine_Inf; }
 
   /*!
    * \brief Get the value of the turbulent frequency.
    * \return Value of the turbulent frequency.
    */
-  inline su2double GetOmega_Inf(void) { return omega_Inf; }
+  inline su2double GetOmega_Inf(void) const final { return omega_Inf; }
 
 };

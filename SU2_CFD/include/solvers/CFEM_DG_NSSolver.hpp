@@ -385,13 +385,13 @@ public:
    * \brief Compute the viscosity at the infinity.
    * \return Value of the viscosity at the infinity.
    */
-  inline su2double GetViscosity_Inf(void) { return Viscosity_Inf; }
+  inline su2double GetViscosity_Inf(void) const final { return Viscosity_Inf; }
 
   /*!
    * \brief Get the turbulent kinetic energy at the infinity.
    * \return Value of the turbulent kinetic energy at the infinity.
    */
-  inline su2double GetTke_Inf(void) { return Tke_Inf; }
+  inline su2double GetTke_Inf(void) const final { return Tke_Inf; }
 
   /*!
    * \brief Compute the viscous forces and all the addimensional coefficients.
@@ -450,25 +450,25 @@ public:
    * \brief Get the max Omega.
    * \return Value of the max Omega.
    */
-  inline su2double GetOmega_Max(void) { return Omega_Max; }
+  inline su2double GetOmega_Max(void) const final { return Omega_Max; }
 
   /*!
    * \brief Get the max Strain rate magnitude.
    * \return Value of the max Strain rate magnitude.
    */
-  inline su2double GetStrainMag_Max(void) { return StrainMag_Max; }
+  inline su2double GetStrainMag_Max(void) const final { return StrainMag_Max; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
-  inline void SetStrainMag_Max(su2double val_strainmag_max) { StrainMag_Max = val_strainmag_max; }
+  inline void SetStrainMag_Max(su2double val_strainmag_max) final { StrainMag_Max = val_strainmag_max; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the Omega_Max
    */
-  inline void SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
+  inline void SetOmega_Max(su2double val_omega_max) final { Omega_Max = val_omega_max; }
 
 private:
 
@@ -495,7 +495,7 @@ private:
                                            const unsigned short nSimul,
                                            const unsigned short NPad,
                                            su2double            *res,
-                                           su2double            *work);
+                                           su2double            *work) final;
 
 /*!
    * \brief Function, which computes the spatial residual of the ADER-DG
@@ -520,7 +520,7 @@ private:
                                            const unsigned short nSimul,
                                            const unsigned short NPad,
                                            su2double            *res,
-                                           su2double            *work);
+                                           su2double            *work) final;
   /*!
    * \brief Function, which computes the spatial residual of the ADER-DG
             predictor step for the given volume element and solution using a
@@ -544,7 +544,7 @@ private:
                                               const unsigned short nSimul,
                                               const unsigned short NPad,
                                               su2double            *res,
-                                              su2double            *work);
+                                              su2double            *work) final;
 
   /*!
    * \brief Function, which computes the spatial residual of the ADER-DG
@@ -569,7 +569,7 @@ private:
                                               const unsigned short nSimul,
                                               const unsigned short NPad,
                                               su2double            *res,
-                                              su2double            *work);
+                                              su2double            *work) final;
   /*!
    * \brief Function to compute the penalty terms in the integration
             points of a face.

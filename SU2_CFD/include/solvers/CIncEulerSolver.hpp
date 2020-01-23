@@ -255,13 +255,13 @@ public:
    * \brief Compute the density at the infinity.
    * \return Value of the density at the infinity.
    */
-  inline su2double GetDensity_Inf(void) { return Density_Inf; }
+  inline su2double GetDensity_Inf(void) const final { return Density_Inf; }
 
   /*!
    * \brief Compute 2-norm of the velocity at the infinity.
    * \return Value of the 2-norm of the velocity at the infinity.
    */
-  inline su2double GetModVelocity_Inf(void) {
+  inline su2double GetModVelocity_Inf(void) const final {
     su2double Vel2 = 0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Vel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
@@ -273,40 +273,42 @@ public:
    * \brief Compute the pressure at the infinity.
    * \return Value of the pressure at the infinity.
    */
-  inline su2double GetPressure_Inf(void) { return Pressure_Inf; }
+  inline su2double GetPressure_Inf(void) const final { return Pressure_Inf; }
 
     /*!
    * \brief Get the temperature value at infinity.
    * \return Value of the temperature at infinity.
    */
-  inline su2double GetTemperature_Inf(void) { return Temperature_Inf; }
+  inline su2double GetTemperature_Inf(void) const final { return Temperature_Inf; }
 
   /*!
    * \brief Compute the density multiply by velocity at the infinity.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the density multiply by the velocity at the infinity.
    */
-  inline su2double GetDensity_Velocity_Inf(unsigned short val_dim) { return Density_Inf*Velocity_Inf[val_dim]; }
+  inline su2double GetDensity_Velocity_Inf(unsigned short val_dim) const final { return Density_Inf*Velocity_Inf[val_dim]; }
 
   /*!
    * \brief Get the velocity at the infinity.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the velocity at the infinity.
    */
-  inline su2double GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
+  inline su2double GetVelocity_Inf(unsigned short val_dim) const final { return Velocity_Inf[val_dim]; }
 
   /*!
    * \brief Get the velocity at the infinity.
    * \return Value of the velocity at the infinity.
    */
-  inline su2double *GetVelocity_Inf(void) { return Velocity_Inf; }
+  inline su2double *GetVelocity_Inf(void) const final { return Velocity_Inf; }
 
   /*!
    * \brief Set the velocity at infinity.
    * \param[in] val_dim - Index of the velocity vector.
    * \param[in] val_velocity - Value of the velocity.
    */
-  inline void SetVelocity_Inf(unsigned short val_dim, su2double val_velocity) { Velocity_Inf[val_dim] = val_velocity; }
+  inline void SetVelocity_Inf(unsigned short val_dim, su2double val_velocity) final {
+    Velocity_Inf[val_dim] = val_velocity;
+  }
 
   /*!
    * \brief Compute the time step for solving the Euler equations.
@@ -417,7 +419,7 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
+  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) override;
 
   /*!
    * \brief Compute a pressure sensor switch.
@@ -1286,7 +1288,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline void SetCPressureTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_pressure) final {
+  inline void SetCPressureTarget(unsigned short val_marker,
+                                 unsigned long val_vertex,
+                                 su2double val_pressure) final {
     CPressureTarget[val_marker][val_vertex] = val_pressure;
   }
 
@@ -1324,7 +1328,11 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) final;
 
   /*!
    * \brief Set the initial condition for the Euler Equations.
@@ -1342,25 +1350,25 @@ public:
    * \brief Set the freestream pressure.
    * \param[in] Value of freestream pressure.
    */
-  inline void SetPressure_Inf(su2double p_inf){Pressure_Inf = p_inf;}
+  inline void SetPressure_Inf(su2double p_inf) final { Pressure_Inf = p_inf; }
 
   /*!
    * \brief Set the freestream temperature.
    * \param[in] Value of freestream temperature.
    */
-  inline void SetTemperature_Inf(su2double t_inf){Temperature_Inf = t_inf;}
+  inline void SetTemperature_Inf(su2double t_inf) final { Temperature_Inf = t_inf; }
 
   /*!
    * \brief Set the freestream temperature.
    * \param[in] Value of freestream temperature.
    */
-  inline void SetDensity_Inf(su2double rho_inf){Density_Inf = rho_inf;}
+  inline void SetDensity_Inf(su2double rho_inf) final { Density_Inf = rho_inf; }
 
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetFreeStream_Solution(CConfig *config);
+  void SetFreeStream_Solution(CConfig *config) final;
 
   /*!
    * \brief Update the Beta parameter for the incompressible preconditioner.
@@ -1369,8 +1377,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - current mesh level for the multigrid.
    */
-  void SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
-                       CConfig *config, unsigned short iMesh);
+  void SetBeta_Parameter(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CConfig *config,
+                         unsigned short iMesh) final;
 
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
@@ -1385,7 +1395,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is evaluated.
    * \return Value of the total temperature
    */
-  inline su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex) { return Inlet_Ttotal[val_marker][val_vertex]; }
+  inline su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex) const final { return Inlet_Ttotal[val_marker][val_vertex]; }
 
   /*!
    * \brief Value of the total pressure at an inlet boundary.
@@ -1393,7 +1403,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
    * \return Value of the total pressure
    */
-  inline su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) { return Inlet_Ptotal[val_marker][val_vertex]; }
+  inline su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) const final { return Inlet_Ptotal[val_marker][val_vertex]; }
 
   /*!
    * \brief A component of the unit vector representing the flow direction at an inlet boundary.
@@ -1402,7 +1412,11 @@ public:
    * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
    * \return Component of a unit vector representing the flow direction.
    */
-  inline su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return Inlet_FlowDir[val_marker][val_vertex][val_dim]; }
+  inline su2double GetInlet_FlowDir(unsigned short val_marker,
+                                    unsigned long val_vertex,
+                                    unsigned short val_dim) const final {
+    return Inlet_FlowDir[val_marker][val_vertex][val_dim];
+  }
 
   /*!
    * \brief Set a uniform inlet profile
@@ -1413,7 +1427,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+  void SetUniformInlet(CConfig* config, unsigned short iMarker) final;
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
@@ -1421,7 +1435,9 @@ public:
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
-  void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+  void SetInletAtVertex(su2double *val_inlet,
+                        unsigned short iMarker,
+                        unsigned long iVertex) final;
 
   /*!
    * \brief Get the set of value imposed at an inlet.
@@ -1520,6 +1536,6 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  void ComputeVerificationError(CGeometry *geometry, CConfig *config);
+  void ComputeVerificationError(CGeometry *geometry, CConfig *config) final;
 
 };

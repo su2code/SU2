@@ -84,7 +84,7 @@ public:
    * \param[in] geometry_container - The geometry container holding all grid levels.
    * \param[in] config_container - The particular config.
    */
-  void RegisterSolution(CGeometry *geometry, CConfig *config);
+  void RegisterSolution(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
@@ -92,7 +92,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
+  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Extract and set the geometrical sensitivity.
@@ -100,7 +100,7 @@ public:
    * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
+  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) final;
 
   /*!
    * \brief Set the value of the max residual and RMS residual.
@@ -112,21 +112,21 @@ public:
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
    */
-  void SetRecording(CGeometry *geometry, CConfig *config);
+  void SetRecording(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false);
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false) final;
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Update the dual-time derivatives.
@@ -154,6 +154,10 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) final;
 
 };
