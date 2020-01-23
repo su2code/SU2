@@ -6073,7 +6073,7 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
                                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim, iVar, iSpecies, iEl;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Density, Pressure, Temperature, Temperature_ve, Energy, *Velocity, *Mass_Frac, Velocity2, soundspeed;
+  su2double Density, Pressure, Temperature, Temperature_ve, Energy, *Velocity, *Mass_Frac, Velocity2, soundspeed, rhoCvve;
   su2double Gas_Constant = config->GetGas_ConstantND();
 
   bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -6093,7 +6093,7 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
   g                       = config->GetElDegeneracy();
   cout << "This doesnt work" << endl;
   su2double denom = 0.0, conc   = 0.0, rhoCvtr = 0.0, num = 0.0,
-      rhoE  = 0.0, rhoEve = 0.0;
+      rhoE  = 0.0, rhoEve = 0.0, rhoCvve = 0.0;
   su2double RuSI  = UNIVERSAL_GAS_CONSTANT;
   su2double Ru = 1000.0*RuSI;
 
@@ -6172,6 +6172,8 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
 
     // Mixture vibrational-electronic energy
     rhoEve += rhos * (Ev + Ee);
+
+    rhoCvve += nodes->CalcCvve(Temperature_ve, config, iSpecies);
   }
 
   /*--- Setting Conservative Variables ---*/
@@ -6194,9 +6196,7 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
   V_inlet[nSpecies+4+nDim] = rhoE+Pressure/Density;
   V_inlet[nSpecies+5+nDim] = soundspeed;
   V_inlet[nSpecies+6+nDim] = rhoCvtr;
-
-  //This requires Newtown Raphson.....So this is not currently operational (See Deathstar)
-  //V_inlet[nSpecies+7+nDim] = rhoCvve;
+  V_inlet[nSpecies+7+nDim] = rhoCvve;
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
