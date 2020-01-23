@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -41,16 +41,16 @@ CVerificationSolution::CVerificationSolution(unsigned short val_nDim,
                                              unsigned short val_iMesh,
                                              CConfig*       config) {
   /*--- Store the kind of solver ---*/
-  
+
   Kind_Solver = config->GetKind_Solver();
-  
+
   /*--- Store the rank and size for the calculation. ---*/
-  
+
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
-  
+
   /*--- Store the dimension and number of variables. ---*/
-  
+
   nDim = val_nDim;
   nVar = val_nVar;
 
@@ -88,28 +88,28 @@ CVerificationSolution::~CVerificationSolution(void) {
 
 void CVerificationSolution::GetSolution(const su2double *val_coords,
                                         const su2double val_t,
-                                        su2double       *val_solution) {
+                                        su2double       *val_solution) const {
 
   SU2_MPI::Error("Function must be overwritten by the derived class", CURRENT_FUNCTION);
 }
 
 void CVerificationSolution::GetInitialCondition(const su2double *val_coords,
-                                                su2double       *val_solution) {
-  
+                                                su2double       *val_solution) const {
+
   /*--- Initial conditions call the GetSolution() method at t = 0. ---*/
   GetSolution(val_coords, 0.0, val_solution);
 }
 
 void CVerificationSolution::GetBCState(const su2double *val_coords,
                                        const su2double val_t,
-                                       su2double       *val_solution) {
+                                       su2double       *val_solution) const {
 
   SU2_MPI::Error("Function must be overwritten by the derived class", CURRENT_FUNCTION);
 }
 
 void CVerificationSolution::GetMMSSourceTerm(const su2double *val_coords,
                                              const su2double val_t,
-                                             su2double       *val_source) {
+                                             su2double       *val_source) const {
 
   /* Default implementation of the source terms for the method of manufactured
      solutions. Simply set them to zero. */
@@ -117,26 +117,26 @@ void CVerificationSolution::GetMMSSourceTerm(const su2double *val_coords,
     val_source[iVar] = 0.0;
 }
 
-bool CVerificationSolution::IsManufacturedSolution(void) {return false;}
+bool CVerificationSolution::IsManufacturedSolution(void) const {return false;}
 
-bool CVerificationSolution::ExactSolutionKnown(void) {return true;}
+bool CVerificationSolution::ExactSolutionKnown(void) const {return true;}
 
 void CVerificationSolution::GetLocalError(const su2double *val_coords,
                                           const su2double val_t,
                                           const su2double *val_solution,
-                                          su2double       *val_error) {
-  
+                                          su2double       *val_error) const {
+
   /*--- Get the value of the verification solution first.
         Use val_error to store this solution. ---*/
-  
+
   GetSolution(val_coords, val_t, val_error);
-  
+
   /*--- Compute the local error as the difference between the current
    numerical solution and the verification solution. ---*/
-  
+
   for (unsigned short iVar=0; iVar<nVar; ++iVar)
     val_error[iVar] = val_solution[iVar] - val_error[iVar];
-  
+
 }
 
 void CVerificationSolution::SetVerificationError(unsigned long nDOFsGlobal,

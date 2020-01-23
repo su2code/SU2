@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -38,7 +38,7 @@
           on a unit quad, heat conduction is neglected.
  * \author E. van der Weide, T. Economon
  */
-class CNSUnitQuadSolution: public CVerificationSolution {
+class CNSUnitQuadSolution final: public CVerificationSolution {
 
 protected:
 
@@ -48,12 +48,12 @@ protected:
   su2double Viscosity;    /*!< \brief Viscosity, must be constant. */
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CNSUnitQuadSolution(void);
-  
+
   /*!
    * \overload
    * \param[in] val_nDim  - Number of dimensions of the problem.
@@ -65,7 +65,7 @@ public:
                       unsigned short val_nvar,
                       unsigned short val_iMesh,
                       CConfig*       config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
@@ -79,8 +79,8 @@ public:
    */
   void GetSolution(const su2double *val_coords,
                    const su2double val_t,
-                   su2double       *val_solution);
-  
+                   su2double       *val_solution) const override;
+
   /*!
    * \brief Get the boundary conditions state for an exact solution.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
@@ -89,5 +89,5 @@ public:
    */
   void GetBCState(const su2double *val_coords,
                   const su2double val_t,
-                  su2double       *val_solution);
+                  su2double       *val_solution) const override;
 };
