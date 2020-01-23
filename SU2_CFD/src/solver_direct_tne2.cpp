@@ -5190,23 +5190,6 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 
-      /*--- Store primitive variables (density, velocities, velocity squared,
-         energy, pressure, and sound speed) at the boundary node, and set some
-         other quantities for clarity. Project the current flow velocity vector
-         at this boundary node into the local normal direction, i.e. compute
-         v_bound.n.  ---*/
-
-      Density_Bound = V_domain[nSpecies+nDim+3];
-      Vel2_Bound = 0.0; Vn_Bound = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vel_Bound[iDim] = V_domain[nSpecies+2+nDim];
-        Vel2_Bound     += Vel_Bound[iDim]*Vel_Bound[iDim];
-        Vn_Bound       += Vel_Bound[iDim]*UnitNormal[iDim];
-      }
-      Pressure_Bound   = nodes->GetPressure(iPoint);
-      SoundSpeed_Bound = nodes->GetSoundSpeed(iPoint);
-      Entropy_Bound    = pow(Density_Bound, Gamma)/Pressure_Bound;
-
       /*--- Store the primitive variable state for the freestream. Project
          the freestream velocity vector into the local normal direction,
          i.e. compute v_infty.n. ---*/
@@ -5231,86 +5214,6 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
           Qn_Infty -= GridVel[iDim]*UnitNormal[iDim];
       }
 
-      /*--- Compute acoustic Riemann invariants: R = u.n +/- 2c/(gamma-1).
-         These correspond with the eigenvalues (u+c) and (u-c), respectively,
-         which represent the acoustic waves. Positive characteristics are
-         incoming, and a physical boundary condition is imposed (freestream
-         state). This occurs when either (u.n+c) > 0 or (u.n-c) > 0. Negative
-         characteristics are leaving the domain, and numerical boundary
-         conditions are required by extrapolating from the interior state
-         using the Riemann invariants. This occurs when (u.n+c) < 0 or
-         (u.n-c) < 0. Note that grid movement is taken into account when
-         checking the sign of the eigenvalue. ---*/
-
-      /*--- Check whether (u.n+c) is greater or less than zero ---*/
-
-      if (Qn_Infty > -SoundSpeed_Infty) {
-        /*--- Subsonic inflow or outflow ---*/
-        RiemannPlus = Vn_Bound + 2.0*SoundSpeed_Bound/Gamma_Minus_One;
-      } else {
-        /*--- Supersonic inflow ---*/
-        RiemannPlus = Vn_Infty + 2.0*SoundSpeed_Infty/Gamma_Minus_One;
-      }
-
-      /*--- Check whether (u.n-c) is greater or less than zero ---*/
-
-      if (Qn_Infty > SoundSpeed_Infty) {
-        /*--- Supersonic outflow ---*/
-        RiemannMinus = Vn_Bound - 2.0*SoundSpeed_Bound/Gamma_Minus_One;
-      } else {
-        /*--- Subsonic outflow ---*/
-        RiemannMinus = Vn_Infty - 2.0*SoundSpeed_Infty/Gamma_Minus_One;
-      }
-
-      /*--- Compute a new value for the local normal velocity and speed of
-         sound from the Riemann invariants. ---*/
-
-      Vn = 0.5 * (RiemannPlus + RiemannMinus);
-      SoundSpeed = 0.25 * (RiemannPlus - RiemannMinus)*Gamma_Minus_One;
-
-      /*--- Construct the primitive variable state at the boundary for
-         computing the flux for the weak boundary condition. The values
-         that we choose to construct the solution (boundary or freestream)
-         depend on whether we are at an inflow or outflow. At an outflow, we
-         choose boundary information (at most one characteristic is incoming),
-         while at an inflow, we choose infinity values (at most one
-         characteristic is outgoing). ---*/
-
-      // if (Qn_Infty > 0.0)   {
-      //   /*--- Outflow conditions ---*/
-      //   for (iDim = 0; iDim < nDim; iDim++)
-      //     Velocity[iDim] = Vel_Bound[iDim] + (Vn-Vn_Bound)*UnitNormal[iDim];
-      //   Entropy = Entropy_Bound;
-      //   Temperature_ve = V_domain[nSpecies+1];
-      //   for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
-      //     Ys[iSpecies] = V_domain[iSpecies]/V_domain[nSpecies+nDim+3];
-      //   }
-      // } else  {
-      //   /*--- Inflow conditions ---*/
-      //   for (iDim = 0; iDim < nDim; iDim++)
-      //     Velocity[iDim] = Vel_Infty[iDim] + (Vn-Vn_Infty)*UnitNormal[iDim];
-      //   Entropy = Entropy_Infty;
-      //   Temperature_ve = Temperature_ve_Inf;
-      //   for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
-      //     Ys[iSpecies] = MassFrac_Inf[iSpecies];
-      //   }
-      // }
-
-      /*--- Recompute the primitive variables. ---*/
-
-      // Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
-      // Velocity2 = 0.0;
-      // for (iDim = 0; iDim < nDim; iDim++) {
-      //   Velocity2 += Velocity[iDim]*Velocity[iDim];
-      // }
-      // Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
-      // Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      // for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      //   Temperature += Pressure*Ms[iSpecies]/(Ru*Density*Ys[iSpecies]);
-      // // TODO: Fix these later!
-      // for (iDim = 0; iDim < nDim; iDim++) {
-      //   Mvec[iDim] = Velocity[iDim]/SoundSpeed;
-      // }
       /*--- For now, assume supersonic everywhere... ---*/
       if (Qn_Infty > 0.0)   {
         /*--- Outflow conditions ---*/

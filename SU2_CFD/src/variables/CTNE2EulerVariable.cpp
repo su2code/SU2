@@ -952,8 +952,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   Tvemin = 50.0; Tvemax = 8E4;
 
   /*--- Set temperature algorithm paramters ---*/
-  NRtol    = 1.0E-4;      // Tolerance for the Newton-Raphson method
-  Btol     = 1.0E-2;      // Tolerance for the Bisection method
+  NRtol    = 1.0E-8;      // Tolerance for the Newton-Raphson method
+  Btol     = 1.0E-4;      // Tolerance for the Bisection method
   maxNIter = 99999;         // Maximum Newton-Raphson iterations
   maxBIter = 99999;         // Maximum Bisection method iterations
   scale    = 0.5;         // Scaling factor for Newton-Raphson step
@@ -984,9 +984,10 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
       V[RHOS_INDEX+iSpecies] = 1E-20;
       U[iSpecies]            = 1E-20;
       nonPhys                = true;
-    } else
-      V[RHOS_INDEX+iSpecies] = U[iSpecies];
-    V[RHO_INDEX]            += U[iSpecies];
+    }
+    else V[RHOS_INDEX+iSpecies] = U[iSpecies];
+    
+    V[RHO_INDEX] += U[iSpecies];
   }
 
   /*--- Assign mixture velocity ---*/
@@ -1030,7 +1031,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   /*--- Vibrational-Electronic Temperature ---*/
 
   // Check for non-physical solutions
-  Tvemin = max(Tmin, V[T_INDEX]/2.); // Tve should be geq T
+  // Tvemin = max(Tmin, V[T_INDEX]/2.); // Tve should be geq T
   rhoEve_min = 0.0;
   rhoEve_max = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
