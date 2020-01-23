@@ -106,22 +106,25 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Index of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration);
+  void SetTime_Step(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned long Iteration) override;
 
   /*!
    * \brief Parallelization of Undivided Laplacian.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
+  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Parallelization of Undivided Laplacian.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config);
+  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Created the force projection vector for adjoint boundary conditions.
@@ -129,7 +132,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetForceProj_Vector(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void SetForceProj_Vector(CGeometry *geometry,
+                           CSolver **solver_container,
+                           CConfig *config) final;
 
   /*!
    * \brief Compute the jump for the interior boundary problem.
@@ -137,7 +142,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void SetIntBoundary_Jump(CGeometry *geometry,
+                           CSolver **solver_container,
+                           CConfig *config) final;
 
   /*!
    * \brief Compute adjoint density at the infinity.
@@ -167,8 +174,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short iMesh, unsigned short iRKStep);
+  void Centered_Residual(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *numerics,
+                        CConfig *config,
+                        unsigned short iMesh,
+                        unsigned short iRKStep) final;
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
@@ -178,8 +189,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                       unsigned short iMesh);
+  void Upwind_Residual(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CNumerics *numerics,
+                      CConfig *config,
+                      unsigned short iMesh) final;
 
   /*!
    * \brief Source term integration.
@@ -190,8 +204,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh);
+  void Source_Residual(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *numerics,
+                       CNumerics *second_numerics,
+                       CConfig *config, unsigned short iMesh) override;
 
   /*!
    * \brief Source term integration.
@@ -201,15 +218,18 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh);
+  void Source_Template(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *numerics,
+                       CConfig *config,
+                       unsigned short iMesh) final;
 
   /*!
    * \brief Compute the undivided laplacian for the adjoint solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Value of the characteristic variables at the boundaries.
@@ -217,7 +237,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) { return DonorAdjVar[val_marker][val_vertex]; }
+  inline su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) const final {
+    return DonorAdjVar[val_marker][val_vertex];
+  }
 
   /*!
    * \brief Value of the characteristic variables at the boundaries.
@@ -225,7 +247,12 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline void SetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { DonorAdjVar[val_marker][val_vertex][val_var] = val_value; }
+  inline void SetDonorAdjVar(unsigned short val_marker,
+                             unsigned long val_vertex,
+                             unsigned short val_var,
+                             su2double val_value) final {
+    DonorAdjVar[val_marker][val_vertex][val_var] = val_value;
+  }
 
   /*!
    * \brief Value of the characteristic variables at the boundaries.
@@ -233,7 +260,11 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline su2double GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var) { return DonorAdjVar[val_marker][val_vertex][val_var]; }
+  inline su2double GetDonorAdjVar(unsigned short val_marker,
+                                  unsigned long val_vertex,
+                                  unsigned short val_var) const final {
+    return DonorAdjVar[val_marker][val_vertex][val_var];
+  }
 
   /*!
    * \brief Value of the characteristic global index at the boundaries.
@@ -249,15 +280,19 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline void SetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex, unsigned long val_index) { DonorGlobalIndex[val_marker][val_vertex] = val_index; }
-
+  inline void SetDonorGlobalIndex(unsigned short val_marker,
+                                  unsigned long val_vertex,
+                                  unsigned long val_index) final {
+    DonorGlobalIndex[val_marker][val_vertex] = val_index;
+  }
+  
   /*!
    * \brief Compute the sensor for higher order dissipation control in rotating problems.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
@@ -267,8 +302,11 @@ public:
    * \param[in] iMesh - current mesh level for the multigrid.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
-                       CConfig *config, unsigned short iMesh, bool Output);
+  void SetFarfield_AoA(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CConfig *config,
+                       unsigned short iMesh,
+                       bool Output) final;
 
   /*!
    * \brief Impose via the residual the adjoint Euler wall boundary condition.
@@ -293,8 +331,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
+  void BC_Interface_Boundary(CGeometry *geometry,
+                             CSolver **solver_container,
+                             CNumerics *numerics,
+                             CConfig *config,
+                             unsigned short val_marker) final;
 
   /*!
    * \brief Impose the near-field boundary condition using the residual.
@@ -304,8 +345,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
+  void BC_NearField_Boundary(CGeometry *geometry,
+                             CSolver **solver_container,
+                             CNumerics *numerics,
+                             CConfig *config,
+                             unsigned short val_marker) final;
 
   /*!
    * \brief Impose an actuator disk inlet boundary condition.
@@ -316,8 +360,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                        CConfig *config, unsigned short val_marker);
+  void BC_ActDisk_Inlet(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) final;
 
   /*!
    * \brief Impose an actuator disk outlet boundary condition.
@@ -328,8 +376,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                         CConfig *config, unsigned short val_marker);
+  void BC_ActDisk_Outlet(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) final;
 
   /*!
    * \brief Impose an actuator disk inlet boundary condition.
@@ -339,9 +391,15 @@ public:
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] val_inlet_surface - Boolean for whether val_marker is an inlet
    */
-  void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
+  void BC_ActDisk(CGeometry *geometry,
+                  CSolver **solver_container,
+                  CNumerics *conv_numerics,
+                  CNumerics *visc_numerics,
+                  CConfig *config,
+                  unsigned short val_marker,
+                  bool val_inlet_surface) final;
 
   /*!
    * \brief Impose via the residual the adjoint symmetry boundary condition.
@@ -357,7 +415,7 @@ public:
                     CNumerics      *conv_numerics,
                     CNumerics      *visc_numerics,
                     CConfig        *config,
-                    unsigned short val_marker) override;
+                    unsigned short val_marker) final;
 
   /*!
    * \brief Impose the boundary condition to the far field using characteristics.
@@ -368,8 +426,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                    unsigned short val_marker);
+  void BC_Far_Field(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CNumerics *conv_numerics,
+                    CNumerics *visc_numerics,
+                    CConfig *config,
+                    unsigned short val_marker) final;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -380,8 +442,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                unsigned short val_marker);
+  void BC_Inlet(CGeometry *geometry,
+                CSolver **solver_container,
+                CNumerics *conv_numerics,
+                CNumerics *visc_numerics,
+                CConfig *config,
+                unsigned short val_marker) final;
 
 
   /*!
@@ -392,8 +458,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                           unsigned short val_marker);
+  void BC_Supersonic_Inlet(CGeometry *geometry,
+                           CSolver **solver_container,
+                           CNumerics *conv_numerics,
+                           CNumerics *visc_numerics,
+                           CConfig *config,
+                           unsigned short val_marker) final;
 
   /*!
    * \brief Impose the supersonic outlet boundary condition.
@@ -403,8 +473,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                            unsigned short val_marker);
+  void BC_Supersonic_Outlet(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CNumerics *conv_numerics,
+                            CNumerics *visc_numerics,
+                            CConfig *config,
+                            unsigned short val_marker) final;
 
   /*!
    * \brief Impose the outlet boundary condition.
@@ -415,8 +489,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                 unsigned short val_marker);
+  void BC_Outlet(CGeometry *geometry,
+                 CSolver **solver_container,
+                 CNumerics *conv_numerics,
+                 CNumerics *visc_numerics,
+                 CConfig *config,
+                 unsigned short val_marker) final;
+
 
   /*!
    * \brief Impose the engine inflow adjoint boundary condition.
@@ -427,8 +506,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                        CConfig *config, unsigned short val_marker);
+  void BC_Engine_Inflow(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) final;
 
   /*!
    * \brief Impose the engine exhaust boundary condition.
@@ -439,8 +522,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                         CConfig *config, unsigned short val_marker);
+  void BC_Engine_Exhaust(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CNumerics *conv_numerics,
+                         CNumerics *visc_numerics,
+                         CConfig *config,
+                         unsigned short val_marker) final;
 
   /*!
    * \brief Update the solution using a Runge-Kutta strategy.
@@ -449,8 +536,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep);
+  void ExplicitRK_Iteration(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CConfig *config,
+                            unsigned short iRKStep) final;
 
   /*!
    * \brief Update the solution using a explicit Euler scheme.
@@ -458,7 +547,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ExplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit solver.
@@ -466,7 +557,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ImplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) final;
 
   /*!
    * \brief Initialize the residual vectors.
@@ -477,7 +570,13 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+  void Preprocessing(CGeometry *geometry,
+                     CSolver **solver_container,
+                     CConfig *config,
+                     unsigned short iMesh,
+                     unsigned short iRKStep,
+                     unsigned short RunTime_EqSystem,
+                     bool Output) override;
 
   /*!
    * \brief Compute the inviscid sensitivity of the functional.
@@ -486,7 +585,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  void Inviscid_Sensitivity(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CNumerics *numerics,
+                            CConfig *config) final;
 
   /*!
    * \brief Smooth the inviscid sensitivity of the functional.
@@ -495,7 +597,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  void Smooth_Sensitivity(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *numerics,
+                          CConfig *config) final;
 
   /*!
    * \brief Get the shape sensitivity coefficient.
@@ -503,7 +608,10 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the sensitivity coefficient.
    */
-  inline su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
+  inline su2double GetCSensitivity(unsigned short val_marker, 
+                                   unsigned long val_vertex) const final{ 
+    return CSensitivity[val_marker][val_vertex]; 
+  }
 
   /*!
    * \brief Set the shape sensitivity coefficient.
@@ -511,7 +619,11 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \param[in] val_sensitivity - Value of the sensitivity coefficient.
    */
-  inline void SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) { CSensitivity[val_marker][val_vertex] = val_sensitivity; }
+  inline void SetCSensitivity(unsigned short val_marker,
+                              unsigned long val_vertex,
+                              su2double val_sensitivity) { 
+    CSensitivity[val_marker][val_vertex] = val_sensitivity; 
+  }
 
   /*!
    * \brief Provide the total shape sensitivity coefficient.
@@ -565,8 +677,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+  void SetResidual_DualTime(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CConfig *config,
+                            unsigned short iRKStep,
+                            unsigned short iMesh,
+                            unsigned short RunTime_EqSystem) final;
 
   /*!
    * \brief Set the initial condition for the Euler Equations.
@@ -575,7 +691,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter);
+  void SetInitialCondition(CGeometry **geometry,
+                           CSolver ***solver_container,
+                           CConfig *config,
+                           unsigned long TimeIter) final;
 
   /*!
    * \brief Load a solution from a restart file.

@@ -252,8 +252,11 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the sensitivity coefficient.
    */
-  inline su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
-
+  inline su2double GetCSensitivity(unsigned short val_marker, 
+                                   unsigned long val_vertex) const final { 
+    return CSensitivity[val_marker][val_vertex]; 
+  }
+  
   /*!
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
@@ -292,7 +295,13 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+  void Preprocessing(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned short iRKStep,
+                    unsigned short RunTime_EqSystem,
+                    bool Output) override final;
 
   /*!
    * \brief Load a solution from a restart file.
@@ -309,7 +318,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.

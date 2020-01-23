@@ -74,7 +74,13 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+  void Preprocessing(CGeometry *geometry,
+                     CSolver **solver_container,
+                     CConfig *config,
+                     unsigned short iMesh,
+                     unsigned short iRKStep,
+                     unsigned short RunTime_EqSystem,
+                     bool Output) final;
 
   /*!
    * \brief Compute the time step for solving the Euler equations.
@@ -84,8 +90,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Index of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration);
+  void SetTime_Step(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned long Iteration) final;
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.
@@ -96,8 +105,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  void Centered_Residual(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CNumerics *numerics,
+                         CConfig *config,
+                         unsigned short iMesh,
+                         unsigned short iRKStep) final;
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
@@ -107,8 +120,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh);
+  void Upwind_Residual(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *numerics,
+                       CConfig *config,
+                       unsigned short iMesh) final;
 
   /*!
    * \brief Source term integration.
@@ -119,8 +135,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh);
+  void Source_Residual(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *numerics,
+                       CNumerics *second_numerics,
+                       CConfig *config, unsigned short iMesh) final;
 
   /*!
    * \brief Source term integration.
@@ -130,8 +149,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh);
+  void Source_Template(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *numerics,
+                       CConfig *config,
+                       unsigned short iMesh) final;
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -157,9 +179,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                        unsigned short val_marker);
-
+  void BC_HeatFlux_Wall(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) final;
   /*!
    * \brief Impose the far-field boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -169,8 +194,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                    unsigned short val_marker);
+  void BC_Far_Field(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CNumerics *conv_numerics,
+                    CNumerics *visc_numerics,
+                    CConfig *config,
+                    unsigned short val_marker) final;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -181,9 +210,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                unsigned short val_marker);
-
+  void BC_Inlet(CGeometry *geometry,
+                CSolver **solver_container,
+                CNumerics *conv_numerics,
+                CNumerics *visc_numerics,
+                CConfig *config,
+                unsigned short val_marker) final;
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -193,9 +225,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                 unsigned short val_marker);
-
+  void BC_Outlet(CGeometry *geometry,
+                 CSolver **solver_container,
+                 CNumerics *conv_numerics,
+                 CNumerics *visc_numerics,
+                 CConfig *config,
+                 unsigned short val_marker) final;
   /*!
    * \brief Impose the symmetry plane boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -210,7 +245,7 @@ public:
                     CNumerics      *conv_numerics,
                     CNumerics      *visc_numerics,
                     CConfig        *config,
-                    unsigned short val_marker) override;
+                    unsigned short val_marker) final;
 
   /*!
    * \brief Impose a custom or verification boundary condition.
@@ -231,23 +266,29 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep);
+  void ExplicitRK_Iteration(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CConfig *config,
+                            unsigned short iRKStep) final;
 
   /*!
-   * \brief Update the solution using the explicit Euler scheme.
+   * \brief Update the solution using a explicit Euler scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ExplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) final;
 
   /*!
-   * \brief Update the solution using an implicit Euler scheme.
+   * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ImplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) final;
 
 };

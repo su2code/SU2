@@ -124,77 +124,77 @@ public:
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CL_Visc(unsigned short val_marker) { return Surface_CL_Visc[val_marker]; }
+  inline su2double GetSurface_CL_Visc(unsigned short val_marker) const final { return Surface_CL_Visc[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional drag coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CD_Visc(unsigned short val_marker) { return Surface_CD_Visc[val_marker]; }
+  inline su2double GetSurface_CD_Visc(unsigned short val_marker) const final { return Surface_CD_Visc[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional side-force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CSF_Visc(unsigned short val_marker) { return Surface_CSF_Visc[val_marker]; }
+  inline su2double GetSurface_CSF_Visc(unsigned short val_marker) const final { return Surface_CSF_Visc[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional side-force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CEff_Visc(unsigned short val_marker) { return Surface_CEff_Visc[val_marker]; }
+  inline su2double GetSurface_CEff_Visc(unsigned short val_marker) const final { return Surface_CEff_Visc[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional x force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x force coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CFx_Visc(unsigned short val_marker) { return Surface_CFx_Visc[val_marker]; }
+  inline su2double GetSurface_CFx_Visc(unsigned short val_marker) const final { return Surface_CFx_Visc[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional y force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y force coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CFy_Visc(unsigned short val_marker) { return Surface_CFy_Visc[val_marker]; }
+  inline su2double GetSurface_CFy_Visc(unsigned short val_marker) const final { return Surface_CFy_Visc[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional z force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z force coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CFz_Visc(unsigned short val_marker) { return Surface_CFz_Visc[val_marker]; }
+  inline su2double GetSurface_CFz_Visc(unsigned short val_marker) const final { return Surface_CFz_Visc[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional x moment coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CMx_Visc(unsigned short val_marker) { return Surface_CMx_Visc[val_marker]; }
+  inline su2double GetSurface_CMx_Visc(unsigned short val_marker) const final { return Surface_CMx_Visc[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional y moment coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CMy_Visc(unsigned short val_marker) { return Surface_CMy_Visc[val_marker]; }
+  inline su2double GetSurface_CMy_Visc(unsigned short val_marker) const final { return Surface_CMy_Visc[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional z moment coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_CMz_Visc(unsigned short val_marker) { return Surface_CMz_Visc[val_marker]; }
+  inline su2double GetSurface_CMz_Visc(unsigned short val_marker) const final { return Surface_CMz_Visc[val_marker]; }
 
   /*!
    * \brief Provide the buffet metric.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the buffet metric on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_Buffet_Metric(unsigned short val_marker) { return Surface_Buffet_Metric[val_marker]; }
+  inline su2double GetSurface_Buffet_Metric(unsigned short val_marker) const final { return Surface_Buffet_Metric[val_marker]; }
 
   /*!
    * \brief Get the inviscid contribution to the lift coefficient.
@@ -300,8 +300,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Index of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration);
+  void SetTime_Step(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned long Iteration) final;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -312,7 +315,13 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+  void Preprocessing(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned short iRKStep,
+                    unsigned short RunTime_EqSystem,
+                    bool Output) final;
 
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
@@ -327,7 +336,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  void Evaluate_ObjFunc(CConfig *config);
+  void Evaluate_ObjFunc(CConfig *config) final;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -338,7 +347,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  void BC_HeatFlux_Wall(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) final;
 
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).
@@ -349,8 +363,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                          unsigned short val_marker);
+  void BC_Isothermal_Wall(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *conv_numerics,
+                          CNumerics *visc_numerics,
+                          CConfig *config,
+                          unsigned short val_marker) final;
 
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong) with values from a CHT coupling.
@@ -361,7 +379,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CConfig *config, unsigned short val_marker);
+  void BC_ConjugateHeat_Interface(CGeometry *geometry,
+                                  CSolver **solver_container,
+                                  CNumerics *numerics,
+                                  CConfig *config,
+                                  unsigned short val_marker) final;
 
   /*!
    * \brief Set the conjugate heat variables.
@@ -369,7 +391,11 @@ public:
    * \param[in] val_vertex        - vertex index
    * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
    */
-  inline su2double GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return HeatConjugateVar[val_marker][val_vertex][pos_var]; }
+  inline su2double GetConjugateHeatVariable(unsigned short val_marker,
+                                            unsigned long val_vertex,
+                                            unsigned short pos_var) const final { 
+    return HeatConjugateVar[val_marker][val_vertex][pos_var]; 
+  }
 
   /*!
    * \brief Set the conjugate heat variables.
@@ -379,58 +405,62 @@ public:
    * \param[in] relaxation factor - relaxation factor for the change of the variables
    * \param[in] val_var           - value of the variable
    */
-  inline void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
-    HeatConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*HeatConjugateVar[val_marker][val_vertex][pos_var]; }
-
+  inline void SetConjugateHeatVariable(unsigned short val_marker,
+                                       unsigned long val_vertex,
+                                       unsigned short pos_var,
+                                       su2double relaxation_factor,
+                                       su2double val_var) final {
+    HeatConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*HeatConjugateVar[val_marker][val_vertex][pos_var];
+  }
 
   /*!
    * \brief Compute the viscous forces and all the addimensional coefficients.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Friction_Forces(CGeometry *geometry, CConfig *config);
+  void Friction_Forces(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Compute the buffet sensor.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Buffet_Monitoring(CGeometry *geometry, CConfig *config);
+  void Buffet_Monitoring(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Get the total heat flux.
    * \param[in] val_marker - Surface marker where the heat flux is computed.
    * \return Value of the integrated heat flux (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_HF_Visc(unsigned short val_marker) { return Surface_HF_Visc[val_marker]; }
+  inline su2double GetSurface_HF_Visc(unsigned short val_marker) const final { return Surface_HF_Visc[val_marker]; }
 
   /*!
    * \brief Get the maximum (per surface) heat flux.
    * \param[in] val_marker - Surface marker where the heat flux is computed.
    * \return Value of the maximum heat flux (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetSurface_MaxHF_Visc(unsigned short val_marker) { return Surface_MaxHF_Visc[val_marker]; }
+  inline su2double GetSurface_MaxHF_Visc(unsigned short val_marker) const final { return Surface_MaxHF_Visc[val_marker]; }
 
   /*!
    * \brief Get the non dimensional lift coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCL_Visc(unsigned short val_marker) { return CL_Visc[val_marker]; }
+  inline su2double GetCL_Visc(unsigned short val_marker) const final { return CL_Visc[val_marker]; }
 
   /*!
    * \brief Get the non dimensional sideforce coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the sideforce coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCSF_Visc(unsigned short val_marker) { return CSF_Visc[val_marker]; }
+  inline su2double GetCSF_Visc(unsigned short val_marker) const final { return CSF_Visc[val_marker]; }
 
   /*!
    * \brief Get the non dimensional drag coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCD_Visc(unsigned short val_marker) { return CD_Visc[val_marker]; }
+  inline su2double GetCD_Visc(unsigned short val_marker) const final { return CD_Visc[val_marker]; }
 
   /*!
    * \brief Compute the viscous residuals.
@@ -441,8 +471,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  void Viscous_Residual(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *numerics,
+                        CConfig *config,
+                        unsigned short iMesh,
+                        unsigned short iRKStep) final;
 
   /*!
    * \brief Get the skin friction coefficient.
