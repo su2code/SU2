@@ -948,8 +948,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   /*--- Set temperature algorithm paramters ---*/
   NRtol    = 1.0E-8;    // Tolerance for the Newton-Raphson method
   Btol     = 1.0E-6;    // Tolerance for the Bisection method
-  maxNIter = 99;        // Maximum Newton-Raphson iterations
-  maxBIter = 99;        // Maximum Bisection method iterations
+  maxNIter = 999;        // Maximum Newton-Raphson iterations
+  maxBIter = 999;        // Maximum Bisection method iterations
   scale    = 0.5;       // Scaling factor for Newton-Raphson step
 
   /*--- Read parameters from config ---*/
@@ -1097,16 +1097,16 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     } else {
 
       // Assign the bounds
-      // Tve_o = Tvemin;
-      // Tve2  = Tvemax;
-      if (rhoEve_t > rhoEve) {
-        Tve2  = Tve;
-        Tve_o = Tvemin;
-      }
-      else{
-        Tve_o = Tve;
-        Tve2  = Tvemax;
-      }
+      Tve_o = Tvemin;
+      Tve2  = Tvemax;
+      // if (rhoEve_t > rhoEve) {
+        // Tve2  = Tve;
+        // Tve_o = Tvemin;
+      // }
+      // else{
+        // Tve_o = Tve;
+        // Tve2  = Tvemax;
+      // }
 
       // Execute the root-finding method
       Bconvg = false;
