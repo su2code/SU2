@@ -909,6 +909,7 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
     bkup = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint],
                         dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
+    if(bkup) Prim2ConsVar(config, iPoint, Primitive[iPoint], Solution[iPoint]]);
   }
 
   SetVelocity2(iPoint);
@@ -1142,15 +1143,15 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
       // If absolutely no convergence, then assign to the TR temperature
       else {
         V[TVE_INDEX] = V[T_INDEX];
-        rhoCvve  = 0.0;
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          val_eves[iSpecies]  = CalcEve(config, V[TVE_INDEX], iSpecies);
-          val_Cvves[iSpecies] = CalcCvve(V[TVE_INDEX], config, iSpecies);
-          rhoCvve  += U[iSpecies]*val_Cvves[iSpecies];
-        }
-        U[nSpecies+nDim]   = rhoCvtr*V[T_INDEX] + rhoCvve*V[TVE_INDEX] + rhoE_f
-                            - rhoE_ref + 0.5*rho*sqvel;
-        U[nSpecies+nDim+1] = rhoCvve*V[TVE_INDEX];
+        // rhoCvve  = 0.0;
+        // for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        //   val_eves[iSpecies]  = CalcEve(config, V[TVE_INDEX], iSpecies);
+        //   val_Cvves[iSpecies] = CalcCvve(V[TVE_INDEX], config, iSpecies);
+        //   rhoCvve  += U[iSpecies]*val_Cvves[iSpecies];
+        // }
+        // U[nSpecies+nDim]   = rhoCvtr*V[T_INDEX] + rhoCvve*V[TVE_INDEX] + rhoE_f
+        //                     - rhoE_ref + 0.5*rho*sqvel;
+        // U[nSpecies+nDim+1] = rhoCvve*V[TVE_INDEX];
       }
     }
   }
