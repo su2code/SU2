@@ -5349,7 +5349,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
                                                            nPrimVar, nPrimVarGrad, config);
 
       /*--- Calculate dPdU, dTdU, dTvedU, and some other primitives ---*/
-      // const bool check_bc = node_bc->SetPrimVar_Compressible(0,config);
+      const bool check_bc = node_bc->SetPrimVar_Compressible(0,config);
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
         node_bc->GetEve(0)[iSpecies] = nodes->CalcEve(config, Temperature_ve, iSpecies);
       }
