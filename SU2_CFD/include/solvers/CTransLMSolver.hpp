@@ -69,12 +69,12 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry,
-                    CSolver **solver_container,
-                    CConfig *config,
-                    unsigned short iMesh,
-                    unsigned short iRKStep,
-                    unsigned short RunTime_EqSystem,
-                    bool Output) final;
+                     CSolver **solver_container,
+                     CConfig *config,
+                     unsigned short iMesh,
+                     unsigned short iRKStep,
+                     unsigned short RunTime_EqSystem,
+                     bool Output) final;
 
   /*!
    * \brief A virtual member.
@@ -97,10 +97,10 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Upwind_Residual(CGeometry *geometry,
-                      CSolver **solver_container,
-                      CNumerics *numerics,
-                      CConfig *config,
-                      unsigned short iMesh) final;
+                       CSolver **solver_container,
+                       CNumerics *numerics,
+                       CConfig *config,
+                       unsigned short iMesh) final;
 
   /*!
    * \brief Compute the viscous residuals for the turbulent equation.
@@ -111,8 +111,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  void Viscous_Residual(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *numerics,
+                        CConfig *config,
+                        unsigned short iMesh,
+                        unsigned short iRKStep) final;
 
   /*!
    * \brief Source term computation.
@@ -123,8 +127,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh);
+  void Source_Residual(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *numerics,
+                       CNumerics *second_numerics,
+                       CConfig *config, unsigned short iMesh) final;
 
   /*!
    * \brief Source term computation.
@@ -134,8 +141,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh);
+  void Source_Template(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *numerics,
+                       CConfig *config,
+                       unsigned short iMesh) final;
 
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
@@ -178,8 +188,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                unsigned short val_marker);
+  void BC_Inlet(CGeometry *geometry,
+                CSolver **solver_container,
+                CNumerics *conv_numerics,
+                CNumerics *visc_numerics,
+                CConfig *config,
+                unsigned short val_marker) final;
 
   /*!
    * \brief Impose the outlet boundary condition.
@@ -190,8 +204,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                 unsigned short val_marker);
+  void BC_Outlet(CGeometry *geometry,
+                 CSolver **solver_container,
+                 CNumerics *conv_numerics,
+                 CNumerics *visc_numerics,
+                 CConfig *config,
+                 unsigned short val_marker) final;
 
   /*!
    * \brief Impose the symmetry condition.
@@ -215,7 +233,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ImplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) final;
 
   // Another set of matrix structures for the Lm equations
   CSysMatrix<su2double> JacobianItmc;  /*!< \brief Complete sparse Jacobian structure for implicit computations. */

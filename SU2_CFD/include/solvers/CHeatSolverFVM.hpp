@@ -117,8 +117,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                         CConfig *config, unsigned short iMesh);
+  void Source_Residual(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *numerics,
+                       CNumerics *second_numerics,
+                       CConfig *config, unsigned short iMesh) final;
 
   /*!
    * \brief Compute the undivided laplacian for the solution.
@@ -165,8 +168,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  void Viscous_Residual(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *numerics,
+                        CConfig *config,
+                        unsigned short iMesh,
+                        unsigned short iRKStep) final;
 
 
   void Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) final;
@@ -212,8 +219,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                          unsigned short val_marker);
+  void BC_Inlet(CGeometry *geometry,
+                CSolver **solver_container,
+                CNumerics *conv_numerics,
+                CNumerics *visc_numerics,
+                CConfig *config,
+                unsigned short val_marker) final;
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -223,8 +234,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Outlet(CGeometry *geometry, CSolver **solver_container,
-                               CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  void BC_Outlet(CGeometry *geometry,
+                 CSolver **solver_container,
+                 CNumerics *conv_numerics,
+                 CNumerics *visc_numerics,
+                 CConfig *config,
+                 unsigned short val_marker) final;
 
   /*!
    * \brief Impose the (received) conjugate heat variables.
@@ -234,8 +249,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                          unsigned short val_marker);
+  void BC_ConjugateHeat_Interface(CGeometry *geometry,
+                                  CSolver **solver_container,
+                                  CNumerics *numerics,
+                                  CConfig *config,
+                                  unsigned short val_marker) final;
 
   /*!
    * \brief Set the conjugate heat variables.
@@ -243,7 +261,11 @@ public:
    * \param[in] val_vertex        - vertex index
    * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
    */
-  inline su2double GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return ConjugateVar[val_marker][val_vertex][pos_var]; }
+  inline su2double GetConjugateHeatVariable(unsigned short val_marker,
+                                            unsigned long val_vertex,
+                                            unsigned short pos_var) const final { 
+    return ConjugateVar[val_marker][val_vertex][pos_var]; 
+  }
 
   /*!
    * \brief Set the conjugate heat variables.
@@ -253,8 +275,13 @@ public:
    * \param[in] relaxation factor - relaxation factor for the change of the variables
    * \param[in] val_var           - value of the variable
    */
-  inline void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
-    ConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*ConjugateVar[val_marker][val_vertex][pos_var]; }
+  inline void SetConjugateHeatVariable(unsigned short val_marker,
+                                       unsigned long val_vertex,
+                                       unsigned short pos_var,
+                                       su2double relaxation_factor,
+                                       su2double val_var) final {
+    ConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*ConjugateVar[val_marker][val_vertex][pos_var];
+  }
 
 
   /*!
@@ -263,19 +290,21 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void Heat_Fluxes(CGeometry *geometry,
+                   CSolver **solver_container,
+                   CConfig *config) final;
 
   /*!
    * \brief Get value of the heat load (integrated heat flux).
    * \return Value of the heat load (integrated heat flux).
    */
-  inline su2double GetTotal_HeatFlux() { return Total_HeatFlux; }
+  inline su2double GetTotal_HeatFlux() const final { return Total_HeatFlux; }
 
   /*!
    * \brief Get value of the integral-averaged temperature.
    * \return Value of the integral-averaged temperature.
    */
-  inline su2double GetTotal_AvgTemperature() { return Total_AverageT; }
+  inline su2double GetTotal_AvgTemperature() const final { return Total_AverageT; }
 
   /*!
    * \brief Update the solution using an implicit solver.
@@ -283,7 +312,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ImplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) final;
 
   /*!
    * \brief Update the solution using an explicit solver.
@@ -291,8 +322,18 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ExplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) final;
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Index of the current iteration.
+   */
   void SetTime_Step(CGeometry *geometry,
                     CSolver **solver_container,
                     CConfig *config,
@@ -306,7 +347,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter);
+  void SetInitialCondition(CGeometry **geometry,
+                           CSolver ***solver_container,
+                           CConfig *config,
+                           unsigned long TimeIter) final;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.

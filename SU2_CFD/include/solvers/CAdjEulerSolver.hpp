@@ -132,7 +132,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetForceProj_Vector(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void SetForceProj_Vector(CGeometry *geometry,
+                           CSolver **solver_container,
+                           CConfig *config) final;
 
   /*!
    * \brief Compute the jump for the interior boundary problem.
@@ -140,7 +142,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void SetIntBoundary_Jump(CGeometry *geometry,
+                           CSolver **solver_container,
+                           CConfig *config) final;
 
   /*!
    * \brief Compute adjoint density at the infinity.
@@ -200,8 +204,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh);
+  void Source_Residual(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *numerics,
+                       CNumerics *second_numerics,
+                       CConfig *config, unsigned short iMesh) override;
 
   /*!
    * \brief Source term integration.
@@ -211,8 +218,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh);
+  void Source_Template(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *numerics,
+                       CConfig *config,
+                       unsigned short iMesh) final;
 
   /*!
    * \brief Compute the undivided laplacian for the adjoint solution.
@@ -227,7 +237,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) { return DonorAdjVar[val_marker][val_vertex]; }
+  inline su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) const final {
+    return DonorAdjVar[val_marker][val_vertex];
+  }
 
   /*!
    * \brief Value of the characteristic variables at the boundaries.
@@ -235,7 +247,12 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline void SetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { DonorAdjVar[val_marker][val_vertex][val_var] = val_value; }
+  inline void SetDonorAdjVar(unsigned short val_marker,
+                             unsigned long val_vertex,
+                             unsigned short val_var,
+                             su2double val_value) final {
+    DonorAdjVar[val_marker][val_vertex][val_var] = val_value;
+  }
 
   /*!
    * \brief Value of the characteristic variables at the boundaries.
@@ -243,7 +260,11 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline su2double GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var) { return DonorAdjVar[val_marker][val_vertex][val_var]; }
+  inline su2double GetDonorAdjVar(unsigned short val_marker,
+                                  unsigned long val_vertex,
+                                  unsigned short val_var) const final {
+    return DonorAdjVar[val_marker][val_vertex][val_var];
+  }
 
   /*!
    * \brief Value of the characteristic global index at the boundaries.
@@ -259,8 +280,12 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline void SetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex, unsigned long val_index) { DonorGlobalIndex[val_marker][val_vertex] = val_index; }
-
+  inline void SetDonorGlobalIndex(unsigned short val_marker,
+                                  unsigned long val_vertex,
+                                  unsigned long val_index) final {
+    DonorGlobalIndex[val_marker][val_vertex] = val_index;
+  }
+  
   /*!
    * \brief Compute the sensor for higher order dissipation control in rotating problems.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -277,8 +302,11 @@ public:
    * \param[in] iMesh - current mesh level for the multigrid.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
-                       CConfig *config, unsigned short iMesh, bool Output);
+  void SetFarfield_AoA(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CConfig *config,
+                       unsigned short iMesh,
+                       bool Output) final;
 
   /*!
    * \brief Impose via the residual the adjoint Euler wall boundary condition.
@@ -414,8 +442,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                unsigned short val_marker);
+  void BC_Inlet(CGeometry *geometry,
+                CSolver **solver_container,
+                CNumerics *conv_numerics,
+                CNumerics *visc_numerics,
+                CConfig *config,
+                unsigned short val_marker) final;
 
 
   /*!
@@ -426,8 +458,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                           unsigned short val_marker);
+  void BC_Supersonic_Inlet(CGeometry *geometry,
+                           CSolver **solver_container,
+                           CNumerics *conv_numerics,
+                           CNumerics *visc_numerics,
+                           CConfig *config,
+                           unsigned short val_marker) final;
 
   /*!
    * \brief Impose the supersonic outlet boundary condition.
@@ -437,8 +473,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                            unsigned short val_marker);
+  void BC_Supersonic_Outlet(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CNumerics *conv_numerics,
+                            CNumerics *visc_numerics,
+                            CConfig *config,
+                            unsigned short val_marker) final;
 
   /*!
    * \brief Impose the outlet boundary condition.
@@ -449,8 +489,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                 unsigned short val_marker);
+  void BC_Outlet(CGeometry *geometry,
+                 CSolver **solver_container,
+                 CNumerics *conv_numerics,
+                 CNumerics *visc_numerics,
+                 CConfig *config,
+                 unsigned short val_marker) final;
+
 
   /*!
    * \brief Impose the engine inflow adjoint boundary condition.
@@ -461,8 +506,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                        CConfig *config, unsigned short val_marker);
+  void BC_Engine_Inflow(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) final;
 
   /*!
    * \brief Impose the engine exhaust boundary condition.
@@ -473,8 +522,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                         CConfig *config, unsigned short val_marker);
+  void BC_Engine_Exhaust(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CNumerics *conv_numerics,
+                         CNumerics *visc_numerics,
+                         CConfig *config,
+                         unsigned short val_marker) final;
 
   /*!
    * \brief Update the solution using a Runge-Kutta strategy.
@@ -483,8 +536,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep);
+  void ExplicitRK_Iteration(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CConfig *config,
+                            unsigned short iRKStep) final;
 
   /*!
    * \brief Update the solution using a explicit Euler scheme.
@@ -492,7 +547,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ExplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit solver.
@@ -500,7 +557,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ImplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) final;
 
   /*!
    * \brief Initialize the residual vectors.
@@ -512,12 +571,12 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry,
-                    CSolver **solver_container,
-                    CConfig *config,
-                    unsigned short iMesh,
-                    unsigned short iRKStep,
-                    unsigned short RunTime_EqSystem,
-                    bool Output) override;
+                     CSolver **solver_container,
+                     CConfig *config,
+                     unsigned short iMesh,
+                     unsigned short iRKStep,
+                     unsigned short RunTime_EqSystem,
+                     bool Output) override;
 
   /*!
    * \brief Compute the inviscid sensitivity of the functional.
@@ -526,7 +585,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  void Inviscid_Sensitivity(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CNumerics *numerics,
+                            CConfig *config) final;
 
   /*!
    * \brief Smooth the inviscid sensitivity of the functional.
@@ -535,7 +597,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  void Smooth_Sensitivity(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *numerics,
+                          CConfig *config) final;
 
   /*!
    * \brief Get the shape sensitivity coefficient.
@@ -543,7 +608,10 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the sensitivity coefficient.
    */
-  inline su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
+  inline su2double GetCSensitivity(unsigned short val_marker, 
+                                   unsigned long val_vertex) const final{ 
+    return CSensitivity[val_marker][val_vertex]; 
+  }
 
   /*!
    * \brief Set the shape sensitivity coefficient.
@@ -551,7 +619,11 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \param[in] val_sensitivity - Value of the sensitivity coefficient.
    */
-  inline void SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) { CSensitivity[val_marker][val_vertex] = val_sensitivity; }
+  inline void SetCSensitivity(unsigned short val_marker,
+                              unsigned long val_vertex,
+                              su2double val_sensitivity) { 
+    CSensitivity[val_marker][val_vertex] = val_sensitivity; 
+  }
 
   /*!
    * \brief Provide the total shape sensitivity coefficient.
@@ -619,7 +691,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter);
+  void SetInitialCondition(CGeometry **geometry,
+                           CSolver ***solver_container,
+                           CConfig *config,
+                           unsigned long TimeIter) final;
 
   /*!
    * \brief Load a solution from a restart file.

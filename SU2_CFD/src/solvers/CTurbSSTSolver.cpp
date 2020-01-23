@@ -1155,10 +1155,6 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
 }
 
-su2double* CTurbSSTSolver::GetConstants() {
-  return constants;
-}
-
 void CTurbSSTSolver::SetInletAtVertex(su2double *val_inlet,
                                      unsigned short iMarker,
                                      unsigned long iVertex) {
