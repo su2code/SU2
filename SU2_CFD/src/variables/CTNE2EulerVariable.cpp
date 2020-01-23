@@ -909,7 +909,7 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
     bkup = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint],
                         dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
-    if(bkup) Prim2ConsVar(config, iPoint, Primitive[iPoint], Solution[iPoint]]);
+    if(bkup) Prim2ConsVar(config, iPoint, Primitive[iPoint], Solution[iPoint]);
   }
 
   SetVelocity2(iPoint);
