@@ -1,11 +1,9 @@
 common_include = include_directories('./')
 common_src =files(['geometry_structure_fem_part.cpp',
-           'primal_grid_structure.cpp',
            'graph_coloring_structure.cpp',
            'fem_geometry_structure.cpp',
            'fem_integration_rules.cpp',
            'config_structure.cpp',
-           'dual_grid_structure.cpp',
            'blas_structure.cpp',
            'ad_structure.cpp',
            'grid_movement_structure.cpp',
@@ -19,17 +17,15 @@ common_src =files(['geometry_structure_fem_part.cpp',
            'interpolation_structure.cpp',
            'mpi_structure.cpp',
            'fem_cgns_elements.cpp',
-           'CMultiGridQueue.cpp',
-           'CMeshReaderFVM.cpp',
-           'CSU2ASCIIMeshReaderFVM.cpp',
-           'CBoxMeshReaderFVM.cpp',
-           'CCGNSMeshReaderFVM.cpp',
-           'CRectangularMeshReaderFVM.cpp'])
+           'CMultiGridQueue.cpp'])
 
 subdir('linear_algebra')
 subdir('toolboxes')
 subdir('geometry')
 subdir('geometry/elements')
+subdir('geometry/dual_grid')
+subdir('geometry/primal_grid')
+subdir('geometry/meshreader')
 
 if get_option('enable-normal')
   common = static_library('SU2Common', 
