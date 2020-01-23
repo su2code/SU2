@@ -419,7 +419,9 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) override;
+  unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                       CConfig *config,
+                                       bool Output) override;
 
   /*!
    * \brief Compute a pressure sensor switch.
@@ -667,7 +669,7 @@ public:
    * \param val_marker Surface where the coefficient is going to be computed.
    * \return Value of the lift coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
-  su2double GetCLift_Inv(unsigned short val_marker);
+  // su2double GetCLift_Inv(unsigned short val_marker);
 
   /*!
    * \brief Provide the non dimensional lift coefficient.
@@ -940,7 +942,7 @@ public:
    * \brief Store the total (inviscid + viscous) non dimensional lift coefficient.
    * \param[in] val_Total_CLift - Value of the total lift coefficient.
    */
-  inline void SetTotal_CLift(su2double val_Total_CLift) { }
+  // inline void SetTotal_CLift(su2double val_Total_CLift) { }
 
   /*!
    * \brief Set the value of the custom objective function.
@@ -1098,7 +1100,7 @@ public:
    * \brief Provide the total custom objective function.
    * \return Value of the custom objective function.
    */
-  inline su2double GetTotal_Custom_ObjFunc() { return Total_Custom_ObjFunc; }
+  inline su2double GetTotal_Custom_ObjFunc() const final { return Total_Custom_ObjFunc; }
 
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
@@ -1230,13 +1232,13 @@ public:
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CoPx_Mnt() { return AllBound_CoPx_Mnt; }
+  inline su2double GetAllBound_CoPx_Mnt() const final { return AllBound_CoPx_Mnt; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CoPy_Mnt() { return AllBound_CoPy_Mnt; }
+  inline su2double GetAllBound_CoPy_Mnt() const final { return AllBound_CoPy_Mnt; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
@@ -1387,7 +1389,7 @@ public:
    * \param[in] iPoint - Index of the grid point
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPreconditioner(CConfig *config, unsigned long iPoint);
+  void SetPreconditioner(CConfig *config, unsigned long iPoint) final;
 
   /*!
    * \brief Value of the total temperature at an inlet boundary.
@@ -1506,7 +1508,9 @@ public:
    * \param[in] val_vertex - vertex index
    * \param[in] value - number of outer states
    */
-  inline void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
+  inline void SetnSlidingStates(unsigned short val_marker,
+                                unsigned long val_vertex,
+                                int value) final { SlidingStateNodes[val_marker][val_vertex] = value; }
 
   /*!
    * \brief Get the number of outer state for fluid interface nodes.

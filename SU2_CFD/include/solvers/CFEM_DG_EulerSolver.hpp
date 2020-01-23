@@ -951,12 +951,12 @@ public:
    */
   inline su2double GetCL_Inv(unsigned short val_marker) const final { return CL_Inv[val_marker]; }
 
-  /*!
+  /*! TODO
    * \brief Provide the non dimensional z moment coefficient (inviscid contribution).
    * \param val_marker Surface where the coefficient is going to be computed.
    * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCMz_Inv(unsigned short val_marker) { return CMz_Inv[val_marker]; }
+  // inline su2double GetCMz_Inv(unsigned short val_marker) { return CMz_Inv[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional lift coefficient.

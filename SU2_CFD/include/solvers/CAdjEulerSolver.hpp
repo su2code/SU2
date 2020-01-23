@@ -272,7 +272,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline unsigned long GetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex) { return DonorGlobalIndex[val_marker][val_vertex]; }
+  inline unsigned long GetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex) const final { return DonorGlobalIndex[val_marker][val_vertex]; }
 
   /*!
    * \brief Value of the characteristic global index at the boundaries.
@@ -621,7 +621,7 @@ public:
    */
   inline void SetCSensitivity(unsigned short val_marker,
                               unsigned long val_vertex,
-                              su2double val_sensitivity) { 
+                              su2double val_sensitivity) final { 
     CSensitivity[val_marker][val_vertex] = val_sensitivity; 
   }
 
@@ -651,7 +651,7 @@ public:
    * \return Value of the farfield pressure sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_Press() { return Total_Sens_Press; }
+  inline su2double GetTotal_Sens_Press() const final { return Total_Sens_Press; }
 
   /*!
    * \brief Set the total farfield temperature sensitivity coefficient.

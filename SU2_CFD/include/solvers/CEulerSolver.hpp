@@ -521,8 +521,10 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) override;
-
+  unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                       CConfig *config,
+                                       bool Output) override;
+  
   /*!
    * \brief Compute a pressure sensor switch.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -573,7 +575,7 @@ public:
    * \param[in] iPoint - Index of the grid point
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPreconditioner(CConfig *config, unsigned long iPoint);
+  void SetPreconditioner(CConfig *config, unsigned long iPoint) final;
 
   /*!
    * \brief Compute the undivided laplacian for the solution, except the energy equation.
@@ -1106,13 +1108,18 @@ public:
    */
   void Momentum_Forces(CGeometry *geometry, CConfig *config) final;
 
-  /*!
+  /*! TODO
    * \brief Compute turbomachinery performance.
    * \param[in] solver - solver containing the outlet information.
    * \param[in] inMarker - marker related to the inlet.
    * \param[in] outMarker - marker related to the outlet.
    */
-  void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf , unsigned short inMarkerTP );
+  // void TurboPerformance(CSolver *solver,
+  //                       CConfig *config,
+  //                       unsigned short inMarker,
+  //                       unsigned short outMarker,
+  //                       unsigned short Kind_TurboPerf,
+  //                       unsigned short inMarkerTP);
 
   /*!
    * \brief Compute turbomachinery performance.
@@ -1120,7 +1127,7 @@ public:
    * \param[in] inMarker - marker related to the inlet.
    * \param[in] outMarker - marker related to the outlet.
    */
-  void StoreTurboPerformance(CSolver *solver,  unsigned short inMarkerTP );
+  // void StoreTurboPerformance(CSolver *solver,  unsigned short inMarkerTP ); TODO
 
  /*!
   * \brief Get the outer state for fluid interface nodes.
@@ -2115,7 +2122,7 @@ public:
    */
   inline void SetActDisk_DeltaT(unsigned short val_marker,
                                 unsigned long val_vertex,
-                                su2double val_deltat) {
+                                su2double val_deltat) final {
     ActDisk_DeltaT[val_marker][val_vertex] = val_deltat;
   }
 
@@ -2332,7 +2339,9 @@ public:
    * \param[in] val_vertex - vertex index
    * \param[in] value - number of outer states
    */
-  inline void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
+  inline void SetnSlidingStates(unsigned short val_marker,
+                                unsigned long val_vertex,
+                                int value) final { SlidingStateNodes[val_marker][val_vertex] = value; }
 
   /*!
    * \brief Get the number of outer state for fluid interface nodes.
@@ -2418,8 +2427,12 @@ public:
    * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
    * \param[in] density_miz - value of the mixed-out avaraged density.
    */
-  void MixedOut_Average (CConfig *config, su2double val_init_pressure, const su2double *val_Averaged_Flux,
-                         const su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
+  void MixedOut_Average (CConfig *config,
+                         su2double val_init_pressure,
+                         const su2double *val_Averaged_Flux,
+                         const su2double *val_normal,
+                         su2double& pressure_mix,
+                         su2double& density_mix);
 
   /*!
    * \brief It gathers into the master node average quantities at inflow and outflow needed for turbomachinery analysis.
@@ -2434,8 +2447,11 @@ public:
    * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
    * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
    */
-  inline void ComputeTurboVelocity(const su2double *cartesianVelocity, const su2double *turboNormal, su2double *turboVelocity,
-                            unsigned short marker_flag, unsigned short kind_turb){
+  inline void ComputeTurboVelocity(const su2double *cartesianVelocity,
+                                   const su2double *turboNormal,
+                                   su2double *turboVelocity,
+                                   unsigned short marker_flag,
+                                   unsigned short kind_turb){
 
     if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
       turboVelocity[2] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
@@ -2460,8 +2476,11 @@ public:
    * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
    * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
    */
-  inline void ComputeBackVelocity(const su2double *turboVelocity, const su2double *turboNormal, su2double *cartesianVelocity,
-                           unsigned short marker_flag, unsigned short kind_turb){
+  inline void ComputeBackVelocity(const su2double *turboVelocity,
+                                  const su2double *turboNormal,
+                                  su2double *cartesianVelocity,
+                                  unsigned short marker_flag,
+                                  unsigned short kind_turb){
 
     if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
       cartesianVelocity[0] = turboVelocity[2]*turboNormal[0] - turboVelocity[1]*turboNormal[1];

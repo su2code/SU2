@@ -313,7 +313,9 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) override;
+  unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                       CConfig *config,
+                                       bool Output) override;
 
   /*!
    * \brief Impose a no-slip condition.
