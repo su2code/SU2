@@ -1025,7 +1025,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   /*--- Vibrational-Electronic Temperature ---*/
 
   // Check for non-physical solutions
-  Tvemin = max(Tmin, V[T_INDEX]); // Tve should be geq T
+  Tvemin = max(Tmin, V[T_INDEX]/2.); // Tve should be geq T
   rhoEve_min = 0.0;
   rhoEve_max = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
