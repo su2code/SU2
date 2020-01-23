@@ -1462,6 +1462,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("LINEAR_SOLVER_SMOOTHER_RELAXATION", Linear_Solver_Smoother_Relaxation, 1.0);
   /* DESCRIPTION: Relaxation of the pressure based flow corrections */
   addDoubleOption("RELAXATION_FACTOR_PBFLOW", Relaxation_Factor_PBFlow, 0.3);
+  /* DESCRIPTION: Relaxation of the Rhie Chow interpolation contribution in pressure based flow. */
+  addDoubleOption("RELAXATION_FACTOR_RHIECHOW", RCFactor, 1.0);
   /* DESCRIPTION: Relaxation of the flow equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */

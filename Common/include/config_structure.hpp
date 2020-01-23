@@ -583,6 +583,7 @@ private:
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
+  su2double RCFactor;                   /*!< \brief Relaxation for Rhie Chow interpolation contribution. */
   unsigned short AdjTurb_Linear_Iter;	/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double *Stations_Bounds;           /*!< \brief Airfoil section limit. */
   unsigned short nLocationStations,     /*!< \brief Number of section cuts to make when outputting mesh and cp . */
@@ -4186,6 +4187,12 @@ public:
    * \return relaxation coefficient of the flow correction for PB solver
    */
   su2double GetRelaxation_Factor_PBFlow(void);
+
+  /*!
+   * \brief Get the relaxation coefficient of the flow correction for PB solver.
+   * \return relaxation coefficient of the flow correction for PB solver
+   */
+  su2double GetRCFactor(void);
 
   /*!
    * \brief Get the relaxation coefficient of the CHT coupling.

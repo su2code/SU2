@@ -32,6 +32,10 @@ su2_cfd_src = files(['solver_direct_transition.cpp',
                      'numerics_template.cpp',
                      'solver_adjoint_discrete.cpp',
                      'CMarkerProfileReaderFVM.cpp',
+                     'solver_direct_mean_PBinc.cpp',
+                     'solver_direct_poisson.cpp',
+                     'numerics_direct_mean_PBinc.cpp',
+                     'numerics_direct_poisson.cpp',
                      'SU2_CFD.cpp'])
 
 su2_cfd_src += files(['output/CAdjElasticityOutput.cpp',
@@ -66,6 +70,7 @@ su2_cfd_src += files(['output/CAdjElasticityOutput.cpp',
                       'output/filewriter/CSU2MeshFileWriter.cpp'])
 
 su2_cfd_src += files(['variables/CIncNSVariable.cpp',
+                      'variables/CPBIncNSVariable.cpp',
                       'variables/CTransLMVariable.cpp',
                       'variables/CAdjEulerVariable.cpp',
                       'variables/CHeatFVMVariable.cpp',
@@ -87,6 +92,7 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                       'variables/CNSVariable.cpp',
                       'variables/CAdjTurbVariable.cpp',
                       'variables/CIncEulerVariable.cpp',
+                      'variables/CPBIncEulerVariable.cpp',
                       'variables/CEulerVariable.cpp'])
 
 su2_cfd_src += files(['solvers/CMeshSolver.cpp',

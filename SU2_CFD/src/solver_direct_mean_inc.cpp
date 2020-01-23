@@ -2113,6 +2113,10 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
+      /*--- Load the primitive variables ---*/
+      
+      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), NULL);
+      
       /*--- Load the conservative variables ---*/
       
       numerics->SetConservative(nodes->GetSolution(iPoint), NULL);

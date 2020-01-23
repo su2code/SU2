@@ -3968,7 +3968,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   su2double MassFlux_Part, Mom_Coeff[3], *Vel_i, *Vel_j,*Normal,Vel_Avg, Grad_Avg;
   su2double Area, Vol_i, Vol_j, Density_i, Density_j, MeanDensity, delT_i, delT_j;
   su2double Mom_Coeff_i[3], Mom_Coeff_j[3], Mom_Coeff_nb[3], VelocityOld[3],VelocityOldFace;
-  su2double GradP_f[3], GradP_in[3], GradP_proj;
+  su2double GradP_f[3], GradP_in[3], GradP_proj, RhieChowInterp, RCFactor= 1.0;
   su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Adj_Mass, small = 1.E-5;
   su2double Net_Mass, alfa, Mass_In, Mass_Out, Mass_Free_In, Mass_Free_Out, Mass_Corr, Area_out;
   string Marker_Tag;
@@ -4066,10 +4066,14 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
      * --- gradient linearly interpolated based on node values. This effectively adds a third
      * --- order derivative of pressure to remove odd-even decoupling of pressure and velocities.
      * --- GradP_f = (p_F^n - p_P^n)/ds , GradP_in = 0.5*(GradP_P^n + GradP_F^n)---*/
-     
+    RhieChowInterp = 0.0; 
     for (iDim = 0; iDim < nDim; iDim++) {
-		MassFlux_Part -= 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*(GradP_f[iDim] - GradP_in[iDim])*Normal[iDim]*MeanDensity;
+		RhieChowInterp += 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*(GradP_f[iDim] - GradP_in[iDim])*Normal[iDim]*MeanDensity;
 	}
+	
+	/*--- RCFactor for now is a specified constant. In future, can think of making it dependent on solution and 
+	 * possibly time step size so as to make the interpolation and final solution independent of CFL number. ---*/
+	MassFlux_Part = MassFlux_Part - config->GetRCFactor()*RhieChowInterp;
 
 	FaceVelocity[iEdge] = MassFlux_Part/(MeanDensity*Area);
 	
@@ -6124,6 +6128,19 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
   CompleteComms(geometry, config, SOLUTION);
   InitiateComms(geometry, config, PRESSURE_VAR);
   CompleteComms(geometry, config, PRESSURE_VAR);
+  
+  /* Store the initial CFL number for all grid points. */
+  
+  const su2double CFL = config->GetCFL(MGLevel);
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    nodes->SetLocalCFL(iPoint, CFL);
+  }
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
+  
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "INC.FLOW";
 
 }
 
@@ -6215,10 +6232,10 @@ unsigned long iPoint, ErrorCounter = 0;
   /*--- Compute gradient of the primitive variables ---*/
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    SetPrimitive_Gradient_GG(geometry, config, true);
+    SetPrimitive_Gradient_GG(geometry, config, false);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    SetPrimitive_Gradient_LS(geometry, config, true);
+    SetPrimitive_Gradient_LS(geometry, config, false);
   }
 
   /*--- Compute the limiter in case we need it in the turbulence model

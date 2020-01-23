@@ -1034,6 +1034,8 @@ inline su2double CConfig::GetRelaxation_Factor_AdjFlow(void) { return Relaxation
 
 inline su2double CConfig::GetRelaxation_Factor_PBFlow(void) { return Relaxation_Factor_PBFlow; }
 
+inline su2double CConfig::GetRCFactor(void) { return RCFactor; }
+
 inline su2double CConfig::GetRelaxation_Factor_CHT(void) { return Relaxation_Factor_CHT; }
 
 inline su2double CConfig::GetRoe_Kappa(void) { return Roe_Kappa; }

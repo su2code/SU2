@@ -1202,7 +1202,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 			solver[iMGlevel][FLOW_SOL] = new CPBIncNSSolver(geometry[iMGlevel], config, iMGlevel);
 			solver[iMGlevel][POISSON_SOL] = new CPoissonSolverFVM(geometry[iMGlevel], config);
     	}
-		else
+		else 
 			solver[iMGlevel][FLOW_SOL] = new CIncNSSolver(geometry[iMGlevel], config, iMGlevel);
       }
       if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][FLOW_SOL]->GetnVar();
