@@ -765,6 +765,24 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nodes = new CNSVariable(Density_Inf, Velocity_Inf, Energy_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
+  #ifndef HAVE_OMP
+  /*--- Get the edge coloring. ---*/
+
+  const auto& coloring = geometry->GetEdgeColoring();
+
+  auto nColor = coloring.getOuterSize();
+  EdgeColoring.resize(nColor);
+
+  for(auto iColor = 0ul; iColor < nColor; ++iColor) {
+    EdgeColoring[iColor].size = coloring.getNumNonZeros(iColor);
+    EdgeColoring[iColor].indices = coloring.innerIdx(iColor);
+  }
+
+  ColorGroupSize = geometry->GetEdgeColorGroupSize();
+
+  omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
+#endif
+
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
   counter_local = 0;
@@ -779,9 +797,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
     StaticEnergy= nodes->GetEnergy(iPoint) - 0.5*Velocity2;
 
-    FluidModel->SetTDState_rhoe(Density, StaticEnergy);
-    Pressure= FluidModel->GetPressure();
-    Temperature= FluidModel->GetTemperature();
+    GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
+    Pressure= GetFluidModel()->GetPressure();
+    Temperature= GetFluidModel()->GetTemperature();
 
     /*--- Use the values at the infinity ---*/
 
@@ -800,11 +818,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Warning message about non-physical points ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-#ifdef HAVE_MPI
+
     SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-#else
-    counter_global = counter_local;
-#endif
+
     if ((rank == MASTER_NODE) && (counter_global != 0))
       cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
   }
@@ -826,14 +842,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Define solver parameters needed for execution of destructor ---*/
 
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) space_centered = true;
-  else space_centered = false;
-
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
-  else euler_implicit = false;
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
-  else least_squares = false;
+  space_centered = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
+  euler_implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  least_squares = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
 
   /*--- Communicate and store volume and the number of neighbors for
    any dual CVs that lie on on periodic markers. ---*/
@@ -1105,8 +1116,8 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
 
-    physical = static_cast<CNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, FluidModel);
-    nodes->SetSecondaryVar(iPoint,FluidModel);
+    physical = static_cast<CNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel());
+    nodes->SetSecondaryVar(iPoint, GetFluidModel());
 
     /* Check for non-realizable states for reporting. */
 
