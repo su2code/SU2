@@ -4424,7 +4424,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual unsigned long GetnDOFsGlobal(void) { return 0; }
+  inline virtual unsigned long GetnDOFsGlobal(void) const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -4741,7 +4741,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline virtual void SetTurboVelocityOut(su2double value,
+  inline virtual void SetTurboVelocityOut(su2double *value,
                                           unsigned short inMarkerTP,
                                           unsigned short valSpan) { }
 

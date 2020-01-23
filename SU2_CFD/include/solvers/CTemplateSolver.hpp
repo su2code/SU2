@@ -35,7 +35,7 @@
  * \ingroup Template_Flow_Equation
  * \author F. Palacios
  */
-class CTemplateSolver : public CSolver {
+class CTemplateSolver final : public CSolver {
 private:
 
   CVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
@@ -80,7 +80,7 @@ public:
                      unsigned short iMesh,
                      unsigned short iRKStep,
                      unsigned short RunTime_EqSystem,
-                     bool Output) final;
+                     bool Output) override;
 
   /*!
    * \brief Compute the time step for solving the Euler equations.
@@ -94,7 +94,7 @@ public:
                     CSolver **solver_container,
                     CConfig *config,
                     unsigned short iMesh,
-                    unsigned long Iteration) final;
+                    unsigned long Iteration) override;
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.
@@ -110,7 +110,7 @@ public:
                          CNumerics *numerics,
                          CConfig *config,
                          unsigned short iMesh,
-                         unsigned short iRKStep) final;
+                         unsigned short iRKStep) override;
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
@@ -124,7 +124,7 @@ public:
                        CSolver **solver_container,
                        CNumerics *numerics,
                        CConfig *config,
-                       unsigned short iMesh) final;
+                       unsigned short iMesh) override;
 
   /*!
    * \brief Source term integration.
@@ -139,7 +139,7 @@ public:
                        CSolver **solver_container,
                        CNumerics *numerics,
                        CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh) final;
+                       CConfig *config, unsigned short iMesh) override;
 
   /*!
    * \brief Source term integration.
@@ -153,7 +153,7 @@ public:
                        CSolver **solver_container,
                        CNumerics *numerics,
                        CConfig *config,
-                       unsigned short iMesh) final;
+                       unsigned short iMesh) override;
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -184,7 +184,7 @@ public:
                         CNumerics *conv_numerics,
                         CNumerics *visc_numerics,
                         CConfig *config,
-                        unsigned short val_marker) final;
+                        unsigned short val_marker) override;
   /*!
    * \brief Impose the far-field boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -199,7 +199,7 @@ public:
                     CNumerics *conv_numerics,
                     CNumerics *visc_numerics,
                     CConfig *config,
-                    unsigned short val_marker) final;
+                    unsigned short val_marker) override;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -215,7 +215,7 @@ public:
                 CNumerics *conv_numerics,
                 CNumerics *visc_numerics,
                 CConfig *config,
-                unsigned short val_marker) final;
+                unsigned short val_marker) override;
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -230,7 +230,7 @@ public:
                  CNumerics *conv_numerics,
                  CNumerics *visc_numerics,
                  CConfig *config,
-                 unsigned short val_marker) final;
+                 unsigned short val_marker) override;
   /*!
    * \brief Impose the symmetry plane boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -245,7 +245,7 @@ public:
                     CNumerics      *conv_numerics,
                     CNumerics      *visc_numerics,
                     CConfig        *config,
-                    unsigned short val_marker) final;
+                    unsigned short val_marker) override;
 
   /*!
    * \brief Impose a custom or verification boundary condition.
@@ -269,7 +269,7 @@ public:
   void ExplicitRK_Iteration(CGeometry *geometry,
                             CSolver **solver_container,
                             CConfig *config,
-                            unsigned short iRKStep) final;
+                            unsigned short iRKStep) override;
 
   /*!
    * \brief Update the solution using a explicit Euler scheme.
@@ -279,7 +279,7 @@ public:
    */
   void ExplicitEuler_Iteration(CGeometry *geometry,
                                CSolver **solver_container,
-                               CConfig *config) final;
+                               CConfig *config) override;
 
   /*!
    * \brief Update the solution using an implicit solver.
@@ -289,6 +289,6 @@ public:
    */
   void ImplicitEuler_Iteration(CGeometry *geometry,
                                CSolver **solver_container,
-                               CConfig *config) final;
+                               CConfig *config) override;
 
 };

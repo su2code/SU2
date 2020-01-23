@@ -36,7 +36,7 @@
  * \author A. Campos, F. Palacios, T. Economon
  */
 
-class CTurbSSTSolver: public CTurbSolver {
+class CTurbSSTSolver final : public CTurbSolver {
 private:
   su2double *constants,  /*!< \brief Constants for the model. */
   kine_Inf,              /*!< \brief Free-stream turbulent kinetic energy. */
@@ -77,7 +77,7 @@ public:
                      unsigned short iMesh,
                      unsigned short iRKStep,
                      unsigned short RunTime_EqSystem,
-                     bool Output) final;
+                     bool Output) override;
 
   /*!
    * \brief Computes the eddy viscosity.
@@ -89,7 +89,7 @@ public:
   void Postprocessing(CGeometry *geometry,
                       CSolver **solver_container,
                       CConfig *config,
-                      unsigned short iMesh) final;
+                      unsigned short iMesh) override;
 
   /*!
    * \brief Source term computation.
@@ -104,7 +104,7 @@ public:
                        CSolver **solver_container,
                        CNumerics *numerics,
                        CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh) final;
+                       CConfig *config, unsigned short iMesh) override;
 
   /*!
    * \brief Source term computation.
@@ -118,7 +118,7 @@ public:
                        CSolver **solver_container,
                        CNumerics *numerics,
                        CConfig *config,
-                       unsigned short iMesh) final;
+                       unsigned short iMesh) override;
 
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
@@ -134,7 +134,7 @@ public:
                         CNumerics *conv_numerics,
                         CNumerics *visc_numerics,
                         CConfig *config,
-                        unsigned short val_marker) final;
+                        unsigned short val_marker) override;
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -149,7 +149,7 @@ public:
                           CNumerics *conv_numerics,
                           CNumerics *visc_numerics,
                           CConfig *config,
-                          unsigned short val_marker) final;
+                          unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Far Field boundary condition.
@@ -165,7 +165,7 @@ public:
                     CNumerics *conv_numerics,
                     CNumerics *visc_numerics,
                     CConfig *config,
-                    unsigned short val_marker) final;
+                    unsigned short val_marker) override;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -181,7 +181,7 @@ public:
                 CNumerics *conv_numerics,
                 CNumerics *visc_numerics,
                 CConfig *config,
-                unsigned short val_marker) final;
+                unsigned short val_marker) override;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -197,7 +197,7 @@ public:
                       CNumerics *conv_numerics,
                       CNumerics *visc_numerics,
                       CConfig *config,
-                      unsigned short val_marker) final;
+                      unsigned short val_marker) override;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -213,7 +213,7 @@ public:
                             CNumerics *conv_numerics,
                             CNumerics *visc_numerics,
                             CConfig *config,
-                            unsigned short val_marker) final;
+                            unsigned short val_marker) override;
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -228,7 +228,7 @@ public:
                  CNumerics *conv_numerics,
                  CNumerics *visc_numerics,
                  CConfig *config,
-                 unsigned short val_marker) final;
+                 unsigned short val_marker) override;
  /*!
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
@@ -241,19 +241,19 @@ public:
                           CSolver **solver_container,
                           CNumerics *conv_numerics,
                           CNumerics *visc_numerics,
-                          CConfig *config) final;
+                          CConfig *config) override;
 
   /*!
    * \brief Get the constants for the SST model.
    * \return A pointer to an array containing a set of constants
    */
-  inline su2double* GetConstants() const final { return constants; }
+  inline su2double* GetConstants() const override { return constants; }
 
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  inline void SetFreeStream_Solution(CConfig *config) final {
+  inline void SetFreeStream_Solution(CConfig *config) override {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
       nodes->SetSolution(iPoint, 0, kine_Inf);
       nodes->SetSolution(iPoint, 1, omega_Inf);
@@ -269,7 +269,7 @@ public:
    */
   void SetInletAtVertex(su2double *val_inlet,
                         unsigned short iMarker,
-                        unsigned long iVertex) final;
+                        unsigned long iVertex) override;
 
   /*!
    * \brief Get the set of value imposed at an inlet.
@@ -285,7 +285,7 @@ public:
                              unsigned short val_kind_marker,
                              string val_marker,
                              CGeometry *geometry,
-                             CConfig *config) const final;
+                             CConfig *config) const override;
   /*!
    * \brief Set a uniform inlet profile
    *
@@ -295,18 +295,18 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  void SetUniformInlet(CConfig* config, unsigned short iMarker) final;
+  void SetUniformInlet(CConfig* config, unsigned short iMarker) override;
 
   /*!
    * \brief Get the value of the turbulent kinetic energy.
    * \return Value of the turbulent kinetic energy.
    */
-  inline su2double GetTke_Inf(void) const final { return kine_Inf; }
+  inline su2double GetTke_Inf(void) const override { return kine_Inf; }
 
   /*!
    * \brief Get the value of the turbulent frequency.
    * \return Value of the turbulent frequency.
    */
-  inline su2double GetOmega_Inf(void) const final { return omega_Inf; }
+  inline su2double GetOmega_Inf(void) const override { return omega_Inf; }
 
 };

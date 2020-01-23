@@ -37,7 +37,7 @@
  * \author E. van der Weide, T. Economon, J. Alonso
  * \version 7.0.0 "Blackbird"
  */
-class CFEM_DG_NSSolver : public CFEM_DG_EulerSolver {
+class CFEM_DG_NSSolver final : public CFEM_DG_EulerSolver {
 private:
   su2double Viscosity_Inf; /*!< \brief Viscosity at the infinity. */
   su2double Tke_Inf;       /*!< \brief Turbulent kinetic energy at the infinity. */
@@ -118,7 +118,7 @@ public:
                     CSolver **solver_container,
                     CConfig *config,
                     unsigned short iMesh,
-                    unsigned long Iteration) final;
+                    unsigned long Iteration) override;
 
   /*!
    * \brief Compute the artificial viscosity for shock capturing in DG.
@@ -189,7 +189,7 @@ public:
                      const CSurfaceElementFEM *surfElem,
                      su2double                *resFaces,
                      CNumerics                *conv_numerics,
-                     su2double                *workArray) final;
+                     su2double                *workArray) override;
 
   /*!
    * \brief Impose the far-field boundary condition.
@@ -209,7 +209,7 @@ public:
                     const CSurfaceElementFEM *surfElem,
                     su2double                *resFaces,
                     CNumerics                *conv_numerics,
-                    su2double                *workArray) final;
+                    su2double                *workArray) override;
 
   /*!
    * \brief Impose the symmetry boundary condition using the residual.
@@ -229,7 +229,7 @@ public:
                     const CSurfaceElementFEM *surfElem,
                     su2double                *resFaces,
                     CNumerics                *conv_numerics,
-                    su2double                *workArray) final;
+                    su2double                *workArray) override;
 
  /*!
    * \brief Impose the supersonic outlet boundary condition.
@@ -249,7 +249,7 @@ public:
                             const CSurfaceElementFEM *surfElem,
                             su2double                *resFaces,
                             CNumerics                *conv_numerics,
-                            su2double                *workArray) final;
+                            su2double                *workArray) override;
 
   /*!
    * \brief Impose the subsonic inlet boundary condition.
@@ -271,7 +271,7 @@ public:
                 su2double                *resFaces,
                 CNumerics                *conv_numerics,
                 unsigned short           val_marker,
-                su2double                *workArray) final;
+                su2double                *workArray) override;
 
   /*!
    * \brief Impose the outlet boundary condition.
@@ -293,7 +293,7 @@ public:
                  su2double                *resFaces,
                  CNumerics                *conv_numerics,
                  unsigned short           val_marker,
-                 su2double                *workArray) final;
+                 su2double                *workArray) override;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -315,7 +315,7 @@ public:
                         su2double                *resFaces,
                         CNumerics                *conv_numerics,
                         unsigned short           val_marker,
-                        su2double                *workArray) final;
+                        su2double                *workArray) override;
 
   /*!
    * \brief Impose an isothermal condition at the wall.
@@ -337,7 +337,7 @@ public:
                           su2double                *resFaces,
                           CNumerics                *conv_numerics,
                           unsigned short           val_marker,
-                          su2double                *workArray) final;
+                          su2double                *workArray) override;
 
   /*!
    * \brief Impose the boundary condition using characteristic reconstruction.
@@ -359,7 +359,7 @@ public:
                   su2double                *resFaces,
                   CNumerics                *conv_numerics,
                   unsigned short           val_marker,
-                  su2double                *workArray) final;
+                  su2double                *workArray) override;
 
   /*!
    * \brief Impose the user customized boundary condition.
@@ -379,54 +379,54 @@ public:
                  const CSurfaceElementFEM *surfElem,
                  su2double                *resFaces,
                  CNumerics                *conv_numerics,
-                 su2double                *workArray) final;
+                 su2double                *workArray) override;
 
   /*!
    * \brief Compute the viscosity at the infinity.
    * \return Value of the viscosity at the infinity.
    */
-  inline su2double GetViscosity_Inf(void) const final { return Viscosity_Inf; }
+  inline su2double GetViscosity_Inf(void) const override { return Viscosity_Inf; }
 
   /*!
    * \brief Get the turbulent kinetic energy at the infinity.
    * \return Value of the turbulent kinetic energy at the infinity.
    */
-  inline su2double GetTke_Inf(void) const final { return Tke_Inf; }
+  inline su2double GetTke_Inf(void) const override { return Tke_Inf; }
 
   /*!
    * \brief Compute the viscous forces and all the addimensional coefficients.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Friction_Forces(CGeometry *geometry, CConfig *config) final;
+  void Friction_Forces(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Get the non dimensional lift coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCL_Visc(unsigned short val_marker) const final { return CL_Visc[val_marker]; }
+  inline su2double GetCL_Visc(unsigned short val_marker) const override { return CL_Visc[val_marker]; }
 
   /*!
    * \brief Get the non dimensional z moment coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  // inline su2double GetCMz_Visc(unsigned short val_marker) const final { return CMz_Visc[val_marker]; }
+  // inline su2double GetCMz_Visc(unsigned short val_marker) const override { return CMz_Visc[val_marker]; }
 
   /*!
    * \brief Get the non dimensional sideforce coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the sideforce coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCSF_Visc(unsigned short val_marker) const final { return CSF_Visc[val_marker]; }
+  inline su2double GetCSF_Visc(unsigned short val_marker) const override { return CSF_Visc[val_marker]; }
 
   /*!
    * \brief Get the non dimensional drag coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCD_Visc(unsigned short val_marker) const final { return CD_Visc[val_marker]; }
+  inline su2double GetCD_Visc(unsigned short val_marker) const override { return CD_Visc[val_marker]; }
 
   /*!
    * \brief Get the total non dimensional lift coefficient (viscous contribution).
@@ -450,25 +450,25 @@ public:
    * \brief Get the max Omega.
    * \return Value of the max Omega.
    */
-  inline su2double GetOmega_Max(void) const final { return Omega_Max; }
+  inline su2double GetOmega_Max(void) const override { return Omega_Max; }
 
   /*!
    * \brief Get the max Strain rate magnitude.
    * \return Value of the max Strain rate magnitude.
    */
-  inline su2double GetStrainMag_Max(void) const final { return StrainMag_Max; }
+  inline su2double GetStrainMag_Max(void) const override { return StrainMag_Max; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
-  inline void SetStrainMag_Max(su2double val_strainmag_max) final { StrainMag_Max = val_strainmag_max; }
+  inline void SetStrainMag_Max(su2double val_strainmag_max) override { StrainMag_Max = val_strainmag_max; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the Omega_Max
    */
-  inline void SetOmega_Max(su2double val_omega_max) final { Omega_Max = val_omega_max; }
+  inline void SetOmega_Max(su2double val_omega_max) override { Omega_Max = val_omega_max; }
 
 private:
 
@@ -495,7 +495,7 @@ private:
                                            const unsigned short nSimul,
                                            const unsigned short NPad,
                                            su2double            *res,
-                                           su2double            *work) final;
+                                           su2double            *work) override;
 
 /*!
    * \brief Function, which computes the spatial residual of the ADER-DG
@@ -520,7 +520,7 @@ private:
                                            const unsigned short nSimul,
                                            const unsigned short NPad,
                                            su2double            *res,
-                                           su2double            *work) final;
+                                           su2double            *work) override;
   /*!
    * \brief Function, which computes the spatial residual of the ADER-DG
             predictor step for the given volume element and solution using a
@@ -544,7 +544,7 @@ private:
                                               const unsigned short nSimul,
                                               const unsigned short NPad,
                                               su2double            *res,
-                                              su2double            *work) final;
+                                              su2double            *work) override;
 
   /*!
    * \brief Function, which computes the spatial residual of the ADER-DG
@@ -569,7 +569,7 @@ private:
                                               const unsigned short nSimul,
                                               const unsigned short NPad,
                                               su2double            *res,
-                                              su2double            *work) final;
+                                              su2double            *work) override;
   /*!
    * \brief Function to compute the penalty terms in the integration
             points of a face.

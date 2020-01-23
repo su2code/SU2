@@ -36,7 +36,7 @@
  * \author A. Aranake.
  */
 
-class CTransLMSolver: public CTurbSolver {
+class CTransLMSolver final : public CTurbSolver {
 private:
   su2double Intermittency_Inf, REth_Inf;
 public:
@@ -74,7 +74,7 @@ public:
                      unsigned short iMesh,
                      unsigned short iRKStep,
                      unsigned short RunTime_EqSystem,
-                     bool Output) final;
+                     bool Output) override;
 
   /*!
    * \brief A virtual member.
@@ -86,7 +86,7 @@ public:
   void Postprocessing(CGeometry *geometry,
                       CSolver **solver_container,
                       CConfig *config,
-                      unsigned short iMesh) final;
+                      unsigned short iMesh) override;
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
@@ -100,7 +100,7 @@ public:
                        CSolver **solver_container,
                        CNumerics *numerics,
                        CConfig *config,
-                       unsigned short iMesh) final;
+                       unsigned short iMesh) override;
 
   /*!
    * \brief Compute the viscous residuals for the turbulent equation.
@@ -116,7 +116,7 @@ public:
                         CNumerics *numerics,
                         CConfig *config,
                         unsigned short iMesh,
-                        unsigned short iRKStep) final;
+                        unsigned short iRKStep) override;
 
   /*!
    * \brief Source term computation.
@@ -131,7 +131,7 @@ public:
                        CSolver **solver_container,
                        CNumerics *numerics,
                        CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh) final;
+                       CConfig *config, unsigned short iMesh) override;
 
   /*!
    * \brief Source term computation.
@@ -145,7 +145,7 @@ public:
                        CSolver **solver_container,
                        CNumerics *numerics,
                        CConfig *config,
-                       unsigned short iMesh) final;
+                       unsigned short iMesh) override;
 
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
@@ -161,7 +161,7 @@ public:
                         CNumerics *conv_numerics,
                         CNumerics *visc_numerics,
                         CConfig *config,
-                        unsigned short val_marker) final;
+                        unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Far Field boundary condition.
@@ -177,7 +177,7 @@ public:
                     CNumerics *conv_numerics,
                     CNumerics *visc_numerics,
                     CConfig *config,
-                    unsigned short val_marker) final;
+                    unsigned short val_marker) override;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -193,7 +193,7 @@ public:
                 CNumerics *conv_numerics,
                 CNumerics *visc_numerics,
                 CConfig *config,
-                unsigned short val_marker) final;
+                unsigned short val_marker) override;
 
   /*!
    * \brief Impose the outlet boundary condition.
@@ -209,7 +209,7 @@ public:
                  CNumerics *conv_numerics,
                  CNumerics *visc_numerics,
                  CConfig *config,
-                 unsigned short val_marker) final;
+                 unsigned short val_marker) override;
 
   /*!
    * \brief Impose the symmetry condition.
@@ -225,7 +225,7 @@ public:
                     CNumerics      *conv_numerics,
                     CNumerics      *visc_numerics,
                     CConfig        *config,
-                    unsigned short val_marker) final;
+                    unsigned short val_marker) override;
 
   /*!
    * \brief Update the solution using an implicit solver.
@@ -235,7 +235,7 @@ public:
    */
   void ImplicitEuler_Iteration(CGeometry *geometry,
                                CSolver **solver_container,
-                               CConfig *config) final;
+                               CConfig *config) override;
 
   // Another set of matrix structures for the Lm equations
   CSysMatrix<su2double> JacobianItmc;  /*!< \brief Complete sparse Jacobian structure for implicit computations. */

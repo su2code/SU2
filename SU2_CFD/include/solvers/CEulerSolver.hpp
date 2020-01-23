@@ -2083,7 +2083,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   inline su2double GetActDisk_DeltaP(unsigned short val_marker,
-                                     unsigned long val_vertex) final {
+                                     unsigned long val_vertex) const final {
     return ActDisk_DeltaP[val_marker][val_vertex];
   }
 
@@ -2178,7 +2178,7 @@ public:
    */
   inline void SetInlet_Ptotal(unsigned short val_marker,
                               unsigned long val_vertex,
-                              su2double val_ttotal) final {
+                              su2double val_ptotal) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)

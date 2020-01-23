@@ -36,7 +36,7 @@
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
  */
-class CAdjNSSolver : public CAdjEulerSolver {
+class CAdjNSSolver final : public CAdjEulerSolver {
 public:
 
   /*!
@@ -69,7 +69,7 @@ public:
                     CSolver **solver_container,
                     CConfig *config,
                     unsigned short iMesh,
-                    unsigned long Iteration) final;
+                    unsigned long Iteration) override;
 
 
   /*!
@@ -86,7 +86,7 @@ public:
                         CNumerics *conv_numerics,
                         CNumerics *visc_numerics,
                         CConfig *config,
-                        unsigned short val_marker) final;
+                        unsigned short val_marker) override;
 
   /*!
    * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
@@ -102,7 +102,7 @@ public:
                           CNumerics *conv_numerics,
                           CNumerics *visc_numerics,
                           CConfig *config,
-                          unsigned short val_marker) final;
+                          unsigned short val_marker) override;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -119,7 +119,7 @@ public:
                      unsigned short iMesh,
                      unsigned short iRKStep,
                      unsigned short RunTime_EqSystem,
-                     bool Output) final;
+                     bool Output) override;
 
   /*!
    * \brief Compute the viscous sensitivity of the functional.
@@ -131,7 +131,7 @@ public:
   void Viscous_Sensitivity(CGeometry *geometry,
                            CSolver **solver_container,
                            CNumerics *numerics,
-                           CConfig *config) final;
+                           CConfig *config) override;
 
   /*!
    * \brief Compute the viscous residuals for the adjoint equation.
@@ -147,7 +147,7 @@ public:
                         CNumerics *numerics,
                         CConfig *config,
                         unsigned short iMesh,
-                        unsigned short iRKStep) final;
+                        unsigned short iRKStep) override;
 
   /*!
    * \brief Source term computation.
@@ -162,6 +162,6 @@ public:
                        CSolver **solver_container,
                        CNumerics *numerics,
                        CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh) final;
+                       CConfig *config, unsigned short iMesh) override;
 
 };
