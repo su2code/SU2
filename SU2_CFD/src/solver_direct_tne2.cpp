@@ -5312,7 +5312,6 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       //   Mvec[iDim] = Velocity[iDim]/SoundSpeed;
       // }
       /*--- For now, assume supersonic everywhere... ---*/
-      CTNE2EulerVariable *node_bc;
       if (Qn_Infty > 0.0)   {
         /*--- Outflow conditions ---*/
         Density = V_domain[nSpecies+nDim+3];
