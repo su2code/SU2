@@ -8519,11 +8519,16 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
           Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
         }
-        else {
+        else if ((config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_NEUMANN_HEATFLUX) ||
+                 (config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX)) {
 
           /*--- (Directly) Set wall temperature to conjugate temperature. ---*/
 
           Twall = Tconjugate;
+        }
+        else {
+
+          SU2_MPI::Error(string("Unknown CHT coupling method."), CURRENT_FUNCTION);
         }
 
         /*--- Strong imposition of the temperature on the fluid zone. ---*/
