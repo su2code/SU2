@@ -1074,7 +1074,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     //        Tve2 = Tvemax;
     
          // Check for convergence
-         if (fabs(f)/U[nSpecies+nDim+1] < NRtol) {
+         if (fabs(f) < NRtol) {
            NRconvg = true;
            break;
          } else {
@@ -1118,7 +1118,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
           rhoEve_t          += U[iSpecies] * val_eves[iSpecies];
         }
 
-        if (fabs(rhoEve_t - U[nSpecies+nDim+1])/U[nSpecies+nDim+1] < Btol) {
+        if (fabs(rhoEve_t - U[nSpecies+nDim+1]) < Btol) {
           V[TVE_INDEX] = Tve;
           for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
             val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
