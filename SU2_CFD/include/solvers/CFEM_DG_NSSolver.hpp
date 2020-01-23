@@ -114,8 +114,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Value of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration);
+  void SetTime_Step(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned long Iteration) final;
 
   /*!
    * \brief Compute the artificial viscosity for shock capturing in DG.
@@ -186,7 +189,7 @@ public:
                      const CSurfaceElementFEM *surfElem,
                      su2double                *resFaces,
                      CNumerics                *conv_numerics,
-                     su2double                *workArray);
+                     su2double                *workArray) final;
 
   /*!
    * \brief Impose the far-field boundary condition.
@@ -206,7 +209,7 @@ public:
                     const CSurfaceElementFEM *surfElem,
                     su2double                *resFaces,
                     CNumerics                *conv_numerics,
-                    su2double                *workArray);
+                    su2double                *workArray) final;
 
   /*!
    * \brief Impose the symmetry boundary condition using the residual.
@@ -226,7 +229,7 @@ public:
                     const CSurfaceElementFEM *surfElem,
                     su2double                *resFaces,
                     CNumerics                *conv_numerics,
-                    su2double                *workArray);
+                    su2double                *workArray) final;
 
  /*!
    * \brief Impose the supersonic outlet boundary condition.
@@ -246,7 +249,7 @@ public:
                             const CSurfaceElementFEM *surfElem,
                             su2double                *resFaces,
                             CNumerics                *conv_numerics,
-                            su2double                *workArray);
+                            su2double                *workArray) final;
 
   /*!
    * \brief Impose the subsonic inlet boundary condition.
@@ -268,7 +271,7 @@ public:
                 su2double                *resFaces,
                 CNumerics                *conv_numerics,
                 unsigned short           val_marker,
-                su2double                *workArray);
+                su2double                *workArray) final;
 
   /*!
    * \brief Impose the outlet boundary condition.
@@ -290,7 +293,7 @@ public:
                  su2double                *resFaces,
                  CNumerics                *conv_numerics,
                  unsigned short           val_marker,
-                 su2double                *workArray);
+                 su2double                *workArray) final;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -312,7 +315,7 @@ public:
                         su2double                *resFaces,
                         CNumerics                *conv_numerics,
                         unsigned short           val_marker,
-                        su2double                *workArray);
+                        su2double                *workArray) final;
 
   /*!
    * \brief Impose an isothermal condition at the wall.
@@ -334,7 +337,7 @@ public:
                           su2double                *resFaces,
                           CNumerics                *conv_numerics,
                           unsigned short           val_marker,
-                          su2double                *workArray);
+                          su2double                *workArray) final;
 
   /*!
    * \brief Impose the boundary condition using characteristic reconstruction.
@@ -356,7 +359,7 @@ public:
                   su2double                *resFaces,
                   CNumerics                *conv_numerics,
                   unsigned short           val_marker,
-                  su2double                *workArray);
+                  su2double                *workArray) final;
 
   /*!
    * \brief Impose the user customized boundary condition.
@@ -376,7 +379,7 @@ public:
                  const CSurfaceElementFEM *surfElem,
                  su2double                *resFaces,
                  CNumerics                *conv_numerics,
-                 su2double                *workArray);
+                 su2double                *workArray) final;
 
   /*!
    * \brief Compute the viscosity at the infinity.
@@ -395,35 +398,35 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Friction_Forces(CGeometry *geometry, CConfig *config);
+  void Friction_Forces(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Get the non dimensional lift coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCL_Visc(unsigned short val_marker) { return CL_Visc[val_marker]; }
+  inline su2double GetCL_Visc(unsigned short val_marker) const final { return CL_Visc[val_marker]; }
 
   /*!
    * \brief Get the non dimensional z moment coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCMz_Visc(unsigned short val_marker) { return CMz_Visc[val_marker]; }
+  // inline su2double GetCMz_Visc(unsigned short val_marker) const final { return CMz_Visc[val_marker]; }
 
   /*!
    * \brief Get the non dimensional sideforce coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the sideforce coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCSF_Visc(unsigned short val_marker) { return CSF_Visc[val_marker]; }
+  inline su2double GetCSF_Visc(unsigned short val_marker) const final { return CSF_Visc[val_marker]; }
 
   /*!
    * \brief Get the non dimensional drag coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCD_Visc(unsigned short val_marker) { return CD_Visc[val_marker]; }
+  inline su2double GetCD_Visc(unsigned short val_marker) const final { return CD_Visc[val_marker]; }
 
   /*!
    * \brief Get the total non dimensional lift coefficient (viscous contribution).
