@@ -324,7 +324,7 @@ public:
    * \brief Compute the pressure at the infinity.
    * \return Value of the pressure at the infinity.
    */
-  inline CFluidModel* GetFluidModel(void) { return FluidModel;}
+  inline CFluidModel* GetFluidModel(void) const final { return FluidModel;}
 
   /*!
    * \brief Compute the density at the infinity.
