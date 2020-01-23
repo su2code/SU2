@@ -16679,12 +16679,17 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
         Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
         dTdn = -(There - Twall)/dist_ij;
       }
-      else {
+      else if ((config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_NEUMANN_HEATFLUX) ||
+              (config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX)) {
 
         /*--- (Directly) Set wall temperature to conjugate temperature. ---*/
 
         Twall = Tconjugate;
         dTdn = -(There - Twall)/dist_ij;
+      }
+      else {
+
+        SU2_MPI::Error(string("Unknown CHT coupling method."), CURRENT_FUNCTION);
       }
 
       /*--- Apply a weak boundary condition for the energy equation.
