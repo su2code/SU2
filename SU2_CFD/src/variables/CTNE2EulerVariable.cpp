@@ -1098,16 +1098,16 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     } else {
 
       // Assign the bounds
-      Tve_o = Tvemin;
-      Tve2  = Tvemax;
-      // if (rhoEve_t > rhoEve) {
-        // Tve2  = Tve;
-        // Tve_o = Tvemin;
-      // }
-      // else{
-        // Tve_o = Tve;
-        // Tve2  = Tvemax;
-      // }
+      // Tve_o = Tvemin;
+      // Tve2  = Tvemax;
+      if (rhoEve_t > rhoEve) {
+        Tve2  = Tve;
+        Tve_o = Tvemin;
+      }
+      else{
+        Tve_o = Tve;
+        Tve2  = Tvemax;
+      }
 
       // Execute the root-finding method
       Bconvg = false;
