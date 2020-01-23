@@ -36,7 +36,7 @@
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
  */
-class CAdjTurbSolver : public CSolver {
+class CAdjTurbSolver final : public CSolver {
 private:
   su2double PsiNu_Inf,  /*!< \brief PsiNu variable at the infinity. */
   *FlowSolution_i,      /*!< \brief Store the flow solution at point i. */
@@ -85,7 +85,7 @@ public:
                         CNumerics *conv_numerics,
                         CNumerics *visc_numerics,
                         CConfig *config,
-                        unsigned short val_marker) final;
+                        unsigned short val_marker) override;
   /*!
    * \brief Impose an isothermal wall boundary condition (no-slip).
    * \param[in] geometry - Geometrical definition of the problem.
@@ -100,7 +100,7 @@ public:
                           CNumerics *conv_numerics,
                           CNumerics *visc_numerics,
                           CConfig *config,
-                          unsigned short val_marker) final;
+                          unsigned short val_marker) override;
 
   /*!
    * \brief Impose the boundary condition to the far field using characteristics.
@@ -116,7 +116,7 @@ public:
                     CNumerics *conv_numerics,
                     CNumerics *visc_numerics,
                     CConfig *config,
-                    unsigned short val_marker) final;
+                    unsigned short val_marker) override;
 
   /*!
    * \brief Initializate the residual vectors.
@@ -133,7 +133,7 @@ public:
                     unsigned short iMesh,
                     unsigned short iRKStep,
                     unsigned short RunTime_EqSystem,
-                    bool Output) final;
+                    bool Output) override;
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
@@ -147,7 +147,7 @@ public:
                       CSolver **solver_container,
                       CNumerics *numerics,
                       CConfig *config,
-                      unsigned short iMesh) final;
+                      unsigned short iMesh) override;
 
   /*!
    * \brief Compute the viscous residuals for the turbulent adjoint equation.
@@ -163,7 +163,7 @@ public:
                         CNumerics *numerics,
                         CConfig *config,
                         unsigned short iMesh,
-                        unsigned short iRKStep) final;
+                        unsigned short iRKStep) override;
 
   /*!
    * \brief Source term computation.
@@ -178,7 +178,7 @@ public:
                        CSolver **solver_container,
                        CNumerics *numerics,
                        CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh) final;
+                       CConfig *config, unsigned short iMesh) override;
 
   /*!
    * \brief Update the solution using an implicit solver.
@@ -188,6 +188,6 @@ public:
    */
   void ImplicitEuler_Iteration(CGeometry *geometry,
                                CSolver **solver_container,
-                               CConfig *config) final;
+                               CConfig *config) override;
 
 };

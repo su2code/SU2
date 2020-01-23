@@ -312,7 +312,7 @@ public:
    * \brief Get a pointer to the vector of the solution degrees of freedom.
    * \return Pointer to the vector of the solution degrees of freedom.
    */
-  inline su2double* GetVecSolDOFs(void) const final { return VecSolDOFs.data(); }
+  inline su2double* GetVecSolDOFs(void) final { return VecSolDOFs.data(); }
 
   /*!
    * \brief Get the global number of solution degrees of freedom for the calculation.

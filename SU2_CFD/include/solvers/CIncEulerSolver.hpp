@@ -279,7 +279,7 @@ public:
    * \brief Get the temperature value at infinity.
    * \return Value of the temperature at infinity.
    */
-  inline su2double GetTemperature_Inf(void) const final { return Temperature_Inf; }
+  inline su2double GetTemperature_Inf(void) const { return Temperature_Inf; }
 
   /*!
    * \brief Compute the density multiply by velocity at the infinity.
@@ -1453,7 +1453,7 @@ public:
                              unsigned short val_kind_marker,
                              string val_marker,
                              CGeometry *geometry,
-                             CConfig *config);
+                             CConfig *config) const final;
 
   /*!
    * \brief A virtual member.

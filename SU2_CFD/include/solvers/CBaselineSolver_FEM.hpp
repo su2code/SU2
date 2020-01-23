@@ -33,7 +33,7 @@
  * \author T. Economon.
  * \version 7.0.0 "Blackbird"
  */
-class CBaselineSolver_FEM : public CSolver {
+class CBaselineSolver_FEM final : public CSolver {
 protected:
 
   unsigned long nDOFsLocTot;    /*!< \brief Total number of local DOFs, including halos. */
@@ -85,12 +85,12 @@ public:
                    CSolver ***solver,
                    CConfig *config,
                    int val_iter,
-                   bool val_update_geo) final;
+                   bool val_update_geo) override;
 
   /*!
    * \brief Get a pointer to the vector of the solution degrees of freedom.
    * \return Pointer to the vector of the solution degrees of freedom.
    */
-  inline su2double* GetVecSolDOFs(void) const final { return VecSolDOFs.data(); }
+  inline su2double* GetVecSolDOFs(void) override { return VecSolDOFs.data(); }
 
 };
