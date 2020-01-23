@@ -232,7 +232,7 @@ public:
    * \return Value of the Back sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_BPress() { return Total_Sens_BPress; }
+  inline su2double GetTotal_Sens_BPress() const override { return Total_Sens_BPress; }
 
   /*!
    * \brief Get the total density sensitivity coefficient.
@@ -261,14 +261,15 @@ public:
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
    */
-  void SetRecording(CGeometry *geometry, CConfig *config);
+  void SetRecording(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
    */
-  void SetMesh_Recording(CGeometry **geometry, CVolumetricMovement *grid_movement,
-      CConfig *config);
+  void SetMesh_Recording(CGeometry **geometry,
+                         CVolumetricMovement *grid_movement,
+                         CConfig *config) override;
 
   /*!
    * \brief A virtual member.

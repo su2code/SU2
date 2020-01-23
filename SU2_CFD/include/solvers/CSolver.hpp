@@ -423,7 +423,7 @@ public:
     Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point; 
   }
 
-  /*!
+  /*! TODO
    * \brief Adds the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
    * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
@@ -642,12 +642,12 @@ public:
    */
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) { }
 
-  /*!
+  /*! TODO
    * \brief Compute the pressure laplacian using in a incompressible solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] PressureLaplacian - Pressure laplacian.
    */
-  void SetPressureLaplacian(CGeometry *geometry, CConfig *config, su2double *PressureLaplacian);
+  // void SetPressureLaplacian(CGeometry *geometry, CConfig *config, su2double *PressureLaplacian);
 
   /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
@@ -856,7 +856,9 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) { }
+  inline virtual void Set_MPI_ActDisk(CSolver **solver_container,
+                                      CGeometry *geometry,
+                                      CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1156,7 +1158,7 @@ public:
                                    CConfig *config,
                                    unsigned short val_marker) { }
 
-  /*! 
+  /*! TODO
    * \brief A virtual member. 
    * \param[in] geometry - Geometrical definition of the problem. 
    * \param[in] solver_container - Container vector with all the solutions. 
@@ -1164,11 +1166,11 @@ public:
    * \param[in] config - Definition of the particular problem.  
    * \param[in] val_marker - Surface marker where the boundary condition is applied.  
    */ 
-  inline virtual void BC_Neumann(CGeometry *geometry,
-                                 CSolver **solver_container,
-                                 CNumerics *numerics,
-                                 CConfig *config,  
-                                 unsigned short val_marker) { }
+  // inline virtual void BC_Neumann(CGeometry *geometry,
+  //                                CSolver **solver_container,
+  //                                CNumerics *numerics,
+  //                                CConfig *config,  
+  //                                unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1493,7 +1495,7 @@ public:
    * \param[in] val_vertex - vertex index
    * \param[in] value      - number of outer states
    */
-  inline virtual void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){}
+  inline virtual void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value) { }
 
   /*!
    * \brief Set the conjugate heat variables.
@@ -1640,7 +1642,7 @@ public:
    */
   inline virtual void GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
-  /*!
+  /*! TODO
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -1666,7 +1668,7 @@ public:
    */
   inline virtual void Momentum_Forces(CGeometry *geometry, CConfig *config) { }
 
-  /*!
+  /*! TODO
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -1698,7 +1700,7 @@ public:
                                   CSolver **solver_container,
                                   CConfig *config) { }
 
-  /*!
+  /*! TODO
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -1760,7 +1762,7 @@ public:
                                        unsigned short iMesh,
                                        unsigned short iRKStep) { }
 
-  /*!
+  /*! TODO
    * \brief A virtual member.
    * \param[in] StiffMatrix_Elem - Stiffness matrix of an element
    */
@@ -1958,7 +1960,7 @@ public:
    */
   inline virtual void SetTotal_MaxHeatFlux(su2double val_Total_MaxHeat) { }
 
-  /*!
+  /*! TODO
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -2341,7 +2343,7 @@ public:
                                            unsigned short iMesh,
                                            bool Output) { }
 
-  /*!
+  /*! TODO
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
@@ -2526,7 +2528,7 @@ public:
    */
   inline virtual su2double GetTotal_AvgTemperature() const { return 0; }
 
-  /*!
+  /*! TODO
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
@@ -2815,7 +2817,7 @@ public:
    */
   inline virtual su2double GetTotal_CFz() const { return 0; }
 
-  /*!
+  /*! TODO
    * \brief A virtual member.
    * \return Value of the wave strength.
    */
@@ -3509,7 +3511,7 @@ public:
    */
   inline virtual su2double GetDensity_Inf(void) const { return 0; }
 
-  /*!
+  /*! TODO
    * \brief A virtual member.
    * \param[in] val_var - Index of the variable for the density.
    * \return Value of the density at the infinity.
@@ -3541,7 +3543,7 @@ public:
    */
   inline virtual su2double GetDensity_Velocity_Inf(unsigned short val_dim) const { return 0; }
 
-  /*!
+  /*! TODO
    * \brief A virtual member.
    * \param[in] val_dim - Index of the velocity vector.
    * \param[in] val_var - Index of the variable for the velocity.
@@ -3766,7 +3768,7 @@ public:
    */
   inline virtual su2double GetFSI_Residual(void) { return 0.0; }
 
-  /*!
+  /*! TODO
    * \brief A virtual member.
    * \param[in] solver1_geometry - Geometrical definition of the problem.
    * \param[in] solver1_solution - Container vector with all the solutions.

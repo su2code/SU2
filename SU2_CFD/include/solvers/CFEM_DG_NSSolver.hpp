@@ -130,7 +130,7 @@ public:
   void Shock_Capturing_DG(CConfig             *config,
                           const unsigned long elemBeg,
                           const unsigned long elemEnd,
-                          su2double           *workArray);
+                          su2double           *workArray) override;
 
   /*!
    * \brief Per-Olof Persson's method for capturing shock in DG
@@ -152,7 +152,7 @@ public:
   void Volume_Residual(CConfig             *config,
                        const unsigned long elemBeg,
                        const unsigned long elemEnd,
-                       su2double           *workArray);
+                       su2double           *workArray) override;
 
   /*!
    * \brief Compute the spatial residual for the given range of faces.
@@ -169,7 +169,7 @@ public:
                      const unsigned long indFaceEnd,
                      unsigned long       &indResFaces,
                      CNumerics           *numerics,
-                     su2double           *workArray);
+                     su2double           *workArray) override;
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -432,19 +432,19 @@ public:
    * \brief Get the total non dimensional lift coefficient (viscous contribution).
    * \return Value of the lift coefficient (viscous contribution).
    */
-  inline su2double GetAllBound_CL_Visc() { return AllBound_CL_Visc; }
+  inline su2double GetAllBound_CL_Visc() const override { return AllBound_CL_Visc; }
 
   /*!
    * \brief Get the total non dimensional sideforce coefficient (viscous contribution).
    * \return Value of the lift coefficient (viscous contribution).
    */
-  inline su2double GetAllBound_CSF_Visc() { return AllBound_CSF_Visc; }
+  inline su2double GetAllBound_CSF_Visc() const override { return AllBound_CSF_Visc; }
 
   /*!
    * \brief Get the total non dimensional drag coefficient (viscous contribution).
    * \return Value of the drag coefficient (viscous contribution).
    */
-  inline su2double GetAllBound_CD_Visc() { return AllBound_CD_Visc; }
+  inline su2double GetAllBound_CD_Visc() const override { return AllBound_CD_Visc; }
 
   /*!
    * \brief Get the max Omega.

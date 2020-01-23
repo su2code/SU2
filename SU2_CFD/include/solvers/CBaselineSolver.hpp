@@ -92,7 +92,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
    */
-  void LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter);
+  void LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter) final;
 
   /*!
    * \brief Set the number of variables and string names from the restart file.
