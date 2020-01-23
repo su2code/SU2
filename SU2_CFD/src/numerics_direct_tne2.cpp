@@ -3374,10 +3374,8 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
         + A[3]*(1E4/Thb) + A[4]*(1E4/Thb)*(1E4/Thb) );
 
     /*--- Calculate rate coefficients ---*/
-    // kf  = Cf * exp(eta*log(Thf)) * exp(-theta/Thf);
-    // kfb = Cf * exp(eta*log(Thb)) * exp(-theta/Thb);
-    kf  = Cf * pow(Thf, eta) * exp(-theta/Thf);
-    kfb = Cf * pow(Thb, eta) * exp(-theta/Thb);
+    kf  = Cf * exp(eta*log(Thf)) * exp(-theta/Thf);
+    kfb = Cf * exp(eta*log(Thb)) * exp(-theta/Thb);
     kb  = kfb / Keq;
 
     /*--- Determine production & destruction of each species ---*/
