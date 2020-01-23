@@ -81,6 +81,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \
+  ../src/output/filewriter/CSTLFileWriter.cpp \
   ../src/output/filewriter/CFEMDataSorter.cpp \
   ../src/output/filewriter/CFVMDataSorter.cpp \
   ../src/output/filewriter/CParallelDataSorter.cpp \
@@ -160,7 +161,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CAdjEulerVariable.cpp \
   ../src/variables/CDiscAdjVariable.cpp \
   ../src/variables/CIncNSVariable.cpp \
-  ../src/variables/CEulerVariable.cpp
+  ../src/variables/CEulerVariable.cpp \
+  ../src/limiters/computeLimiters.cpp
 
 su2_cfd_sources = \
   ../include/SU2_CFD.hpp \

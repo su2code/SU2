@@ -369,6 +369,8 @@ private:
   using Base::m_allocate;
 public:
   using Base::size;
+  using Index = Index_t;
+  using Scalar = Scalar_t;
 
 private:
   /*!
@@ -485,6 +487,70 @@ public:
   }
 };
 
+
+/*!
+ * \class C2DDummyLastView
+ * \brief Helper class, adds dummy trailing dimension to a reference of a
+ *        vector object making it a dummy matrix.
+ * \note The constness of the object is derived from the template type, but
+ *       we allways keep a reference, never a copy of the associated vector.
+ */
+template<class T>
+struct C2DDummyLastView
+{
+  using Index = typename T::Index;
+  using Scalar = typename T::Scalar;
+
+  T& data;
+
+  C2DDummyLastView() = delete;
+
+  C2DDummyLastView(T& ref) : data(ref) {}
+
+  template<class U = T,
+           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
+  Scalar& operator() (Index i, Index) noexcept
+  {
+    return data(i);
+  }
+
+  const Scalar& operator() (Index i, Index) const noexcept
+  {
+    return data(i);
+  }
+};
+
+/*!
+ * \class C3DDummyMiddleView
+ * \brief Helper class, adds dummy middle dimension to a reference of a
+ *        matrix object making it a dummy 3D array.
+ * \note The constness of the object is derived from the template type, but
+ *       we allways keep a reference, never a copy of the associated matrix.
+ */
+template<class T>
+struct C3DDummyMiddleView
+{
+  using Index = typename T::Index;
+  using Scalar = typename T::Scalar;
+
+  T& data;
+
+  C3DDummyMiddleView() = delete;
+
+  C3DDummyMiddleView(T& ref) : data(ref) {}
+
+  template<class U = T,
+           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
+  Scalar& operator() (Index i, Index, Index k) noexcept
+  {
+    return data(i,k);
+  }
+
+  const Scalar& operator() (Index i, Index, Index k) const noexcept
+  {
+    return data(i,k);
+  }
+};
 
 /*!
  * \brief Useful typedefs with default template parameters
