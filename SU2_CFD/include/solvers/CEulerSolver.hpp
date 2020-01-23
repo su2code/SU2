@@ -29,6 +29,7 @@
 
 #include "CSolver.hpp"
 #include "../variables/CEulerVariable.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 
 /*!
  * \class CSolver
@@ -38,6 +39,10 @@
  */
 class CEulerSolver : public CSolver {
 protected:
+
+  enum : size_t {OMP_MAX_SIZE = 512};
+
+  unsigned long omp_chunk_size;     /*!< \brief Chunk size used in light point loops. */
 
   su2double
   Mach_Inf,         /*!< \brief Mach number at the infinity. */
@@ -268,7 +273,7 @@ protected:
   unsigned short nSpanMax;           /*!< \brief Max number of maximum span-wise sections for all zones */
   unsigned short nMarkerTurboPerf;   /*!< \brief Number of turbo performance. */
 
-  CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
+  vector<CFluidModel*> FluidModel;  /*!< \brief fluid model used in the solver */
 
   /*--- Turbomachinery Solver Variables ---*/
   su2double *** AverageFlux,
@@ -308,14 +313,26 @@ protected:
                      ***CkOutflow1,
                      ***CkOutflow2;
 
- /*--- End of Turbomachinery Solver Variables ---*/
+  /*--- End of Turbomachinery Solver Variables ---*/
 
-  /* Sliding meshes variables */
+  /*--- Sliding meshes variables ---*/
 
   su2double ****SlidingState;
   int **SlidingStateNodes;
 
-  CEulerVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
+
+  struct EdgeColor {
+    unsigned long size;             /*!< \brief Number of edges with a given color. */
+    const unsigned long* indices;   /*!< \brief Array of edge indices for a given color. */
+  };
+  vector<EdgeColor> EdgeColoring;   /*!< \brief Edge colors. */
+  unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size in edge loops must be a multiple of this. */
+
+  /*!
+   * \brief The highest level in the variable hierarchy this solver can safely use.
+   */
+  CEulerVariable* nodes = nullptr;
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
@@ -353,7 +370,7 @@ public:
    * \brief Compute the pressure at the infinity.
    * \return Value of the pressure at the infinity.
    */
-  inline CFluidModel* GetFluidModel(void) const final { return FluidModel;}
+  inline CFluidModel* GetFluidModel(void) const final { return FluidModel[omp_get_thread_num()]; }
 
   /*!
    * \brief Compute the density at the infinity.
@@ -1132,8 +1149,8 @@ public:
   inline su2double GetSlidingState(unsigned short val_marker,
                                    unsigned long val_vertex,
                                    unsigned short val_state,
-                                   unsigned long donor_index) const final { 
-    return SlidingState[val_marker][val_vertex][val_state][donor_index]; 
+                                   unsigned long donor_index) const final {
+    return SlidingState[val_marker][val_vertex][val_state][donor_index];
   }
 
   /*!
@@ -2309,8 +2326,8 @@ public:
    * \param[in] val_marker - marker index
    * \param[in] val_vertex - vertex index
    */
-  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const final { 
-    return SlidingStateNodes[val_marker][val_vertex]; 
+  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const final {
+    return SlidingStateNodes[val_marker][val_vertex];
   }
 
   /*!

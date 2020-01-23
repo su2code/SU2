@@ -408,7 +408,6 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
     long iElem_Local;
     unsigned long iElem_Global_Local = 0, iElem_Global = 0; string text_line;
-    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
     /*--- The first line is the header ---*/
 
@@ -451,11 +450,7 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
     /*--- Detect a wrong solution file ---*/
 
-    if (iElem_Global_Local < nElement) { sbuf_NotMatching = 1; }
-
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-    if (rbuf_NotMatching != 0) {
+    if (iElem_Global_Local != nElement) {
       SU2_MPI::Error(string("The properties file ") + filename + string(" doesn't match with the mesh file!\n")  +
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
     }
@@ -502,6 +497,7 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
   if (prestretch_file.fail()) {
     SU2_MPI::Error(string("There is no FEM prestretch reference file ") + filename, CURRENT_FUNCTION);
   }
+
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
 
@@ -517,7 +513,6 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
   long iPoint_Local;
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- The first line is the header ---*/
 
@@ -548,13 +543,9 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-  if (rbuf_NotMatching != 0) {
-      SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
-                     string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+  if (iPoint_Global_Local != nPointDomain) {
+    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
   /*--- Close the restart file ---*/
@@ -673,7 +664,6 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   long iPoint_Local;
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- The first line is the header ---*/
 
@@ -713,16 +703,10 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-  if (rbuf_NotMatching != 0) {
+  if (iPoint_Global_Local != nPointDomain) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n")  +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
-
-  /*--- I don't think we need to communicate ---*/
 
   /*--- Close the restart file ---*/
 
