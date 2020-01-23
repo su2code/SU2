@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -26,7 +26,7 @@
  */
 
 #include "../../../include/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.hpp"
-  
+
 CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(void) : CVerificationSolution() { }
 
 CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(unsigned short val_nDim,
@@ -34,7 +34,7 @@ CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(unsigned short val_nD
                                                            unsigned short val_iMesh,
                                                            CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-  
+
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the Navier-Stokes equations on a unit quad with no-slip
    wall boundary conditions. ---*/
@@ -114,7 +114,7 @@ CMMSNSUnitQuadSolutionWallBC::~CMMSNSUnitQuadSolutionWallBC(void) { }
 
 void CMMSNSUnitQuadSolutionWallBC::GetBCState(const su2double *val_coords,
                                               const su2double val_t,
-                                              su2double       *val_solution) {
+                                              su2double       *val_solution) const {
 
   /*--- The exact solution is prescribed on the boundaries. ---*/
   GetSolution(val_coords, val_t, val_solution);
@@ -122,7 +122,7 @@ void CMMSNSUnitQuadSolutionWallBC::GetBCState(const su2double *val_coords,
 
 void CMMSNSUnitQuadSolutionWallBC::GetSolution(const su2double *val_coords,
                                                const su2double val_t,
-                                               su2double       *val_solution) {
+                                               su2double       *val_solution) const {
   /* Easier storage of the y-coordinate. */
   const su2double y = val_coords[1];
 
@@ -158,7 +158,7 @@ void CMMSNSUnitQuadSolutionWallBC::GetSolution(const su2double *val_coords,
 
 void CMMSNSUnitQuadSolutionWallBC::GetMMSSourceTerm(const su2double *val_coords,
                                                     const su2double val_t,
-                                                    su2double       *val_source) {
+                                                    su2double       *val_source) const {
 
   /*--- Abbreviate Pi and the y-coordinate. ---*/
   const su2double Pi = PI_NUMBER;
@@ -231,6 +231,6 @@ void CMMSNSUnitQuadSolutionWallBC::GetMMSSourceTerm(const su2double *val_coords,
   val_source[nDim+1] /= Velocity_Ref*Pressure_Ref;
 }
 
-bool CMMSNSUnitQuadSolutionWallBC::IsManufacturedSolution(void) {
+bool CMMSNSUnitQuadSolutionWallBC::IsManufacturedSolution(void) const {
   return true;
 }
