@@ -5244,7 +5244,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   /*--- Compute Test Basis: W = J * Phi ---*/
   
-  bool debug = false;
   vector<double> TestBasis2(m*n, 0.0);
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -5271,24 +5270,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
         for (unsigned long i = 0; i < nVar; i++){ // column order
           TestBasis2[jPoint*m + iPoint*nVar + i] += prod[i];
         }
-          
-        if (debug) {
-          std::cout << "iPoint, kPoint and jPoint: " << iPoint << ", " << kPoint << " and " << jPoint << std::endl;
-          std::cout << "Jacobian Matrix:" << std::endl;
-          for (unsigned short i = 0; i < nVar; i++){
-            std::cout << mat_i[i*nVar] << " " << mat_i[i*nVar+1] << " " << mat_i[i*nVar+2] << " " << mat_i[i*nVar+3] << std::endl;
-          }
-          
-          std::cout << "Phi vector:" << std::endl;
-          std::cout << phi[0] << " " << phi[1] << " " << phi[2] << " " << phi[3] << std::endl;
-          
-          std::cout << "Product:" << std::endl;
-          std::cout << prod[0] << " " << prod[1] << " " << prod[2] << " " << prod[3] << std::endl;
-          
-          std::cout << "Current TestBasis:" << std::endl;
-          unsigned long test = jPoint*m + iPoint*nVar;
-          std::cout << TestBasis2[test] << " " << TestBasis2[test+1] << " " << TestBasis2[test+2] << " " << TestBasis2[test+3] << std::endl;
-        }
         
         // Jacobian is defined for (iPoint, k=iPoint) but won't be listed as a neighbor
         if (kNeigh == 0) {
@@ -5308,15 +5289,9 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
             }
           }
           
-          //TestBasis.AddBlock(iPoint, j, prod);
           for (unsigned long i = 0; i < nVar; i++){
             TestBasis2[jPoint*m + iPoint*nVar + i] += prod[i];
           }
-          
-          // save Jacobian for debugging purposes
-          //for (unsigned short = 0; i < nVar; i++){
-          // int place = (nVar*iPoint+1)*m + (nVar*k);
-          // Jac[place] = mat[i*nVar];
         }
       }
     }
@@ -5354,7 +5329,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
       for(int j=0; j < n; j++){
         fs << TestBasis2[i +j*m] << "," ;
         TestBasis2[i +j*m] = TestBasis2[i +j*m] * (-1.0);
-        //std::cout << "Test Basis[" << i+j*m << "]: " << TestBasis2[i +j*m] << std::endl;
       }
       fs << "\n";
     }
@@ -5387,7 +5361,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.close();
   
   // backtracking line search to find step size:
-  double a =  0.01;
+  double a =  0.1;
   
   for (int i = 0; i < n; i++) {
     GenCoordsY[i] += a * r[i];
