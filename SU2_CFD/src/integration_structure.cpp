@@ -153,6 +153,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case DIELEC_BOUNDARY:
         solver_container[MainSolver]->BC_Dielec(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
+      case NEUMANN:
+        solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
     }
   }
   

@@ -103,8 +103,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  void Viscous_Residual(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *numerics,
+                        CConfig *config,
+                        unsigned short iMesh,
+                        unsigned short iRKStep) override;
 
   /*!
    * \brief Impose the Symmetry Plane boundary condition.
@@ -200,8 +204,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
+  void ImplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) override;
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
    * \param[in] geometry - Geometric definition of the problem.
@@ -223,7 +228,7 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config);
+  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config) final;
 
   /*!
    * \brief Load a solution from a restart file.
@@ -240,15 +245,21 @@ public:
   * \param[in] val_marker - marker index
   * \param[in] val_vertex - vertex index
   * \param[in] val_state  - requested state component
+  * \param[in] donor_index- index of the donor node to get
   */
-  inline su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }
+  inline su2double GetSlidingState(unsigned short val_marker,
+                                   unsigned long val_vertex,
+                                   unsigned short val_state,
+                                   unsigned long donor_index) const final { 
+    return SlidingState[val_marker][val_vertex][val_state][donor_index]; 
+  }
 
   /*!
    * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
    * \param[in] val_marker   - marker index
    * \param[in] val_vertex   - vertex index
    */
-  inline void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex){
+  inline void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex) final {
     int iVar;
 
     for( iVar = 0; iVar < nVar+1; iVar++){
@@ -269,7 +280,11 @@ public:
    * \param[in] donor_index  - index of the donor node to set
    * \param[in] component    - set value
    */
-  inline void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){
+  inline void SetSlidingState(unsigned short val_marker,
+                              unsigned long val_vertex,
+                              unsigned short val_state,
+                              unsigned long donor_index,
+                              su2double component) final {
     SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
   }
 
@@ -287,7 +302,9 @@ public:
    * \param[in] val_marker - marker index
    * \param[in] val_vertex - vertex index
    */
-  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return SlidingStateNodes[val_marker][val_vertex]; }
+  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const final { 
+    return SlidingStateNodes[val_marker][val_vertex]; 
+  }
 
   /*!
    * \brief Set custom turbulence variables at the vertex of an inlet.

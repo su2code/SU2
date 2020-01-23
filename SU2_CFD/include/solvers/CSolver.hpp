@@ -417,7 +417,11 @@ public:
    * \param[in] val_var - Index of the variable.
    * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
    */
-  inline void SetRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point) { Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point; }
+  inline void SetRes_Max(unsigned short val_var,
+                         su2double val_residual,
+                         unsigned long val_point) { 
+    Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point; 
+  }
 
   /*!
    * \brief Adds the maximal residual, this is useful for the convergence history.
@@ -443,7 +447,10 @@ public:
    * \param[in] val_point - Value of the point index for the max residual.
    * \param[in] val_coord - Location (x, y, z) of the max residual point.
    */
-  inline void AddRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point, const su2double* val_coord) {
+  inline void AddRes_Max(unsigned short val_var,
+                         su2double val_residual,
+                         unsigned long val_point,
+                         const su2double* val_coord) {
     if (val_residual > Residual_Max[val_var]) {
       Residual_Max[val_var] = val_residual;
       Point_Max[val_var] = val_point;
@@ -486,7 +493,11 @@ public:
    * \param[in] val_var - Index of the variable.
    * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
    */
-  inline void SetRes_Max_BGS(unsigned short val_var, su2double val_residual, unsigned long val_point) { Residual_Max_BGS[val_var] = val_residual; Point_Max_BGS[val_var] = val_point; }
+  inline void SetRes_Max_BGS(unsigned short val_var,
+                             su2double val_residual,
+                             unsigned long val_point) {
+    Residual_Max_BGS[val_var] = val_residual; Point_Max_BGS[val_var] = val_point; 
+  }
 
   /*!
    * \brief Adds the maximal residual for BGS subiterations.
@@ -495,7 +506,10 @@ public:
    * \param[in] val_point - Value of the point index for the max residual.
    * \param[in] val_coord - Location (x, y, z) of the max residual point.
    */
-  inline void AddRes_Max_BGS(unsigned short val_var, su2double val_residual, unsigned long val_point, const su2double* val_coord) {
+  inline void AddRes_Max_BGS(unsigned short val_var,
+                             su2double val_residual,
+                             unsigned long val_point,
+                             const su2double* val_coord) {
     if (val_residual > Residual_Max_BGS[val_var]) {
     Residual_Max_BGS[val_var] = val_residual;
     Point_Max_BGS[val_var] = val_point;
@@ -690,8 +704,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void ProcessTaskList_DG(CGeometry *geometry,  CSolver **solver_container,
-                                         CNumerics **numerics, CConfig *config,
+  inline virtual void ProcessTaskList_DG(CGeometry *geometry, 
+                                         CSolver **solver_container,
+                                         CNumerics **numerics,
+                                         CConfig *config,
                                          unsigned short iMesh) {}
 
   /*!
@@ -702,9 +718,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
-                                                CNumerics **numerics, CConfig *config,
-                                                unsigned short iMesh, unsigned short RunTime_EqSystem) {}
+  inline virtual void ADER_SpaceTimeIntegration(CGeometry *geometry,
+                                                CSolver **solver_container,
+                                                CNumerics **numerics,
+                                                CConfig *config,
+                                                unsigned short iMesh,
+                                                unsigned short RunTime_EqSystem) {}
 
   /*!
    * \brief A virtual member.
@@ -1137,6 +1156,20 @@ public:
                                    CConfig *config,
                                    unsigned short val_marker) { }
 
+  /*! 
+   * \brief A virtual member. 
+   * \param[in] geometry - Geometrical definition of the problem. 
+   * \param[in] solver_container - Container vector with all the solutions. 
+   * \param[in] numerics - Description of the numerical method. 
+   * \param[in] config - Definition of the particular problem.  
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.  
+   */ 
+  inline virtual void BC_Neumann(CGeometry *geometry,
+                                 CSolver **solver_container,
+                                 CNumerics *numerics,
+                                 CConfig *config,  
+                                 unsigned short val_marker) { }
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1238,8 +1271,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                     CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Inlet(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CNumerics *conv_numerics,
+                               CNumerics *visc_numerics,
+                               CConfig *config,
+                               unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1250,8 +1287,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                     CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Inlet_Turbo(CGeometry *geometry,
+                                     CSolver **solver_container,
+                                     CNumerics *conv_numerics,
+                                     CNumerics *visc_numerics,
+                                     CConfig *config,
+                                     unsigned short val_marker) { }
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1261,8 +1302,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                     CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Inlet_MixingPlane(CGeometry *geometry,
+                                           CSolver **solver_container,
+                                           CNumerics *conv_numerics,
+                                           CNumerics *visc_numerics,
+                                           CConfig *config,
+                                           unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1273,8 +1318,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                     CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Supersonic_Inlet(CGeometry *geometry,
+                                          CSolver **solver_container,
+                                          CNumerics *conv_numerics,
+                                          CNumerics *visc_numerics,
+                                          CConfig *config,
+                                          unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1285,8 +1334,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                         CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Supersonic_Outlet(CGeometry *geometry,
+                                           CSolver **solver_container,
+                                           CNumerics *conv_numerics,
+                                           CNumerics *visc_numerics,
+                                           CConfig *config,
+                                           unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1297,8 +1350,12 @@ public:
    * \param[in] config           - Definition of the particular problem.
    * \param[in] val_marker       - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                     CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Custom(CGeometry *geometry,
+                                CSolver **solver_container,
+                                CNumerics *conv_numerics,
+                                CNumerics *visc_numerics,
+                                CConfig *config,
+                                unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1309,8 +1366,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                      CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Outlet(CGeometry *geometry,
+                                CSolver **solver_container,
+                                CNumerics *conv_numerics,
+                                CNumerics *visc_numerics,
+                                CConfig *config,
+                                unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1321,8 +1382,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                      CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Engine_Inflow(CGeometry *geometry,
+                                       CSolver **solver_container,
+                                       CNumerics *conv_numerics,
+                                       CNumerics *visc_numerics,
+                                       CConfig *config,
+                                       unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1333,8 +1398,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                      CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Engine_Exhaust(CGeometry *geometry,
+                                        CSolver **solver_container,
+                                        CNumerics *conv_numerics,
+                                        CNumerics *visc_numerics,
+                                        CConfig *config,
+                                        unsigned short val_marker) { }
 
   /*!
    * \brief Impose the symmetry boundary condition using the residual.
@@ -1344,8 +1413,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Dielec(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                   CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Dielec(CGeometry *geometry,
+                                CSolver **solver_container,
+                                CNumerics *numerics,
+                                CConfig *config,
+                                unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1355,8 +1427,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                  CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_Electrode(CGeometry *geometry,
+                                   CSolver **solver_container,
+                                   CNumerics *numerics,
+                                   CConfig *config,
+                                   unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1366,16 +1441,23 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                      CConfig *config, unsigned short val_marker) { }
+  inline virtual void BC_ConjugateHeat_Interface(CGeometry *geometry,
+                                                 CSolver **solver_container,
+                                                 CNumerics *numerics,
+                                                 CConfig *config,
+                                                 unsigned short val_marker) { }
 
  /*!
    * \brief Get the outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
    * \param[in] val_vertex - vertex index
    * \param[in] val_state  - requested state component
+   * \param[in] donor_index- index of the donor node to get
    */
-  inline virtual su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return 0; }
+  inline virtual su2double GetSlidingState(unsigned short val_marker,
+                                           unsigned long val_vertex,
+                                           unsigned short val_state,
+                                           unsigned long donor_index) const { return 0; }
 
   /*!
    * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
@@ -1389,16 +1471,21 @@ public:
    * \param[in] val_marker - marker index
    * \param[in] val_vertex - vertex index
    * \param[in] val_state  - requested state component
+   * \param[in] donor_index- index of the donor node to set
    * \param[in] component  - set value
    */
-  inline virtual void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){ }
+  inline virtual void SetSlidingState(unsigned short val_marker,
+                                      unsigned long val_vertex,
+                                      unsigned short val_state,
+                                      unsigned long donor_index,
+                                      su2double component){ }
 
   /*!
    * \brief Get the number of outer states for fluid interface nodes.
    * \param[in] val_marker - marker index
    * \param[in] val_vertex - vertex index
    */
-  inline virtual int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return 0; }
+  inline virtual int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
    * \brief Set the number of outer states for fluid interface nodes.
@@ -1416,7 +1503,11 @@ public:
    * \param[in] relaxation factor - relaxation factor for the change of the variables
    * \param[in] val_var           - value of the variable
    */
-  inline virtual void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }
+  inline virtual void SetConjugateHeatVariable(unsigned short val_marker,
+                                               unsigned long val_vertex,
+                                               unsigned short pos_var,
+                                               su2double relaxation_factor,
+                                               su2double val_var) { }
 
   /*!
    * \brief Set the conjugate heat variables.
@@ -1424,7 +1515,9 @@ public:
    * \param[in] val_vertex        - vertex index
    * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
    */
-  inline virtual su2double GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return 0.0; }
+  inline virtual su2double GetConjugateHeatVariable(unsigned short val_marker,
+                                                    unsigned long val_vertex,
+                                                    unsigned short pos_var) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1433,8 +1526,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  inline virtual void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
-                      CConfig *config, unsigned short iRKStep) { }
+  inline virtual void ExplicitRK_Iteration(CGeometry *geometry,
+                                           CSolver **solver_container,
+                                           CConfig *config,
+                                           unsigned short iRKStep) { }
 
   /*!
    * \brief A virtual member.
@@ -1443,8 +1538,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  inline virtual void ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
-                                            CConfig *config, unsigned short iRKStep) { }
+  inline virtual void ClassicalRK4_Iteration(CGeometry *geometry,
+                                             CSolver **solver_container,
+                                             CConfig *config,
+                                             unsigned short iRKStep) { }
 
   /*!
    * \brief A virtual member.
@@ -1452,7 +1549,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+  inline virtual void ExplicitEuler_Iteration(CGeometry *geometry,
+                                              CSolver **solver_container,
+                                              CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1460,7 +1559,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+  inline virtual void ImplicitEuler_Iteration(CGeometry *geometry, 
+                                              CSolver **solver_container,
+                                              CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1546,8 +1647,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh) { }
+  // inline virtual void Compute_Residual(CGeometry *geometry,
+  //                                      CSolver **solver_container,
+  //                                      CConfig *config,
+  //                                      unsigned short iMesh) { }
 
   /*!
    * \brief A virtual member.
@@ -1569,7 +1672,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+  // inline virtual void Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1591,21 +1694,23 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+  inline virtual void Heat_Fluxes(CGeometry *geometry,
+                                  CSolver **solver_container,
+                                  CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Viscous_DeltaForces(CGeometry *geometry, CConfig *config) { }
+  // inline virtual void Viscous_DeltaForces(CGeometry *geometry, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Wave_Strength(CGeometry *geometry, CConfig *config) { }
+  // inline virtual void Wave_Strength(CGeometry *geometry, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1613,7 +1718,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  inline virtual void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false) { }
+  inline virtual void SetPrimitive_Gradient_GG(CGeometry *geometry,
+                                               CConfig *config,
+                                               bool reconstruction = false) { }
 
   /*!
    * \brief A virtual member.
@@ -1646,14 +1753,22 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  inline virtual void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
+  inline virtual void Viscous_Residual(CGeometry *geometry,
+                                       CSolver **solver_container,
+                                       CNumerics *numerics,
+                                       CConfig *config,
+                                       unsigned short iMesh,
+                                       unsigned short iRKStep) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] StiffMatrix_Elem - Stiffness matrix of an element
    */
-  inline virtual void AddStiffMatrix(su2double **StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3 ) { }
+  // inline virtual void AddStiffMatrix(su2double **StiffMatrix_Elem,
+  //                                    unsigned long Point_0,
+  //                                    unsigned long Point_1,
+  //                                    unsigned long Point_2,
+  //                                    unsigned long Point_3 ) { }
 
   /*!
    * \brief A virtual member.
@@ -1664,8 +1779,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void Source_Residual(CGeometry *geometry, CSolver **solver_container,
-                          CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) { }
+  inline virtual void Source_Residual(CGeometry *geometry,
+                                      CSolver **solver_container,
+                                      CNumerics *numerics,
+                                      CNumerics *second_numerics,
+                                      CConfig *config,
+                                      unsigned short iMesh) { }
 
   /*!
    * \brief A virtual member.
@@ -1675,8 +1794,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void Source_Template(CGeometry *geometry, CSolver **solver_container,
-                          CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
+  inline virtual void Source_Template(CGeometry *geometry,
+                                      CSolver **solver_container,
+                                      CNumerics *numerics,
+                                      CConfig *config,
+                                      unsigned short iMesh) { }
 
   /*!
    * \brief A virtual member.
@@ -1684,7 +1806,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \param[in] val_sensitivity - Value of the sensitivity coefficient.
    */
-  inline virtual void SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) { }
+  inline virtual void SetCSensitivity(unsigned short val_marker,
+                                      unsigned long val_vertex,
+                                      su2double val_sensitivity) { }
 
   /*!
    * \brief A virtual member.
@@ -1692,7 +1816,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetForceProj_Vector(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+  inline virtual void SetForceProj_Vector(CGeometry *geometry,
+                                          CSolver **solver_container,
+                                          CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1700,7 +1826,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+  inline virtual void SetIntBoundary_Jump(CGeometry *geometry,
+                                          CSolver **solver_container,
+                                          CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1835,7 +1963,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetDistance(CGeometry *geometry, CConfig *config) { };
+  // inline virtual void SetDistance(CGeometry *geometry, CConfig *config) { };
 
   /*!
    * \brief A virtual member.
@@ -1844,7 +1972,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
+  inline virtual void Inviscid_Sensitivity(CGeometry *geometry,
+                                           CSolver **solver_container,
+                                           CNumerics *numerics,
+                                           CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1853,7 +1984,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
+  inline virtual void Smooth_Sensitivity(CGeometry *geometry,
+                                         CSolver **solver_container,
+                                         CNumerics *numerics,
+                                         CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1862,348 +1996,357 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
+  inline virtual void Viscous_Sensitivity(CGeometry *geometry,
+                                          CSolver **solver_container,
+                                          CNumerics *numerics,
+                                          CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetCL_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetCL_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetCL_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetCL_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CL(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CL(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CD(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CD(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CSF(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CSF(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CEff(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CEff(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CFx(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CFx(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CFy(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CFy(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CFz(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CFz(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CMx(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CMx(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CMy(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CMy(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CMz(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CMz(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CL_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CL_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CD_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CD_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CSF_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CSF_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CEff_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CEff_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CFx_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CFx_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CFy_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CFy_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CFz_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CFz_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CMx_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CMx_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CMy_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CMy_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CMz_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CMz_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CL_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CL_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CD_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CD_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CSF_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CSF_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CEff_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CEff_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CFx_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CFx_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CFy_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CFy_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CFz_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CFz_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CMx_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CMx_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CMy_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CMy_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CMz_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CMz_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the buffet metric on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_Buffet_Metric(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_Buffet_Metric(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CL_Mnt(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CL_Mnt(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CD_Mnt(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CD_Mnt(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CSF_Mnt(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CSF_Mnt(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CEff_Mnt(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CEff_Mnt(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CFx_Mnt(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CFx_Mnt(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CFy_Mnt(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CFy_Mnt(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z force coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CFz_Mnt(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CFz_Mnt(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CMx_Mnt(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CMx_Mnt(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CMy_Mnt(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CMy_Mnt(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_CMz_Mnt(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_CMz_Mnt(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetCSF_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetCSF_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetCD_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetCD_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the mass flow rate on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetInflow_MassFlow(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetInflow_MassFlow(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
-  inline virtual void GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+  inline virtual void GetPower_Properties(CGeometry *geometry,
+                                          CConfig *config,
+                                          unsigned short iMesh,
+                                          bool Output) { }
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+  inline virtual void GetOutlet_Properties(CGeometry *geometry,
+                                           CConfig *config,
+                                           unsigned short iMesh,
+                                           bool Output) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
-  inline virtual void GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config) { }
+  // inline virtual void GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -2213,8 +2356,11 @@ public:
    * \param[in] iMesh - current mesh level for the multigrid.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  inline virtual void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
-                                     CConfig *config, unsigned short iMesh, bool Output) { }
+  inline virtual void SetFarfield_AoA(CGeometry *geometry,
+                                      CSolver **solver_container,
+                                      CConfig *config,
+                                      unsigned short iMesh,
+                                      bool Output) { }
 
   /*!
    * \brief A virtual member.
@@ -2228,31 +2374,31 @@ public:
    * \brief A virtual member.
    * \return boolean for whether the Fixed C_L mode is currently in finite-differencing mode
    */
-  inline virtual bool GetStart_AoA_FD(void) { return false; }
+  inline virtual bool GetStart_AoA_FD(void) const { return false; }
 
   /*!
    * \brief A virtual member.
    * \return boolean for whether the Fixed C_L mode is currently in finite-differencing mode
    */
-  inline virtual bool GetEnd_AoA_FD(void) { return false; }
+  inline virtual bool GetEnd_AoA_FD(void) const { return false; }
 
   /*!
    * \brief A virtual member.
    * \return value for the last iteration that the AoA was updated
    */
-  inline virtual unsigned long GetIter_Update_AoA(void) { return 0; }
+  inline virtual unsigned long GetIter_Update_AoA(void) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return value of the AoA before most recent update
    */
-  inline virtual su2double GetPrevious_AoA(void) { return 0.0; }
+  inline virtual su2double GetPrevious_AoA(void) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
    * \return value of CL Driver control command (AoA_inc)
    */
-  inline virtual su2double GetAoA_inc(void) { return 0.0; }
+  inline virtual su2double GetAoA_inc(void) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -2262,64 +2408,67 @@ public:
    * \param[in] iMesh - current mesh level for the multigrid.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  inline virtual void SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_container,
-                                         CConfig *config, unsigned short iMesh, bool Output) { }
+  inline virtual void SetActDisk_BCThrust(CGeometry *geometry,
+                                          CSolver **solver_container,
+                                          CConfig *config,
+                                          unsigned short iMesh,
+                                          bool Output) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the mass flow rate on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetExhaust_MassFlow(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetExhaust_MassFlow(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the fan face pressure on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetInflow_Pressure(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetInflow_Pressure(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the fan face mach on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetInflow_Mach(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetInflow_Mach(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the sideforce coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetCSF_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetCSF_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the efficiency coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetCEff_Inv(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetCEff_Inv(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the heat flux is computed.
    * \return Value of the integrated heat flux (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_HF_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_HF_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the heat flux is computed.
    * \return Value of the maximum heat flux (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetSurface_MaxHF_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetSurface_MaxHF_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetCD_Visc(unsigned short val_marker) { return 0; }
+  inline virtual su2double GetCD_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
    * \author H. Kline
@@ -2333,91 +2482,91 @@ public:
    * \brief Provide the total "combo" objective (weighted sum of other values).
    * \return Value of the "combo" objective values.
    */
-  inline virtual su2double GetTotal_ComboObj(void) { return 0;}
+  inline virtual su2double GetTotal_ComboObj(void) const { return 0;}
 
   /*!
    * \brief A virtual member.
    * \return Value of the sideforce coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CSF() { return 0; }
+  inline virtual su2double GetTotal_CSF() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the efficiency coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CEff() { return 0; }
+  inline virtual su2double GetTotal_CEff() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the thrust coefficient (force in the -x direction, inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CT() { return 0; }
+  inline virtual su2double GetTotal_CT() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the torque coefficient (moment in the -x direction, inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CQ() { return 0; }
+  inline virtual su2double GetTotal_CQ() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the heat load (integrated heat flux).
    */
-  inline virtual su2double GetTotal_HeatFlux() { return 0; }
+  inline virtual su2double GetTotal_HeatFlux() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the heat load (integrated heat flux).
    */
-  inline virtual su2double GetTotal_MaxHeatFlux() { return 0; }
+  inline virtual su2double GetTotal_MaxHeatFlux() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the average temperature.
    */
-  inline virtual su2double GetTotal_AvgTemperature() { return 0; }
+  inline virtual su2double GetTotal_AvgTemperature() const { return 0; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double Get_PressureDrag() { return 0; }
+  // inline virtual su2double Get_PressureDrag() { return 0; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double Get_ViscDrag() { return 0; }
+  // inline virtual su2double Get_ViscDrag() { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the rotor Figure of Merit (FM) (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CMerit() { return 0; }
+  inline virtual su2double GetTotal_CMerit() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CEquivArea() { return 0; }
+  inline virtual su2double GetTotal_CEquivArea() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the Aero drag (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_AeroCD() { return 0; }
+  inline virtual su2double GetTotal_AeroCD() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the difference of the presure and the target pressure.
    */
-  inline virtual su2double GetTotal_CpDiff() { return 0; }
+  inline virtual su2double GetTotal_CpDiff() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the difference of the heat and the target heat.
    */
-  inline virtual su2double GetTotal_HeatFluxDiff() { return 0; }
+  inline virtual su2double GetTotal_HeatFluxDiff() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -2429,7 +2578,7 @@ public:
    * \brief A virtual member.
    * \return Value of the Near-Field Pressure coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CNearFieldOF() { return 0; }
+  inline virtual su2double GetTotal_CNearFieldOF() const { return 0; }
 
   /*!
    * \author H. Kline
@@ -2520,402 +2669,402 @@ public:
    * \brief A virtual member.
    * \return Value of the lift coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CL() { return 0; }
+  inline virtual su2double GetTotal_CL() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CD() { return 0; }
+  inline virtual su2double GetTotal_CD() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_NetThrust() { return 0; }
+  inline virtual su2double GetTotal_NetThrust() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_Power() { return 0; }
+  inline virtual su2double GetTotal_Power() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_SolidCD() { return 0; }
+  inline virtual su2double GetTotal_SolidCD() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_ReverseFlow() { return 0; }
+  inline virtual su2double GetTotal_ReverseFlow() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_MFR() { return 0; }
+  inline virtual su2double GetTotal_MFR() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_Prop_Eff() { return 0; }
+  inline virtual su2double GetTotal_Prop_Eff() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_ByPassProp_Eff() { return 0; }
+  inline virtual su2double GetTotal_ByPassProp_Eff() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_Adiab_Eff() { return 0; }
+  inline virtual su2double GetTotal_Adiab_Eff() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_Poly_Eff() { return 0; }
+  inline virtual su2double GetTotal_Poly_Eff() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_IDC() { return 0; }
+  inline virtual su2double GetTotal_IDC() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_IDC_Mach() { return 0; }
+  inline virtual su2double GetTotal_IDC_Mach() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_IDR() { return 0; }
+  inline virtual su2double GetTotal_IDR() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_DC60() { return 0; }
+  inline virtual su2double GetTotal_DC60() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the custom objective function.
    */
-  inline virtual su2double GetTotal_Custom_ObjFunc() { return 0; }
+  inline virtual su2double GetTotal_Custom_ObjFunc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the moment x coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CMx() { return 0; }
+  inline virtual su2double GetTotal_CMx() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the moment y coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CMy() { return 0; }
+  inline virtual su2double GetTotal_CMy() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the moment y coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CMz() { return 0; }
+  inline virtual su2double GetTotal_CMz() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the moment x coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CoPx() { return 0; }
+  inline virtual su2double GetTotal_CoPx() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the moment y coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CoPy() { return 0; }
+  inline virtual su2double GetTotal_CoPy() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the moment y coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CoPz() { return 0; }
+  inline virtual su2double GetTotal_CoPz() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the force x coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CFx() { return 0; }
+  inline virtual su2double GetTotal_CFx() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the force y coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CFy() { return 0; }
+  inline virtual su2double GetTotal_CFy() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the force y coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CFz() { return 0; }
+  inline virtual su2double GetTotal_CFz() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the wave strength.
    */
-  inline virtual su2double GetTotal_CWave() { return 0; }
+  // inline virtual su2double GetTotal_CWave() { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the wave strength.
    */
-  inline virtual su2double GetTotal_CHeat() { return 0; }
+  // inline virtual su2double GetTotal_CHeat() { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the lift coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CL_Inv() { return 0; }
+  inline virtual su2double GetAllBound_CL_Inv() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CD_Inv() { return 0; }
+  inline virtual su2double GetAllBound_CD_Inv() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CSF_Inv() { return 0; }
+  inline virtual su2double GetAllBound_CSF_Inv() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CEff_Inv() { return 0; }
+  inline virtual su2double GetAllBound_CEff_Inv() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CMx_Inv() { return 0; }
+  inline virtual su2double GetAllBound_CMx_Inv() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CMy_Inv() { return 0; }
+  inline virtual su2double GetAllBound_CMy_Inv() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CMz_Inv() { return 0; }
+  inline virtual su2double GetAllBound_CMz_Inv() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CoPx_Inv() { return 0; }
+  inline virtual su2double GetAllBound_CoPx_Inv() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CoPy_Inv() { return 0; }
+  inline virtual su2double GetAllBound_CoPy_Inv() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CoPz_Inv() { return 0; }
+  inline virtual su2double GetAllBound_CoPz_Inv() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CFx_Inv() { return 0; }
+  inline virtual su2double GetAllBound_CFx_Inv() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CFy_Inv() { return 0; }
+  inline virtual su2double GetAllBound_CFy_Inv() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CFz_Inv() { return 0; }
+  inline virtual su2double GetAllBound_CFz_Inv() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the lift coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CL_Visc() { return 0; }
+  inline virtual su2double GetAllBound_CL_Visc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CD_Visc() { return 0; }
+  inline virtual su2double GetAllBound_CD_Visc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CSF_Visc() { return 0; }
+  inline virtual su2double GetAllBound_CSF_Visc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CEff_Visc() { return 0; }
+  inline virtual su2double GetAllBound_CEff_Visc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CMx_Visc() { return 0; }
+  inline virtual su2double GetAllBound_CMx_Visc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CMy_Visc() { return 0; }
+  inline virtual su2double GetAllBound_CMy_Visc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CMz_Visc() { return 0; }
+  inline virtual su2double GetAllBound_CMz_Visc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CoPx_Visc() { return 0; }
+  inline virtual su2double GetAllBound_CoPx_Visc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CoPy_Visc() { return 0; }
+  inline virtual su2double GetAllBound_CoPy_Visc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CoPz_Visc() { return 0; }
+  inline virtual su2double GetAllBound_CoPz_Visc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CFx_Visc() { return 0; }
+  inline virtual su2double GetAllBound_CFx_Visc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CFy_Visc() { return 0; }
+  inline virtual su2double GetAllBound_CFy_Visc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CFz_Visc() { return 0; }
+  inline virtual su2double GetAllBound_CFz_Visc() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the lift coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CL_Mnt() { return 0; }
+  inline virtual su2double GetAllBound_CL_Mnt() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CD_Mnt() { return 0; }
+  inline virtual su2double GetAllBound_CD_Mnt() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CSF_Mnt() { return 0; }
+  inline virtual su2double GetAllBound_CSF_Mnt() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CEff_Mnt() { return 0; }
+  inline virtual su2double GetAllBound_CEff_Mnt() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CMx_Mnt() { return 0; }
+  inline virtual su2double GetAllBound_CMx_Mnt() const { return 0; }
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CMy_Mnt() { return 0; }
+  inline virtual su2double GetAllBound_CMy_Mnt() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CMz_Mnt() { return 0; }
+  inline virtual su2double GetAllBound_CMz_Mnt() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CoPx_Mnt() { return 0; }
+  inline virtual su2double GetAllBound_CoPx_Mnt() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CoPy_Mnt() { return 0; }
+  inline virtual su2double GetAllBound_CoPy_Mnt() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CoPz_Mnt() { return 0; }
+  inline virtual su2double GetAllBound_CoPz_Mnt() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CFx_Mnt() { return 0; }
+  inline virtual su2double GetAllBound_CFx_Mnt() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CFy_Mnt() { return 0; }
+  inline virtual su2double GetAllBound_CFy_Mnt() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline virtual su2double GetAllBound_CFz_Mnt() { return 0; }
+  inline virtual su2double GetAllBound_CFz_Mnt() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the buffet metric.
    */
-  inline virtual su2double GetTotal_Buffet_Metric() { return 0; }
+  inline virtual su2double GetTotal_Buffet_Metric() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -2923,7 +3072,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual su2double GetCPressure(unsigned short val_marker, unsigned long val_vertex) { return 0; }
+  inline virtual su2double GetCPressure(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -2931,7 +3080,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual su2double GetCPressureTarget(unsigned short val_marker, unsigned long val_vertex) { return 0; }
+  inline virtual su2double GetCPressureTarget(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -2939,33 +3088,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual void SetCPressureTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_pressure) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-
-  inline virtual void SetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual su2double *GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex) { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual void SetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { }
+  inline virtual void SetCPressureTarget(unsigned short val_marker, 
+                                         unsigned long val_vertex,
+                                         su2double val_pressure) { }
 
   /*!
    * \brief A virtual member.
@@ -2974,7 +3099,19 @@ public:
    * \return Value of the pressure coefficient.
    */
 
-  inline virtual void SetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { }
+  inline virtual void SetCharacPrimVar(unsigned short val_marker,
+                                       unsigned long val_vertex,
+                                       unsigned short val_var,
+                                       su2double val_value) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline virtual su2double *GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -2982,7 +3119,10 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual su2double GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var) { return 0; }
+  inline virtual void SetDonorPrimVar(unsigned short val_marker,
+                                      unsigned long val_vertex,
+                                      unsigned short val_var,
+                                      su2double val_value) { }
 
   /*!
    * \brief A virtual member.
@@ -2991,7 +3131,20 @@ public:
    * \return Value of the pressure coefficient.
    */
 
-  inline virtual su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) { return 0; }
+  inline virtual void SetDonorAdjVar(unsigned short val_marker,
+                                     unsigned long val_vertex,
+                                     unsigned short val_var,
+                                     su2double val_value) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline virtual su2double GetDonorPrimVar(unsigned short val_marker,
+                                           unsigned long val_vertex,
+                                           unsigned short val_var) const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -3000,7 +3153,9 @@ public:
    * \return Value of the pressure coefficient.
    */
 
-  inline virtual su2double GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var) { return 0; }
+  inline virtual su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) const {
+    return nullptr;
+  }
 
   /*!
    * \brief A virtual member.
@@ -3008,7 +3163,12 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual unsigned long GetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex) { return 0; }
+
+  inline virtual su2double GetDonorAdjVar(unsigned short val_marker,
+                                          unsigned long val_vertex,
+                                          unsigned short val_var) const {
+    return 0;
+  }
 
   /*!
    * \brief A virtual member.
@@ -3016,7 +3176,10 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual void SetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex, unsigned long val_index) { }
+  inline virtual unsigned long GetDonorGlobalIndex(unsigned short val_marker, 
+                                                   unsigned long val_vertex) const {
+    return 0;
+  }
 
   /*!
    * \brief A virtual member.
@@ -3024,7 +3187,17 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual su2double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) { return 0; }
+  inline virtual void SetDonorGlobalIndex(unsigned short val_marker,
+                                          unsigned long val_vertex,
+                                          unsigned long val_index) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  inline virtual su2double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -3516,13 +3689,16 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the sensitivity coefficient.
    */
-  inline virtual su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return 0; }
+  inline virtual su2double GetCSensitivity(unsigned short val_marker, 
+                                           unsigned long val_vertex) const { 
+    return 0; 
+  }
 
   /*!
    * \brief A virtual member.
    * \return A pointer to an array containing a set of constants
    */
-  inline virtual su2double* GetConstants() { return NULL;}
+  inline virtual su2double* GetConstants() const { return NULL; }
 
   /*!
    * \brief A virtual member.
@@ -3571,8 +3747,12 @@ public:
    * \param[in] solver2_solution - Container vector with all the solutions.
    * \param[in] solver2_config - Definition of the particular problem.
    */
-  inline virtual void Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry **solver1_geometry, CConfig *solver1_config,
-                      CSolver ***solver2_solution, CGeometry **solver2_geometry, CConfig *solver2_config) {};
+  // inline virtual void Copy_Zone_Solution(CSolver ***solver1_solution,
+  //                                        CGeometry **solver1_geometry,
+  //                                        CConfig *solver1_config,
+  //                                        CSolver ***solver2_solution,
+  //                                        CGeometry **solver2_geometry,
+  //                                        CConfig *solver2_config) {};
 
   /*!
    * \brief A virtual member.
@@ -3581,7 +3761,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  inline virtual void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) { }
+  inline virtual void SetInitialCondition(CGeometry **geometry,
+                                          CSolver ***solver_container,
+                                          CConfig *config,
+                                          unsigned long TimeIter) { }
 
   /*!
    * \brief A virtual member.
