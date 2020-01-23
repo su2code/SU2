@@ -150,20 +150,20 @@ public:
    * \brief Compute adjoint density at the infinity.
    * \return Value of the adjoint density at the infinity.
    */
-  inline su2double GetPsiRho_Inf(void) { return PsiRho_Inf; }
+  inline su2double GetPsiRho_Inf(void) const final { return PsiRho_Inf; }
 
   /*!
    * \brief Compute the adjoint energy at the infinity.
    * \return Value of the adjoint energy at the infinity.
    */
-  inline su2double GetPsiE_Inf(void) { return PsiE_Inf; }
+  inline su2double GetPsiE_Inf(void) const final { return PsiE_Inf; }
 
   /*!
    * \brief Compute Phi (adjoint velocity) at the infinity.
    * \param[in] val_dim - Index of the adjoint velocity vector.
    * \return Value of the adjoint velocity vector at the infinity.
    */
-  inline su2double GetPhi_Inf(unsigned short val_dim) { return Phi_Inf[val_dim]; }
+  inline su2double GetPhi_Inf(unsigned short val_dim) const final { return Phi_Inf[val_dim]; }
 
   /*!
    * \brief Compute the spatial integration using a centered scheme for the adjoint equations.
@@ -630,21 +630,21 @@ public:
    * \return Value of the geometrical sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_Geo() { return Total_Sens_Geo; }
+  inline su2double GetTotal_Sens_Geo() const final { return Total_Sens_Geo; }
 
   /*!
    * \brief Set the total Mach number sensitivity coefficient.
    * \return Value of the Mach sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_Mach() { return Total_Sens_Mach; }
+  inline su2double GetTotal_Sens_Mach() const final { return Total_Sens_Mach; }
 
   /*!
    * \brief Set the total angle of attack sensitivity coefficient.
    * \return Value of the angle of attack sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_AoA() { return Total_Sens_AoA; }
+  inline su2double GetTotal_Sens_AoA() const final { return Total_Sens_AoA; }
 
   /*!
    * \brief Set the total farfield pressure sensitivity coefficient.
@@ -658,7 +658,7 @@ public:
    * \return Value of the farfield temperature sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_Temp() { return Total_Sens_Temp; }
+  inline su2double GetTotal_Sens_Temp() const final { return Total_Sens_Temp; }
 
   /*!
    * \author H. Kline
@@ -666,7 +666,7 @@ public:
    * \return Value of the Back sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_BPress() { return Total_Sens_BPress; }
+  inline su2double GetTotal_Sens_BPress() const final { return Total_Sens_BPress; }
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -704,6 +704,10 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) final;
 
 };

@@ -96,7 +96,7 @@ public:
    * \param[in] geometry_container - The geometry container holding all grid levels.
    * \param[in] config_container - The particular config.
    */
-  void RegisterSolution(CGeometry *geometry, CConfig *config);
+  void RegisterSolution(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -105,7 +105,7 @@ public:
    * \param[in] geometry_container - The geometry container holding all grid levels.
    * \param[in] config_container - The particular config.
    */
-  void RegisterOutput(CGeometry *geometry, CConfig *config);
+  void RegisterOutput(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Sets the adjoint values of the output of the flow (+turb.) iteration
@@ -113,7 +113,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void SetAdjoint_Output(CGeometry *geometry, CConfig *config);
+  void SetAdjoint_Output(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Sets the adjoint values of the output of the mesh deformation iteration
@@ -121,7 +121,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config);
+  void SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
@@ -129,7 +129,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
+  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief A virtual member.
@@ -137,7 +137,7 @@ public:
    * \param[in] solver_container - The solver container holding all solutions.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config);
+  void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Sets the adjoint values of the flow variables due to cross term contributions
@@ -145,7 +145,7 @@ public:
    * \param[in] solver_container - The solver container holding all solutions.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config);
+  void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config) final;
 
   /*!
    * \brief A virtual member.
@@ -153,7 +153,7 @@ public:
    * \param[in] solver_container - The solver container holding all solutions.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config);
+  void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config) final;
 
   /*!
    * \brief A virtual member.
@@ -161,20 +161,20 @@ public:
    * \param[in] solver_container - The solver container holding all solutions.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,  CConfig *config);
+  void ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,  CConfig *config) final;
 
   /*!
    * \brief Register the objective function as output.
    * \param[in] geometry - The geometrical definition of the problem.
    */
-  void RegisterObj_Func(CConfig *config);
+  void RegisterObj_Func(CConfig *config) final;
 
   /*!
    * \brief Set the surface sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSurface_Sensitivity(CGeometry *geometry, CConfig* config);
+  void SetSurface_Sensitivity(CGeometry *geometry, CConfig* config) final;
 
   /*!
    * \brief Extract and set the geometrical sensitivity.
@@ -182,49 +182,49 @@ public:
    * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
+  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) final;
 
   /*!
    * \brief Set the objective function.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
+  void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config) final;
 
   /*!
    * \brief Provide the total shape sensitivity coefficient.
    * \return Value of the geometrical sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_Geo() { return Total_Sens_Geo; }
+  inline su2double GetTotal_Sens_Geo() const final { return Total_Sens_Geo; }
 
   /*!
    * \brief Set the total Mach number sensitivity coefficient.
    * \return Value of the Mach sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_Mach() { return Total_Sens_Mach; }
+  inline su2double GetTotal_Sens_Mach() const final { return Total_Sens_Mach; }
 
   /*!
    * \brief Set the total angle of attack sensitivity coefficient.
    * \return Value of the angle of attack sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_AoA() { return Total_Sens_AoA; }
+  inline su2double GetTotal_Sens_AoA() const final { return Total_Sens_AoA; }
 
   /*!
    * \brief Set the total farfield pressure sensitivity coefficient.
    * \return Value of the farfield pressure sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_Press() { return Total_Sens_Press; }
+  inline su2double GetTotal_Sens_Press() const final { return Total_Sens_Press; }
 
   /*!
    * \brief Set the total farfield temperature sensitivity coefficient.
    * \return Value of the farfield temperature sensitivity coefficient
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_Temp() { return Total_Sens_Temp; }
+  inline su2double GetTotal_Sens_Temp() const final { return Total_Sens_Temp; }
 
   /*!
    * \author H. Kline
@@ -238,13 +238,13 @@ public:
    * \brief Get the total density sensitivity coefficient.
    * \return Value of the density sensitivity.
    */
-  inline su2double GetTotal_Sens_Density() { return Total_Sens_Density; }
+  inline su2double GetTotal_Sens_Density() const final { return Total_Sens_Density; }
 
   /*!
    * \brief Get the total velocity magnitude sensitivity coefficient.
    * \return Value of the velocity magnitude sensitivity.
    */
-  inline su2double GetTotal_Sens_ModVel() { return Total_Sens_ModVel; }
+  inline su2double GetTotal_Sens_ModVel() const final { return Total_Sens_ModVel; }
 
   /*!
    * \brief Get the shape sensitivity coefficient.
@@ -276,14 +276,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reset - If true reset variables to their initial values.
    */
-  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false) override;
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false) final;
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) override;
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Update the dual-time derivatives.
@@ -311,7 +311,11 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) final;
 
   /*!
    * \brief Compute the multizone residual.

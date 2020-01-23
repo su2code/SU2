@@ -358,7 +358,7 @@ public:
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  inline void SetFreeStream_Solution(CConfig *config) {
+  inline void SetFreeStream_Solution(CConfig *config) final {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) nodes->SetSolution(iPoint, 0, nu_tilde_Inf);
   }
 
@@ -369,7 +369,9 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
+  void SetDES_LengthScale(CSolver** solver,
+                          CGeometry *geometry,
+                          CConfig *config) final;
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
@@ -377,7 +379,9 @@ public:
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
-  void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+  void SetInletAtVertex(su2double *val_inlet,
+                        unsigned short iMarker,
+                        unsigned long iVertex) final;
 
   /*!
    * \brief Get the set of value imposed at an inlet.
@@ -393,7 +397,7 @@ public:
                              unsigned short val_kind_marker,
                              string val_marker,
                              CGeometry *geometry,
-                             CConfig *config);
+                             CConfig *config) const final;
 
   /*!
    * \brief Set a uniform inlet profile
@@ -404,13 +408,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+  void SetUniformInlet(CConfig* config, unsigned short iMarker) final;
 
   /*!
    * \brief Get the value of nu tilde at the far-field.
    * \return Value of nu tilde at the far-field.
    */
-  inline su2double GetNuTilde_Inf(void) { return nu_tilde_Inf; }
+  inline su2double GetNuTilde_Inf(void) const final { return nu_tilde_Inf; }
 
   /*!
    * \brief Compute nu tilde from the wall functions.
@@ -421,6 +425,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                              CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  void SetNuTilde_WF(CGeometry *geometry,
+                     CSolver **solver_container,
+                     CNumerics *conv_numerics,
+                     CNumerics *visc_numerics,
+                     CConfig *config,
+                     unsigned short val_marker) final;
 };
