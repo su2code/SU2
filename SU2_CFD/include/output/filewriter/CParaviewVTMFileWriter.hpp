@@ -55,6 +55,16 @@ class CParaviewVTMFileWriter final: public CFileWriter{
    * \brief Current physical time
    */
   su2double curTime;
+  
+  /*!
+   * \brief Number of data sets
+   */
+  int nWrittenDatasets;
+  
+  /*!
+   * \brief Accumulated bandwidth
+   */
+  su2double accumulatedBandwidth;
 
 public:
 
