@@ -1158,9 +1158,9 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
         val_Cvves[iSpecies] = CalcCvve(V[TVE_INDEX], config, iSpecies);
         rhoCvve  += U[iSpecies]*val_Cvves[iSpecies];
       }
-      U[nSpecies+nDim]   = rhoCvtr*V[T_INDEX] + rhoCvve*V[TVE_INDEX] + rhoE_f
-                         - rhoE_ref + 0.5*rho*sqvel;
-      U[nSpecies+nDim+1] = rhoCvve*V[TVE_INDEX];
+      // U[nSpecies+nDim]   = rhoCvtr*V[T_INDEX] + rhoCvve*V[TVE_INDEX] + rhoE_f
+      //                    - rhoE_ref + 0.5*rho*sqvel;
+      // U[nSpecies+nDim+1] = rhoCvve*V[TVE_INDEX];
     }
   }
 
