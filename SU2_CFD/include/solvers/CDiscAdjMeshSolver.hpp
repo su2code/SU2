@@ -118,8 +118,11 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] reset - If true reset variables to their initial values.
    */
-  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false) override;
+  void RegisterVariables(CGeometry *geometry,
+                         CConfig *config,
+                         bool reset = false) override;
 
   /*!
    * \brief A virtual member.

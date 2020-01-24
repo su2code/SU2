@@ -1096,27 +1096,6 @@ public:
    */
   void Momentum_Forces(CGeometry *geometry, CConfig *config) final;
 
-  /*! TODO
-   * \brief Compute turbomachinery performance.
-   * \param[in] solver - solver containing the outlet information.
-   * \param[in] inMarker - marker related to the inlet.
-   * \param[in] outMarker - marker related to the outlet.
-   */
-  // void TurboPerformance(CSolver *solver,
-  //                       CConfig *config,
-  //                       unsigned short inMarker,
-  //                       unsigned short outMarker,
-  //                       unsigned short Kind_TurboPerf,
-  //                       unsigned short inMarkerTP);
-
-  /*!
-   * \brief Compute turbomachinery performance.
-   * \param[in] solver - solver containing the outlet information.
-   * \param[in] inMarker - marker related to the inlet.
-   * \param[in] outMarker - marker related to the outlet.
-   */
-  // void StoreTurboPerformance(CSolver *solver,  unsigned short inMarkerTP ); TODO
-
  /*!
   * \brief Get the outer state for fluid interface nodes.
   * \param[in] val_marker - marker index
