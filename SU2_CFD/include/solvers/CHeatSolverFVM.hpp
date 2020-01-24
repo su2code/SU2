@@ -35,7 +35,7 @@
  *  \author O. Burghardt
  *  \date January 19, 2018.
  */
-class CHeatSolverFVM : public CSolver {
+class CHeatSolverFVM final : public CSolver {
 protected:
   unsigned short nVarFlow, nMarker, CurrentMesh;
   su2double **HeatFlux, *HeatFlux_per_Marker, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
@@ -84,7 +84,7 @@ public:
                     unsigned short iMesh,
                     unsigned short iRKStep,
                     unsigned short RunTime_EqSystem,
-                    bool Output) final;
+                    bool Output) override;
 
   /*!
    * \brief A virtual member.
@@ -96,7 +96,7 @@ public:
   void Postprocessing(CGeometry *geometry,
                       CSolver **solver_container,
                       CConfig *config,
-                      unsigned short iMesh) final;
+                      unsigned short iMesh) override;
 
   /*!
    * \brief Load a solution from a restart file.
@@ -106,7 +106,11 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) override;
 
   /*!
    * \brief Source term computation.
@@ -121,14 +125,14 @@ public:
                        CSolver **solver_container,
                        CNumerics *numerics,
                        CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh) final;
+                       CConfig *config, unsigned short iMesh) override;
 
   /*!
    * \brief Compute the undivided laplacian for the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) final;
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.
@@ -144,7 +148,7 @@ public:
                         CNumerics *numerics,
                         CConfig *config,
                         unsigned short iMesh,
-                        unsigned short iRKStep) final;
+                        unsigned short iRKStep) override;
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -157,7 +161,7 @@ public:
                       CSolver **solver_container,
                       CNumerics *numerics,
                       CConfig *config,
-                      unsigned short iMesh) final;
+                      unsigned short iMesh) override;
 
   /*!
    * \brief Compute the viscous residuals for the turbulent equation.
@@ -173,10 +177,10 @@ public:
                         CNumerics *numerics,
                         CConfig *config,
                         unsigned short iMesh,
-                        unsigned short iRKStep) final;
+                        unsigned short iRKStep) override;
 
 
-  void Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) final;
+  void Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).
@@ -192,7 +196,7 @@ public:
                           CNumerics *conv_numerics,
                           CNumerics *visc_numerics,
                           CConfig *config,
-                          unsigned short val_marker) final;
+                          unsigned short val_marker) override;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -208,7 +212,7 @@ public:
                         CNumerics *conv_numerics,
                         CNumerics *visc_numerics,
                         CConfig *config,
-                        unsigned short val_marker) final;
+                        unsigned short val_marker) override;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -224,7 +228,7 @@ public:
                 CNumerics *conv_numerics,
                 CNumerics *visc_numerics,
                 CConfig *config,
-                unsigned short val_marker) final;
+                unsigned short val_marker) override;
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -239,7 +243,7 @@ public:
                  CNumerics *conv_numerics,
                  CNumerics *visc_numerics,
                  CConfig *config,
-                 unsigned short val_marker) final;
+                 unsigned short val_marker) override;
 
   /*!
    * \brief Impose the (received) conjugate heat variables.
@@ -253,7 +257,7 @@ public:
                                   CSolver **solver_container,
                                   CNumerics *numerics,
                                   CConfig *config,
-                                  unsigned short val_marker) final;
+                                  unsigned short val_marker) override;
 
   /*!
    * \brief Set the conjugate heat variables.
@@ -263,7 +267,7 @@ public:
    */
   inline su2double GetConjugateHeatVariable(unsigned short val_marker,
                                             unsigned long val_vertex,
-                                            unsigned short pos_var) const final { 
+                                            unsigned short pos_var) const override { 
     return ConjugateVar[val_marker][val_vertex][pos_var]; 
   }
 
@@ -279,7 +283,7 @@ public:
                                        unsigned long val_vertex,
                                        unsigned short pos_var,
                                        su2double relaxation_factor,
-                                       su2double val_var) final {
+                                       su2double val_var) override {
     ConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*ConjugateVar[val_marker][val_vertex][pos_var];
   }
 
@@ -292,19 +296,19 @@ public:
    */
   void Heat_Fluxes(CGeometry *geometry,
                    CSolver **solver_container,
-                   CConfig *config) final;
+                   CConfig *config) override;
 
   /*!
    * \brief Get value of the heat load (integrated heat flux).
    * \return Value of the heat load (integrated heat flux).
    */
-  inline su2double GetTotal_HeatFlux() const final { return Total_HeatFlux; }
+  inline su2double GetTotal_HeatFlux() const override { return Total_HeatFlux; }
 
   /*!
    * \brief Get value of the integral-averaged temperature.
    * \return Value of the integral-averaged temperature.
    */
-  inline su2double GetTotal_AvgTemperature() const final { return Total_AverageT; }
+  inline su2double GetTotal_AvgTemperature() const override { return Total_AverageT; }
 
   /*!
    * \brief Update the solution using an implicit solver.
@@ -314,7 +318,7 @@ public:
    */
   void ImplicitEuler_Iteration(CGeometry *geometry,
                                CSolver **solver_container,
-                               CConfig *config) final;
+                               CConfig *config) override;
 
   /*!
    * \brief Update the solution using an explicit solver.
@@ -324,7 +328,7 @@ public:
    */
   void ExplicitEuler_Iteration(CGeometry *geometry,
                                CSolver **solver_container,
-                               CConfig *config) final;
+                               CConfig *config) override;
 
   /*!
    * \brief A virtual member.
@@ -338,7 +342,7 @@ public:
                     CSolver **solver_container,
                     CConfig *config,
                     unsigned short iMesh,
-                    unsigned long Iteration) final;
+                    unsigned long Iteration) override;
 
   /*!
    * \brief Set the initial condition for the FEM structural problem.
@@ -350,7 +354,7 @@ public:
   void SetInitialCondition(CGeometry **geometry,
                            CSolver ***solver_container,
                            CConfig *config,
-                           unsigned long TimeIter) final;
+                           unsigned long TimeIter) override;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
@@ -366,7 +370,7 @@ public:
                             CConfig *config,
                             unsigned short iRKStep,
                             unsigned short iMesh,
-                            unsigned short RunTime_EqSystem) final;
+                            unsigned short RunTime_EqSystem) override;
 
   /*!
    * \brief Get the heat flux.
@@ -374,6 +378,6 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the heat flux.
    */
-  inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
+  inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) const override { return HeatFlux[val_marker][val_vertex]; }
 
 };

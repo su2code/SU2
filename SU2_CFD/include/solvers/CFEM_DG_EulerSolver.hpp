@@ -312,13 +312,13 @@ public:
    * \brief Get a pointer to the vector of the solution degrees of freedom.
    * \return Pointer to the vector of the solution degrees of freedom.
    */
-  inline su2double* GetVecSolDOFs(void) {return VecSolDOFs.data();}
+  inline su2double* GetVecSolDOFs(void) final { return VecSolDOFs.data(); }
 
   /*!
    * \brief Get the global number of solution degrees of freedom for the calculation.
    * \return Global number of solution degrees of freedom
    */
-  inline unsigned long GetnDOFsGlobal(void) {return nDOFsGlobal;}
+  inline unsigned long GetnDOFsGlobal(void) const final { return nDOFsGlobal; }
 
   /*!
    * \brief Compute the pressure at the infinity.
@@ -330,13 +330,13 @@ public:
    * \brief Compute the density at the infinity.
    * \return Value of the density at the infinity.
    */
-  inline su2double GetDensity_Inf(void) { return Density_Inf; }
+  inline su2double GetDensity_Inf(void) const final { return Density_Inf; }
 
   /*!
    * \brief Compute 2-norm of the velocity at the infinity.
    * \return Value of the 2-norm of the velocity at the infinity.
    */
-  inline su2double GetModVelocity_Inf(void) {
+  inline su2double GetModVelocity_Inf(void) const final {
     su2double Vel2 = 0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Vel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
@@ -348,45 +348,45 @@ public:
    * \brief Compute the density multiply by energy at the infinity.
    * \return Value of the density multiply by  energy at the infinity.
    */
-  inline su2double GetDensity_Energy_Inf(void) { return Density_Inf*Energy_Inf; }
+  inline su2double GetDensity_Energy_Inf(void) const final { return Density_Inf*Energy_Inf; }
 
   /*!
    * \brief Compute the pressure at the infinity.
    * \return Value of the pressure at the infinity.
    */
-  inline su2double GetPressure_Inf(void) { return Pressure_Inf; }
+  inline su2double GetPressure_Inf(void) const final { return Pressure_Inf; }
 
   /*!
    * \brief Compute the density multiply by velocity at the infinity.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the density multiply by the velocity at the infinity.
    */
-  inline su2double GetDensity_Velocity_Inf(unsigned short val_dim) { return Density_Inf*Velocity_Inf[val_dim]; }
+  inline su2double GetDensity_Velocity_Inf(unsigned short val_dim) const final { return Density_Inf*Velocity_Inf[val_dim]; }
 
   /*!
    * \brief Get the velocity at the infinity.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the velocity at the infinity.
    */
-  inline su2double GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
+  inline su2double GetVelocity_Inf(unsigned short val_dim) const final { return Velocity_Inf[val_dim]; }
 
   /*!
    * \brief Get the velocity at the infinity.
    * \return Value of the velocity at the infinity.
    */
-  inline su2double *GetVelocity_Inf(void) { return Velocity_Inf; }
+  inline su2double *GetVelocity_Inf(void) const final { return Velocity_Inf; }
 
   /*!
    * \brief Set the freestream pressure.
    * \param[in] Value of freestream pressure.
    */
-  inline void SetPressure_Inf(su2double p_inf){Pressure_Inf = p_inf;}
+  inline void SetPressure_Inf(su2double p_inf) final { Pressure_Inf = p_inf; }
 
   /*!
    * \brief Set the freestream temperature.
    * \param[in] Value of freestream temperature.
    */
-  inline void SetTemperature_Inf(su2double t_inf){Temperature_Inf = t_inf;}
+  inline void SetTemperature_Inf(su2double t_inf) final { Temperature_Inf = t_inf; }
 
   /*!
    * \brief Set the initial condition for the Euler Equations.
@@ -912,7 +912,7 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  void ComputeVerificationError(CGeometry *geometry, CConfig *config);
+  void ComputeVerificationError(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Update the solution for the ADER-DG scheme for the given range
@@ -938,7 +938,11 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) final;
 
   /*!
    * \brief Provide the non dimensional lift coefficient (inviscid contribution).
@@ -947,12 +951,12 @@ public:
    */
   inline su2double GetCL_Inv(unsigned short val_marker) const final { return CL_Inv[val_marker]; }
 
-  /*!
+  /*! TODO
    * \brief Provide the non dimensional z moment coefficient (inviscid contribution).
    * \param val_marker Surface where the coefficient is going to be computed.
    * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCMz_Inv(unsigned short val_marker) { return CMz_Inv[val_marker]; }
+  // inline su2double GetCMz_Inv(unsigned short val_marker) { return CMz_Inv[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional lift coefficient.
