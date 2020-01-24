@@ -384,11 +384,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  inline virtual void SetResidual_DualTime(CGeometry *geometry, 
-                                           CSolver **solver_container, 
-                                           CConfig *config, 
+  inline virtual void SetResidual_DualTime(CGeometry *geometry,
+                                           CSolver **solver_container,
+                                           CConfig *config,
                                            unsigned short iRKStep,
-                                           unsigned short iMesh, 
+                                           unsigned short iMesh,
                                            unsigned short RunTime_EqSystem) { }
 
   /*!
@@ -419,8 +419,8 @@ public:
    */
   inline void SetRes_Max(unsigned short val_var,
                          su2double val_residual,
-                         unsigned long val_point) { 
-    Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point; 
+                         unsigned long val_point) {
+    Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point;
   }
 
   /*! TODO
@@ -496,7 +496,7 @@ public:
   inline void SetRes_Max_BGS(unsigned short val_var,
                              su2double val_residual,
                              unsigned long val_point) {
-    Residual_Max_BGS[val_var] = val_residual; Point_Max_BGS[val_var] = val_point; 
+    Residual_Max_BGS[val_var] = val_residual; Point_Max_BGS[val_var] = val_point;
   }
 
   /*!
@@ -704,7 +704,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void ProcessTaskList_DG(CGeometry *geometry, 
+  inline virtual void ProcessTaskList_DG(CGeometry *geometry,
                                          CSolver **solver_container,
                                          CNumerics **numerics,
                                          CConfig *config,
@@ -1018,7 +1018,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Interface_Boundary(CGeometry *geometry, 
+  inline virtual void BC_Interface_Boundary(CGeometry *geometry,
                                             CSolver **solver_container,
                                             CNumerics *numerics,
                                             CConfig *config,
@@ -1033,7 +1033,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_NearField_Boundary(CGeometry *geometry,
-                                            CSolver **solver_container, 
+                                            CSolver **solver_container,
                                             CNumerics *numerics,
                                             CConfig *config,
                                             unsigned short val_marker) { }
@@ -1159,17 +1159,17 @@ public:
                                    unsigned short val_marker) { }
 
   /*! TODO
-   * \brief A virtual member. 
-   * \param[in] geometry - Geometrical definition of the problem. 
-   * \param[in] solver_container - Container vector with all the solutions. 
-   * \param[in] numerics - Description of the numerical method. 
-   * \param[in] config - Definition of the particular problem.  
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.  
-   */ 
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
   // inline virtual void BC_Neumann(CGeometry *geometry,
   //                                CSolver **solver_container,
   //                                CNumerics *numerics,
-  //                                CConfig *config,  
+  //                                CConfig *config,
   //                                unsigned short val_marker) { }
 
   /*!
@@ -1561,7 +1561,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ImplicitEuler_Iteration(CGeometry *geometry, 
+  inline virtual void ImplicitEuler_Iteration(CGeometry *geometry,
                                               CSolver **solver_container,
                                               CConfig *config) { }
 
@@ -3090,7 +3090,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual void SetCPressureTarget(unsigned short val_marker, 
+  inline virtual void SetCPressureTarget(unsigned short val_marker,
                                          unsigned long val_vertex,
                                          su2double val_pressure) { }
 
@@ -3178,7 +3178,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual unsigned long GetDonorGlobalIndex(unsigned short val_marker, 
+  inline virtual unsigned long GetDonorGlobalIndex(unsigned short val_marker,
                                                    unsigned long val_vertex) const {
     return 0;
   }
@@ -3199,7 +3199,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual su2double *GetCharacPrimVar(unsigned short val_marker, 
+  inline virtual su2double *GetCharacPrimVar(unsigned short val_marker,
                                              unsigned long val_vertex) const { return 0; }
 
   /*!
@@ -3719,9 +3719,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the sensitivity coefficient.
    */
-  inline virtual su2double GetCSensitivity(unsigned short val_marker, 
-                                           unsigned long val_vertex) const { 
-    return 0; 
+  inline virtual su2double GetCSensitivity(unsigned short val_marker,
+                                           unsigned long val_vertex) const {
+    return 0;
   }
 
   /*!
@@ -4042,7 +4042,7 @@ public:
    * \param[in] rhs - Right hand side.
    * \param[in] nVar - Number of variables.
    */
-  void Gauss_Elimination(su2double** A, 
+  void Gauss_Elimination(su2double** A,
                          su2double* rhs,
                          unsigned short nVar);
 
@@ -4077,17 +4077,11 @@ public:
    * \param[in] val_Marker - Surface that is being monitored.
    * \param[in] displacements - solution of typical section wing model.
    */
-<<<<<<< HEAD
-  void SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su2double Cm,
-                                    CConfig *config, unsigned short val_Marker, vector<su2double>& displacements);
-=======
-
   void SolveTypicalSectionWingModel(CGeometry *geometry,
                                     su2double Cl, su2double Cm,
                                     CConfig *config,
                                     unsigned short val_Marker,
                                     vector<su2double>& displacements);
->>>>>>> upstream/restructure_solvers
 
   /*!
    * \brief A virtual member.
@@ -4402,17 +4396,12 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-<<<<<<< HEAD
-  inline virtual void SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {}
-=======
   inline virtual void SetNuTilde_WF(CGeometry *geometry,
                                     CSolver **solver_container,
                                     CNumerics *conv_numerics,
                                     CNumerics *visc_numerics,
                                     CConfig *config,
                                     unsigned short val_marker) { }
->>>>>>> upstream/restructure_solvers
 
   /*!
    * \brief A virtual member.
@@ -4548,7 +4537,7 @@ public:
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Nu on the surface <i>val_marker</i>.
    */
-  inline virtual void SetExtAverageNu(unsigned short valMarker, 
+  inline virtual void SetExtAverageNu(unsigned short valMarker,
                                       unsigned short valSpan,
                                       su2double valNu) { }
 
@@ -4659,7 +4648,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline virtual void SetDensityIn(su2double value, 
+  inline virtual void SetDensityIn(su2double value,
                                    unsigned short inMarkerTP,
                                    unsigned short valSpan) { }
 
@@ -4668,7 +4657,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline virtual void SetPressureIn(su2double value, 
+  inline virtual void SetPressureIn(su2double value,
                                     unsigned short inMarkerTP,
                                     unsigned short valSpan) { }
 
@@ -4775,7 +4764,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - current mesh level for the multigrid.
    */
-  inline virtual void SetBeta_Parameter(CGeometry *geometry, 
+  inline virtual void SetBeta_Parameter(CGeometry *geometry,
                                         CSolver **solver_container,
                                         CConfig *config,
                                         unsigned short iMesh) { }
@@ -4897,15 +4886,9 @@ public:
    * \param[in] iVertex  - Index of the relevant vertex
    * \param[in] iDim     - Dimension
    */
-<<<<<<< HEAD
   inline su2double GetVertexTractions(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
     return VertexTraction[iMarker][iVertex][iDim];
   }
-=======
-  inline su2double GetVertexTractions(unsigned short iMarker,
-                                      unsigned long iVertex,
-                                      unsigned short iDim){ return VertexTraction[iMarker][iVertex][iDim]; }
->>>>>>> upstream/restructure_solvers
 
   /*!
    * \brief Register the vertex tractions as output.
