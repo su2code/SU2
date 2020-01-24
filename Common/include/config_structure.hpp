@@ -200,7 +200,6 @@ private:
   nMarker_Fluid_Load,			  /*!< \brief Number of markers in which the flow load is computed/employed. */
   nMarker_Fluid_InterfaceBound,	  /*!< \brief Number of fluid interface markers. */
   nMarker_CHTInterface,           /*!< \brief Number of conjugate heat transfer interface markers. */
-  nMarker_Dirichlet,			  /*!< \brief Number of interface boundary markers. */
   nMarker_Inlet,				  /*!< \brief Number of inlet flow markers. */
   nMarker_Riemann,				  /*!< \brief Number of Riemann flow markers. */
   nMarker_Giles,				  /*!< \brief Number of Giles flow markers. */
@@ -220,8 +219,7 @@ private:
   nMarker_Disp_Dir,               /*!< \brief Number of load surface markers defined by magnitude and direction. */
   nMarker_Load_Sine,			  /*!< \brief Number of load surface markers defined by magnitude and direction. */
   nMarker_FlowLoad,				  /*!< \brief Number of load surface markers. */
-  nMarker_Neumann,				  /*!< \brief Number of Neumann flow markers. */
-  nMarker_Internal,				  /*!< \brief Number of Neumann flow markers. */
+  nMarker_Internal,				  /*!< \brief Number of internal flow markers. */
   nMarker_All,					  /*!< \brief Total number of markers using the grid information. */
   nMarker_Max,					  /*!< \brief Max number of number of markers using the grid information. */
   nMarker_CfgFile;				  /*!< \brief Total number of markers using the config file
@@ -248,7 +246,6 @@ private:
   *Marker_CHTInterface,           /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,           /*!< \brief Actuator disk inlet markers. */
   *Marker_ActDiskOutlet,          /*!< \brief Actuator disk outlet markers. */
-  *Marker_Dirichlet,			  /*!< \brief Interface boundaries markers. */
   *Marker_Inlet,				  /*!< \brief Inlet flow markers. */
   *Marker_Riemann,				  /*!< \brief Riemann markers. */
   *Marker_Giles,				  /*!< \brief Giles markers. */
@@ -268,11 +265,9 @@ private:
   *Marker_Disp_Dir,               /*!< \brief Load markers defined in cartesian coordinates. */
   *Marker_Load_Sine,              /*!< \brief Sine-wave loaded markers defined in cartesian coordinates. */
   *Marker_FlowLoad,				  /*!< \brief Flow Load markers. */
-  *Marker_Neumann,				  /*!< \brief Neumann flow markers. */
-  *Marker_Internal,				  /*!< \brief Neumann flow markers. */
+  *Marker_Internal,				  /*!< \brief Internal flow markers. */
   *Marker_All_TagBound;			  /*!< \brief Global index for markers using grid information. */
 
-  su2double *Dirichlet_Value;                /*!< \brief Specified Dirichlet value at the boundaries. */
   su2double *Exhaust_Temperature_Target;     /*!< \brief Specified total temperatures for nacelle boundaries. */
   su2double *Exhaust_Pressure_Target;        /*!< \brief Specified total pressures for nacelle boundaries. */
   su2double *Inlet_Ttotal;                   /*!< \brief Specified total temperatures for inlet boundaries. */
@@ -6553,21 +6548,7 @@ public:
    * \return The inlet velocity vector.
    */
   su2double* GetInlet_Velocity(string val_index);
-  
-  /*!
-   * \brief Get the fixed value at the Dirichlet boundary.
-   * \param[in] val_index - Index corresponding to the Dirichlet boundary.
-   * \return The total temperature.
-   */
-  su2double GetDirichlet_Value(string val_index);
-  
-  /*!
-   * \brief Get whether this is a Dirichlet or a Neumann boundary.
-   * \param[in] val_index - Index corresponding to the Dirichlet boundary.
-   * \return Yes or No.
-   */
-  bool GetDirichlet_Boundary(string val_index);
-  
+
   /*!
    * \brief Get the total pressure at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.

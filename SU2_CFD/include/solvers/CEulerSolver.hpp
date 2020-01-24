@@ -764,18 +764,6 @@ public:
                    CConfig *config) final;
 
   /*!
-   * \brief Impose the dirichlet boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Dirichlet(CGeometry *geometry,
-                    CSolver **solver_container,
-                    CConfig *config,
-                    unsigned short val_marker) final;
-
-  /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
    *
    * \brief Impose the boundary condition using characteristic recostruction.
