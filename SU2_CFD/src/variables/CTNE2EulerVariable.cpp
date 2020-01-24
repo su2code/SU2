@@ -929,7 +929,7 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *
       //     nonPhys = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint],
       //                            dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
       //   }
-      }
+      // }
     // }
   }
 
