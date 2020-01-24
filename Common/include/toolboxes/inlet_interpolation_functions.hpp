@@ -45,7 +45,7 @@ class CInletInterpolation{
     vector<su2double> Inlet_Values;
     unsigned short nDim;
 
-    CMarkerProfileReaderFVM profileReader;
+    CMarkerProfileReaderFVM profileReader(CGeometry **geometry, CConfig *config,string profile_filename,unsigned short KIND_MARKER, unsigned short iMarker, unsigned short jMarker, unsigned short nDim);
 
     unsigned long nColumns, iPoint, iVertex, iRow, index, iRow_Akima, nRow;
     unsigned short nCol_InletFile;
@@ -58,10 +58,10 @@ class CInletInterpolation{
     su2double slope, interpolated_value, Parameter1, Parameter2, unit_r, unit_Theta, unit_m, Alpha, Phi;
     su2double dxi, ai, bi, ci ,di ,delta;
     
-    void LinearInterpolation(), AkimaInterpolation(unsigned long iRow_Akima), CorrectForInterpolationType(), SetInterpolatedData(), PrintInterpolatedData();
+    void LinearInterpolation(), AkimaInterpolation(unsigned long iRow_Akima), CorrectForInterpolationType(), SetInterpolatedData(), PrintInterpolatedData(CMarkerProfileReaderFVM profileReader);
     void Interpolate();
     void GetClosestPointFromFile();
-    void SetVertex();
+    void SetVertex(CMarkerProfileReaderFVM profileReader);
 
     su2double Get_Ai_dash(unsigned long iRow_Akima), Get_Pi(unsigned long iRow_Akima), Get_Wi(unsigned long iRow_Akima);
 

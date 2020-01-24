@@ -30,18 +30,18 @@
 
 
 CInletInterpolation::CInletInterpolation(CGeometry **geometry, CConfig *config,string profile_filename,unsigned short KIND_MARKER, unsigned short iMarker, unsigned short jMarker, unsigned short nDim){
-
+ 
+  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, 9);
   nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
-  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, 52);
   nRow = profileReader.GetNumberOfRowsInProfile(jMarker);
   Inlet_Data = profileReader.GetDataForProfile(jMarker);
   Inlet_Values.resize(nColumns + nDim);
   InletInterpolatedData.resize((nColumns + nDim)*geometry[MESH_0]->nVertex[iMarker]);
 
-  SetVertex();
+  SetVertex(profileReader);
 
   if(config->GetPrintInlet_InterpolatedData() == true)
-    PrintInterpolatedData();
+    PrintInterpolatedData(profileReader);
 
 }
 
@@ -58,7 +58,7 @@ void CInletInterpolation::Interpolate()
 }
 
 
-void CInletInterpolation::SetVertex(){
+void CInletInterpolation::SetVertex(CMarkerProfileReaderFVM profileReader){
 
   for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++){
     iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
@@ -146,7 +146,7 @@ void CInletInterpolation::LinearInterpolation(){
 
 }
 
-void CInletInterpolation::PrintInterpolatedData()
+void CInletInterpolation::PrintInterpolatedData(CMarkerProfileReaderFVM profileReader)
 {
 
 ofstream myfile;
