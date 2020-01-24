@@ -26,7 +26,7 @@
  */
 
 
-#include "../include/solvers/CBaselineSolver_FEM.hpp"
+#include "../../include/solvers/CBaselineSolver_FEM.hpp"
 
 
 CBaselineSolver_FEM::CBaselineSolver_FEM(void) : CSolver() { }

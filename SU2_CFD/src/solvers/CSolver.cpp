@@ -26,24 +26,24 @@
  */
 
 
-#include "../include/solvers/CSolver.hpp"
-#include "../include/gradients/computeGradientsGreenGauss.hpp"
-#include "../include/gradients/computeGradientsLeastSquares.hpp"
-#include "../include/limiters/computeLimiters.hpp"
-#include "../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
-#include "../../Common/include/toolboxes/MMS/CInviscidVortexSolution.hpp"
-#include "../../Common/include/toolboxes/MMS/CMMSIncEulerSolution.hpp"
-#include "../../Common/include/toolboxes/MMS/CMMSIncNSSolution.hpp"
-#include "../../Common/include/toolboxes/MMS/CMMSNSTwoHalfCirclesSolution.hpp"
-#include "../../Common/include/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.hpp"
-#include "../../Common/include/toolboxes/MMS/CMMSNSUnitQuadSolution.hpp"
-#include "../../Common/include/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.hpp"
-#include "../../Common/include/toolboxes/MMS/CNSUnitQuadSolution.hpp"
-#include "../../Common/include/toolboxes/MMS/CRinglebSolution.hpp"
-#include "../../Common/include/toolboxes/MMS/CTGVSolution.hpp"
-#include "../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
-#include "../../Common/include/toolboxes/printing_toolbox.hpp"
-#include "../include/CMarkerProfileReaderFVM.hpp"
+#include "../../include/solvers/CSolver.hpp"
+#include "../../include/gradients/computeGradientsGreenGauss.hpp"
+#include "../../include/gradients/computeGradientsLeastSquares.hpp"
+#include "../../include/limiters/computeLimiters.hpp"
+#include "../../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
+#include "../../../Common/include/toolboxes/MMS/CInviscidVortexSolution.hpp"
+#include "../../../Common/include/toolboxes/MMS/CMMSIncEulerSolution.hpp"
+#include "../../../Common/include/toolboxes/MMS/CMMSIncNSSolution.hpp"
+#include "../../../Common/include/toolboxes/MMS/CMMSNSTwoHalfCirclesSolution.hpp"
+#include "../../../Common/include/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.hpp"
+#include "../../../Common/include/toolboxes/MMS/CMMSNSUnitQuadSolution.hpp"
+#include "../../../Common/include/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.hpp"
+#include "../../../Common/include/toolboxes/MMS/CNSUnitQuadSolution.hpp"
+#include "../../../Common/include/toolboxes/MMS/CRinglebSolution.hpp"
+#include "../../../Common/include/toolboxes/MMS/CTGVSolution.hpp"
+#include "../../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
+#include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../include/CMarkerProfileReaderFVM.hpp"
 
 
 CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
@@ -2804,6 +2804,8 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
   const auto solution = base_nodes->GetAuxVar();
   auto gradient = base_nodes->GetAuxVarGradient();
 
+  computeGradientsGreenGauss(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
+                             *config, solution, 0, 1, gradient);
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {

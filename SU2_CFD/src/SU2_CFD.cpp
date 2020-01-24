@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -39,30 +39,37 @@
 using namespace std;
 
 int main(int argc, char *argv[]) {
-  
-  unsigned short nZone;
+
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi, turbo;
   bool dry_run = false;
-  std::string filename = "default";
-  
+  int num_threads = omp_get_max_threads();
+  bool use_thread_mult = false;
+  std::string filename = "default.cfg";
+
   /*--- Command line parsing ---*/
-  
+
   CLI::App app{"SU2 v7.0.0 \"Blackbird\", The Open-Source CFD Code"};
-  app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n" 
+  app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n"
                                        "Only execute preprocessing steps using a dummy geometry.");
+  app.add_option("-t,--threads", num_threads, "Number of OpenMP threads per MPI rank.");
+  app.add_flag("--thread_multiple", use_thread_mult, "Request MPI_THREAD_MULTIPLE thread support.");
   app.add_option("configfile", filename, "A config file.")->check(CLI::ExistingFile);
-  
+
   CLI11_PARSE(app, argc, argv)
-  
+
+  omp_set_num_threads(num_threads);
+
   /*--- MPI initialization, and buffer setting ---*/
-  
+
 #ifdef HAVE_MPI
   int  buffsize;
   char *buffptr;
 #ifdef HAVE_OMP
   int provided;
-  SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+  if (use_thread_mult)
+    SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+  else
+    SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
 #else
   SU2_MPI::Init(&argc, &argv);
 #endif
@@ -79,10 +86,10 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_LIBXSMM
   libxsmm_init();
 #endif
-  
+
   /*--- Create a pointer to the main SU2 Driver ---*/
-  
-  CDriver *driver = NULL;
+
+  CDriver* driver = nullptr;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
@@ -92,117 +99,107 @@ int main(int argc, char *argv[]) {
    file the number of zones and dimensions from the numerical grid (required
    for variables allocation). ---*/
 
-  CConfig *config = new CConfig(config_file_name, SU2_CFD);
-  nZone  = config->GetnZone();
-  fsi    = config->GetFSI_Simulation();
-  turbo  = config->GetBoolTurbomachinery();
+  CConfig* config = new CConfig(config_file_name, SU2_CFD);
+  unsigned short nZone = config->GetnZone();
+  bool fsi = config->GetFSI_Simulation();
+  bool turbo = config->GetBoolTurbomachinery();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
-  
-  if (!dry_run){
-    
-    if ((!config->GetMultizone_Problem() && (config->GetTime_Marching() != HARMONIC_BALANCE) && !turbo)
-        || (turbo && config->GetDiscrete_Adjoint())) {
-      
-      /*--- Single zone problem: instantiate the single zone driver class. ---*/
-      
-      if (nZone > 1 ) {
-        SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
-      }
-      if (config->GetDiscrete_Adjoint()) {
 
-        driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, MPICommunicator);
-      }
-      else
-        driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
-      
-    }
-    else if (config->GetMultizone_Problem() && !turbo && !fsi) {
-      
-    /*--- Multizone Drivers. ---*/
+  bool disc_adj = config->GetDiscrete_Adjoint();
+  bool multizone = config->GetMultizone_Problem();
+  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
 
-    if (config->GetDiscrete_Adjoint()) {
+  if (dry_run) {
 
-      driver = new CDiscAdjMultizoneDriver(config_file_name, nZone, MPICommunicator);
+    /*--- Dry Run. ---*/
+    driver = new CDummyDriver(config_file_name, nZone, MPICommunicator);
 
+  }
+  else if ((!multizone && !harmonic_balance && !turbo) || (turbo && disc_adj)) {
+
+    /*--- Generic single zone problem: instantiate the single zone driver class. ---*/
+    if (nZone != 1 )
+      SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
+
+    if (disc_adj) {
+      driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, MPICommunicator);
     }
     else {
-      
-      driver = new CMultizoneDriver(config_file_name, nZone, MPICommunicator);
+      driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
+    }
 
-    }
-      
-    } else if (config->GetTime_Marching() == HARMONIC_BALANCE) {
-      
-      /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
-      
-      driver = new CHBDriver(config_file_name, nZone, MPICommunicator);
-      
-    } else if ((nZone == 2) && fsi) {
-      
-      bool stat_fsi = ((!config->GetTime_Domain()));
-      bool disc_adj_fsi = (config->GetDiscrete_Adjoint());
-      
-      /*--- If the problem is a discrete adjoint FSI problem ---*/
-      if (disc_adj_fsi) {
-        if (stat_fsi) {
-          driver = new CDiscAdjFSIDriver(config_file_name, nZone, MPICommunicator);
-        }
-        else {
-          SU2_MPI::Error("WARNING: There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
-        }
-      }
-      
-    } else {
-      
-      /*--- Multi-zone problem: instantiate the multi-zone driver class by default
-            or a specialized driver class for a particular multi-physics problem. ---*/
-      
-      if (turbo) {
-        
-        driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
-        
-      } else {
-        
-        /*--- Instantiate the class for external aerodynamics ---*/
-        
-        driver = new CFluidDriver(config_file_name, nZone, MPICommunicator);
-        
-      }
-      
-    }
-  } else {
-    driver = new CDummyDriver(config_file_name, nZone, MPICommunicator);
   }
-  
+  else if (multizone && !turbo && !fsi) {
+
+    /*--- Generic multizone problems. ---*/
+    if (disc_adj) {
+      driver = new CDiscAdjMultizoneDriver(config_file_name, nZone, MPICommunicator);
+    }
+    else {
+      driver = new CMultizoneDriver(config_file_name, nZone, MPICommunicator);
+    }
+
+  }
+  else if (harmonic_balance) {
+
+    /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
+    driver = new CHBDriver(config_file_name, nZone, MPICommunicator);
+
+  }
+  else if (fsi && disc_adj) {
+
+    /*--- Discrete adjoint FSI problem with the legacy driver. ---*/
+    if (config->GetTime_Domain())
+      SU2_MPI::Error("There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
+
+    if (nZone != 2)
+      SU2_MPI::Error("The legacy discrete adjoint FSI driver only works for two-zone problems. ", CURRENT_FUNCTION);
+
+    driver = new CDiscAdjFSIDriver(config_file_name, nZone, MPICommunicator);
+
+  }
+  else if (turbo) {
+
+    /*--- Turbomachinery problem. ---*/
+    driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
+
+  }
+  else {
+
+    /*--- Instantiate the class for external aerodynamics by default. ---*/
+    driver = new CFluidDriver(config_file_name, nZone, MPICommunicator);
+
+  }
+
   delete config;
-  config = NULL;
-  
-  /*--- Launch the main external loop of the solver ---*/
+  config = nullptr;
+
+  /*--- Launch the main external loop of the solver. ---*/
 
   driver->StartSolver();
 
-  /*--- Postprocess all the containers, close history file, exit SU2 ---*/
-  
+  /*--- Postprocess all the containers, close history file, exit SU2. ---*/
+
   driver->Postprocessing();
 
-  if (driver != NULL) delete driver;
-  driver = NULL;
-  
+  delete driver;
+  driver = nullptr;
+
   /*---Finalize libxsmm, if supported. ---*/
 #ifdef HAVE_LIBXSMM
   libxsmm_finalize();
 #endif
 
-  /*--- Finalize MPI parallelization ---*/
+  /*--- Finalize MPI parallelization. ---*/
 #ifdef HAVE_MPI
   SU2_MPI::Buffer_detach(&buffptr, &buffsize);
   free(buffptr);
   SU2_MPI::Finalize();
 #endif
-  
+
   return EXIT_SUCCESS;
-  
+
 }

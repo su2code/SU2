@@ -27,10 +27,10 @@
 
 
 #include "../../include/solvers/CEulerSolver.hpp"
-#include "../../Common/include/toolboxes/printing_toolbox.hpp"
-#include "../include/gradients/computeGradientsGreenGauss.hpp"
-#include "../include/gradients/computeGradientsLeastSquares.hpp"
-#include "../include/limiters/computeLimiters.hpp"
+#include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../include/gradients/computeGradientsGreenGauss.hpp"
+#include "../../include/gradients/computeGradientsLeastSquares.hpp"
+#include "../../include/limiters/computeLimiters.hpp"
 
 CEulerSolver::CEulerSolver(void) : CSolver() {
 
