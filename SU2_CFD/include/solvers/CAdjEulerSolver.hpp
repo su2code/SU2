@@ -169,14 +169,14 @@ public:
    * \brief Compute the spatial integration using a centered scheme for the adjoint equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void Centered_Residual(CGeometry *geometry,
                         CSolver **solver_container,
-                        CNumerics *numerics,
+                        CNumerics **numerics_container,
                         CConfig *config,
                         unsigned short iMesh,
                         unsigned short iRKStep) final;
@@ -185,13 +185,13 @@ public:
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Upwind_Residual(CGeometry *geometry,
                       CSolver **solver_container,
-                      CNumerics *numerics,
+                      CNumerics **numerics_container,
                       CConfig *config,
                       unsigned short iMesh) final;
 
@@ -285,7 +285,7 @@ public:
                                   unsigned long val_index) final {
     DonorGlobalIndex[val_marker][val_vertex] = val_index;
   }
-  
+
   /*!
    * \brief Compute the sensor for higher order dissipation control in rotating problems.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -608,9 +608,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the sensitivity coefficient.
    */
-  inline su2double GetCSensitivity(unsigned short val_marker, 
-                                   unsigned long val_vertex) const final{ 
-    return CSensitivity[val_marker][val_vertex]; 
+  inline su2double GetCSensitivity(unsigned short val_marker,
+                                   unsigned long val_vertex) const final{
+    return CSensitivity[val_marker][val_vertex];
   }
 
   /*!
@@ -621,8 +621,8 @@ public:
    */
   inline void SetCSensitivity(unsigned short val_marker,
                               unsigned long val_vertex,
-                              su2double val_sensitivity) final { 
-    CSensitivity[val_marker][val_vertex] = val_sensitivity; 
+                              su2double val_sensitivity) final {
+    CSensitivity[val_marker][val_vertex] = val_sensitivity;
   }
 
   /*!

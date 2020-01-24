@@ -39,10 +39,10 @@
  */
 class CEulerSolver : public CSolver {
 protected:
+  enum : size_t {OMP_MAX_SIZE = 512};  /*!< \brief Max chunk size for light point loops. */
+  enum : size_t {OMP_MIN_SIZE = 128};  /*!< \brief Min chunk size for edge loops (max is color group size). */
 
-  enum : size_t {OMP_MAX_SIZE = 512};
-
-  unsigned long omp_chunk_size;     /*!< \brief Chunk size used in light point loops. */
+  unsigned long omp_chunk_size;  /*!< \brief Chunk size used in light point loops. */
 
   su2double
   Mach_Inf,         /*!< \brief Mach number at the infinity. */
@@ -440,14 +440,14 @@ public:
    * \brief Compute the spatial integration using a centered scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void Centered_Residual(CGeometry *geometry,
                          CSolver **solver_container,
-                         CNumerics *numerics,
+                         CNumerics **numerics_container,
                          CConfig *config,
                          unsigned short iMesh,
                          unsigned short iRKStep) final;
@@ -456,13 +456,13 @@ public:
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Upwind_Residual(CGeometry *geometry,
                        CSolver **solver_container,
-                       CNumerics *numerics,
+                       CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) final;
 
@@ -541,7 +541,7 @@ public:
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
                                        CConfig *config,
                                        bool Output) override;
-  
+
   /*!
    * \brief Compute a pressure sensor switch.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -2117,7 +2117,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline void SetActDisk_DeltaP(unsigned short val_marker, 
+  inline void SetActDisk_DeltaP(unsigned short val_marker,
                                 unsigned long val_vertex,
                                 su2double val_deltap) final { ActDisk_DeltaP[val_marker][val_vertex] = val_deltap; }
 
@@ -2605,7 +2605,7 @@ public:
    * \param[in] val_Span   - value of the Span.
    * \param[in] valDensity - value to set.
    */
-  inline void SetExtAverageDensity(unsigned short valMarker, 
+  inline void SetExtAverageDensity(unsigned short valMarker,
                                    unsigned short valSpan,
                                    su2double valDensity) final {
     ExtAverageDensity[valMarker][valSpan] = valDensity;
@@ -2642,7 +2642,7 @@ public:
    * \param[in] valNu - value to set.
    */
   inline void SetExtAverageNu(unsigned short valMarker,
-                              unsigned short valSpan, 
+                              unsigned short valSpan,
                               su2double valNu) final {
     ExtAverageNu[valMarker][valSpan] = valNu;
   }
@@ -2784,7 +2784,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetDensityIn(su2double value, 
+  inline void SetDensityIn(su2double value,
                            unsigned short inMarkerTP,
                            unsigned short valSpan) final {
     DensityIn[inMarkerTP][valSpan] = value;
@@ -2842,7 +2842,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetTurboVelocityOut(su2double *value, 
+  inline void SetTurboVelocityOut(su2double *value,
                                   unsigned short inMarkerTP,
                                   unsigned short valSpan) final {
     unsigned short iDim;
