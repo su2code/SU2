@@ -2610,7 +2610,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
   unsigned long iVertex, iPoint, Point_Normal, total_index;
 
   su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, theta2;
-  su2double Twall, There, dTdn, dTdrho, thermal_conductivity, Tconjugate, HF_FactorHere, HF_FactorConjugate;
+  su2double Twall= 0.0, There, dTdn= 0.0, dTdrho, thermal_conductivity, Tconjugate, HF_FactorHere, HF_FactorConjugate;
   su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
   su2double ProjGridVel, *GridVel, GridVel2, Pressure = 0.0, Density, Vel2;
   su2double total_viscosity, div_vel, tau_vel[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};

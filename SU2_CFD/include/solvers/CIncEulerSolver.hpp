@@ -1504,8 +1504,8 @@ public:
    * \param[in] val_marker - marker index
    * \param[in] val_vertex - vertex index
    */
-  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const final{ 
-    return SlidingStateNodes[val_marker][val_vertex]; 
+  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const final{
+    return SlidingStateNodes[val_marker][val_vertex];
   }
 
   /*!
@@ -1518,8 +1518,8 @@ public:
   inline su2double GetSlidingState(unsigned short val_marker,
                                    unsigned long val_vertex,
                                    unsigned short val_state,
-                                   unsigned long donor_index) const final { 
-    return SlidingState[val_marker][val_vertex][val_state][donor_index]; 
+                                   unsigned long donor_index) const final {
+    return SlidingState[val_marker][val_vertex][val_state][donor_index];
   }
 
   /*!

@@ -450,7 +450,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void ProcessTaskList_DG(CGeometry      *geometry, 
+  void ProcessTaskList_DG(CGeometry      *geometry,
                           CSolver        **solver_container,
                           CNumerics      **numerics,
                           CConfig        *config,
@@ -465,7 +465,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void ADER_SpaceTimeIntegration(CGeometry      *geometry, 
+  void ADER_SpaceTimeIntegration(CGeometry      *geometry,
                                  CSolver        **solver_container,
                                  CNumerics      **numerics,
                                  CConfig        *config,
@@ -480,7 +480,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void ComputeSpatialJacobian(CGeometry      *geometry, 
+  void ComputeSpatialJacobian(CGeometry      *geometry,
                               CSolver        **solver_container,
                               CNumerics      **numerics,
                               CConfig        *config,

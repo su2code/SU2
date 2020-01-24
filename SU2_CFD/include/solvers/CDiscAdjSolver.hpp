@@ -252,11 +252,11 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the sensitivity coefficient.
    */
-  inline su2double GetCSensitivity(unsigned short val_marker, 
-                                   unsigned long val_vertex) const override { 
-    return CSensitivity[val_marker][val_vertex]; 
+  inline su2double GetCSensitivity(unsigned short val_marker,
+                                   unsigned long val_vertex) const override {
+    return CSensitivity[val_marker][val_vertex];
   }
-  
+
   /*!
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
@@ -326,12 +326,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
 };
