@@ -924,7 +924,7 @@ void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **
   su2double e_ve_i, e_ve_j;
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
   su2double sq_veli, sq_velj;
-  su2double conc_i, conc_l;
+  su2double conc_i, conc_j;
 
   /*--- Face area ---*/
   Area = 0.0;
