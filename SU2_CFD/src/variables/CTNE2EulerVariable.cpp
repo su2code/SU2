@@ -1072,8 +1072,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
          Tve2 = Tve - (f/df)*scale;
     
          // Check for nonphysical steps
-         if ((Tve2 < Tvemin) || (Tve2 > Tvemax))
-           break;
+         // if ((Tve2 < Tvemin) || (Tve2 > Tvemax))
+         //   break;
     //      if (Tve2 < Tvemin)
     //        Tve2 = Tvemin;
     //      else if (Tve2 > Tvemax)
