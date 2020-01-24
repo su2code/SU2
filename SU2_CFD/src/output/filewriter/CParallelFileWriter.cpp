@@ -66,6 +66,8 @@ bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBy
   
 #ifdef HAVE_MPI
 
+  startTime = MPI_Wtime();
+  
   MPI_Datatype filetype;
   
   /*--- Prepare to write the actual data ---*/
@@ -89,9 +91,15 @@ bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBy
   disp      += totalSizeInBytes;
   fileSize  += sizeInBytes;
   
+  stopTime = MPI_Wtime();
+  
+  usedTime += stopTime - startTime;
+  
   return (ierr == MPI_SUCCESS);
 #else
 
+  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  
   unsigned long bytesWritten;
   
   /*--- Write binary data ---*/
@@ -99,14 +107,20 @@ bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBy
   bytesWritten = fwrite(data, sizeof(char), sizeInBytes, fhw);
   fileSize += bytesWritten;
   
+  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  
+  usedTime += stopTime - startTime;
+  
   return (bytesWritten == sizeInBytes);
 #endif
-  
+
 }
 
 bool CFileWriter::WriteMPIBinaryData(const void *data, unsigned long sizeInBytes, unsigned short processor){
   
 #ifdef HAVE_MPI
+  
+  startTime = MPI_Wtime();
   
   int ierr = MPI_SUCCESS;
   
@@ -121,14 +135,24 @@ bool CFileWriter::WriteMPIBinaryData(const void *data, unsigned long sizeInBytes
   disp     += sizeInBytes;
   fileSize += sizeInBytes;
   
+  stopTime = MPI_Wtime();
+  
+  usedTime += stopTime - startTime;
+  
   return (ierr == MPI_SUCCESS);
 #else
+  
+  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
   
   unsigned long bytesWritten = sizeInBytes;
   
   /*--- Write the total size in bytes at the beginning of the binary data blob ---*/
   
   bytesWritten = fwrite(data, sizeof(char), sizeInBytes, fhw);
+  
+  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  
+  usedTime += stopTime - startTime;
   
   return (bytesWritten == sizeInBytes);
   
@@ -140,6 +164,8 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
   
 #ifdef HAVE_MPI
 
+  startTime = MPI_Wtime();
+  
   int ierr = MPI_SUCCESS;
   
   /*--- Reset the file view. ---*/
@@ -150,16 +176,28 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
   if (SU2_MPI::GetRank() == processor)
     ierr = MPI_File_write_at(fhw, disp, str.c_str(), str.size(),
                       MPI_CHAR, MPI_STATUS_IGNORE);
+  
   disp += str.size()*sizeof(char);
   fileSize += sizeof(char)*str.size();
+  
+  stopTime = MPI_Wtime();
+  
+  usedTime += stopTime - startTime;
   
   return (ierr == MPI_SUCCESS);
   
 #else
+  
+  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  
   unsigned long bytesWritten;  
   bytesWritten = fwrite(str.c_str(), sizeof(char), str.size(), fhw);
   
   fileSize += bytesWritten;
+  
+  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  
+  usedTime += stopTime - startTime;
   
   return (bytesWritten == str.size()*sizeof(char));
   
@@ -208,13 +246,7 @@ bool CFileWriter::OpenMPIFile(){
   disp     = 0.0;
   fileSize = 0.0;
   
-  /*--- Set a timer for the file writing. ---*/
-
-#ifndef HAVE_MPI
-  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  startTime = MPI_Wtime();
-#endif
+  usedTime = 0;
   
   return true;
 }
@@ -228,14 +260,6 @@ bool CFileWriter::CloseMPIFile(){
 #else
   fclose(fhw);
 #endif
-  /*--- Compute and store the write time. ---*/
-
-#ifndef HAVE_MPI
-  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  stopTime = MPI_Wtime();
-#endif
-  usedTime = stopTime-startTime;
 
   /*--- Communicate the total file size for the restart ---*/
 

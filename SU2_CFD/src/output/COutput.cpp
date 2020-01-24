@@ -722,12 +722,19 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
     /*--- Write data to file ---*/
 
     fileWriter->Write_Data();
+    
+    su2double BandWidth = fileWriter->Get_Bandwidth();    
 
     /*--- Compute and store the bandwidth ---*/
 
     if (format == RESTART_BINARY){
-      su2double BandWidth = fileWriter->Get_Bandwidth();
       config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+BandWidth);
+    }
+    
+    if (config->GetWrt_Performance() && (rank == MASTER_NODE)){
+      fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+      (*fileWritingTable) << " " << "(" + PrintingToolbox::to_string(BandWidth) + " MB/s)";
+      fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);      
     }
 
     delete fileWriter;
