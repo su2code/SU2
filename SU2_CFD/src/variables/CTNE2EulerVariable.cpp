@@ -905,16 +905,16 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(unsigned long iPoint, CConfig *
                          dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   if (nonPhys) {
     // cout << "Non-physical at " << iPoint << "." << endl;
-    for (iVar = 0; iVar < nVar; iVar++)
-      Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
-    bkup = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint],
-                        dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
-    if(bkup) {
+    // for (iVar = 0; iVar < nVar; iVar++)
+      // Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
+    // bkup = Cons2PrimVar(config, Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint],
+                        // dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
+    // if(bkup) {
       Prim2ConsVar(config, iPoint, Primitive[iPoint], Solution[iPoint]);
       CalcdPdU(  Primitive[iPoint], eves[iPoint], config, dPdU[iPoint]  );
       CalcdTdU(  Primitive[iPoint], config, dTdU[iPoint]  );
       CalcdTvedU(Primitive[iPoint], eves[iPoint], config, dTvedU[iPoint]);
-    }
+    // }
   }
 
   SetVelocity2(iPoint);
