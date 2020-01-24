@@ -1072,37 +1072,29 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
     // Execute the root-finding method
     NRconvg = false;
-       for (iIter = 0; iIter < maxNIter; iIter++) {
-         rhoEve_t = 0.0;
-         rhoCvve  = 0.0;
-         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-           val_eves[iSpecies]  = CalcEve(config, Tve, iSpecies);
-           val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
-           rhoEve_t += U[iSpecies]*val_eves[iSpecies];
-           rhoCvve  += U[iSpecies]*val_Cvves[iSpecies];
-         }
+    //    for (iIter = 0; iIter < maxNIter; iIter++) {
+    //      rhoEve_t = 0.0;
+    //      rhoCvve  = 0.0;
+    //      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    //        val_eves[iSpecies]  = CalcEve(config, Tve, iSpecies);
+    //        val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
+    //        rhoEve_t += U[iSpecies]*val_eves[iSpecies];
+    //        rhoCvve  += U[iSpecies]*val_Cvves[iSpecies];
+    //      }
     
-         // Find the root
-         f  = U[nSpecies+nDim+1] - rhoEve_t;
-         df = -rhoCvve;
-         Tve2 = Tve - (f/df)*scale;
+    //      // Find the root
+    //      f  = U[nSpecies+nDim+1] - rhoEve_t;
+    //      df = -rhoCvve;
+    //      Tve2 = Tve - (f/df)*scale;
     
-         // Check for nonphysical steps
-         // if ((Tve2 < Tvemin) || (Tve2 > Tvemax))
-         //   break;
-    //      if (Tve2 < Tvemin)
-    //        Tve2 = Tvemin;
-    //      else if (Tve2 > Tvemax)
-    //        Tve2 = Tvemax;
-    
-         // Check for convergence
-         if ((fabs(f) < NRtol) && (Tve2 > Tvemin) & (Tve2 < Tvemax)) {
-           NRconvg = true;
-           break;
-         } else {
-           Tve = Tve2;
-         }
-       }
+    //      // Check for convergence
+    //      if ((fabs(f) < NRtol) && (Tve2 > Tvemin) & (Tve2 < Tvemax)) {
+    //        NRconvg = true;
+    //        break;
+    //      } else {
+    //        Tve = Tve2;
+    //      }
+    //    }
 
     // If the Newton-Raphson method has converged, assign the value of Tve.
     // Otherwise, execute a bisection root-finding method
