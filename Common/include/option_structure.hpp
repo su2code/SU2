@@ -1113,6 +1113,23 @@ static const map<string, ENUM_DVFEA> DVFEA_Map = CCreateMap<string, ENUM_DVFEA>
 ("ELECTRIC_FIELD", ELECTRIC_FIELD);
 
 /*!
+ * \brief Kinds of coupling methods at CHT interfaces.
+ * The first (temperature) part determines the BC method on the fluid side, the second (heatflux) part determines
+ * the BC method on the solid side of the CHT interface.
+ */
+enum ENUM_CHT_COUPLING {
+  DIRECT_TEMPERATURE_NEUMANN_HEATFLUX = 0,
+  AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX = 1,
+  DIRECT_TEMPERATURE_ROBIN_HEATFLUX = 2,
+  AVERAGED_TEMPERATURE_ROBIN_HEATFLUX = 3
+};
+static const map<string, ENUM_CHT_COUPLING> CHT_Coupling_Map = CCreateMap<string, ENUM_CHT_COUPLING>
+("DIRECT_TEMPERATURE_NEUMANN_HEATFLUX", DIRECT_TEMPERATURE_NEUMANN_HEATFLUX)
+("AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX", AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX)
+("DIRECT_TEMPERATURE_ROBIN_HEATFLUX", DIRECT_TEMPERATURE_ROBIN_HEATFLUX)
+("AVERAGED_TEMPERATURE_ROBIN_HEATFLUX", AVERAGED_TEMPERATURE_ROBIN_HEATFLUX);
+
+/*!
  * \brief types Riemann boundary treatments
  */
 enum RIEMANN_TYPE {
