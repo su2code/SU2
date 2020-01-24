@@ -997,8 +997,8 @@ void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **
   conc_i = 0.0;
   conc_j = 0.0;
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    conc_i += V_i[iSpecies]*rho_i/Ms[iSpecies];
-    conc_j += V_j[iSpecies]*rho_j/Ms[iSpecies];
+    conc_i += V_i[iSpecies]/Ms[iSpecies];
+    conc_j += V_j[iSpecies]/Ms[iSpecies];
   }
   const su2double GammaL = (1.0 + Ru/rhoCvtr_i*conc_i);
   const su2double GammaR = (1.0 + Ru/rhoCvtr_j*conc_j);
