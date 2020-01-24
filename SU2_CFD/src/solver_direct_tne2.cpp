@@ -1413,8 +1413,8 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   delete [] dTdU_j;
   delete [] dTvedU_i;
   delete [] dTvedU_j;
-  //delete [] Eve_i;
-  //delete [] Eve_j;
+  delete [] Eve_i;
+  delete [] Eve_j;
   delete [] Cvve_i;
   delete [] Cvve_j;
 }
@@ -3017,6 +3017,8 @@ void CTNE2EulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config)
     }
   }
 
+  delete [] densitys;
+
   /*--- Communicate the gradient values via MPI. ---*/
   
   InitiateComms(geometry, config, ANISO_GRADIENT);
@@ -3285,6 +3287,14 @@ void CTNE2EulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
       }
     }
   }
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    delete [] A[iDim];
+    delete [] EigVec[iDim];
+  }
+  delete [] A;
+  delete [] EigVal;
+  delete [] EigVec;
 }
 
 void CTNE2EulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
@@ -3772,6 +3782,14 @@ void CTNE2EulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
       }
     }
   }
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    delete [] A[iDim];
+    delete [] EigVec[iDim];
+  }
+  delete [] A;
+  delete [] EigVal;
+  delete [] EigVec;
 }
 
 void CTNE2EulerSolver::SetPrimitive_Limiter(CGeometry *geometry,
@@ -4944,7 +4962,25 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
       // }
     }
   }
+
+  delete [] Normal;
+  delete [] NormalArea;
+  delete [] Velocity_b;
+  delete [] Velocity_i;
+  for (iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian_b[iVar];
+    delete [] DubDu[iVar];
+  }
+  delete [] Jacobian_b;
+  delete [] DubDu;
   delete [] u;
+
+  delete [] U_reflected;
+  delete [] V_reflected;
+
+  delete [] dPdU_reflected;
+  delete [] dTdU_reflected;
+  delete [] dTvedU_reflected;
 }
 
 // void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_container,
@@ -5329,6 +5365,11 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
+  delete [] U_infty;
+  delete [] V_infty;
+  delete [] Ys;
+  delete [] Mvec;
+  delete [] Mvec_Inf;
 }
 
 void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_container,
