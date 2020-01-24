@@ -2268,7 +2268,9 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   * \param[in] Output - boolean to determine whether to print output.
    */
   inline virtual void GetPower_Properties(CGeometry *geometry,
                                           CConfig *config,
@@ -2277,6 +2279,10 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   * \param[in] Output - boolean to determine whether to print output.
    */
   inline virtual void GetOutlet_Properties(CGeometry *geometry,
                                            CConfig *config,

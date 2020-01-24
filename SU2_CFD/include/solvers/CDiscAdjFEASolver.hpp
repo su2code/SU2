@@ -395,11 +395,4 @@ public:
    */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) override;
 
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-
 };

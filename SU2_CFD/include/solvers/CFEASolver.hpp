@@ -45,7 +45,7 @@ protected:
 
   su2double Total_CFEA;             /*!< \brief Total FEA coefficient for all the boundaries. */
 
-  unsigned short *iElem_iDe;	      /*!< \brief For DE cases, ID of the region considered for each iElem. */
+  unsigned short *iElem_iDe;        /*!< \brief For DE cases, ID of the region considered for each iElem. */
 
   su2double a_dt[9];                /*!< \brief Integration constants. */
 
@@ -806,7 +806,7 @@ public:
                    CSolver ***solver,
                    CConfig *config,
                    int val_iter,
-                   bool val_update_geo);
+                   bool val_update_geo) override;
 
   /*!
    * \brief Get multiplier for loads.

@@ -71,7 +71,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   void SetWallDistance(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Update the value of the coordinates after the grid movement.
    * \param[in] geometry - Geometrical definition of the problem.

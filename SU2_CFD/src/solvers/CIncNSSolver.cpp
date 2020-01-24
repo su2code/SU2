@@ -1854,7 +1854,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
   unsigned long iVertex, iPoint, total_index, Point_Normal;
 
   su2double *Coord_i, *Coord_j, dist_ij;
-  su2double *GridVel, There, Tconjugate, Twall, Temperature_Ref, thermal_conductivity, HF_FactorHere, HF_FactorConjugate;
+  su2double *GridVel, There, Tconjugate, Twall= 0.0, Temperature_Ref, thermal_conductivity, HF_FactorHere, HF_FactorConjugate;
 
   Temperature_Ref = config->GetTemperature_Ref();
 
