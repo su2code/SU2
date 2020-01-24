@@ -33,7 +33,7 @@
  * \author T. Economon.
  * \version 7.0.0 "Blackbird"
  */
-class CBaselineSolver_FEM : public CSolver {
+class CBaselineSolver_FEM final : public CSolver {
 protected:
 
   unsigned long nDOFsLocTot;    /*!< \brief Total number of local DOFs, including halos. */
@@ -81,12 +81,16 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) override;
 
   /*!
    * \brief Get a pointer to the vector of the solution degrees of freedom.
    * \return Pointer to the vector of the solution degrees of freedom.
    */
-  inline su2double* GetVecSolDOFs(void) {return VecSolDOFs.data();}
+  inline su2double* GetVecSolDOFs(void) override { return VecSolDOFs.data(); }
 
 };

@@ -1169,7 +1169,7 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
                                            unsigned short val_kind_marker,
                                            string val_marker,
                                            CGeometry *geometry,
-                                           CConfig *config) {
+                                           CConfig *config) const {
 
   /*--- Local variables ---*/
 

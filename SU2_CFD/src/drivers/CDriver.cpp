@@ -3218,7 +3218,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
       else if (fluid_donor && heat_target) {
         nVarTransfer = 0;
         nVar = 4;
-        if(config[donorZone]->GetEnergy_Equation())
+        if(config[donorZone]->GetEnergy_Equation() || (config[donorZone]->GetKind_Regime() == COMPRESSIBLE))
           interface_types[donorZone][targetZone] = CONJUGATE_HEAT_FS;
         else if (config[donorZone]->GetWeakly_Coupled_Heat())
           interface_types[donorZone][targetZone] = CONJUGATE_HEAT_WEAKLY_FS;
@@ -3229,7 +3229,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
       else if (heat_donor && fluid_target) {
         nVarTransfer = 0;
         nVar = 4;
-        if(config[targetZone]->GetEnergy_Equation())
+        if(config[targetZone]->GetEnergy_Equation() || (config[targetZone]->GetKind_Regime() == COMPRESSIBLE))
           interface_types[donorZone][targetZone] = CONJUGATE_HEAT_SF;
         else if (config[targetZone]->GetWeakly_Coupled_Heat())
           interface_types[donorZone][targetZone] = CONJUGATE_HEAT_WEAKLY_SF;

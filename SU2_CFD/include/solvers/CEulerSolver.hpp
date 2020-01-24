@@ -376,13 +376,13 @@ public:
    * \brief Compute the density at the infinity.
    * \return Value of the density at the infinity.
    */
-  inline su2double GetDensity_Inf(void) { return Density_Inf; }
+  inline su2double GetDensity_Inf(void) const final { return Density_Inf; }
 
   /*!
    * \brief Compute 2-norm of the velocity at the infinity.
    * \return Value of the 2-norm of the velocity at the infinity.
    */
-  inline su2double GetModVelocity_Inf(void) {
+  inline su2double GetModVelocity_Inf(void) const final {
     su2double Vel2 = 0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Vel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
@@ -394,33 +394,33 @@ public:
    * \brief Compute the density multiply by energy at the infinity.
    * \return Value of the density multiply by  energy at the infinity.
    */
-  inline su2double GetDensity_Energy_Inf(void) { return Density_Inf*Energy_Inf; }
+  inline su2double GetDensity_Energy_Inf(void) const final { return Density_Inf*Energy_Inf; }
 
   /*!
    * \brief Compute the pressure at the infinity.
    * \return Value of the pressure at the infinity.
    */
-  inline su2double GetPressure_Inf(void) { return Pressure_Inf; }
+  inline su2double GetPressure_Inf(void) const final { return Pressure_Inf; }
 
   /*!
    * \brief Compute the density multiply by velocity at the infinity.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the density multiply by the velocity at the infinity.
    */
-  inline su2double GetDensity_Velocity_Inf(unsigned short val_dim) { return Density_Inf*Velocity_Inf[val_dim]; }
+  inline su2double GetDensity_Velocity_Inf(unsigned short val_dim) const final { return Density_Inf*Velocity_Inf[val_dim]; }
 
   /*!
    * \brief Get the velocity at the infinity.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the velocity at the infinity.
    */
-  inline su2double GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
+  inline su2double GetVelocity_Inf(unsigned short val_dim) const final { return Velocity_Inf[val_dim]; }
 
   /*!
    * \brief Get the velocity at the infinity.
    * \return Value of the velocity at the infinity.
    */
-  inline su2double *GetVelocity_Inf(void) { return Velocity_Inf; }
+  inline su2double *GetVelocity_Inf(void) const final { return Velocity_Inf; }
 
   /*!
    * \brief Compute the time step for solving the Euler equations.
@@ -538,8 +538,10 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
-
+  unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                       CConfig *config,
+                                       bool Output) override;
+  
   /*!
    * \brief Compute a pressure sensor switch.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -590,7 +592,7 @@ public:
    * \param[in] iPoint - Index of the grid point
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPreconditioner(CConfig *config, unsigned long iPoint);
+  void SetPreconditioner(CConfig *config, unsigned long iPoint) final;
 
   /*!
    * \brief Compute the undivided laplacian for the solution, except the energy equation.
@@ -1123,13 +1125,18 @@ public:
    */
   void Momentum_Forces(CGeometry *geometry, CConfig *config) final;
 
-  /*!
+  /*! TODO
    * \brief Compute turbomachinery performance.
    * \param[in] solver - solver containing the outlet information.
    * \param[in] inMarker - marker related to the inlet.
    * \param[in] outMarker - marker related to the outlet.
    */
-  void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf , unsigned short inMarkerTP );
+  // void TurboPerformance(CSolver *solver,
+  //                       CConfig *config,
+  //                       unsigned short inMarker,
+  //                       unsigned short outMarker,
+  //                       unsigned short Kind_TurboPerf,
+  //                       unsigned short inMarkerTP);
 
   /*!
    * \brief Compute turbomachinery performance.
@@ -1137,7 +1144,7 @@ public:
    * \param[in] inMarker - marker related to the inlet.
    * \param[in] outMarker - marker related to the outlet.
    */
-  void StoreTurboPerformance(CSolver *solver,  unsigned short inMarkerTP );
+  // void StoreTurboPerformance(CSolver *solver,  unsigned short inMarkerTP ); TODO
 
  /*!
   * \brief Get the outer state for fluid interface nodes.
@@ -2006,7 +2013,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline void SetCPressureTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_pressure) final {
+  inline void SetCPressureTarget(unsigned short val_marker,
+                                 unsigned long val_vertex,
+                                 su2double val_pressure) final {
     CPressureTarget[val_marker][val_vertex] = val_pressure;
   }
 
@@ -2097,7 +2106,10 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline su2double GetActDisk_DeltaP(unsigned short val_marker, unsigned long val_vertex) { return ActDisk_DeltaP[val_marker][val_vertex]; }
+  inline su2double GetActDisk_DeltaP(unsigned short val_marker,
+                                     unsigned long val_vertex) const final {
+    return ActDisk_DeltaP[val_marker][val_vertex];
+  }
 
   /*!
    * \brief Value of the characteristic global index at the boundaries.
@@ -2105,7 +2117,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline void SetActDisk_DeltaP(unsigned short val_marker, unsigned long val_vertex, su2double val_deltap) { ActDisk_DeltaP[val_marker][val_vertex] = val_deltap; }
+  inline void SetActDisk_DeltaP(unsigned short val_marker, 
+                                unsigned long val_vertex,
+                                su2double val_deltap) final { ActDisk_DeltaP[val_marker][val_vertex] = val_deltap; }
 
   /*!
    * \brief Value of the characteristic global index at the boundaries.
@@ -2113,7 +2127,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline su2double GetActDisk_DeltaT(unsigned short val_marker, unsigned long val_vertex) { return ActDisk_DeltaT[val_marker][val_vertex]; }
+  inline su2double GetActDisk_DeltaT(unsigned short val_marker, unsigned long val_vertex) final {
+    return ActDisk_DeltaT[val_marker][val_vertex];
+  }
 
   /*!
    * \brief Value of the characteristic global index at the boundaries.
@@ -2121,7 +2137,11 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline void SetActDisk_DeltaT(unsigned short val_marker, unsigned long val_vertex, su2double val_deltat) { ActDisk_DeltaT[val_marker][val_vertex] = val_deltat; }
+  inline void SetActDisk_DeltaT(unsigned short val_marker,
+                                unsigned long val_vertex,
+                                su2double val_deltat) final {
+    ActDisk_DeltaT[val_marker][val_vertex] = val_deltat;
+  }
 
   /*!
    * \brief Value of the total temperature at an inlet boundary.
@@ -2129,7 +2149,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is evaluated.
    * \return Value of the total temperature
    */
-  inline su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex) { return Inlet_Ttotal[val_marker][val_vertex]; }
+  inline su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex) const final { return Inlet_Ttotal[val_marker][val_vertex]; }
 
   /*!
    * \brief Value of the total pressure at an inlet boundary.
@@ -2137,7 +2157,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
    * \return Value of the total pressure
    */
-  inline su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) { return Inlet_Ptotal[val_marker][val_vertex]; }
+  inline su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) const final { return Inlet_Ptotal[val_marker][val_vertex]; }
 
   /*!
    * \brief A component of the unit vector representing the flow direction at an inlet boundary.
@@ -2146,7 +2166,11 @@ public:
    * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
    * \return Component of a unit vector representing the flow direction.
    */
-  inline su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return Inlet_FlowDir[val_marker][val_vertex][val_dim]; }
+  inline su2double GetInlet_FlowDir(unsigned short val_marker,
+                                    unsigned long val_vertex,
+                                    unsigned short val_dim) const final {
+    return Inlet_FlowDir[val_marker][val_vertex][val_dim];
+  }
 
   /*!
    * \brief Set the value of the total temperature at an inlet boundary.
@@ -2154,7 +2178,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is set.
    * \param[in] val_ttotal - Value of the total temperature
    */
-  inline void SetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal) {
+  inline void SetInlet_Ttotal(unsigned short val_marker,
+                              unsigned long val_vertex,
+                              su2double val_ttotal) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
@@ -2174,7 +2200,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is set.
    * \param[in] val_ptotal - Value of the total pressure
    */
-  inline void SetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal) {
+  inline void SetInlet_Ptotal(unsigned short val_marker,
+                              unsigned long val_vertex,
+                              su2double val_ptotal) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
@@ -2195,7 +2223,10 @@ public:
    * \param[in] val_dim - The component of the flow direction unit vector to be set
    * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
    */
-  inline void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir) {
+  inline void SetInlet_FlowDir(unsigned short val_marker,
+                               unsigned long val_vertex,
+                               unsigned short val_dim,
+                               su2double val_flowdir) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
@@ -2218,7 +2249,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+  void SetUniformInlet(CConfig* config, unsigned short iMarker) final;
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
@@ -2226,7 +2257,9 @@ public:
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
-  void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+  void SetInletAtVertex(su2double *val_inlet,
+                        unsigned short iMarker,
+                        unsigned long iVertex) final;
 
   /*!
    * \brief Get the set of value imposed at an inlet.
@@ -2242,14 +2275,14 @@ public:
                              unsigned short val_kind_marker,
                              string val_marker,
                              CGeometry *geometry,
-                             CConfig *config);
+                             CConfig *config) const final;
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions
    * \param geometry_container - Geometrical definition.
    * \param config - Definition of the particular problem.
    */
-  void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config);
+  void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config) final;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -2275,7 +2308,11 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) final;
 
   /*!
    * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
@@ -2319,7 +2356,9 @@ public:
    * \param[in] val_vertex - vertex index
    * \param[in] value - number of outer states
    */
-  inline void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
+  inline void SetnSlidingStates(unsigned short val_marker,
+                                unsigned long val_vertex,
+                                int value) final { SlidingStateNodes[val_marker][val_vertex] = value; }
 
   /*!
    * \brief Get the number of outer state for fluid interface nodes.
@@ -2346,32 +2385,32 @@ public:
    * \brief Set the freestream pressure.
    * \param[in] Value of freestream pressure.
    */
-  inline void SetPressure_Inf(su2double p_inf) {Pressure_Inf = p_inf;}
+  inline void SetPressure_Inf(su2double p_inf) final {Pressure_Inf = p_inf;}
 
   /*!
    * \brief Set the freestream temperature.
    * \param[in] Value of freestream temperature.
    */
-  inline void SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
+  inline void SetTemperature_Inf(su2double t_inf) final {Temperature_Inf = t_inf;}
 
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetFreeStream_Solution(CConfig *config);
+  void SetFreeStream_Solution(CConfig *config) final;
 
   /*!
    * \brief Initilize turbo containers.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void InitTurboContainers(CGeometry *geometry, CConfig *config);
+  void InitTurboContainers(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetFreeStream_TurboSolution(CConfig *config);
+  void SetFreeStream_TurboSolution(CConfig *config) final;
 
   /*!
    * \brief It computes average quantities along the span for turbomachinery analysis.
@@ -2380,7 +2419,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] marker_flag - Surface marker flag where the function is applied.
    */
-  void PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+  void PreprocessAverage(CSolver **solver,
+                         CGeometry *geometry,
+                         CConfig *config,
+                         unsigned short marker_flag) final;
 
   /*!
    * \brief It computes average quantities along the span for turbomachinery analysis.
@@ -2389,7 +2431,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] marker_flag - Surface marker flag where the function is applied.
    */
-  void TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+  void TurboAverageProcess(CSolver **solver,
+                           CGeometry *geometry,
+                           CConfig *config,
+                           unsigned short marker_flag) final;
 
   /*!
    * \brief it performs a mixed out average of the nodes of a boundary.
@@ -2399,15 +2444,19 @@ public:
    * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
    * \param[in] density_miz - value of the mixed-out avaraged density.
    */
-  void MixedOut_Average (CConfig *config, su2double val_init_pressure, const su2double *val_Averaged_Flux,
-                         const su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
+  void MixedOut_Average (CConfig *config,
+                         su2double val_init_pressure,
+                         const su2double *val_Averaged_Flux,
+                         const su2double *val_normal,
+                         su2double& pressure_mix,
+                         su2double& density_mix);
 
   /*!
    * \brief It gathers into the master node average quantities at inflow and outflow needed for turbomachinery analysis.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void GatherInOutAverageValues(CConfig *config, CGeometry *geometry);
+  void GatherInOutAverageValues(CConfig *config, CGeometry *geometry) final;
 
   /*!
    * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
@@ -2415,8 +2464,11 @@ public:
    * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
    * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
    */
-  inline void ComputeTurboVelocity(const su2double *cartesianVelocity, const su2double *turboNormal, su2double *turboVelocity,
-                            unsigned short marker_flag, unsigned short kind_turb){
+  inline void ComputeTurboVelocity(const su2double *cartesianVelocity,
+                                   const su2double *turboNormal,
+                                   su2double *turboVelocity,
+                                   unsigned short marker_flag,
+                                   unsigned short kind_turb){
 
     if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
       turboVelocity[2] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
@@ -2441,8 +2493,11 @@ public:
    * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
    * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
    */
-  inline void ComputeBackVelocity(const su2double *turboVelocity, const su2double *turboNormal, su2double *cartesianVelocity,
-                           unsigned short marker_flag, unsigned short kind_turb){
+  inline void ComputeBackVelocity(const su2double *turboVelocity,
+                                  const su2double *turboNormal,
+                                  su2double *cartesianVelocity,
+                                  unsigned short marker_flag,
+                                  unsigned short kind_turb){
 
     if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
       cartesianVelocity[0] = turboVelocity[2]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
@@ -2468,63 +2523,81 @@ public:
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Density on the surface <i>val_marker</i>.
    */
-  inline su2double GetAverageDensity(unsigned short valMarker, unsigned short valSpan){return AverageDensity[valMarker][valSpan];}
+  inline su2double GetAverageDensity(unsigned short valMarker, unsigned short valSpan) const final {
+    return AverageDensity[valMarker][valSpan];
+  }
 
   /*!
    * \brief Provide the average pressure at the boundary of interest.
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Pressure on the surface <i>val_marker</i>.
    */
-  inline su2double GetAveragePressure(unsigned short valMarker, unsigned short valSpan){return AveragePressure[valMarker][valSpan];}
+  inline su2double GetAveragePressure(unsigned short valMarker, unsigned short valSpan) const final {
+    return AveragePressure[valMarker][valSpan];
+  }
 
   /*!
    * \brief Provide the average turbo velocity average at the boundary of interest.
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
    */
-  inline su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan){return AverageTurboVelocity[valMarker][valSpan];}
+  inline su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) const final {
+    return AverageTurboVelocity[valMarker][valSpan];
+  }
 
   /*!
    * \brief Provide the average density at the boundary of interest.
    * \param[in] val_marker - bound marker.
    * \return Value of the Average turbulent Nu on the surface <i>val_marker</i>.
    */
-  inline su2double GetAverageNu(unsigned short valMarker, unsigned short valSpan){return AverageNu[valMarker][valSpan];}
+  inline su2double GetAverageNu(unsigned short valMarker, unsigned short valSpan) const final {
+    return AverageNu[valMarker][valSpan];
+  }
 
   /*!
    * \brief Provide the average density at the boundary of interest.
    * \param[in] val_marker - bound marker.
    * \return Value of the Average turbulent Kine on the surface <i>val_marker</i>.
    */
-  inline su2double GetAverageKine(unsigned short valMarker, unsigned short valSpan){return AverageKine[valMarker][valSpan];}
+  inline su2double GetAverageKine(unsigned short valMarker, unsigned short valSpan) const final {
+    return AverageKine[valMarker][valSpan];
+  }
 
   /*!
    * \brief Provide the average density at the boundary of interest.
    * \param[in] val_marker - bound marker.
    * \return Value of the Average turbulent Omega on the surface <i>val_marker</i>.
    */
-  inline su2double GetAverageOmega(unsigned short valMarker, unsigned short valSpan){return AverageOmega[valMarker][valSpan];}
+  inline su2double GetAverageOmega(unsigned short valMarker, unsigned short valSpan) const final {
+    return AverageOmega[valMarker][valSpan];
+  }
 
   /*!
    * \brief Provide the average density at the boundary of interest.
    * \param[in] val_marker - bound marker.
    * \return Value of the Average turbulent Nu on the surface <i>val_marker</i>.
    */
-  inline su2double GetExtAverageNu(unsigned short valMarker, unsigned short valSpan){return ExtAverageNu[valMarker][valSpan];}
+  inline su2double GetExtAverageNu(unsigned short valMarker, unsigned short valSpan) const final {
+    return ExtAverageNu[valMarker][valSpan];
+  }
 
   /*!
    * \brief Provide the average density at the boundary of interest.
    * \param[in] val_marker - bound marker.
    * \return Value of the Average turbulent Kine on the surface <i>val_marker</i>.
    */
-  inline su2double GetExtAverageKine(unsigned short valMarker, unsigned short valSpan){return ExtAverageKine[valMarker][valSpan];}
+  inline su2double GetExtAverageKine(unsigned short valMarker, unsigned short valSpan) const final {
+    return ExtAverageKine[valMarker][valSpan];
+  }
 
   /*!
    * \brief Provide the average density at the boundary of interest.
    * \param[in] val_marker - bound marker.
    * \return Value of the Average turbulent Omega on the surface <i>val_marker</i>.
    */
-  inline su2double GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan){return ExtAverageOmega[valMarker][valSpan];}
+  inline su2double GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan) const final {
+    return ExtAverageOmega[valMarker][valSpan];
+  }
 
   /*!
    * \brief Set the external average density at the boundary of interest.
@@ -2532,7 +2605,11 @@ public:
    * \param[in] val_Span   - value of the Span.
    * \param[in] valDensity - value to set.
    */
-  inline void SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity){ExtAverageDensity[valMarker][valSpan] = valDensity;}
+  inline void SetExtAverageDensity(unsigned short valMarker, 
+                                   unsigned short valSpan,
+                                   su2double valDensity) final {
+    ExtAverageDensity[valMarker][valSpan] = valDensity;
+  }
 
   /*!
    * \brief Set the external average density at the boundary of interest.
@@ -2540,14 +2617,23 @@ public:
    * \param[in] val_Span   - value of the Span.
    * \param[in] valPressure - value to set.
    */
-  inline void SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure){ExtAveragePressure[valMarker][valSpan] = valPressure;}
+  inline void SetExtAveragePressure(unsigned short valMarker,
+                                    unsigned short valSpan,
+                                    su2double valPressure) final {
+    ExtAveragePressure[valMarker][valSpan] = valPressure;
+  }
 
   /*!
    * \brief Set the external the average turbo velocity average at the boundary of interest.
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
    */
-  inline void SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity){ExtAverageTurboVelocity[valMarker][valSpan][valIndex] = valTurboVelocity;}
+  inline void SetExtAverageTurboVelocity(unsigned short valMarker,
+                                         unsigned short valSpan,
+                                         unsigned short valIndex,
+                                         su2double valTurboVelocity) final {
+    ExtAverageTurboVelocity[valMarker][valSpan][valIndex] = valTurboVelocity;
+  }
 
   /*!
    * \brief Set the external average turbulent Nu at the boundary of interest.
@@ -2555,7 +2641,11 @@ public:
    * \param[in] val_Span   - value of the Span.
    * \param[in] valNu - value to set.
    */
-  inline void SetExtAverageNu(unsigned short valMarker, unsigned short valSpan, su2double valNu){ExtAverageNu[valMarker][valSpan] = valNu;}
+  inline void SetExtAverageNu(unsigned short valMarker,
+                              unsigned short valSpan, 
+                              su2double valNu) final {
+    ExtAverageNu[valMarker][valSpan] = valNu;
+  }
 
   /*!
    * \brief Set the external average turbulent Kine at the boundary of interest.
@@ -2563,7 +2653,11 @@ public:
    * \param[in] val_Span   - value of the Span.
    * \param[in] valKine - value to set.
    */
-  inline void SetExtAverageKine(unsigned short valMarker, unsigned short valSpan, su2double valKine){ExtAverageKine[valMarker][valSpan] = valKine;}
+  inline void SetExtAverageKine(unsigned short valMarker,
+                                unsigned short valSpan,
+                                su2double valKine) final {
+    ExtAverageKine[valMarker][valSpan] = valKine;
+  }
 
   /*!
    * \brief Set the external average turbulent Omega at the boundary of interest.
@@ -2571,112 +2665,150 @@ public:
    * \param[in] val_Span   - value of the Span.
    * \param[in] valOmega - value to set.
    */
-  inline void SetExtAverageOmega(unsigned short valMarker, unsigned short valSpan, su2double valOmega){ExtAverageOmega[valMarker][valSpan] = valOmega;}
+  inline void SetExtAverageOmega(unsigned short valMarker,
+                                 unsigned short valSpan,
+                                 su2double valOmega) final {
+    ExtAverageOmega[valMarker][valSpan] = valOmega;
+  }
 
   /*!
    * \brief Provide the inlet density to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
    */
-  inline su2double GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan){return DensityIn[inMarkerTP][valSpan];}
+  inline su2double GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan) const final {
+    return DensityIn[inMarkerTP][valSpan];
+  }
 
   /*!
    * \brief Provide the inlet pressure to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of inlet pressure.
    */
-  inline su2double GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan){return PressureIn[inMarkerTP][valSpan];}
+  inline su2double GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan) const final {
+    return PressureIn[inMarkerTP][valSpan];
+  }
 
   /*!
    * \brief Provide the inlet normal velocity to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet normal velocity.
    */
-  inline su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan){return TurboVelocityIn[inMarkerTP][valSpan];}
+  inline su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const final {
+    return TurboVelocityIn[inMarkerTP][valSpan];
+  }
 
   /*!
    * \brief Provide the outlet density to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the outlet density.
    */
-  inline su2double GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan){return DensityOut[inMarkerTP][valSpan];}
+  inline su2double GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan) const final {
+    return DensityOut[inMarkerTP][valSpan];
+  }
 
   /*!
    * \brief Provide the outlet pressure to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the outlet pressure.
    */
-  inline su2double GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan){return PressureOut[inMarkerTP][valSpan];}
+  inline su2double GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan) const final {
+    return PressureOut[inMarkerTP][valSpan];
+  }
 
   /*!
    * \brief Provide the outlet normal velocity to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the outlet normal velocity.
    */
-  inline su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan){return TurboVelocityOut[inMarkerTP][valSpan];}
+  inline su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const final {
+    return TurboVelocityOut[inMarkerTP][valSpan];
+  }
 
   /*!
    * \brief Provide the inlet turbulent kei to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
    */
-  inline su2double GetKineIn(unsigned short inMarkerTP, unsigned short valSpan){return KineIn[inMarkerTP][valSpan];}
+  inline su2double GetKineIn(unsigned short inMarkerTP, unsigned short valSpan) const final {
+    return KineIn[inMarkerTP][valSpan];
+  }
 
   /*!
    * \brief Provide the inlet turbulent omega to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
    */
-  inline su2double GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan){return OmegaIn[inMarkerTP][valSpan];}
+  inline su2double GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan) const final {
+    return OmegaIn[inMarkerTP][valSpan];
+  }
 
   /*!
    * \brief Provide the inlet turbulent nu to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
    */
-  inline su2double GetNuIn(unsigned short inMarkerTP, unsigned short valSpan){return NuIn[inMarkerTP][valSpan];}
+  inline su2double GetNuIn(unsigned short inMarkerTP, unsigned short valSpan) const final {
+    return NuIn[inMarkerTP][valSpan];
+  }
 
   /*!
    * \brief Provide the outlet turbulent kei to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
    */
-  inline su2double GetKineOut(unsigned short inMarkerTP, unsigned short valSpan){return KineOut[inMarkerTP][valSpan];}
+  inline su2double GetKineOut(unsigned short inMarkerTP, unsigned short valSpan) const final {
+    return KineOut[inMarkerTP][valSpan];
+  }
 
   /*!
    * \brief Provide the outlet turbulent omega to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
    */
-  inline su2double GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan){return OmegaOut[inMarkerTP][valSpan];}
+  inline su2double GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan) const final {
+    return OmegaOut[inMarkerTP][valSpan];
+  }
 
   /*!
    * \brief Provide the outlet turbulent nu to check convergence of conservative mixing-plane.
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet density.
    */
-  inline su2double GetNuOut(unsigned short inMarkerTP, unsigned short valSpan){return NuOut[inMarkerTP][valSpan];}
+  inline su2double GetNuOut(unsigned short inMarkerTP, unsigned short valSpan) const final {
+    return NuOut[inMarkerTP][valSpan];
+  }
 
   /*!
    * \brief Set inlet density.
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){DensityIn[inMarkerTP][valSpan] = value;}
+  inline void SetDensityIn(su2double value, 
+                           unsigned short inMarkerTP,
+                           unsigned short valSpan) final {
+    DensityIn[inMarkerTP][valSpan] = value;
+  }
 
   /*!
    * \brief Set inlet pressure.
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){PressureIn[inMarkerTP][valSpan] = value;}
+  inline void SetPressureIn(su2double value,
+                            unsigned short inMarkerTP,
+                            unsigned short valSpan) final {
+    PressureIn[inMarkerTP][valSpan] = value;
+  }
 
   /*!
    * \brief Set inlet normal velocity.
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetTurboVelocityIn(su2double *value, unsigned short inMarkerTP, unsigned short valSpan) {
+  inline void SetTurboVelocityIn(su2double *value,
+                                 unsigned short inMarkerTP,
+                                 unsigned short valSpan) final {
     unsigned short iDim;
 
     for(iDim = 0; iDim < nDim; iDim++)
@@ -2688,21 +2820,31 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetDensityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan) {DensityOut[inMarkerTP][valSpan] = value;}
+  inline void SetDensityOut(su2double value,
+                            unsigned short inMarkerTP,
+                            unsigned short valSpan) final {
+    DensityOut[inMarkerTP][valSpan] = value;
+  }
 
   /*!
    * \brief Set outlet pressure.
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetPressureOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){PressureOut[inMarkerTP][valSpan] = value;}
+  inline void SetPressureOut(su2double value,
+                             unsigned short inMarkerTP,
+                             unsigned short valSpan) final {
+    PressureOut[inMarkerTP][valSpan] = value;
+  }
 
   /*!
    * \brief Set outlet normal velocity.
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetTurboVelocityOut(su2double *value, unsigned short inMarkerTP, unsigned short valSpan){
+  inline void SetTurboVelocityOut(su2double *value, 
+                                  unsigned short inMarkerTP,
+                                  unsigned short valSpan) final {
     unsigned short iDim;
 
     for(iDim = 0; iDim < nDim; iDim++)
@@ -2714,44 +2856,71 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){KineIn[inMarkerTP][valSpan] = value;}
+  inline void SetKineIn(su2double value,
+                        unsigned short inMarkerTP,
+                        unsigned short valSpan) final {
+    KineIn[inMarkerTP][valSpan] = value;
+  }
   /*!
    * \brief Set inlet turbulent omega.
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetOmegaIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){OmegaIn[inMarkerTP][valSpan] = value;}
+  inline void SetOmegaIn(su2double value,
+                        unsigned short inMarkerTP,
+                        unsigned short valSpan) final {
+    OmegaIn[inMarkerTP][valSpan] = value;
+  }
+
   /*!
    * \brief Set inlet turbulent Nu.
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetNuIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){NuIn[inMarkerTP][valSpan] = value;}
+  inline void SetNuIn(su2double value,
+                      unsigned short inMarkerTP,
+                      unsigned short valSpan) final {
+    NuIn[inMarkerTP][valSpan] = value;
+  }
 
   /*!
    * \brief Set outlet turbulent kei.
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetKineOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){KineOut[inMarkerTP][valSpan] = value;}
+  inline void SetKineOut(su2double value,
+                         unsigned short inMarkerTP,
+                         unsigned short valSpan) final {
+    KineOut[inMarkerTP][valSpan] = value;
+  }
+
   /*!
    * \brief Set Outlet turbulent omega.
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){OmegaOut[inMarkerTP][valSpan] = value;}
+  inline void SetOmegaOut(su2double value,
+                          unsigned short inMarkerTP,
+                          unsigned short valSpan) final {
+    OmegaOut[inMarkerTP][valSpan] = value;
+  }
+
   /*!
    * \brief Set outlet turbulent Nu.
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){NuOut[inMarkerTP][valSpan] = value;}
+  inline void SetNuOut(su2double value,
+                       unsigned short inMarkerTP,
+                       unsigned short valSpan) final {
+    NuOut[inMarkerTP][valSpan] = value;
+  }
 
   /*!
    * \brief Compute the global error measures (L2, Linf) for verification cases.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  void ComputeVerificationError(CGeometry *geometry, CConfig *config);
+  void ComputeVerificationError(CGeometry *geometry, CConfig *config) final;
 
 };
