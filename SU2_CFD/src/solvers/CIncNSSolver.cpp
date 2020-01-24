@@ -1847,13 +1847,16 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 }
 
 
-void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CConfig *config, unsigned short val_marker) {
+void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                              CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar, jVar, iDim, Wall_Function;
-  unsigned long iVertex, iPoint, total_index;
+  unsigned long iVertex, iPoint, total_index, Point_Normal;
 
-  su2double *GridVel, Tconjugate;
-  su2double Temperature_Ref = config->GetTemperature_Ref();
+  su2double *Coord_i, *Coord_j, dist_ij;
+  su2double *GridVel, There, Tconjugate, Twall, Temperature_Ref, thermal_conductivity, HF_FactorHere, HF_FactorConjugate;
+
+  Temperature_Ref = config->GetTemperature_Ref();
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool energy        = config->GetEnergy_Equation();
@@ -1912,12 +1915,47 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
         Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
 
+        if ((config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX) ||
+            (config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+
+          /*--- Compute closest normal neighbor ---*/
+
+          Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+          /*--- Get coordinates of i & nearest normal and compute distance ---*/
+
+          Coord_i = geometry->node[iPoint]->GetCoord();
+          Coord_j = geometry->node[Point_Normal]->GetCoord();
+          dist_ij = 0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+          dist_ij = sqrt(dist_ij);
+
+          /*--- Compute wall temperature from both temperatures ---*/
+
+          thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+          There = nodes->GetTemperature(Point_Normal);
+          HF_FactorHere = thermal_conductivity*config->GetViscosity_Ref()/dist_ij;
+          HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 2);
+
+          Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
+        }
+        else if ((config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_NEUMANN_HEATFLUX) ||
+                 (config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX)) {
+
+          /*--- (Directly) Set wall temperature to conjugate temperature. ---*/
+
+          Twall = Tconjugate;
+        }
+        else {
+          SU2_MPI::Error("Unknown CHT coupling method.", CURRENT_FUNCTION);
+        }
+
         /*--- Strong imposition of the temperature on the fluid zone. ---*/
 
         LinSysRes.SetBlock_Zero(iPoint, nDim+1);
-        nodes->SetSolution_Old(iPoint, nDim+1, Tconjugate);
+        nodes->SetSolution_Old(iPoint, nDim+1, Twall);
         nodes->SetEnergy_ResTruncError_Zero(iPoint);
-
       }
 
       /*--- Enforce the no-slip boundary condition in a strong way by
@@ -1933,7 +1971,6 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
           Jacobian.DeleteValsRowi(total_index);
         }
       }
-
     }
   }
 }
