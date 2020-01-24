@@ -37,7 +37,7 @@
  * \ingroup Discrete_Adjoint
  * \author R. Sanchez
  */
-class CDiscAdjMeshSolver : public CSolver {
+class CDiscAdjMeshSolver final : public CSolver {
 private:
   unsigned short KindDirect_Solver;
   CSolver *direct_solver;
@@ -84,7 +84,7 @@ public:
    * \param[in] geometry_container - The geometry container holding all grid levels.
    * \param[in] config_container - The particular config.
    */
-  void RegisterSolution(CGeometry *geometry, CConfig *config);
+  void RegisterSolution(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
@@ -92,7 +92,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
+  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Extract and set the geometrical sensitivity.
@@ -100,33 +100,33 @@ public:
    * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
+  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) override;
 
   /*!
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) final;
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
    */
-  void SetRecording(CGeometry *geometry, CConfig *config);
+  void SetRecording(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false);
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false) override;
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Update the dual-time derivatives.
@@ -144,7 +144,7 @@ public:
                     unsigned short iMesh,
                     unsigned short iRKStep,
                     unsigned short RunTime_EqSystem,
-                    bool Output) final;
+                    bool Output) override;
 
   /*!
    * \brief Load a solution from a restart file.
@@ -154,6 +154,10 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) override;
 
 };
