@@ -831,6 +831,7 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
         val_Jacobian_j[iVar][jVar] *= Area;
       }
     }
+  }
 
   // /*--- Roe's Jacobian -> checking if there is an improvement over TNE2 AUSM Jacobian---*/
   // if (implicit){
