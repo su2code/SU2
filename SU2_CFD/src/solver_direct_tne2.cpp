@@ -4903,6 +4903,9 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
           Residual[nSpecies+iDim+1] += (2.0/3.0)*Density_b*turb_ke*NormalArea[iDim];
       }
 
+      /*--- Add value to the residual ---*/
+      LinSysRes.AddBlock(iPoint, Residual);
+
       /*--- If using implicit time-stepping, calculate b.c. contribution to Jacobian ---*/
       if (implicit) {
 
