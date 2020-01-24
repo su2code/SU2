@@ -3785,45 +3785,45 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_Jacobian_i[nEv][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
 
-    /*--- Relaxation time derivatives ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      rhos = V_i[RHOS_INDEX+iSpecies];
-      const su2double dRdTau = -rhos*(estar[iSpecies]-eve_i[iSpecies])/(pow(taus[iSpecies], 2.0))*Volume;
-      /*--- tauP terms ---*/
-      /*--- (dR/dtau)(dtau/dtauP)(dtauP/dT)(dT/dU) ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        val_Jacobian_i[nEv][iVar] += dRdTau *
-                                     1.5/(1E-20*(5E4*5E4)*N*sqrt((8.0*Ru)/(PI_NUMBER*Ms[iSpecies])))*sqrt(T)*dTdU_i[iVar];
-      }
-      /*--- (dR/dtau)(dtau/dtauP)(dtauP/drhos) ---*/
-      Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*Ms[iSpecies]));
-      sig_s = 1E-20*(5E4*5E4)/(T*T);
-      val_Jacobian_i[nEv][iSpecies] += dRdTau *
-                                       (-1.*AVOGAD_CONSTANT/(Cs*sig_s*N*N*Ms[iSpecies]));
+    // /*--- Relaxation time derivatives ---*/
+    // for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    //   rhos = V_i[RHOS_INDEX+iSpecies];
+    //   const su2double dRdTau = -rhos*(estar[iSpecies]-eve_i[iSpecies])/(pow(taus[iSpecies], 2.0))*Volume;
+    //   /*--- tauP terms ---*/
+    //   /*--- (dR/dtau)(dtau/dtauP)(dtauP/dT)(dT/dU) ---*/
+    //   for (iVar = 0; iVar < nVar; iVar++) {
+    //     val_Jacobian_i[nEv][iVar] += dRdTau *
+    //                                  1.5/(1E-20*(5E4*5E4)*N*sqrt((8.0*Ru)/(PI_NUMBER*Ms[iSpecies])))*sqrt(T)*dTdU_i[iVar];
+    //   }
+    //   /*--- (dR/dtau)(dtau/dtauP)(dtauP/drhos) ---*/
+    //   Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*Ms[iSpecies]));
+    //   sig_s = 1E-20*(5E4*5E4)/(T*T);
+    //   val_Jacobian_i[nEv][iSpecies] += dRdTau *
+    //                                    (-1.*AVOGAD_CONSTANT/(Cs*sig_s*N*N*Ms[iSpecies]));
 
-      /*--- tauMW terms ---*/
-      num   = 0.0;
-      denom = 0.0;
-      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-        num   += X[jSpecies];
-        denom += X[jSpecies] / tau_sr[iSpecies][jSpecies];
-      }
-      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-        mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
-        A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
-        const su2double dTauMWdTauSR = num/pow(denom, 2.0)*Ms[jSpecies]/pow(tau_sr[iSpecies][jSpecies], 2.0);
-        const su2double dTauSRdP = -tau_sr[iSpecies][jSpecies]/P;
-        const su2double dTauSRdT = -tau_sr[iSpecies][jSpecies]*(1./3.)*A_sr*pow(T, -4./3.);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          /*--- (dR/dtauMW)(dtau/dtauMW)(dtauMW/dtausp)(dtausp/dP)(dP/dU) ---*/
-          val_Jacobian_i[nEv][iVar] += dRdTau *
-                                       dTauMWdTauSR*dTauSRdP*dPdU_i[iVar];
-          /*--- (dR/dtauMW)(dtau/dtauMW)(dtauMW/dtausp)(dtausp/dT)(dT/dU) ---*/
-          val_Jacobian_i[nEv][iVar] += dRdTau *
-                                       dTauMWdTauSR*dTauSRdT*dTdU_i[iVar];
-        }
-      }
-    }
+    //   /*--- tauMW terms ---*/
+    //   num   = 0.0;
+    //   denom = 0.0;
+    //   for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+    //     num   += X[jSpecies];
+    //     denom += X[jSpecies] / tau_sr[iSpecies][jSpecies];
+    //   }
+    //   for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+    //     mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
+    //     A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
+    //     const su2double dTauMWdTauSR = num/pow(denom, 2.0)*Ms[jSpecies]/pow(tau_sr[iSpecies][jSpecies], 2.0);
+    //     const su2double dTauSRdP = -tau_sr[iSpecies][jSpecies]/P;
+    //     const su2double dTauSRdT = -tau_sr[iSpecies][jSpecies]*(1./3.)*A_sr*pow(T, -4./3.);
+    //     for (iVar = 0; iVar < nVar; iVar++) {
+    //       /*--- (dR/dtauMW)(dtau/dtauMW)(dtauMW/dtausp)(dtausp/dP)(dP/dU) ---*/
+    //       val_Jacobian_i[nEv][iVar] += dRdTau *
+    //                                    dTauMWdTauSR*dTauSRdP*dPdU_i[iVar];
+    //       /*--- (dR/dtauMW)(dtau/dtauMW)(dtauMW/dtausp)(dtausp/dT)(dT/dU) ---*/
+    //       val_Jacobian_i[nEv][iVar] += dRdTau *
+    //                                    dTauMWdTauSR*dTauSRdT*dTdU_i[iVar];
+    //     }
+    //   }
+    // }
   }
 }
 
