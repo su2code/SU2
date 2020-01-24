@@ -929,7 +929,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
                                       su2double *val_Cvves) {
 
   bool ionization, errT, errTve, NRconvg, Bconvg, nonPhys;
-  unsigned short iDim, iEl, iSpecies, nHeavy, nEl, iIter, maxBIter, maxNIter;
+  unsigned short iDim, iEl, iSpecies, nHeavy, nEl;
+  unsigned long iIter, maxBIter, maxNIter;
   su2double rho, rhoE, rhoEve, rhoE_f, rhoE_ref, rhoEve_min, rhoEve_max, rhoEve_t;
   su2double RuSI, Ru, sqvel, rhoCvtr, rhoCvve;
   su2double Tve, Tve2, Tve_o;
