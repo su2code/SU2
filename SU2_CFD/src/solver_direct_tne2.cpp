@@ -4932,8 +4932,8 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
 
           /////// NEW //////
           for (iDim = 0; iDim < nDim; iDim++) {
-            Jacobian_i[nSpecies+iDim][iSpecies] = dPdU[iSpecies] * UnitNormal[iDim];
-            Jacobian_i[iSpecies][nSpecies+iDim] = cs * UnitNormal[iDim];
+            Jacobian_i[nSpecies+iDim][iSpecies] = -dPdU[iSpecies] * UnitNormal[iDim];
+            Jacobian_i[iSpecies][nSpecies+iDim] = -cs * UnitNormal[iDim];
           }
         }
 
@@ -4941,14 +4941,14 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
 
         for (iDim = 0; iDim < nDim; iDim++) {
           for (jDim = 0; jDim < nDim; jDim++) {
-            Jacobian_i[nSpecies+iDim][nSpecies+jDim] = u[iDim]*UnitNormal[jDim]
-                + dPdU[nSpecies+jDim]*UnitNormal[iDim];
+            Jacobian_i[nSpecies+iDim][nSpecies+jDim] = -u[iDim]*UnitNormal[jDim]
+                - dPdU[nSpecies+jDim]*UnitNormal[iDim];
           }
-          Jacobian_i[nSpecies+iDim][nSpecies+nDim]   = dPdU[nSpecies+nDim]  *UnitNormal[iDim];
-          Jacobian_i[nSpecies+iDim][nSpecies+nDim+1] = dPdU[nSpecies+nDim+1]*UnitNormal[iDim];
+          Jacobian_i[nSpecies+iDim][nSpecies+nDim]   = -dPdU[nSpecies+nDim]  *UnitNormal[iDim];
+          Jacobian_i[nSpecies+iDim][nSpecies+nDim+1] = -dPdU[nSpecies+nDim+1]*UnitNormal[iDim];
 
-          Jacobian_i[nSpecies+nDim][nSpecies+iDim]   = (rhoE+P)/rho * UnitNormal[iDim];
-          Jacobian_i[nSpecies+nDim+1][nSpecies+iDim] = rhoEve/rho   * UnitNormal[iDim];
+          Jacobian_i[nSpecies+nDim][nSpecies+iDim]   = -(rhoE+P)/rho * UnitNormal[iDim];
+          Jacobian_i[nSpecies+nDim+1][nSpecies+iDim] = -rhoEve/rho   * UnitNormal[iDim];
         }
 
         /*--- Integrate over the dual-grid area ---*/
