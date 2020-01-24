@@ -834,6 +834,7 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
 
   /*--- Roe's Jacobian -> checking if there is an improvement over TNE2 AUSM Jacobian---*/
   if (implicit){
+    const unsigned short nPrimVar = nSpecies + nDim + 8;
     su2double * Diff_U      = new su2double  [nVar];
     su2double * RoeU        = new su2double  [nVar];
     su2double * RoeV        = new su2double  [nPrimVar];
@@ -853,7 +854,7 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
     su2double * ProjFlux_j = new su2double [nVar];
   
    /*--- Compute Roe Variables ---*/
-   R    = sqrt(abs(V_j[RHO_INDEX]/V_i[RHO_INDEX]));
+   su2double R    = sqrt(abs(V_j[RHO_INDEX]/V_i[RHO_INDEX]));
    for (iVar = 0; iVar < nVar; iVar++)
      RoeU[iVar] = (R*U_j[iVar] + U_i[iVar])/(R+1);
    for (iVar = 0; iVar < nPrimVar; iVar++)
@@ -872,15 +873,17 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
    GetPMatrix(RoeU, RoeV, RoedPdU, UnitNormal, l, m, P_Tensor);
    GetPMatrix_inv(RoeU, RoeV, RoedPdU, UnitNormal, l, m, invP_Tensor);
 
-   RoeSoundSpeed = sqrt((1.0+RoedPdU[nSpecies+nDim])*
+   su2double RoeSoundSpeed = sqrt((1.0+RoedPdU[nSpecies+nDim])*
        RoeV[P_INDEX]/RoeV[RHO_INDEX]);
 
   /*--- Compute projected velocities ---*/
-   ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
+   su2double ProjVelocity = 0.0; 
+   ProjVel_i = 0.0;
+   ProjVel_j = 0.0;
    for (iDim = 0; iDim < nDim; iDim++) {
      ProjVelocity   += RoeV[VEL_INDEX+iDim] * UnitNormal[iDim];
-     ProjVelocity_i += V_i[VEL_INDEX+iDim]  * UnitNormal[iDim];
-     ProjVelocity_j += V_j[VEL_INDEX+iDim]  * UnitNormal[iDim];
+     ProjVel_i += V_i[VEL_INDEX+iDim]  * UnitNormal[iDim];
+     ProjVel_j += V_j[VEL_INDEX+iDim]  * UnitNormal[iDim];
    }
 
   /*--- Calculate eigenvalues ---*/
@@ -894,17 +897,17 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
 
   /*--- Harten and Hyman (1983) entropy correction ---*/
    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-     Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-                                          ProjVelocity_j-Lambda[iDim] ));
+     Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iDim]-ProjVel_i,
+                                          ProjVel_j-Lambda[iDim] ));
    for (iDim = 0; iDim < nDim-1; iDim++)
-     Epsilon[nSpecies+iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-                                               ProjVelocity_j-Lambda[iDim] ));
-   Epsilon[nSpecies+nDim-1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim-1]-(ProjVelocity_i+V_i[A_INDEX]),
-                                      (ProjVelocity_j+V_j[A_INDEX])-Lambda[nSpecies+nDim-1]));
-   Epsilon[nSpecies+nDim]   = 4.0*max(0.0, max(Lambda[nSpecies+nDim]-(ProjVelocity_i-V_i[A_INDEX]),
-                                      (ProjVelocity_j-V_j[A_INDEX])-Lambda[nSpecies+nDim]));
-   Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-                                               ProjVelocity_j-Lambda[iDim] ));
+     Epsilon[nSpecies+iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVel_i,
+                                               ProjVel_j-Lambda[iDim] ));
+   Epsilon[nSpecies+nDim-1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim-1]-(ProjVel_i+V_i[A_INDEX]),
+                                      (ProjVel_j+V_j[A_INDEX])-Lambda[nSpecies+nDim-1]));
+   Epsilon[nSpecies+nDim]   = 4.0*max(0.0, max(Lambda[nSpecies+nDim]-(ProjVel_i-V_i[A_INDEX]),
+                                      (ProjVel_j-V_j[A_INDEX])-Lambda[nSpecies+nDim]));
+   Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max(Lambda[iDim]-ProjVel_i,
+                                               ProjVel_j-Lambda[iDim] ));
    for (iVar = 0; iVar < nVar; iVar++)
      if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
        Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
@@ -925,7 +928,7 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
 
   /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
        Proj_ModJac_Tensor_ij = 0.0;
-       for (kVar = 0; kVar < nVar; kVar++)
+       for (unsigned short kVar = 0; kVar < nVar; kVar++)
          Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
        val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
        val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
