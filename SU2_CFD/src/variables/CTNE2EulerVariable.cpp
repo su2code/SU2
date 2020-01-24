@@ -1152,6 +1152,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
           val_eves[iSpecies] = CalcEve(config, Tve, iSpecies);
           val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
+          rhoCvve  += U[iSpecies]*val_Cvves[iSpecies];
         }
       }
       // If absolutely no convergence, then assign to the TR temperature
