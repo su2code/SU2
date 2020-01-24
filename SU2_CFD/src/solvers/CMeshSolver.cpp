@@ -27,6 +27,7 @@
 
 
 #include "../../../Common/include/adt_structure.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 #include "../../include/solvers/CMeshSolver.hpp"
 #include "../../include/variables/CMeshBoundVariable.hpp"
 #include "../../include/variables/CMeshElement.hpp"
@@ -52,7 +53,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   /*--- Initialize the number of spatial dimensions, length of the state
    vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
 
-  unsigned short iDim, jDim;
+  unsigned short iDim;
   unsigned long iPoint, iElem;
 
   nDim         = geometry->GetnDim();
@@ -69,7 +70,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
   /*--- Initialize the node structure ---*/
 
-  Coordinate = new su2double[nDim];
   nodes = new CMeshBoundVariable(nPoint, nDim, config);
   SetBaseClassPointerToNodes();
 
@@ -90,23 +90,33 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   }
   static_cast<CMeshBoundVariable*>(nodes)->AllocateBoundaryVariables(config);
 
-
   /*--- Initialize the element structure ---*/
-  element = new CMeshElement[nElement];
-  for (iElem = 0; iElem < nElement; iElem++)
-    element[iElem] = CMeshElement();
 
-  Residual = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Residual[iDim] = 0.0;
-  Solution = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Solution[iDim] = 0.0;
-
-  /*--- Stress contribution to the node i ---*/
-  Res_Stress_i = new su2double[nVar];
+  element.resize(nElement);
 
   /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
 
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+
+#ifdef HAVE_OMP
+  /*--- Get the element coloring. ---*/
+
+  const auto& coloring = geometry->GetElementColoring();
+
+  auto nColor = coloring.getOuterSize();
+  ElemColoring.resize(nColor);
+
+  for(auto iColor = 0ul; iColor < nColor; ++iColor) {
+    ElemColoring[iColor].size = coloring.getNumNonZeros(iColor);
+    ElemColoring[iColor].indices = coloring.innerIdx(iColor);
+  }
+
+  ColorGroupSize = geometry->GetElementColorGroupSize();
+
+  omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
+#endif
 
   /*--- Structural parameters ---*/
 
@@ -119,40 +129,21 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   /*--- Element container structure ---*/
 
   if (nDim == 2) {
-    element_container[FEA_TERM][EL_TRIA] = new CTRIA1();
-    element_container[FEA_TERM][EL_QUAD] = new CQUAD4();
+    for(int thread = 0; thread < omp_get_max_threads(); ++thread) {
+
+      const int offset = thread*MAX_FE_KINDS;
+      element_container[FEA_TERM][EL_TRIA+offset] = new CTRIA1();
+      element_container[FEA_TERM][EL_QUAD+offset] = new CQUAD4();
+    }
   }
   else {
-    element_container[FEA_TERM][EL_TETRA] = new CTETRA1();
-    element_container[FEA_TERM][EL_HEXA]  = new CHEXA8();
-    element_container[FEA_TERM][EL_PYRAM] = new CPYRAM5();
-    element_container[FEA_TERM][EL_PRISM] = new CPRISM6();
-  }
+    for(int thread = 0; thread < omp_get_max_threads(); ++thread) {
 
-  /*--- Matrices to impose boundary conditions ---*/
-
-  mZeros_Aux = new su2double *[nDim];
-  mId_Aux    = new su2double *[nDim];
-  for(iDim = 0; iDim < nDim; iDim++){
-    mZeros_Aux[iDim] = new su2double[nDim];
-    mId_Aux[iDim]    = new su2double[nDim];
-  }
-
-  for(iDim = 0; iDim < nDim; iDim++){
-    for (jDim = 0; jDim < nDim; jDim++){
-      mZeros_Aux[iDim][jDim] = 0.0;
-      mId_Aux[iDim][jDim]    = 0.0;
-    }
-    mId_Aux[iDim][iDim] = 1.0;
-  }
-
-  /*--- Term ij of the Jacobian ---*/
-
-  Jacobian_ij = new su2double*[nDim];
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Jacobian_ij[iDim] = new su2double [nDim];
-    for (jDim = 0; jDim < nDim; jDim++) {
-      Jacobian_ij[iDim][jDim] = 0.0;
+      const int offset = thread*MAX_FE_KINDS;
+      element_container[FEA_TERM][EL_TETRA+offset] = new CTETRA1();
+      element_container[FEA_TERM][EL_HEXA +offset] = new CHEXA8 ();
+      element_container[FEA_TERM][EL_PYRAM+offset] = new CPYRAM5();
+      element_container[FEA_TERM][EL_PRISM+offset] = new CPRISM6();
     }
   }
 
@@ -161,16 +152,15 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   /*--- Initialize the BGS residuals in multizone problems. ---*/
   if (config->GetMultizone_Residual()){
 
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
-    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+    Residual_BGS      = new su2double[nVar]();
+    Residual_Max_BGS  = new su2double[nVar]();
 
     /*--- Define some structures for locating max residuals ---*/
 
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+    Point_Max_BGS       = new unsigned long[nVar]();
     Point_Max_Coord_BGS = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
     }
   }
 
@@ -189,94 +179,99 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
 }
 
-CMeshSolver::~CMeshSolver(void) {
-
-  if (Coordinate != NULL) delete [] Coordinate;
-  if (element    != NULL) delete [] element;
-}
-
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
 
-  unsigned long iElem, indexNode, ElemCounter = 0;
-  unsigned short iNode, iDim, nNodes = 0;
-  su2double val_Coord;
-  su2double MaxVolume, MinVolume;
-  int EL_KIND = 0;
+  /*--- Shared reduction variables. ---*/
 
-  su2double ElemVolume;
+  unsigned long ElemCounter = 0;
+  su2double MaxVolume = -1E22, MinVolume = -1E22;
 
-  MaxVolume = -1E22; MinVolume = 1E22;
+  SU2_OMP_PARALLEL
+  {
+    /*--- Loop over the elements in the domain. ---*/
 
-  /*--- Loops over all the elements ---*/
+    SU2_OMP(for schedule(dynamic,omp_chunk_size) reduction(max:MaxVolume,MinVolume))
+    for (unsigned long iElem = 0; iElem < nElement; iElem++) {
 
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+      int thread = omp_get_thread_num();
 
-    switch(geometry->elem[iElem]->GetVTK_Type()) {
-      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA;  break;
-      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD;  break;
-      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
-      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
-      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA;  break;
-      default: SU2_MPI::Error("Unknown VTK element type",CURRENT_FUNCTION); break;
+      int EL_KIND;
+      unsigned short iNode, nNodes, iDim;
+
+      GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
+
+      CElement* fea_elem = element_container[FEA_TERM][EL_KIND + thread*MAX_FE_KINDS];
+
+      /*--- For the number of nodes, we get the coordinates from
+       *    the connectivity matrix and the geometry structure. ---*/
+
+      for (iNode = 0; iNode < nNodes; iNode++) {
+
+        auto indexNode = geometry->elem[iElem]->GetNode(iNode);
+
+        /*--- Compute the volume with the reference or current coordinates. ---*/
+        for (iDim = 0; iDim < nDim; iDim++) {
+          su2double val_Coord = nodes->GetMesh_Coord(indexNode,iDim);
+          if (updated)
+            val_Coord += nodes->GetSolution(indexNode,iDim);
+
+          fea_elem->SetRef_Coord(iNode, iDim, val_Coord);
+        }
+      }
+
+      /*--- Compute the volume of the element (or the area in 2D cases ). ---*/
+
+      su2double ElemVolume;
+      if (nDim == 2) ElemVolume = fea_elem->ComputeArea();
+      else           ElemVolume = fea_elem->ComputeVolume();
+
+      MaxVolume = max(MaxVolume, ElemVolume);
+      MinVolume = max(MinVolume, -1.0*ElemVolume);
+
+      if (updated) element[iElem].SetCurr_Volume(ElemVolume);
+      else element[iElem].SetRef_Volume(ElemVolume);
+
+      /*--- Count distorted elements. ---*/
+      if (ElemVolume <= 0.0) {
+        SU2_OMP(atomic)
+        ElemCounter++;
+      }
     }
+    MinVolume *= -1.0;
 
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix and the geometry structure ---*/
+    SU2_OMP_MASTER
+    {
+      unsigned long ElemCounter_Local = ElemCounter;
+      su2double MaxVolume_Local = MaxVolume;
+      su2double MinVolume_Local = MinVolume;
+      SU2_MPI::Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    }
+    SU2_OMP_BARRIER
 
-    for (iNode = 0; iNode < nNodes; iNode++) {
+    /*--- Volume from  0 to 1 ---*/
 
-      indexNode = geometry->elem[iElem]->GetNode(iNode);
-
-      /*--- Compute the volume with the reference or with the current coordinates ---*/
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = nodes->GetMesh_Coord(indexNode,iDim);
-        if (updated)
-          val_Coord += nodes->GetSolution(indexNode,iDim);
-
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+      if (updated) {
+        su2double ElemVolume = element[iElem].GetCurr_Volume()/MaxVolume;
+        element[iElem].SetCurr_Volume(ElemVolume);
+      }
+      else {
+        su2double ElemVolume = element[iElem].GetRef_Volume()/MaxVolume;
+        element[iElem].SetRef_Volume(ElemVolume);
       }
     }
 
-    /*--- Compute the volume of the element (or the area in 2D cases ) ---*/
+  } // end SU2_OMP_PARALLEL
 
-    if (nDim == 2)  ElemVolume = element_container[FEA_TERM][EL_KIND]->ComputeArea();
-    else            ElemVolume = element_container[FEA_TERM][EL_KIND]->ComputeVolume();
-
-    MaxVolume = max(MaxVolume, ElemVolume);
-    MinVolume = min(MinVolume, ElemVolume);
-    if (updated) element[iElem].SetCurr_Volume(ElemVolume);
-    else element[iElem].SetRef_Volume(ElemVolume);
-
-    /*--- Count distorted elements. ---*/
-    if (ElemVolume <= 0.0) ElemCounter++;
-
-  }
-
-  unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
-  su2double MaxVolume_Local = MaxVolume; MaxVolume = 0.0;
-  su2double MinVolume_Local = MinVolume; MinVolume = 0.0;
-  SU2_MPI::Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-
-  /*--- Volume from  0 to 1 ---*/
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    if (updated){
-      ElemVolume = element[iElem].GetCurr_Volume()/MaxVolume;
-      element[iElem].SetCurr_Volume(ElemVolume);
-    }
-    else{
-      ElemVolume = element[iElem].GetRef_Volume()/MaxVolume;
-      element[iElem].SetRef_Volume(ElemVolume);
-    }
-  }
-
-  /*--- Store the maximum and minimum volume ---*/
-  if (updated){
+  /*--- Store the maximum and minimum volume. ---*/
+  if (updated) {
     MaxVolume_Curr = MaxVolume;
     MinVolume_Curr = MinVolume;
   }
-  else{
+  else {
     MaxVolume_Ref = MaxVolume;
     MinVolume_Ref = MinVolume;
   }
@@ -388,15 +383,8 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
   /*--- Compute the element distances ---*/
   for (iElem = 0; iElem < nElement; iElem++) {
 
-    switch(geometry->elem[iElem]->GetVTK_Type()) {
-      case TRIANGLE:      nNodes = 3; break;
-      case QUADRILATERAL: nNodes = 4; break;
-      case TETRAHEDRON:   nNodes = 4; break;
-      case PYRAMID:       nNodes = 5; break;
-      case PRISM:         nNodes = 6; break;
-      case HEXAHEDRON:    nNodes = 8; break;
-      default: SU2_MPI::Error("Unknown VTK element type",CURRENT_FUNCTION); break;
-    }
+    int EL_KIND;
+    GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
     /*--- Average the distance of the nodes in the element ---*/
 
@@ -417,7 +405,7 @@ void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, 
 
   unsigned long iElem;
 
-  if(!stiffness_set){
+  if (!stiffness_set) {
     for (iElem = 0; iElem < nElement; iElem++) {
 
       switch (config->GetDeform_Stiffness_Type()) {
@@ -492,22 +480,19 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
 void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
 
-  unsigned short iDim;
-  unsigned long iPoint, total_index;
-  su2double val_disp, val_coord;
-
   /*--- Update the grid coordinates using the solution of the linear system ---*/
 
   /*--- LinSysSol contains the absolute x, y, z displacements. ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iDim = 0; iDim < nDim; iDim++) {
-      total_index = iPoint*nDim + iDim;
+  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      auto total_index = iPoint*nDim + iDim;
       /*--- Retrieve the displacement from the solution of the linear system ---*/
-      val_disp = LinSysSol[total_index];
+      su2double val_disp = LinSysSol[total_index];
       /*--- Store the displacement of the mesh node ---*/
       nodes->SetSolution(iPoint, iDim, val_disp);
       /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
-      val_coord = nodes->GetMesh_Coord(iPoint,iDim) + val_disp;
+      su2double val_coord = nodes->GetMesh_Coord(iPoint,iDim) + val_disp;
       /*--- Update the geometry container ---*/
       geometry->node[iPoint]->SetCoord(iDim, val_coord);
     }
@@ -540,30 +525,28 @@ void CMeshSolver::UpdateDualGrid(CGeometry *geometry, CConfig *config){
 
 void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
-  /*--- Local variables ---*/
-
-  su2double *Disp_nP1 = NULL, *Disp_n = NULL, *Disp_nM1 = NULL;
-  su2double TimeStep, GridVel = 0.0;
-  unsigned long iPoint;
-  unsigned short iDim;
-
   /*--- Compute the velocity of each node in the domain of the current rank
-   (halo nodes are not computed as the grid velocity is later communicated) ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+   (halo nodes are not computed as the grid velocity is later communicated). ---*/
 
-    /*--- Coordinates of the current point at n+1, n, & n-1 time levels ---*/
+  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    Disp_nM1 = nodes->GetSolution_time_n1(iPoint);
-    Disp_n   = nodes->GetSolution_time_n(iPoint);
-    Disp_nP1 = nodes->GetSolution(iPoint);
+    /*--- Coordinates of the current point at n+1, n, & n-1 time levels. ---*/
+
+    const su2double* Disp_nM1 = nodes->GetSolution_time_n1(iPoint);
+    const su2double* Disp_n   = nodes->GetSolution_time_n(iPoint);
+    const su2double* Disp_nP1 = nodes->GetSolution(iPoint);
 
     /*--- Unsteady time step ---*/
 
-    TimeStep = config->GetDelta_UnstTimeND();
+    su2double TimeStep = config->GetDelta_UnstTimeND();
 
-    /*--- Compute mesh velocity with 1st or 2nd-order approximation ---*/
+    /*--- Compute mesh velocity with 1st or 2nd-order approximation. ---*/
 
-    for (iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+
+      su2double GridVel = 0.0;
+
       if (config->GetTime_Marching() == DT_STEPPING_1ST)
         GridVel = ( Disp_nP1[iDim] - Disp_n[iDim] ) / TimeStep;
       if (config->GetTime_Marching() == DT_STEPPING_2ND)
@@ -577,7 +560,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- The velocity was computed for nPointDomain, now we communicate it ---*/
+  /*--- The velocity was computed for nPointDomain, now we communicate it. ---*/
   geometry->InitiateComms(geometry, config, GRID_VELOCITY);
   geometry->CompleteComms(geometry, config, GRID_VELOCITY);
 
@@ -645,60 +628,46 @@ void CMeshSolver::SetDualTime_Mesh(void){
 
 void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
-  /*--- Restart the solution from file information ---*/
-  unsigned short iDim;
-  unsigned long index;
-
-  su2double curr_coord, displ;
-
-  string UnstExt, text_line;
-  ifstream restart_file;
-
-  string restart_filename = config->GetSolution_FileName();
-
-  int counter = 0;
-  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-
-  restart_filename = config->GetFilename(restart_filename, "", val_iter);
-
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
+  string filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+
   if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
   } else {
-    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
   }
 
   /*--- Load data from the restart into correct containers. ---*/
-  counter = 0;
-  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+  unsigned long iPoint_Global, counter = 0;
+
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
-    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+    auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
-    if (iPoint_Local > -1) {
+    if (iPoint_Local >= 0) {
 
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[1];
-      for (iDim = 0; iDim < nDim; iDim++){
+      auto index = counter*Restart_Vars[1];
+
+      for (unsigned short iDim = 0; iDim < nDim; iDim++){
         /*--- Update the coordinates of the mesh ---*/
-        curr_coord = Restart_Data[index+iDim];
+        su2double curr_coord = Restart_Data[index+iDim];
         /// TODO: "Double deformation" in multizone adjoint if this is set here?
         ///       In any case it should not be needed as deformation is called before other solvers
         ///geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, curr_coord);
 
         /*--- Store the displacements computed as the current coordinates
          minus the coordinates of the reference mesh file ---*/
-        displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
+        su2double displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
         nodes->SetSolution(iPoint_Local, iDim, displ);
       }
-      iPoint_Global_Local++;
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
       counter++;
@@ -708,12 +677,8 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-  if (rbuf_NotMatching != 0) {
-    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
+  if (counter != nPointDomain) {
+    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
@@ -745,34 +710,25 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Store the boundary displacements at the Bound_Disp variable. ---*/
 
-  unsigned short iMarker;
-  unsigned long iVertex, iNode;
-
-  su2double VarCoord[3] = {0.0, 0.0, 0.0};
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if (config->GetMarker_All_Deform_Mesh(iMarker) == YES) {
 
-      for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+      for (unsigned long iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
-        /*--- Get node index ---*/
-        iNode = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+        /*--- Get node index. ---*/
+        auto iNode = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- Store it into the current displacement.  ---*/
-        for (iDim = 0; iDim < nDim; iDim++){
-          VarCoord[iDim] = nodes->GetSolution(iNode,iDim);
-        }
-
-        nodes->SetBound_Disp(iNode,VarCoord);
+        /*--- Set boundary solution. ---*/
+        nodes->SetBound_Disp(iNode, nodes->GetSolution(iNode));
       }
     }
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) { delete [] Restart_Vars; Restart_Vars = NULL; }
-  if (Restart_Data != NULL) { delete [] Restart_Data; Restart_Data = NULL; }
+  delete [] Restart_Vars; Restart_Vars = nullptr;
+  delete [] Restart_Data; Restart_Data = nullptr;
 
 }
 
@@ -783,14 +739,6 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
   string filename = config->GetSolution_FileName();
-
-  /*--- Auxiliary variables for storing the coordinates ---*/
-  su2double curr_coord, displ;
-
-  /*--- Variables for reading the restart files ---*/
-  unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
@@ -818,30 +766,32 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     }
 
     /*--- Load data from the restart into correct containers. ---*/
-    int counter = 0;
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    unsigned long iPoint_Global, counter = 0;
+
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
 
       /*--- Retrieve local index. If this node from the restart file lives
        on the current processor, we will load and instantiate the vars. ---*/
 
-      long iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+      auto iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
-      if (iPoint_Local > -1) {
+      if (iPoint_Local >= 0) {
 
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        unsigned long index = counter*Restart_Vars[1];
-        for (unsigned short iDim = 0; iDim < nDim; iDim++){
-          curr_coord = Restart_Data[index+iDim];
-          displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local,iDim);
+        auto index = counter*Restart_Vars[1];
+
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          su2double curr_coord = Restart_Data[index+iDim];
+          su2double displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local,iDim);
 
           if(iStep==1)
             nodes->Set_Solution_time_n(iPoint_Local, iDim, displ);
           else
             nodes->Set_Solution_time_n1(iPoint_Local, iDim, displ);
         }
-        iPoint_Global_Local++;
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
@@ -849,24 +799,21 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     }
 
-    /*--- Detect a wrong solution file ---*/
+    /*--- Detect a wrong solution file. ---*/
 
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-    if (rbuf_NotMatching != 0) {
+    if (counter != nPointDomain) {
       SU2_MPI::Error(string("The solution file ") + filename_n + string(" doesn't match with the mesh file!\n") +
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
     }
 
     /*--- Delete the class memory that is used to load the restart. ---*/
 
-    if (Restart_Vars != NULL) { delete [] Restart_Vars; Restart_Vars = NULL; }
-    if (Restart_Data != NULL) { delete [] Restart_Data; Restart_Data = NULL; }
+    delete [] Restart_Vars; Restart_Vars = nullptr;
+    delete [] Restart_Data; Restart_Data = nullptr;
 
     InitiateComms(geometry, config, CommType);
     CompleteComms(geometry, config, CommType);
-  }
+
+  } // iStep
 
 }

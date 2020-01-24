@@ -108,7 +108,6 @@ const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of doma
 const unsigned int MAX_NUMBER_FFD = 15;	      /*!< \brief Maximum number of FFDBoxes for the FFD. */
 const unsigned int MAX_SOLS = 10;		      /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		      /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
-const unsigned int MAX_TERMS_FEA = 10;        /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;		      /*!< \brief No Runge-Kutta iteration. */
@@ -1888,21 +1887,21 @@ static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMa
  */
 enum ENUM_DIRECTDIFF_VAR {
   NO_DERIVATIVE = 0,
-  D_MACH = 1,         /*!< \brief Derivative with respect to the mach number */
-  D_AOA = 2,		  /*!< \brief Derivative with respect to the angle of attack */
-  D_PRESSURE = 3,     /*!< \brief Derivative with respect to the freestream pressure */
-  D_TEMPERATURE = 4,  /*!< \brief Derivative with respect to the freestream temperature */
-  D_DENSITY = 5,      /*!< \brief Derivative with respect to the freestream density */
-  D_TURB2LAM = 6,     /*!< \brief Derivative with respect to the turb2lam */
-  D_SIDESLIP = 7,     /*!< \brief Derivative with respect to the sideslip angle */
-  D_VISCOSITY = 8,    /*!< \brief Derivative with respect to the viscosity */
-  D_REYNOLDS = 9,     /*!< \brief Derivative with respect to the reynolds number */
-  D_DESIGN = 10,      /*!< \brief Derivative with respect to the design?? */
-  D_YOUNG = 11,       /*!< \brief Derivative with respect to the Young's Modulus */
-  D_POISSON = 12,
-  D_RHO = 13,
-  D_RHO_DL = 14,
-  D_EFIELD = 15
+  D_MACH = 1,         /*!< \brief Derivative w.r.t. the Mach number */
+  D_AOA = 2,          /*!< \brief Derivative w.r.t. the angle of attack */
+  D_PRESSURE = 3,     /*!< \brief Derivative w.r.t. the freestream pressure */
+  D_TEMPERATURE = 4,  /*!< \brief Derivative w.r.t. the freestream temperature */
+  D_DENSITY = 5,      /*!< \brief Derivative w.r.t. the freestream density */
+  D_TURB2LAM = 6,     /*!< \brief Derivative w.r.t. the turb2lam */
+  D_SIDESLIP = 7,     /*!< \brief Derivative w.r.t. the sideslip angle */
+  D_VISCOSITY = 8,    /*!< \brief Derivative w.r.t. the viscosity */
+  D_REYNOLDS = 9,     /*!< \brief Derivative w.r.t. the reynolds number */
+  D_DESIGN = 10,      /*!< \brief Derivative w.r.t. the design?? */
+  D_YOUNG = 11,       /*!< \brief Derivative w.r.t. the Young's modulus */
+  D_POISSON = 12,     /*!< \brief Derivative w.r.t. the Poisson's ratio */
+  D_RHO = 13,         /*!< \brief Derivative w.r.t. the solid density (inertial) */
+  D_RHO_DL = 14,      /*!< \brief Derivative w.r.t. the density for dead loads */
+  D_EFIELD = 15       /*!< \brief Derivative w.r.t. the electric field */
 };
 static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<string, ENUM_DIRECTDIFF_VAR>
 ("NONE", NO_DERIVATIVE)
@@ -2665,11 +2664,9 @@ class COptionConvect : public COptionBase {
   unsigned short & upwind;
 
 public:
-  COptionConvect(string option_field_name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field) : space(space_field), centered(centered_field), upwind(upwind_field) {
-    this->name = option_field_name;
-  }
+  COptionConvect(string option_field_name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field)
+    : name(option_field_name), space(space_field), centered(centered_field), upwind(upwind_field) { }
 
-  ~COptionConvect() {};
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
 
@@ -2691,9 +2688,7 @@ public:
       return "";
     }
     // Make them defined in case something weird happens
-    this->centered = NO_CENTERED;
-    this->upwind = NO_UPWIND;
-    this->space = SPACE_CENTERED;
+    SetDefault();
     return badValue(option_value, "convect", this->name);
 
   }
@@ -2701,7 +2696,7 @@ public:
   void SetDefault() {
     this->centered = NO_CENTERED;
     this->upwind = NO_UPWIND;
-    this->space = SPACE_CENTERED;
+    this->space = NO_CONVECTIVE;
   }
 };
 

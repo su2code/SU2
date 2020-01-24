@@ -570,16 +570,17 @@ private:
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
   su2double Inc_Inlet_Damping;     /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
   su2double Inc_Outlet_Damping;    /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
-  bool Inc_Inlet_UseNormal;                       /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
-  su2double Linear_Solver_Error;		          /*!< \brief Min error of the linear solver for the implicit formulation. */
-  su2double Deform_Linear_Solver_Error;           /*!< \brief Min error of the linear solver for the implicit formulation. */
-  su2double Linear_Solver_Error_FSI_Struc;		  /*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
-  su2double Linear_Solver_Smoother_Relaxation;    /*!< \brief Relaxation factor for iterative linear smoothers. */
-  unsigned long Linear_Solver_Iter;		          /*!< \brief Max iterations of the linear solver for the implicit formulation. */
-  unsigned long Deform_Linear_Solver_Iter;        /*!< \brief Max iterations of the linear solver for the implicit formulation. */
-  unsigned long Linear_Solver_Iter_FSI_Struc;	  /*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
-  unsigned long Linear_Solver_Restart_Frequency;  /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
-  unsigned short Linear_Solver_ILU_n;		      /*!< \brief ILU fill=in level. */
+  bool Inc_Inlet_UseNormal;        /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
+  su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
+  su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
+  su2double Linear_Solver_Error_FSI_Struc;       /*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
+  su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
+  unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
+  unsigned long Deform_Linear_Solver_Iter;       /*!< \brief Max iterations of the linear solver for the implicit formulation. */
+  unsigned long Linear_Solver_Iter_FSI_Struc;    /*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
+  unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
+  unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
+  unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
   su2double SemiSpan;		          /*!< \brief Wing Semi span. */
   su2double Roe_Kappa;		          /*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_AdjFlow;  /*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
@@ -9355,12 +9356,20 @@ public:
    * \return <TRUE> if option was set in the config file
    */
   bool OptionIsSet(string option);
-  
+
   /*!
    * \brief Get the name of the current case
    * \return the case name
    */
   const string& GetCaseName() const;
+
+
+  /*!
+   * \brief Get the number of threads per rank to use for ILU and LU_SGS preconditioners.
+   * \return Number of threads per rank.
+   */
+  inline unsigned long GetLinear_Solver_Prec_Threads(void) const {return Linear_Solver_Prec_Threads;} 
+
 };
 
 #include "config_structure.inl"
