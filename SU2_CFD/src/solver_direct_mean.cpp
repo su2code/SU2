@@ -44,6 +44,7 @@
 #include <sstream>
 #include <vector>
 #include <Accelerate/Accelerate.h>
+#include <chrono>
 
 //extern "C" void dgels_(char*, int*, int*, int*, passivedouble*, int*, passivedouble*,
 //                       int*, passivedouble*, int*, int*);
@@ -863,6 +864,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*---- Initialize ROM specific variables. ----*/
   
   if (config->GetReduced_Model() && (TrialBasis.size() == 0)) {
+    Mask_Selection(nPoint, nPointDomain, nVar, geometry, config);
     SetROM_Variables(nPoint, nPointDomain, nVar, geometry, config);
   }
   
@@ -3132,6 +3134,66 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
   return ErrorCounter;
 }
 
+// TODO: Put this function and next in more general location
+void CEulerSolver::Mask_Selection(unsigned long nPoint, unsigned long nPointDomain,
+unsigned short nVar, CGeometry *geometry, CConfig *config) {
+  auto t_start = std::chrono::high_resolution_clock::now();
+  // This function selects the masks E and E' using the Phi matrix and mesh data
+  
+  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+  
+  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
+  //int desired_nodes = 500; //TODO: create config file option
+  ifstream in_phi(phi_filename);
+  std::vector<std::vector<double>> Phi;
+  int firstrun = 0;
+  
+  if (in_phi) {
+    std::string line;
+    
+    while (getline(in_phi, line)) {
+      stringstream sep(line);
+      string field;
+      int s = 0;
+      while (getline(sep, field, ',')) {
+        if (firstrun == 0) Phi.push_back({});
+        Phi[s].push_back(stod(field)); // Phi[0] is 1st snapshot
+        s++;
+      }
+      firstrun++;
+    }
+  }
+  //unsigned long nsnaps = Phi.size();
+  unsigned long N = Phi[0].size();
+  //unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil
+  //unsigned long i, j, k;
+  //
+  //const auto nodewithMax = std::max_element(Phi[0].begin(), Phi[0].end());
+  
+  //for (i = 0; i < nsnaps; i++) {
+  //
+  //  std::vector<std::vector<double>> U;
+  //  for (j = 0; j < i; j++) {
+  //    U.push_back(Phi[j]);
+  //  }
+  //
+  //  for (k = 0; k < nodestoAdd; k++) {
+  //    masked_Phi =
+  //  }
+  //
+  //}
+  
+  // set mask to all nodes for now
+  for (unsigned long i = 0; i < N; i++) {
+    Mask.push_back(i);
+    MaskNeighbors.push_back(i);
+  }
+  
+  auto t_end = std::chrono::high_resolution_clock::now();
+  double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+  std::cout << "Mask selection for ROM completed in " << elapsed_time_ms/1000.0 << " seconds." << std::endl;
+}
+
 void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
                                     unsigned short nVar, CGeometry *geometry, CConfig *config) {
   // Explanation of certain ROM-specific variables:
@@ -3143,9 +3205,9 @@ void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDo
   
   /*--- Read data from the following three files: ---*/
   
-  string phi_filename  = config->GetRom_FileName();
-  string ref_filename  = config->GetRef_Snapshot_FileName(); // TODO: make a variable to import ref solution from file
-  string init_filename = config->GetInit_Snapshot_FileName(); // TODO: make a variable to import initial solution from file
+  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
+  string ref_filename  = config->GetRef_Snapshot_FileName();
+  string init_filename = config->GetInit_Snapshot_FileName();
   
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
