@@ -924,6 +924,7 @@ void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **
   su2double e_ve_i, e_ve_j;
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
   su2double sq_veli, sq_velj;
+  su2double conc_i, conc_l;
 
   /*--- Face area ---*/
   Area = 0.0;
@@ -941,7 +942,6 @@ void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **
   RuSI  = UNIVERSAL_GAS_CONSTANT;
   Ru    = 1000.0*RuSI;
   Minf  = config->GetMach();
-  Gamma = config->GetGamma();
 
   /*--- Determine the number of heavy particle species ---*/
   if (ionization) {
@@ -994,8 +994,16 @@ void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **
   }
 
   /*--- Compute C*  ---*/
-  CstarL = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*h_i);
-  CstarR = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*h_j);
+  conc_i = 0.0;
+  conc_j = 0.0;
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    conc_i += V_i[iSpecies]*rho_i/Ms[iSpecies];
+    conc_j += V_j[iSpecies]*rho_j/Ms[iSpecies];
+  }
+  const su2double GammaL = (1.0 + Ru/rhoCvtr_i*conc_i);
+  const su2double GammaR = (1.0 + Ru/rhoCvtr_j*conc_j);
+  CstarL = sqrt(2.0*(GammaL-1.0)/(GammaL+1.0)*h_i);
+  CstarR = sqrt(2.0*(GammaR-1.0)/(GammaR+1.0)*h_j);
 
   /*--- Compute C^ ---*/
   ChatL = CstarL*CstarL/max(CstarL,ProjVel_i);
