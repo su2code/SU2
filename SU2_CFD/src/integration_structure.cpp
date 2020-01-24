@@ -63,10 +63,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   switch (config->GetKind_ConvNumScheme()) {
     case SPACE_CENTERED:
-      solver_container[MainSolver]->Centered_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
+      solver_container[MainSolver]->Centered_Residual(geometry, solver_container, numerics, config, iMesh, iRKStep);
       break;
     case SPACE_UPWIND:
-      solver_container[MainSolver]->Upwind_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh);
+      solver_container[MainSolver]->Upwind_Residual(geometry, solver_container, numerics, config, iMesh);
       break;
     case FINITE_ELEMENT:
       solver_container[MainSolver]->Convective_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);

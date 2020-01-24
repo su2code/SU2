@@ -2746,7 +2746,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
         dTdn = -(There - Twall)/dist_ij;
       }
       else {
-
+        Twall = dTdn = 0.0;
         SU2_MPI::Error("Unknown CHT coupling method.", CURRENT_FUNCTION);
       }
 

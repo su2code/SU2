@@ -85,6 +85,7 @@ inline constexpr int omp_get_thread_num(void) {return 0;}
 
 #define SU2_OMP_MASTER SU2_OMP(master)
 #define SU2_OMP_BARRIER SU2_OMP(barrier)
+#define SU2_OMP_CRITICAL SU2_OMP(critical)
 
 #define SU2_OMP_PARALLEL SU2_OMP(parallel)
 #define SU2_OMP_PARALLEL_(ARGS) SU2_OMP(parallel ARGS)

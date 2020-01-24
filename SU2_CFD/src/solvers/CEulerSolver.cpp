@@ -3032,22 +3032,25 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
                                 unsigned short iMesh, unsigned long Iteration) {
 
   const bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  const bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
-  const bool dual_time     = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                              (config->GetTime_Marching() == DT_STEPPING_2ND));
+  const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
+  const bool dual_time     = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                             (config->GetTime_Marching() == DT_STEPPING_2ND);
 
-  Min_Delta_Time = 1.E30; Max_Delta_Time = 0.0;
+  /*--- Init thread-shared variables to compute min/max values.
+   *    Critical sections are used for this instead of reduction
+   *    clauses for compatibility with OpenMP 2.0 (Windows...). ---*/
 
+  Min_Delta_Time = 1e30; Max_Delta_Time = 0.0;
+
+  su2double Global_Delta_Time, Global_Delta_UnstTimeND = 1e30;
 
   /*--- Start OpenMP parallel section. ---*/
 
   SU2_OMP_PARALLEL
   {
-  const int thread = omp_get_thread_num();
 
   const su2double *Normal = nullptr;
   su2double Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda, Local_Delta_Time;
-  su2double Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
 
@@ -3113,7 +3116,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
-      SU2_OMP_FOR_STAT(omp_chunk_size)
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         /*--- Point identification, Normal vector and area ---*/
@@ -3147,28 +3150,37 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   }
 
   /*--- Each element uses their own speed, steady state simulation. ---*/
+  {
+    /*--- Thread-local variables for min/max reduction. ---*/
+    su2double minDt = 1e30, maxDt = 0.0;
 
-  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    Vol = geometry->node[iPoint]->GetVolume();
+      Vol = geometry->node[iPoint]->GetVolume();
 
-    if (Vol != 0.0) {
-      Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
-      Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
-      Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
-      Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
-      if (Local_Delta_Time > config->GetMax_DeltaTime())
-        Local_Delta_Time = config->GetMax_DeltaTime();
-      nodes->SetDelta_Time(iPoint,Local_Delta_Time);
+      if (Vol != 0.0) {
+        Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
+
+        minDt = min(minDt, Local_Delta_Time);
+        maxDt = max(maxDt, Local_Delta_Time);
+
+        nodes->SetDelta_Time(iPoint, min(Local_Delta_Time, config->GetMax_DeltaTime()));
+      }
+      else {
+        nodes->SetDelta_Time(iPoint,0.0);
+      }
     }
-    else {
-      nodes->SetDelta_Time(iPoint,0.0);
+    /*--- Min/max over threads. ---*/
+    SU2_OMP_CRITICAL
+    {
+      Min_Delta_Time = min(Min_Delta_Time, minDt);
+      Max_Delta_Time = max(Max_Delta_Time, maxDt);
     }
-
+    SU2_OMP_BARRIER
   }
 
-  /*--- Compute the max and the min dt (in parallel) ---*/
+  /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
 
   SU2_OMP_MASTER
   if (config->GetComm_Level() == COMM_FULL) {
@@ -3181,13 +3193,12 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   }
   SU2_OMP_BARRIER
 
-  /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
+  /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
 
   if (time_stepping) {
 
-    /*--- If the unsteady CFL is set to zero, it uses the defined
-     unsteady time step, otherwise it computes the time step based
-     on the unsteady CFL ---*/
+    /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step,
+     *    otherwise it computes the time step based on the unsteady CFL. ---*/
 
     SU2_OMP_MASTER
     {
@@ -3195,42 +3206,43 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
         Global_Delta_Time = config->GetDelta_UnstTime();
       }
       else {
-        su2double rbuf_time;
-        SU2_MPI::Allreduce(&Global_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-        Global_Delta_Time = rbuf_time;
+        Global_Delta_Time = Min_Delta_Time;
       }
-      config->SetDelta_UnstTimeND(Global_Delta_Time);
-
-      Min_Delta_Time = Global_Delta_Time;
       Max_Delta_Time = Global_Delta_Time;
+
+      config->SetDelta_UnstTimeND(Global_Delta_Time);
     }
     SU2_OMP_BARRIER
 
-    /*--- Sets the regular CFL equal to the unsteady CFL ---*/
+    /*--- Sets the regular CFL equal to the unsteady CFL. ---*/
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
       nodes->SetDelta_Time(iPoint, Global_Delta_Time);
     }
 
   }
 
-  /*--- Recompute the unsteady time step for the dual time strategy
-   if the unsteady CFL is diferent from 0 ---*/
+  /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is diferent from 0. ---*/
 
   if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
 
-    Global_Delta_UnstTimeND = 1e30;
+    /*--- Thread-local variable for reduction. ---*/
+    su2double glbDtND = 1e30;
+
+    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND,config->GetUnst_CFL()*Global_Delta_Time/nodes->GetLocalCFL(iPoint));
+      glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time/nodes->GetLocalCFL(iPoint));
     }
+    SU2_OMP_CRITICAL
+    Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
+    SU2_OMP_BARRIER
 
     SU2_OMP_MASTER
     {
-      su2double rbuf_time;
-      SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-      Global_Delta_UnstTimeND = rbuf_time;
+      SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      Global_Delta_UnstTimeND = glbDtND;
 
       config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
     }
@@ -3251,19 +3263,40 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
 }
 
-void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
-  unsigned long iEdge, iPoint, jPoint;
+  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool jst_scheme = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool jst_scheme = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
+  /*--- Start OpenMP parallel section. ---*/
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  SU2_OMP_PARALLEL
+  {
+  /*--- Pick one numerics object per thread. ---*/
+  CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
+#ifdef HAVE_OMP
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring)
+  {
+  SU2_OMP_FOR_DYN(chunkSize)
+  for(auto k = 0ul; k < color.size; ++k) {
+
+    auto iEdge = color.indices[k];
+#else
+  /*--- Natural coloring. ---*/
+  {
+  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
+#endif
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
+    auto iPoint = geometry->edge[iEdge]->GetNode(0);
+    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
 
@@ -3278,8 +3311,10 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Set undivided laplacian an pressure based sensor ---*/
 
     if (jst_scheme) {
-      numerics->SetUndivided_Laplacian(nodes->GetUndivided_Laplacian(iPoint), nodes->GetUndivided_Laplacian(jPoint));
-      numerics->SetSensor(nodes->GetSensor(iPoint), nodes->GetSensor(jPoint));
+      numerics->SetUndivided_Laplacian(nodes->GetUndivided_Laplacian(iPoint),
+                                       nodes->GetUndivided_Laplacian(jPoint));
+      numerics->SetSensor(nodes->GetSensor(iPoint),
+                          nodes->GetSensor(jPoint));
     }
 
     /*--- Grid movement ---*/
@@ -3302,11 +3337,15 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
       Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
     }
   }
+  } // end color loop
+  } // end SU2_OMP_PARALLEL
 
 }
 
-void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                   CConfig *config, unsigned short iMesh) {
+void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
+                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  CNumerics* numerics = numerics_container[CONV_TERM];
 
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
   *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Sensor_i, Sensor_j, Dissipation_i, Dissipation_j, *Coord_i, *Coord_j;
