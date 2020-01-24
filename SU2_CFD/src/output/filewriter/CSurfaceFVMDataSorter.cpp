@@ -1093,21 +1093,9 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
     }
   }
 
-  /*--- Sort connectivity for each type of element (excluding halos). Note
-   In these routines, we sort the connectivity into a linear partitioning
-   across all processors based on the global index of the grid nodes. ---*/
-
-  /*--- Sort volumetric grid connectivity. ---*/
+  /*--- Call the sort connectivity routine ---*/
   
-  nLocalPerElem.fill(0);
-
-  SortSurfaceConnectivity(config, geometry, LINE         , markerList);
-  SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
-  SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);
-
-  SetTotalElements();
-
-  connectivitySorted = true;
+  SortConnectivity(config, geometry, markerList);
 
 }
 

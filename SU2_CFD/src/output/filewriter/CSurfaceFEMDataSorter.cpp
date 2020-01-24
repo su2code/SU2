@@ -341,15 +341,9 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
     }
   }
   
-  nLocalPerElem.fill(0);  
-
-  SortSurfaceConnectivity(config, geometry, LINE         , markerList);
-  SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
-  SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);
+  /*--- Call the sort connectivity routine ---*/
   
-  SetTotalElements();
-
-  connectivitySorted = true;
+  SortConnectivity(config, geometry, markerList);
 
 }
 
