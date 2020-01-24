@@ -999,7 +999,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     if (U[iSpecies] < 0.0) {
       V[RHOS_INDEX+iSpecies] = 1E-20;
       U[iSpecies]            = 1E-20;
-      nonPhys                = true;
+      // nonPhys                = true;
     }
     else V[RHOS_INDEX+iSpecies] = U[iSpecies];
 
@@ -1064,7 +1064,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     V[TVE_INDEX] = Tvemax;
   } else {
 
-    AD_BEGIN_PASSIVE
+    // AD_BEGIN_PASSIVE
 
     /*--- Execute a Newton-Raphson root-finding method to find Tve ---*/
     // Initialize to the translational-rotational temperature
@@ -1108,7 +1108,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     // Otherwise, execute a bisection root-finding method
     if (NRconvg){
 
-      AD_END_PASSIVE
+      // AD_END_PASSIVE
 
       // Recompute Eve and Cvve after search
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1153,7 +1153,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
         }
       }
 
-      AD_END_PASSIVE
+      // AD_END_PASSIVE
 
       // Recompute Eve and Cvve after search
       if (Bconvg) {
