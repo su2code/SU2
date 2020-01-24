@@ -261,8 +261,8 @@ def main():
     discadj_fea           = TestCase('discadj_fea')
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
-    discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-6.070230, -6.262517, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_iter = 4
+    discadj_fea.test_vals = [-2.849526, -3.238467, -3.6413e-04, -8.7087] #last 4 columns
     discadj_fea.su2_exec  = "parallel_computation.py -f"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001

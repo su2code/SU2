@@ -26,7 +26,7 @@
  */
 
 
-#include "../include/solvers/CTurbSolver.hpp"
+#include "../../include/solvers/CTurbSolver.hpp"
 
 
 CTurbSolver::CTurbSolver(void) : CSolver() {

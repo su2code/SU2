@@ -26,7 +26,7 @@
  */
 
 
-#include "../include/solvers/CTemplateSolver.hpp"
+#include "../../include/solvers/CTemplateSolver.hpp"
 
 CTemplateSolver::CTemplateSolver(void) : CSolver() { }
 

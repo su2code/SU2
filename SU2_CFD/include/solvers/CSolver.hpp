@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/mpi_structure.hpp"
 
 #include <cmath>
 #include <string>
@@ -384,11 +384,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  inline virtual void SetResidual_DualTime(CGeometry *geometry, 
-                                           CSolver **solver_container, 
-                                           CConfig *config, 
+  inline virtual void SetResidual_DualTime(CGeometry *geometry,
+                                           CSolver **solver_container,
+                                           CConfig *config,
                                            unsigned short iRKStep,
-                                           unsigned short iMesh, 
+                                           unsigned short iMesh,
                                            unsigned short RunTime_EqSystem) { }
 
   /*!
@@ -419,8 +419,8 @@ public:
    */
   inline void SetRes_Max(unsigned short val_var,
                          su2double val_residual,
-                         unsigned long val_point) { 
-    Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point; 
+                         unsigned long val_point) {
+    Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point;
   }
 
   /*! TODO
@@ -496,7 +496,7 @@ public:
   inline void SetRes_Max_BGS(unsigned short val_var,
                              su2double val_residual,
                              unsigned long val_point) {
-    Residual_Max_BGS[val_var] = val_residual; Point_Max_BGS[val_var] = val_point; 
+    Residual_Max_BGS[val_var] = val_residual; Point_Max_BGS[val_var] = val_point;
   }
 
   /*!
@@ -704,7 +704,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void ProcessTaskList_DG(CGeometry *geometry, 
+  inline virtual void ProcessTaskList_DG(CGeometry *geometry,
                                          CSolver **solver_container,
                                          CNumerics **numerics,
                                          CConfig *config,
@@ -1018,7 +1018,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Interface_Boundary(CGeometry *geometry, 
+  inline virtual void BC_Interface_Boundary(CGeometry *geometry,
                                             CSolver **solver_container,
                                             CNumerics *numerics,
                                             CConfig *config,
@@ -1033,7 +1033,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_NearField_Boundary(CGeometry *geometry,
-                                            CSolver **solver_container, 
+                                            CSolver **solver_container,
                                             CNumerics *numerics,
                                             CConfig *config,
                                             unsigned short val_marker) { }
@@ -1535,7 +1535,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ImplicitEuler_Iteration(CGeometry *geometry, 
+  inline virtual void ImplicitEuler_Iteration(CGeometry *geometry,
                                               CSolver **solver_container,
                                               CConfig *config) { }
 
@@ -2548,7 +2548,7 @@ public:
    * \brief A virtual member.
    * \return Value of the FEA coefficient (inviscid + viscous contribution).
    */
-  inline virtual su2double GetTotal_CFEA() { return 0; }
+  inline virtual su2double GetTotal_CFEA() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -2567,31 +2567,31 @@ public:
    * \brief A virtual member.
    * \return Value of the objective function for a reference geometry.
    */
-  inline virtual su2double GetTotal_OFRefGeom() { return 0; }
+  inline virtual su2double GetTotal_OFRefGeom() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the objective function for a reference node.
    */
-  inline virtual su2double GetTotal_OFRefNode() { return 0; }
+  inline virtual su2double GetTotal_OFRefNode() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the objective function for the volume fraction.
    */
-  inline virtual su2double GetTotal_OFVolFrac() { return 0; }
+  inline virtual su2double GetTotal_OFVolFrac() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the objective function for the structural compliance.
    */
-  inline virtual su2double GetTotal_OFCompliance() { return 0; }
+  inline virtual su2double GetTotal_OFCompliance() const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Bool that defines whether the solution has an element-based file or not
    */
-  inline virtual bool IsElementBased(void){ return false; }
+  inline virtual bool IsElementBased(void) const { return false; }
 
   /*!
    * \brief A virtual member.
@@ -3064,7 +3064,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual void SetCPressureTarget(unsigned short val_marker, 
+  inline virtual void SetCPressureTarget(unsigned short val_marker,
                                          unsigned long val_vertex,
                                          su2double val_pressure) { }
 
@@ -3152,7 +3152,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual unsigned long GetDonorGlobalIndex(unsigned short val_marker, 
+  inline virtual unsigned long GetDonorGlobalIndex(unsigned short val_marker,
                                                    unsigned long val_vertex) const {
     return 0;
   }
@@ -3173,7 +3173,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline virtual su2double *GetCharacPrimVar(unsigned short val_marker, 
+  inline virtual su2double *GetCharacPrimVar(unsigned short val_marker,
                                              unsigned long val_vertex) const { return 0; }
 
   /*!
@@ -3693,9 +3693,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the sensitivity coefficient.
    */
-  inline virtual su2double GetCSensitivity(unsigned short val_marker, 
-                                           unsigned long val_vertex) const { 
-    return 0; 
+  inline virtual su2double GetCSensitivity(unsigned short val_marker,
+                                           unsigned long val_vertex) const {
+    return 0;
   }
 
   /*!
@@ -3728,19 +3728,19 @@ public:
    * \brief A virtual member.
    * \param[out] val_forcecoeff_history - Value of the force coefficient.
    */
-  inline virtual su2double GetForceCoeff(void) { return 0.0; }
+  inline virtual su2double GetForceCoeff(void) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
    * \param[out] val_relaxcoeff_history - Value of the relax coefficient.
    */
-  inline virtual su2double GetRelaxCoeff(void) { return 0.0; }
+  inline virtual su2double GetRelaxCoeff(void) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
    * \param[out] val_FSI_residual - Value of the residual.
    */
-  inline virtual su2double GetFSI_Residual(void) { return 0.0; }
+  inline virtual su2double GetFSI_Residual(void) const { return 0.0; }
 
   /*! TODO
    * \brief A virtual member.
@@ -3988,7 +3988,7 @@ public:
    * \param[in] iElem - element parameter.
    * \param[out] iElem_iDe - ID of the Dielectric Elastomer region.
    */
-  inline virtual unsigned short Get_iElem_iDe(unsigned long iElem){ return 0; }
+  inline virtual unsigned short Get_iElem_iDe(unsigned long iElem) const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -4016,7 +4016,7 @@ public:
    * \param[in] rhs - Right hand side.
    * \param[in] nVar - Number of variables.
    */
-  void Gauss_Elimination(su2double** A, 
+  void Gauss_Elimination(su2double** A,
                          su2double* rhs,
                          unsigned short nVar);
 
@@ -4051,7 +4051,6 @@ public:
    * \param[in] val_Marker - Surface that is being monitored.
    * \param[in] displacements - solution of typical section wing model.
    */
-
   void SolveTypicalSectionWingModel(CGeometry *geometry,
                                     su2double Cl, su2double Cm,
                                     CConfig *config,
@@ -4165,28 +4164,7 @@ public:
    * \param[in]  Value of interest: 0 - Initial value, 1 - Current value.
    * \return Values to compare
    */
-  inline virtual su2double GetFSI_ConvValue(unsigned short val_index) { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Set_Prestretch(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Set_ElementProperties(CGeometry *geometry, CConfig *config) { }
+  inline virtual su2double GetFSI_ConvValue(unsigned short val_index)const  { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -4195,14 +4173,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config) { return 0.0; }
-
-  /*!
-   * \brief A virtual member, get the value of the reference coordinate to set on the element structure.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] indexNode - Index of the node.
-   * \param[in] iDim - Dimension required.
-   */
-  inline virtual su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {return 0.0;}
 
   /*!
    * \brief A virtual member.
@@ -4219,7 +4189,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
-
 
   /*!
    * \brief A virtual member.
@@ -4261,7 +4230,6 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-
   inline virtual void Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
 
   /*!
@@ -4272,33 +4240,17 @@ public:
    */
   inline virtual void Solve_System(CGeometry *geometry, CConfig *config) { }
 
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Compute_IntegrationConstants(CConfig *config) { }
-
   /*!
    * \brief A virtual member.
    * \return Value of the dynamic Aitken relaxation factor
    */
-  inline virtual su2double GetWAitken_Dyn(void) { return 0; }
+  inline virtual su2double GetWAitken_Dyn(void) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the last Aitken relaxation factor in the previous time step.
    */
-  inline virtual su2double GetWAitken_Dyn_tn1(void) { return 0; }
+  inline virtual su2double GetWAitken_Dyn_tn1(void) const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -4322,7 +4274,7 @@ public:
    * \brief A virtual member.
    * \param[in] Value of the load increment for nonlinear structural analysis
    */
-  inline virtual su2double GetLoad_Increment() { return 0; }
+  inline virtual su2double GetLoad_Increment() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -4444,7 +4396,6 @@ public:
                                         CConfig *config,
                                         unsigned short marker_flag) { }
 
-
   /*!
    * \brief virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4527,7 +4478,6 @@ public:
    */
   inline virtual su2double GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
 
-
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - bound marker.
@@ -4561,7 +4511,7 @@ public:
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Nu on the surface <i>val_marker</i>.
    */
-  inline virtual void SetExtAverageNu(unsigned short valMarker, 
+  inline virtual void SetExtAverageNu(unsigned short valMarker,
                                       unsigned short valSpan,
                                       su2double valNu) { }
 
@@ -4672,7 +4622,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline virtual void SetDensityIn(su2double value, 
+  inline virtual void SetDensityIn(su2double value,
                                    unsigned short inMarkerTP,
                                    unsigned short valSpan) { }
 
@@ -4681,7 +4631,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline virtual void SetPressureIn(su2double value, 
+  inline virtual void SetPressureIn(su2double value,
                                     unsigned short inMarkerTP,
                                     unsigned short valSpan) { }
 
@@ -4788,7 +4738,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - current mesh level for the multigrid.
    */
-  inline virtual void SetBeta_Parameter(CGeometry *geometry, 
+  inline virtual void SetBeta_Parameter(CGeometry *geometry,
                                         CSolver **solver_container,
                                         CConfig *config,
                                         unsigned short iMesh) { }
@@ -4864,7 +4814,6 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-
   inline void InitVertexTractionContainer(CGeometry *geometry, CConfig *config){
 
     unsigned long iVertex;
@@ -4884,7 +4833,6 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-
   inline void InitVertexTractionAdjointContainer(CGeometry *geometry, CConfig *config){
 
     unsigned long iVertex;
@@ -4912,9 +4860,9 @@ public:
    * \param[in] iVertex  - Index of the relevant vertex
    * \param[in] iDim     - Dimension
    */
-  inline su2double GetVertexTractions(unsigned short iMarker,
-                                      unsigned long iVertex,
-                                      unsigned short iDim){ return VertexTraction[iMarker][iVertex][iDim]; }
+  inline su2double GetVertexTractions(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
+    return VertexTraction[iMarker][iVertex][iDim];
+  }
 
   /*!
    * \brief Register the vertex tractions as output.
@@ -4948,13 +4896,13 @@ public:
    * \brief Get minimun volume in the mesh
    * \return
    */
-  virtual su2double GetMinimum_Volume(){ return 0.0; }
+  virtual su2double GetMinimum_Volume() const { return 0.0; }
 
   /*!
    * \brief Get maximum volume in the mesh
    * \return
    */
-  virtual su2double GetMaximum_Volume(){ return 0.0; }
+  virtual su2double GetMaximum_Volume() const { return 0.0; }
 
 protected:
   /*!

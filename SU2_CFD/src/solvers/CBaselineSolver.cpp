@@ -26,8 +26,8 @@
  */
 
 
-#include "../include/solvers/CBaselineSolver.hpp"
-#include "../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../include/solvers/CBaselineSolver.hpp"
+#include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
 

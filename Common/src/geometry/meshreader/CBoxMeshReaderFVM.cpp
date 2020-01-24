@@ -26,8 +26,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/toolboxes/CLinearPartitioner.hpp"
-#include "../include/geometry/meshreader/CBoxMeshReaderFVM.hpp"
+#include "../../../include/toolboxes/CLinearPartitioner.hpp"
+#include "../../../include/geometry/meshreader/CBoxMeshReaderFVM.hpp"
 
 CBoxMeshReaderFVM::CBoxMeshReaderFVM(CConfig        *val_config,
                                      unsigned short val_iZone,

@@ -95,6 +95,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/filewriter/CSU2MeshFileWriter.cpp \
   ../src/output/filewriter/CTecplotFileWriter.cpp \
   ../src/output/filewriter/CTecplotBinaryFileWriter.cpp \
+  ../src/output/tools/CWindowingTools.cpp \
   ../src/output/COutput.cpp \
   ../src/output/output_physics.cpp \
   ../src/output/CMeshOutput.cpp \
@@ -169,8 +170,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CAdjEulerVariable.cpp \
   ../src/variables/CDiscAdjVariable.cpp \
   ../src/variables/CIncNSVariable.cpp \
-  ../src/variables/CEulerVariable.cpp \
-  ../src/limiters/computeLimiters.cpp
+  ../src/variables/CEulerVariable.cpp
 
 su2_cfd_sources = \
   ../include/SU2_CFD.hpp \

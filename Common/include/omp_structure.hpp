@@ -69,6 +69,11 @@ inline constexpr int omp_get_max_threads(void) {return 1;}
 inline constexpr int omp_get_num_threads(void) {return 1;}
 
 /*!
+ * \brief Set the maximum number of threads.
+ */
+inline void omp_set_num_threads(int) { }
+
+/*!
  * \brief Index of current thread, akin to MPI rank.
  */
 inline constexpr int omp_get_thread_num(void) {return 0;}

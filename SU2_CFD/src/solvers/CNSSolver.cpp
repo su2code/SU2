@@ -28,7 +28,7 @@
 
 #include "../../include/solvers/CNSSolver.hpp"
 #include "../../include/variables/CNSVariable.hpp"
-#include "../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 
 CNSSolver::CNSSolver(void) : CEulerSolver() {
 
@@ -2603,7 +2603,8 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
   }
 }
 
-void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CConfig *config, unsigned short val_marker) {
+void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                           CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar, jVar, iDim, jDim;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
@@ -2620,6 +2621,8 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
   su2double Prandtl_Turb = config->GetPrandtl_Turb();
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+
+  su2double Temperature_Ref = config->GetTemperature_Ref();
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
@@ -2710,17 +2713,31 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
       /*--- Compute the normal gradient in temperature using Twall ---*/
 
       There = nodes->GetTemperature(Point_Normal);
-      Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0);
+      Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
 
-      HF_FactorHere = thermal_conductivity*config->GetViscosity_Ref()/dist_ij;
-      HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 2);
+      if ((config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX) ||
+          (config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
-      Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
+        /*--- Compute wall temperature from both temperatures ---*/
 
-      // this will be changed soon...
-      Twall = GetConjugateHeatVariable(val_marker, iVertex, 0);
+        HF_FactorHere = thermal_conductivity*config->GetViscosity_Ref()/dist_ij;
+        HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 2);
 
-      dTdn = -(There - Twall)/dist_ij;
+        Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
+        dTdn = -(There - Twall)/dist_ij;
+      }
+      else if ((config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_NEUMANN_HEATFLUX) ||
+              (config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX)) {
+
+        /*--- (Directly) Set wall temperature to conjugate temperature. ---*/
+
+        Twall = Tconjugate;
+        dTdn = -(There - Twall)/dist_ij;
+      }
+      else {
+
+        SU2_MPI::Error("Unknown CHT coupling method.", CURRENT_FUNCTION);
+      }
 
       /*--- Apply a weak boundary condition for the energy equation.
        Compute the residual due to the prescribed heat flux. ---*/
@@ -2796,7 +2813,8 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
         for (iDim = 0; iDim < nDim; iDim++)
           for (jDim = 0; jDim < nDim; jDim++) {
-            tau[iDim][jDim] = total_viscosity*( Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim] ) - TWO3*total_viscosity*div_vel*delta[iDim][jDim];
+            tau[iDim][jDim] = total_viscosity*( Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim] )
+                              - TWO3*total_viscosity*div_vel*delta[iDim][jDim];
           }
 
         /*--- Dot product of the stress tensor with the grid velocity ---*/
@@ -2899,7 +2917,6 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
           Jacobian.DeleteValsRowi(total_index);
         }
       }
-
     }
   }
 }
