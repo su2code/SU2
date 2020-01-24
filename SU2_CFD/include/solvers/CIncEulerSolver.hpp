@@ -665,13 +665,6 @@ public:
   void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config) final;
 
   /*!
-   * \brief Provide the non dimensional lift coefficient (inviscid contribution).
-   * \param val_marker Surface where the coefficient is going to be computed.
-   * \return Value of the lift coefficient (inviscid contribution) on the surface <i>val_marker</i>.
-   */
-  // su2double GetCLift_Inv(unsigned short val_marker);
-
-  /*!
    * \brief Provide the non dimensional lift coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
@@ -937,12 +930,6 @@ public:
    * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
    */
   inline void SetTotal_HeatFluxDiff(su2double val_heat) final { Total_HeatFluxDiff = val_heat; }
-
-  /*!
-   * \brief Store the total (inviscid + viscous) non dimensional lift coefficient.
-   * \param[in] val_Total_CLift - Value of the total lift coefficient.
-   */
-  // inline void SetTotal_CLift(su2double val_Total_CLift) { }
 
   /*!
    * \brief Set the value of the custom objective function.

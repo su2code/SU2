@@ -408,13 +408,6 @@ public:
   inline su2double GetCL_Visc(unsigned short val_marker) const override { return CL_Visc[val_marker]; }
 
   /*!
-   * \brief Get the non dimensional z moment coefficient (viscous contribution).
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  // inline su2double GetCMz_Visc(unsigned short val_marker) const override { return CMz_Visc[val_marker]; }
-
-  /*!
    * \brief Get the non dimensional sideforce coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the sideforce coefficient (viscous contribution) on the surface <i>val_marker</i>.

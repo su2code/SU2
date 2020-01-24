@@ -345,7 +345,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reset - If true reset variables to their initial values.
    */
-  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false) override;
+  void RegisterVariables(CGeometry *geometry,
+                         CConfig *config,
+                         bool reset = false) override;
 
   /*!
    * \brief A virtual member.
