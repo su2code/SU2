@@ -929,8 +929,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
                                       su2double *val_Cvves) {
 
   bool ionization, errT, errTve, NRconvg, Bconvg, nonPhys;
-  unsigned short iDim, iEl, iSpecies, nHeavy, nEl;
-  unsigned long iIter, maxBIter, maxNIter;
+  unsigned short iDim, iEl, iSpecies, nHeavy, nEl, iIter, maxBIter, maxNIter;
   su2double rho, rhoE, rhoEve, rhoE_f, rhoE_ref, rhoEve_min, rhoEve_max, rhoEve_t;
   su2double RuSI, Ru, sqvel, rhoCvtr, rhoCvve;
   su2double Tve, Tve2, Tve_o;
@@ -953,10 +952,10 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   Tvemin = 50.0; Tvemax = 8E4;
 
   /*--- Set temperature algorithm paramters ---*/
-  NRtol    = 1.0E-8;      // Tolerance for the Newton-Raphson method
-  Btol     = 1.0E-4;      // Tolerance for the Bisection method
-  maxNIter = 99999;         // Maximum Newton-Raphson iterations
-  maxBIter = 99999;         // Maximum Bisection method iterations
+  NRtol    = 1.0E-4;      // Tolerance for the Newton-Raphson method
+  Btol     = 1.0E-2;      // Tolerance for the Bisection method
+  maxNIter = 99;         // Maximum Newton-Raphson iterations
+  maxBIter = 99;         // Maximum Bisection method iterations
   scale    = 0.5;         // Scaling factor for Newton-Raphson step
 
   /*--- Read parameters from config ---*/
