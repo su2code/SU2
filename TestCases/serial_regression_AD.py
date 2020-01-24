@@ -213,8 +213,8 @@ def main():
     discadj_fea           = TestCase('discadj_fea')
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
-    discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-6.352150, -6.402687, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_iter = 4
+    discadj_fea.test_vals = [-2.849531, -3.238474, -3.6413e-04, -8.7087] #last 4 columns
     discadj_fea.su2_exec  = "SU2_CFD_AD"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
