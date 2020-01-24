@@ -1112,32 +1112,27 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
 
   if (flow) {
 
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-      if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (geometry->node[iPoint]->GetDomain()) {
 
-          if (geometry->node[iPoint]->GetDomain()) {
+        Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt (Area);
 
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt (Area);
+        T_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
 
-            T_Conjugate = GetConjugateHeatVariable(iMarker, iVertex, 0)/Temperature_Ref;
+        nodes->SetSolution_Old(iPoint,&T_Conjugate);
+        LinSysRes.SetBlock_Zero(iPoint, 0);
+        nodes->SetRes_TruncErrorZero(iPoint);
 
-            nodes->SetSolution_Old(iPoint,&T_Conjugate);
-            LinSysRes.SetBlock_Zero(iPoint, 0);
-            nodes->SetRes_TruncErrorZero(iPoint);
-
-            if (implicit) {
-              for (iVar = 0; iVar < nVar; iVar++) {
-                total_index = iPoint*nVar+iVar;
-                Jacobian.DeleteValsRowi(total_index);
-              }
-            }
+        if (implicit) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            total_index = iPoint*nVar+iVar;
+            Jacobian.DeleteValsRowi(total_index);
           }
         }
       }
@@ -1145,45 +1140,41 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
   }
   else {
 
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-      if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (geometry->node[iPoint]->GetDomain()) {
 
-          if (geometry->node[iPoint]->GetDomain()) {
+        Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt(Area);
 
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt(Area);
+        thermal_diffusivity = GetConjugateHeatVariable(val_marker, iVertex, 2)/rho_cp_solid;
 
-            thermal_diffusivity = GetConjugateHeatVariable(iMarker, iVertex, 2)/rho_cp_solid;
+        if ((config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
+            (config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
-            if (config->GetCHT_Robin()) {
+          Tinterface        = nodes->GetSolution(iPoint,0);
+          Tnormal_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 3)/Temperature_Ref;
 
-              Tinterface        = nodes->GetSolution(iPoint,0);
-              Tnormal_Conjugate = GetConjugateHeatVariable(iMarker, iVertex, 3)/Temperature_Ref;
+          HeatFluxDensity   = thermal_diffusivity*(Tinterface - Tnormal_Conjugate);
+          HeatFlux          = HeatFluxDensity * Area;
+        }
+        else {
 
-              HeatFluxDensity   = thermal_diffusivity*(Tinterface - Tnormal_Conjugate);
-              HeatFlux          = HeatFluxDensity * Area;
-            }
-            else {
+          HeatFluxDensity = GetConjugateHeatVariable(val_marker, iVertex, 1)/config->GetHeat_Flux_Ref();
+          HeatFlux        = HeatFluxDensity*Area;
+        }
 
-              HeatFluxDensity = GetConjugateHeatVariable(iMarker, iVertex, 1)/config->GetHeat_Flux_Ref();
-              HeatFlux        = HeatFluxDensity*Area;
-            }
+        Res_Visc[0] = -HeatFlux;
+        LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
-            Res_Visc[0] = -HeatFlux;
-            LinSysRes.SubtractBlock(iPoint, Res_Visc);
+        if (implicit) {
 
-            if (implicit) {
-
-              Jacobian_i[0][0] = thermal_diffusivity*Area;
-              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-            }
-          }
+          Jacobian_i[0][0] = thermal_diffusivity*Area;
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         }
       }
     }

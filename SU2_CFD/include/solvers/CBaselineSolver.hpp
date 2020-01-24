@@ -79,7 +79,11 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) override;
 
   /*!
    * \brief Load a FSI solution from a restart file.
@@ -88,7 +92,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
    */
-  void LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter);
+  void LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter) final;
 
   /*!
    * \brief Set the number of variables and string names from the restart file.

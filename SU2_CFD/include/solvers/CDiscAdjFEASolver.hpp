@@ -36,7 +36,7 @@
  * \ingroup Discrete_Adjoint
  * \author R. Sanchez
  */
-class CDiscAdjFEASolver : public CSolver {
+class CDiscAdjFEASolver final : public CSolver {
 private:
   unsigned short KindDirect_Solver;
   CSolver *direct_solver;
@@ -136,7 +136,7 @@ public:
    * \param[in] geometry_container - The geometry container holding all grid levels.
    * \param[in] config_container - The particular config.
    */
-  void RegisterSolution(CGeometry *geometry, CConfig *config);
+  void RegisterSolution(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -145,7 +145,7 @@ public:
    * \param[in] geometry_container - The geometry container holding all grid levels.
    * \param[in] config_container - The particular config.
    */
-  void RegisterOutput(CGeometry *geometry, CConfig *config);
+  void RegisterOutput(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Sets the adjoint values of the output of the flow (+turb.) iteration
@@ -153,7 +153,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void SetAdjoint_Output(CGeometry *geometry, CConfig *config);
+  void SetAdjoint_Output(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
@@ -161,7 +161,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
+  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Sets the adjoint values of the structural variables due to cross term contributions
@@ -169,7 +169,7 @@ public:
    * \param[in] solver_container - The solver container holding all solutions.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config);
+  void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config) override;
 
   /*!
    * \brief A virtual member.
@@ -177,20 +177,20 @@ public:
    * \param[in] solver_container - The solver container holding all solutions.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config);
+  void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config) override;
 
   /*!
    * \brief Register the objective function as output.
    * \param[in] geometry - The geometrical definition of the problem.
    */
-  void RegisterObj_Func(CConfig *config);
+  void RegisterObj_Func(CConfig *config) override;
 
   /*!
    * \brief Set the surface sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSurface_Sensitivity(CGeometry *geometry, CConfig* config);
+  void SetSurface_Sensitivity(CGeometry *geometry, CConfig* config) override;
 
   /*!
    * \brief Extract and set the geometrical sensitivity.
@@ -198,147 +198,146 @@ public:
    * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
+  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) override;
 
   /*!
    * \brief Set the objective function.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
+  void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config) override;
 
   /*!
    * \brief Provide the total Young's modulus sensitivity
    * \return Value of the total Young's modulus sensitivity
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_E(unsigned short iVal) { return Total_Sens_E[iVal]; }
+  inline su2double GetTotal_Sens_E(unsigned short iVal) const override { return Total_Sens_E[iVal]; }
 
   /*!
    * \brief Set the total Poisson's ratio sensitivity.
    * \return Value of the Poisson's ratio sensitivity
    */
-  inline su2double GetTotal_Sens_Nu(unsigned short iVal) { return Total_Sens_Nu[iVal]; }
+  inline su2double GetTotal_Sens_Nu(unsigned short iVal) const override { return Total_Sens_Nu[iVal]; }
 
   /*!
    * \brief Get the total sensitivity for the structural density
    * \return Value of the structural density sensitivity
    */
-  inline su2double GetTotal_Sens_Rho(unsigned short iVal) { return Total_Sens_Rho[iVal]; }
+  inline su2double GetTotal_Sens_Rho(unsigned short iVal) const override { return Total_Sens_Rho[iVal]; }
 
   /*!
    * \brief Get the total sensitivity for the structural weight
    * \return Value of the structural weight sensitivity
    */
-  inline su2double GetTotal_Sens_Rho_DL(unsigned short iVal) { return Total_Sens_Rho_DL[iVal]; }
+  inline su2double GetTotal_Sens_Rho_DL(unsigned short iVal) const override { return Total_Sens_Rho_DL[iVal]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Electric Field in the region iEField (time averaged)
    */
-  inline su2double GetTotal_Sens_EField(unsigned short iEField) { return Total_Sens_EField[iEField]; }
+  inline su2double GetTotal_Sens_EField(unsigned short iEField) const override { return Total_Sens_EField[iEField]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the total sensitivity coefficient for the FEA DV in the region iDVFEA (time averaged)
    */
-  inline su2double GetTotal_Sens_DVFEA(unsigned short iDVFEA) { return Total_Sens_DV[iDVFEA]; }
+  inline su2double GetTotal_Sens_DVFEA(unsigned short iDVFEA) const override { return Total_Sens_DV[iDVFEA]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
    */
-  inline su2double GetGlobal_Sens_E(unsigned short iVal) { return Global_Sens_E[iVal]; }
+  inline su2double GetGlobal_Sens_E(unsigned short iVal) const override { return Global_Sens_E[iVal]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the Mach sensitivity for the Poisson's ratio Nu
    */
-  inline su2double GetGlobal_Sens_Nu(unsigned short iVal) { return Global_Sens_Nu[iVal]; }
+  inline su2double GetGlobal_Sens_Nu(unsigned short iVal) const override { return Global_Sens_Nu[iVal]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
    */
-  inline su2double GetGlobal_Sens_EField(unsigned short iEField) { return Global_Sens_EField[iEField]; }
+  inline su2double GetGlobal_Sens_EField(unsigned short iEField) const override { return Global_Sens_EField[iEField]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the FEA DV in the region iDVFEA
    */
-  inline su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA) { return Global_Sens_DV[iDVFEA]; }
+  inline su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA) const override { return Global_Sens_DV[iDVFEA]; }
 
   /*!
    * \brief Get the total sensitivity for the structural density
    * \return Value of the structural density sensitivity
    */
-  inline su2double GetGlobal_Sens_Rho(unsigned short iVal) { return Global_Sens_Rho[iVal]; }
+  inline su2double GetGlobal_Sens_Rho(unsigned short iVal) const override { return Global_Sens_Rho[iVal]; }
 
   /*!
    * \brief Get the total sensitivity for the structural weight
    * \return Value of the structural weight sensitivity
    */
-  inline su2double GetGlobal_Sens_Rho_DL(unsigned short iVal) { return Global_Sens_Rho_DL[iVal]; }
-
+  inline su2double GetGlobal_Sens_Rho_DL(unsigned short iVal) const override { return Global_Sens_Rho_DL[iVal]; }
 
   /*!
    * \brief Get the value of the Young modulus from the adjoint solver
    * \return Value of the Young modulus from the adjoint solver
    */
-  inline su2double GetVal_Young(unsigned short iVal) { return E_i[iVal]; }
+  inline su2double GetVal_Young(unsigned short iVal) const override { return E_i[iVal]; }
 
   /*!
    * \brief Get the value of the Poisson's ratio from the adjoint solver
    * \return Value of the Poisson's ratio from the adjoint solver
    */
-  inline su2double GetVal_Poisson(unsigned short iVal) { return Nu_i[iVal]; }
+  inline su2double GetVal_Poisson(unsigned short iVal) const override { return Nu_i[iVal]; }
 
   /*!
    * \brief Get the value of the density from the adjoint solver, for inertial effects
    * \return Value of the density from the adjoint solver
    */
-  inline su2double GetVal_Rho(unsigned short iVal) { return Rho_i[iVal]; }
+  inline su2double GetVal_Rho(unsigned short iVal) const override { return Rho_i[iVal]; }
 
   /*!
    * \brief Get the value of the density from the adjoint solver, for dead loads
    * \return Value of the density for dead loads, from the adjoint solver
    */
-  inline su2double GetVal_Rho_DL(unsigned short iVal) { return Rho_DL_i[iVal]; }
+  inline su2double GetVal_Rho_DL(unsigned short iVal) const override { return Rho_DL_i[iVal]; }
 
   /*!
    * \brief Get the number of variables for the Electric Field from the adjoint solver
    * \return Number of electric field variables from the adjoint solver
    */
-  inline unsigned short GetnEField(void) { return nEField; }
+  inline unsigned short GetnEField(void) const override { return nEField; }
 
   /*!
    * \brief Read the design variables for the adjoint solver
    */
-  void ReadDV(CConfig *config);
+  void ReadDV(CConfig *config) override;
 
   /*!
    * \brief Get the number of design variables from the adjoint solver,
    * \return Number of design variables from the adjoint solver
    */
-  inline unsigned short GetnDVFEA(void) { return nDV; }
+  inline unsigned short GetnDVFEA(void) const override { return nDV; }
 
   /*!
    * \brief Get the value of the Electric Field from the adjoint solver
    * \return Pointer to the values of the Electric Field
    */
-  inline su2double GetVal_EField(unsigned short iVal) { return EField[iVal]; }
+  inline su2double GetVal_EField(unsigned short iVal) const override { return EField[iVal]; }
 
   /*!
    * \brief Get the value of the design variables from the adjoint solver
    * \return Pointer to the values of the design variables
    */
-  inline su2double GetVal_DVFEA(unsigned short iVal) { return DV_Val[iVal]; }
+  inline su2double GetVal_DVFEA(unsigned short iVal) const override { return DV_Val[iVal]; }
 
   /*!
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
    */
-  void SetRecording(CGeometry *geometry, CConfig *config);
+  void SetRecording(CGeometry *geometry, CConfig *config) override ;
 
   /*!
    * \brief A virtual member.
@@ -371,7 +370,7 @@ public:
                     unsigned short iMesh,
                     unsigned short iRKStep,
                     unsigned short RunTime_EqSystem,
-                    bool Output) final;
+                    bool Output) override;
 
   /*!
    * \brief Load a solution from a restart file.
@@ -381,14 +380,18 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) override;
 
   /*!
    * \brief Compute the multizone residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) final;
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
