@@ -528,7 +528,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   check_infty = node_infty->SetPrimVar_Compressible(0,config);
 
   su2double Vel_Infty[3] = {0.0,0.0,0.0};
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) Vel_Infty[iDim] = MVec_Inf[iDim]*node_infty->GetSoundSpeed(0);
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) Vel_Infty[iDim] = Mvec_Inf[iDim]*node_infty->GetSoundSpeed(0);
 
   node_infty->Prim2ConsVar(config, 0, node_infty->GetPrimitive(0), node_infty->GetSolution(0));
 
@@ -5300,7 +5300,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
       /*--- If taking free-stream conditions, enforce Mach ---*/
       if(Qn_Infty < 0.0) {
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) Vel_Infty[iDim] = MVec_Inf[iDim]*node_bc->GetSoundSpeed(0);
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) Vel_Infty[iDim] = Mvec_Inf[iDim]*node_bc->GetSoundSpeed(0);
 
         node_bc->Prim2ConsVar(config, 0, node_bc->GetPrimitive(0), node_bc->GetSolution(0));
       }
