@@ -527,7 +527,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
                                       nPrimVar, nPrimVarGrad, config);
   check_infty = node_infty->SetPrimVar_Compressible(0,config);
 
-  su2double Vel_Infty[3] = {0.0,0.0,0.0};
   for (unsigned short iDim = 0; iDim < nDim; iDim++) node_infty->SetPrimitive(0, nSpecies+2+iDim, Mvec_Inf[iDim]*node_infty->GetSoundSpeed(0));
 
   node_infty->Prim2ConsVar(config, 0, node_infty->GetPrimitive(0), node_infty->GetSolution(0));
@@ -537,6 +536,13 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
                                  Temperature_ve_Inf, nPoint, nDim, nVar,
                                  nPrimVar, nPrimVarGrad, config);
   SetBaseClassPointerToNodes();
+
+  /*--- Enforce freestream Mach ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    nonPhys = nodes->SetPrimVar_Compressible(iPoint, config);
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) nodes->SetPrimitive(iPoint, nSpecies+2+iDim, Mvec_Inf[iDim]*node_infty->GetSoundSpeed(0));
+    nodes->Prim2ConsVar(config, iPoint, nodes->GetPrimitive(iPoint), nodes->GetSolution(iPoint));
+  }
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
   counter_local = 0;
