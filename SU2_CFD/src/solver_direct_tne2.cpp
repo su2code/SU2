@@ -527,6 +527,11 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
                                       nPrimVar, nPrimVarGrad, config);
   check_infty = node_infty->SetPrimVar_Compressible(0,config);
 
+  su2double Vel_Infty[3] = {0.0,0.0,0.0};
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) Vel_Infty[iDim] = MVec_Inf[iDim]*node_infty->GetSoundSpeed(0);
+
+  node_infty->Prim2ConsVar(config, 0, node_infty->GetPrimitive(0), node_infty->GetSolution(0));
+
   /*--- Initialize the solution to the far-field state everywhere. ---*/
   nodes = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf, Temperature_Inf,
                                  Temperature_ve_Inf, nPoint, nDim, nVar,
@@ -5292,6 +5297,14 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
       /*--- Calculate dPdU, dTdU, dTvedU, and some other primitives ---*/
       const bool check_bc = node_bc->SetPrimVar_Compressible(0,config);
+
+      /*--- If taking free-stream conditions, enforce Mach ---*/
+      if(Qn_Infty < 0.0) {
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) Vel_Infty[iDim] = MVec_Inf[iDim]*node_bc->GetSoundSpeed(0);
+
+        node_bc->Prim2ConsVar(config, 0, node_bc->GetPrimitive(0), node_bc->GetSolution(0));
+      }
+
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
         node_bc->GetEve(0)[iSpecies] = nodes->CalcEve(config, Temperature_ve, iSpecies);
       }
@@ -6784,6 +6797,11 @@ void CTNE2EulerSolver::ResetNodeInfty(su2double pressure_inf, su2double *massfra
                                       nPrimVar, nPrimVarGrad, config);
 
   check_infty = node_infty->SetPrimVar_Compressible(0,config);
+  su2double Vel_Infty[3] = {0.0,0.0,0.0};
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) Vel_Infty[iDim] = mvec_inf[iDim]*node_infty->GetSoundSpeed(0);
+
+  node_infty->Prim2ConsVar(config, 0, node_infty->GetPrimitive(0), node_infty->GetSolution(0));
+
 }
 
 CTNE2NSSolver::CTNE2NSSolver(void) : CTNE2EulerSolver() {

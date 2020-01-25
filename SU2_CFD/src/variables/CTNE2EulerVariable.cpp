@@ -1200,19 +1200,20 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
 
   /*--- Sound speed ---*/
-  radical2 = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    radical2 += V[RHOS_INDEX+iSpecies]/V[RHO_INDEX] * val_dPdU[iSpecies];
-  for (iDim = 0; iDim < nDim; iDim++)
-    radical2 += V[VEL_INDEX+iDim]*val_dPdU[nSpecies+iDim];
-  radical2 += (U[nSpecies+nDim]+V[P_INDEX])/V[RHO_INDEX] * val_dPdU[nSpecies+nDim];
-  radical2 += U[nSpecies+nDim+1]/V[RHO_INDEX] * val_dPdU[nSpecies+nDim+1];
-  V[A_INDEX] = sqrt(radical2);
+  V[A_INDEX] = sqrt((1.0 + Ru/rhoCvtr*conc) * V[P_INDEX]/V[RHO_INDEX]);
+  // radical2 = 0.0;
+  // for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  //   radical2 += V[RHOS_INDEX+iSpecies]/V[RHO_INDEX] * val_dPdU[iSpecies];
+  // for (iDim = 0; iDim < nDim; iDim++)
+  //   radical2 += V[VEL_INDEX+iDim]*val_dPdU[nSpecies+iDim];
+  // radical2 += (U[nSpecies+nDim]+V[P_INDEX])/V[RHO_INDEX] * val_dPdU[nSpecies+nDim];
+  // radical2 += U[nSpecies+nDim+1]/V[RHO_INDEX] * val_dPdU[nSpecies+nDim+1];
+  // V[A_INDEX] = sqrt(radical2);
 
-  if (radical2 < 0.0) {
-    nonPhys = true;
-    V[A_INDEX] = EPS;
-  }
+  // if (radical2 < 0.0) {
+  //   nonPhys = true;
+  //   V[A_INDEX] = EPS;
+  // }
 
 
   /*--- Enthalpy ---*/
