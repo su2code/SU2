@@ -1200,6 +1200,10 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
 
   /*--- Sound speed ---*/
+  su2double conc = 0.0;
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    conc += V[iSpecies]/Ms[iSpecies];
+  }
   V[A_INDEX] = sqrt((1.0 + Ru/rhoCvtr*conc) * V[P_INDEX]/V[RHO_INDEX]);
   // radical2 = 0.0;
   // for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
