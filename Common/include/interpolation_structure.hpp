@@ -1,7 +1,7 @@
 ﻿/*!
  * \file interpolation_structure.hpp
- * \brief Headers of the main subroutines used by SU2_FSI.
- *        The subroutines and functions are in the <i>interpolation_structure.cpp</i> file.
+ * \brief Headers of classes used for multiphysics interpolation.
+ *        The implementation is in the <i>interpolation_structure.cpp</i> file.
  * \author H. Kline
  * \version 7.0.0 "Blackbird"
  *
@@ -244,7 +244,7 @@ public:
    * \param[in] nDim - the dimension of the coordinates.
    * \param[in] iZone_1 - zone index of the element to use for interpolation (the DONOR zone)
    * \param[in] donor_elem - element index of the element to use for interpolation (or global index of a point in 2D)
-   * \param[in[ nDonorPoints - number of donor points in the element.
+   * \param[in] nDonorPoints - number of donor points in the element.
    * \param[in] xj - point projected onto the plane of the donor element.
    * \param[out] isoparams - isoparametric coefficients. Must be allocated to size nNodes ahead of time. (size> nDonors)
    *
