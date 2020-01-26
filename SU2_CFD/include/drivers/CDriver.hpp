@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -29,50 +29,17 @@
 #pragma once
 
 #include "../../../Common/include/mpi_structure.hpp"
+
 #include "../iteration_structure.hpp"
-#include "../solvers/CSolver.hpp"
-#include "../solvers/CEulerSolver.hpp"
-#include "../solvers/CIncEulerSolver.hpp"
-#include "../solvers/CNSSolver.hpp"
-#include "../solvers/CIncNSSolver.hpp"
-#include "../solvers/CTurbSASolver.hpp"
-#include "../solvers/CTurbSSTSolver.hpp"
-#include "../solvers/CTransLMSolver.hpp"
-#include "../solvers/CAdjEulerSolver.hpp"
-#include "../solvers/CAdjNSSolver.hpp"
-#include "../solvers/CAdjTurbSolver.hpp"
-#include "../solvers/CHeatSolverFVM.hpp"
-#include "../solvers/CFEASolver.hpp"
-#include "../solvers/CTemplateSolver.hpp"
-#include "../solvers/CDiscAdjSolver.hpp"
-#include "../solvers/CDiscAdjFEASolver.hpp"
-#include "../solvers/CFEM_DG_EulerSolver.hpp"
-#include "../solvers/CFEM_DG_NSSolver.hpp"
-
-
 #include "../integration_structure.hpp"
-
-#include "../numerics_structure.hpp"
-/*--- Transfer includes ---*/
+#include "../solvers/CSolver.hpp"
 #include "../interfaces/CInterface.hpp"
-#include "../interfaces/cfd/CConservativeVarsInterface.hpp"
-#include "../interfaces/cfd/CMixingPlaneInterface.hpp"
-#include "../interfaces/cfd/CSlidingInterface.hpp"
-#include "../interfaces/cht/CConjugateHeatInterface.hpp"
-#include "../interfaces/fsi/CDisplacementsInterface.hpp"
-#include "../interfaces/fsi/CFlowTractionInterface.hpp"
-#include "../interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
-#include "../interfaces/fsi/CDisplacementsInterfaceLegacy.hpp"
-#include "../interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.hpp"
-#include "../solvers/CDiscAdjMeshSolver.hpp"
-#include "../solvers/CMeshSolver.hpp"
+
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/grid_movement_structure.hpp"
-#include "../../../Common/include/config_structure.hpp"
 #include "../../../Common/include/interpolation_structure.hpp"
 
 #include "../output/COutputLegacy.hpp"
-
 #include "../output/COutput.hpp"
 #include "../output/CMultizoneOutput.hpp"
 #include "../output/CElasticityOutput.hpp"
