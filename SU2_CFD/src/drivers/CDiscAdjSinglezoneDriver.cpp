@@ -799,8 +799,14 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
     const su2double b = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 1);
     const su2double c = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 2);
     
-    A[0][0] = a; A[0][1] = b;
-    A[1][0] = b; A[1][1] = c;
+    if (fabs(a*c - b*b) < 1.0E-16) {
+      A[0][0] = 1.0E-16; A[0][1] = 1.0E-16;
+      A[1][0] = 1.0E-16; A[1][1] = 1.0E-16;
+    }
+    else {
+      A[0][0] = a; A[0][1] = b;
+      A[1][0] = b; A[1][1] = c;
+    }
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
