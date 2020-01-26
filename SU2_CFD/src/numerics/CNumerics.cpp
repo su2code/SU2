@@ -75,17 +75,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   l = NULL;
   m = NULL;
 
-  MeanReynoldsStress  = NULL;
-  MeanPerturbedRSM    = NULL;
-  A_ij                = NULL;
-  Eig_Vec             = NULL;
-  New_Eig_Vec         = NULL;
-  newA_ij             = NULL;
-  Corners             = NULL;
-  Eig_Val             = NULL;
-  Barycentric_Coord   = NULL;
-  New_Coord           = NULL;
-
   nDim = val_nDim;
   nVar = val_nVar;
   Gamma = config->GetGamma();
