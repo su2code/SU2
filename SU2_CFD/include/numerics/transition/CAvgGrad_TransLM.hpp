@@ -46,9 +46,9 @@ private:
   //su2double dist_ij_2;
   //su2double proj_vector_ij;
   //unsigned short iVar, iDim;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -56,12 +56,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CAvgGrad_TransLM(void);
-  
+
   /*!
    * \brief Compute the viscous turbulence terms residual using an average of gradients.
    * \param[out] val_residual - Pointer to the total residual.

@@ -42,7 +42,7 @@ protected:
   su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j, *Conservatives_i, *Conservatives_j;
   su2double *Diff_U, *Lambda, **P_Tensor, **invP_Tensor;
   su2double *RoeVelocity, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;
-  
+
   /*!
    * \brief Derived classes must specialize this method to add the specifics of the scheme they implement (e.g. low-Mach precond.).
    * \param[out] val_residual - Convective flux.
@@ -51,9 +51,9 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) = 0;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -62,12 +62,12 @@ public:
    * \param[in] val_low_dissipation - Use a low dissipation formulation.
    */
   CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CUpwRoeBase_Flow(void);
-  
+
   /*!
    * \brief Compute the flux from node i to node j, part common to most Roe schemes.
    * \param[out] val_residual - Convective flux.
@@ -76,5 +76,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-  
+
 };

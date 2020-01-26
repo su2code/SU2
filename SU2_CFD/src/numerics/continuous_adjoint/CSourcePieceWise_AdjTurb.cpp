@@ -28,10 +28,10 @@
 #include "../../../include/numerics/continuous_adjoint/CSourcePieceWise_AdjTurb.hpp"
 
 CSourcePieceWise_AdjTurb::CSourcePieceWise_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-  
+
   Velocity = new su2double [nDim];
   tau = new su2double* [nDim];
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -40,7 +40,7 @@ CSourcePieceWise_AdjTurb::CSourcePieceWise_AdjTurb(unsigned short val_nDim, unsi
 
 CSourcePieceWise_AdjTurb::~CSourcePieceWise_AdjTurb(void) {
   delete [] Velocity;
-  
+
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     delete [] tau[iDim];
   delete [] tau;
@@ -48,29 +48,29 @@ CSourcePieceWise_AdjTurb::~CSourcePieceWise_AdjTurb(void) {
 
 void CSourcePieceWise_AdjTurb::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   unsigned short iDim, jDim;
-  
+
   bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
   su2double Prandtl_Turb = config->GetPrandtl_Turb();
-  
+
   val_residual[0] = 0.0;
   if (implicit)
     val_Jacobian_i[0][0] = 0.0;
-  
+
   if (dist_i > 0.0) {
-    
+
     /*--- Computation of Vorticity and Divergence of velocity ---*/
     su2double div_vel = 0;
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity[iDim] = U_i[iDim+1]/U_i[0];
       div_vel += PrimVar_Grad_i[iDim+1][iDim];
     }
-    
+
     su2double Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
     if (nDim == 3)
       Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) +
                     (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
     Vorticity = sqrt(Vorticity);
-    
+
     /*--- FIRST PART: -Bs*TurbPsi_i ---*/
     /*--- CLOUSURE CONSTANTS ---*/
     su2double cv1 = 7.1;
@@ -83,13 +83,13 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(su2double *val_residual, su2doubl
     su2double sigma = 2./3.;
     su2double cb2 = 0.622;
     su2double cw1 = cb1/k2+(1+cb2)/sigma;
-    
+
     su2double nu, Ji, fv1, fv2, Shat, dist_0_2, Ji_2, Ji_3, one_o_oneplusJifv1;
     su2double r, g, g_6, glim, fw;
     su2double dTs_nuhat, dTs_Shat, dShat_nuhat, dTs_fw, dfw_g, dg_r, dr_nuhat, dr_Shat;
     su2double dShat_fv2, dfv2_fv1, dfv1_Ji, dJi_nuhat, dfv2_Ji;
     su2double Bs;
-    
+
     dist_0_2 = dist_i*dist_i;
     nu = Laminar_Viscosity_i/U_i[0];
     Ji = TurbVar_i[0]/nu;
@@ -99,14 +99,14 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(su2double *val_residual, su2doubl
     one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
     fv2 = 1.0 - Ji*one_o_oneplusJifv1;
     Shat = max(Vorticity + TurbVar_i[0]*fv2/(k2*dist_0_2), TURB_EPS);
-    
+
     //    r = TurbVar_i[0]/(Shat*k2*dist_0_2);
     r = min(TurbVar_i[0]/(Shat*k2*dist_0_2),10.);
     g = r + cw2*(pow(r,6.)-r);
     g_6 = pow(g,6.);
     glim = pow((1+cw3_6)/(g_6+cw3_6),1./6.);
     fw = g*glim;
-    
+
     dTs_nuhat = cb1*Shat-2.0*cw1*fw*TurbVar_i[0]/dist_0_2;
     dTs_Shat = cb1*TurbVar_i[0];
     dTs_fw = -cw1*TurbVar_i[0]*TurbVar_i[0]/dist_0_2;
@@ -114,7 +114,7 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(su2double *val_residual, su2doubl
     dg_r = 1.0 + cw2*(6.0*pow(r,5.0)-1.0);
     dr_nuhat = 1.0/(Shat*k2*dist_0_2);
     dr_Shat = -dr_nuhat*TurbVar_i[0]/Shat;
-    
+
     dShat_nuhat = fv2/(k2*dist_0_2);
     dShat_fv2 = TurbVar_i[0]/(k2*dist_0_2);
     dfv2_fv1 = Ji_2*one_o_oneplusJifv1*one_o_oneplusJifv1;
@@ -122,33 +122,33 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(su2double *val_residual, su2doubl
     dJi_nuhat = 1.0/nu;
     dfv2_Ji = -one_o_oneplusJifv1*one_o_oneplusJifv1;
     dShat_nuhat += dShat_fv2*(dfv2_fv1*dfv1_Ji+dfv2_Ji)*dJi_nuhat;
-    
+
     Bs = dTs_nuhat;                       // nu_hat term
     Bs += dTs_Shat*dShat_nuhat;                 // S_hat term
     Bs += dTs_fw*dfw_g*dg_r*(dr_nuhat+dr_Shat*dShat_nuhat);   // fw terms
-    
+
     val_residual[0] = -Bs*TurbPsi_i[0]*Volume;
-        
+
     if (implicit)
       val_Jacobian_i[0][0] = -Bs*Volume;
-    
+
     /*---SECOND PART: \partial_nu_hat mu^k F^{vk} cdot \grad Psi ---*/
     su2double dEddyVisc_nuhat;
     if (!config->GetFrozen_Visc_Cont())
       dEddyVisc_nuhat = U_i[0]*fv1*(1.0 + 3.0*cv1_3/(Ji_3+cv1_3));
     else
       dEddyVisc_nuhat = 0;
-    
+
     for (iDim = 0; iDim < nDim; iDim++) {
       for (jDim = 0; jDim < nDim; jDim++)
         tau[iDim][jDim] = PrimVar_Grad_i[iDim+1][jDim] + PrimVar_Grad_i[jDim+1][iDim];
       tau[iDim][iDim] -= TWO3*div_vel;
     }
-    
+
     su2double Gas_Constant = config->GetGas_ConstantND();
     su2double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
     su2double tau_gradphi = 0.0, vel_tau_gradpsi5 = 0.0, gradT_gradpsi5 = 0.0;
-    
+
     for (iDim = 0; iDim < nDim; iDim++) {
       gradT_gradpsi5 += PrimVar_Grad_i[0][iDim]*PsiVar_Grad_i[nVar-1][iDim];
       for (jDim = 0; jDim < nDim; jDim++) {
@@ -157,6 +157,6 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(su2double *val_residual, su2doubl
       }
     }
     val_residual[0] += (tau_gradphi + vel_tau_gradpsi5 + Cp/Prandtl_Turb*gradT_gradpsi5)*dEddyVisc_nuhat*Volume;
-    
+
   }
 }

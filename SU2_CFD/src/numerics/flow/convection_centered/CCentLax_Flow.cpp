@@ -46,19 +46,19 @@ void CCentLax_Flow::DissipationTerm(su2double *val_residual, su2double **val_Jac
 
   sc0 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
   Epsilon_0 = Param_Kappa_0*sc0*su2double(nDim)/3.0;
-  
+
   /*--- Compute viscous part of the residual ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] += Epsilon_0*Diff_U[iVar]*StretchingFactor*MeanLambda;
-  
+
   /*--- Jacobian computation ---*/
 
   if (implicit) {
-    
+
     cte_0 = Epsilon_0*StretchingFactor*MeanLambda;
     cte_1 = cte_0;
-    
+
     ScalarDissipationJacobian(val_Jacobian_i, val_Jacobian_j);
   }
 }

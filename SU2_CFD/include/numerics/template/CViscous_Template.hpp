@@ -38,9 +38,9 @@
  */
 class CViscous_Template : public CNumerics {
 private:
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -48,12 +48,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CViscous_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CViscous_Template(void);
-  
+
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
    * \param[out] val_residual - Pointer to the total residual.

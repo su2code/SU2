@@ -28,7 +28,7 @@
 #include "../../../../include/numerics/flow/convection_centered/CCentJSTInc_Flow.hpp"
 
 CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
+
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == VARIABLE);
   energy           = config->GetEnergy_Equation();
@@ -40,7 +40,7 @@ CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_n
   Param_p = 0.3;
   Param_Kappa_2 = config->GetKappa_2nd_Flow();
   Param_Kappa_4 = config->GetKappa_4th_Flow();
-  
+
   /*--- Allocate some structures ---*/
 
   Diff_V       = new su2double [nVar];
@@ -57,7 +57,7 @@ CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_n
 }
 
 CCentJSTInc_Flow::~CCentJSTInc_Flow(void) {
-  
+
   delete [] Diff_V;
   delete [] Diff_Lapl;
   delete [] Velocity_i;
@@ -77,7 +77,7 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   su2double ProjGridVel = 0.0;
 
   /*--- Primitive variables at point i and j ---*/
-  
+
   Pressure_i    = V_i[0];             Pressure_j    = V_j[0];
   Temperature_i = V_i[nDim+1];        Temperature_j = V_j[nDim+1];
   DensityInc_i  = V_i[nDim+2];        DensityInc_j  = V_j[nDim+2];
@@ -98,9 +98,9 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     Area               += Normal[iDim]*Normal[iDim];
   }
   Area = sqrt(Area);
-  
+
   /*--- Compute mean values of the variables ---*/
-  
+
   MeanDensity     = 0.5*(DensityInc_i  + DensityInc_j);
   MeanPressure    = 0.5*(Pressure_i    + Pressure_j);
   MeanBetaInc2    = 0.5*(BetaInc2_i    + BetaInc2_j);
@@ -120,13 +120,13 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   /*--- Get projected flux tensor ---*/
 
   GetInviscidIncProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, &MeanEnthalpy, Normal, ProjFlux);
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = ProjFlux[iVar];
   }
 
   /*--- Jacobians of the inviscid flux ---*/
-  
+
   if (implicit) {
     GetInviscidIncProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanTemperature, &MeandRhodT, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -169,7 +169,7 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   }
 
   /*--- Computes differences between Laplacians and conservative variables ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
     Diff_Lapl[iVar] = Und_Lapl_i[iVar]-Und_Lapl_j[iVar];
     Diff_V[iVar]    = V_i[iVar]-V_j[iVar];
@@ -195,23 +195,23 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   SoundSpeed_i = sqrt(BetaInc2_i*Area*Area);
   SoundSpeed_j = sqrt(BetaInc2_j*Area*Area);
-  
+
   Local_Lambda_i = fabs(ProjVelocity_i)+SoundSpeed_i;
   Local_Lambda_j = fabs(ProjVelocity_j)+SoundSpeed_j;
 
   MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
-  
+
   Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
   Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
 
   StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
-  
+
   sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
   sc4 = sc2*sc2/4.0;
-  
+
   Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
   Epsilon_4 = max(0.0, Param_Kappa_4-Epsilon_2)*sc4;
-  
+
   /*--- Compute viscous part of the residual ---*/
 
   for (iVar = 0; iVar < nVar; iVar++) {

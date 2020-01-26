@@ -47,9 +47,9 @@ private:
   su2double *Mean_GradPsiE;              /*!< \brief Counter for dimensions of the problem. */
   su2double **Mean_GradPhi;              /*!< \brief Counter for dimensions of the problem. */
   bool implicit;                         /*!< \brief Boolean controlling Jacobian calculations. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -57,12 +57,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGradCorrected_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CAvgGradCorrected_AdjFlow(void);
-  
+
   /*!
    * \brief Compute the adjoint flow viscous residual in a non-conservative way using an average of gradients and derivative correction.
    * \param[out] val_residual_i - Pointer to the viscous residual at point i.

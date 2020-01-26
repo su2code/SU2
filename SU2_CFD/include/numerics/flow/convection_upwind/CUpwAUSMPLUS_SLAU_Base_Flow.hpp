@@ -42,15 +42,15 @@ protected:
   bool UseAccurateJacobian;
   bool HasAnalyticalDerivatives;
   su2double FinDiffStep;
-  
+
   su2double MassFlux, DissFlux, Pressure;
   su2double *Velocity_i, *Velocity_j;
   su2double *psi_i, *psi_j;
   su2double dmdot_dVi[6], dmdot_dVj[6], dpres_dVi[6], dpres_dVj[6];
-  
+
   /*--- Roe variables (for approximate Jacobian) ---*/
   su2double *Lambda, *Epsilon, *RoeVelocity, **P_Tensor, **invP_Tensor;
-  
+
   /*!
    * \brief Compute the mass flux and pressure based on Primitives_i/j, derived classes must implement this method.
    * \note See the body of the (empty) default implementation for instructions on how to implement the method.
@@ -59,23 +59,23 @@ protected:
    * \param[out] pressure - The pressure at the control volume face.
    */
   virtual void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) = 0;
-  
+
   /*!
    * \brief Compute the flux Jacobians of the Roe scheme to use as an approximation.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    */
   void ApproximateJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j);
-  
+
   /*!
    * \brief Compute the flux Jacobians using a mix of finite differences and manual differentiation.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    */
   void AccurateJacobian(CConfig *config, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -83,12 +83,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CUpwAUSMPLUS_SLAU_Base_Flow(void);
-  
+
   /*!
    * \brief Compute the AUSM+ and SLAU family of schemes.
    * \param[out] val_residual - Pointer to the total residual.

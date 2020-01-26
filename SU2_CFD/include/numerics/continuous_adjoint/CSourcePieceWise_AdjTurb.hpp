@@ -39,9 +39,9 @@
 class CSourcePieceWise_AdjTurb : public CNumerics {
 private:
   su2double **tau, *Velocity;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -49,12 +49,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CSourcePieceWise_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CSourcePieceWise_AdjTurb(void);
-  
+
   /*!
    * \brief Source term integration of the adjoint turbulence equation.
    * \param[out] val_residual - Pointer to the total residual.

@@ -28,37 +28,37 @@
 #include "../../../include/numerics/continuous_adjoint/CSourceConservative_AdjTurb.hpp"
 
 CSourceConservative_AdjTurb::CSourceConservative_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-  
+
 }
 
 CSourceConservative_AdjTurb::~CSourceConservative_AdjTurb(void) {
 }
 
 void CSourceConservative_AdjTurb::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
+
   /*--- SOURCE term  -->  \nabla ( \psi_\mu \B7 E^{s} )
    E^{s} = 2 c_{b2}/\sigma \nabla \hat{nu} ---*/
-  
+
   unsigned short iDim;
   bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
-  
+
   su2double cb2 = 0.622;
   su2double sigma = 2./3.;
   su2double coeff = 2.0*cb2/sigma;
   su2double E_ij, proj_TurbVar_Grad_i, proj_TurbVar_Grad_j;
-  
+
   E_ij = 0.0;  proj_TurbVar_Grad_i = 0.0; proj_TurbVar_Grad_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     proj_TurbVar_Grad_i += coeff*TurbVar_Grad_i[0][iDim]*Normal[iDim];
     proj_TurbVar_Grad_j += coeff*TurbVar_Grad_j[0][iDim]*Normal[iDim];
     E_ij += 0.5*(TurbPsi_i[0]*proj_TurbVar_Grad_i + TurbPsi_j[0]*proj_TurbVar_Grad_j);
   }
-  
+
   val_residual[0] = E_ij;
-  
+
   if (implicit) {
     val_Jacobian_i[0][0] = 0.5*proj_TurbVar_Grad_i;
     val_Jacobian_j[0][0] = 0.5*proj_TurbVar_Grad_j;

@@ -31,7 +31,7 @@ CSource_Template::CSource_Template(unsigned short val_nDim, unsigned short val_n
                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {}
 
 CSource_Template::~CSource_Template(void) {
-  
+
 }
 
 void CSource_Template::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {}

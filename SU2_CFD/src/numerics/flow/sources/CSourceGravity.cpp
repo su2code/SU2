@@ -28,18 +28,18 @@
 #include "../../../../include/numerics/flow/sources/CSourceGravity.hpp"
 
 CSourceGravity::CSourceGravity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
+
 }
 
 CSourceGravity::~CSourceGravity(void) { }
 
 void CSourceGravity::ComputeResidual(su2double *val_residual, CConfig *config) {
   unsigned short iVar;
-  
+
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = 0.0;
-  
+
   /*--- Evaluate the source term  ---*/
   val_residual[nDim] = Volume * U_i[0] * STANDARD_GRAVITY;
-  
+
 }

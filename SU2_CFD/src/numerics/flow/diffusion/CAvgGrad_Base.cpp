@@ -88,7 +88,7 @@ CAvgGrad_Base::~CAvgGrad_Base() {
   if (heat_flux_jac_i != NULL) {
     delete [] heat_flux_jac_i;
   }
-  
+
   delete [] Edge_Vector;
   if (Proj_Mean_GradPrimVar_Edge != NULL)
     delete [] Proj_Mean_GradPrimVar_Edge;
@@ -455,13 +455,13 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
     Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
         heat_flux_vector[2];
   }
-  
+
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
   }
-  
+
 }
 
 void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
@@ -490,15 +490,15 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     const su2double contraction = tau_jacobian_i[0][0]*val_Mean_PrimVar[1] +
                                   tau_jacobian_i[1][0]*val_Mean_PrimVar[2];
     val_Proj_Jac_Tensor_i[3][0] = val_dS*(contraction - heat_flux_jac_i[0]);
-    val_Proj_Jac_Tensor_i[3][1] = -val_dS*(tau_jacobian_i[0][0] + heat_flux_jac_i[1]); 
-    val_Proj_Jac_Tensor_i[3][2] = -val_dS*(tau_jacobian_i[1][0] + heat_flux_jac_i[2]); 
+    val_Proj_Jac_Tensor_i[3][1] = -val_dS*(tau_jacobian_i[0][0] + heat_flux_jac_i[1]);
+    val_Proj_Jac_Tensor_i[3][2] = -val_dS*(tau_jacobian_i[1][0] + heat_flux_jac_i[2]);
     val_Proj_Jac_Tensor_i[3][3] = -val_dS*heat_flux_jac_i[3];
-    
+
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
-    const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] + 
+    const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] +
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2];
     val_Proj_Jac_Tensor_i[3][0] -= factor*proj_viscousflux_vel;
     val_Proj_Jac_Tensor_j[3][0] -= factor*proj_viscousflux_vel;
@@ -506,8 +506,8 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     val_Proj_Jac_Tensor_j[3][1] += factor*val_Proj_Visc_Flux[1];
     val_Proj_Jac_Tensor_i[3][2] += factor*val_Proj_Visc_Flux[2];
     val_Proj_Jac_Tensor_j[3][2] += factor*val_Proj_Visc_Flux[2];
-    
-    
+
+
   } else {
 
     val_Proj_Jac_Tensor_i[0][0] = 0.0;
@@ -534,16 +534,16 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
                                   tau_jacobian_i[1][0]*val_Mean_PrimVar[2] +
                                   tau_jacobian_i[2][0]*val_Mean_PrimVar[3];
     val_Proj_Jac_Tensor_i[4][0] = val_dS*(contraction - heat_flux_jac_i[0]);
-    val_Proj_Jac_Tensor_i[4][1] = -val_dS*(tau_jacobian_i[0][0] + heat_flux_jac_i[1]); 
-    val_Proj_Jac_Tensor_i[4][2] = -val_dS*(tau_jacobian_i[1][0] + heat_flux_jac_i[2]); 
-    val_Proj_Jac_Tensor_i[4][3] = -val_dS*(tau_jacobian_i[2][0] + heat_flux_jac_i[3]); 
+    val_Proj_Jac_Tensor_i[4][1] = -val_dS*(tau_jacobian_i[0][0] + heat_flux_jac_i[1]);
+    val_Proj_Jac_Tensor_i[4][2] = -val_dS*(tau_jacobian_i[1][0] + heat_flux_jac_i[2]);
+    val_Proj_Jac_Tensor_i[4][3] = -val_dS*(tau_jacobian_i[2][0] + heat_flux_jac_i[3]);
     val_Proj_Jac_Tensor_i[4][4] = -val_dS*heat_flux_jac_i[4];
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
-    
-    const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] + 
+
+    const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] +
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2] +
                                           val_Proj_Visc_Flux[3]*val_Mean_PrimVar[3];
     val_Proj_Jac_Tensor_i[4][0] -= factor*proj_viscousflux_vel;

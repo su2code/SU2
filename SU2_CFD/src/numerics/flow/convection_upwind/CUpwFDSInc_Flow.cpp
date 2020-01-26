@@ -28,7 +28,7 @@
 #include "../../../../include/numerics/flow/convection_upwind/CUpwFDSInc_Flow.hpp"
 
 CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
+
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == VARIABLE);
   energy           = config->GetEnergy_Equation();
@@ -45,16 +45,16 @@ CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVa
   Epsilon      = new su2double[nVar];
   Precon       = new su2double*[nVar];
   invPrecon_A  = new su2double*[nVar];
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
     Precon[iVar]      = new su2double[nVar];
     invPrecon_A[iVar] = new su2double[nVar];
   }
-  
+
 }
 
 CUpwFDSInc_Flow::~CUpwFDSInc_Flow(void) {
-  
+
   delete [] Diff_V;
   delete [] Velocity_i;
   delete [] Velocity_j;
@@ -63,18 +63,18 @@ CUpwFDSInc_Flow::~CUpwFDSInc_Flow(void) {
   delete [] ProjFlux_j;
   delete [] Lambda;
   delete [] Epsilon;
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
     delete [] Precon[iVar];
     delete [] invPrecon_A[iVar];
   }
   delete [] Precon;
   delete [] invPrecon_A;
-  
+
 }
 
 void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
+
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
   su2double ProjGridVel = 0.0;
 
@@ -86,21 +86,21 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   }
 
   /*--- Face area (norm or the normal vector) ---*/
-  
+
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
-  
+
   /*--- Compute and unitary normal vector ---*/
-  
+
   for (iDim = 0; iDim < nDim; iDim++) {
     UnitNormal[iDim] = Normal[iDim]/Area;
     if (fabs(UnitNormal[iDim]) < EPS) UnitNormal[iDim] = EPS;
   }
-  
+
   /*--- Set primitive variables at points iPoint and jPoint ---*/
-    
+
   Pressure_i    = V_i[0];             Pressure_j    = V_j[0];
   Temperature_i = V_i[nDim+1];        Temperature_j = V_j[nDim+1];
   DensityInc_i  = V_i[nDim+2];        DensityInc_j  = V_j[nDim+2];
@@ -115,19 +115,19 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
     MeanVelocity[iDim]  = 0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
     ProjVelocity       += MeanVelocity[iDim]*Normal[iDim];
   }
-  
+
   /*--- Projected velocity adjustment due to mesh motion ---*/
-  
-  if (dynamic_grid) { 
-    ProjGridVel = 0.0; 
-    for (iDim = 0; iDim < nDim; iDim++) { 
-      ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim]; 
-    } 
-    ProjVelocity   -= ProjGridVel; 
+
+  if (dynamic_grid) {
+    ProjGridVel = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+    }
+    ProjVelocity   -= ProjGridVel;
   }
 
   /*--- Mean variables at points iPoint and jPoint ---*/
-  
+
   MeanDensity     = 0.5*(DensityInc_i  + DensityInc_j);
   MeanPressure    = 0.5*(Pressure_i    + Pressure_j);
   MeanBetaInc2    = 0.5*(BetaInc2_i    + BetaInc2_j);
@@ -153,13 +153,13 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   /*--- Compute ProjFlux_i ---*/
 
   GetInviscidIncProjFlux(&DensityInc_i, Velocity_i, &Pressure_i, &BetaInc2_i, &Enthalpy_i, Normal, ProjFlux_i);
-  
+
   /*--- Compute ProjFlux_j ---*/
 
   GetInviscidIncProjFlux(&DensityInc_j, Velocity_j, &Pressure_j, &BetaInc2_j, &Enthalpy_j, Normal, ProjFlux_j);
 
   /*--- Eigenvalues of the preconditioned system ---*/
-  
+
   if (nDim == 2) {
     Lambda[0] = ProjVelocity;
     Lambda[1] = ProjVelocity;
@@ -173,9 +173,9 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
     Lambda[3] = ProjVelocity - MeanSoundSpeed;
     Lambda[4] = ProjVelocity + MeanSoundSpeed;
   }
-  
+
   /*--- Absolute value of the eigenvalues ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++)
     Lambda[iVar] = fabs(Lambda[iVar]);
 

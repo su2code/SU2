@@ -44,7 +44,7 @@ CCentJST_Flow::~CCentJST_Flow(void) {
 void CCentJST_Flow::DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
   /*--- Compute differences btw. Laplacians ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
     Diff_Lapl[iVar] = Und_Lapl_i[iVar]-Und_Lapl_j[iVar];
   }
@@ -53,22 +53,22 @@ void CCentJST_Flow::DissipationTerm(su2double *val_residual, su2double **val_Jac
 
   sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
   sc4 = sc2*sc2/4.0;
-  
+
   Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
   Epsilon_4 = max(0.0, Param_Kappa_4-Epsilon_2)*sc4;
-  
+
   /*--- Compute viscous part of the residual ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] += (Epsilon_2*Diff_U[iVar] - Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
-  
+
   /*--- Jacobian computation ---*/
 
   if (implicit) {
 
     cte_0 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
     cte_1 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
-    
+
     ScalarDissipationJacobian(val_Jacobian_i, val_Jacobian_j);
   }
 }

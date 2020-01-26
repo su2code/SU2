@@ -29,7 +29,7 @@
 
 CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config,
                                    bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
-  
+
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
@@ -37,9 +37,9 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-  
+
   roe_low_dissipation = val_low_dissipation;
-  
+
   Diff_U = new su2double [nVar];
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
@@ -58,7 +58,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
 }
 
 CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
-  
+
   delete [] Diff_U;
   delete [] Velocity_i;
   delete [] Velocity_j;
@@ -74,7 +74,7 @@ CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
   }
   delete [] P_Tensor;
   delete [] invP_Tensor;
-  
+
 }
 
 void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
@@ -86,7 +86,7 @@ void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val
 }
 
 void CUpwRoeBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
+
   unsigned short iVar, jVar, iDim;
   su2double ProjGridVel = 0.0, Energy_i, Energy_j;
 
@@ -99,39 +99,39 @@ void CUpwRoeBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     AD::SetPreaccIn(Sensor_i); AD::SetPreaccIn(Sensor_j);
     AD::SetPreaccIn(Dissipation_i); AD::SetPreaccIn(Dissipation_j);
   }
-  
+
   /*--- Face area (norm or the normal vector) and unit normal ---*/
 
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
-  
+
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
-  
+
   /*--- Primitive variables at point i ---*/
-  
+
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity_i[iDim] = V_i[iDim+1];
   Pressure_i = V_i[nDim+1];
   Density_i  = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
- 
+
   /*--- Primitive variables at point j ---*/
-  
+
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity_j[iDim] = V_j[iDim+1];
   Pressure_j = V_j[nDim+1];
   Density_j  = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  
+
   /*--- Compute variables that are common to the derived schemes ---*/
-  
+
   /*--- Roe-averaged variables at interface between i & j ---*/
-  
+
   su2double R = sqrt(fabs(Density_j/Density_i));
   RoeDensity = R*Density_i;
   su2double sq_vel = 0.0;
@@ -141,9 +141,9 @@ void CUpwRoeBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
   RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel);
-  
+
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
-  
+
   if (RoeSoundSpeed2 <= 0.0) {
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] = 0.0;
@@ -158,85 +158,85 @@ void CUpwRoeBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     AD::EndPreacc();
     return;
   }
-  
+
   RoeSoundSpeed = sqrt(RoeSoundSpeed2);
-  
+
   /*--- P tensor ---*/
-  
+
   GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
-  
+
   /*--- Projected velocity adjusted for mesh motion ---*/
-  
+
   ProjVelocity = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     ProjVelocity += RoeVelocity[iDim]*UnitNormal[iDim];
-  
+
   if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++)
       ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
     ProjVelocity -= ProjGridVel;
   }
-  
+
   /*--- Flow eigenvalues ---*/
-  
+
   for (iDim = 0; iDim < nDim; iDim++)
     Lambda[iDim] = ProjVelocity;
-  
+
   Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
-  
+
   /*--- Apply Mavriplis' entropy correction to eigenvalues ---*/
-  
+
   su2double MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
-  
-  for (iVar = 0; iVar < nVar; iVar++) 
+
+  for (iVar = 0; iVar < nVar; iVar++)
     Lambda[iVar] = max(fabs(Lambda[iVar]), config->GetEntropyFix_Coeff()*MaxLambda);
-  
+
   /*--- Reconstruct conservative variables ---*/
-  
+
   Conservatives_i[0] = Density_i;
   Conservatives_j[0] = Density_j;
-  
+
   for (iDim = 0; iDim < nDim; iDim++) {
     Conservatives_i[iDim+1] = Density_i*Velocity_i[iDim];
     Conservatives_j[iDim+1] = Density_j*Velocity_j[iDim];
   }
   Conservatives_i[nDim+1] = Density_i*Energy_i;
   Conservatives_j[nDim+1] = Density_j*Energy_j;
-  
+
   /*--- Compute left and right fluxes ---*/
-  
+
   GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, ProjFlux_i);
   GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, Normal, ProjFlux_j);
-  
+
   /*--- Initialize residual (flux) and Jacobians ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = kappa*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
-  
+
   if (implicit) {
     GetInviscidProjJac(Velocity_i, &Energy_i, Normal, kappa, val_Jacobian_i);
     GetInviscidProjJac(Velocity_j, &Energy_j, Normal, kappa, val_Jacobian_j);
   }
-  
+
   /*--- Finalize in children class ---*/
-  
+
   FinalizeResidual(val_residual, val_Jacobian_i, val_Jacobian_j, config);
-  
+
   /*--- Correct for grid motion ---*/
-  
+
   if (dynamic_grid) {
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] -= ProjGridVel*Area * 0.5*(Conservatives_i[iVar]+Conservatives_j[iVar]);
-      
+
       if (implicit) {
         val_Jacobian_i[iVar][iVar] -= 0.5*ProjGridVel*Area;
         val_Jacobian_j[iVar][iVar] -= 0.5*ProjGridVel*Area;
       }
     }
   }
-  
+
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
-  
+
 }

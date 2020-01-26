@@ -38,7 +38,7 @@
  */
 class CSourcePieceWise_TransLM : public CNumerics {
 private:
-  
+
   /*-- SA model constants --*/
   su2double cv1_3;
   su2double k2;
@@ -48,7 +48,7 @@ private:
   su2double sigma;
   su2double cb2;
   su2double cw1;
-  
+
   /*-- gamma-theta model constants --*/
   su2double c_e1;
   su2double c_a1;
@@ -58,17 +58,17 @@ private:
   su2double s1;
   su2double c_theta;
   su2double sigmat;
-  
+
   /*-- Correlation constants --*/
   su2double flen_global;
   su2double alpha_global;
   su2double Vorticity;
 
   bool implicit;
-  
+
 public:
   bool debugme; // For debugging only, remove this. -AA
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -76,12 +76,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CSourcePieceWise_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CSourcePieceWise_TransLM(void);
-  
+
   /*!
    * \brief Residual for source term integration.
    * \param[out] val_residual - Pointer to the total residual.
@@ -90,6 +90,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep);
-  
+
   void CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(su2double *TransVar_i, su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config);
 };

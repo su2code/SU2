@@ -44,23 +44,23 @@ CSourceBodyForce::~CSourceBodyForce(void) {
 }
 
 void CSourceBodyForce::ComputeResidual(su2double *val_residual, CConfig *config) {
-  
+
   unsigned short iDim;
   su2double Force_Ref = config->GetForce_Ref();
-  
+
   /*--- Zero the continuity contribution ---*/
-  
+
   val_residual[0] = 0.0;
-  
+
   /*--- Momentum contribution ---*/
-  
+
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[iDim+1] = -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
-  
+
   /*--- Energy contribution ---*/
-  
+
   val_residual[nDim+1] = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
-  
+
 }

@@ -39,7 +39,7 @@
 class CUpwAUSMPLUSUP_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
 private:
   su2double Kp, Ku, sigma;
-  
+
   /*!
    * \brief Mass flux and pressure for the AUSM+up scheme.
    * \param[in] config - Definition of the particular problem.
@@ -47,9 +47,9 @@ private:
    * \param[out] pressure - The pressure at the control volume face.
    */
   void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -57,7 +57,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */

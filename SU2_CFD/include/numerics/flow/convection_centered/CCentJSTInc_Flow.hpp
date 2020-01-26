@@ -37,7 +37,7 @@
  * \author F. Palacios, T. Economon
  */
 class CCentJSTInc_Flow : public CNumerics {
-  
+
 private:
   unsigned short iDim, iVar, jVar;   /*!< \brief Iteration on dimension and variables. */
   su2double *Diff_V, *Diff_Lapl,     /*!< \brief Diference of primitive variables and undivided laplacians. */
@@ -65,7 +65,7 @@ private:
   energy;                /*!< \brief computation with the energy equation. */
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -73,12 +73,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CCentJSTInc_Flow(void);
-  
+
   /*!
    * \brief Compute the flow residual using a JST method.
    * \param[out] val_residual - Pointer to the residual array.

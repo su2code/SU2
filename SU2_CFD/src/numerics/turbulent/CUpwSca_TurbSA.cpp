@@ -41,9 +41,9 @@ void CUpwSca_TurbSA::ExtraADPreaccIn() {
 }
 
 void CUpwSca_TurbSA::FinishResidualCalc(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
+
   val_residual[0] = a0*TurbVar_i[0]+a1*TurbVar_j[0];
-  
+
   if (implicit) {
     val_Jacobian_i[0][0] = a0;
     val_Jacobian_j[0][0] = a1;

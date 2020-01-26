@@ -28,16 +28,16 @@
 #include "../../../include/numerics/transition/CUpwLin_TransLM.hpp"
 
 CUpwLin_TransLM::CUpwLin_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
+
   implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-  
+
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
-  
+
 }
 
 CUpwLin_TransLM::~CUpwLin_TransLM(void) {
@@ -46,18 +46,18 @@ CUpwLin_TransLM::~CUpwLin_TransLM(void) {
 }
 
 void CUpwLin_TransLM::ComputeResidual (su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
-  
+
+
   Density_i = U_i[0];
   Density_j = U_j[0];
-  
+
   q_ij = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = U_i[iDim+1]/Density_i;
     Velocity_j[iDim] = U_j[iDim+1]/Density_j;
     q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
   }
-  
+
   a0 = 0.5*(q_ij+fabs(q_ij));
   a1 = 0.5*(q_ij-fabs(q_ij));
   val_residual[0] = a0*TransVar_i[0]+a1*TransVar_j[0];
@@ -65,8 +65,8 @@ void CUpwLin_TransLM::ComputeResidual (su2double *val_residual, su2double **val_
   //  cout << "Velicity x: " << Velocity_i[0] << ", " << Velocity_j[0] << endl;
   //  cout << "Velicity y: " << Velocity_i[1] << ", " << Velocity_j[1] << endl;
   //  cout << "val_resid: " << val_residual[0] << ", " << val_residual[1] << endl;
-  
-  
+
+
   if (implicit) {
     val_Jacobian_i[0][0] = a0;
     val_Jacobian_i[1][1] = a0;

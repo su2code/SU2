@@ -29,23 +29,23 @@
 
 CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
                              CNumerics(val_nDim, val_nVar, config) {
-  
+
   if (config->GetDynamic_Grid() && (SU2_MPI::GetRank() == MASTER_NODE))
     cout << "WARNING: Grid velocities are NOT yet considered in AUSM-type schemes." << endl;
-  
+
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   UseAccurateJacobian = config->GetUse_Accurate_Jacobians();
   HasAnalyticalDerivatives = false;
   FinDiffStep = 1e-4;
-  
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-  
+
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
   psi_i = new su2double [nVar];
   psi_j = new su2double [nVar];
-  
+
   RoeVelocity = new su2double [nDim];
   Lambda = new su2double [nVar];
   Epsilon = new su2double [nVar];
@@ -58,12 +58,12 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
 }
 
 CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
-  
+
   delete [] Velocity_i;
   delete [] Velocity_j;
   delete [] psi_i;
   delete [] psi_j;
-  
+
   delete [] RoeVelocity;
   delete [] Lambda;
   delete [] Epsilon;
@@ -73,7 +73,7 @@ CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
   }
   delete [] P_Tensor;
   delete [] invP_Tensor;
-  
+
 }
 
 void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure)
@@ -94,12 +94,12 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
 
   unsigned short iDim, iVar, jVar, kVar;
   su2double R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, sq_vel, Energy_i, Energy_j;
-  
+
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
 
   /*--- Mean Roe variables iPoint and jPoint ---*/
-  
+
   R = sqrt(fabs(Density_j/Density_i));
   RoeDensity = R*Density_i;
   ProjVelocity = 0.0;
@@ -111,27 +111,27 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
   RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
-  
+
   /*--- Compute P and Lambda (do it with the Normal) ---*/
 
   GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
 
   /*--- Flow eigenvalues and Entropy correctors ---*/
-  
+
   for (iDim = 0; iDim < nDim; iDim++)
     Lambda[iDim] = ProjVelocity;
   Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
-  
+
   /*--- Compute inverse P ---*/
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
-  
+
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
   GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
   GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
-  
+
   /*--- Roe's Flux approximation ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
       su2double Proj_ModJac_Tensor_ij = 0.0;
@@ -148,18 +148,18 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
 void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
   /*--- Compute Jacobians using a mixed (numerical/analytical) formulation ---*/
-  
+
   unsigned short iDim, iVar, jVar;
-  
+
   /*--- If not computed analytically, numerically differentiate the fluxes wrt primitives ---*/
-  
+
   if (!HasAnalyticalDerivatives) {
-    
+
     /*--- Create arrays of pointers to the primitive variables so
      we can loop through and perturb them in a general way. ---*/
-    
+
     su2double *primitives_i[6], *primitives_j[6];
-    
+
     for (iDim = 0; iDim < nDim; ++iDim) {
       primitives_i[iDim] = &Velocity_i[iDim];
       primitives_j[iDim] = &Velocity_j[iDim];
@@ -167,15 +167,15 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
     primitives_i[ nDim ] = &Pressure_i;  primitives_j[ nDim ] = &Pressure_j;
     primitives_i[nDim+1] = &Density_i;   primitives_j[nDim+1] = &Density_j;
     primitives_i[nDim+2] = &Enthalpy_i;  primitives_j[nDim+2] = &Enthalpy_j;
-    
+
     /*--- Initialize the gradient arrays with the negative of the quantity,
      then for forward finite differences we add to it and divide. ---*/
-    
+
     for (iVar = 0; iVar < 6; ++iVar) {
       dmdot_dVi[iVar] = -MassFlux;  dpres_dVi[iVar] = -Pressure;
       dmdot_dVj[iVar] = -MassFlux;  dpres_dVj[iVar] = -Pressure;
     }
-    
+
     for (iVar = 0; iVar < nDim+3; ++iVar) {
       /*--- Perturb side i ---*/
       su2double epsilon = FinDiffStep * max(1.0, fabs(*primitives_i[iVar]));
@@ -184,7 +184,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
       dmdot_dVi[iVar] += MassFlux;  dpres_dVi[iVar] += Pressure;
       dmdot_dVi[iVar] /= epsilon;   dpres_dVi[iVar] /= epsilon;
       *primitives_i[iVar] -= epsilon;
-      
+
       /*--- Perturb side j ---*/
       epsilon = FinDiffStep * max(1.0, fabs(*primitives_j[iVar]));
       *primitives_j[iVar] += epsilon;
@@ -196,17 +196,17 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
   }
 
   /*--- Differentiation of fluxes wrt conservatives assuming ideal gas ---*/
-  
+
   su2double dmdot_dUi[5], dmdot_dUj[5], dpres_dUi[5], dpres_dUj[5];
   su2double sq_veli = 0.0, sq_velj = 0.0, dHi_drhoi = 0.0, dHj_drhoj = 0.0;
   su2double oneOnRhoi = 1.0/Density_i, oneOnRhoj = 1.0/Density_j;
-  
+
   for (jVar = 0; jVar < nVar; ++jVar) {
 
     /*--- Partial derivatives of the primitives wrt conservative "jVar" ---*/
     su2double dVi_dUi[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     su2double dVj_dUj[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    
+
     if (jVar == 0) { // Density
       for (iDim = 0; iDim < nDim; ++iDim) {
         // -u,v,w / rho
@@ -218,9 +218,9 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
       }
       dVi_dUi[nDim] = 0.5*Gamma_Minus_One*sq_veli;
       dVj_dUj[nDim] = 0.5*Gamma_Minus_One*sq_velj;
-      
+
       dVi_dUi[nDim+1] = dVj_dUj[nDim+1] = 1.0;
-      
+
       dHi_drhoi = 0.5*(Gamma-2.0)*sq_veli - Gamma*Pressure_i/((Gamma-1.0)*Density_i);
       dHj_drhoj = 0.5*(Gamma-2.0)*sq_velj - Gamma*Pressure_j/((Gamma-1.0)*Density_j);
       dVi_dUi[nDim+2] = dHi_drhoi * oneOnRhoi;
@@ -234,14 +234,14 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
     else { // Momentum
       dVi_dUi[jVar-1] = oneOnRhoi;
       dVj_dUj[jVar-1] = oneOnRhoj;
-      
+
       dVi_dUi[nDim] = -Gamma_Minus_One*Velocity_i[jVar-1];
       dVj_dUj[nDim] = -Gamma_Minus_One*Velocity_j[jVar-1];
-      
+
       dVi_dUi[nDim+2] = dVi_dUi[nDim] * oneOnRhoi;
       dVj_dUj[nDim+2] = dVj_dUj[nDim] * oneOnRhoj;
     }
-    
+
     /*--- Dot product to complete chain rule ---*/
     dmdot_dUi[jVar] = 0.0;  dpres_dUi[jVar] = 0.0;
     dmdot_dUj[jVar] = 0.0;  dpres_dUj[jVar] = 0.0;
@@ -252,11 +252,11 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
       dpres_dUj[jVar] += dpres_dVj[iVar]*dVj_dUj[iVar];
     }
   }
-  
+
   /*--- Assemble final Jacobians (assuming phi = |mdot|) ---*/
-  
+
   su2double mdot_hat, psi_hat[5];
-  
+
   if (MassFlux > 0.0) {
     mdot_hat = Area*MassFlux*oneOnRhoi;
     for (iVar = 0; iVar < nVar; ++iVar) psi_hat[iVar] = Area*psi_i[iVar];
@@ -265,7 +265,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
     mdot_hat = Area*MassFlux*oneOnRhoj;
     for (iVar = 0; iVar < nVar; ++iVar) psi_hat[iVar] = Area*psi_j[iVar];
   }
-  
+
   /*--- Contribution from the mass flux derivatives ---*/
   for (iVar = 0; iVar < nVar; ++iVar) {
     for (jVar = 0; jVar < nVar; ++jVar) {
@@ -273,7 +273,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
       val_Jacobian_j[iVar][jVar] = psi_hat[iVar] * dmdot_dUj[jVar];
     }
   }
-  
+
   /*--- Contribution from the pressure derivatives ---*/
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jVar = 0; jVar < nVar; ++jVar) {
@@ -281,7 +281,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
       val_Jacobian_j[iDim+1][jVar] += Normal[iDim] * dpres_dUj[jVar];
     }
   }
-  
+
   /*--- Contributions from the derivatives of PSI wrt the conservatives ---*/
   if (MassFlux > 0.0) {
     /*--- Velocity terms ---*/
@@ -365,16 +365,16 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
                          0.5*DissFlux*(psi_i[nVar-1]-psi_j[nVar-1]);
 
   for (iVar = 0; iVar < nVar; iVar++) val_residual[iVar] *= Area;
-  
+
   /*--- Space to end preaccumulation ---*/
-  
+
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
-  
+
   /*--- If required, compute Jacobians, either approximately (Roe) or numerically ---*/
-  
+
   if (!implicit) return;
-  
+
   if (UseAccurateJacobian)
     AccurateJacobian(config, val_Jacobian_i, val_Jacobian_j);
   else

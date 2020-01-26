@@ -28,16 +28,16 @@
 #include "../../../../include/numerics/flow/convection_upwind/CUpwHLLC_Flow.hpp"
 
 CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
+
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   kappa = config->GetRoe_Kappa();
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
-  
+
   Gamma = config->GetGamma();
 
   Gamma_Minus_One = Gamma - 1.0;
-  
+
   IntermediateState = new su2double [nVar];
   dSm_dU            = new su2double [nVar];
   dPI_dU            = new su2double [nVar];
@@ -47,12 +47,12 @@ CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, C
 
   Velocity_i        = new su2double [nDim];
   Velocity_j        = new su2double [nDim];
-  RoeVelocity       = new su2double [nDim];  
-  
+  RoeVelocity       = new su2double [nDim];
+
 }
 
 CUpwHLLC_Flow::~CUpwHLLC_Flow(void) {
-  
+
   delete [] IntermediateState;
   delete [] dSm_dU;
   delete [] dPI_dU;
@@ -63,25 +63,25 @@ CUpwHLLC_Flow::~CUpwHLLC_Flow(void) {
   delete [] Velocity_i;
   delete [] Velocity_j;
   delete [] RoeVelocity;
-  
+
 }
 
 void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
+
   /*--- Face area (norm or the normal vector) ---*/
-  
+
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim] * Normal[iDim];
 
   Area = sqrt(Area);
-  
+
   /*-- Unit Normal ---*/
-  
+
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim] / Area;
 
-  /*-- Fluid velocity at node i,j ---*/  
+  /*-- Fluid velocity at node i,j ---*/
 
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim]  = V_i[iDim+1];
@@ -95,7 +95,7 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   Enthalpy_i = V_i[nDim+3];
 
   /*--- Primitive variables at point j ---*/
-  
+
   Pressure_j = V_j[nDim+1];
   Density_j  = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
@@ -114,10 +114,10 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   SoundSpeed_i = sqrt( (Enthalpy_i - 0.5 * sq_vel_i) * Gamma_Minus_One );
   SoundSpeed_j = sqrt( (Enthalpy_j - 0.5 * sq_vel_j) * Gamma_Minus_One );
-   
+
   /*--- Projected velocities ---*/
-  
-  ProjVelocity_i = 0; 
+
+  ProjVelocity_i = 0;
   ProjVelocity_j = 0;
 
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -137,10 +137,10 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   SoundSpeed_i -= ProjInterfaceVel;
     SoundSpeed_j += ProjInterfaceVel;
 
-        ProjVelocity_i -= ProjInterfaceVel; 
+        ProjVelocity_i -= ProjInterfaceVel;
         ProjVelocity_j -= ProjInterfaceVel;
-  }  
-  
+  }
+
   /*--- Roe's averaging ---*/
 
   Rrho = ( sqrt(Density_i) + sqrt(Density_j) );
@@ -152,10 +152,10 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     RoeVelocity[iDim] = ( Velocity_i[iDim] * sqrt(Density_i) + Velocity_j[iDim] * sqrt(Density_j) ) / Rrho;
     sq_velRoe        +=  RoeVelocity[iDim] * RoeVelocity[iDim];
     RoeProjVelocity  +=  RoeVelocity[iDim] * UnitNormal[iDim];
-  } 
+  }
 
   /*--- Mean Roe variables iPoint and jPoint ---*/
-    
+
   RoeDensity = sqrt( Density_i * Density_j );
   RoeEnthalpy = ( sqrt(Density_j) * Enthalpy_j + sqrt(Density_i) * Enthalpy_i) / Rrho;
 
@@ -166,17 +166,17 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
 
   /*--- Speed of sound at L and R ---*/
-  
+
   sL = min( RoeProjVelocity - RoeSoundSpeed, ProjVelocity_i - SoundSpeed_i);
   sR = max( RoeProjVelocity + RoeSoundSpeed, ProjVelocity_j + SoundSpeed_j);
-  
+
   /*--- speed of contact surface ---*/
 
   RHO = Density_j * (sR - ProjVelocity_j) - Density_i * (sL - ProjVelocity_i);
   sM = ( Pressure_i - Pressure_j - Density_i * ProjVelocity_i * ( sL - ProjVelocity_i ) + Density_j * ProjVelocity_j * ( sR - ProjVelocity_j ) ) / RHO;
-  
+
   /*--- Pressure at right and left (Pressure_j=Pressure_i) side of contact surface ---*/
-  
+
   pStar = Density_j * ( ProjVelocity_j - sR ) * ( ProjVelocity_j - sM ) + Pressure_j;
 
 
@@ -215,7 +215,7 @@ if (sM > 0.0) {
 
     /*--- Compute Right Flux ---*/
 
-    val_residual[0] = Density_j * ProjVelocity_j;  
+    val_residual[0] = Density_j * ProjVelocity_j;
     for (iDim = 0; iDim < nDim; iDim++)
       val_residual[iDim+1] = Density_j * Velocity_j[iDim] * ProjVelocity_j + Pressure_j * UnitNormal[iDim];
     val_residual[nVar-1] = Enthalpy_j * Density_j * ProjVelocity_j;
@@ -251,9 +251,9 @@ if (sM > 0.0) {
     if (sL > 0.0) {
 
       /*--- Compute Jacobian based on Left State ---*/
-  
-      for (iVar = 0; iVar < nVar; iVar++) 
-        for (jVar = 0; jVar < nVar; jVar++) 
+
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
           val_Jacobian_j[iVar][jVar] = 0;
 
       GetInviscidProjJac(Velocity_i, &Energy_i, UnitNormal, 1.0, val_Jacobian_i);
@@ -273,10 +273,10 @@ if (sM > 0.0) {
       /*--- Computing pressure derivatives d/dU_L (PI) ---*/
 
       dPI_dU[0] = 0.5 * Gamma_Minus_One * sq_vel_i;
-      for (iDim = 0; iDim < nDim; iDim++)      
+      for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Gamma_Minus_One * Velocity_i[iDim];
       dPI_dU[nVar-1] = Gamma_Minus_One;
-      
+
 
       /*--- Computing d/dU_L (Sm) ---*/
 
@@ -285,14 +285,14 @@ if (sM > 0.0) {
         dSm_dU[iDim+1] = ( UnitNormal[iDim] * ( 2 * ProjVelocity_i - sL - sM ) + dPI_dU[iDim+1] ) / RHO;
       dSm_dU[nVar-1] = dPI_dU[nVar-1] / RHO;
 
-      
+
       /*--- Computing d/dU_L (rhoStar) ---*/
 
       drhoStar_dU[0] = Omega * ( sL + IntermediateState[0] * dSm_dU[0] );
       for (iDim = 0; iDim < nDim; iDim++)
         drhoStar_dU[iDim+1] = Omega * ( - UnitNormal[iDim] + IntermediateState[0] * dSm_dU[iDim+1] );
       drhoStar_dU[nVar-1] = Omega * IntermediateState[0] * dSm_dU[nVar-1];
-      
+
 
       /*--- Computing d/dU_L (pStar) ---*/
 
@@ -304,7 +304,7 @@ if (sM > 0.0) {
 
       for (iVar = 0; iVar < nVar; iVar++)
         dEStar_dU[iVar] = Omega * ( sM * dpStar_dU[iVar] + ( EStar + pStar ) * dSm_dU[iVar] );
-      
+
       dEStar_dU[0] += Omega * ProjVelocity_i * ( Enthalpy_i - dPI_dU[0] );
       for (iDim = 0; iDim < nDim; iDim++)
         dEStar_dU[iDim+1] += Omega * ( - UnitNormal[iDim] * Enthalpy_i - ProjVelocity_i * dPI_dU[iDim+1] );
@@ -313,7 +313,7 @@ if (sM > 0.0) {
 
 
       /*--- Jacobian First Row ---*/
-            
+
       for (iVar = 0; iVar < nVar; iVar++)
         val_Jacobian_i[0][iVar] = sM * drhoStar_dU[iVar] + IntermediateState[0] * dSm_dU[iVar];
 
@@ -326,7 +326,7 @@ if (sM > 0.0) {
         val_Jacobian_i[jDim+1][0] += OmegaSM * Velocity_i[jDim] * ProjVelocity_i;
 
         val_Jacobian_i[jDim+1][jDim+1] += OmegaSM * (sL - ProjVelocity_i);
-        
+
         for (iDim = 0; iDim < nDim; iDim++)
           val_Jacobian_i[jDim+1][iDim+1] -= OmegaSM * Velocity_i[jDim] * UnitNormal[iDim];
 
@@ -335,7 +335,7 @@ if (sM > 0.0) {
       }
 
       /*--- Jacobian Last Row ---*/
-      
+
       for (iVar = 0; iVar < nVar; iVar++)
         val_Jacobian_i[nVar-1][iVar] = sM * ( dEStar_dU[iVar] + dpStar_dU[iVar] ) + ( EStar + pStar ) * dSm_dU[iVar];
 
@@ -346,13 +346,13 @@ if (sM > 0.0) {
 
 
       /*--- Computing d/dU_R (Sm) ---*/
-      
+
       dSm_dU[0] = ( ProjVelocity_j * ProjVelocity_j - sM * sR - 0.5 * Gamma_Minus_One * sq_vel_j ) / RHO;
       for (iDim = 0; iDim < nDim; iDim++)
         dSm_dU[iDim+1] = - ( UnitNormal[iDim] * ( 2 * ProjVelocity_j - sR - sM) - Gamma_Minus_One * Velocity_j[iDim] ) / RHO;
       dSm_dU[nVar-1]  = - Gamma_Minus_One / RHO;
-      
-      
+
+
       /*--- Computing d/dU_R (pStar) ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
@@ -363,7 +363,7 @@ if (sM > 0.0) {
 
       for (iVar = 0; iVar < nVar; iVar++)
         dEStar_dU[iVar] = Omega * ( sM * dpStar_dU[iVar] + ( EStar + pStar ) * dSm_dU[iVar] );
-      
+
 
 
       /*--- Jacobian First Row ---*/
@@ -388,13 +388,13 @@ if (sM > 0.0) {
     if (sR < 0.0) {
 
       /*--- Compute Jacobian based on Right State ---*/
-  
-      for (iVar = 0; iVar < nVar; iVar++) 
-        for (jVar = 0; jVar < nVar; jVar++) 
+
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
           val_Jacobian_i[iVar][jVar] = 0;
 
       GetInviscidProjJac(Velocity_j, &Energy_j, UnitNormal, 1.0, val_Jacobian_j);
-    
+
     }
     else {
       /*--- Compute Jacobian based on Right Star State ---*/
@@ -413,7 +413,7 @@ if (sM > 0.0) {
       for (iDim = 0; iDim < nDim; iDim++)
         dSm_dU[iDim+1] = ( UnitNormal[iDim] * ( 2 * ProjVelocity_i - sL - sM ) - Gamma_Minus_One * Velocity_i[iDim] ) / RHO;
       dSm_dU[nVar-1] = Gamma_Minus_One / RHO;
-      
+
 
       /*--- Computing d/dU_L (pStar) ---*/
 
@@ -425,7 +425,7 @@ if (sM > 0.0) {
 
       for (iVar = 0; iVar < nVar; iVar++)
         dEStar_dU[iVar] = Omega * ( sM * dpStar_dU[iVar] + ( EStar + pStar ) * dSm_dU[iVar] );
-      
+
 
 
       /*--- Jacobian First Row ---*/
@@ -448,30 +448,30 @@ if (sM > 0.0) {
 
 
       /*--------- Right Jacobian ---------*/
-      
-      
+
+
       /*--- Computing pressure derivatives d/dU_R (PI) ---*/
 
       dPI_dU[0] = 0.5 * Gamma_Minus_One * sq_vel_j;
-      for (iDim = 0; iDim < nDim; iDim++)      
+      for (iDim = 0; iDim < nDim; iDim++)
         dPI_dU[iDim+1] = - Gamma_Minus_One * Velocity_j[iDim];
       dPI_dU[nVar-1] = Gamma_Minus_One;
 
 
 
       /*--- Computing d/dU_R (Sm) ---*/
-      
+
       dSm_dU[0] = - ( - ProjVelocity_j * ProjVelocity_j + sM * sR + dPI_dU[0] ) / RHO;
       for (iDim = 0; iDim < nDim; iDim++)
         dSm_dU[iDim+1] = - ( UnitNormal[iDim] * ( 2 * ProjVelocity_j - sR - sM) + dPI_dU[iDim+1] ) / RHO;
       dSm_dU[nVar-1]  = - dPI_dU[nVar-1] / RHO;
-      
+
 
       /*--- Computing d/dU_R (pStar) ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
         dpStar_dU[iVar] = Density_j * (sL - ProjVelocity_i) * dSm_dU[iVar];
-      
+
 
       /*--- Computing d/dU_R (rhoStar) ---*/
 
@@ -485,7 +485,7 @@ if (sM > 0.0) {
 
       for (iVar = 0; iVar < nVar; iVar++)
         dEStar_dU[iVar] = Omega * ( sM * dpStar_dU[iVar] + ( EStar + pStar ) * dSm_dU[iVar] );
-      
+
       dEStar_dU[0] += Omega * ProjVelocity_j * ( Enthalpy_j - dPI_dU[0] );
       for (iDim = 0; iDim < nDim; iDim++)
         dEStar_dU[iDim+1] += Omega * ( - UnitNormal[iDim] * Enthalpy_j - ProjVelocity_j * dPI_dU[iDim+1] );
@@ -494,7 +494,7 @@ if (sM > 0.0) {
 
 
       /*--- Jacobian First Row ---*/
-            
+
       for (iVar = 0; iVar < nVar; iVar++)
         val_Jacobian_j[0][iVar] = sM * drhoStar_dU[iVar] + IntermediateState[0] * dSm_dU[iVar];
 
@@ -507,7 +507,7 @@ if (sM > 0.0) {
         val_Jacobian_j[jDim+1][0] += OmegaSM * Velocity_j[jDim] * ProjVelocity_j;
 
         val_Jacobian_j[jDim+1][jDim+1] += OmegaSM * (sR - ProjVelocity_j);
-        
+
         for (iDim = 0; iDim < nDim; iDim++)
           val_Jacobian_j[jDim+1][iDim+1] -= OmegaSM * Velocity_j[jDim] * UnitNormal[iDim];
 
@@ -516,17 +516,17 @@ if (sM > 0.0) {
       }
 
       /*--- Jacobian Last Row ---*/
-      
+
       for (iVar = 0; iVar < nVar; iVar++)
         val_Jacobian_j[nVar-1][iVar] = sM * ( dEStar_dU[iVar] + dpStar_dU[iVar] ) + ( EStar + pStar ) * dSm_dU[iVar];
-  
+
     }
   }
 
 
   /*--- Jacobians of the inviscid flux, scale = k because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
-  
-  Area *= kappa;  
+
+  Area *= kappa;
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {

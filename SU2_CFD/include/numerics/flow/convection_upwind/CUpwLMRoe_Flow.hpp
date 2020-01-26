@@ -47,7 +47,7 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-    
+
 public:
   /*!
    * \brief Constructor of the class.

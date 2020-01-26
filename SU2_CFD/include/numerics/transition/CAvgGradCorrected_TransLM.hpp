@@ -43,9 +43,9 @@ private:
   su2double *Edge_Vector;
   bool implicit, incompressible;
   su2double sigma;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -53,12 +53,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGradCorrected_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CAvgGradCorrected_TransLM(void);
-  
+
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients with correction.
    * \param[out] val_residual - Pointer to the total residual.

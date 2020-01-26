@@ -52,24 +52,24 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   unsigned short iVar, jVar, iDim;
 
   /*--- Normalized normal vector ---*/
-  
+
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
-  
+
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
-  
+
   for (iVar = 0; iVar < nPrimVar; iVar++) {
     PrimVar_i[iVar] = V_i[iVar];
     PrimVar_j[iVar] = V_j[iVar];
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
-  
+
 
   /*--- Compute vector going from iPoint to jPoint ---*/
-  
+
   dist_ij_2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
@@ -77,16 +77,16 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   }
 
   /*--- Laminar and Eddy viscosity ---*/
-  
+
   Laminar_Viscosity_i = V_i[nDim+5]; Laminar_Viscosity_j = V_j[nDim+5];
   Eddy_Viscosity_i = V_i[nDim+6]; Eddy_Viscosity_j = V_j[nDim+6];
 
   /*--- Mean Viscosities and turbulent kinetic energy---*/
-  
+
   Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
   Mean_Eddy_Viscosity = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   Mean_turb_ke = 0.5*(turb_ke_i + turb_ke_j);
-  
+
   /*--- Mean gradient approximation ---*/
 
   for (iVar = 0; iVar < nDim+1; iVar++) {
@@ -101,9 +101,9 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, Edge_Vector,
                     dist_ij_2, nDim+1);
   }
-  
+
   /*--- Wall shear stress values (wall functions) ---*/
-  
+
   if (TauWall_i > 0.0 && TauWall_j > 0.0) Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
   else if (TauWall_i > 0.0) Mean_TauWall = TauWall_i;
   else if (TauWall_j > 0.0) Mean_TauWall = TauWall_j;
@@ -129,14 +129,14 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   GetViscousProjFlux(Mean_PrimVar, Normal);
 
   /*--- Update viscous residual ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
-  
+
   /*--- Compute the implicit part ---*/
-  
+
   if (implicit) {
-    
+
     if (dist_ij_2 == 0.0) {
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
@@ -153,12 +153,12 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
       GetViscousProjJacs(Mean_PrimVar, Area, Proj_Flux_Tensor,
                          val_Jacobian_i, val_Jacobian_j);
     }
-    
+
   }
 
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
-  
+
 }
 
 

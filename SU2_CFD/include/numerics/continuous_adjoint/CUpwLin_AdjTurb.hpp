@@ -39,9 +39,9 @@
 class CUpwLin_AdjTurb : public CNumerics {
 private:
   su2double *Velocity_i;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -49,12 +49,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwLin_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CUpwLin_AdjTurb(void);
-  
+
   /*!
    * \brief Compute the adjoint upwind flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.

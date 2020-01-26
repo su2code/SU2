@@ -38,7 +38,7 @@
  */
 class CSourceConservative_AdjTurb : public CNumerics {
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -46,12 +46,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CSourceConservative_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CSourceConservative_AdjTurb(void);
-  
+
   /*!
    * \brief Source term integration using a conservative scheme.
    * \param[out] val_residual - Pointer to the total residual.

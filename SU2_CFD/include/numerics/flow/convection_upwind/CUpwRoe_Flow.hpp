@@ -46,9 +46,9 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -57,10 +57,10 @@ public:
    * \param[in] val_low_dissipation - Use a low dissipation formulation.
    */
   CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CUpwRoe_Flow(void);
-  
+
 };

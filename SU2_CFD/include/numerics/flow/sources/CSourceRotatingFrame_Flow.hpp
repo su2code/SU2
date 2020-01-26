@@ -38,7 +38,7 @@
  */
 class CSourceRotatingFrame_Flow : public CNumerics {
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -46,12 +46,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CSourceRotatingFrame_Flow(void);
-  
+
   /*!
    * \brief Residual of the rotational frame source term.
    * \param[out] val_residual - Pointer to the total residual.
