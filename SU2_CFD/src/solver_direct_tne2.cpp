@@ -542,6 +542,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
     nonPhys = nodes->SetPrimVar_Compressible(iPoint, config);
     for (unsigned short iDim = 0; iDim < nDim; iDim++) nodes->SetPrimitive(iPoint, nSpecies+2+iDim, Mvec_Inf[iDim]*node_infty->GetSoundSpeed(0));
     nodes->Prim2ConsVar(config, iPoint, nodes->GetPrimitive(iPoint), nodes->GetSolution(iPoint));
+    for (iVar = 0; iVar < nVar; iVar++) nodes->SetSolution_Old(iPoint, nodes->GetSolution(iPoint));
   }
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
@@ -3204,21 +3205,6 @@ void CTNE2EulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- Communicate the Hessian values via MPI. ---*/
-  
-  InitiateComms(geometry, config, ANISO_HESSIAN);
-  CompleteComms(geometry, config, ANISO_HESSIAN);
-  if(viscous) {
-    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
-    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
-  }
-  if(source) {
-    InitiateComms(geometry, config, ANISO_HESSIAN_SOURCE);
-    CompleteComms(geometry, config, ANISO_HESSIAN_SOURCE);
-  }
-
-  CorrectBoundAnisoHess(geometry, config);
-
   //--- Make positive definite matrix
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     for(iVar = 0; iVar < nVarMetr; iVar++){
@@ -3306,6 +3292,21 @@ void CTNE2EulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
   delete [] A;
   delete [] EigVal;
   delete [] EigVec;
+
+  /*--- Communicate the Hessian values via MPI. ---*/
+  
+  InitiateComms(geometry, config, ANISO_HESSIAN);
+  CompleteComms(geometry, config, ANISO_HESSIAN);
+  if(viscous) {
+    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
+    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
+  }
+  if(source) {
+    InitiateComms(geometry, config, ANISO_HESSIAN_SOURCE);
+    CompleteComms(geometry, config, ANISO_HESSIAN_SOURCE);
+  }
+
+  CorrectBoundAnisoHess(geometry, config);
 }
 
 void CTNE2EulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
@@ -3702,21 +3703,6 @@ void CTNE2EulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- Communicate the Hessian values via MPI. ---*/
-  
-  InitiateComms(geometry, config, ANISO_HESSIAN);
-  CompleteComms(geometry, config, ANISO_HESSIAN);
-  if(viscous) {
-    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
-    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
-  }
-  if(source) {
-    InitiateComms(geometry, config, ANISO_HESSIAN_SOURCE);
-    CompleteComms(geometry, config, ANISO_HESSIAN_SOURCE);
-  }
-
-  CorrectBoundAnisoHess(geometry, config);
-
   //--- Make positive definite matrix
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
@@ -3801,6 +3787,21 @@ void CTNE2EulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
   delete [] A;
   delete [] EigVal;
   delete [] EigVec;
+
+  /*--- Communicate the Hessian values via MPI. ---*/
+  
+  InitiateComms(geometry, config, ANISO_HESSIAN);
+  CompleteComms(geometry, config, ANISO_HESSIAN);
+  if(viscous) {
+    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
+    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
+  }
+  if(source) {
+    InitiateComms(geometry, config, ANISO_HESSIAN_SOURCE);
+    CompleteComms(geometry, config, ANISO_HESSIAN_SOURCE);
+  }
+
+  CorrectBoundAnisoHess(geometry, config);
 }
 
 void CTNE2EulerSolver::SetPrimitive_Limiter(CGeometry *geometry,
@@ -6659,6 +6660,7 @@ void CTNE2EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
   for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
     nodes->SetSolution_Old(iPoint, nodes->GetSolution(iPoint));
   }
+
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
@@ -6803,7 +6805,6 @@ void CTNE2EulerSolver::ResetNodeInfty(su2double pressure_inf, su2double *massfra
                                       nPrimVar, nPrimVarGrad, config);
 
   check_infty = node_infty->SetPrimVar_Compressible(0,config);
-  su2double Vel_Infty[3] = {0.0,0.0,0.0};
   for (unsigned short iDim = 0; iDim < nDim; iDim++) node_infty->SetPrimitive(0, nSpecies+2+iDim, mvec_inf[iDim]*node_infty->GetSoundSpeed(0));
 
   node_infty->Prim2ConsVar(config, 0, node_infty->GetPrimitive(0), node_infty->GetSolution(0));
