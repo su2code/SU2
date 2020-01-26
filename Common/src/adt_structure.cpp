@@ -39,7 +39,7 @@
 #include "../include/adt_structure.hpp"
 
 /* Define the tolerance to decide whether or not a point is inside an element. */
-const su2double tolInsideElem   =  1.e-10;
+const su2double tolInsideElem   =  1.e-8;
 const su2double paramLowerBound = -1.0 - tolInsideElem;
 const su2double paramUpperBound =  1.0 + tolInsideElem;
 
@@ -2119,7 +2119,7 @@ bool CADTElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3],
      the real hexahedron and return true. */
   if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
      ((r+s+t) <= paramLowerBound)) {
-    parCoor[0] = r; parCoor[1] = s; parCoor[2] = t;
+    parCoor[0] = 2.0+r+s+t; parCoor[1] = s; parCoor[2] = t;
     return true;
   }
 
@@ -2141,7 +2141,7 @@ bool CADTElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3],
      the real hexahedron and return true. */
   if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
      ((r+s+t) <= paramLowerBound)) {
-    parCoor[0] = s; parCoor[1] = r; parCoor[2] = 1.0 - t;
+    parCoor[0] = s; parCoor[1] = r; parCoor[2] = -t;
     return true;
   }
 
@@ -2163,7 +2163,7 @@ bool CADTElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3],
      the real hexahedron and return true. */
   if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
      ((r+s+t) <= paramLowerBound)) {
-    parCoor[0] = 1.0 - s; parCoor[1] = 1.0 - r; parCoor[2] = 1.0 - t;
+    parCoor[0] = -s; parCoor[1] = -r; parCoor[2] = -t;
     return true;
   }
 
@@ -2185,7 +2185,7 @@ bool CADTElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3],
      the real hexahedron and return true. */
   if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
      ((r+s+t) <= paramLowerBound)) {
-    parCoor[0] = 1.0 - s; parCoor[1] = r; parCoor[2] = 1.0 - t;
+    parCoor[0] = s; parCoor[1] = -r; parCoor[2] = t;
     return true;
   }
 
@@ -2251,7 +2251,7 @@ bool CADTElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3],
      the real hexahedron and return true. */
   if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
      ((r+s+t) <= paramLowerBound)) {
-    parCoor[0] = r; parCoor[1] = 1.0 - s; parCoor[2] = 1.0 - t;
+    parCoor[0] = r; parCoor[1] = -s; parCoor[2] = -t;
     return true;
   }
 
@@ -2273,7 +2273,7 @@ bool CADTElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3],
      the real hexahedron and return true. */
   if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
      ((r+s+t) <= paramLowerBound)) {
-    parCoor[0] = 1.0 - r; parCoor[1] = s; parCoor[2] = 1.0 - t;
+    parCoor[0] = -r; parCoor[1] = s; parCoor[2] = -t;
     return true;
   }
 
@@ -2295,7 +2295,7 @@ bool CADTElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3],
      the real hexahedron and return true. */
   if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
      ((r+s+t) <= paramLowerBound)) {
-    parCoor[0] = 1.0 - r; parCoor[1] = 1.0 - s; parCoor[2] = t;
+    parCoor[0] = -r; parCoor[1] = -s; parCoor[2] = t;
     return true;
   }
 
