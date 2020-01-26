@@ -66,12 +66,12 @@ protected:
   unsigned short MGLevel;        /*!< \brief Multigrid level of this solver object. */
   unsigned short IterLinSolver;  /*!< \brief Linear solver iterations. */
   su2double ResLinSolver;        /*!< \brief Final linear solver residual. */
-  su2double NonLinRes_Value,        /*!< \brief Summed value of the nonlinear residual indicator. */
-  NonLinRes_Func;      /*!< \brief Current value of the nonlinear residual indicator at one iteration. */
-  unsigned short NonLinRes_Counter;  /*!< \brief Number of elements of the nonlinear residual indicator series. */
-  vector<su2double> NonLinRes_Series;      /*!< \brief Vector holding the nonlinear residual indicator series. */
+  su2double NonLinRes_Value,     /*!< \brief Summed value of the nonlinear residual indicator. */
+  NonLinRes_Func;                /*!< \brief Current value of the nonlinear residual indicator at one iteration. */
+  unsigned short NonLinRes_Counter;   /*!< \brief Number of elements of the nonlinear residual indicator series. */
+  vector<su2double> NonLinRes_Series; /*!< \brief Vector holding the nonlinear residual indicator series. */
   su2double Old_Func,  /*!< \brief Old value of the nonlinear residual indicator. */
-  New_Func;      /*!< \brief Current value of the nonlinear residual indicator. */
+  New_Func;            /*!< \brief Current value of the nonlinear residual indicator. */
   unsigned short nVar,           /*!< \brief Number of variables of the problem. */
   nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */
@@ -81,8 +81,8 @@ protected:
   nDim;                          /*!< \brief Number of dimensions of the problem. */
   unsigned long nPoint;          /*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain;    /*!< \brief Number of points of the computational grid. */
-  su2double Max_Delta_Time,  /*!< \brief Maximum value of the delta time for all the control volumes. */
-  Min_Delta_Time;          /*!< \brief Minimum value of the delta time for all the control volumes. */
+  su2double Max_Delta_Time, /*!< \brief Maximum value of the delta time for all the control volumes. */
+  Min_Delta_Time;           /*!< \brief Minimum value of the delta time for all the control volumes. */
   su2double Max_CFL_Local;  /*!< \brief Maximum value of the CFL across all the control volumes. */
   su2double Min_CFL_Local;  /*!< \brief Minimum value of the CFL across all the control volumes. */
   su2double Avg_CFL_Local;  /*!< \brief Average value of the CFL across all the control volumes. */
@@ -126,8 +126,8 @@ protected:
   passivedouble *Restart_Data;      /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
-  unsigned long nMarker,                 /*!< \brief Total number of markers using the grid information. */
-  *nVertex;                              /*!< \brief Store nVertex at each marker for deallocation */
+  unsigned long nMarker,            /*!< \brief Total number of markers using the grid information. */
+  *nVertex;                         /*!< \brief Store nVertex at each marker for deallocation */
 
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
@@ -155,7 +155,7 @@ protected:
 private:
 
   /*--- Private to prevent use by derived solvers, each solver MUST have its own "nodes" member of the
-   most derived type possible, e.g. CEulerVariable has nodes of CEulerVariable* and not CVariable*.
+   most derived type possible, e.g. CEulerSolver has nodes of CEulerVariable* and not CVariable*.
    This variable is to avoid two virtual functions calls per call i.e. CSolver::GetNodes() returns
    directly instead of calling GetBaseClassPointerToNodes() or doing something equivalent. ---*/
   CVariable* base_nodes;  /*!< \brief Pointer to CVariable to allow polymorphic access to solver nodes. */

@@ -55,16 +55,11 @@ protected:
   su2double Minf;             /*!< \brief Free stream Mach number . */
   su2double Gas_Constant;     /*!< \brief Gas constant. */
   su2double *Vector;          /*!< \brief Auxiliary vector. */
-  su2double *Enthalpy_formation; /*!< \brief Enthalpy of formation. */
   su2double Prandtl_Lam;         /*!< \brief Laminar Prandtl's number. */
   su2double Prandtl_Turb;        /*!< \brief Turbulent Prandtl's number. */
-
-public:
-
   su2double
   **Flux_Tensor,      /*!< \brief Flux tensor (used for viscous and inviscid purposes. */
   *Proj_Flux_Tensor;  /*!< \brief Flux tensor projected in a direction. */
-
   su2double
   **tau,      /*!< \brief Viscous stress tensor. */
   **delta,    /*!< \brief Identity matrix. */
@@ -80,14 +75,11 @@ public:
   su2double
   Thermal_Conductivity_i,    /*!< \brief Thermal conductivity at point i. */
   Thermal_Conductivity_j,    /*!< \brief Thermal conductivity at point j. */
-  Thermal_Conductivity_ve_i, /*!< \brief Thermal conductivity at point i. */
-  Thermal_Conductivity_ve_j, /*!< \brief Thermal conductivity at point j. */
   Thermal_Diffusivity_i,     /*!< \brief Thermal diffusivity at point i. */
   Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
   su2double
   Cp_i,               /*!< \brief Cp at point i. */
   Cp_j;               /*!< \brief Cp at point j. */
-  su2double *Theta_v; /*!< \brief Characteristic vibrational temperature */
   su2double
   Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
   Eddy_Viscosity_j;  /*!< \brief Eddy viscosity at point j. */
@@ -128,12 +120,6 @@ public:
   Temp_i,  /*!< \brief Temperature at point i. */
   Temp_j;  /*!< \brief Temperature at point j. */
   su2double
-  *Temp_tr_i,  /*!< \brief Temperature transl-rot at point i. */
-  *Temp_tr_j;  /*!< \brief Temperature transl-rot at point j. */
-  su2double
-  *Temp_vib_i, /*!< \brief Temperature vibrational at point i. */
-  *Temp_vib_j; /*!< \brief Temperature vibrational at point j. */
-  su2double
   *Und_Lapl_i,  /*!< \brief Undivided laplacians at point i. */
   *Und_Lapl_j;  /*!< \brief Undivided laplacians at point j. */
   su2double
@@ -145,14 +131,8 @@ public:
   su2double
   *U_i,           /*!< \brief Vector of conservative variables at point i. */
   *U_id,          /*!< \brief Vector of derivative of conservative variables at point i. */
-  *UZeroOrder_i,  /*!< \brief Vector of conservative variables at point i without reconstruction. */
   *U_j,           /*!< \brief Vector of conservative variables at point j. */
-  *UZeroOrder_j,  /*!< \brief Vector of conservative variables at point j without reconstruction. */
-  *U_jd,          /*!< \brief Vector of derivative of conservative variables at point j. */
-  *U_0,           /*!< \brief Vector of conservative variables at node 0. */
-  *U_1,           /*!< \brief Vector of conservative variables at node 1. */
-  *U_2,           /*!< \brief Vector of conservative variables at node 2. */
-  *U_3;           /*!< \brief Vector of conservative variables at node 3. */
+  *U_jd;          /*!< \brief Vector of derivative of conservative variables at point j. */
   su2double
   *V_i,     /*!< \brief Vector of primitive variables at point i. */
   *V_j;     /*!< \brief Vector of primitive variables at point j. */
@@ -179,10 +159,6 @@ public:
   su2double
   **ConsVar_Grad_i,  /*!< \brief Gradient of conservative variables at point i. */
   **ConsVar_Grad_j,  /*!< \brief Gradient of conservative variables at point j. */
-  **ConsVar_Grad_0,  /*!< \brief Gradient of conservative variables at point 0. */
-  **ConsVar_Grad_1,  /*!< \brief Gradient of conservative variables at point 1. */
-  **ConsVar_Grad_2,  /*!< \brief Gradient of conservative variables at point 2. */
-  **ConsVar_Grad_3,  /*!< \brief Gradient of conservative variables at point 3. */
   **ConsVar_Grad;    /*!< \brief Gradient of conservative variables which is a scalar. */
   su2double
   **PrimVar_Grad_i,  /*!< \brief Gradient of primitive variables at point i. */
@@ -204,30 +180,18 @@ public:
   *AuxVar_Grad_j;    /*!< \brief Gradient of an auxiliary variable at point i. */
   su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
-  *Coord_j,      /*!< \brief Cartesians coordinates of point j. */
-  *Coord_0,      /*!< \brief Cartesians coordinates of point 0 (Galerkin method, triangle). */
-  *Coord_1,      /*!< \brief Cartesians coordinates of point 1 (Galerkin method, tetrahedra). */
-  *Coord_2,      /*!< \brief Cartesians coordinates of point 2 (Galerkin method, triangle). */
-  *Coord_3;      /*!< \brief Cartesians coordinates of point 3 (Galerkin method, tetrahedra). */
+  *Coord_j;      /*!< \brief Cartesians coordinates of point j. */
   unsigned short
   Neighbor_i,  /*!< \brief Number of neighbors of the point i. */
   Neighbor_j;  /*!< \brief Number of neighbors of the point j. */
   su2double
-  *Normal,       /*!< \brief Normal vector, it norm is the area of the face. */
+  *Normal,       /*!< \brief Normal vector, its norm is the area of the face. */
   *UnitNormal,   /*!< \brief Unitary normal vector. */
-  *UnitNormald;  /*!< \brief derivatve of unitary normal vector. */
+  *UnitNormald;  /*!< \brief Derivative of unitary normal vector. */
   su2double
   TimeStep,    /*!< \brief Time step useful in dual time method. */
   Area,        /*!< \brief Area of the face i-j. */
   Volume;      /*!< \brief Volume of the control volume around point i. */
-  su2double
-  Volume_n,      /*!< \brief Volume of the control volume at time n. */
-  Volume_nM1,    /*!< \brief Volume of the control volume at time n-1. */
-  Volume_nP1;    /*!< \brief Volume of the control volume at time n+1. */
-  su2double
-  *U_n,      /*!< \brief Vector of conservative variables at time n. */
-  *U_nM1,    /*!< \brief Vector of conservative variables at time n-1. */
-  *U_nP1;    /*!< \brief Vector of conservative variables at time n+1. */
   su2double vel2_inf;     /*!< \brief value of the square of freestream speed. */
   su2double
   *WindGust_i,  /*!< \brief Wind gust at point i. */
@@ -255,6 +219,8 @@ public:
   su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
   su2double *Eig_Val, *Barycentric_Coord, *New_Coord;
 
+public:
+
   /*!
    * \brief Constructor of the class.
    */
@@ -276,29 +242,13 @@ public:
   /*!
    * \brief Compute the determinant of a 3 by 3 matrix.
    * \param[in] val_matrix 3 by 3 matrix.
-   * \result Determinant of the matrix
+   * \return Determinant of the matrix
    */
   inline static su2double Determinant_3x3(su2double A00, su2double A01, su2double A02,
                                           su2double A10, su2double A11, su2double A12,
                                           su2double A20, su2double A21, su2double A22) {
     return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
   }
-
-  /*!
-   * \brief Set the solution at different times.
-   * \param[in] val_u_nM1 Conservative solution at time n-1.
-   * \param[in] val_u_n Conservative solution at time n.
-   * \param[in] val_u_nP1 Conservative solution at time n+1.
-   */
-  void SetPastSol(su2double *val_u_nM1, su2double *val_u_n, su2double *val_u_nP1);
-
-  /*!
-   * \brief Set the control volume at different times.
-   * \param[in] val_volume_nM1 - Control volume at time n-1.
-   * \param[in] val_volume_n - Control volume at time n.
-   * \param[in] val_volume_nP1 - Control volume at time n+1.
-   */
-  void SetPastVolume(su2double val_volume_nM1, su2double val_volume_n, su2double val_volume_nP1);
 
   /*!
    * \brief Set the time step.
@@ -342,16 +292,6 @@ public:
   }
 
   /*!
-   * \brief Set the value of the conservative variables withour reconstruction.
-   * \param[in] val_u_i - Value of the conservative variable at point i.
-   * \param[in] val_u_j - Value of the conservative variable at point j.
-   */
-  inline void SetConservative_ZeroOrder(su2double *val_u_i, su2double *val_u_j) {
-    UZeroOrder_i = val_u_i;
-    UZeroOrder_j = val_u_j;
-  }
-
-  /*!
    * \brief Set the value of the primitive variables.
    * \param[in] val_v_i - Value of the primitive variable at point i.
    * \param[in] val_v_j - Value of the primitive variable at point j.
@@ -372,32 +312,6 @@ public:
   }
 
   /*!
-   * \brief Set the value of the conservative variables.
-   * \param[in] val_u_0 - Value of the conservative variable at point 0.
-   * \param[in] val_u_1 - Value of the conservative variable at point 1.
-   * \param[in] val_u_2 - Value of the conservative variable at point 2.
-   */
-  inline void SetConservative(su2double *val_u_0, su2double *val_u_1, su2double *val_u_2) {
-    U_0 = val_u_0;
-    U_1 = val_u_1;
-    U_2 = val_u_2;
-  }
-
-  /*!
-   * \brief Set the value of the conservative variables.
-   * \param[in] val_u_0 - Value of the conservative variable at point 0.
-   * \param[in] val_u_1 - Value of the conservative variable at point 1.
-   * \param[in] val_u_2 - Value of the conservative variable at point 2.
-   * \param[in] val_u_3 - Value of the conservative variable at point 3.
-   */
-  inline void SetConservative(su2double *val_u_0, su2double *val_u_1, su2double *val_u_2, su2double *val_u_3) {
-    U_0 = val_u_0;
-    U_1 = val_u_1;
-    U_2 = val_u_2;
-    U_3 = val_u_3;
-  }
-
-  /*!
    * \brief Set the gradient of the conservative variables.
    * \param[in] val_consvar_grad_i - Gradient of the conservative variable at point i.
    * \param[in] val_consvar_grad_j - Gradient of the conservative variable at point j.
@@ -406,37 +320,6 @@ public:
                                  su2double **val_consvar_grad_j) {
     ConsVar_Grad_i = val_consvar_grad_i;
     ConsVar_Grad_j = val_consvar_grad_j;
-  }
-
-  /*!
-   * \brief Set the gradient of the conservative variables.
-   * \param[in] val_consvar_grad_0 - Gradient of the conservative variable at point 0.
-   * \param[in] val_consvar_grad_1 - Gradient of the conservative variable at point 1.
-   * \param[in] val_consvar_grad_2 - Gradient of the conservative variable at point 2.
-   */
-  inline void SetConsVarGradient(su2double **val_consvar_grad_0,
-                                 su2double **val_consvar_grad_1,
-                                 su2double **val_consvar_grad_2) {
-    ConsVar_Grad_0 = val_consvar_grad_0;
-    ConsVar_Grad_1 = val_consvar_grad_1;
-    ConsVar_Grad_2 = val_consvar_grad_2;
-  }
-
-  /*!
-   * \brief Set the gradient of the conservative variables.
-   * \param[in] val_consvar_grad_0 - Gradient of the conservative variable at point 0.
-   * \param[in] val_consvar_grad_1 - Gradient of the conservative variable at point 1.
-   * \param[in] val_consvar_grad_2 - Gradient of the conservative variable at point 2.
-   * \param[in] val_consvar_grad_3 - Gradient of the conservative variable at point 3.
-   */
-  inline void SetConsVarGradient(su2double **val_consvar_grad_0,
-                                 su2double **val_consvar_grad_1,
-                                 su2double **val_consvar_grad_2,
-                                 su2double **val_consvar_grad_3) {
-    ConsVar_Grad_0 = val_consvar_grad_0;
-    ConsVar_Grad_1 = val_consvar_grad_1;
-    ConsVar_Grad_2 = val_consvar_grad_2;
-    ConsVar_Grad_3 = val_consvar_grad_3;
   }
 
   /*!
@@ -606,18 +489,6 @@ public:
   }
 
   /*!
-   * \brief Set the thermal conductivity (translational/rotational)
-   * \param[in] val_thermal_conductivity_i - Value of the thermal conductivity at point i.
-   * \param[in] val_thermal_conductivity_j - Value of the thermal conductivity at point j.
-   * \param[in] iSpecies - Value of the species.
-   */
-  inline void SetThermalConductivity_ve(su2double val_thermal_conductivity_ve_i,
-                                        su2double val_thermal_conductivity_ve_j) {
-    Thermal_Conductivity_ve_i = val_thermal_conductivity_ve_i;
-    Thermal_Conductivity_ve_j = val_thermal_conductivity_ve_j;
-  }
-
-  /*!
    * \brief Set the thermal diffusivity (translational/rotational)
    * \param[in] val_thermal_diffusivity_i - Value of the thermal diffusivity at point i.
    * \param[in] val_thermal_diffusivity_j - Value of the thermal diffusivity at point j.
@@ -671,34 +542,6 @@ public:
   }
 
   /*!
-   * \overload
-   * \param[in] val_coord_0 - Coordinates of the point 0.
-   * \param[in] val_coord_1 - Coordinates of the point 1.
-   * \param[in] val_coord_2 - Coordinates of the point 2.
-   */
-  inline void SetCoord(su2double *val_coord_0, su2double *val_coord_1,
-                       su2double *val_coord_2) {
-    Coord_0 = val_coord_0;
-    Coord_1 = val_coord_1;
-    Coord_2 = val_coord_2;
-  }
-
-  /*!
-   * \overload
-   * \param[in] val_coord_0 - Coordinates of the point 0.
-   * \param[in] val_coord_1 - Coordinates of the point 1.
-   * \param[in] val_coord_2 - Coordinates of the point 2.
-   * \param[in] val_coord_3 - Coordinates of the point 3.
-   */
-  inline void SetCoord(su2double *val_coord_0, su2double *val_coord_1,
-                       su2double *val_coord_2, su2double *val_coord_3) {
-    Coord_0 = val_coord_0;
-    Coord_1 = val_coord_1;
-    Coord_2 = val_coord_2;
-    Coord_3 = val_coord_3;
-  }
-
-  /*!
    * \brief Set the velocity of the computational grid.
    * \param[in] val_gridvel_i - Grid velocity of the point i.
    * \param[in] val_gridvel_j - Grid velocity of the point j.
@@ -734,9 +577,9 @@ public:
    * \param[in] val_pressure_j - Value of the pressure at point j.
    */
   void SetPressure(su2double val_pressure_i, su2double val_pressure_j) {
-  Pressure_i = val_pressure_i;
-  Pressure_j = val_pressure_j;
-}
+    Pressure_i = val_pressure_i;
+    Pressure_j = val_pressure_j;
+  }
 
   /*!
    * \brief Set the value of the density for the incompressible solver.
@@ -841,84 +684,6 @@ public:
   inline void SetVolume(su2double val_volume) { Volume = val_volume; }
 
   /*!
-   * \brief Retrieves the value of the species density in the primitive variable vector.
-   * \param[in] iRho_s
-   */
-  void SetRhosIndex(unsigned short val_Index);
-
-  /*!
-   * \brief Retrieves the value of the species density in the primitive variable vector.
-   * \param[in] iRho_s
-   */
-  void SetRhoIndex(unsigned short val_Index);
-
-  /*!
-   * \brief Retrieves the value of the species density in the primitive variable vector.
-   * \param[in] iRho_s
-   */
-  void SetPIndex(unsigned short val_Index);
-
-  /*!
-   * \brief Retrieves the value of the species density in the primitive variable vector.
-   * \param[in] iRho_s
-   */
-  void SetTIndex(unsigned short val_Index);
-
-  /*!
-   * \brief Retrieves the value of the species density in the primitive variable vector.
-   * \param[in] iRho_s
-   */
-  void SetTveIndex(unsigned short val_Index);
-
-  /*!
-   * \brief Retrieves the value of the velocity index in the primitive variable vector.
-   * \param[in] i(rho*u)
-   */
-  void SetVelIndex(unsigned short val_Index);
-
-  /*!
-   * \brief Retrieves the value of the species density in the primitive variable vector.
-   * \param[in] iRho_s
-   */
-  void SetHIndex(unsigned short val_Index);
-
-  /*!
-   * \brief Retrieves the value of the species density in the primitive variable vector.
-   * \param[in] iRho_s
-   */
-  void SetAIndex(unsigned short val_Index);
-
-  /*!
-   * \brief Retrieves the value of the species density in the primitive variable vector.
-   * \param[in] iRho_s
-   */
-  void SetRhoCvtrIndex(unsigned short val_Index);
-
-  /*!
-   * \brief Retrieves the value of the species density in the primitive variable vector.
-   * \param[in] iRho_s
-   */
-  void SetRhoCvveIndex(unsigned short val_Index);
-
-  /*!
-   * \brief Sets the value of the derivative of pressure w.r.t. species density.
-   * \param[in] iRho_s
-   */
-  void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j);
-
-  /*!
-   * \brief Sets the value of the derivative of temperature w.r.t. species density.
-   * \param[in] iRho_s
-   */
-  void SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j);
-
-  /*!
-   * \brief Sets the value of the derivative of vib-el. temperature w.r.t. species density.
-   * \param[in] iRho_s
-   */
-  void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j);
-
-  /*!
   * \brief Sets the values of the roe dissipation.
   * \param[in] diss_i - Dissipation value at node i
   * \param[in] diss_j - Dissipation value at node j
@@ -991,9 +756,9 @@ public:
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
   void GetInviscidIncProjJac(su2double *val_density, su2double *val_velocity,
-                                 su2double *val_betainc2, su2double *val_normal,
-                                 su2double val_scale,
-                                 su2double **val_Proj_Jac_tensor);
+                             su2double *val_betainc2, su2double *val_normal,
+                             su2double val_scale,
+                             su2double **val_Proj_Jac_tensor);
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (overload for low speed preconditioner version).
@@ -1008,14 +773,14 @@ public:
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
   void GetInviscidIncProjJac(su2double *val_density,
-                                 su2double *val_velocity,
-                                 su2double *val_betainc2,
-                                 su2double *val_cp,
-                                 su2double *val_temperature,
-                                 su2double *val_dRhodT,
-                                 su2double *val_normal,
-                                 su2double val_scale,
-                                 su2double **val_Proj_Jac_Tensor);
+                             su2double *val_velocity,
+                             su2double *val_betainc2,
+                             su2double *val_cp,
+                             su2double *val_temperature,
+                             su2double *val_dRhodT,
+                             su2double *val_normal,
+                             su2double val_scale,
+                             su2double **val_Proj_Jac_Tensor);
 
   /*!
    * \brief Compute the low speed preconditioning matrix.
@@ -1085,7 +850,8 @@ public:
    * \param[out] val_p_tensor - Pointer to the P matrix.
    */
   void GetPMatrix(su2double *val_density, su2double *val_velocity,
-                  su2double *val_soundspeed, su2double *val_enthalpy, su2double *val_chi, su2double *val_kappa,
+                  su2double *val_soundspeed, su2double *val_enthalpy,
+                  su2double *val_chi, su2double *val_kappa,
                   su2double *val_normal, su2double **val_p_tensor);
 
   /*!
@@ -1122,7 +888,6 @@ public:
    * \param[in] val_velocity - value of the velocity.
    * \param[out] val_invR_invPe - Pointer to the matrix of conversion from entropic to conserved variables.
    */
-
   void GetRMatrix(su2double val_pressure, su2double val_soundspeed,
                   su2double val_density, su2double* val_velocity,
                   su2double** val_invR_invPe);
@@ -1171,7 +936,7 @@ public:
    * \param[in] val_soundspeed - value of the sound speed.
    * \param[in] val_density - value of the density.
    * \param[in] prim_jump - pointer to the vector containing the primitive variable jump (drho, dV, dp).
-   * \param[out]char_jump - pointer to the vector containing the characteristic variable jump.
+   * \param[out] char_jump - pointer to the vector containing the characteristic variable jump.
    */
   void GetCharJump(su2double val_soundspeed, su2double val_density, su2double *prim_jump, su2double *char_jump);
 
@@ -1187,8 +952,8 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_absPeJac - Pointer to the Preconditioned Jacobian matrix.
    */
-  void GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* val_Lambda, su2double* val_normal, su2double** val_absPeJac);
-
+  void GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat,
+                          su2double rB2a2, su2double* val_Lambda, su2double* val_normal, su2double** val_absPeJac);
 
   /*!
    * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
@@ -1248,26 +1013,6 @@ public:
 
   /*!
    * \overload
-   * \param[out] val_residual_i - Pointer to the total residual at point i.
-   * \param[out] val_residual_j - Pointer to the total residual at point j.
-   */
-  inline virtual void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j) { }
-
-  inline virtual void ComputeResidual_TransLM(su2double *val_residual,
-                                              su2double **val_Jacobian_i,
-                                              su2double **val_Jacobian_j, CConfig *config,
-                                              su2double &gamma_sep) { }
-
-  /*!
-   * \overload
-   * \param[out] val_residual_i - Pointer to the total residual at point i.
-   * \param[out] val_residual_j - Pointer to the total residual at point j.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, CConfig *config) { }
-
-  /*!
-   * \overload
    * \param[out] val_residual - Pointer to the total residual.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
@@ -1275,42 +1020,6 @@ public:
    */
   inline virtual void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                       su2double **val_Jacobian_j, CConfig *config) { }
-
-  /*!
-   * \overload
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[out] val_JacobianMeanFlow_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_JacobianMeanFlow_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void ComputeResidual(su2double *val_residual,
-                                      su2double **val_Jacobian_i,
-                                      su2double **val_Jacobian_j,
-                                      su2double **val_JacobianMeanFlow_i,
-                                      su2double **val_JacobianMeanFlow_j,
-                                      CConfig *config) { }
-
-  /*!
-   * \overload
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void ComputeResidual(su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) { }
-
-  /*!
-   * \overload
-   * \param[out] val_resconv - Pointer to the convective residual.
-   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void ComputeResidual(su2double *val_resconv, su2double *val_resvisc,
-                                      su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                                      CConfig *config) { }
 
   /*!
    * \overload
@@ -1350,13 +1059,6 @@ public:
 
   /*!
    * \overload
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void ComputeResidual(su2double **val_stiffmatrix_elem, CConfig *config) { }
-
-  /*!
-   * \overload
    * \param[in] config - Definition of the particular problem.
    * \param[out] val_residual - residual of the source terms
    * \param[out] val_Jacobian_i - Jacobian of the source terms
@@ -1364,56 +1066,17 @@ public:
   inline virtual void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
 
   /*!
-   * \overload
-   * \param[out] - Matrix for storing the constants to be used in the calculation of the equilibrium extent of reaction Keq.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void GetEq_Rxn_Coefficients(su2double **EqnRxnConstants, CConfig *config) { }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void ComputeResidual_Axisymmetric(su2double *val_residual, CConfig *config) { }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void ComputeResidual_Axisymmetric_ad(su2double *val_residual, su2double *val_residuald, CConfig *config) { }
-
-  /*!
-   * \brief Calculation of axisymmetric source term Jacobian
+   * \brief Residual for transition problems.
+   * \param[out] val_residual - Pointer to the total residual.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \param[out] gamma_sep
    */
-  inline virtual void SetJacobian_Axisymmetric(su2double **val_Jacobian_i, CConfig *config) { }
-
-  /*!
-   * \brief Calculation of the translational-vibrational energy exchange source term
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] val_residual - residual of the source terms
-   * \param[out] val_Jacobian_i - Jacobian of the source terms
-   */
-  inline virtual void ComputeVibRelaxation(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
-
-  /*!
-   * \brief Calculation of the chemistry source term
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] val_residual - residual of the source terms
-   * \param[out] val_Jacobian_i - Jacobian of the source terms
-   */
-  inline virtual void ComputeChemistry(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
-
-  /*!
-   * \brief Calculates constants used for Keq correlation.
-   * \param[out] A - Pointer to coefficient array.
-   * \param[in] val_reaction - Reaction number indicator.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void GetKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config) { }
+  inline virtual void ComputeResidual_TransLM(su2double *val_residual,
+                                              su2double **val_Jacobian_i,
+                                              su2double **val_Jacobian_j, CConfig *config,
+                                              su2double &gamma_sep) { }
 
   /*!
    * \brief Set intermittency for numerics (used in SA with LM transition model)
@@ -1460,27 +1123,6 @@ public:
    * \brief A virtual member.
    */
   inline virtual su2double GetGammaBC(void) { return 0.0; }
-
-  /*!
-   * \overload
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void ComputeResidual(su2double **val_Jacobian_i,
-                                      su2double *val_Jacobian_mui,
-                                      su2double ***val_Jacobian_gradi, CConfig *config) { }
-
-  /*!
-   * \overload
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void ComputeResidual(su2double **val_Jacobian_i,
-                                      su2double *val_Jacobian_mui,
-                                      su2double ***val_Jacobian_gradi,
-                                      su2double **val_Jacobian_j,
-                                      su2double *val_Jacobian_muj,
-                                      su2double ***val_Jacobian_gradj, CConfig *config) { }
 
   /*!
    * \brief A virtual member to compute the tangent matrix in structural problems
@@ -1555,7 +1197,7 @@ public:
   inline virtual void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
 
   /*!
-   * \brief Computes a basis of orthogonal vectors from a suppled vector
+   * \brief Computes a basis of orthogonal vectors from a supplied vector
    * \param[in] config - Normal vector
    */
   void CreateBasis(su2double *val_Normal);

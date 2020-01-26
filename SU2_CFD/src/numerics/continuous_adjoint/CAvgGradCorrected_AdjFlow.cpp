@@ -75,7 +75,7 @@ void CAvgGradCorrected_AdjFlow::ComputeResidual(su2double *val_residual_i,
                                                 su2double *val_residual_j,
                                                 su2double **val_Jacobian_ii,
                                                 su2double **val_Jacobian_ij,
-                                            su2double **val_Jacobian_ji,
+                                                su2double **val_Jacobian_ji,
                                                 su2double **val_Jacobian_jj,
                                                 CConfig *config) {
 
