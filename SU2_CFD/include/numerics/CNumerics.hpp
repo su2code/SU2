@@ -1229,12 +1229,6 @@ public:
                           su2double& Dissipation_ij, CConfig *config);
 
   /*!
-   * \brief Setting the UQ framework usage
-   * \param[in] val_using_uq
-   */
-  inline void SetUsing_UQ(bool val_using_uq) { using_uq = val_using_uq; }
-
-  /*!
    * \brief Decomposes the symmetric matrix A_ij, into eigenvectors and eigenvalues
    * \param[in] A_i: symmetric matrix to be decomposed
    * \param[in] Eig_Vec: strores the eigenvectors
@@ -1267,7 +1261,6 @@ public:
    * \param[in] d: array that will hold the ordered eigenvalues
    * \param[in] e: supplemental data structure
    * \param[in] n: order of matrix V
-
    */
   static void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
 
