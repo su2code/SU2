@@ -104,7 +104,7 @@ private:
    * \param[out] typeStr - The string name of the type
    * \param[out] typeSize - The size in bytes of the type
    */
-  inline void GetTypeInfo(const VTKDatatype type, string &typeStr, unsigned long &typeSize){
+  inline void GetTypeInfo(const VTKDatatype type, string &typeStr, unsigned long &typeSize) const {
     switch (type) {
       case VTKDatatype::FLOAT32:
         typeStr = "\"Float32\"";
