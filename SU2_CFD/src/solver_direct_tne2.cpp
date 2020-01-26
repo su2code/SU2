@@ -3205,6 +3205,21 @@ void CTNE2EulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
     }
   }
 
+  /*--- Communicate the Hessian values via MPI. ---*/
+  
+  InitiateComms(geometry, config, ANISO_HESSIAN);
+  CompleteComms(geometry, config, ANISO_HESSIAN);
+  if(viscous) {
+    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
+    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
+  }
+  if(source) {
+    InitiateComms(geometry, config, ANISO_HESSIAN_SOURCE);
+    CompleteComms(geometry, config, ANISO_HESSIAN_SOURCE);
+  }
+
+  CorrectBoundAnisoHess(geometry, config);
+
   //--- Make positive definite matrix
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     for(iVar = 0; iVar < nVarMetr; iVar++){
@@ -3292,21 +3307,6 @@ void CTNE2EulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
   delete [] A;
   delete [] EigVal;
   delete [] EigVec;
-
-  /*--- Communicate the Hessian values via MPI. ---*/
-  
-  InitiateComms(geometry, config, ANISO_HESSIAN);
-  CompleteComms(geometry, config, ANISO_HESSIAN);
-  if(viscous) {
-    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
-    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
-  }
-  if(source) {
-    InitiateComms(geometry, config, ANISO_HESSIAN_SOURCE);
-    CompleteComms(geometry, config, ANISO_HESSIAN_SOURCE);
-  }
-
-  CorrectBoundAnisoHess(geometry, config);
 }
 
 void CTNE2EulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
@@ -3703,6 +3703,21 @@ void CTNE2EulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
     }
   }
 
+  /*--- Communicate the Hessian values via MPI. ---*/
+  
+  InitiateComms(geometry, config, ANISO_HESSIAN);
+  CompleteComms(geometry, config, ANISO_HESSIAN);
+  if(viscous) {
+    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
+    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
+  }
+  if(source) {
+    InitiateComms(geometry, config, ANISO_HESSIAN_SOURCE);
+    CompleteComms(geometry, config, ANISO_HESSIAN_SOURCE);
+  }
+
+  CorrectBoundAnisoHess(geometry, config);
+
   //--- Make positive definite matrix
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
@@ -3787,21 +3802,6 @@ void CTNE2EulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
   delete [] A;
   delete [] EigVal;
   delete [] EigVec;
-
-  /*--- Communicate the Hessian values via MPI. ---*/
-  
-  InitiateComms(geometry, config, ANISO_HESSIAN);
-  CompleteComms(geometry, config, ANISO_HESSIAN);
-  if(viscous) {
-    InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
-    CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
-  }
-  if(source) {
-    InitiateComms(geometry, config, ANISO_HESSIAN_SOURCE);
-    CompleteComms(geometry, config, ANISO_HESSIAN_SOURCE);
-  }
-
-  CorrectBoundAnisoHess(geometry, config);
 }
 
 void CTNE2EulerSolver::SetPrimitive_Limiter(CGeometry *geometry,
@@ -6656,10 +6656,6 @@ void CTNE2EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
   solver[MESH_0][TNE2_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][TNE2_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][TNE2_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TNE2_SYS, false);
-
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
-    nodes->SetSolution_Old(iPoint, nodes->GetSolution(iPoint));
-  }
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
