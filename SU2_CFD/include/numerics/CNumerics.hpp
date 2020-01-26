@@ -28,19 +28,17 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
-
 #include <cmath>
 #include <iostream>
 #include <limits>
 #include <cstdlib>
 
 #include "../../../Common/include/config_structure.hpp"
-#include "../fluid_model.hpp"
 
 using namespace std;
 
 class CElement;
+class CFluidModel;
 
 /*!
  * \class CNumerics
