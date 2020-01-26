@@ -63,7 +63,8 @@ CSourcePieceWise_TransLM::CSourcePieceWise_TransLM(unsigned short val_nDim, unsi
 
 CSourcePieceWise_TransLM::~CSourcePieceWise_TransLM(void) { }
 
-void CSourcePieceWise_TransLM::ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep) {
+void CSourcePieceWise_TransLM::ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i,
+                                                       su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep) {
   //************************************************//
   // Please do not delete //SU2_CPP2C comment lines //
   //************************************************//
