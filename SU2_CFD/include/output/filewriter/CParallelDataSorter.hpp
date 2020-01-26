@@ -83,9 +83,9 @@ protected:
   int *nPoint_Send;                    //!< Number of points this processor has to send to other processors
   int *nPoint_Recv;                    //!< Number of points this processor receives from other processors
   int *nElem_Send;                     //!< Number of elements this processor has to send to other processors
-  int *nElem_Cum;                     //!< Cumulative number of elements
-  int *nElemConn_Send;                     //!< Number of element connectivity this processor has to send to other processors
-  int *nElemConn_Cum;                     //!< Cumulative number of element connectivity entries
+  int *nElem_Cum;                      //!< Cumulative number of elements
+  int *nElemConn_Send;                 //!< Number of element connectivity this processor has to send to other processors
+  int *nElemConn_Cum;                  //!< Cumulative number of element connectivity entries
   unsigned long *Index;                //!< Index each point has in the send buffer
   su2double *connSend;                 //!< Send buffer holding the data that will be send to other processors
   passivedouble *passiveDoubleBuffer;  //!< Buffer holding the sorted, partitioned data as passivedouble types

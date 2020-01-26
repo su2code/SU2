@@ -39,7 +39,7 @@ CParaviewVTMFileWriter::CParaviewVTMFileWriter(string valFileName, string valFol
   : CFileWriter(std::move(valFileName), fileExt),
     folderName(std::move(valFolderName)), iZone(valiZone), nZone(valnZone), curTime(valTime){
 
-  if (rank == MASTER_NODE)
+  if (rank == MASTER_NODE){
 #if defined(_WIN32) || defined(_WIN64) || defined (__WINDOWS__)
     _mkdir(this->folderName.c_str());
     _mkdir((this->folderName + "/zone_" + to_string(iZone)).c_str());
@@ -47,6 +47,7 @@ CParaviewVTMFileWriter::CParaviewVTMFileWriter(string valFileName, string valFol
     mkdir(this->folderName.c_str(), 0777);
     mkdir((this->folderName + "/zone_" + to_string(valiZone)).c_str(), 0777);
 #endif
+  }
     
   nWrittenDatasets = 0;
   accumulatedBandwidth = 0;

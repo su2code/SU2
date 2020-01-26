@@ -210,6 +210,9 @@ bool CFileWriter::OpenMPIFile(){
   int ierr;
 
 #ifdef HAVE_MPI
+  
+  disp     = 0.0;
+  
   /*--- All ranks open the file using MPI. Here, we try to open the file with
    exclusive so that an error is generated if the file exists. We always want
    to write a fresh output file, so we delete any existing files and create
@@ -243,9 +246,7 @@ bool CFileWriter::OpenMPIFile(){
   }
 #endif
 
-  disp     = 0.0;
   fileSize = 0.0;
-  
   usedTime = 0;
   
   return true;

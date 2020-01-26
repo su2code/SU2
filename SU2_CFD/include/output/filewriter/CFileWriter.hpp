@@ -97,11 +97,6 @@ protected:
 #else
 
   /*!
-   * \brief The displacement that every process has in the current file view
-   */
-  unsigned long disp;
-
-  /*!
    * \brief The file handle for writing
    */
   FILE* fhw;

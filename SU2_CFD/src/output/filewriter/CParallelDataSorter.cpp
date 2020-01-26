@@ -86,26 +86,26 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
 
 CParallelDataSorter::~CParallelDataSorter(){
 
-  if (nPoint_Send != NULL) delete [] nPoint_Send;
-  if (nPoint_Recv != NULL) delete [] nPoint_Recv;
-  if (nElem_Send != NULL) delete []  nElem_Send;
-  if (nElem_Cum != NULL) delete []  nElem_Cum;
-  if (nElemConn_Send != NULL) delete []  nElemConn_Send;
-  if (nElemConn_Cum != NULL) delete []  nElemConn_Cum;
+  delete [] nPoint_Send;
+  delete [] nPoint_Recv;
+  delete [] nElem_Send;
+  delete [] nElem_Cum;
+  delete [] nElemConn_Send;
+  delete [] nElemConn_Cum;
   
   /*--- Deallocate memory for connectivity data on each processor. ---*/
 
-  if (GetnElem(LINE) > 0          && Conn_Line_Par != NULL) delete [] Conn_Line_Par;
-  if (GetnElem(TRIANGLE) > 0      && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-  if (GetnElem(QUADRILATERAL) > 0 && Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-  if (GetnElem(TETRAHEDRON) > 0   && Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-  if (GetnElem(HEXAHEDRON) > 0    && Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-  if (GetnElem(PRISM) > 0         && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-  if (GetnElem(PYRAMID) > 0       && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+  delete [] Conn_Line_Par;
+  delete [] Conn_Tria_Par;
+  delete [] Conn_Quad_Par;
+  delete [] Conn_Tetr_Par;
+  delete [] Conn_Hexa_Par;
+  delete [] Conn_Pris_Par;
+  delete [] Conn_Pyra_Par;
 
-  if (connSend != NULL) delete [] connSend;
+  delete [] connSend;
 
-  if (dataBuffer != NULL) delete [] dataBuffer;
+  delete [] dataBuffer;
 }
 
 void CParallelDataSorter::SortOutputData() {
