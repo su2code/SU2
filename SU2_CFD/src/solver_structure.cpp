@@ -272,8 +272,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   
   bool boundary_i, boundary_j;
   bool weighted = true;
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
 
-  unsigned short iVar, jVar, iDim;
+  unsigned short iVar, jVar, iDim, iVel = 0;
   unsigned short iNeighbor, nNeighbor = 0;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
@@ -299,6 +300,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   su2double rotCoord_i[3] = {0.0, 0.0, 0.0}, rotCoord_j[3] = {0.0, 0.0, 0.0};
   
   string Marker_Tag;
+  
+  if (pressure_based) iVel = -1;
   
   /*--- Set the size of the data packet and type depending on quantity. ---*/
   
@@ -512,20 +515,20 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             if (rotate_periodic) {
               if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[0][1]*LinSysRes.GetBlock(iPoint, 2));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[1][1]*LinSysRes.GetBlock(iPoint, 2));
+                bufDSend[buf_offset+iVel+1] = (rotMatrix[0][0]*LinSysRes.GetBlock(iPoint, iVel+1) +
+                                               rotMatrix[0][1]*LinSysRes.GetBlock(iPoint, iVel+2));
+                bufDSend[buf_offset+iVel+2] = (rotMatrix[1][0]*LinSysRes.GetBlock(iPoint, iVel+1) +
+                                               rotMatrix[1][1]*LinSysRes.GetBlock(iPoint, iVel+2));
               } else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[0][1]*LinSysRes.GetBlock(iPoint, 2) +
-                                          rotMatrix[0][2]*LinSysRes.GetBlock(iPoint, 3));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[1][1]*LinSysRes.GetBlock(iPoint, 2) +
-                                          rotMatrix[1][2]*LinSysRes.GetBlock(iPoint, 3));
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[2][1]*LinSysRes.GetBlock(iPoint, 2) +
-                                          rotMatrix[2][2]*LinSysRes.GetBlock(iPoint, 3));
+                bufDSend[buf_offset+iVel+1] = (rotMatrix[0][0]*LinSysRes.GetBlock(iPoint, iVel+1) +
+                                               rotMatrix[0][1]*LinSysRes.GetBlock(iPoint, iVel+2) +
+                                               rotMatrix[0][2]*LinSysRes.GetBlock(iPoint, iVel+3));
+                bufDSend[buf_offset+iVel+2] = (rotMatrix[1][0]*LinSysRes.GetBlock(iPoint, iVel+1) +
+                                               rotMatrix[1][1]*LinSysRes.GetBlock(iPoint, iVel+2) +
+                                               rotMatrix[1][2]*LinSysRes.GetBlock(iPoint, iVel+3));
+                bufDSend[buf_offset+iVel+3] = (rotMatrix[2][0]*LinSysRes.GetBlock(iPoint, iVel+1) +
+                                               rotMatrix[2][1]*LinSysRes.GetBlock(iPoint, iVel+2) +
+                                               rotMatrix[2][2]*LinSysRes.GetBlock(iPoint, iVel+3));
               }
             }
             buf_offset += nVar;
@@ -552,21 +555,21 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               if (rotate_periodic) {
                 for (iVar = 0; iVar < nVar; iVar++) {
                   if (nDim == 2) {
-                    jacBlock[1][iVar] = (rotMatrix[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
-                    jacBlock[2][iVar] = (rotMatrix[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
+                    jacBlock[iVel+1][iVar] = (rotMatrix[0][0]*Jacobian.GetBlock(iPoint, iPoint, iVel+1, iVar) +
+                                              rotMatrix[0][1]*Jacobian.GetBlock(iPoint, iPoint, iVel+2, iVar));
+                    jacBlock[iVel+2][iVar] = (rotMatrix[1][0]*Jacobian.GetBlock(iPoint, iPoint, iVel+1, iVar) +
+                                              rotMatrix[1][1]*Jacobian.GetBlock(iPoint, iPoint, iVel+2, iVar));
                   } else {
                     
-                    jacBlock[1][iVar] = (rotMatrix[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix[0][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacBlock[2][iVar] = (rotMatrix[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix[1][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacBlock[3][iVar] = (rotMatrix[2][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix[2][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix[2][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
+                    jacBlock[iVel+1][iVar] = (rotMatrix[0][0]*Jacobian.GetBlock(iPoint, iPoint, iVel+1, iVar) +
+                                              rotMatrix[0][1]*Jacobian.GetBlock(iPoint, iPoint, iVel+2, iVar) +
+                                              rotMatrix[0][2]*Jacobian.GetBlock(iPoint, iPoint, iVel+3, iVar));
+                    jacBlock[iVel+2][iVar] = (rotMatrix[1][0]*Jacobian.GetBlock(iPoint, iPoint, iVel+1, iVar) +
+                                              rotMatrix[1][1]*Jacobian.GetBlock(iPoint, iPoint, iVel+2, iVar) +
+                                              rotMatrix[1][2]*Jacobian.GetBlock(iPoint, iPoint, iVel+3, iVar));
+                    jacBlock[iVel+3][iVar] = (rotMatrix[2][0]*Jacobian.GetBlock(iPoint, iPoint, iVel+1, iVar) +
+                                              rotMatrix[2][1]*Jacobian.GetBlock(iPoint, iPoint, iVel+2, iVar) +
+                                              rotMatrix[2][2]*Jacobian.GetBlock(iPoint, iPoint, iVel+3, iVar));
                   }
                 }
               }
@@ -599,20 +602,20 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             if (rotate_periodic) {
               if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*base_nodes->GetSolution(iPoint,1) +
-                                          rotMatrix[0][1]*base_nodes->GetSolution(iPoint,2));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*base_nodes->GetSolution(iPoint,1) +
-                                          rotMatrix[1][1]*base_nodes->GetSolution(iPoint,2));
+                bufDSend[buf_offset+iVel+1] = (rotMatrix[0][0]*base_nodes->GetSolution(iPoint,iVel+1) +
+                                               rotMatrix[0][1]*base_nodes->GetSolution(iPoint,iVel+2));
+                bufDSend[buf_offset+iVel+2] = (rotMatrix[1][0]*base_nodes->GetSolution(iPoint,iVel+1) +
+                                               rotMatrix[1][1]*base_nodes->GetSolution(iPoint,iVel+2));
               } else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*base_nodes->GetSolution(iPoint,1) +
-                                          rotMatrix[0][1]*base_nodes->GetSolution(iPoint,2) +
-                                          rotMatrix[0][2]*base_nodes->GetSolution(iPoint,3));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*base_nodes->GetSolution(iPoint,1) +
-                                          rotMatrix[1][1]*base_nodes->GetSolution(iPoint,2) +
-                                          rotMatrix[1][2]*base_nodes->GetSolution(iPoint,3));
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*base_nodes->GetSolution(iPoint,1) +
-                                          rotMatrix[2][1]*base_nodes->GetSolution(iPoint,2) +
-                                          rotMatrix[2][2]*base_nodes->GetSolution(iPoint,3));
+                bufDSend[buf_offset+iVel+1] = (rotMatrix[0][0]*base_nodes->GetSolution(iPoint,iVel+1) +
+                                               rotMatrix[0][1]*base_nodes->GetSolution(iPoint,iVel+2) +
+                                               rotMatrix[0][2]*base_nodes->GetSolution(iPoint,iVel+3));
+                bufDSend[buf_offset+iVel+2] = (rotMatrix[1][0]*base_nodes->GetSolution(iPoint,iVel+1) +
+                                               rotMatrix[1][1]*base_nodes->GetSolution(iPoint,iVel+2) +
+                                               rotMatrix[1][2]*base_nodes->GetSolution(iPoint,iVel+3));
+                bufDSend[buf_offset+iVel+3] = (rotMatrix[2][0]*base_nodes->GetSolution(iPoint,iVel+1) +
+                                               rotMatrix[2][1]*base_nodes->GetSolution(iPoint,iVel+2) +
+                                               rotMatrix[2][2]*base_nodes->GetSolution(iPoint,iVel+3));
               }
             }
             
@@ -907,21 +910,21 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             if (rotate_periodic) {
               if (nDim == 2) {
-                rotPrim_i[1] = (rotMatrix[0][0]*base_nodes->GetSolution(iPoint,1) +
-                                rotMatrix[0][1]*base_nodes->GetSolution(iPoint,2));
-                rotPrim_i[2] = (rotMatrix[1][0]*base_nodes->GetSolution(iPoint,1) +
-                                rotMatrix[1][1]*base_nodes->GetSolution(iPoint,2));
+                rotPrim_i[iVel+1] = (rotMatrix[0][0]*base_nodes->GetSolution(iPoint,iVel+1) +
+                                     rotMatrix[0][1]*base_nodes->GetSolution(iPoint,iVel+2));
+                rotPrim_i[iVel+2] = (rotMatrix[1][0]*base_nodes->GetSolution(iPoint,iVel+1) +
+                                     rotMatrix[1][1]*base_nodes->GetSolution(iPoint,iVel+2));
               }
               else {
-                rotPrim_i[1] = (rotMatrix[0][0]*base_nodes->GetSolution(iPoint,1) +
-                                rotMatrix[0][1]*base_nodes->GetSolution(iPoint,2) +
-                                rotMatrix[0][2]*base_nodes->GetSolution(iPoint,3));
-                rotPrim_i[2] = (rotMatrix[1][0]*base_nodes->GetSolution(iPoint,1) +
-                                rotMatrix[1][1]*base_nodes->GetSolution(iPoint,2) +
-                                rotMatrix[1][2]*base_nodes->GetSolution(iPoint,3));
-                rotPrim_i[3] = (rotMatrix[2][0]*base_nodes->GetSolution(iPoint,1) +
-                                rotMatrix[2][1]*base_nodes->GetSolution(iPoint,2) +
-                                rotMatrix[2][2]*base_nodes->GetSolution(iPoint,3));
+                rotPrim_i[iVel+1] = (rotMatrix[0][0]*base_nodes->GetSolution(iPoint,iVel+1) +
+                                     rotMatrix[0][1]*base_nodes->GetSolution(iPoint,iVel+2) +
+                                     rotMatrix[0][2]*base_nodes->GetSolution(iPoint,iVel+3));
+                rotPrim_i[iVel+2] = (rotMatrix[1][0]*base_nodes->GetSolution(iPoint,iVel+1) +
+                                     rotMatrix[1][1]*base_nodes->GetSolution(iPoint,iVel+2) +
+                                     rotMatrix[1][2]*base_nodes->GetSolution(iPoint,iVel+3));
+                rotPrim_i[iVel+3] = (rotMatrix[2][0]*base_nodes->GetSolution(iPoint,iVel+1) +
+                                     rotMatrix[2][1]*base_nodes->GetSolution(iPoint,iVel+2) +
+                                     rotMatrix[2][2]*base_nodes->GetSolution(iPoint,iVel+3));
               }
             }
             
@@ -967,28 +970,28 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                  rotMatrix[2][1]*dy +
                                  rotMatrix[2][2]*dz + translation[2]);
                 
-                /*--- Get conservative solution and rotte if necessary. ---*/
+                /*--- Get conservative solution and rotate if necessary. ---*/
                 
                 for (iVar = 0; iVar < nVar; iVar++)
                 rotPrim_j[iVar] = base_nodes->GetSolution(jPoint,iVar);
                 
                 if (rotate_periodic) {
                   if (nDim == 2) {
-                    rotPrim_j[1] = (rotMatrix[0][0]*base_nodes->GetSolution(jPoint,1) +
-                                    rotMatrix[0][1]*base_nodes->GetSolution(jPoint,2));
-                    rotPrim_j[2] = (rotMatrix[1][0]*base_nodes->GetSolution(jPoint,1) +
-                                    rotMatrix[1][1]*base_nodes->GetSolution(jPoint,2));
+                    rotPrim_j[iVel+1] = (rotMatrix[0][0]*base_nodes->GetSolution(jPoint,iVel+1) +
+                                         rotMatrix[0][1]*base_nodes->GetSolution(jPoint,iVel+2));
+                    rotPrim_j[iVel+2] = (rotMatrix[1][0]*base_nodes->GetSolution(jPoint,iVel+1) +
+                                         rotMatrix[1][1]*base_nodes->GetSolution(jPoint,iVel+2));
                   }
                   else {
-                    rotPrim_j[1] = (rotMatrix[0][0]*base_nodes->GetSolution(jPoint,1) +
-                                    rotMatrix[0][1]*base_nodes->GetSolution(jPoint,2) +
-                                    rotMatrix[0][2]*base_nodes->GetSolution(jPoint,3));
-                    rotPrim_j[2] = (rotMatrix[1][0]*base_nodes->GetSolution(jPoint,1) +
-                                    rotMatrix[1][1]*base_nodes->GetSolution(jPoint,2) +
-                                    rotMatrix[1][2]*base_nodes->GetSolution(jPoint,3));
-                    rotPrim_j[3] = (rotMatrix[2][0]*base_nodes->GetSolution(jPoint,1) +
-                                    rotMatrix[2][1]*base_nodes->GetSolution(jPoint,2) +
-                                    rotMatrix[2][2]*base_nodes->GetSolution(jPoint,3));
+                    rotPrim_j[iVel+1] = (rotMatrix[0][0]*base_nodes->GetSolution(jPoint,iVel+1) +
+                                         rotMatrix[0][1]*base_nodes->GetSolution(jPoint,iVel+2) +
+                                         rotMatrix[0][2]*base_nodes->GetSolution(jPoint,iVel+3));
+                    rotPrim_j[iVel+2] = (rotMatrix[1][0]*base_nodes->GetSolution(jPoint,iVel+1) +
+                                         rotMatrix[1][1]*base_nodes->GetSolution(jPoint,iVel+2) +
+                                         rotMatrix[1][2]*base_nodes->GetSolution(jPoint,iVel+3));
+                    rotPrim_j[iVel+3] = (rotMatrix[2][0]*base_nodes->GetSolution(jPoint,iVel+1) +
+                                         rotMatrix[2][1]*base_nodes->GetSolution(jPoint,iVel+2) +
+                                         rotMatrix[2][2]*base_nodes->GetSolution(jPoint,iVel+3));
                   }
                 }
                 
@@ -1296,36 +1299,36 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             if (rotate_periodic) {
               if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
-                                          rotMatrix[0][1]*Sol_Min[2]);
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*Sol_Min[1] +
-                                          rotMatrix[1][1]*Sol_Min[2]);
+                bufDSend[buf_offset+iVel+1] = (rotMatrix[0][0]*Sol_Min[iVel+1] +
+                                               rotMatrix[0][1]*Sol_Min[iVel+2]);
+                bufDSend[buf_offset+iVel+2] = (rotMatrix[1][0]*Sol_Min[iVel+1] +
+                                               rotMatrix[1][1]*Sol_Min[iVel+2]);
                 
-                bufDSend[buf_offset+nPrimVarGrad+1] = (rotMatrix[0][0]*Sol_Max[1] +
-                                                       rotMatrix[0][1]*Sol_Max[2]);
-                bufDSend[buf_offset+nPrimVarGrad+2] = (rotMatrix[1][0]*Sol_Max[1] +
-                                                       rotMatrix[1][1]*Sol_Max[2]);
+                bufDSend[buf_offset+nPrimVarGrad+iVel+1] = (rotMatrix[0][0]*Sol_Max[iVel+1] +
+                                                            rotMatrix[0][1]*Sol_Max[iVel+2]);
+                bufDSend[buf_offset+nPrimVarGrad+iVel+2] = (rotMatrix[1][0]*Sol_Max[iVel+1] +
+                                                            rotMatrix[1][1]*Sol_Max[iVel+2]);
                 
               } else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
-                                          rotMatrix[0][1]*Sol_Min[2] +
-                                          rotMatrix[0][2]*Sol_Min[3]);
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*Sol_Min[1] +
-                                          rotMatrix[1][1]*Sol_Min[2] +
-                                          rotMatrix[1][2]*Sol_Min[3]);
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*Sol_Min[1] +
-                                          rotMatrix[2][1]*Sol_Min[2] +
-                                          rotMatrix[2][2]*Sol_Min[3]);
+                bufDSend[buf_offset+iVel+1] = (rotMatrix[0][0]*Sol_Min[iVel+1] +
+                                               rotMatrix[0][1]*Sol_Min[iVel+2] +
+                                               rotMatrix[0][2]*Sol_Min[iVel+3]);
+                bufDSend[buf_offset+iVel+2] = (rotMatrix[1][0]*Sol_Min[iVel+1] +
+                                               rotMatrix[1][1]*Sol_Min[iVel+2] +
+                                               rotMatrix[1][2]*Sol_Min[iVel+3]);
+                bufDSend[buf_offset+iVel+3] = (rotMatrix[2][0]*Sol_Min[iVel+1] +
+                                               rotMatrix[2][1]*Sol_Min[iVel+2] +
+                                               rotMatrix[2][2]*Sol_Min[iVel+3]);
                 
-                bufDSend[buf_offset+nPrimVarGrad+1] = (rotMatrix[0][0]*Sol_Max[1] +
-                                                       rotMatrix[0][1]*Sol_Max[2] +
-                                                       rotMatrix[0][2]*Sol_Max[3]);
-                bufDSend[buf_offset+nPrimVarGrad+2] = (rotMatrix[1][0]*Sol_Max[1] +
-                                                       rotMatrix[1][1]*Sol_Max[2] +
-                                                       rotMatrix[1][2]*Sol_Max[3]);
-                bufDSend[buf_offset+nPrimVarGrad+3] = (rotMatrix[2][0]*Sol_Max[1] +
-                                                       rotMatrix[2][1]*Sol_Max[2] +
-                                                       rotMatrix[2][2]*Sol_Max[3]);
+                bufDSend[buf_offset+nPrimVarGrad+iVel+1] = (rotMatrix[0][0]*Sol_Max[iVel+1] +
+                                                            rotMatrix[0][1]*Sol_Max[iVel+2] +
+                                                            rotMatrix[0][2]*Sol_Max[iVel+3]);
+                bufDSend[buf_offset+nPrimVarGrad+iVel+2] = (rotMatrix[1][0]*Sol_Max[iVel+1] +
+                                                            rotMatrix[1][1]*Sol_Max[iVel+2] +
+                                                            rotMatrix[1][2]*Sol_Max[iVel+3]);
+                bufDSend[buf_offset+nPrimVarGrad+iVel+3] = (rotMatrix[2][0]*Sol_Max[iVel+1] +
+                                                            rotMatrix[2][1]*Sol_Max[iVel+2] +
+                                                            rotMatrix[2][2]*Sol_Max[iVel+3]);
               }
             }
             
@@ -1383,37 +1386,37 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             if (rotate_periodic) {
               
               if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
-                                          rotMatrix[0][1]*Sol_Min[2]);
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*Sol_Min[1] +
-                                          rotMatrix[1][1]*Sol_Min[2]);
+                bufDSend[buf_offset+iVel+1] = (rotMatrix[0][0]*Sol_Min[iVel+1] +
+                                               rotMatrix[0][1]*Sol_Min[iVel+2]);
+                bufDSend[buf_offset+iVel+2] = (rotMatrix[1][0]*Sol_Min[iVel+1] +
+                                               rotMatrix[1][1]*Sol_Min[iVel+2]);
                 
-                bufDSend[buf_offset+nVar+1] = (rotMatrix[0][0]*Sol_Max[1] +
-                                               rotMatrix[0][1]*Sol_Max[2]);
-                bufDSend[buf_offset+nVar+2] = (rotMatrix[1][0]*Sol_Max[1] +
-                                               rotMatrix[1][1]*Sol_Max[2]);
+                bufDSend[buf_offset+nVar+iVel+1] = (rotMatrix[0][0]*Sol_Max[iVel+1] +
+                                                    rotMatrix[0][1]*Sol_Max[iVel+2]);
+                bufDSend[buf_offset+nVar+iVel+2] = (rotMatrix[1][0]*Sol_Max[iVel+1] +
+                                                    rotMatrix[1][1]*Sol_Max[iVel+2]);
                 
               }
               else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
-                                          rotMatrix[0][1]*Sol_Min[2] +
-                                          rotMatrix[0][2]*Sol_Min[3]);
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*Sol_Min[1] +
-                                          rotMatrix[1][1]*Sol_Min[2] +
-                                          rotMatrix[1][2]*Sol_Min[3]);
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*Sol_Min[1] +
-                                          rotMatrix[2][1]*Sol_Min[2] +
-                                          rotMatrix[2][2]*Sol_Min[3]);
+                bufDSend[buf_offset+iVel+1] = (rotMatrix[0][0]*Sol_Min[iVel+1] +
+                                               rotMatrix[0][1]*Sol_Min[iVel+2] +
+                                               rotMatrix[0][2]*Sol_Min[iVel+3]);
+                bufDSend[buf_offset+iVel+2] = (rotMatrix[1][0]*Sol_Min[iVel+1] +
+                                               rotMatrix[1][1]*Sol_Min[iVel+2] +
+                                               rotMatrix[1][2]*Sol_Min[iVel+3]);
+                bufDSend[buf_offset+iVel+3] = (rotMatrix[2][0]*Sol_Min[iVel+1] +
+                                               rotMatrix[2][1]*Sol_Min[iVel+2] +
+                                               rotMatrix[2][2]*Sol_Min[iVel+3]);
                 
-                bufDSend[buf_offset+nVar+1] = (rotMatrix[0][0]*Sol_Max[1] +
-                                               rotMatrix[0][1]*Sol_Max[2] +
-                                               rotMatrix[0][2]*Sol_Max[3]);
-                bufDSend[buf_offset+nVar+2] = (rotMatrix[1][0]*Sol_Max[1] +
-                                               rotMatrix[1][1]*Sol_Max[2] +
-                                               rotMatrix[1][2]*Sol_Max[3]);
-                bufDSend[buf_offset+nVar+3] = (rotMatrix[2][0]*Sol_Max[1] +
-                                               rotMatrix[2][1]*Sol_Max[2] +
-                                               rotMatrix[2][2]*Sol_Max[3]);
+                bufDSend[buf_offset+nVar+iVel+1] = (rotMatrix[0][0]*Sol_Max[iVel+1] +
+                                                    rotMatrix[0][1]*Sol_Max[iVel+2] +
+                                                    rotMatrix[0][2]*Sol_Max[iVel+3]);
+                bufDSend[buf_offset+nVar+iVel+2] = (rotMatrix[1][0]*Sol_Max[iVel+1] +
+                                                    rotMatrix[1][1]*Sol_Max[iVel+2] +
+                                                    rotMatrix[1][2]*Sol_Max[iVel+3]);
+                bufDSend[buf_offset+nVar+iVel+3] = (rotMatrix[2][0]*Sol_Max[iVel+1] +
+                                                    rotMatrix[2][1]*Sol_Max[iVel+2] +
+                                                    rotMatrix[2][2]*Sol_Max[iVel+3]);
                 
               }
             }
@@ -1432,22 +1435,22 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             if (rotate_periodic) {
               if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*base_nodes->GetLimiter(iPoint,1) +
-                                          rotMatrix[0][1]*base_nodes->GetLimiter(iPoint,2));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*base_nodes->GetLimiter(iPoint,1) +
-                                          rotMatrix[1][1]*base_nodes->GetLimiter(iPoint,2));
+                bufDSend[buf_offset+iVel+1] = (rotMatrix[0][0]*base_nodes->GetLimiter(iPoint,iVel+1) +
+                                               rotMatrix[0][1]*base_nodes->GetLimiter(iPoint,iVel+2));
+                bufDSend[buf_offset+iVel+2] = (rotMatrix[1][0]*base_nodes->GetLimiter(iPoint,iVel+1) +
+                                               rotMatrix[1][1]*base_nodes->GetLimiter(iPoint,iVel+2));
                 
               }
               else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*base_nodes->GetLimiter(iPoint,1) +
-                                          rotMatrix[0][1]*base_nodes->GetLimiter(iPoint,2) +
-                                          rotMatrix[0][2]*base_nodes->GetLimiter(iPoint,3));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*base_nodes->GetLimiter(iPoint,1) +
-                                          rotMatrix[1][1]*base_nodes->GetLimiter(iPoint,2) +
-                                          rotMatrix[1][2]*base_nodes->GetLimiter(iPoint,3));
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*base_nodes->GetLimiter(iPoint,1) +
-                                          rotMatrix[2][1]*base_nodes->GetLimiter(iPoint,2) +
-                                          rotMatrix[2][2]*base_nodes->GetLimiter(iPoint,3));
+                bufDSend[buf_offset+iVel+1] = (rotMatrix[0][0]*base_nodes->GetLimiter(iPoint,iVel+1) +
+                                               rotMatrix[0][1]*base_nodes->GetLimiter(iPoint,iVel+2) +
+                                               rotMatrix[0][2]*base_nodes->GetLimiter(iPoint,iVel+3));
+                bufDSend[buf_offset+iVel+2] = (rotMatrix[1][0]*base_nodes->GetLimiter(iPoint,iVel+1) +
+                                               rotMatrix[1][1]*base_nodes->GetLimiter(iPoint,iVel+2) +
+                                               rotMatrix[1][2]*base_nodes->GetLimiter(iPoint,iVel+3));
+                bufDSend[buf_offset+iVel+3] = (rotMatrix[2][0]*base_nodes->GetLimiter(iPoint,iVel+1) +
+                                               rotMatrix[2][1]*base_nodes->GetLimiter(iPoint,iVel+2) +
+                                               rotMatrix[2][2]*base_nodes->GetLimiter(iPoint,iVel+3));
               }
             }
             

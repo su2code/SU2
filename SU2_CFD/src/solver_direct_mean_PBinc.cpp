@@ -3708,8 +3708,7 @@ void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_contai
 		  }
 	  }
 	  for (iVar = 0; iVar < nVar; iVar++) {
-		  //Mom_Coeff[iVar] = Mom_Coeff[iVar] - nodes->Get_Mom_Coeff_nb(iPoint, iVar) - Vol/delT;
-		  Mom_Coeff[iVar] = Mom_Coeff[iVar] - nodes->Get_Mom_Coeff_nb(iPoint, iVar);
+		  Mom_Coeff[iVar] = Mom_Coeff[iVar] - nodes->Get_Mom_Coeff_nb(iPoint, iVar) - config->GetRCFactor()*(Vol/delT);
 		  Mom_Coeff[iVar] = nodes->GetDensity(iPoint)*Vol/Mom_Coeff[iVar];
 		  Mom_Coeff[iVar] = K_c*Mom_Coeff[iVar];
 	  }
@@ -4073,7 +4072,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 	
 	/*--- RCFactor for now is a specified constant. In future, can think of making it dependent on solution and 
 	 * possibly time step size so as to make the interpolation and final solution independent of CFL number. ---*/
-	MassFlux_Part = MassFlux_Part - config->GetRCFactor()*RhieChowInterp;
+	MassFlux_Part = MassFlux_Part - RhieChowInterp;
 
 	FaceVelocity[iEdge] = MassFlux_Part/(MeanDensity*Area);
 	
