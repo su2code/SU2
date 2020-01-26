@@ -38,7 +38,7 @@
  */
 class CSource_Template : public CNumerics {
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -47,8 +47,8 @@ public:
    *
    */
   CSource_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  
+
+
   /*!
    * \brief Residual for source term integration.
    * \param[out] val_residual - Pointer to the total residual.
@@ -56,7 +56,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */

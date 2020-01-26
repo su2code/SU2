@@ -32,37 +32,37 @@ CSourceAxisymmetric_AdjFlow::CSourceAxisymmetric_AdjFlow(unsigned short val_nDim
 CSourceAxisymmetric_AdjFlow::~CSourceAxisymmetric_AdjFlow(void) { }
 
 void CSourceAxisymmetric_AdjFlow::ComputeResidual(su2double *val_residual, su2double **Jacobian_ii, CConfig *config) {
-  
+
   su2double yinv;
   su2double Jacobian_Axisymmetric[4][4];
-  
+
   if (Coord_i[1] > 0.0) yinv = 1.0/Coord_i[1];
   else yinv = 0.0;
-  
+
   Jacobian_Axisymmetric[0][0] = 0;
   Jacobian_Axisymmetric[0][1] = 0;
   Jacobian_Axisymmetric[0][2] = 1.;
   Jacobian_Axisymmetric[0][3] = 0;
-  
+
   Jacobian_Axisymmetric[1][0] = -U_i[1]*U_i[2]/(U_i[0]*U_i[0]);
   Jacobian_Axisymmetric[1][1] = U_i[2]/U_i[0];
   Jacobian_Axisymmetric[1][2] = U_i[1]/U_i[0];
   Jacobian_Axisymmetric[1][3] = 0;
-  
+
   Jacobian_Axisymmetric[2][0] = -U_i[2]*U_i[2]/(U_i[0]*U_i[0]);
   Jacobian_Axisymmetric[2][1] = 0;
   Jacobian_Axisymmetric[2][2] = 2*U_i[2]/U_i[0];
   Jacobian_Axisymmetric[2][3] = 0;
-  
+
   Jacobian_Axisymmetric[3][0] = -Gamma*U_i[2]*U_i[3]/(U_i[0]*U_i[0]) + (Gamma-1)*U_i[2]*(U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]*U_i[0]);
   Jacobian_Axisymmetric[3][1] = -(Gamma-1)*U_i[2]*U_i[1]/(U_i[0]*U_i[0]);
   Jacobian_Axisymmetric[3][2] = Gamma*U_i[3]/U_i[0] - 1/2*(Gamma-1)*( (U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]) + 2*U_i[2]*U_i[2]/(U_i[0]*U_i[0]) );
   Jacobian_Axisymmetric[3][3] = Gamma*U_i[2]/U_i[0];
-  
+
   for (int iVar=0; iVar<4; iVar++)
     for (int jVar=0; jVar<4; jVar++)
       Jacobian_Axisymmetric[iVar][jVar] *= yinv*Volume;
-  
+
   /* -- Residual = transpose(Jacobian) * psi --*/
   for (int iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = 0.0;

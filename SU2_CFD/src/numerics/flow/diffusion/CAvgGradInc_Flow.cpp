@@ -31,16 +31,16 @@ CAvgGradInc_Flow::CAvgGradInc_Flow(unsigned short val_nDim,
                                    unsigned short val_nVar,
                                    bool val_correct_grad, CConfig *config)
     : CAvgGrad_Base(val_nDim, val_nVar, val_nDim+3, val_correct_grad, config) {
-  
+
   energy   = config->GetEnergy_Equation();
-  
+
 }
 
 CAvgGradInc_Flow::~CAvgGradInc_Flow(void) {
 }
 
 void CAvgGradInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
+
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
@@ -52,12 +52,12 @@ void CAvgGradInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   unsigned short iVar, jVar, iDim;
 
   /*--- Normalized normal vector ---*/
-  
+
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
-  
+
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
@@ -76,20 +76,20 @@ void CAvgGradInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   }
 
   /*--- Density and transport properties ---*/
-  
+
   Laminar_Viscosity_i    = V_i[nDim+4];  Laminar_Viscosity_j    = V_j[nDim+4];
   Eddy_Viscosity_i       = V_i[nDim+5];  Eddy_Viscosity_j       = V_j[nDim+5];
   Thermal_Conductivity_i = V_i[nDim+6];  Thermal_Conductivity_j = V_j[nDim+6];
 
   /*--- Mean transport properties ---*/
-  
+
   Mean_Laminar_Viscosity    = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
   Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
   Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
 
   /*--- Mean gradient approximation ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++)
     for (iDim = 0; iDim < nDim; iDim++)
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
@@ -100,22 +100,22 @@ void CAvgGradInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, Edge_Vector,
                     dist_ij_2, nVar);
   }
-  
+
   /*--- Get projected flux tensor ---*/
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
          Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
-  
+
   /*--- Update viscous residual ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
   }
 
   /*--- Implicit part ---*/
-  
+
   if (implicit) {
-    
+
     if (dist_ij_2 == 0.0) {
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
@@ -139,7 +139,7 @@ void CAvgGradInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
       val_Jacobian_i[nDim+1][nDim+1] = -Mean_Thermal_Conductivity*proj_vector_ij;
       val_Jacobian_j[nDim+1][nDim+1] =  Mean_Thermal_Conductivity*proj_vector_ij;
     }
-    
+
   }
 
   if (!energy) {

@@ -90,7 +90,7 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
       for (iVar=0; iVar < nVar; iVar++)
         for (jVar=0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] *= yinv*Volume*DensityInc_i;
-      
+
     }
 
     /*--- Add the viscous terms if necessary. ---*/
@@ -116,7 +116,7 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
           tau[iDim][jDim] = (total_viscosity*(PrimVar_Grad_i[jDim+1][iDim] +
                                               PrimVar_Grad_i[iDim+1][jDim] )
                              -TWO3*total_viscosity*div_vel*delta[iDim][jDim]);
-      
+
       /*--- Viscous terms. ---*/
 
       val_residual[0] -= 0.0;
@@ -127,7 +127,7 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
       val_residual[3] -= Volume*yinv*Thermal_Conductivity_i*PrimVar_Grad_i[nDim+1][1];
 
     }
-    
+
   } else {
 
     for (iVar=0; iVar < nVar; iVar++)
@@ -139,7 +139,7 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
           Jacobian_i[iVar][jVar] = 0.0;
       }
     }
-    
+
   }
 
   if (!energy) {

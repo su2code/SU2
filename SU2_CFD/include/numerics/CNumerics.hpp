@@ -1126,21 +1126,21 @@ public:
   void GetRMatrix(su2double val_pressure, su2double val_soundspeed,
                   su2double val_density, su2double* val_velocity,
                   su2double** val_invR_invPe);
-	/*!
-	 * \brief Computation of the matrix R.
-	 * \param[in] val_soundspeed - value of the sound speed.
-	 * \param[in] val_density - value of the density.
-	 * \param[out] R_Matrix - Pointer to the matrix of conversion from entropic to conserved variables.
-	 */
-	void GetRMatrix(su2double val_soundspeed, su2double val_density, su2double **R_Matrix);
+  /*!
+   * \brief Computation of the matrix R.
+   * \param[in] val_soundspeed - value of the sound speed.
+   * \param[in] val_density - value of the density.
+   * \param[out] R_Matrix - Pointer to the matrix of conversion from entropic to conserved variables.
+   */
+  void GetRMatrix(su2double val_soundspeed, su2double val_density, su2double **R_Matrix);
 
-	/*!
-	 * \brief Computation of the matrix R.
-	 * \param[in] val_soundspeed - value of the sound speed.
-	 * \param[in] val_density - value of the density.
-	 * \param[out] L_Matrix - Pointer to the matrix of conversion from conserved to entropic variables.
-	 */
-	void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix);
+  /*!
+   * \brief Computation of the matrix R.
+   * \param[in] val_soundspeed - value of the sound speed.
+   * \param[in] val_density - value of the density.
+   * \param[out] L_Matrix - Pointer to the matrix of conversion from conserved to entropic variables.
+   */
+  void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix);
 
   /*!
    * \brief Computation of the flow Residual Jacoboan Matrix for Non Reflecting BC.

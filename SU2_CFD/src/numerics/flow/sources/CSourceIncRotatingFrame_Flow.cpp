@@ -64,13 +64,13 @@ void CSourceIncRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2d
     val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
     val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
     val_residual[3] = 0.0;
-  } else { 
+  } else {
     val_residual[0] = 0.0;
     val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
     val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
     val_residual[3] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume;
     val_residual[4] = 0.0;
-  } 
+  }
 
   /*--- Calculate the source term Jacobian ---*/
 

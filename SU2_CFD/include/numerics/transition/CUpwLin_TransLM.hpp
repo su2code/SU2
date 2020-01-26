@@ -43,9 +43,9 @@ private:
   bool implicit, incompressible;
   su2double Density_i, Density_j, q_ij, a0, a1;
   unsigned short iDim;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -53,12 +53,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwLin_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CUpwLin_TransLM(void);
-  
+
   /*!
    * \brief Compute the upwind flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.

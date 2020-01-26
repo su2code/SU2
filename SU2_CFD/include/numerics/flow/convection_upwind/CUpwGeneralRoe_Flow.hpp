@@ -58,7 +58,7 @@ private:
   su2double RoeKappa, RoeChi;
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -66,12 +66,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CUpwGeneralRoe_Flow(void);
-  
+
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.
@@ -80,11 +80,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-  
+
   /*!
    * \brief Compute the Average for a general fluid flux between two nodes i and j.
    * Using the approach of Vinokur and Montagne'
    */
-  
+
   void ComputeRoeAverage();
 };

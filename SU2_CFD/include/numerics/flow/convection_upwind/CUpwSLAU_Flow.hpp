@@ -40,7 +40,7 @@ class CUpwSLAU_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
 protected:
   bool slau_low_diss;
   bool slau2;
-  
+
   /*!
    * \brief Mass flux and pressure for the SLAU and SLAU2 schemes.
    * \param[in] config - Definition of the particular problem.
@@ -48,9 +48,9 @@ protected:
    * \param[out] pressure - The pressure at the control volume face.
    */
   void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -58,7 +58,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
-  
+
   /*!
    * \brief Destructor of the class.
    */
@@ -81,7 +81,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
-  
+
   /*!
    * \brief Destructor of the class.
    */

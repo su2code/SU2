@@ -61,9 +61,9 @@ private:
   dynamic_grid,                    /*!< \brief Modification for grid movement. */
   variable_density,                /*!< \brief Variable density incompressible flows. */
   energy;                          /*!< \brief computation with the energy equation. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -71,12 +71,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CCentLaxInc_Flow(void);
-  
+
   /*!
    * \brief Compute the flow residual using a Lax method.
    * \param[out] val_residual - Pointer to the residual array.

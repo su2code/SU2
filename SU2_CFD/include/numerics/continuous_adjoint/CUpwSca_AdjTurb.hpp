@@ -39,9 +39,9 @@
 class CUpwSca_AdjTurb : public CNumerics {
 private:
   su2double *Velocity_i, *Velocity_j;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -49,12 +49,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwSca_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CUpwSca_AdjTurb(void);
-  
+
   /*!
    * \param[out] val_residual_i - Pointer to the total residual at point i.
    * \param[out] val_residual_j - Pointer to the total viscosity residual at point j.

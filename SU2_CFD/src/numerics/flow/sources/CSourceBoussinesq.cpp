@@ -63,7 +63,7 @@ void CSourceBoussinesq::ComputeResidual(su2double *val_residual, CConfig *config
    hydrostatic pressure component (important for pressure BCs). ---*/
 
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[iDim+1] = Volume * DensityInc_i * ( Beta * (U_i[nDim+1] - T0)) * Gravity_Vector[iDim] / Force_Ref; 
+    val_residual[iDim+1] = Volume * DensityInc_i * ( Beta * (U_i[nDim+1] - T0)) * Gravity_Vector[iDim] / Force_Ref;
 
   /*--- Zero the energy contribution ---*/
 

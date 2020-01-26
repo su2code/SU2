@@ -73,13 +73,13 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   }
 
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
-  
+
   Pressure_i = V_i[nDim+1];                       Pressure_j = V_j[nDim+1];
   Density_i  = V_i[nDim+2];                       Density_j  = V_j[nDim+2];
   Enthalpy_i = V_i[nDim+3];                       Enthalpy_j = V_j[nDim+3];
   SoundSpeed_i = V_i[nDim+4];                     SoundSpeed_j = V_j[nDim+4];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  
+
   sq_vel_i = 0.0; sq_vel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
@@ -89,31 +89,31 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   }
 
   /*--- Recompute conservative variables ---*/
-  
+
   U_i[0] = Density_i; U_j[0] = Density_j;
   for (iDim = 0; iDim < nDim; iDim++) {
     U_i[iDim+1] = Density_i*Velocity_i[iDim]; U_j[iDim+1] = Density_j*Velocity_j[iDim];
   }
   U_i[nDim+1] = Density_i*Energy_i; U_j[nDim+1] = Density_j*Energy_j;
-  
+
   /*--- Compute mean values of the variables ---*/
-  
+
   MeanDensity = 0.5*(Density_i+Density_j);
   MeanPressure = 0.5*(Pressure_i+Pressure_j);
   MeanEnthalpy = 0.5*(Enthalpy_i+Enthalpy_j);
   for (iDim = 0; iDim < nDim; iDim++)
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
   MeanEnergy = 0.5*(Energy_i+Energy_j);
-  
+
   /*--- Get projected flux tensor ---*/
-  
+
   GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
-  
+
   /*--- Residual of the inviscid flux ---*/
 
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = ProjFlux[iVar];
-  
+
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
 
   if (implicit) {
@@ -124,7 +124,7 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   }
 
   /*--- Adjustment due to grid motion ---*/
-  
+
   if (dynamic_grid) {
     ProjGridVel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
@@ -138,9 +138,9 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
       }
     }
   }
-  
+
   /*--- Compute the local spectral radius and the stretching factor ---*/
-  
+
   ProjVelocity_i = 0.0; ProjVelocity_j = 0.0; Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
@@ -148,31 +148,31 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
     Area += Normal[iDim]*Normal[iDim];
   }
   Area = sqrt(Area);
-  
+
   /*--- Adjustment due to mesh motion ---*/
-  
+
   if (dynamic_grid) {
     ProjVelocity_i -= ProjGridVel;
     ProjVelocity_j -= ProjGridVel;
   }
-  
+
   /*--- Dissipation term ---*/
-  
+
   Local_Lambda_i = (fabs(ProjVelocity_i)+SoundSpeed_i*Area);
   Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
   MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
-  
+
   Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
   Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
   StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
-  
+
   /*--- Compute differences btw. conservative variables, with a correction for enthalpy ---*/
-  
+
   for (iVar = 0; iVar < nVar-1; iVar++) {
     Diff_U[iVar] = U_i[iVar]-U_j[iVar];
   }
   Diff_U[nVar-1] = Density_i*Enthalpy_i-Density_j*Enthalpy_j;
-  
+
   DissipationTerm(val_residual, val_Jacobian_i, val_Jacobian_j);
 
   if (preacc) {
@@ -189,16 +189,16 @@ void CCentBase_Flow::ScalarDissipationJacobian(su2double **val_Jacobian_i, su2do
     val_Jacobian_i[iVar][iVar] += fix_factor*cte_0;
     val_Jacobian_j[iVar][iVar] -= fix_factor*cte_1;
   }
-  
+
   /*--- Last row of Jacobian_i ---*/
-  
+
   val_Jacobian_i[nVar-1][0] += fix_factor*cte_0*Gamma_Minus_One*sq_vel_i;
   for (iDim = 0; iDim < nDim; iDim++)
     val_Jacobian_i[nVar-1][iDim+1] -= fix_factor*cte_0*Gamma_Minus_One*Velocity_i[iDim];
   val_Jacobian_i[nVar-1][nVar-1] += fix_factor*cte_0*Gamma;
-  
+
   /*--- Last row of Jacobian_j ---*/
-  
+
   val_Jacobian_j[nVar-1][0] -= fix_factor*cte_1*Gamma_Minus_One*sq_vel_j;
   for (iDim = 0; iDim < nDim; iDim++)
     val_Jacobian_j[nVar-1][iDim+1] += fix_factor*cte_1*Gamma_Minus_One*Velocity_j[iDim];

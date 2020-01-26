@@ -34,9 +34,9 @@ class CSourceConservative_AdjFlow : public CNumerics {
 private:
   su2double *Velocity, *Residual_i, *Residual_j, *Mean_Residual;
   su2double **Mean_PrimVar_Grad;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -44,12 +44,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CSourceConservative_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CSourceConservative_AdjFlow(void);
-  
+
   /*!
    * \brief Source term integration using a conservative scheme.
    * \param[out] val_residual - Pointer to the total residual.

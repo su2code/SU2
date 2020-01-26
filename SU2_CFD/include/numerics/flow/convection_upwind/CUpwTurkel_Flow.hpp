@@ -52,9 +52,9 @@ private:
   su2double r_hat, s_hat, t_hat, rhoB2a2, sqr_one_m_Betasqr_Lam1;
   su2double Beta2, one_m_Betasqr, one_p_Betasqr, sqr_two_Beta_c_Area;
   su2double local_Mach;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -62,12 +62,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CUpwTurkel_Flow(void);
-  
+
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.

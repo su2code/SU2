@@ -47,15 +47,15 @@ void CAvgGrad_TurbSA_Neg::FinishResidualCalc(su2double *val_residual,
                                                    CConfig *config) {
 
   /*--- Compute mean effective viscosity ---*/
-  
+
   nu_i = Laminar_Viscosity_i/Density_i;
   nu_j = Laminar_Viscosity_j/Density_j;
-  
+
   nu_ij = 0.5*(nu_i+nu_j);
   nu_tilde_ij = 0.5*(TurbVar_i[0]+TurbVar_j[0]);
 
   Xi = nu_tilde_ij/nu_ij;
-  
+
   if (nu_tilde_ij > 0.0) {
     nu_e = nu_ij + nu_tilde_ij;
   }
@@ -63,11 +63,11 @@ void CAvgGrad_TurbSA_Neg::FinishResidualCalc(su2double *val_residual,
     fn = (cn1 + Xi*Xi*Xi)/(cn1 - Xi*Xi*Xi);
     nu_e = nu_ij + fn*nu_tilde_ij;
   }
-  
+
   val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Normal[0]/sigma;
-  
+
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-  
+
   if (implicit) {
     Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar[0]-nu_e*proj_vector_ij)/sigma;
     Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar[0]+nu_e*proj_vector_ij)/sigma;

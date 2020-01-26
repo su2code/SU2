@@ -46,9 +46,9 @@ private:
   MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_0, Local_Lambda_i, Local_Lambda_j, MeanLambda,
   Phi_i, Phi_j, sc2, StretchingFactor, Epsilon_0;
   bool implicit, grid_movement;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -56,12 +56,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CCentLax_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CCentLax_AdjFlow(void);
-  
+
   /*!
    * \brief Compute the adjoint flow residual using a Lax method.
    * \param[out] val_resconv_i - Pointer to the convective residual at point i.

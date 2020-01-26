@@ -30,10 +30,10 @@
 CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const su2double *constants,
                                                    su2double val_kine_Inf, su2double val_omega_Inf, CConfig *config)
   : CNumerics(val_nDim, val_nVar, config) {
-  
+
   incompressible   = (config->GetKind_Regime()     == INCOMPRESSIBLE);
   sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
-  
+
   /*--- Closure constants ---*/
   beta_star     = constants[6];
   sigma_omega_1 = constants[2];
@@ -52,7 +52,7 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsi
 CSourcePieceWise_TurbSST::~CSourcePieceWise_TurbSST(void) { }
 
 void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
+
   AD::StartPreacc();
   AD::SetPreaccIn(StrainMag_i);
   AD::SetPreaccIn(TurbVar_i, nVar);
@@ -64,7 +64,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   unsigned short iDim;
   su2double alfa_blended, beta_blended;
   su2double diverg, pk, pw, zeta;
-  
+
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6);
 
@@ -79,16 +79,16 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     Laminar_Viscosity_i = V_i[nDim+5];
     Eddy_Viscosity_i = V_i[nDim+6];
   }
-  
+
   val_residual[0] = 0.0;        val_residual[1] = 0.0;
   val_Jacobian_i[0][0] = 0.0;    val_Jacobian_i[0][1] = 0.0;
   val_Jacobian_i[1][0] = 0.0;    val_Jacobian_i[1][1] = 0.0;
-  
+
   /*--- Computation of blended constants for the source terms---*/
-  
+
   alfa_blended = F1_i*alfa_1 + (1.0 - F1_i)*alfa_2;
   beta_blended = F1_i*beta_1 + (1.0 - F1_i)*beta_2;
-  
+
   if (dist_i > 1e-10) {
 
    /*--- Production ---*/
@@ -96,7 +96,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    diverg = 0.0;
    for (iDim = 0; iDim < nDim; iDim++)
      diverg += PrimVar_Grad_i[iDim+1][iDim];
-   
+
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
    if (using_uq){
@@ -162,7 +162,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    val_Jacobian_i[1][0] = 0.0;
    val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
   }
-  
+
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
 

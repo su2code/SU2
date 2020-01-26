@@ -28,7 +28,7 @@
 #include "../../../../include/numerics/flow/convection_centered/CCentLaxInc_Flow.hpp"
 
 CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
+
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == VARIABLE);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
@@ -39,7 +39,7 @@ CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_n
 
   Param_p = 0.3;
   Param_Kappa_0 = config->GetKappa_1st_Flow();
-  
+
   /*--- Allocate some structures ---*/
 
   Diff_V       = new su2double[nVar];
@@ -51,11 +51,11 @@ CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_n
 
   for (iVar = 0; iVar < nVar; iVar++)
     Precon[iVar] = new su2double[nVar];
-  
+
 }
 
 CCentLaxInc_Flow::~CCentLaxInc_Flow(void) {
-  
+
   delete [] Diff_V;
   delete [] Velocity_i;
   delete [] Velocity_j;
@@ -72,9 +72,9 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
   su2double ProjGridVel = 0.0, ProjVelocity = 0.0;
-  
+
   /*--- Primitive variables at point i and j ---*/
-  
+
   Pressure_i    = V_i[0];             Pressure_j    = V_j[0];
   Temperature_i = V_i[nDim+1];        Temperature_j = V_j[nDim+1];
   DensityInc_i  = V_i[nDim+2];        DensityInc_j  = V_j[nDim+2];
@@ -119,7 +119,7 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   GetInviscidIncProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, &MeanEnthalpy, Normal, ProjFlux);
 
   /*--- Compute inviscid residual ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = ProjFlux[iVar];
   }
@@ -167,7 +167,7 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   }
 
   /*--- Computes differences btw. conservative variables ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++)
     Diff_V[iVar] = V_i[iVar]-V_j[iVar];
 
@@ -201,10 +201,10 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
 
   StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
-  
+
   sc0 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
   Epsilon_0 = Param_Kappa_0*sc0*su2double(nDim)/3.0;
-  
+
   /*--- Compute viscous part of the residual ---*/
 
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -216,7 +216,7 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
       }
     }
   }
-  
+
   /*--- Remove energy contributions if we aren't solving the energy equation. ---*/
 
   if (!energy) {

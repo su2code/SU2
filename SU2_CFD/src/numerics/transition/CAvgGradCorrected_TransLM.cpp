@@ -29,17 +29,17 @@
 
 CAvgGradCorrected_TransLM::CAvgGradCorrected_TransLM(unsigned short val_nDim, unsigned short val_nVar,
                                                      CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
+
   unsigned short iVar;
-  
+
   implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-  
+
   sigma = 2./3.;
-  
+
   Edge_Vector = new su2double [nDim];
   Proj_Mean_GradTurbVar_Kappa = new su2double [nVar];
   Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
@@ -50,9 +50,9 @@ CAvgGradCorrected_TransLM::CAvgGradCorrected_TransLM(unsigned short val_nDim, un
 }
 
 CAvgGradCorrected_TransLM::~CAvgGradCorrected_TransLM(void) {
-  
+
   unsigned short iVar;
-  
+
   delete [] Edge_Vector;
   delete [] Proj_Mean_GradTurbVar_Kappa;
   delete [] Proj_Mean_GradTurbVar_Edge;
@@ -63,7 +63,7 @@ CAvgGradCorrected_TransLM::~CAvgGradCorrected_TransLM(void) {
 }
 
 void CAvgGradCorrected_TransLM::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
-  
+
   //  switch (config->GetKind_Turb_Model()) {
   //  case SA :
   //    /*--- Compute mean effective viscosity ---*/

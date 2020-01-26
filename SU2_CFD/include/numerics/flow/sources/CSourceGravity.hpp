@@ -37,21 +37,21 @@
  * \author F. Palacios
  */
 class CSourceGravity : public CNumerics {
-  
+
 public:
-  
+
   /*!
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CSourceGravity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CSourceGravity(void);
-  
+
   /*!
    * \brief Source term integration for the poissonal potential.
    * \param[out] val_residual - Pointer to the total residual.

@@ -46,9 +46,9 @@ private:
   su2double MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_4, Param_Kappa_2, Local_Lambda_i, Local_Lambda_j, MeanLambda;
   su2double Phi_i, Phi_j, sc4, StretchingFactor, Epsilon_4, Epsilon_2;
   bool implicit, grid_movement;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -56,12 +56,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CCentJST_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CCentJST_AdjFlow(void);
-  
+
   /*!
    * \brief Compute the adjoint flow residual using a JST method.
    * \param[out] val_resconv_i - Pointer to the convective residual at point i.

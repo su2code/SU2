@@ -41,9 +41,9 @@ private:
   su2double **Mean_GradTurbPsi;
   su2double *Proj_Mean_GradTurbPsi_Kappa, *Proj_Mean_GradTurbPsi_Edge, *Proj_Mean_GradTurbPsi_Corrected;
   su2double *Edge_Vector;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -51,12 +51,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CAvgGrad_AdjTurb(void);
-  
+
   /*!
    * \brief Compute the adjoint turbulent residual using average of gradients and a derivative correction.
    * \param[out] val_residual - Pointer to the total residual.
@@ -64,9 +64,9 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  
+
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-  
+
   /*!
    * \overload
    * \param[out] val_residual_i - Pointer to the total residual at point i.

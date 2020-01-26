@@ -45,9 +45,9 @@ private:
   su2double **Mean_GradPhi;  /*!< \brief Counter for dimensions of the problem. */
   su2double *Edge_Vector;    /*!< \brief Vector going from node i to node j. */
   bool implicit;             /*!< \brief Implicit calculus. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -55,12 +55,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CAvgGrad_AdjFlow(void);
-  
+
   /*!
    * \brief Residual computation.
    * \param[out] val_residual_i - Pointer to the total residual at point i.

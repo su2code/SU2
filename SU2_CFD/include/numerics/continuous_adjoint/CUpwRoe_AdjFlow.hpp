@@ -50,9 +50,9 @@ private:
   Proj_ModJac_Tensor_ij, **Proj_ModJac_Tensor, Energy_i, Energy_j, **P_Tensor, **invP_Tensor;
   unsigned short iDim, iVar, jVar, kVar;
   bool implicit, grid_movement;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -60,12 +60,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwRoe_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CUpwRoe_AdjFlow(void);
-  
+
   /*!
    * \brief Compute the adjoint Roe's flux between two nodes i and j.
    * \param[out] val_residual_i - Pointer to the total residual at point i.

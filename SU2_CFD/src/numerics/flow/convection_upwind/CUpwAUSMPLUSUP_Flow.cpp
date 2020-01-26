@@ -55,7 +55,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
     ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
   }
 
-  /*--- Compute interface speed of sound (aF) ---*/ 
+  /*--- Compute interface speed of sound (aF) ---*/
 
   su2double astarL = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_i);
   su2double astarR = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_j);
@@ -66,7 +66,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
   su2double aF = min(ahatL,ahatR);
 
   /*--- Left and right pressures and Mach numbers ---*/
-  
+
   su2double mLP, betaLP, mRM, betaRM;
 
   su2double mL = ProjVelocity_i/aF;
@@ -118,21 +118,21 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
   mdot = aF * (max(mF,0.0)*Density_i + min(mF,0.0)*Density_j);
 
   pressure = betaLP*Pressure_i + betaRM*Pressure_j + Pu;
-  
+
   if (!implicit || !UseAccurateJacobian) return;
-  
+
   /*--- Analytical differentiation of the face mass flux and
    pressure (in reverse mode, "?_b" denotes dmot_d?). ---*/
-  
+
   /*--- limited mean Mach number (used in division...) ---*/
   su2double MF = max(numeric_limits<passivedouble>::epsilon(),sqrt(MFsq));
-  
+
   for (int outVar=0; outVar<2; ++outVar) {
-    
+
     su2double aF_b    = 0.0, mF_b    = 0.0, MF_b  = 0.0, rhoF_b = 0.0, fa_b   = 0.0, alpha_b = 0.0,
               rho_i_b = 0.0, rho_j_b = 0.0, p_i_b = 0.0, p_j_b  = 0.0, Vn_i_b = 0.0, Vn_j_b  = 0.0,
               mR_b    = 0.0, mL_b    = 0.0, betaLP_b = 0.0,  betaRM_b = 0.0,  tmp = 0.0;
-    
+
     if (outVar==0) {
       /*--- mdot = ... ---*/
       if (mF > 0.0) {
@@ -145,7 +145,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
         mF_b += aF*Density_j;
         rho_j_b += mF*aF;
       }
-      
+
       /*--- Mp = ... ---*/
       if (sigma*MFsq < 1.0) {
         rhoF_b -= Mp/rhoF * mF_b;
@@ -156,14 +156,14 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
         p_i_b -= tmp * mF_b;
         p_j_b += tmp * mF_b;
       }
-      
+
       /*--- rhoF = ... ---*/
       rho_i_b += 0.5*rhoF_b;  rho_j_b += 0.5*rhoF_b;
-      
+
       /*--- mRM = ... ---*/
       if (fabs(mR) < 1.0) mR_b += (1.0-mR)*(0.5+4.0*beta*mR*(mR+1.0)) * mF_b;
       else if (mR <=-1.0) mR_b += mF_b;
-      
+
       /*--- mLP = ... ---*/
       if (fabs(mL) < 1.0) mL_b += (1.0+mL)*(0.5+4.0*beta*mL*(mL-1.0)) * mF_b;
       else if (mL >= 1.0) mL_b += mF_b;
@@ -172,7 +172,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
       /*--- pressure = ... ---*/
       p_i_b += betaLP;  betaLP_b += Pressure_i;
       p_j_b += betaRM;  betaRM_b += Pressure_j;
-      
+
       /*--- Pu = ... ---*/
       rhoF_b += Pu/rhoF;
       fa_b += Pu/fa;
@@ -183,45 +183,45 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
       tmp = -Ku*fa*betaLP*betaRM*2.0*rhoF*aF;
       Vn_i_b -= tmp;
       Vn_j_b += tmp;
-      
+
       /*--- rhoF = ... ---*/
       rho_i_b += 0.5*rhoF_b;  rho_j_b += 0.5*rhoF_b;
-      
+
       /*--- betaRM = ... ---*/
       if (fabs(mR) < 1.0) {
         tmp = mR*mR-1.0;
         mR_b += tmp*(0.75-alpha*(5.0*tmp+4.0)) * betaRM_b;
         alpha_b -= mR*tmp*tmp * betaRM_b;
       }
-      
+
       /*--- betaLP = ... ---*/
       if (fabs(mL) < 1.0) {
         tmp = mL*mL-1.0;
         mL_b -= tmp*(0.75-alpha*(5.0*tmp+4.0)) * betaLP_b;
         alpha_b += mL*tmp*tmp * betaLP_b;
       }
-      
+
       /*--- alpha = ... ---*/
       fa_b += 1.875*fa * alpha_b;
     }
-    
+
     /*--- steps shared by both ---*/
     /*--- fa = ... ---*/
     su2double Mref_b = 2.0*(1.0-sqrt(Mrefsq)) * fa_b;
-    
+
     /*--- Mrefsq = ... ---*/
     if (MF < 1.0 && MF > Minf) MF_b += Mref_b;
-    
+
     /*--- MFsq = ... ---*/
     mL_b += 0.5*mL/MF * MF_b;  mR_b += 0.5*mR/MF * MF_b;
-    
+
     /*--- mL/R = ... ---*/
     Vn_i_b += mL_b/aF;  Vn_j_b += mR_b/aF;
     aF_b -= (mL*mL_b+mR*mR_b)/aF;
-    
+
     /*--- aF,ahat,astar = f(H_i,H_j) ---*/
     su2double astar_b = aF_b, H_i_b, H_j_b;
-    
+
     if (ahatL < ahatR) {
       if (astarL <= ProjVelocity_i) {
         tmp = astarL/ProjVelocity_i;
@@ -240,12 +240,12 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
       H_j_b = sqrt(0.5*(Gamma-1.0)/((Gamma+1.0)*Enthalpy_j)) * astar_b;
       H_i_b = 0.0;
     }
-    
+
     /*--- store derivatives ---*/
     su2double *target_i = (outVar==0 ? dmdot_dVi : dpres_dVi),
               *target_j = (outVar==0 ? dmdot_dVj : dpres_dVj);
     target_i[5] = target_j[5] = 0.0;
-    
+
     /*--- ProjVelocity = ... ---*/
     for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
       target_i[iDim] = UnitNormal[iDim] * Vn_i_b;

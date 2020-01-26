@@ -50,9 +50,9 @@ private:
   ProjVelocity, ProjVelocity_i, ProjVelocity_j;
   unsigned short iDim, iVar, jVar, kVar;
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -60,12 +60,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CUpwAUSM_Flow(void);
-  
+
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.

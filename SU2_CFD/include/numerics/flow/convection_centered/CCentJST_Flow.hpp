@@ -37,7 +37,7 @@
  * \author F. Palacios
  */
 class CCentJST_Flow : public CCentBase_Flow {
-  
+
 private:
   su2double Param_Kappa_2, Param_Kappa_4; /*!< \brief Artificial dissipation parameters. */
   su2double sc2, sc4;                     /*!< \brief Streching parameters. */

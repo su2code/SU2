@@ -47,9 +47,9 @@ private:
   su2double *Ust_i, *Ust_j, *Vst_i, *Vst_j, *Velst_i, *Velst_j;
   su2double **P_Tensor, **invP_Tensor;
   unsigned short nPrimVar, nVar, nDim;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -57,12 +57,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CUpwMSW_Flow(void);
-  
+
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.
@@ -71,5 +71,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-  
+
 };

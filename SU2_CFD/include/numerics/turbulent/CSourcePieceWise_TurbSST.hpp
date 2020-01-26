@@ -42,7 +42,7 @@ private:
   F1_j,
   F2_i,
   F2_j;
-  
+
   su2double alfa_1,
   alfa_2,
   beta_1,
@@ -51,16 +51,16 @@ private:
   sigma_omega_2,
   beta_star,
   a1;
-  
+
   su2double CDkw_i, CDkw_j;
 
   su2double kAmb, omegaAmb;
- 
+
   bool incompressible;
   bool sustaining_terms;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -69,12 +69,12 @@ public:
    */
   CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const su2double* constants,
                            su2double val_kine_Inf, su2double val_omega_Inf, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CSourcePieceWise_TurbSST(void);
-  
+
   /*!
    * \brief Set the value of the first blending function.
    * \param[in] val_F1_i - Value of the first blending function at point i.
@@ -84,7 +84,7 @@ public:
     F1_i = val_F1_i;
     F1_j = val_F1_j;
   }
-  
+
   /*!
    * \brief Set the value of the second blending function.
    * \param[in] val_F2_i - Value of the second blending function at point i.
@@ -94,7 +94,7 @@ public:
     F2_i = val_F2_i;
     F2_j = val_F2_j;
   }
-  
+
   /*!
    * \brief Set the value of the cross diffusion for the SST model.
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
@@ -104,7 +104,7 @@ public:
     CDkw_i = val_CDkw_i;
     CDkw_j = val_CDkw_j;
   }
-  
+
   /*!
    * \brief Residual for source term integration.
    * \param[out] val_residual - Pointer to the total residual.
@@ -113,7 +113,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-  
+
   /*!
    * \brief Initialize the Reynolds Stress Matrix
    * \param[in] turb_ke turbulent kinetic energy of node

@@ -29,7 +29,7 @@
 
 CUpwAUSMPLUSUP2_Flow::CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
                       CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
-  
+
   Minf = config->GetMach();
   Kp = 0.25;
   sigma = 1.0;

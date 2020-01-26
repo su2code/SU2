@@ -40,9 +40,9 @@ class CSourceViscous_AdjFlow : public CNumerics {
 private:
   su2double *Velocity, *GradDensity, *GradInvDensity, *dPoDensity2, *alpha, *beta, *Sigma_5_vec;
   su2double **GradVel_o_Rho, **sigma, **Sigma_phi, **Sigma_5_Tensor, **Sigma;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -50,17 +50,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CSourceViscous_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CSourceViscous_AdjFlow(void);
-  
+
   /*!
    * \brief Source term integration of the flow adjoint equation.
    * \param[out] val_residual - Pointer to the total residual.
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual (su2double *val_residual, CConfig *config);
-  
+
 };

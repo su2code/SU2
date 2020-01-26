@@ -38,7 +38,7 @@
  */
 class CConvective_Template : public CNumerics {
 private:
-  
+
   /* define private variables here */
   bool implicit;
   su2double *Diff_U;
@@ -51,9 +51,9 @@ private:
   Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
   ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
   unsigned short iDim, iVar, jVar, kVar;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -61,12 +61,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CConvective_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CConvective_Template(void);
-  
+
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.

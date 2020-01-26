@@ -37,13 +37,13 @@
  * \author F. Palacios
  */
 class CUpwCUSP_Flow : public CNumerics {
-  
+
 private:
   su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j;
   bool implicit;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -51,12 +51,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CUpwCUSP_Flow(void);
-  
+
   /*!
    * \brief Compute the flow residual using a JST method.
    * \param[out] val_residual - Pointer to the residual.

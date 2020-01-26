@@ -61,9 +61,9 @@ private:
   su2double gamma_BC;
   su2double intermittency;
   su2double Production, Destruction, CrossProduction;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -71,12 +71,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CSourcePieceWise_TurbSA(void);
-  
+
   /*!
    * \brief Residual for source term integration.
    * \param[out] val_residual - Pointer to the total residual.
@@ -85,31 +85,31 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-  
+
   /*!
    * \brief Residual for source term integration.
    * \param[in] intermittency_in - Value of the intermittency.
    */
   inline void SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
-  
+
   /*!
    * \brief Residual for source term integration.
    * \param[in] val_production - Value of the Production.
    */
   inline void SetProduction(su2double val_production) { Production = val_production; }
-  
+
   /*!
    * \brief Residual for source term integration.
    * \param[in] val_destruction - Value of the Destruction.
    */
   inline void SetDestruction(su2double val_destruction) { Destruction = val_destruction; }
-  
+
   /*!
    * \brief Residual for source term integration.
    * \param[in] val_crossproduction - Value of the CrossProduction.
    */
   inline void SetCrossProduction(su2double val_crossproduction) { CrossProduction = val_crossproduction; }
-  
+
   /*!
    * \brief ______________.
    */
@@ -120,12 +120,12 @@ public:
    * \return Value of the intermittency.
    */
   inline su2double GetGammaBC(void) { return gamma_BC; }
-  
+
   /*!
    * \brief  ______________.
    */
   inline su2double GetDestruction(void) { return Destruction; }
-  
+
   /*!
    * \brief  ______________.
    */

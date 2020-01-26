@@ -1288,7 +1288,7 @@ void CNumerics::GetCharJump(su2double val_soundspeed, su2double val_density, su2
   if (nDim == 2) {
     delta_char[0] = -cc*delta_prim[0] + delta_prim[3];
     delta_char[1] = rhoc*delta_prim[2];
-    delta_char[2] = rhoc*delta_prim[1] + delta_prim[3];																	;
+    delta_char[2] = rhoc*delta_prim[1] + delta_prim[3];                                 ;
     delta_char[3] = -rhoc*delta_prim[1] + delta_prim[3];
   }else {
     delta_char[0] = -cc*delta_prim[0] + delta_prim[4];

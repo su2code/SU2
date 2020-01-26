@@ -53,9 +53,9 @@ private:
   Temperature_i, Temperature_j,   /*!< \brief Temperature at node 0 and 1. */
   MeanDensity, MeanPressure, MeanSoundSpeed, MeanBetaInc2, MeanEnthalpy, MeanCp, MeanTemperature; /*!< \brief Mean values of primitive variables. */
   unsigned short iDim, iVar, jVar, kVar;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -63,12 +63,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CUpwFDSInc_Flow(void);
-  
+
   /*!
    * \brief Compute the upwind flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the residual array.
