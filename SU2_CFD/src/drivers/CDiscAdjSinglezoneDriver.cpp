@@ -802,6 +802,10 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
     if (fabs(a*c - b*b) < 1.0E-16) {
       A[0][0] = 1.0E-16; A[0][1] = 1.0E-16;
       A[1][0] = 1.0E-16; A[1][1] = 1.0E-16;
+
+      solver_flow->GetNodes()->SetAnisoMetr(iPoint, 0, A[0][0]);
+      solver_flow->GetNodes()->SetAnisoMetr(iPoint, 1, A[0][1]);
+      solver_flow->GetNodes()->SetAnisoMetr(iPoint, 2, A[1][1]);
     }
     else {
       A[0][0] = a; A[0][1] = b;
