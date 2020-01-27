@@ -529,6 +529,9 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) node_infty->SetPrimitive(0, nSpecies+2+iDim, Mvec_Inf[iDim]*node_infty->GetSoundSpeed(0));
 
+  node_infty->CalcdPdU(  node_infty->GetPrimitive(0), node_infty->GetEve(0), config, node_infty->GetdPdU(0)  );
+  node_infty->CalcdTdU(  node_infty->GetPrimitive(0), config, node_infty->GetdTdU(0)  );
+  node_infty->CalcdTvedU(node_infty->GetPrimitive(0), node_infty->GetEve(0), config, node_infty->GetdTvedU(0));
   node_infty->Prim2ConsVar(config, 0, node_infty->GetPrimitive(0), node_infty->GetSolution(0));
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
@@ -541,6 +544,10 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     nonPhys = nodes->SetPrimVar_Compressible(iPoint, config);
     for (unsigned short iDim = 0; iDim < nDim; iDim++) nodes->SetPrimitive(iPoint, nSpecies+2+iDim, Mvec_Inf[iDim]*node_infty->GetSoundSpeed(0));
+
+    nodes->CalcdPdU(  nodes->GetPrimitive(iPoint), nodes->GetEve(iPoint), config, nodes->GetdPdU(iPoint)  );
+    nodes->CalcdTdU(  nodes->GetPrimitive(iPoint), config, nodes->GetdTdU(iPoint)  );
+    nodes->CalcdTvedU(nodes->GetPrimitive(iPoint), nodes->GetEve(iPoint), config, nodes->GetdTvedU(iPoint));
     nodes->Prim2ConsVar(config, iPoint, nodes->GetPrimitive(iPoint), nodes->GetSolution(iPoint));
     for (iVar = 0; iVar < nVar; iVar++) nodes->SetSolution_Old(iPoint, nodes->GetSolution(iPoint));
   }
@@ -5183,6 +5190,11 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
     Mvec_Inf[2] = sin(Alpha)*cos(Beta)*Mach_Inf;
   }
 
+  /*--- Create temp node to store boundary state ---*/
+  CTNE2EulerVariable *node_bc = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf, Temperature_Inf,
+                                                       Temperature_ve_Inf, 1, nDim, nVar,
+                                                       nPrimVar, nPrimVarGrad, config);
+
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
   conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
   conv_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
@@ -5268,56 +5280,29 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       /*--- For now, assume supersonic everywhere... ---*/
       if (Qn_Infty > 0.0)   {
         /*--- Outflow conditions ---*/
-        Density = V_domain[nSpecies+nDim+3];
-        Pressure = V_domain[nSpecies+nDim+2];
-        SoundSpeed = V_domain[nSpecies+nDim+5];
-        Temperature = V_domain[nSpecies];
-        Temperature_ve = V_domain[nSpecies+1];
-        for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
-          Ys[iSpecies] = V_domain[iSpecies]/Density;
-        }
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Mvec[iDim] = V_domain[nSpecies+2+iDim]/SoundSpeed;
-        }
+        node_bc->SetSolution(nodes->GetSolution(iPoint));
       } else  {
         /*--- Inflow conditions ---*/
-        Density = node_infty->GetDensity(0);
-        Pressure = node_infty->GetPressure(0);
-        SoundSpeed = node_infty->GetSoundSpeed(0);
-        Temperature = node_infty->GetTemperature(0);
-        Temperature_ve = node_infty->GetTemperature_ve(0);
-        for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
-          Ys[iSpecies] = MassFrac_Inf[iSpecies];
-        }
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Mvec[iDim] = Mvec_Inf[iDim];
-        }
+        node_bc->SetSolution(node_infty->GetSolution(0));
       }
 
       if (tkeNeeded) Energy += GetTke_Inf();
 
-      /*--- Store new primitive state for computing the flux. ---*/
-
-      CTNE2EulerVariable *node_bc = new CTNE2EulerVariable(Pressure, Ys, Mvec, Temperature,
-                                                           Temperature_ve, 1, nDim, nVar,
-                                                           nPrimVar, nPrimVarGrad, config);
-
       /*--- Calculate dPdU, dTdU, dTvedU, and some other primitives ---*/
-      const bool check_bc = node_bc->SetPrimVar_Compressible(0,config);
+      const bool check_bc = node_bc->Cons2PrimVar(config, node_bc->GetSolution(0), node_bc->GetPrimitive(0),
+                                                    node_bc->GetdPdU(0), node_bc->GetdTdU(0), node_bc->GetdTvedU(0), 
+                                                    node_bc->GetEve(0), node_bc->GetCvve(0));
 
       /*--- If taking free-stream conditions, enforce Mach ---*/
       if(Qn_Infty < 0.0) {
         for (unsigned short iDim = 0; iDim < nDim; iDim++) node_bc->SetPrimitive(0, nSpecies+2+iDim, Mvec_Inf[iDim]*node_bc->GetSoundSpeed(0));
 
+        node_bc->CalcdPdU(  node_bc->GetPrimitive(0), node_bc->GetEve(0), config, node_bc->GetdPdU(0)  );
+        node_bc->CalcdTdU(  node_bc->GetPrimitive(0), config, node_bc->GetdTdU(0)  );
+        node_bc->CalcdTvedU(node_bc->GetPrimitive(0), node_bc->GetEve(0), config, node_bc->GetdTvedU(0));
         node_bc->Prim2ConsVar(config, 0, node_bc->GetPrimitive(0), node_bc->GetSolution(0));
       }
 
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        node_bc->GetEve(0)[iSpecies] = nodes->CalcEve(config, Temperature_ve, iSpecies);
-      }
-      nodes->CalcdPdU(  node_bc->GetPrimitive(0), node_bc->GetEve(0), config, node_bc->GetdPdU(0)  );
-      nodes->CalcdTdU(  node_bc->GetPrimitive(0), config, node_bc->GetdTdU(0)  );
-      nodes->CalcdTvedU(node_bc->GetPrimitive(0), node_bc->GetEve(0), config, node_bc->GetdTvedU(0));
 
       /*--- Pass conserved & primitive variables to CNumerics ---*/
       conv_numerics->SetConservative(U_domain, node_bc->GetSolution(0));
@@ -5393,6 +5378,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   delete [] Ys;
   delete [] Mvec;
   delete [] Mvec_Inf;
+  delete node_bc;
 }
 
 void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_container,
@@ -6803,6 +6789,9 @@ void CTNE2EulerSolver::ResetNodeInfty(su2double pressure_inf, su2double *massfra
   check_infty = node_infty->SetPrimVar_Compressible(0,config);
   for (unsigned short iDim = 0; iDim < nDim; iDim++) node_infty->SetPrimitive(0, nSpecies+2+iDim, mvec_inf[iDim]*node_infty->GetSoundSpeed(0));
 
+  node_infty->CalcdPdU(  node_infty->GetPrimitive(0), node_infty->GetEve(0), config, node_infty->GetdPdU(0)  );
+  node_infty->CalcdTdU(  node_infty->GetPrimitive(0), config, node_infty->GetdTdU(0)  );
+  node_infty->CalcdTvedU(node_infty->GetPrimitive(0), node_infty->GetEve(0), config, node_infty->GetdTvedU(0));
   node_infty->Prim2ConsVar(config, 0, node_infty->GetPrimitive(0), node_infty->GetSolution(0));
 
 }
