@@ -2081,6 +2081,9 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   SU2_OMP_PARALLEL
   {
+  /// TODO: we are segfaulting when allocating in parallel...
+  SU2_OMP_CRITICAL
+  {
   const int thread = omp_get_thread_num();
   const int offset = thread * MAX_TERMS;
 
@@ -2822,7 +2825,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (config->GetDeform_Mesh())
     numerics[MESH_0][MESH_SOL][fea_term] = new CFEAMeshElasticity(nDim, nDim, geometry[MESH_0]->GetnElem(), config);
 
-  } // end SU2_OMP_PARALLEL
+  }} // end SU2_OMP_PARALLEL
 
 }
 
