@@ -184,19 +184,19 @@ static const map<string, AVERAGE_TYPE> Average_Map = CCreateMap<string, AVERAGE_
  * \brief different solver types for the CFD component
  */
 enum ENUM_SOLVER {
-  NO_SOLVER = 0,					/*!< \brief Definition of no solver. */
-  EULER = 1,						/*!< \brief Definition of the Euler's solver. */
-  NAVIER_STOKES = 2,				/*!< \brief Definition of the Navier-Stokes' solver. */
-  RANS = 3,							/*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  INC_EULER = 4,					/*!< \brief Definition of the incompressible Euler's solver. */
-  INC_NAVIER_STOKES =5,				/*!< \brief Definition of the incompressible Navier-Stokes' solver. */
-  INC_RANS = 6,						/*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  NO_SOLVER = 0,                    /*!< \brief Definition of no solver. */
+  EULER = 1,                        /*!< \brief Definition of the Euler's solver. */
+  NAVIER_STOKES = 2,                /*!< \brief Definition of the Navier-Stokes' solver. */
+  RANS = 3,                         /*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  INC_EULER = 4,                    /*!< \brief Definition of the incompressible Euler's solver. */
+  INC_NAVIER_STOKES =5,             /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
+  INC_RANS = 6,                     /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
   HEAT_EQUATION_FVM = 7,            /*!< \brief Definition of the finite volume heat solver. */
   FLUID_STRUCTURE_INTERACTION = 8,  /*!< \brief Definition of a FSI solver. */
-  FEM_ELASTICITY = 9,				/*!< \brief Definition of a FEM solver. */
-  ADJ_EULER = 10,					/*!< \brief Definition of the continuous adjoint Euler's solver. */
-  ADJ_NAVIER_STOKES = 11,			/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
-  ADJ_RANS = 12,					/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  FEM_ELASTICITY = 9,               /*!< \brief Definition of a FEM solver. */
+  ADJ_EULER = 10,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
+  ADJ_NAVIER_STOKES = 11,           /*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
+  ADJ_RANS = 12,                    /*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
   TEMPLATE_SOLVER = 13,             /*!< \brief Definition of template solver. */
   DISC_ADJ_EULER = 15,              /*!< \brief Definition of the discrete adjoint Euler solver. */
   DISC_ADJ_RANS = 16,               /*!< \brief Definition of the discrete adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
