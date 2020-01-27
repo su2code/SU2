@@ -269,7 +269,7 @@ def amg ( config , kind='' ):
     if(config['ADAP_INV_VOL'] == 'YES'):
         config_amg['options'] = config_amg['options'] + ' -inv-back'
     if(config['ADAP_ORTHO'] == 'YES'):
-        config_amg['options'] = config_amg['options'] + ' -cart3d-only'
+        config_amg['options'] = config_amg['options'] + ' -cart3d'
     
     #--- Start adaptive loop
 
