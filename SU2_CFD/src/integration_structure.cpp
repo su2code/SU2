@@ -206,80 +206,78 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
                                      CConfig *config,
                                      unsigned short RunTime_EqSystem) {
 
-    unsigned short iMarker;
+  bool dynamic = config->GetTime_Domain();
+  bool first_iter = (config->GetInnerIter() == 0);
+  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
+  unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA();
 
-    bool initial_calc = (config->GetTimeIter() == 0);                  // Checks if it is the first calculation.
-    bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-    bool first_iter = (config->GetInnerIter() == 0);                  // Checks if it is the first iteration
-    unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA();       // Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
-    unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
+  unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
+  CSolver* solver = solver_container[MainSolver];
 
-    bool restart = config->GetRestart();                                  // Restart solution
-    bool initial_calc_restart = (SU2_TYPE::Int(config->GetTimeIter()) ==  SU2_TYPE::Int(config->GetRestart_Iter()));  // Restart iteration
+  /*--- Initial calculation, different logic for restarted simulations. ---*/
+  bool initial_calc = false;
+  if (config->GetRestart())
+    initial_calc = (config->GetTimeIter() == config->GetRestart_Iter()) && first_iter;
+  else
+    initial_calc = (config->GetTimeIter() == 0) && first_iter;
 
-    /*--- Compute Mass Matrix ---*/
-    /*--- The mass matrix is computed only once, at the beginning of the calculation, no matter whether the ---*/
-    /*--- problem is linear or nonlinear. This is done in the preprocessing step. ---*/
+  /*--- Mass Matrix computed during preprocessing, see notes therein. ---*/
 
-    /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
-    /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
-    if ((linear_analysis && (initial_calc && first_iter)) ||
-      (linear_analysis && restart && initial_calc_restart)) {
-      solver_container[MainSolver]->Compute_StiffMatrix(geometry, numerics, config);
-    }
-    else if (!linear_analysis) {
-      /*--- If the analysis is nonlinear, also the stress terms need to be computed ---*/
-      /*--- If the method is full Newton-Raphson, the stiffness matrix and the nodal term are updated every time ---*/
-      /*--- They are calculated together to avoid looping twice over the elements ---*/
-      if (IterativeScheme == NEWTON_RAPHSON) {
-        /*--- The Jacobian is reinitialized every time in Preprocessing (before calling Space_Integration_FEM) */
-        solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, numerics, config);
-      }
+  /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed. ---*/
+  /*--- This is done only once, at the beginning of the calculation. From then on, K is constant. ---*/
+  /*--- For correct differentiation of dynamic cases the matrix needs to be computed every time. ---*/
+  if (linear_analysis && (dynamic || initial_calc))
+    solver->Compute_StiffMatrix(geometry, numerics, config);
 
-      /*--- If the method is modified Newton-Raphson, the stiffness matrix is only computed once at the beginning of the time-step ---*/
-      /*--- Nevertheless, the Nodal Stress Term has to be computed for each iteration ---*/
-      else if (IterativeScheme == MODIFIED_NEWTON_RAPHSON) {
+  if (nonlinear_analysis) {
 
-        if (first_iter) {
-          solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, numerics, config);
-        }
-
-        else {
-          solver_container[MainSolver]->Compute_NodalStressRes(geometry, numerics, config);
-        }
-
-      }
-
+    /*--- If the analysis is nonlinear the stress terms also need to be computed. ---*/
+    /*--- For full Newton-Raphson the stiffness matrix and the nodal term are updated every time. ---*/
+    if (IterativeScheme == NEWTON_RAPHSON) {
+      solver->Compute_StiffMatrix_NodalStressRes(geometry, numerics, config);
     }
 
-    /*--- Apply the NATURAL BOUNDARY CONDITIONS (loads). ---*/
-    /*--- If there are FSI loads, they have to be previously applied at other level involving both zones. ---*/
+    /*--- If the method is modified Newton-Raphson, the stiffness matrix is only computed once at the beginning
+     * of the time step, then only the Nodal Stress Term has to be computed on each iteration. ---*/
+    if (IterativeScheme == MODIFIED_NEWTON_RAPHSON) {
+      if (first_iter)
+        solver->Compute_StiffMatrix_NodalStressRes(geometry, numerics, config);
+      else
+        solver->Compute_NodalStressRes(geometry, numerics, config);
+    }
 
-    /*--- Some external loads may be considered constant over the time step ---*/
-    if (first_iter) {
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        switch (config->GetMarker_All_KindBC(iMarker)) {
-          case LOAD_DIR_BOUNDARY:
-        solver_container[MainSolver]->BC_Dir_Load(geometry, numerics[FEA_TERM], config, iMarker);
+  }
+
+  /*--- Apply the NATURAL BOUNDARY CONDITIONS (loads). ---*/
+  /*--- If there are FSI loads, they have to be previously applied at other level involving both zones. ---*/
+
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+
+      /*--- Some external loads are considered constant over the time step ---*/
+
+      case LOAD_DIR_BOUNDARY:
+        if (first_iter)
+          solver->BC_Dir_Load(geometry, numerics[FEA_TERM], config, iMarker);
         break;
-          case LOAD_SINE_BOUNDARY:
-        solver_container[MainSolver]->BC_Sine_Load(geometry, numerics[FEA_TERM], config, iMarker);
-        break;
-        }
-      }
-    }
 
-    /*--- Others are not, because they depend on the geometry ---*/
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      switch (config->GetMarker_All_KindBC(iMarker)) {
-        case LOAD_BOUNDARY:
-          solver_container[MainSolver]->BC_Normal_Load(geometry, numerics[FEA_TERM], config, iMarker);
-          break;
-        case DAMPER_BOUNDARY:
-          solver_container[MainSolver]->BC_Damper(geometry, numerics[FEA_TERM], config, iMarker);
+      case LOAD_SINE_BOUNDARY:
+        if (first_iter)
+          solver->BC_Sine_Load(geometry, numerics[FEA_TERM], config, iMarker);
         break;
-      }
+
+      /*--- Others are not, because they depend on the geometry ---*/
+
+      case LOAD_BOUNDARY:
+        solver->BC_Normal_Load(geometry, numerics[FEA_TERM], config, iMarker);
+        break;
+
+      case DAMPER_BOUNDARY:
+        solver->BC_Damper(geometry, numerics[FEA_TERM], config, iMarker);
+        break;
     }
+  }
 
 }
 
@@ -424,9 +422,6 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
       case CLAMPED_BOUNDARY:
         solver_container[MainSolver]->BC_Clamped_Post(geometry, numerics[FEA_TERM], config, iMarker);
         break;
-//      case DISPLACEMENT_BOUNDARY:
-//        solver_container[MainSolver]->BC_Normal_Displacement(geometry, numerics[CONV_BOUND_TERM], config, iMarker);
-//        break;
     }
   }
 
