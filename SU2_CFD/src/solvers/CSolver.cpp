@@ -1296,7 +1296,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               Sol_Min[iVar] = base_nodes->GetSolution_Min(iPoint, iVar);
               Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
             }
-            
+
             for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
               jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
               for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -1304,12 +1304,12 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetPrimitive(jPoint, iVar));
               }
             }
-            
+
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               bufDSend[buf_offset+iVar]              = Sol_Min[iVar];
               bufDSend[buf_offset+nPrimVarGrad+iVar] = Sol_Max[iVar];
             }
-            
+
             /*--- Rotate the momentum components of the min/max. ---*/
 
             if (rotate_periodic) {
@@ -1387,14 +1387,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- The first phase of the periodic limiter calculation
              ensures that the proper min and max of the solution are found
              among all nodes adjacent to periodic faces. ---*/
-            
+
             /*--- We send the min and max over "our" neighbours. ---*/
-            
+
             for (iVar = 0; iVar < nVar; iVar++) {
               Sol_Min[iVar] = base_nodes->GetSolution_Min(iPoint, iVar);
               Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
             }
-            
+
             for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
               jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
               for (iVar = 0; iVar < nVar; iVar++) {
@@ -1402,12 +1402,12 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetSolution(jPoint, iVar));
               }
             }
-            
+
             for (iVar = 0; iVar < nVar; iVar++) {
               bufDSend[buf_offset+iVar]      = Sol_Min[iVar];
               bufDSend[buf_offset+nVar+iVar] = Sol_Max[iVar];
             }
-            
+
             /*--- Rotate the momentum components of the min/max. ---*/
 
             if (rotate_periodic) {
@@ -1523,7 +1523,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   if (commType == PERIODIC_NONE) return;
 
   /*--- Local variables ---*/
-  
+
   unsigned short nPeriodic = config->GetnMarker_Periodic();
   unsigned short iDim, jDim, iVar, jVar, iPeriodic, nNeighbor;
 
@@ -1802,21 +1802,21 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               break;
 
             case PERIODIC_LIM_PRIM_1:
-              
+
               /*--- Update solution min/max with min/max between "us" and
                the periodic match plus its neighbors, computation will need to
                be concluded on "our" side to account for "our" neighbors. ---*/
-              
+
               for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-                
+
                 /*--- Solution minimum. ---*/
-                
+
                 Solution_Min = min(base_nodes->GetSolution_Min(iPoint, iVar),
                                    bufDRecv[buf_offset+iVar]);
                 base_nodes->SetSolution_Min(iPoint, iVar, Solution_Min);
-                
+
                 /*--- Solution maximum. ---*/
-                
+
                 Solution_Max = max(base_nodes->GetSolution_Max(iPoint, iVar),
                                    bufDRecv[buf_offset+nPrimVarGrad+iVar]);
                 base_nodes->SetSolution_Max(iPoint, iVar, Solution_Max);
@@ -1838,11 +1838,11 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               break;
 
             case PERIODIC_LIM_SOL_1:
-              
+
               /*--- Update solution min/max with min/max between "us" and
                the periodic match plus its neighbors, computation will need to
                be concluded on "our" side to account for "our" neighbors. ---*/
-              
+
               for (iVar = 0; iVar < nVar; iVar++) {
 
                 /*--- Solution minimum. ---*/

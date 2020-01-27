@@ -267,7 +267,7 @@ private:
   vector<CTaskDefinition> tasksList; /*!< \brief List of tasks to be carried out in the computationally
                                                  intensive part of the solver. */
 
-  CVariable* GetBaseClassPointerToNodes() {return nullptr;}
+  CVariable* GetBaseClassPointerToNodes() final {return nullptr;}
 
 public:
 
@@ -450,7 +450,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void ProcessTaskList_DG(CGeometry      *geometry, 
+  void ProcessTaskList_DG(CGeometry      *geometry,
                           CSolver        **solver_container,
                           CNumerics      **numerics,
                           CConfig        *config,
@@ -465,7 +465,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void ADER_SpaceTimeIntegration(CGeometry      *geometry, 
+  void ADER_SpaceTimeIntegration(CGeometry      *geometry,
                                  CSolver        **solver_container,
                                  CNumerics      **numerics,
                                  CConfig        *config,
@@ -480,7 +480,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void ComputeSpatialJacobian(CGeometry      *geometry, 
+  void ComputeSpatialJacobian(CGeometry      *geometry,
                               CSolver        **solver_container,
                               CNumerics      **numerics,
                               CConfig        *config,
@@ -950,13 +950,6 @@ public:
    * \return Value of the lift coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
   inline su2double GetCL_Inv(unsigned short val_marker) const final { return CL_Inv[val_marker]; }
-
-  /*! TODO
-   * \brief Provide the non dimensional z moment coefficient (inviscid contribution).
-   * \param val_marker Surface where the coefficient is going to be computed.
-   * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
-   */
-  // inline su2double GetCMz_Inv(unsigned short val_marker) { return CMz_Inv[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional lift coefficient.

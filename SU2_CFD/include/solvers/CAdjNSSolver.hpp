@@ -28,7 +28,6 @@
 #pragma once
 
 #include "CAdjEulerSolver.hpp"
-// #include "../variables/CAdjNSVariable.hpp"
 
 /*!
  * \class CAdjNSSolver
