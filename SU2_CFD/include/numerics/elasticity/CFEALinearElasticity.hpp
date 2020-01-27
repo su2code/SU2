@@ -83,3 +83,59 @@ private:
   void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) final;
 
 };
+
+
+/*!
+ * \class CFEAMeshElasticity
+ * \brief Particular case of linear elasticity used for mesh deformation.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 7.0.0 "Blackbird"
+ */
+class CFEAMeshElasticity final : public CFEALinearElasticity {
+
+  bool element_based;
+  bool stiffness_set;
+
+public:
+  /*!
+   * \brief Default constructor deleted as instantiation with no argument would not allocate fields.
+   */
+  CFEAMeshElasticity() = delete;
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, unsigned long val_nElem, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CFEAMeshElasticity(void) = default;
+
+  /*!
+   * \brief Set the element-based local Young's modulus in mesh problems
+   * \param[in] iElem - Element index.
+   * \param[in] val_E - Value of elasticity modulus.
+   */
+  inline void SetMeshElasticProperties(unsigned long iElem, su2double val_E) override {
+    if (element_based) E_i[iElem] = val_E;
+  }
+
+private:
+  /*!
+   * \brief Set element material properties.
+   * \param[in] element_container - Element defining the properties.
+   * \param[in] config - Definition of the problem.
+   */
+  inline void SetElement_Properties(const CElement *element, CConfig *config) override {
+    if (element_based) {
+      E = E_i[element->Get_iProp()];
+      Compute_Lame_Parameters();
+    }
+  }
+
+};

@@ -1,6 +1,6 @@
 ﻿/*!
  * \file CNumerics.hpp
- * \brief Delaration of numerics class CNumerics, the
+ * \brief Delaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
  * \version 7.0.0 "Blackbird"
@@ -1268,4 +1268,3 @@ public:
  * /brief Alias for a "do nothing" source term class
  */
 using CSourceNothing = CNumerics;
-

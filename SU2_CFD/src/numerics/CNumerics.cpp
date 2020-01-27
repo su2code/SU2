@@ -1,6 +1,8 @@
 /*!
- * \file numerics_structure.cpp
- * \brief This file contains all the numerical methods.
+ * \file CNumerics.cpp
+ * \brief Implementation of the base for all numerics classes.
+ *        Contains methods for common tasks, e.g. compute flux
+ *        Jacobians.
  * \author F. Palacios, T. Economon
  * \version 7.0.0 "Blackbird"
  *
