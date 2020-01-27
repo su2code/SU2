@@ -1,6 +1,6 @@
 /*!
  * \file CFEALinearElasticity.cpp
- * \brief This file contains the routines for setting the FEM elastic structural problem.
+ * \brief Classes for linear elasticity problems.
  * \author R. Sanchez
  * \version 7.0.0 "Blackbird"
  *
@@ -339,6 +339,70 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
       }
     }
 
+  }
+
+}
+
+
+CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar,
+                                       unsigned long val_nElem, CConfig *config) :
+                                       CFEALinearElasticity() {
+  DV_Val         = NULL;
+  FAux_Dead_Load = NULL;
+  Rho_s_i        = NULL;
+  Rho_s_DL_i     = NULL;
+  Nu_i           = NULL;
+
+  nDim = val_nDim;
+  nVar = val_nVar;
+
+  unsigned long iVar;
+
+  E = config->GetDeform_ElasticityMod();
+  Nu = config->GetDeform_PoissonRatio();
+  Compute_Lame_Parameters();
+
+  switch (config->GetDeform_Stiffness_Type()) {
+  case INVERSE_VOLUME:
+  case SOLID_WALL_DISTANCE:
+    element_based = true;
+    Nu = config->GetDeform_Coeff();
+    break;
+  case CONSTANT_STIFFNESS:
+    element_based = false;
+    break;
+  }
+
+  E_i  = NULL;
+  if (element_based){
+    E_i = new su2double[val_nElem];
+    for (iVar = 0; iVar < val_nElem; iVar++){
+      E_i[iVar] = E;
+    }
+  }
+
+  KAux_ab = new su2double* [nDim];
+  for (iVar = 0; iVar < nDim; iVar++) {
+    KAux_ab[iVar] = new su2double[nDim];
+  }
+
+  unsigned short nStrain = (nDim==2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
+  unsigned short nNodes = (nDim==2) ? NNODES_2D : NNODES_3D;
+
+  Ba_Mat = new su2double* [nStrain];
+  Bb_Mat = new su2double* [nStrain];
+  D_Mat  = new su2double* [nStrain];
+  Ni_Vec  = new su2double [nNodes];
+  GradNi_Ref_Mat = new su2double* [nNodes];
+  GradNi_Curr_Mat = new su2double* [nNodes];
+  for (iVar = 0; iVar < nStrain; iVar++) {
+    Ba_Mat[iVar] = new su2double[nDim];
+    Bb_Mat[iVar] = new su2double[nDim];
+    D_Mat[iVar] = new su2double[nStrain];
+  }
+  for (iVar = 0; iVar < nNodes; iVar++) {
+    GradNi_Ref_Mat[iVar] = new su2double[nDim];
+    GradNi_Curr_Mat[iVar] = new su2double[nDim];
   }
 
 }

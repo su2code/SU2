@@ -1,7 +1,6 @@
 /*!
  * \file CFEAElasticity.cpp
- * \brief This file contains the routines for setting the tangent matrix and
- *        residual of a FEM linear elastic structural problem.
+ * \brief Base class for all elasticity problems.
  * \author R. Sanchez
  * \version 7.0.0 "Blackbird"
  *
@@ -167,15 +166,15 @@ CFEAElasticity::~CFEAElasticity(void) {
   delete [] GradNi_Ref_Mat;
   delete [] GradNi_Curr_Mat;
 
-  if (DV_Val != nullptr) delete[] DV_Val;
+  delete[] DV_Val;
 
-  if (FAux_Dead_Load != nullptr) delete [] FAux_Dead_Load;
+  delete [] FAux_Dead_Load;
 
-  if (E_i != nullptr) delete [] E_i;
-  if (Nu_i != nullptr) delete [] Nu_i;
-  if (Rho_s_i != nullptr) delete [] Rho_s_i;
-  if (Rho_s_DL_i != nullptr) delete [] Rho_s_DL_i;
-  if (Ni_Vec != nullptr) delete [] Ni_Vec;
+  delete [] E_i;
+  delete [] Nu_i;
+  delete [] Rho_s_i;
+  delete [] Rho_s_DL_i;
+  delete [] Ni_Vec;
 }
 
 

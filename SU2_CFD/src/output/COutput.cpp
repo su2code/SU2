@@ -1637,7 +1637,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
 void COutput::Postprocess_HistoryFields(CConfig *config){
 
   map<string, bool> Average;
-  map<string, string> AverageGroupName =  CCreateMap<string, string>("BGS_RES", "bgs")("RMS_RES","rms")("MAX_RES", "max");
+  map<string, string> AverageGroupName = {{"BGS_RES", "bgs"},{"RMS_RES","rms"},{"MAX_RES", "max"}};
 
   for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
     const string &fieldIdentifier = historyOutput_List[iField];
