@@ -3176,6 +3176,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     {
       Min_Delta_Time = min(Min_Delta_Time, minDt);
       Max_Delta_Time = max(Max_Delta_Time, maxDt);
+      Global_Delta_Time = Min_Delta_Time;
     }
     SU2_OMP_BARRIER
   }
