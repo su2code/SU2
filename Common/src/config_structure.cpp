@@ -2640,6 +2640,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_INV_VOL");
 
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_ORTHO");
+
   /* END_CONFIG_OPTIONS */
 
 }

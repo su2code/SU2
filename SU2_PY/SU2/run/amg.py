@@ -53,7 +53,8 @@ def amg ( config , kind='' ):
     'ADAP_BACK', 'ADAP_HMAX', 'ADAP_HMIN', 'ADAP_HGRAD', 'ADAP_RESIDUAL_REDUCTION', 'ADAP_FLOW_ITER', 'ADAP_ADJ_ITER', 'ADAP_INV_VOL', \
     'ADAP_SOURCE','ADAP_PYTHON']
     required_options = ['ADAP_SIZES', 'ADAP_SUBITE', \
-    'ADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME', 'ADAP_INV_VOL']
+    'ADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME', \
+    'ADAP_INV_VOL', 'ADAP_ORTHO']
     
     if not all (opt in config for opt in required_options):
         err = '\n\n## ERROR : Missing options: \n'
@@ -196,10 +197,12 @@ def amg ( config , kind='' ):
         sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
         sav_stderr, sys.stderr = sys.stderr, stderr_hdl
 
-        current_mesh     = config['MESH_FILENAME']
-        current_solution = "ini_restart_flow.csv"
+        current_mesh         = config['MESH_FILENAME']
+        current_solution     = "ini_restart_flow.csv"
+        current_adj_solution = "ini_restart_flow.csv"
 
         config_cfd.RESTART_FILENAME       = current_solution
+        config_cfd.RESTART_ADJ_FILENAME   = current_adj_solution
         config_cfd.SOLUTION_FILENAME      = '../' + config['SOLUTION_FILENAME']
         config_cfd.SOLUTION_ADJ_FILENAME  = '../' + config['SOLUTION_ADJ_FILENAME']
         config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, ANISOTROPIC_METRIC)"
@@ -208,7 +211,8 @@ def amg ( config , kind='' ):
         config_cfd.MESH_HMAX              = config.ADAP_HMAX
         config_cfd.MESH_HMIN              = config.ADAP_HMIN
         config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
-        SU2_MET(config_cfd)
+        config_cfd.ITER                   = 1
+        SU2_CFD(config_cfd)
 
         sys.stdout = sav_stdout
         sys.stderr = sav_stderr
@@ -264,6 +268,8 @@ def amg ( config , kind='' ):
     config_amg['options'] = "-back " + config_amg['adap_back']
     if(config['ADAP_INV_VOL'] == 'YES'):
         config_amg['options'] = config_amg['options'] + ' -inv-back'
+    if(config['ADAP_ORTHO'] == 'YES'):
+        config_amg['options'] = config_amg['options'] + ' -cart3d-only'
     
     #--- Start adaptive loop
 
