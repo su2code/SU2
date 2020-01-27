@@ -178,10 +178,6 @@ CNumerics::~CNumerics(void) {
   if (UnitNormal!= NULL) delete [] UnitNormal;
   if (UnitNormald!= NULL) delete [] UnitNormald;
 
-//  if (U_n!= NULL) delete [] U_n;
-//  if (U_nM1!= NULL) delete [] U_nM1;
-//  if (U_nP1!= NULL) delete [] U_nP1;
-
   // visc
   if (Proj_Flux_Tensor!= NULL) delete [] Proj_Flux_Tensor;
 

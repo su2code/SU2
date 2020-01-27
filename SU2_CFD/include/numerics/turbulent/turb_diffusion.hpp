@@ -84,7 +84,7 @@ class CAvgGrad_Scalar : public CNumerics {
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar,
-                    bool correct_gradient, CConfig *config);
+                  bool correct_gradient, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -127,7 +127,7 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
-                                su2double **Jacobian_j, CConfig *config);
+                          su2double **Jacobian_j, CConfig *config);
 
 public:
 
