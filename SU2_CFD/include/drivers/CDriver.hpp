@@ -30,25 +30,6 @@
 
 #include "../../../Common/include/mpi_structure.hpp"
 #include "../iteration_structure.hpp"
-#include "../solvers/CSolver.hpp"
-#include "../solvers/CEulerSolver.hpp"
-#include "../solvers/CIncEulerSolver.hpp"
-#include "../solvers/CNSSolver.hpp"
-#include "../solvers/CIncNSSolver.hpp"
-#include "../solvers/CTurbSASolver.hpp"
-#include "../solvers/CTurbSSTSolver.hpp"
-#include "../solvers/CTransLMSolver.hpp"
-#include "../solvers/CAdjEulerSolver.hpp"
-#include "../solvers/CAdjNSSolver.hpp"
-#include "../solvers/CAdjTurbSolver.hpp"
-#include "../solvers/CHeatSolverFVM.hpp"
-#include "../solvers/CFEASolver.hpp"
-#include "../solvers/CTemplateSolver.hpp"
-#include "../solvers/CDiscAdjSolver.hpp"
-#include "../solvers/CDiscAdjFEASolver.hpp"
-#include "../solvers/CFEM_DG_EulerSolver.hpp"
-#include "../solvers/CFEM_DG_NSSolver.hpp"
-
 
 #include "../integration_structure.hpp"
 

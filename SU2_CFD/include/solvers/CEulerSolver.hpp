@@ -320,7 +320,7 @@ protected:
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
-  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+  inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
 public:
 

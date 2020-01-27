@@ -195,7 +195,7 @@ public:
    * \brief Allow outside access to the nodes of the solver, containing conservatives, primitives, etc.
    * \return Nodes of the solver.
    */
-  inline CVariable* GetNodes() const {
+  inline CVariable* GetNodes() {
     assert(base_nodes!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
     return base_nodes;
   }

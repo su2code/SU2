@@ -32,12 +32,11 @@
 
 #include <ctime>
 
-#include "solvers/CSolver.hpp"
-#include "solvers/CFEASolver.hpp"
 #include "integration_structure.hpp"
+
 #include "output/COutput.hpp"
 #include "numerics_structure.hpp"
-#include "../../Common/include/geometry/CGeometry.hpp"
+
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 
