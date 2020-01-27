@@ -8661,7 +8661,6 @@ public:
    */
   su2double* Get_Electric_Field_Dir(void);
   
-  
   /*!
    * \brief Check if the user wants to apply the load as a ramp.
    * \return 	<code>TRUE</code> means that the load is to be applied as a ramp.
@@ -8692,31 +8691,32 @@ public:
    * \return The pointer to the sine load values.
    */
   su2double* GetLoad_Sine(void);
-   /*!
-    * \brief Get the kind of load transfer method we want to use for dynamic problems
-    * \note This value is obtained from the config file, and it is constant
-    *       during the computation.
-    * \return Kind of transfer method for multiphysics problems
-    */
-   unsigned short GetDynamic_LoadTransfer(void);
+
+  /*!
+   * \brief Get the kind of load transfer method we want to use for dynamic problems
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of transfer method for multiphysics problems
+   */
+  unsigned short GetDynamic_LoadTransfer(void);
   
-   /*!
-    * \brief Get the penalty weight value for the objective function.
-    * \return  Penalty weight value for the reference geometry objective function.
-    */
-   su2double GetRefGeom_Penalty(void);
+  /*!
+   * \brief Get the penalty weight value for the objective function.
+   * \return  Penalty weight value for the reference geometry objective function.
+   */
+  su2double GetRefGeom_Penalty(void);
   
-   /*!
-    * \brief Get the penalty weight value for the objective function.
-    * \return  Penalty weight value for the reference geometry objective function.
-    */
-   su2double GetTotalDV_Penalty(void);
+  /*!
+   * \brief Get the penalty weight value for the objective function.
+   * \return  Penalty weight value for the reference geometry objective function.
+   */
+  su2double GetTotalDV_Penalty(void);
   
-   /*!
-    * \brief Get whether a predictor is used for FSI applications.
-    * \return  Bool: determines if predictor is used or not
-    */
-   bool GetPredictor(void);
+  /*!
+   * \brief Get whether a predictor is used for FSI applications.
+   * \return  Bool: determines if predictor is used or not
+   */
+  bool GetPredictor(void);
 
   /*!
    * \brief Get the order of the predictor for FSI applications.
@@ -9131,7 +9131,7 @@ public:
    */
   unsigned short GetComm_Level(void);
   
-  /*
+  /*!
    * \brief Check if the mesh read supports multiple zones.
    * \return YES if multiple zones can be contained in the mesh file.
    */
@@ -9197,9 +9197,9 @@ public:
    */
   unsigned short GetnScreenOutput(void);
 
-  /*
-  * \brief Get the screen output field iField
-  */
+  /*!
+   * \brief Get the screen output field iField
+   */
   string GetScreenOutput_Field(unsigned short iField);
 
   /*!
@@ -9207,9 +9207,9 @@ public:
    */
   unsigned short GetnHistoryOutput(void);
 
-  /*
-  * \brief Get the history output field iField
-  */
+  /*!
+   * \brief Get the history output field iField
+   */
   string GetHistoryOutput_Field(unsigned short iField);
 
   /*!
@@ -9217,9 +9217,9 @@ public:
    */
   unsigned short GetnVolumeOutput(void);
 
-  /*
-  * \brief Get the history output field iField
-  */
+  /*!
+   * \brief Get the history output field iField
+   */
   string GetVolumeOutput_Field(unsigned short iField);
 
   /*!
@@ -9228,7 +9228,6 @@ public:
   * return Field name for monitoring convergence
   */
   string GetConv_Field(unsigned short iField);
-  
 
   /*!
    * \brief Get functional that is going to be used to evaluate the convergence of the windowed time average of the unsteady problem.

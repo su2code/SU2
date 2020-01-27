@@ -26,7 +26,6 @@
  */
 
 #pragma once
-#include "config_structure.hpp"
 
 inline su2double CConfig::GetHTP_Axis(unsigned short val_index) { return HTP_Axis[val_index]; }
 
