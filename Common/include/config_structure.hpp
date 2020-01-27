@@ -1168,269 +1168,90 @@ private:
   /*!< \brief addDoubleOption creates a config file parser for an option with the given name whose
    value can be represented by a su2double.*/
   
-  void addDoubleOption(const string name, su2double & option_field, su2double default_value) {
-    // Check if the key is already in the map. If this fails, it is coder error
-    // and not user error, so throw.
-    assert(option_map.find(name) == option_map.end());
-    
-    // Add this option to the list of all the options
-    all_options.insert(pair<string, bool>(name, true));
-    
-    // Create the parser for a su2double option with a reference to the option_field and the desired
-    // default value. This will take the string in the config file, convert it to a su2double, and
-    // place that su2double in the memory location specified by the reference.
-    COptionBase* val = new COptionDouble(name, option_field, default_value);
-    
-    // Create an association between the option name ("CFL") and the parser generated above.
-    // During configuration, the parsing script will get the option name, and use this map
-    // to find how to parse that option.
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addDoubleOption(const string name, su2double & option_field, su2double default_value);
   
-  void addStringOption(const string name, string & option_field, string default_value) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionString(name, option_field, default_value);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addStringOption(const string name, string & option_field, string default_value);
   
-  void addIntegerOption(const string name, int & option_field, int default_value) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionInt(name, option_field, default_value);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addIntegerOption(const string name, int & option_field, int default_value);
   
-  void addUnsignedLongOption(const string name, unsigned long & option_field, unsigned long default_value) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionULong(name, option_field, default_value);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addUnsignedLongOption(const string name, unsigned long & option_field, unsigned long default_value);
   
-  void addUnsignedShortOption(const string name, unsigned short & option_field, unsigned short default_value) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionUShort(name, option_field, default_value);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addUnsignedShortOption(const string name, unsigned short & option_field, unsigned short default_value);
   
-  void addLongOption(const string name, long & option_field, long default_value) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionLong(name, option_field, default_value);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addLongOption(const string name, long & option_field, long default_value);
   
-  void addBoolOption(const string name, bool & option_field, bool default_value) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionBool(name, option_field, default_value);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addBoolOption(const string name, bool & option_field, bool default_value);
   
   // enum types work differently than all of the others because there are a small number of valid
   // string entries for the type. One must also provide a list of all the valid strings of that type.
   template <class Tenum>
-  void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionEnum<Tenum>(name, enum_map, option_field, default_value);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-    return;
-  }
-  
+  void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value);
   
   // input_size is the number of options read in from the config file
   template <class Tenum>
-  void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map) {
-    input_size = 0;
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionEnumList<Tenum>(name, enum_map, option_field, input_size);
-    option_map.insert( pair<string, COptionBase*>(name, val) );
-  }
+  void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map);
   
-  void addDoubleArrayOption(const string name, const int size, su2double * & option_field, su2double * default_value) {
-    
-    //  su2double * def = new su2double [size];
-    //  for (int i = 0; i < size; i++) {
-    //    def[i] = default_value[i];
-    //  }
-    
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionDoubleArray(name, size, option_field, default_value);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addDoubleArrayOption(const string name, const int size, su2double * & option_field, su2double * default_value);
   
-  void addDoubleListOption(const string name, unsigned short & size, su2double * & option_field) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionDoubleList(name, size, option_field);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addDoubleListOption(const string name, unsigned short & size, su2double * & option_field);
   
-  void addShortListOption(const string name, unsigned short & size, short * & option_field) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionShortList(name, size, option_field);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addShortListOption(const string name, unsigned short & size, short * & option_field);
   
-  void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionUShortList(name, size, option_field);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field);
   
-  void addStringListOption(const string name, unsigned short & num_marker, string* & option_field) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionStringList(name, num_marker, option_field);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addStringListOption(const string name, unsigned short & num_marker, string* & option_field);
   
-  void addConvectOption(const string name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionConvect(name, space_field, centered_field, upwind_field);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
-  
-  void addConvectFEMOption(const string name, unsigned short & space_field, unsigned short & fem_field) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionFEMConvect(name, space_field, fem_field);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addConvectOption(const string name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field);
+
+  void addConvectFEMOption(const string name, unsigned short & space_field, unsigned short & fem_field);
   
   void addMathProblemOption(const string name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
                             bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
-                            bool & Restart_Flow, const bool & Restart_Flow_default) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default, Restart_Flow, Restart_Flow_default);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+                            bool & Restart_Flow, const bool & Restart_Flow_default);
   
   void addDVParamOption(const string name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag,
-                        unsigned short* & design_variable) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, FFDTag, design_variable);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+                        unsigned short* & design_variable);
   
   void addDVValueOption(const string name, unsigned short* & nDVValue_field, su2double** & valueDV, unsigned short & nDV_field,  su2double** & paramDV,
-                        unsigned short* & design_variable) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionDVValue(name, nDVValue_field, valueDV, nDV_field, paramDV, design_variable);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+                        unsigned short* & design_variable);
+
+  void addFFDDefOption(const string name, unsigned short & nFFD_field, su2double** & coordFFD, string* & FFDTag);
   
-  void addFFDDefOption(const string name, unsigned short & nFFD_field, su2double** & coordFFD, string* & FFDTag) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionFFDDef(name, nFFD_field, coordFFD, FFDTag);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
-  
-  void addFFDDegreeOption(const string name, unsigned short & nFFD_field, unsigned short** & degreeFFD) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionFFDDegree(name, nFFD_field, degreeFFD);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addFFDDegreeOption(const string name, unsigned short & nFFD_field, unsigned short** & degreeFFD);
   
   void addStringDoubleListOption(const string name, unsigned short & list_size, string * & string_field,
-                                 su2double* & double_field) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionStringDoubleList(name, list_size, string_field, double_field);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+                                 su2double* & double_field);
   
   void addInletOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
-                      su2double* & Ttotal, su2double* & Ptotal, su2double** & FlowDir) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionInlet(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal, FlowDir);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+                      su2double* & Ttotal, su2double* & Ptotal, su2double** & FlowDir);
   
   template <class Tenum>
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
-                        su2double* & var1, su2double* & var2, su2double** & FlowDir) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionRiemann<Tenum>(name, nMarker_Riemann, Marker_Riemann, option_field, enum_map, var1, var2, FlowDir);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+                        su2double* & var1, su2double* & var2, su2double** & FlowDir);
   
   template <class Tenum>
   void addGilesOption(const string name, unsigned short & nMarker_Giles, string * & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> & enum_map,
-                     su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relaxfactor1, su2double* & relaxfactor2) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionGiles<Tenum>(name, nMarker_Giles, Marker_Giles, option_field, enum_map, var1, var2, FlowDir, relaxfactor1, relaxfactor2);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+                     su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relaxfactor1, su2double* & relaxfactor2);
   
   void addExhaustOption(const string name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
-                        su2double* & Ttotal, su2double* & Ptotal) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionExhaust(name, nMarker_Exhaust, Marker_Exhaust, Ttotal, Ptotal);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+                        su2double* & Ttotal, su2double* & Ptotal);
   
   void addPeriodicOption(const string & name, unsigned short & nMarker_PerBound,
                          string* & Marker_PerBound, string* & Marker_PerDonor,
-                         su2double** & RotCenter, su2double** & RotAngles, su2double** & Translation) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionPeriodic(name, nMarker_PerBound, Marker_PerBound, Marker_PerDonor, RotCenter, RotAngles, Translation);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+                         su2double** & RotCenter, su2double** & RotAngles, su2double** & Translation);
  
   void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
-                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionTurboPerformance(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut);
   
   void addActDiskOption(const string & name,
                         unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string* & Marker_ActDiskInlet, string* & Marker_ActDiskOutlet,
-                        su2double** & ActDisk_PressJump, su2double** & ActDisk_TempJump, su2double** & ActDisk_Omega) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionActDisk(name,
-                                          nMarker_ActDiskInlet, nMarker_ActDiskOutlet, Marker_ActDiskInlet, Marker_ActDiskOutlet,
-                                          ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+                        su2double** & ActDisk_PressJump, su2double** & ActDisk_TempJump, su2double** & ActDisk_Omega);
 
   void addWallFunctionOption(const string &name,               unsigned short &list_size,
                              string* &string_field,            unsigned short* &val_Kind_WF,
-                             unsigned short** &val_IntInfo_WF, su2double** &val_DoubleInfo_WF) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionWallFunction(name, list_size, string_field, val_Kind_WF,
-                                               val_IntInfo_WF, val_DoubleInfo_WF);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+                             unsigned short** &val_IntInfo_WF, su2double** &val_DoubleInfo_WF);
   
-  void addPythonOption(const string name) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionPython(name);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+  void addPythonOption(const string name);
   
 public:
   
