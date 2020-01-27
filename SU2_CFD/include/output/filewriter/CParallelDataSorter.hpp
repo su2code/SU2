@@ -48,7 +48,7 @@ protected:
   int size;
   
   unsigned long nGlobalPointBeforeSort; //!< Global number of points without halos before sorting
-  unsigned long nLocalPointBeforeSort;   //!< Local number of points without halos before sorting on this proc
+  unsigned long nLocalPointsBeforeSort;   //!< Local number of points without halos before sorting on this proc
  
   int *Conn_Line_Par;              //!< Local connectivity of line elements 
   int *Conn_Tria_Par;              //!< Local connectivity of triangle elements 
@@ -58,8 +58,8 @@ protected:
   int *Conn_Pris_Par;              //!< Local connectivity of prism elements 
   int *Conn_Pyra_Par;              //!< Local connectivity of pyramid elements 
 
-  array<unsigned long, N_ELEM_TYPES> nGlobalPerElem;   //!< Global number of elements after sorting on this proc
-  array<unsigned long, N_ELEM_TYPES> nLocalPerElem; //!< Local number of elements after sorting on this proc
+  array<unsigned long, N_ELEM_TYPES> nElemPerTypeGlobal;   //!< Global number of elements after sorting on this proc
+  array<unsigned long, N_ELEM_TYPES> nElemPerType; //!< Local number of elements after sorting on this proc
   
   /*!
    * \brief Map that stores the index for each GEO_TYPE type where to find information
@@ -67,12 +67,12 @@ protected:
    */
   static const map<unsigned short, unsigned short> TypeMap; 
  
-  unsigned long nGlobalPoint;   //!< Global number of points without halos 
-  unsigned long nGlobalElem;    //!< Global number of elems without halos
-  unsigned long nGlobalConn;    //!< Global size of the connectivity array
-  unsigned long nLocalPoint;    //!< Local number of points 
-  unsigned long nLocalElem;     //!< Local number of elements
-  unsigned long nLocalConn;     //!< Local size of the connectivity array
+  unsigned long nPointsGlobal;   //!< Global number of points without halos 
+  unsigned long nElemGlobal;    //!< Global number of elems without halos
+  unsigned long nConnGlobal;    //!< Global size of the connectivity array
+  unsigned long nPoints;    //!< Local number of points 
+  unsigned long nElem;     //!< Local number of elements
+  unsigned long nConn;     //!< Local size of the connectivity array
   
   CLinearPartitioner* linearPartitioner;  //!< Linear partitioner based on the global number of points.
 
@@ -113,7 +113,7 @@ public:
   /*!
    * \brief Constructor
    * \param[in] config - Pointer to the current config structure
-   * \param[in] fieldNames - Vector containing the field names
+   * \param[in] valFieldNames - Vector containing the field names
    */
   CParallelDataSorter(CConfig *config, const vector<string> &valFieldNames);
 
@@ -147,25 +147,25 @@ public:
    * \brief Get the number of points the local rank owns.
    * \return local number of points.
    */
-  unsigned long GetnPoints() const {return nLocalPoint;}
+  unsigned long GetnPoints() const {return nPoints;}
 
   /*!
    * \brief Get the number of points to sort.
    * \return local number of points.
    */
-  unsigned long GetnLocalPointSort() const {return nLocalPointBeforeSort;}
+  unsigned long GetnLocalPointsBeforeSort() const {return nLocalPointsBeforeSort;}
 
   /*!
    * \brief Get the global number of points (accumulated from all ranks)
    * \return Global number of points.
    */
-  unsigned long GetnPointsGlobal() const {return nGlobalPoint;}
+  unsigned long GetnPointsGlobal() const {return nPointsGlobal;}
 
   /*!
    * \brief Get the global of elements (accumulated from all ranks and element types)
    * \return Global number elements.
    */
-  unsigned long GetnElem() const {return nLocalElem;}
+  unsigned long GetnElem() const {return nElem;}
 
   /*!
    * \brief Get the local number of elements of a specific type that the current rank owns
@@ -173,7 +173,7 @@ public:
    * \return Local number of elements of a specific type.
    */
   unsigned long GetnElem(GEO_TYPE type) const {
-    return nLocalPerElem[TypeMap.at(type)];
+    return nElemPerType[TypeMap.at(type)];
   }
   
   /*!
@@ -182,7 +182,7 @@ public:
    * \return global number of elements of a specific type.
    */
   unsigned long GetnElemGlobal(GEO_TYPE type) const {
-    return nGlobalPerElem[TypeMap.at(type)];
+    return nElemPerTypeGlobal[TypeMap.at(type)];
   }
   
   /*!
@@ -190,23 +190,23 @@ public:
    * \return global number of elements.
    */
   unsigned long GetnElemGlobal() const {
-    return nGlobalElem;
+    return nElemGlobal;
   }
   
   /*!
    * \brief Get the global number entries of the connectivity array
    * \return global number of entries of the connectivity array
    */
-  unsigned long GetnElemConnGlobal() const {
-    return nGlobalConn;
+  unsigned long GetnConnGlobal() const {
+    return nConnGlobal;
   }
   
   /*!
    * \brief Get the local number entries of the connectivity array
    * \return local number of entries of the connectivity array
    */
-  unsigned long GetnElemConn() const {
-    return nLocalConn;
+  unsigned long GetnConn() const {
+    return nConn;
   }
   
   /*!

@@ -57,11 +57,11 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vecto
       const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
       globalID.push_back(globalIndex);
 
-      nLocalPointBeforeSort++;
+      nLocalPointsBeforeSort++;
     }
   }
 
-  SU2_MPI::Allreduce(&nLocalPointBeforeSort, &nGlobalPointBeforeSort, 1,
+  SU2_MPI::Allreduce(&nLocalPointsBeforeSort, &nGlobalPointBeforeSort, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
   /*--- Create a linear partition --- */
@@ -93,7 +93,7 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
 
   /*--- Sort volumetric grid connectivity. ---*/
   
-  nLocalPerElem.fill(0);
+  nElemPerType.fill(0);
 
   SortVolumetricConnectivity(config, geometry, TRIANGLE     );
   SortVolumetricConnectivity(config, geometry, QUADRILATERAL);
@@ -205,7 +205,7 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
     }
   }
   
-  nLocalPerElem[TypeMap.at(Elem_Type)] = nSubElem_Local;
+  nElemPerType[TypeMap.at(Elem_Type)] = nSubElem_Local;
 
   /*--- Store the particular global element count in the class data,
         and set the class data pointer to the connectivity array. ---*/

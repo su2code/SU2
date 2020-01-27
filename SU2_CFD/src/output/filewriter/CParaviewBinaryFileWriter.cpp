@@ -128,9 +128,9 @@ void CParaviewBinaryFileWriter::Write_Data(){
                 nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
 
   myElem            = dataSorter->GetnElem();
-  myElemStorage     = dataSorter->GetnElemConn();
+  myElemStorage     = dataSorter->GetnConn();
   GlobalElem        = dataSorter->GetnElemGlobal();
-  GlobalElemStorage = dataSorter->GetnElemConnGlobal();
+  GlobalElemStorage = dataSorter->GetnConnGlobal();
 
   SPRINTF(str_buf, "\nCELLS %i %i\n", SU2_TYPE::Int(GlobalElem),
           SU2_TYPE::Int(GlobalElemStorage+GlobalElem));

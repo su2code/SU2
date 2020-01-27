@@ -32,9 +32,8 @@
 class CSurfaceFEMDataSorter final: public CParallelDataSorter{
 
   CFEMDataSorter* volumeSorter;                  //!< Pointer to the volume sorter instance
-   //! Structure to map the local sorted point ID to the global point ID
-  std::vector<unsigned long> globalSurfaceDOFIDs;
-  vector<unsigned long> nSurfaceDOFsRanks;
+  vector<unsigned long> globalSurfaceDOFIDs;     //!< Structure to map the local sorted point ID to the global point ID
+  vector<unsigned long> nSurfaceDOFsRanks;       //!< Number of points on each rank
   
 public:
 
@@ -63,7 +62,7 @@ public:
    *  All markers in MARKER_PLOTTING will be sorted.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] surf - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
+   * \param[in] val_sort - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
    */
   void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) override;
 
@@ -114,7 +113,7 @@ public:
    
    /*!
     * \brief Get the cumulated number of points
-    * \input rank - the processor rank.
+    * \param[in] rank - the processor rank.
     * \return The cumulated number of points up to certain processor rank.
     */
    unsigned long GetnPointCumulative(unsigned short rank) const override {
@@ -128,6 +127,7 @@ private:
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
+   * \param[in] markerList - List of markers to sort
    */
   void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type,
                                const vector<string> &markerList);
