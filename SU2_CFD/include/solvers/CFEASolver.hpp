@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../solver_structure.hpp"
+#include "CSolver.hpp"
 
 /*!
  * \class CFEASolver
@@ -45,7 +45,7 @@ protected:
 
   su2double Total_CFEA;             /*!< \brief Total FEA coefficient for all the boundaries. */
 
-  unsigned short *iElem_iDe;	      /*!< \brief For DE cases, ID of the region considered for each iElem. */
+  unsigned short *iElem_iDe;        /*!< \brief For DE cases, ID of the region considered for each iElem. */
 
   su2double a_dt[9];                /*!< \brief Integration constants. */
 
@@ -148,8 +148,12 @@ protected:
    * \param[in] der - Value of the derivative.
    * \param[in] der_avg - Time-averaged value of the derivative.
    */
-  void OutputForwardModeGradient(CConfig *config, bool newFile, su2double fun,
-                                 su2double fun_avg, su2double der, su2double der_avg) const;
+  void OutputForwardModeGradient(CConfig *config,
+                                 bool newFile,
+                                 su2double fun,
+                                 su2double fun_avg,
+                                 su2double der,
+                                 su2double der_avg) const;
 
 public:
 
@@ -190,8 +194,14 @@ public:
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics,
-                     unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) override;
+  void Preprocessing(CGeometry *geometry,
+                     CSolver **solver_container,
+                     CConfig *config,
+                     CNumerics **numerics,
+                     unsigned short iMesh,
+                     unsigned long Iteration,
+                     unsigned short RunTime_EqSystem,
+                     bool Output) override;
 
   /*!
    * \brief Set the initial condition for the FEM structural problem.
@@ -200,8 +210,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
-                           CConfig *config, unsigned long TimeIter) override;
+  void SetInitialCondition(CGeometry **geometry,
+                           CSolver ***solver_container,
+                           CConfig *config,
+                           unsigned long TimeIter) override;
 
   /*!
    * \brief Reset the initial condition for the FEM structural problem.
@@ -210,8 +222,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
-                             CConfig *config, unsigned long TimeIter) override;
+  void ResetInitialCondition(CGeometry **geometry,
+                             CSolver ***solver_container,
+                             CConfig *config,
+                             unsigned long TimeIter) override;
 
   /*!
    * \brief Compute the time step for solving the FEM equations.
@@ -221,8 +235,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Index of the current iteration.
    */
-  inline void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                           unsigned short iMesh, unsigned long Iteration) override { }
+  inline void SetTime_Step(CGeometry *geometry,
+                           CSolver **solver_container,
+                           CConfig *config,
+                           unsigned short iMesh,
+                           unsigned long Iteration) override { }
 
   /*!
    * \brief Get the value of the reference coordinate to set on the element structure.
@@ -230,7 +247,9 @@ public:
    * \param[in] indexNode - Index of the node.
    * \param[in] iDim - Dimension required.
    */
-  inline virtual su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) const {
+  inline virtual su2double Get_ValCoord(CGeometry *geometry,
+                                        unsigned long indexNode,
+                                        unsigned short iDim) const {
     return geometry->node[indexNode]->GetCoord(iDim);
   }
 
@@ -241,7 +260,9 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
+  void Compute_StiffMatrix(CGeometry *geometry,
+                           CNumerics **numerics,
+                           CConfig *config) final;
 
   /*!
    * \brief Compute the stiffness matrix of the problem and the nodal stress terms at the same time.
@@ -251,7 +272,9 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
+  void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry,
+                                          CNumerics **numerics,
+                                          CConfig *config) final;
 
   /*!
    * \brief Compute the mass matrix of the problem.
@@ -259,7 +282,9 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
+  void Compute_MassMatrix(CGeometry *geometry,
+                          CNumerics **numerics,
+                          CConfig *config) final;
 
   /*!
    * \brief Compute the mass residual of the problem.
@@ -267,7 +292,9 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
+  void Compute_MassRes(CGeometry *geometry,
+                       CNumerics **numerics,
+                       CConfig *config) final;
 
   /*!
    * \brief Compute the nodal stress terms and add them to the residual.
@@ -275,7 +302,9 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
+  void Compute_NodalStressRes(CGeometry *geometry,
+                              CNumerics **numerics,
+                              CConfig *config) final;
 
   /*!
    * \brief Compute the stress at the nodes for output purposes.
@@ -284,7 +313,9 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
+  void Compute_NodalStress(CGeometry *geometry,
+                           CNumerics **numerics,
+                           CConfig *config) final;
 
   /*!
    * \brief Compute the dead loads.
@@ -293,7 +324,9 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config) final;
+  void Compute_DeadLoad(CGeometry *geometry,
+                        CNumerics **numerics,
+                        CConfig *config) final;
 
   /*!
    * \brief Clamped boundary conditions.
@@ -301,7 +334,10 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
+  void BC_Clamped(CGeometry *geometry,
+                  CNumerics *numerics,
+                  CConfig *config,
+                  unsigned short val_marker) final;
 
   /*!
    * \brief Enforce the solution to be 0 in the clamped nodes - Avoids accumulation of numerical error.
@@ -310,7 +346,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
+  void BC_Clamped_Post(CGeometry *geometry,
+                       CNumerics *numerics,
+                       CConfig *config,
+                       unsigned short val_marker) final;
 
   /*!
    * \brief A virtual member.
@@ -320,7 +359,10 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
 
-  void BC_DispDir(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
+  void BC_DispDir(CGeometry *geometry,
+                  CNumerics *numerics,
+                  CConfig *config,
+                  unsigned short val_marker) final;
 
   /*!
    * \brief Impose a displacement (constraint) boundary condition.
@@ -329,8 +371,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline void BC_Normal_Displacement(CGeometry *geometry, CNumerics *numerics,
-                                     CConfig *config, unsigned short val_marker) final { }
+  inline void BC_Normal_Displacement(CGeometry *geometry,
+                                     CNumerics *numerics,
+                                     CConfig *config,
+                                     unsigned short val_marker) final { }
 
   /*!
    * \brief Impose a load boundary condition normal to the boundary.
@@ -339,7 +383,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
+  void BC_Normal_Load(CGeometry *geometry,
+                      CNumerics *numerics,
+                      CConfig *config,
+                      unsigned short val_marker) final;
 
   /*!
    * \brief Impose a load boundary condition in cartesian coordinates.
@@ -348,7 +395,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
+  void BC_Dir_Load(CGeometry *geometry,
+                   CNumerics *numerics,
+                   CConfig *config,
+                   unsigned short val_marker) final;
 
   /*!
    * \brief Impose a sine-wave load boundary condition in cartesian coordinates.
@@ -357,7 +407,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline void BC_Sine_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final { }
+  inline void BC_Sine_Load(CGeometry *geometry,
+                           CNumerics *numerics,
+                           CConfig *config,
+                           unsigned short val_marker) final { }
 
   /*!
    * \brief Impose a damping load.
@@ -366,7 +419,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
+  void BC_Damper(CGeometry *geometry,
+                 CNumerics *numerics,
+                 CConfig *config,
+                 unsigned short val_marker) final;
 
   /*!
    * \brief Deformable boundary condition.
@@ -375,7 +431,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) final;
+  void BC_Deforming(CGeometry *geometry,
+                    CNumerics *numerics,
+                    CConfig *config,
+                    unsigned short val_marker) final;
 
   /*!
    * \brief Required step for non conservative interpolation schemes where stresses are transferred instead of forces.
@@ -390,7 +449,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final { };
+  inline void ImplicitEuler_Iteration(CGeometry *geometry,
+                                      CSolver **solver_container,
+                                      CConfig *config) final { };
 
   /*!
    * \brief Iterate using an implicit Newmark solver.
@@ -398,7 +459,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  void ImplicitNewmark_Iteration(CGeometry *geometry,
+                                 CSolver **solver_container,
+                                 CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Newmark solver.
@@ -406,7 +469,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  void ImplicitNewmark_Update(CGeometry *geometry,
+                              CSolver **solver_container,
+                              CConfig *config) final;
 
   /*!
    * \brief A virtual member.
@@ -414,7 +479,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  void ImplicitNewmark_Relaxation(CGeometry *geometry,
+                                  CSolver **solver_container,
+                                  CConfig *config) final;
 
   /*!
    * \brief Iterate using an implicit Generalized Alpha solver.
@@ -422,7 +489,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  void GeneralizedAlpha_Iteration(CGeometry *geometry,
+                                  CSolver **solver_container,
+                                  CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
@@ -430,7 +499,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  void GeneralizedAlpha_UpdateDisp(CGeometry *geometry,
+                                   CSolver **solver_container,
+                                   CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
@@ -438,7 +509,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  void GeneralizedAlpha_UpdateSolution(CGeometry *geometry,
+                                       CSolver **solver_container,
+                                       CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
@@ -446,7 +519,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  void GeneralizedAlpha_UpdateLoads(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CConfig *config) final;
 
   /*!
    * \brief Postprocessing.
@@ -455,8 +530,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                      CNumerics **numerics, unsigned short iMesh) final;
+  void Postprocessing(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CConfig *config,
+                      CNumerics **numerics,
+                      unsigned short iMesh) final;
 
   /*!
    * \brief Routine to solve the Jacobian-Residual linearized system.
@@ -614,7 +692,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  void Compute_OFRefGeom(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CConfig *config) final;
 
   /*!
    * \brief Compute the objective function for a reference node
@@ -622,7 +702,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  void Compute_OFRefNode(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CConfig *config) final;
 
   /*!
    * \brief Compute the objective function for a volume fraction
@@ -630,7 +712,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  void Compute_OFVolFrac(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CConfig *config) final;
 
   /*!
    * \brief Compute the compliance objective function
@@ -638,7 +722,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_OFCompliance(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  void Compute_OFCompliance(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CConfig *config) final;
 
   /*!
    * \brief Compute the penalty due to the stiffness increase
@@ -647,8 +733,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container,
-                         CNumerics **numerics_container, CConfig *config) final;
+  void Stiffness_Penalty(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CNumerics **numerics_container,
+                         CConfig *config) final;
 
   /*!
    * \brief Get the value of the FSI convergence.
@@ -714,14 +802,20 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) override;
 
   /*!
    * \brief Get multiplier for loads.
    * \param[in] CurrentTime - Current time step.
    * \param[in] config - Definition of the particular problem.
    */
-  su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config) final;
+  su2double Compute_LoadCoefficient(su2double CurrentTime,
+                                    su2double RampTime,
+                                    CConfig *config) final;
 
   /*!
    * \brief A virtual member.
@@ -729,7 +823,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reset - Not used by this class ATM.
    */
-  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) override;
+  void RegisterVariables(CGeometry *geometry,
+                         CConfig *config,
+                         bool reset) override;
 
   /*!
    * \brief A virtual member.

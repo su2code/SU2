@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/geometry/primal_grid/CTriangle.hpp"
+#include "../../../include/geometry/primal_grid/CTriangle.hpp"
 
 unsigned short CTriangle::Faces[3][2] = {{0,1},{1,2},{2,0}};
 
