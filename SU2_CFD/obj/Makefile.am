@@ -64,28 +64,28 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/drivers/CDummyDriver.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics/CNumerics.cpp \
-  ../src/numerics/template.hpp \
-  ../src/numerics/transition.hpp \
-  ../src/numerics/heat.hpp \
-  ../src/numerics/flow/convection/roe.hpp \
-  ../src/numerics/flow/convection/fds.hpp \
-  ../src/numerics/flow/convection/fvs.hpp \
-  ../src/numerics/flow/convection/cusp.hpp \
-  ../src/numerics/flow/convection/hllc.hpp \
-  ../src/numerics/flow/convection/ausm_slau.hpp \
-  ../src/numerics/flow/convection/centered.hpp \
-  ../src/numerics/flow/flow_diffusion.hpp \
-  ../src/numerics/flow/flow_sources.hpp \
-  ../src/numerics/continuous_adjoint/adj_convection.hpp \
-  ../src/numerics/continuous_adjoint/adj_diffusion.hpp \
-  ../src/numerics/continuous_adjoint/adj_sources.hpp \
-  ../src/numerics/turbulent/turb_convection.hpp \
-  ../src/numerics/turbulent/turb_diffusion.hpp \
-  ../src/numerics/turbulent/turb_sources.hpp \
-  ../src/numerics/elasticity/CFEAElasticity.hpp \
-  ../src/numerics/elasticity/CFEALinearElasticity.hpp \
-  ../src/numerics/elasticity/CFEANonlinearElasticity.hpp \
-  ../src/numerics/elasticity/nonlinear_models.hpp \
+  ../src/numerics/template.cpp \
+  ../src/numerics/transition.cpp \
+  ../src/numerics/heat.cpp \
+  ../src/numerics/flow/convection/roe.cpp \
+  ../src/numerics/flow/convection/fds.cpp \
+  ../src/numerics/flow/convection/fvs.cpp \
+  ../src/numerics/flow/convection/cusp.cpp \
+  ../src/numerics/flow/convection/hllc.cpp \
+  ../src/numerics/flow/convection/ausm_slau.cpp \
+  ../src/numerics/flow/convection/centered.cpp \
+  ../src/numerics/flow/flow_diffusion.cpp \
+  ../src/numerics/flow/flow_sources.cpp \
+  ../src/numerics/continuous_adjoint/adj_convection.cpp \
+  ../src/numerics/continuous_adjoint/adj_diffusion.cpp \
+  ../src/numerics/continuous_adjoint/adj_sources.cpp \
+  ../src/numerics/turbulent/turb_convection.cpp \
+  ../src/numerics/turbulent/turb_diffusion.cpp \
+  ../src/numerics/turbulent/turb_sources.cpp \
+  ../src/numerics/elasticity/CFEAElasticity.cpp \
+  ../src/numerics/elasticity/CFEALinearElasticity.cpp \
+  ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
+  ../src/numerics/elasticity/nonlinear_models.cpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \
   ../src/output/filewriter/CSTLFileWriter.cpp \
   ../src/output/filewriter/CFEMDataSorter.cpp \
@@ -179,7 +179,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CEulerVariable.cpp
 
 su2_cfd_sources = \
-  ../include/SU2_CFD.hpp \
+  ../include/SU2_CFD.cpp \
   ../src/SU2_CFD.cpp
 
 libSU2Core_cxx_flags = -fPIC -std=c++11
