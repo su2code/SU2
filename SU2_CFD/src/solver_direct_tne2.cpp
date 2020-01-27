@@ -5280,10 +5280,10 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       /*--- For now, assume supersonic everywhere... ---*/
       if (Qn_Infty > 0.0)   {
         /*--- Outflow conditions ---*/
-        node_bc->SetSolution(nodes->GetSolution(iPoint));
+        node_bc->SetSolution(0, nodes->GetSolution(iPoint));
       } else  {
         /*--- Inflow conditions ---*/
-        node_bc->SetSolution(node_infty->GetSolution(0));
+        node_bc->SetSolution(0, node_infty->GetSolution(0));
       }
 
       if (tkeNeeded) Energy += GetTke_Inf();
