@@ -267,7 +267,7 @@ private:
   vector<CTaskDefinition> tasksList; /*!< \brief List of tasks to be carried out in the computationally
                                                  intensive part of the solver. */
 
-  CVariable* GetBaseClassPointerToNodes() {return nullptr;}
+  CVariable* GetBaseClassPointerToNodes() final {return nullptr;}
 
 public:
 
