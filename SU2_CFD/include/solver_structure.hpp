@@ -9559,6 +9559,7 @@ protected:
 
   CTNE2EulerVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
   CTNE2EulerVariable* node_infty;
+  CTNE2EulerVariable* node_bc;
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */

@@ -87,6 +87,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
 
   nodes = nullptr;
   node_infty = nullptr;
+  node_bc = nullptr;
 }
 
 CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -526,6 +527,11 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
                                       Temperature_ve_Inf, 1, nDim, nVar,
                                       nPrimVar, nPrimVarGrad, config);
   check_infty = node_infty->SetPrimVar_Compressible(0,config);
+
+  /*--- Create a CVariable that holds BC values ---*/
+  node_bc = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf, Temperature_Inf,
+                                   Temperature_ve_Inf, 1, nDim, nVar,
+                                   nPrimVar, nPrimVarGrad, config);
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) node_infty->SetPrimitive(0, nSpecies+2+iDim, Mvec_Inf[iDim]*node_infty->GetSoundSpeed(0));
 
@@ -5190,11 +5196,6 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
     Mvec_Inf[2] = sin(Alpha)*cos(Beta)*Mach_Inf;
   }
 
-  /*--- Create temp node to store boundary state ---*/
-  CTNE2EulerVariable *node_bc = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf, Temperature_Inf,
-                                                       Temperature_ve_Inf, 1, nDim, nVar,
-                                                       nPrimVar, nPrimVarGrad, config);
-
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
   conv_numerics->SetRhosIndex   ( nodes->GetRhosIndex()    );
   conv_numerics->SetRhoIndex    ( nodes->GetRhoIndex()     );
@@ -5378,7 +5379,6 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   delete [] Ys;
   delete [] Mvec;
   delete [] Mvec_Inf;
-  delete node_bc;
 }
 
 void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_container,
