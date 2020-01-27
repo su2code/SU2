@@ -63,23 +63,29 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/drivers/CDriver.cpp \
   ../src/drivers/CDummyDriver.cpp \
   ../src/iteration_structure.cpp \
-  ../src/numerics_adjoint_mean.cpp \
-  ../src/numerics_adjoint_turbulent.cpp \
-  ../src/numerics_direct_heat.cpp \
-  ../src/numerics_direct_mean.cpp \
-  ../src/numerics_direct_mean_inc.cpp \
-  ../src/numerics_direct_transition.cpp \
-  ../src/numerics_direct_turbulent.cpp \
-  ../src/numerics/elasticity/CFEAElasticity.cpp \
-  ../src/numerics/elasticity/CFEALinearElasticity.cpp \
-  ../src/numerics/elasticity/CFEAMeshElasticity.cpp \
-  ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
-  ../src/numerics/elasticity/CFEM_NeoHookean_Comp.cpp \
-  ../src/numerics/elasticity/CFEM_Knowles_NearInc.cpp \
-  ../src/numerics/elasticity/CFEM_IdealDE.cpp \
-  ../src/numerics/elasticity/CFEM_DielectricElastomer.cpp \
-  ../src/numerics_structure.cpp \
-  ../src/numerics_template.cpp \
+  ../src/numerics/CNumerics.cpp \
+  ../src/numerics/template.hpp \
+  ../src/numerics/transition.hpp \
+  ../src/numerics/heat.hpp \
+  ../src/numerics/flow/convection/roe.hpp \
+  ../src/numerics/flow/convection/fds.hpp \
+  ../src/numerics/flow/convection/fvs.hpp \
+  ../src/numerics/flow/convection/cusp.hpp \
+  ../src/numerics/flow/convection/hllc.hpp \
+  ../src/numerics/flow/convection/ausm_slau.hpp \
+  ../src/numerics/flow/convection/centered.hpp \
+  ../src/numerics/flow/flow_diffusion.hpp \
+  ../src/numerics/flow/flow_sources.hpp \
+  ../src/numerics/continuous_adjoint/adj_convection.hpp \
+  ../src/numerics/continuous_adjoint/adj_diffusion.hpp \
+  ../src/numerics/continuous_adjoint/adj_sources.hpp \
+  ../src/numerics/turbulent/turb_convection.hpp \
+  ../src/numerics/turbulent/turb_diffusion.hpp \
+  ../src/numerics/turbulent/turb_sources.hpp \
+  ../src/numerics/elasticity/CFEAElasticity.hpp \
+  ../src/numerics/elasticity/CFEALinearElasticity.hpp \
+  ../src/numerics/elasticity/CFEANonlinearElasticity.hpp \
+  ../src/numerics/elasticity/nonlinear_models.hpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \
   ../src/output/filewriter/CSTLFileWriter.cpp \
   ../src/output/filewriter/CFEMDataSorter.cpp \
