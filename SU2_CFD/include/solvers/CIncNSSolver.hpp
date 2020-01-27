@@ -387,8 +387,8 @@ public:
    */
   inline su2double GetConjugateHeatVariable(unsigned short val_marker,
                                             unsigned long val_vertex,
-                                            unsigned short pos_var) const override { 
-    return HeatConjugateVar[val_marker][val_vertex][pos_var]; 
+                                            unsigned short pos_var) const override {
+    return HeatConjugateVar[val_marker][val_vertex][pos_var];
   }
 
   /*!

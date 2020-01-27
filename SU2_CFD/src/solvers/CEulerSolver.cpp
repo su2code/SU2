@@ -11690,9 +11690,6 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 
 }
 
-void CEulerSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
-                                CConfig *config, unsigned short val_marker) { }
-
 void CEulerSolver::BC_Custom(CGeometry      *geometry,
                              CSolver        **solver_container,
                              CNumerics      *conv_numerics,

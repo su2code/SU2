@@ -345,7 +345,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reset - If true reset variables to their initial values.
    */
-  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false) override;
+  void RegisterVariables(CGeometry *geometry,
+                         CConfig *config,
+                         bool reset = false) override;
 
   /*!
    * \brief A virtual member.
@@ -392,12 +394,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
 };

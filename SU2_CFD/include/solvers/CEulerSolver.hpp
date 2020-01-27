@@ -337,7 +337,7 @@ protected:
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
-  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+  inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
 public:
 
@@ -781,18 +781,6 @@ public:
                    CConfig *config) final;
 
   /*!
-   * \brief Impose the dirichlet boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Dirichlet(CGeometry *geometry,
-                    CSolver **solver_container,
-                    CConfig *config,
-                    unsigned short val_marker) final;
-
-  /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
    *
    * \brief Impose the boundary condition using characteristic recostruction.
@@ -1124,27 +1112,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Momentum_Forces(CGeometry *geometry, CConfig *config) final;
-
-  /*! TODO
-   * \brief Compute turbomachinery performance.
-   * \param[in] solver - solver containing the outlet information.
-   * \param[in] inMarker - marker related to the inlet.
-   * \param[in] outMarker - marker related to the outlet.
-   */
-  // void TurboPerformance(CSolver *solver,
-  //                       CConfig *config,
-  //                       unsigned short inMarker,
-  //                       unsigned short outMarker,
-  //                       unsigned short Kind_TurboPerf,
-  //                       unsigned short inMarkerTP);
-
-  /*!
-   * \brief Compute turbomachinery performance.
-   * \param[in] solver - solver containing the outlet information.
-   * \param[in] inMarker - marker related to the inlet.
-   * \param[in] outMarker - marker related to the outlet.
-   */
-  // void StoreTurboPerformance(CSolver *solver,  unsigned short inMarkerTP ); TODO
 
  /*!
   * \brief Get the outer state for fluid interface nodes.

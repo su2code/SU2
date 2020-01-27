@@ -58,7 +58,7 @@ protected:
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
-  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+  inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
 public:
 
@@ -299,7 +299,9 @@ public:
    * \param[in] val_vertex - vertex index
    * \param[in] value - number of outer states
    */
-  inline void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
+  inline void SetnSlidingStates(unsigned short val_marker,
+                                unsigned long val_vertex,
+                                int value) final { SlidingStateNodes[val_marker][val_vertex] = value; }
 
   /*!
    * \brief Get the number of outer state for fluid interface nodes.
