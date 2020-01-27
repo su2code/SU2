@@ -39,7 +39,7 @@ CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometr
   connectivitySorted = false;
 
   nGlobalPointBeforeSort = geometry->GetGlobal_nPointDomain();
-  nLocalPointBeforeSort  = geometry->GetnPointDomain();
+  nLocalPointsBeforeSort  = geometry->GetnPointDomain();
 
   /*--- Create the linear partitioner --- */
 
@@ -398,7 +398,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
   /*--- First, add up the number of surface points I have on my rank. ---*/
 
-  nLocalPoint = 0;
+  nPoints = 0;
   Renumber2Global.clear();
 
   for (iPoint = 0; iPoint < volumeSorter->GetnPoints(); iPoint++) {
@@ -406,11 +406,11 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
       /*--- Save the global index values for CSV output. ---*/
 
-      Renumber2Global[nLocalPoint] = surfPoint[iPoint];
+      Renumber2Global[nPoints] = surfPoint[iPoint];
 
       /*--- Increment total number of surface points found locally. ---*/
 
-      nLocalPoint++;
+      nPoints++;
 
     }
   }
@@ -422,7 +422,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   nPoint_Send[0] = 0;
   nPoint_Recv[0] = 0;
 
-  for (int ii=1; ii < size+1; ii++) nPoint_Send[ii]= (int)nLocalPoint;
+  for (int ii=1; ii < size+1; ii++) nPoint_Send[ii]= (int)nPoints;
 
   SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
                     &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
@@ -442,7 +442,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
     delete [] passiveDoubleBuffer;
   }
 
-  passiveDoubleBuffer = new passivedouble[nLocalPoint*VARS_PER_POINT];
+  passiveDoubleBuffer = new passivedouble[nPoints*VARS_PER_POINT];
 
   for (int jj = 0; jj < VARS_PER_POINT; jj++) {
     count = 0;
@@ -456,7 +456,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   /*--- Reduce the total number of surf points we have. This will be
    needed for writing the surface solution files later. ---*/
 
-  SU2_MPI::Allreduce(&nLocalPoint, &nGlobalPoint, 1,
+  SU2_MPI::Allreduce(&nPoints, &nPointsGlobal, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
   /*--- Now that we know every proc's global offset for the number of
@@ -464,8 +464,8 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    create a new mapping using two arrays, which will need to be
    communicated. We use our mask again here.  ---*/
 
-  unsigned long *globalP = new unsigned long[nLocalPoint]();
-  unsigned long *renumbP = new unsigned long[nLocalPoint]();
+  unsigned long *globalP = new unsigned long[nPoints]();
+  unsigned long *renumbP = new unsigned long[nPoints]();
 
   count = 0;
   for (iPoint = 0; iPoint < volumeSorter->GetnPoints(); iPoint++) {
@@ -501,7 +501,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   /*--- Loop through my local surface nodes, find which proc the global
    value lives on, then communicate the global ID and remumbered value. ---*/
 
-  for (int ii = 0; ii < (int)nLocalPoint; ii++) {
+  for (int ii = 0; ii < (int)nPoints; ii++) {
 
     Global_Index = globalP[ii];
 
@@ -563,7 +563,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   /*--- Loop back through and load up the buffers for the global IDs
    and their new renumbering values. ---*/
 
-  for (int ii = 0; ii < (int)nLocalPoint; ii++) {
+  for (int ii = 0; ii < (int)nPoints; ii++) {
 
     Global_Index = globalP[ii];
 
@@ -956,7 +956,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    that they need to have their renumbering shared. ---*/
 
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    for (iPoint = 0; iPoint < nLocalPoint; iPoint++) {
+    for (iPoint = 0; iPoint < nPoints; iPoint++) {
       if (idRecv[ii] == globalP[iPoint]) {
         idRecv[ii] = renumbP[iPoint];
       }
@@ -1106,7 +1106,7 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
 
   /*--- Sort volumetric grid connectivity. ---*/
 
-  nLocalPerElem.fill(0);
+  nElemPerType.fill(0);
   
   SortSurfaceConnectivity(config, geometry, LINE         , markerList);
   SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
@@ -1473,7 +1473,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     }
   }
 
-  nLocalPerElem[TypeMap.at(Elem_Type)] = nElem_Total;
+  nElemPerType[TypeMap.at(Elem_Type)] = nElem_Total;
 
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/

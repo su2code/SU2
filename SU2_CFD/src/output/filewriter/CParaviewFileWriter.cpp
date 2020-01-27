@@ -120,7 +120,7 @@ void CParaviewFileWriter::Write_Data(){
   if (rank == MASTER_NODE) {
 
     /*--- Write the header ---*/
-    nGlobal_Elem_Storage = dataSorter->GetnElemGlobal() + dataSorter->GetnElemConnGlobal();
+    nGlobal_Elem_Storage = dataSorter->GetnElemGlobal() + dataSorter->GetnConnGlobal();
 
     Paraview_File << "\nCELLS " << dataSorter->GetnElemGlobal() << "\t" << nGlobal_Elem_Storage << "\n";
 

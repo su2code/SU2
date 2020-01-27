@@ -67,7 +67,7 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
   nSends = 0;
   nRecvs = 0;
 
-  nLocalPointBeforeSort  = 0;
+  nLocalPointsBeforeSort  = 0;
   nGlobalPointBeforeSort = 0;
 
   nPoint_Send = new int[size+1]();
@@ -79,8 +79,8 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
   
   linearPartitioner = NULL;
   
-  nLocalPerElem.fill(0);
-  nGlobalPerElem.fill(0);
+  nElemPerType.fill(0);
+  nElemPerTypeGlobal.fill(0);
 
 }
 
@@ -257,11 +257,11 @@ void CParallelDataSorter::SortOutputData() {
   /*--- Store the total number of local points my rank has for
    the current section after completing the communications. ---*/
 
-  nLocalPoint = nPoint_Recv[size];
+  nPoints = nPoint_Recv[size];
 
   /*--- Reduce the total number of points we will write in the output files. ---*/
 
-  SU2_MPI::Allreduce(&nLocalPoint, &nGlobalPoint, 1,
+  SU2_MPI::Allreduce(&nPoints, &nPointsGlobal, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
   /*--- Free temporary memory from communications ---*/
@@ -283,7 +283,7 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
    nodes, i.e., rank 0 holds the first ~ nGlobalPoint()/nProcessors nodes.
    First, initialize a counter and flag. ---*/
 
-  for (iPoint = 0; iPoint < nLocalPointBeforeSort; iPoint++ ) {
+  for (iPoint = 0; iPoint < nLocalPointsBeforeSort; iPoint++ ) {
 
     iProcessor = linearPartitioner->GetRankContainingIndex(globalID[iPoint]);
 
@@ -344,12 +344,12 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   unsigned long *idIndex = new unsigned long[size]();
   for (int ii=0; ii < size; ii++) idIndex[ii] = nPoint_Send[ii];
 
-  Index = new unsigned long[nLocalPointBeforeSort]();
+  Index = new unsigned long[nLocalPointsBeforeSort]();
 
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
 
-  for (iPoint = 0; iPoint < nLocalPointBeforeSort; iPoint++) {
+  for (iPoint = 0; iPoint < nLocalPointsBeforeSort; iPoint++) {
 
     iProcessor = linearPartitioner->GetRankContainingIndex(globalID[iPoint]);
 
@@ -414,16 +414,16 @@ void CParallelDataSorter::SetTotalElements(){
   
   /*--- Reduce the total number of cells we will be writing in the output files. ---*/
 
-  SU2_MPI::Allreduce(nLocalPerElem.data(), nGlobalPerElem.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(nElemPerType.data(), nElemPerTypeGlobal.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   
-  nGlobalElem = std::accumulate(nGlobalPerElem.begin(), nGlobalPerElem.end(), 0); 
-  nLocalElem  = std::accumulate(nLocalPerElem.begin(), nLocalPerElem.end(), 0);
+  nElemGlobal = std::accumulate(nElemPerTypeGlobal.begin(), nElemPerTypeGlobal.end(), 0); 
+  nElem  = std::accumulate(nElemPerType.begin(), nElemPerType.end(), 0);
   
-  nLocalConn = 0;
-  nGlobalConn   = 0;
+  nConn = 0;
+  nConnGlobal   = 0;
   auto addConnectivitySize = [this](GEO_TYPE elem, unsigned short nPoints){
-    nLocalConn    += GetnElem(elem)*nPoints;
-    nGlobalConn   += GetnElemGlobal(elem)*nPoints;
+    nConn    += GetnElem(elem)*nPoints;
+    nConnGlobal   += GetnElemGlobal(elem)*nPoints;
   };
   
   addConnectivitySize(LINE,          N_POINTS_LINE);
@@ -442,8 +442,8 @@ void CParallelDataSorter::SetTotalElements(){
   nElem_Send[0] = 0; nElemConn_Send[0] = 0;
   nElem_Cum[0] = 0; nElemConn_Cum[0] = 0;
   for (int ii=1; ii <= size; ii++) {
-    nElem_Send[ii]     = int(nLocalElem); 
-    nElemConn_Send[ii] = int(nLocalConn);
+    nElem_Send[ii]     = int(nElem); 
+    nElemConn_Send[ii] = int(nConn);
     nElem_Cum[ii] = 0;     
     nElemConn_Cum[ii] = 0;
   }

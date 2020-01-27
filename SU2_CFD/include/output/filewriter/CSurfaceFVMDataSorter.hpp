@@ -60,7 +60,7 @@ public:
    *  All markers in MARKER_PLOTTING will be sorted.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] surf - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
+   * \param[in] val_sort - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
    */
   void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) override;
 
@@ -79,9 +79,9 @@ public:
    * \return Global index of a specific point.
    */
   unsigned long GetGlobalIndex(unsigned long iPoint) const override{
-    if (iPoint > nLocalPoint)
+    if (iPoint > nPoints)
       SU2_MPI::Error(string("Local renumbered iPoint ID ") + to_string(iPoint) +
-                     string(" is larger than max number of nodes ") + to_string(nLocalPoint), CURRENT_FUNCTION);
+                     string(" is larger than max number of nodes ") + to_string(nPoints), CURRENT_FUNCTION);
 
     return Renumber2Global.at(iPoint);
   }
@@ -126,6 +126,7 @@ private:
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
+   * \param[in] markerList - List of markers to sort
    */
   void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type,
                                const vector<string> &markerList);

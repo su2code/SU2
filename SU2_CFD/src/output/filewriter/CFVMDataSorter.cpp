@@ -37,7 +37,7 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, const vecto
   std::vector<unsigned long> globalID;
 
   nGlobalPointBeforeSort = geometry->GetGlobal_nPointDomain();
-  nLocalPointBeforeSort  = geometry->GetnPointDomain();
+  nLocalPointsBeforeSort  = geometry->GetnPointDomain();
 
   Local_Halo = new int[geometry->GetnPoint()]();
 
@@ -116,7 +116,7 @@ void CFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
    In these routines, we sort the connectivity into a linear partitioning
    across all processors based on the global index of the grid nodes. ---*/
 
-  nLocalPerElem.fill(0);
+  nElemPerType.fill(0);
   
   SortVolumetricConnectivity(config, geometry, TRIANGLE,      val_sort);
   SortVolumetricConnectivity(config, geometry, QUADRILATERAL, val_sort);
@@ -477,7 +477,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
     }
   }
   
-  nLocalPerElem[TypeMap.at(Elem_Type)] = nElem_Total;
+  nElemPerType[TypeMap.at(Elem_Type)] = nElem_Total;
 
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/

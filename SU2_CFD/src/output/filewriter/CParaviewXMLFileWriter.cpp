@@ -98,9 +98,9 @@ void CParaviewXMLFileWriter::Write_Data(){
                 nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
 
   myElem            = dataSorter->GetnElem();
-  myElemStorage     = dataSorter->GetnElemConn();
+  myElemStorage     = dataSorter->GetnConn();
   GlobalElem        = dataSorter->GetnElemGlobal();
-  GlobalElemStorage = dataSorter->GetnElemConnGlobal();
+  GlobalElemStorage = dataSorter->GetnConnGlobal();
 
   /* Write the ASCII XML header. Note that we use the appended format for the data,
   * which means that all data is appended at the end of the file in one binary blob.

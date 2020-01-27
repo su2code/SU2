@@ -1172,7 +1172,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
       /*--- Open history file and print the header ---*/
       if (!config->GetMultizone_Problem() || config->GetWrt_ZoneConv())
-          PrepareHistoryFile(config);
+        PrepareHistoryFile(config);
 
       total_width = nRequestedScreenFields*fieldWidth + (nRequestedScreenFields-1);
 
@@ -2019,7 +2019,7 @@ void COutput::LoadCommonHistoryData(CConfig *config){
 
   SetHistoryOutputValue("TIME_STEP", config->GetDelta_UnstTimeND()*config->GetTime_Ref());
 
-  /*--- Update the current time time only if the time iteration has changed ---*/
+  /*--- Update the current time only if the time iteration has changed ---*/
 
   if (SU2_TYPE::Int(GetHistoryFieldValue("TIME_ITER")) != curTimeIter){
     SetHistoryOutputValue("CUR_TIME",  GetHistoryFieldValue("CUR_TIME") + GetHistoryFieldValue("TIME_STEP"));
