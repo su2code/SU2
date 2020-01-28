@@ -44,8 +44,9 @@ protected:
   bool implicit;                   /*!< \brief Implicit calculation (compute Jacobians). */
   su2double fix_factor;            /*!< \brief Fix factor for dissipation Jacobians (more diagonal dominance). */
 
-  su2double Velocity_i[3], Velocity_j[3];            /*!< \brief Velocity at nodes i and j. */
-  su2double MeanVelocity[3];                         /*!< \brief Mean velocity. */
+  su2double Velocity_i[MAXNDIM] = {0.0};             /*!< \brief Velocity at node i. */
+  su2double Velocity_j[MAXNDIM] = {0.0};             /*!< \brief Velocity at node j. */
+  su2double MeanVelocity[MAXNDIM] = {0.0};           /*!< \brief Mean velocity. */
   su2double ProjVelocity_i, ProjVelocity_j;          /*!< \brief Velocities in the face normal direction. */
   su2double sq_vel_i,  sq_vel_j;                     /*!< \brief Squared norm of the velocity vectors. */
   su2double Energy_i,  Energy_j,  MeanEnergy;        /*!< \brief Energy at nodes i and j and mean. */
@@ -114,7 +115,7 @@ public:
  * \ingroup ConvDiscr
  * \author F. Palacios
  */
-class CCentLax_Flow : public CCentBase_Flow {
+class CCentLax_Flow final : public CCentBase_Flow {
 private:
   su2double Param_Kappa_0; /*!< \brief Artificial dissipation parameter. */
   su2double sc0;           /*!< \brief Streching parameter. */
@@ -126,13 +127,13 @@ private:
    * \param[in,out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    */
-  void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+  void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j) override;
 
   /*!
    * \brief Set input variables for AD preaccumulation.
    * \return true, as we will define inputs.
    */
-  bool SetPreaccInVars(void);
+  bool SetPreaccInVars(void) override;
 
 public:
   /*!
@@ -151,7 +152,7 @@ public:
  * \ingroup ConvDiscr
  * \author F. Palacios
  */
-class CCentJST_KE_Flow : public CCentBase_Flow {
+class CCentJST_KE_Flow final : public CCentBase_Flow {
 
 private:
   su2double Param_Kappa_2; /*!< \brief Artificial dissipation parameter. */
@@ -164,7 +165,7 @@ private:
    * \param[in,out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    */
-  void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+  void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j) override;
 
   /*!
    * \brief Set input variables for AD preaccumulation.
@@ -189,7 +190,7 @@ public:
  * \ingroup ConvDiscr
  * \author F. Palacios
  */
-class CCentJST_Flow : public CCentBase_Flow {
+class CCentJST_Flow final : public CCentBase_Flow {
 
 private:
   su2double Param_Kappa_2, Param_Kappa_4; /*!< \brief Artificial dissipation parameters. */
@@ -202,13 +203,13 @@ private:
    * \param[in,out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    */
-  void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+  void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j) override;
 
   /*!
    * \brief Set input variables for AD preaccumulation.
    * \return true, as we will define inputs.
    */
-  bool SetPreaccInVars(void);
+  bool SetPreaccInVars(void) override;
 
 public:
   /*!

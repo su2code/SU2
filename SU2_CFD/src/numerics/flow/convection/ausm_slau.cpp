@@ -41,38 +41,42 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
 
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
   psi_i = new su2double [nVar];
   psi_j = new su2double [nVar];
 
-  RoeVelocity = new su2double [nDim];
+  Flux = new su2double [nVar];
   Lambda = new su2double [nVar];
   Epsilon = new su2double [nVar];
   P_Tensor = new su2double* [nVar];
   invP_Tensor = new su2double* [nVar];
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     P_Tensor[iVar] = new su2double [nVar];
     invP_Tensor[iVar] = new su2double [nVar];
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
   }
 }
 
 CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
 
-  delete [] Velocity_i;
-  delete [] Velocity_j;
   delete [] psi_i;
   delete [] psi_j;
 
-  delete [] RoeVelocity;
+  delete [] Flux;
   delete [] Lambda;
   delete [] Epsilon;
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     delete [] P_Tensor[iVar];
     delete [] invP_Tensor[iVar];
+    delete [] Jacobian_i[iVar];
+    delete [] Jacobian_j[iVar];
   }
   delete [] P_Tensor;
   delete [] invP_Tensor;
+  delete [] Jacobian_i;
+  delete [] Jacobian_j;
 
 }
 
@@ -308,8 +312,10 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
 
 }
 
-void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-
+void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const su2double*  &residual,
+                                                  const su2double* const* &jacobian_i,
+                                                  const su2double* const* &jacobian_j,
+                                                  CConfig *config) {
   unsigned short iDim, iVar;
 
   /*--- Space to start preaccumulation ---*/
@@ -354,32 +360,36 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
   ComputeMassAndPressureFluxes(config, MassFlux, Pressure);
   DissFlux = fabs(MassFlux);
 
-  val_residual[0] = MassFlux;
+  Flux[0] = MassFlux;
 
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[iDim+1] = 0.5*MassFlux*(psi_i[iDim+1]+psi_j[iDim+1]) +
-                           0.5*DissFlux*(psi_i[iDim+1]-psi_j[iDim+1]) +
-                           UnitNormal[iDim]*Pressure;
+    Flux[iDim+1] = 0.5*MassFlux*(psi_i[iDim+1]+psi_j[iDim+1]) +
+                   0.5*DissFlux*(psi_i[iDim+1]-psi_j[iDim+1]) +
+                   UnitNormal[iDim]*Pressure;
 
-  val_residual[nVar-1] = 0.5*MassFlux*(psi_i[nVar-1]+psi_j[nVar-1]) +
-                         0.5*DissFlux*(psi_i[nVar-1]-psi_j[nVar-1]);
+  Flux[nVar-1] = 0.5*MassFlux*(psi_i[nVar-1]+psi_j[nVar-1]) +
+                 0.5*DissFlux*(psi_i[nVar-1]-psi_j[nVar-1]);
 
-  for (iVar = 0; iVar < nVar; iVar++) val_residual[iVar] *= Area;
+  for (iVar = 0; iVar < nVar; iVar++) Flux[iVar] *= Area;
 
   /*--- Space to end preaccumulation ---*/
 
-  AD::SetPreaccOut(val_residual, nVar);
+  AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
+
+  residual = Flux;
 
   /*--- If required, compute Jacobians, either approximately (Roe) or numerically ---*/
 
   if (!implicit) return;
 
   if (UseAccurateJacobian)
-    AccurateJacobian(config, val_Jacobian_i, val_Jacobian_j);
+    AccurateJacobian(config, Jacobian_i, Jacobian_j);
   else
-    ApproximateJacobian(val_Jacobian_i, val_Jacobian_j);
+    ApproximateJacobian(Jacobian_i, Jacobian_j);
 
+  jacobian_i = Jacobian_i;
+  jacobian_j = Jacobian_j;
 }
 
 CUpwAUSMPLUSUP_Flow::CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
@@ -788,11 +798,8 @@ CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
 
+  Flux = new su2double [nVar];
   Diff_U = new su2double [nVar];
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
-  RoeVelocity = new su2double [nDim];
-  delta_vel  = new su2double [nDim];
   delta_wave = new su2double [nVar];
   ProjFlux_i = new su2double [nVar];
   ProjFlux_j = new su2double [nVar];
@@ -800,35 +807,42 @@ CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   Epsilon = new su2double [nVar];
   P_Tensor = new su2double* [nVar];
   invP_Tensor = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     P_Tensor[iVar] = new su2double [nVar];
     invP_Tensor[iVar] = new su2double [nVar];
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
   }
 }
 
 CUpwAUSM_Flow::~CUpwAUSM_Flow(void) {
 
+  delete [] Flux;
   delete [] Diff_U;
-  delete [] Velocity_i;
-  delete [] Velocity_j;
-  delete [] RoeVelocity;
-  delete [] delta_vel;
   delete [] delta_wave;
   delete [] ProjFlux_i;
   delete [] ProjFlux_j;
   delete [] Lambda;
   delete [] Epsilon;
-  for (iVar = 0; iVar < nVar; iVar++) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     delete [] P_Tensor[iVar];
     delete [] invP_Tensor[iVar];
+    delete [] Jacobian_i[iVar];
+    delete [] Jacobian_j[iVar];
   }
   delete [] P_Tensor;
   delete [] invP_Tensor;
+  delete [] Jacobian_i;
+  delete [] Jacobian_j;
 
 }
 
-void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-
+void CUpwAUSM_Flow::ComputeResidual(const su2double*  &residual,
+                                    const su2double* const* &jacobian_i,
+                                    const su2double* const* &jacobian_j,
+                                    CConfig *config) {
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(V_i, nDim+4);
@@ -895,17 +909,19 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   pF = pLP + pRM;
   Phi = fabs(mF);
 
-  val_residual[0] = 0.5*(mF*((Density_i*SoundSpeed_i)+(Density_j*SoundSpeed_j))-Phi*((Density_j*SoundSpeed_j)-(Density_i*SoundSpeed_i)));
+  Flux[0] = 0.5*(mF*((Density_i*SoundSpeed_i)+(Density_j*SoundSpeed_j))-Phi*((Density_j*SoundSpeed_j)-(Density_i*SoundSpeed_i)));
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[iDim+1] = 0.5*(mF*((Density_i*SoundSpeed_i*Velocity_i[iDim])+(Density_j*SoundSpeed_j*Velocity_j[iDim]))
-                                -Phi*((Density_j*SoundSpeed_j*Velocity_j[iDim])-(Density_i*SoundSpeed_i*Velocity_i[iDim])))+UnitNormal[iDim]*pF;
-  val_residual[nVar-1] = 0.5*(mF*((Density_i*SoundSpeed_i*Enthalpy_i)+(Density_j*SoundSpeed_j*Enthalpy_j))-Phi*((Density_j*SoundSpeed_j*Enthalpy_j)-(Density_i*SoundSpeed_i*Enthalpy_i)));
+    Flux[iDim+1] = 0.5*(mF*((Density_i*SoundSpeed_i*Velocity_i[iDim])+(Density_j*SoundSpeed_j*Velocity_j[iDim]))
+                      -Phi*((Density_j*SoundSpeed_j*Velocity_j[iDim])-(Density_i*SoundSpeed_i*Velocity_i[iDim])))+UnitNormal[iDim]*pF;
+  Flux[nVar-1] = 0.5*(mF*((Density_i*SoundSpeed_i*Enthalpy_i)+(Density_j*SoundSpeed_j*Enthalpy_j))-Phi*((Density_j*SoundSpeed_j*Enthalpy_j)-(Density_i*SoundSpeed_i*Enthalpy_i)));
 
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] *= Area;
+    Flux[iVar] *= Area;
 
-  AD::SetPreaccOut(val_residual, nVar);
+  AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
+
+  residual = Flux;
 
   /*--- Roe's Jacobian for AUSM (this must be fixed) ---*/
   if (implicit) {
@@ -941,8 +957,8 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
     /*--- Jacobias of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
-    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
 
     /*--- Roe's Flux approximation ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -951,9 +967,12 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
         /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
         for (kVar = 0; kVar < nVar; kVar++)
           Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*fabs(Lambda[kVar])*invP_Tensor[kVar][jVar];
-        val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
-        val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
+        Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
+        Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
       }
     }
+
+    jacobian_i = Jacobian_i;
+    jacobian_j = Jacobian_j;
   }
 }

@@ -67,7 +67,7 @@ void CCentBase_Flow::ComputeResidual(const su2double*  &residual,
                                      const su2double* const* &jacobian_j,
                                      CConfig *config) {
 
-  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double U_i[5] = {0.0}, U_j[5] = {0.0};
 
   bool preacc = SetPreaccInVars();
 
@@ -381,7 +381,7 @@ CCentLaxInc_Flow::~CCentLaxInc_Flow(void) {
 
 void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
-  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0, ProjVelocity = 0.0;
 
   /*--- Primitive variables at point i and j ---*/
@@ -591,7 +591,7 @@ CCentJSTInc_Flow::~CCentJSTInc_Flow(void) {
 
 void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
-  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0;
 
   /*--- Primitive variables at point i and j ---*/

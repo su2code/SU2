@@ -47,14 +47,16 @@ class CFluidModel;
  */
 class CNumerics {
 protected:
+  enum : size_t {MAXNDIM = 3}; /*!< \brief Max number of space dimensions, used in some static arrays. */
+
   unsigned short nDim, nVar;  /*!< \brief Number of dimensions and variables. */
   su2double Gamma;            /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;  /*!< \brief Fluids's Gamma - 1.0  . */
   su2double Minf;             /*!< \brief Free stream Mach number . */
   su2double Gas_Constant;     /*!< \brief Gas constant. */
   su2double *Vector;          /*!< \brief Auxiliary vector. */
-  su2double Prandtl_Lam;         /*!< \brief Laminar Prandtl's number. */
-  su2double Prandtl_Turb;        /*!< \brief Turbulent Prandtl's number. */
+  su2double Prandtl_Lam;      /*!< \brief Laminar Prandtl's number. */
+  su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl's number. */
   su2double
   **Flux_Tensor,      /*!< \brief Flux tensor (used for viscous and inviscid purposes. */
   *Proj_Flux_Tensor;  /*!< \brief Flux tensor projected in a direction. */
