@@ -199,7 +199,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 		SizMsh[GmfPrisms] = PyList_Size(pyPri);
 
 	if ( PyList_Check(pyCor) )
-		SizMsh[GmfCorners] = PyList_Size(pyCorners);
+		SizMsh[GmfCorners] = PyList_Size(pyCor);
 
 	if ( PyList_Check(pyMarkers) )
 		NbrMarkers = PyList_Size(pyMarkers);
