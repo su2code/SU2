@@ -28,7 +28,7 @@ if get_option('enable-normal')
       '_pysu2',
       cpp_source,
       dependencies: [wrapper_deps, common_dep, su2_deps],
-      objects: su2_cfd.extract_all_objects(),
+      objects: su2_cfd_lib.extract_all_objects(),
       install: true,
       include_directories : mpi4py_include,
       cpp_args : [default_warning_flags,su2_cpp_args],
