@@ -222,7 +222,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 	       	PyObject *oo = PyList_GetItem(pyCor,idx+0);
 	       	if ( PyInt_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[0] = (int) PyInt_AS_LONG(oo);
 	       	}
 				
 				oo = PyList_GetItem(pyCor,idx+1);
