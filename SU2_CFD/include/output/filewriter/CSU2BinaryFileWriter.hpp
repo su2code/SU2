@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -39,14 +39,11 @@ public:
   const static string fileExt;
 
   /*!
-   * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fields - A list of field names
-   * \param[in] nDim - Physical dimension
-   * \param[in] fileName - The name of the file
-   * \param[in] data_sorter - The parallel sorted data to write
+   * \brief Construct a file writer using field names and the data sorter.
+   * \param[in] valFileName - The name of the file
+   * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim,
-                       string fileName, CParallelDataSorter* data_sorter);
+  CSU2BinaryFileWriter(string valFileName, CParallelDataSorter* valDataSorter);
 
   /*!
    * \brief Destructor
