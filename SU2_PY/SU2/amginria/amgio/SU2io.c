@@ -579,9 +579,9 @@ int LoadSU2Corners(FILE *FilHdl, Mesh *Msh)
 
     if ( typ == SU2_CORNER ) {
     	fscanf(FilHdl, "%d", &buf);
-    	swi[s] = buf+1;
-    	if ( swi[s] > Msh->NbrVer ) {
-			printf("  ## ERROR Corners: vertex out of bound (vid=%d)\n", swi[s]);
+    	swi[0] = buf+1;
+    	if ( swi[0] > Msh->NbrVer ) {
+			printf("  ## ERROR Corners: vertex out of bound (vid=%d)\n", swi[0]);
 			return 0;
 		}
 
