@@ -167,14 +167,18 @@ public:
    * \input rank - the processor rank.
    * \return The beginning node ID.
    */
-  unsigned long GetNodeBegin(unsigned short rank){return linearPartitioner->GetFirstIndexOnRank(rank);}
+  virtual unsigned long GetNodeBegin(unsigned short rank) const {
+    return linearPartitioner->GetFirstIndexOnRank(rank);
+  }
 
   /*!
    * \brief Ending node ID of the linear partition owned by a specific processor.
-   * \input rank - the processor rank.
+   * \param rank - the processor rank.
    * \return The ending node ID.
    */
-  unsigned long GetNodeEnd(unsigned short rank){return linearPartitioner->GetLastIndexOnRank(rank);}
+  unsigned long GetNodeEnd(unsigned short rank) const {
+    return linearPartitioner->GetLastIndexOnRank(rank);
+  }
 
   /*!
    * \brief Get the value of the linear partitioned data.
@@ -195,7 +199,7 @@ public:
    * \input iPoint - the point ID.
    * \return Global index of a specific point.
    */
-  virtual unsigned long GetGlobalIndex(unsigned long iPoint){return 0;}
+  virtual unsigned long GetGlobalIndex(unsigned long iPoint) const { return 0; }
 
   /*!
    * \brief Get the cumulated number of points
@@ -232,4 +236,14 @@ public:
   su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField){
     return connSend[Index[iPoint] + iField];
   }
+
+  /*!
+   * \brief Get the Processor ID a Point belongs to.
+   * \param[in] iPoint - global renumbered ID of the point
+   * \return The rank/processor number.
+   */
+  virtual unsigned short FindProcessor(unsigned long iPoint) const {
+    return linearPartitioner->GetRankContainingIndex(iPoint);
+  }
+
 };
