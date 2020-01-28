@@ -3495,7 +3495,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
       
       /*--- Loop over this partition to collect the current variable ---*/
       
-      jPoint = 0; su2double *Stress;
+      jPoint = 0; const su2double *Stress;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Check for halos & write only if requested ---*/
@@ -3556,7 +3556,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
       
       /*--- Loop over this partition to collect the current variable ---*/
       
-      jPoint = 0; su2double *Stress;
+      jPoint = 0; const su2double *Stress;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Check for halos & write only if requested ---*/
@@ -14220,7 +14220,8 @@ void COutputLegacy::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometr
   unsigned long iPoint, jPoint, FirstIndex = NONE, iMarker, iVertex;
   unsigned long nVar_First = 0, nVar_Consv_Par = 0;
   
-  su2double *Node_Vel = NULL, *Node_Accel = NULL, *Stress = NULL;
+  su2double *Node_Vel = NULL, *Node_Accel = NULL;
+  const su2double *Stress = NULL;
 
   bool Wrt_Halo   = config->GetWrt_Halo(), isPeriodic;
   int *Local_Halo = NULL;

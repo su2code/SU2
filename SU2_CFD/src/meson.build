@@ -17,7 +17,6 @@ su2_cfd_src = files(['solver_direct_transition.cpp',
                      'numerics_direct_turbulent.cpp',
                      'numerics_direct_transition.cpp',
                      'solver_template.cpp',
-                     'solver_direct_elasticity.cpp',
                      'definition_structure.cpp',
                      'numerics_direct_mean_inc.cpp',
                      'solver_direct_turbulent.cpp',
@@ -92,7 +91,8 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                       'variables/CEulerVariable.cpp'])
 
 su2_cfd_src += files(['solvers/CMeshSolver.cpp',
-                      'solvers/CDiscAdjMeshSolver.cpp'])
+                      'solvers/CDiscAdjMeshSolver.cpp',
+                      'solvers/CFEASolver.cpp'])
 
 su2_cfd_src += files(['numerics/elasticity/CFEAElasticity.cpp',
                       'numerics/elasticity/CFEALinearElasticity.cpp',

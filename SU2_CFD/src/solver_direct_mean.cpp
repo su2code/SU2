@@ -16003,6 +16003,8 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
+  su2double Temperature_Ref = config->GetTemperature_Ref();
+
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Identify the boundary ---*/
@@ -16092,17 +16094,31 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
       /*--- Compute the normal gradient in temperature using Twall ---*/
 
       There = nodes->GetTemperature(Point_Normal);
-      Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0);
+      Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
 
-      HF_FactorHere = thermal_conductivity*config->GetViscosity_Ref()/dist_ij;
-      HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 2);
+      if ((config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX) ||
+          (config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
-      Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
+        /*--- Compute wall temperature from both temperatures ---*/
 
-      // this will be changed soon...
-      Twall = GetConjugateHeatVariable(val_marker, iVertex, 0);
+        HF_FactorHere = thermal_conductivity*config->GetViscosity_Ref()/dist_ij;
+        HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 2);
 
-      dTdn = -(There - Twall)/dist_ij;
+        Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
+        dTdn = -(There - Twall)/dist_ij;
+      }
+      else if ((config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_NEUMANN_HEATFLUX) ||
+              (config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX)) {
+
+        /*--- (Directly) Set wall temperature to conjugate temperature. ---*/
+
+        Twall = Tconjugate;
+        dTdn = -(There - Twall)/dist_ij;
+      }
+      else {
+
+        SU2_MPI::Error(string("Unknown CHT coupling method."), CURRENT_FUNCTION);
+      }
 
       /*--- Apply a weak boundary condition for the energy equation.
        Compute the residual due to the prescribed heat flux. ---*/
@@ -16281,7 +16297,6 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
           Jacobian.DeleteValsRowi(total_index);
         }
       }
-
     }
   }
 }

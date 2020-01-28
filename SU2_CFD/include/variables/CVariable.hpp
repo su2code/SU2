@@ -1756,7 +1756,7 @@ public:
    * \brief A virtual member.
 
    */
-  inline virtual su2double *GetStress_FEM(unsigned long iPoint) {return nullptr;}
+  inline virtual const su2double *GetStress_FEM(unsigned long iPoint) const {return nullptr;}
 
   /*!
    * \brief A virtual member.

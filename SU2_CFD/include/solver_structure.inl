@@ -72,11 +72,11 @@ inline void CSolver::SetFSI_Residual(su2double val_FSI_residual) { }
 
 inline void CSolver::SetRelaxCoeff(su2double val_relaxecoeff_history) { }
 
-inline su2double CSolver::GetRelaxCoeff(void) { return 0.0; }
+inline su2double CSolver::GetRelaxCoeff(void) const { return 0.0; }
 
-inline su2double CSolver::GetForceCoeff(void) { return 0.0; }
+inline su2double CSolver::GetForceCoeff(void) const { return 0.0; }
 
-inline su2double CSolver::GetFSI_Residual(void) { return 0.0; }
+inline su2double CSolver::GetFSI_Residual(void) const { return 0.0; }
 
 inline void CSolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config) { }
 
@@ -386,19 +386,19 @@ inline su2double CSolver::GetTotal_CpDiff() { return 0; }
 
 inline su2double CSolver::GetTotal_HeatFluxDiff() { return 0; }
 
-inline su2double CSolver::GetTotal_CFEA() { return 0; }
+inline su2double CSolver::GetTotal_CFEA() const { return 0; }
 
 inline su2double CSolver::GetTotal_CNearFieldOF() { return 0; }
 
-inline su2double CSolver::GetTotal_OFRefGeom() { return 0; }
+inline su2double CSolver::GetTotal_OFRefGeom() const { return 0; }
 
-inline su2double CSolver::GetTotal_OFRefNode() { return 0; }
+inline su2double CSolver::GetTotal_OFRefNode() const { return 0; }
 
-inline su2double CSolver::GetTotal_OFVolFrac() { return 0; }
+inline su2double CSolver::GetTotal_OFVolFrac() const { return 0; }
 
-inline su2double CSolver::GetTotal_OFCompliance() { return 0; }
+inline su2double CSolver::GetTotal_OFCompliance() const { return 0; }
 
-inline bool CSolver::IsElementBased(void){ return false; }
+inline bool CSolver::IsElementBased(void) const { return false; }
 
 inline void CSolver::AddTotal_ComboObj(su2double val_obj) {}
 
@@ -416,9 +416,9 @@ inline void CSolver::SetTotal_OFRefGeom(su2double val_ofrefgeom) { }
 
 inline void CSolver::SetTotal_OFRefNode(su2double val_ofrefnode) { }
 
-inline su2double CSolver::GetWAitken_Dyn(void) { return 0; }
+inline su2double CSolver::GetWAitken_Dyn(void) const { return 0; }
 
-inline su2double CSolver::GetWAitken_Dyn_tn1(void) { return 0; }
+inline su2double CSolver::GetWAitken_Dyn_tn1(void) const { return 0; }
 
 inline void CSolver::SetWAitken_Dyn(su2double waitk) {  }
 
@@ -426,7 +426,7 @@ inline void CSolver::SetWAitken_Dyn_tn1(su2double waitk_tn1) {  }
 
 inline void CSolver::SetLoad_Increment(su2double val_loadIncrement) {  }
 
-inline su2double CSolver::GetLoad_Increment() { return 0; }
+inline su2double CSolver::GetLoad_Increment() const { return 0; }
 
 inline void CSolver::SetTotal_CNearFieldOF(su2double val_cnearfieldpress) { }
 
@@ -936,7 +936,7 @@ inline void CSolver::AddRes_Max_BGS(unsigned short val_var, su2double val_residu
 
 inline su2double CSolver::GetRes_Max_BGS(unsigned short val_var) { return Residual_Max_BGS[val_var]; }
 
-inline su2double CSolver::GetRes_FEM(unsigned short val_var) { return 0.0; }
+inline su2double CSolver::GetRes_FEM(unsigned short val_var) const { return 0.0; }
 
 inline unsigned long CSolver::GetPoint_Max(unsigned short val_var) { return Point_Max[val_var]; }
 
@@ -979,15 +979,7 @@ inline su2double* CSolver::GetVecSolDOFs(void) {return NULL;}
 
 inline unsigned long CSolver::GetnDOFsGlobal(void) {return 0;}
 
-inline void CSolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_Prestretch(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) { }
-
 inline su2double CSolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config) { return 0.0; }
-
-inline su2double CSolver::Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {return 0.0;}
                       
 inline void CSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
 
@@ -1003,13 +995,9 @@ inline void CSolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numeri
 
 inline void CSolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
 
-inline void CSolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }  
-
-inline void CSolver::Compute_IntegrationConstants(CConfig *config) { }
-
 inline void CSolver::SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { };
 
-inline su2double CSolver::GetFSI_ConvValue(unsigned short val_index) { return 0.0; }
+inline su2double CSolver::GetFSI_ConvValue(unsigned short val_index) const { return 0.0; }
 
 inline void CSolver::RegisterSolution(CGeometry *geometry_container, CConfig *config){}
 
@@ -1958,7 +1946,7 @@ inline void CSolver::DE_Sensitivity(CGeometry *geometry, CSolver **solver_contai
 
 inline void CSolver::Stiffness_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config){ }
 
-inline unsigned short CSolver::Get_iElem_iDe(unsigned long iElem){ return 0; }
+inline unsigned short CSolver::Get_iElem_iDe(unsigned long iElem) const { return 0; }
 
 inline void CSolver::Set_DV_Val(su2double val_EField, unsigned short i_DV){ }
 
@@ -2284,58 +2272,6 @@ inline su2double CHeatSolverFVM::GetConjugateHeatVariable(unsigned short val_mar
 
 inline void CHeatSolverFVM::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
   ConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*ConjugateVar[val_marker][val_vertex][pos_var]; }
-
-inline unsigned short CFEASolver::Get_iElem_iDe(unsigned long iElem){ return iElem_iDe[iElem]; }
-
-inline su2double CFEASolver::GetRes_FEM(unsigned short val_var) { return Conv_Check[val_var]; }
-
-inline su2double CFEASolver::GetTotal_CFEA() { return Total_CFEA; }
-
-inline void CFEASolver::SetTotal_CFEA(su2double cfea) { Total_CFEA = cfea; }
-
-inline void CFEASolver::SetTotal_OFRefGeom(su2double val_ofrefgeom) { Total_OFRefGeom = val_ofrefgeom; }
-
-inline void CFEASolver::SetTotal_OFRefNode(su2double val_ofrefnode) { Total_OFRefNode = val_ofrefnode; }
-
-inline su2double CFEASolver::GetWAitken_Dyn(void) { return WAitken_Dyn; }
-
-inline su2double CFEASolver::GetWAitken_Dyn_tn1(void) { return WAitken_Dyn_tn1; }
-
-inline void CFEASolver::SetWAitken_Dyn(su2double waitk) { WAitken_Dyn = waitk; }
-
-inline void CFEASolver::SetWAitken_Dyn_tn1(su2double waitk_tn1) { WAitken_Dyn_tn1 = waitk_tn1; }
-
-inline void CFEASolver::SetLoad_Increment(su2double val_loadIncrement) { loadIncrement = val_loadIncrement; }
-
-inline su2double CFEASolver::GetLoad_Increment(void) { return loadIncrement; }
-
-inline void CFEASolver::SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { FSI_Conv[val_index] = val_criteria; }
-
-inline su2double CFEASolver::GetFSI_ConvValue(unsigned short val_index){ return FSI_Conv[val_index]; }
-
-inline su2double CFEASolver::GetTotal_OFRefGeom(void){ return Total_OFRefGeom; }
-
-inline su2double CFEASolver::GetTotal_OFRefNode(void){ return Total_OFRefNode; }
-
-inline su2double CFEASolver::GetTotal_OFVolFrac(void){ return Total_OFVolFrac; }
-
-inline su2double CFEASolver::GetTotal_OFCompliance(void){ return Total_OFCompliance; }
-
-inline bool CFEASolver::IsElementBased(void){ return element_based; }
-
-inline void CFEASolver::SetForceCoeff(su2double val_forcecoeff_history) { ForceCoeff = val_forcecoeff_history; }
-
-inline void CFEASolver::SetRelaxCoeff(su2double val_relaxecoeff_history) { RelaxCoeff = val_relaxecoeff_history; }
-
-inline void CFEASolver::SetFSI_Residual(su2double val_FSI_residual) { FSI_Residual = val_FSI_residual; }
-
-inline su2double CFEASolver::GetForceCoeff(void) { return ForceCoeff; }
-
-inline su2double CFEASolver::GetRelaxCoeff(void) { return RelaxCoeff; }
-
-inline su2double CFEASolver::GetFSI_Residual(void) { return FSI_Residual; }
-
-inline su2double CFEASolver::Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {return geometry->node[indexNode]->GetCoord(iDim);}
 
 inline void CSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config) {}
 
