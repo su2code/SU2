@@ -35,12 +35,15 @@
  * \ingroup ConvDiscr
  * \author F. Palacios
  */
-class CUpwCUSP_Flow : public CNumerics {
+class CUpwCUSP_Flow final : public CNumerics {
 
 private:
-  su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j;
+  su2double Velocity_i[MAXNDIM], Velocity_j[MAXNDIM], *ProjFlux_i, *ProjFlux_j;
   bool implicit;
 
+  su2double* Flux;        /*!< \brief The flux accross the face. */
+  su2double** Jacobian_i; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j; /*!< \brief The Jacobian w.r.t. point j after computation. */
 public:
 
   /*!
@@ -63,6 +66,6 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                       CConfig *config);
+  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
+                       const su2double* const* &jacobian_j, CConfig *config) override;
 };

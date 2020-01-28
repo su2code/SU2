@@ -38,24 +38,35 @@ CUpwCUSP_Flow::CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, C
     cout << "WARNING: Grid velocities are NOT yet considered by the CUSP scheme." << endl;
 
   /*--- Allocate some structures ---*/
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
+  Flux = new su2double [nVar];
   ProjFlux_i = new su2double [nVar];
   ProjFlux_j = new su2double [nVar];
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
+  }
 }
 
 CUpwCUSP_Flow::~CUpwCUSP_Flow(void) {
-  delete [] Velocity_i;
-  delete [] Velocity_j;
+  delete [] Flux;
   delete [] ProjFlux_i;
   delete [] ProjFlux_j;
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian_i[iVar];
+    delete [] Jacobian_j[iVar];
+  }
+  delete [] Jacobian_i;
+  delete [] Jacobian_j;
 }
 
-void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                                     CConfig *config) {
-
+void CUpwCUSP_Flow::ComputeResidual(const su2double*  &residual,
+                                    const su2double* const* &jacobian_i,
+                                    const su2double* const* &jacobian_j,
+                                    CConfig *config) {
   unsigned short iDim, iVar;
-  su2double Diff_U[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double Diff_U[5] = {0.0};
 
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(V_i, nDim+4);
@@ -134,7 +145,7 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Compute the residual ---*/
 
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = 0.5*((1.0+Beta)*ProjFlux_i[iVar] + (1.0-Beta)*ProjFlux_j[iVar] + Nu_c*Diff_U[iVar])*Area;
+    Flux[iVar] = 0.5*((1.0+Beta)*ProjFlux_i[iVar] + (1.0-Beta)*ProjFlux_j[iVar] + Nu_c*Diff_U[iVar])*Area;
 
   /*--- Jacobian computation ---*/
 
@@ -142,8 +153,8 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
     /*--- Flux average and difference contributions ---*/
 
-    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5*(1.0+Beta), val_Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5*(1.0-Beta), val_Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5*(1.0+Beta), Jacobian_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5*(1.0-Beta), Jacobian_j);
 
     /*--- Solution difference (scalar dissipation) contribution ---*/
 
@@ -152,24 +163,29 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     /*--- n-1 diagonal entries ---*/
 
     for (iVar = 0; iVar < (nVar-1); iVar++) {
-      val_Jacobian_i[iVar][iVar] += cte_0;
-      val_Jacobian_j[iVar][iVar] -= cte_0;
+      Jacobian_i[iVar][iVar] += cte_0;
+      Jacobian_j[iVar][iVar] -= cte_0;
     }
 
     /*--- Last rows ---*/
 
-    val_Jacobian_i[nVar-1][0] += cte_0*Gamma_Minus_One*0.5*sq_vel_i;
+    Jacobian_i[nVar-1][0] += cte_0*Gamma_Minus_One*0.5*sq_vel_i;
     for (iDim = 0; iDim < nDim; iDim++)
-      val_Jacobian_i[nVar-1][iDim+1] -= cte_0*Gamma_Minus_One*Velocity_i[iDim];
-    val_Jacobian_i[nVar-1][nVar-1] += cte_0*Gamma;
+      Jacobian_i[nVar-1][iDim+1] -= cte_0*Gamma_Minus_One*Velocity_i[iDim];
+    Jacobian_i[nVar-1][nVar-1] += cte_0*Gamma;
 
-    val_Jacobian_j[nVar-1][0] -= cte_0*Gamma_Minus_One*0.5*sq_vel_j;
+    Jacobian_j[nVar-1][0] -= cte_0*Gamma_Minus_One*0.5*sq_vel_j;
     for (iDim = 0; iDim < nDim; iDim++)
-      val_Jacobian_j[nVar-1][iDim+1] += cte_0*Gamma_Minus_One*Velocity_j[iDim];
-    val_Jacobian_j[nVar-1][nVar-1] -= cte_0*Gamma;
+      Jacobian_j[nVar-1][iDim+1] += cte_0*Gamma_Minus_One*Velocity_j[iDim];
+    Jacobian_j[nVar-1][nVar-1] -= cte_0*Gamma;
 
   }
 
-  AD::SetPreaccOut(val_residual, nVar);
+  AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
+
+  residual = Flux;
+  jacobian_i = Jacobian_i;
+  jacobian_j = Jacobian_j;
+
 }
