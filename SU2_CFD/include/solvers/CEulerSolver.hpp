@@ -243,13 +243,7 @@ protected:
   *Surface_HF_Visc,     /*!< \brief Total (integrated) heat flux for each monitored surface. */
   *Surface_MaxHF_Visc;  /*!< \brief Maximum heat flux for each monitored surface. */
 
-  su2double
-  *SecondaryVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
-  *SecondaryVar_j;  /*!< \brief Auxiliary vector for storing the solution at point j. */
-  su2double
-  *PrimVar_i,      /*!< \brief Auxiliary vector for storing the solution at point i. */
-  *PrimVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
-  su2double **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
+  su2double **LowMach_Preconditioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
   bool space_centered,  /*!< \brief True if space centered scheeme used. */
   euler_implicit,       /*!< \brief True if euler implicit scheme used. */
   least_squares;        /*!< \brief True if computing gradients by least squares. */

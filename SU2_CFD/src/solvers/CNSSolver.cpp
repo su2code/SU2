@@ -274,9 +274,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
 
   if (roe_turkel || low_mach_prec) {
-    LowMach_Precontioner = new su2double* [nVar];
+    LowMach_Preconditioner = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar ++)
-      LowMach_Precontioner[iVar] = new su2double[nVar];
+      LowMach_Preconditioner[iVar] = new su2double[nVar];
   }
 
   /*--- Initialize the solution and right hand side vectors for storing

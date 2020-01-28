@@ -84,7 +84,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 
   /*--- Numerical methods array initialization ---*/
 
-  LowMach_Precontioner = NULL;
+  LowMach_Preconditioner = NULL;
   CharacPrimVar = NULL;
 
   DonorPrimVar = NULL; DonorGlobalIndex = NULL;
@@ -265,7 +265,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   iPoint_UndLapl = NULL;
   jPoint_UndLapl = NULL;
-  LowMach_Precontioner = NULL;
+  LowMach_Preconditioner = NULL;
   CharacPrimVar = NULL;
   DonorPrimVar = NULL; DonorGlobalIndex = NULL;
   ActDisk_DeltaP = NULL; ActDisk_DeltaT = NULL;
@@ -408,9 +408,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
 
   if (roe_turkel || low_mach_prec) {
-    LowMach_Precontioner = new su2double* [nVar];
+    LowMach_Preconditioner = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar ++)
-      LowMach_Precontioner[iVar] = new su2double[nVar];
+      LowMach_Preconditioner[iVar] = new su2double[nVar];
   }
 
   /*--- Initialize the solution and right hand side vectors for storing
@@ -939,10 +939,10 @@ CEulerSolver::~CEulerSolver(void) {
   delete [] Exhaust_Pressure;
   delete [] Exhaust_Temperature;
 
-  if (LowMach_Precontioner != NULL) {
+  if (LowMach_Preconditioner != NULL) {
     for (iVar = 0; iVar < nVar; iVar ++)
-      delete [] LowMach_Precontioner[iVar];
-    delete [] LowMach_Precontioner;
+      delete [] LowMach_Preconditioner[iVar];
+    delete [] LowMach_Preconditioner;
   }
 
   if (CPressure != NULL) {
@@ -5119,8 +5119,8 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
         SetPreconditioner(config, iPoint);
         for (iVar = 0; iVar < nVar; iVar ++ )
           for (jVar = 0; jVar < nVar; jVar ++ )
-            LowMach_Precontioner[iVar][jVar] = Delta*LowMach_Precontioner[iVar][jVar];
-        Jacobian.AddBlock(iPoint, iPoint, LowMach_Precontioner);
+            LowMach_Preconditioner[iVar][jVar] = Delta*LowMach_Preconditioner[iVar][jVar];
+        Jacobian.AddBlock(iPoint, iPoint, LowMach_Preconditioner);
       }
       else {
         Jacobian.AddVal2Diag(iPoint, Delta);
@@ -5309,30 +5309,30 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   sq_vel = nodes->GetVelocity2(iPoint);
 
   /*---Calculating the inverse of the preconditioning matrix that multiplies the time derivative  */
-  LowMach_Precontioner[0][0] = 0.5*sq_vel;
-  LowMach_Precontioner[0][nVar-1] = 1.0;
+  LowMach_Preconditioner[0][0] = 0.5*sq_vel;
+  LowMach_Preconditioner[0][nVar-1] = 1.0;
   for (iDim = 0; iDim < nDim; iDim ++)
-    LowMach_Precontioner[0][1+iDim] = -1.0*U_i[iDim+1]/rho;
+    LowMach_Preconditioner[0][1+iDim] = -1.0*U_i[iDim+1]/rho;
 
   for (iDim = 0; iDim < nDim; iDim ++) {
-    LowMach_Precontioner[iDim+1][0] = 0.5*sq_vel*U_i[iDim+1]/rho;
-    LowMach_Precontioner[iDim+1][nVar-1] = U_i[iDim+1]/rho;
+    LowMach_Preconditioner[iDim+1][0] = 0.5*sq_vel*U_i[iDim+1]/rho;
+    LowMach_Preconditioner[iDim+1][nVar-1] = U_i[iDim+1]/rho;
     for (jDim = 0; jDim < nDim; jDim ++) {
-      LowMach_Precontioner[iDim+1][1+jDim] = -1.0*U_i[jDim+1]/rho*U_i[iDim+1]/rho;
+      LowMach_Preconditioner[iDim+1][1+jDim] = -1.0*U_i[jDim+1]/rho*U_i[iDim+1]/rho;
     }
   }
 
-  LowMach_Precontioner[nVar-1][0] = 0.5*sq_vel*enthalpy;
-  LowMach_Precontioner[nVar-1][nVar-1] = enthalpy;
+  LowMach_Preconditioner[nVar-1][0] = 0.5*sq_vel*enthalpy;
+  LowMach_Preconditioner[nVar-1][nVar-1] = enthalpy;
   for (iDim = 0; iDim < nDim; iDim ++)
-    LowMach_Precontioner[nVar-1][1+iDim] = -1.0*U_i[iDim+1]/rho*enthalpy;
+    LowMach_Preconditioner[nVar-1][1+iDim] = -1.0*U_i[iDim+1]/rho*enthalpy;
 
 
   for (iVar = 0; iVar < nVar; iVar ++ ) {
     for (jVar = 0; jVar < nVar; jVar ++ ) {
-      LowMach_Precontioner[iVar][jVar] = (parameter - 1.0) * ((Gamma-1.0)/(soundspeed*soundspeed))*LowMach_Precontioner[iVar][jVar];
+      LowMach_Preconditioner[iVar][jVar] = (parameter - 1.0) * ((Gamma-1.0)/(soundspeed*soundspeed))*LowMach_Preconditioner[iVar][jVar];
       if (iVar == jVar)
-        LowMach_Precontioner[iVar][iVar] += 1.0;
+        LowMach_Preconditioner[iVar][iVar] += 1.0;
     }
   }
 
