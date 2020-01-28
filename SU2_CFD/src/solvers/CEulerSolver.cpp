@@ -3326,16 +3326,19 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Compute residuals, and Jacobians ---*/
 
-    numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+    const su2double* flux;
+    const su2double* const* jacobian_i;
+    const su2double* const* jacobian_j;
+    numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
 
     /*--- Update convective and artificial dissipation residuals ---*/
 
-    LinSysRes.AddBlock(iPoint, Res_Conv);
-    LinSysRes.SubtractBlock(jPoint, Res_Conv);
+    LinSysRes.AddBlock(iPoint, flux);
+    LinSysRes.SubtractBlock(jPoint, flux);
 
     /*--- Set implicit computation ---*/
     if (implicit) {
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
+      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, jacobian_i, jacobian_j);
     }
   }
   } // end color loop
@@ -3597,11 +3600,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   /*--- Warning message about non-physical reconstructions ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-#ifdef HAVE_MPI
     SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-#else
-    counter_global = counter_local;
-#endif
+
     if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
   }
 }

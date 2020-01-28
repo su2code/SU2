@@ -41,23 +41,31 @@ CCentBase_Flow::CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar,
   /*--- Allocate required structures ---*/
   Diff_U = new su2double [nVar];
   Diff_Lapl = new su2double [nVar];
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
-  MeanVelocity = new su2double [nDim];
   ProjFlux = new su2double [nVar];
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
+  }
 }
 
 CCentBase_Flow::~CCentBase_Flow(void) {
   delete [] Diff_U;
   delete [] Diff_Lapl;
-  delete [] Velocity_i;
-  delete [] Velocity_j;
-  delete [] MeanVelocity;
   delete [] ProjFlux;
+  for (iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian_i[iVar];
+    delete [] Jacobian_j[iVar];
+  }
+  delete [] Jacobian_i;
+  delete [] Jacobian_j;
 }
 
-void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                                    CConfig *config) {
+void CCentBase_Flow::ComputeResidual(const su2double*  &residual,
+                                     const su2double* const* &jacobian_i,
+                                     const su2double* const* &jacobian_j,
+                                     CConfig *config) {
 
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
 
@@ -105,22 +113,17 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
   MeanEnergy = 0.5*(Energy_i+Energy_j);
 
-  /*--- Get projected flux tensor ---*/
+  /*--- Residual of the inviscid flux ---*/
 
   GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
 
-  /*--- Residual of the inviscid flux ---*/
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = ProjFlux[iVar];
-
-  /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
+  /*--- Jacobians of the inviscid flux, scale = 0.5 because ProjFlux ~ 0.5*(fc_i+fc_j)*Normal ---*/
 
   if (implicit) {
-    GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, 0.5, val_Jacobian_i);
+    GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, 0.5, Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
+        Jacobian_j[iVar][jVar] = Jacobian_i[iVar][jVar];
   }
 
   /*--- Adjustment due to grid motion ---*/
@@ -131,10 +134,10 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
       ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_residual[iVar] -= ProjGridVel * 0.5*(U_i[iVar] + U_j[iVar]);
+      ProjFlux[iVar] -= ProjGridVel * 0.5*(U_i[iVar] + U_j[iVar]);
       if (implicit) {
-        val_Jacobian_i[iVar][iVar] -= 0.5*ProjGridVel;
-        val_Jacobian_j[iVar][iVar] -= 0.5*ProjGridVel;
+        Jacobian_i[iVar][iVar] -= 0.5*ProjGridVel;
+        Jacobian_j[iVar][iVar] -= 0.5*ProjGridVel;
       }
     }
   }
@@ -173,12 +176,17 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   }
   Diff_U[nVar-1] = Density_i*Enthalpy_i-Density_j*Enthalpy_j;
 
-  DissipationTerm(val_residual, val_Jacobian_i, val_Jacobian_j);
+  DissipationTerm(ProjFlux, Jacobian_i, Jacobian_j);
 
   if (preacc) {
-    AD::SetPreaccOut(val_residual, nVar);
+    AD::SetPreaccOut(ProjFlux, nVar);
     AD::EndPreacc();
   }
+
+  residual = ProjFlux;
+  jacobian_i = Jacobian_i;
+  jacobian_j = Jacobian_j;
+
 }
 
 void CCentBase_Flow::ScalarDissipationJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
