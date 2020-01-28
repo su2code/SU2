@@ -7,7 +7,7 @@ Victorien Menier Feb 2016
 int AddSU2MeshSize(char *FilNam, int *SizMsh) 
 {
 	int i, NbrElt, iElt, typ, CptElt;
-  int NbrTri, NbrTet, NbrHex, NbrPyr, NbrRec, NbrLin, NbrWed, NbrP2Tri, NbrP2Lin;
+  int NbrTri, NbrTet, NbrHex, NbrPyr, NbrRec, NbrLin, NbrCor, NbrWed, NbrP2Tri, NbrP2Lin;
   int NbrMark, iMark;
   FILE *FilHdl = NULL;
   char    str[1024];
@@ -37,7 +37,7 @@ int AddSU2MeshSize(char *FilNam, int *SizMsh)
 		
   //--- Elements?
   
-  NbrTri = NbrTet = NbrHex = NbrPyr = NbrLin = NbrRec = NbrWed = NbrP2Tri = NbrP2Lin =  0;
+  NbrTri = NbrTet = NbrHex = NbrPyr = NbrLin = NbrCor = NbrRec = NbrWed = NbrP2Tri = NbrP2Lin =  0;
 	
 	NbrElt = GetSU2KeywordValue (FilHdl, "NELEM=");
 	
@@ -80,6 +80,9 @@ int AddSU2MeshSize(char *FilNam, int *SizMsh)
 	
  	rewind(FilHdl);
 	SizMsh[GmfVertices] = GetSU2KeywordValue (FilHdl, "NPOIN=");
+
+	rewind(FilHdl);
+	NbrCor = GetSU2KeywordValue (FilHdl, "NCORNERS=");
   
   //--- Boundary Elements?
 	NbrMark = 0;	
@@ -125,6 +128,7 @@ int AddSU2MeshSize(char *FilNam, int *SizMsh)
 	
   SizMsh[GmfTriangles]      = NbrTri+NbrP2Tri;
   SizMsh[GmfTetrahedra]     = NbrTet;
+  SizMsh[GmfCorners]        = NbrCor;
   SizMsh[GmfEdges]          = NbrLin+NbrP2Lin;
   SizMsh[GmfPrisms]         = NbrWed;
   SizMsh[GmfQuadrilaterals] = NbrRec;

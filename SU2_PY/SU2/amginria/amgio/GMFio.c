@@ -22,6 +22,7 @@ int AddGMFMeshSize (char *MshNam, int *SizMsh)
   SizMsh[GmfTriangles]  = GmfStatKwd(InpMsh, GmfTriangles);
 	SizMsh[GmfTetrahedra] = GmfStatKwd(InpMsh, GmfTetrahedra);
   SizMsh[GmfEdges]      = GmfStatKwd(InpMsh, GmfEdges);
+  SizMsh[GmfCorners]      = GmfStatKwd(InpMsh, GmfCorners);
 	SizMsh[GmfPrisms]     = GmfStatKwd(InpMsh, GmfPrisms);
   SizMsh[GmfPyramids]   = GmfStatKwd(InpMsh, GmfPyramids);
 	SizMsh[GmfHexahedra]   = GmfStatKwd(InpMsh, GmfHexahedra);
@@ -118,7 +119,7 @@ int LoadGMFMesh (char *MshNam, Mesh *Msh)
   //--- Read corners
 	NbrCor = GmfStatKwd(InpMsh, GmfCorners);	
 	GmfGotoKwd(InpMsh, GmfCorners);
-  for (i=1; i<=NbrTet; ++i) {
+  for (i=1; i<=NbrCor; ++i) {
 		GmfGetLin(InpMsh, GmfCorners, &bufInt[0], &ref);
 		Msh->NbrCor++;
 		AddCorner(Msh,Msh->NbrCor,bufInt,ref);
@@ -479,7 +480,7 @@ int WriteGMFMesh(char *nam, Mesh *Msh, int OptBin)
   }
 
   if ( Msh->NbrCor ) {
-  	//--- Write Edges
+  	//--- Write corners
   	GmfSetKwd(OutMsh, GmfCorners, NbrCor);
   	for (iCor=1; iCor<=NbrCor; ++iCor) {
   	  for (i=0; i<1; ++i) {

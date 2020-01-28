@@ -255,6 +255,10 @@ int FreeMesh(Mesh *Msh)
 		free(Msh->Ver);
 	}
 	
+  if ( Msh->Cor ) {
+    free(Msh->Cor);
+  }
+
 	if ( Msh->Efr ) {
 		free(Msh->Efr);
 	}
