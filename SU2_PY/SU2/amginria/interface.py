@@ -85,7 +85,7 @@ def amg_call_python(mesh, config):
     if 'xy' in mesh:    mesh['xy']  = mesh['xy'].tolist()
     if 'xyz' in mesh:   mesh['xyz'] = mesh['xyz'].tolist()
     
-    if 'Corners' in mesh:      mesh['Corners']      = mesh['Corners'].tolist() 
+    if 'Corners' in mesh:    mesh['Corners']    = mesh['Corners'].tolist() 
     if 'Edges' in mesh:      mesh['Edges']      = mesh['Edges'].tolist() 
     if 'Triangles' in mesh:  mesh['Triangles']  = mesh['Triangles'].tolist()
     if 'Tetrahedra' in mesh: mesh['Tetrahedra'] = mesh['Tetrahedra'].tolist()   
@@ -170,7 +170,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     Tri     = []
     Tet     = []
     Edg     = []
-    Edg     = []
+    Cor     = []
     Hex     = []
     Pyr     = []
     Pri     = []
@@ -201,6 +201,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     Tri = np.array(Tri).reshape(4*len(Tri)).tolist()
     Tet = np.array(Tet).reshape(5*len(Tet)).tolist()
     Edg = np.array(Edg).reshape(3*len(Edg)).tolist()
+    Cor = np.array(Cor).reshape(2*len(Cor)).tolist()
     
     if len(Sol) > 1 :
         SolSiz = len(Sol[1])
