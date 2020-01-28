@@ -44,8 +44,8 @@ void CTemplateSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 void CTemplateSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                         CConfig *config, unsigned short iMesh) { }
 
-void CTemplateSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                                 CConfig *config, unsigned short iMesh) { }
+void CTemplateSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) { }
 
 void CTemplateSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                                  CConfig *config, unsigned short iMesh) { }
