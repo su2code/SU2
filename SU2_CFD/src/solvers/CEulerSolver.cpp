@@ -3242,7 +3242,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  const bool jst_scheme = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
+  const bool jst_scheme = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
 
   /*--- Start OpenMP parallel section. ---*/
 
@@ -3350,6 +3350,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
+  /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
+  su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
+  su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
+
   /*--- Loop over all the edges ---*/
 
 #ifdef HAVE_OMP
@@ -3411,11 +3415,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     }
     else {
       /*--- Reconstruction ---*/
-
-      /*--- Static arrays of primitives and secondaries (thread safety). ---*/
-
-      su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
-      su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
       su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
