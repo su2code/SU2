@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/geometry/primal_grid/CQuadrilateral.hpp"
+#include "../../../include/geometry/primal_grid/CQuadrilateral.hpp"
 
 unsigned short CQuadrilateral::Faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
 

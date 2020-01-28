@@ -1,12 +1,12 @@
 /*!
- * \file solution_direct_heat.cpp
+ * \file CHeatSolverFVM.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
  * \version 7.0.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -26,8 +26,7 @@
  */
 
 
-#include "../include/solver_structure.hpp"
-#include "../include/variables/CHeatFVMVariable.hpp"
+#include "../../include/solvers/CHeatSolverFVM.hpp"
 
 CHeatSolverFVM::CHeatSolverFVM(void) : CSolver() {
 
@@ -43,7 +42,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   bool multizone = config->GetMultizone_Problem();
 
   int rank = MASTER_NODE;
-  
+
   bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
 
@@ -216,7 +215,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   }
 
   /*--- Heat flux in all the markers ---*/
-  
+
   HeatFlux = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     HeatFlux[iMarker] = new su2double [geometry->nVertex[iMarker]];
@@ -247,7 +246,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/
-  
+
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
 
@@ -257,16 +256,16 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
 }
 
 CHeatSolverFVM::~CHeatSolverFVM(void) {
-  
+
   unsigned short iMarker;
-  
+
   if (HeatFlux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] HeatFlux[iMarker];
     }
     delete [] HeatFlux;
   }
-  
+
   if (nodes != nullptr) delete nodes;
 }
 
@@ -310,12 +309,12 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   unsigned short iDim, iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
-  
+
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == INC_RANS)
                || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
-  
+
   bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
 
@@ -416,10 +415,10 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
    it down to the coarse levels. We alo call the preprocessing routine
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
-  
+
   solver[MESH_0][HEAT_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][HEAT_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
-  
+
   solver[MESH_0][HEAT_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -498,10 +497,10 @@ void CHeatSolverFVM::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config
   }
 
   /*--- MPI parallelization ---*/
-  
+
   InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
   CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
-  
+
   delete [] Diff;
 
 }
@@ -911,7 +910,7 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *Flow_Dir,  Vel_Mag;
   su2double *V_inlet, *V_domain;
-  
+
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == INC_RANS)
                || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
@@ -1095,7 +1094,7 @@ void CHeatSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iVertex, iPoint, total_index;
-  unsigned short iDim, iVar, iMarker;
+  unsigned short iDim, iVar;
 
   su2double thermal_diffusivity, rho_cp_solid, Temperature_Ref, T_Conjugate, Tinterface,
       Tnormal_Conjugate, HeatFluxDensity, HeatFlux, Area;
@@ -1244,9 +1243,9 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
           }
 
           HeatFlux[iMarker][iVertex] = thermal_diffusivity*dTdn*config->GetHeat_Flux_Ref();
-          
+
           HeatFlux_per_Marker[iMarker] += HeatFlux[iMarker][iVertex]*Area;
-          
+
         }
       }
     }
@@ -1284,7 +1283,7 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
           }
 
           HeatFlux[iMarker][iVertex] = thermal_diffusivity*dTdn*config->GetHeat_Flux_Ref();
-          
+
           HeatFlux_per_Marker[iMarker] += HeatFlux[iMarker][iVertex]*Area;
 
           /*--- We do only aim to compute averaged temperatures on the (interesting) heat flux walls ---*/
@@ -1328,12 +1327,12 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   su2double *Normal, Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb, Mean_ProjVel, Mean_BetaInc2, Mean_DensityInc, Mean_SoundSpeed, Lambda;
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
-  
+
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == INC_RANS)
                || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
-  
+
   bool turb = ((config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
@@ -1577,7 +1576,7 @@ void CHeatSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
-  
+
   /*--- Compute the root mean square residual ---*/
 
   SetResidual_RMS(geometry, config);
@@ -1672,7 +1671,7 @@ void CHeatSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
-  
+
   /*--- Compute the root mean square residual ---*/
 
   SetResidual_RMS(geometry, config);
@@ -1708,7 +1707,7 @@ void CHeatSolverFVM::SetInitialCondition(CGeometry **geometry, CSolver ***solver
           }
         }
         solver_container[iMesh][HEAT_SOL]->GetNodes()->SetSolution(iPoint,Solution);
-      }      
+      }
       solver_container[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
       solver_container[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     }
