@@ -36,7 +36,7 @@
  * \ingroup ConvDiscr
  * \author S. Copeland
  */
-class CUpwMSW_Flow : public CNumerics {
+class CUpwMSW_Flow final : public CNumerics {
 private:
   bool implicit;
   su2double *Diff_U;
@@ -47,6 +47,9 @@ private:
   su2double *Ust_i, *Ust_j, *Vst_i, *Vst_j, *Velst_i, *Velst_j;
   su2double **P_Tensor, **invP_Tensor;
   unsigned short nPrimVar, nVar, nDim;
+
+  su2double** Jacobian_i; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
 public:
 
@@ -70,6 +73,7 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
+                       const su2double* const* &jacobian_j, CConfig *config) override;
 
 };

@@ -42,8 +42,8 @@ CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CCo
   Lambda_i = new su2double [nVar];
   Lambda_j = new su2double [nVar];
 
-  u_i       = new su2double [nDim];
-  u_j       = new su2double [nDim];
+  u_i      = new su2double [nDim];
+  u_j      = new su2double [nDim];
   ust_i    = new su2double [nDim];
   ust_j    = new su2double [nDim];
   Vst_i    = new su2double [nPrimVar];
@@ -54,11 +54,15 @@ CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CCo
   Velst_i    = new su2double [nDim];
   Velst_j    = new su2double [nDim];
 
-  P_Tensor    = new su2double* [nVar];
-  invP_Tensor  = new su2double* [nVar];
+  P_Tensor   = new su2double* [nVar];
+  invP_Tensor= new su2double* [nVar];
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar]    = new su2double [nVar];
+    P_Tensor[iVar] = new su2double [nVar];
     invP_Tensor[iVar] = new su2double [nVar];
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
   }
 
 }
@@ -85,15 +89,20 @@ CUpwMSW_Flow::~CUpwMSW_Flow(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     delete [] P_Tensor[iVar];
     delete [] invP_Tensor[iVar];
+    delete [] Jacobian_i[iVar];
+    delete [] Jacobian_j[iVar];
   }
   delete [] P_Tensor;
   delete [] invP_Tensor;
+  delete [] Jacobian_i;
+  delete [] Jacobian_j;
 
 }
 
-void CUpwMSW_Flow::ComputeResidual(su2double *val_residual,
-                                   su2double **val_Jacobian_i,
-                                   su2double **val_Jacobian_j, CConfig *config) {
+void CUpwMSW_Flow::ComputeResidual(const su2double*  &residual,
+                                    const su2double* const* &jacobian_i,
+                                    const su2double* const* &jacobian_j,
+                                    CConfig *config) {
 
   unsigned short iDim, iVar, jVar, kVar;
   su2double P_i, P_j;
@@ -124,8 +133,8 @@ void CUpwMSW_Flow::ComputeResidual(su2double *val_residual,
   if (implicit) {
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_i[iVar][jVar] = 0.0;
-        val_Jacobian_j[iVar][jVar] = 0.0;
+        Jacobian_i[iVar][jVar] = 0.0;
+        Jacobian_j[iVar][jVar] = 0.0;
       }
     }
   }
@@ -179,11 +188,11 @@ void CUpwMSW_Flow::ComputeResidual(su2double *val_residual,
   /*--- Flow eigenvalues at i (Lambda+) ---*/
 
   for (iDim = 0; iDim < nDim; iDim++) {
-  Lambda_i[iDim]      = 0.5*(ProjVelst_i + fabs(ProjVelst_i));
+  Lambda_i[iDim] = 0.5*(ProjVelst_i + fabs(ProjVelst_i));
   }
 
-  Lambda_i[nDim] = 0.5*( ProjVelst_i + Vst_i[nDim+4] + fabs(ProjVelst_i + Vst_i[nDim+4])  );
-  Lambda_i[nDim+1]   = 0.5*( ProjVelst_i - Vst_i[nDim+4] + fabs(ProjVelst_i - Vst_i[nDim+4])  );
+  Lambda_i[nDim]   = 0.5*( ProjVelst_i + Vst_i[nDim+4] + fabs(ProjVelst_i + Vst_i[nDim+4]) );
+  Lambda_i[nDim+1] = 0.5*( ProjVelst_i - Vst_i[nDim+4] + fabs(ProjVelst_i - Vst_i[nDim+4]) );
 
   /*--- Compute projected P, invP, and Lambda ---*/
 
@@ -202,19 +211,17 @@ void CUpwMSW_Flow::ComputeResidual(su2double *val_residual,
         Proj_ModJac_Tensor_i += P_Tensor[iVar][kVar]*Lambda_i[kVar]*invP_Tensor[kVar][jVar];
       Fc_i[iVar] += Proj_ModJac_Tensor_i*U_i[jVar]*Area;
       if (implicit)
-        val_Jacobian_i[iVar][jVar] += Proj_ModJac_Tensor_i*Area;
+        Jacobian_i[iVar][jVar] += Proj_ModJac_Tensor_i*Area;
     }
   }
 
   /*--- Flow eigenvalues at j (Lambda-) ---*/
 
   for (iDim = 0; iDim < nDim; iDim++) {
-    Lambda_j[iDim]          = 0.5*(ProjVelst_j - fabs(ProjVelst_j));
+    Lambda_j[iDim] = 0.5*(ProjVelst_j - fabs(ProjVelst_j));
   }
-  Lambda_j[nDim] = 0.5*(     ProjVelst_j + Vst_j[nDim+4] -
-                                   fabs(ProjVelst_j + Vst_j[nDim+4])  );
-  Lambda_j[nDim+1]   = 0.5*(     ProjVelst_j - Vst_j[nDim+4] -
-                                   fabs(ProjVelst_j - Vst_j[nDim+4])  );
+  Lambda_j[nDim]   = 0.5*( ProjVelst_j + Vst_j[nDim+4] - fabs(ProjVelst_j + Vst_j[nDim+4]) );
+  Lambda_j[nDim+1] = 0.5*( ProjVelst_j - Vst_j[nDim+4] - fabs(ProjVelst_j - Vst_j[nDim+4]) );
 
   /*--- Compute projected P, invP, and Lambda ---*/
 
@@ -231,14 +238,18 @@ void CUpwMSW_Flow::ComputeResidual(su2double *val_residual,
         Proj_ModJac_Tensor_j += P_Tensor[iVar][kVar]*Lambda_j[kVar]*invP_Tensor[kVar][jVar];
       Fc_j[iVar] += Proj_ModJac_Tensor_j*U_j[jVar]*Area;
       if (implicit)
-        val_Jacobian_j[iVar][jVar] += Proj_ModJac_Tensor_j*Area;
+        Jacobian_j[iVar][jVar] += Proj_ModJac_Tensor_j*Area;
     }
   }
 
-  /*--- Flux splitting ---*/
+  /*--- Flux splitting, use the i flux as final output. ---*/
 
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = Fc_i[iVar]+Fc_j[iVar];
+    Fc_i[iVar] += Fc_j[iVar];
   }
+  residual = Fc_i;
+
+  jacobian_i = Jacobian_i;
+  jacobian_j = Jacobian_j;
 
 }
