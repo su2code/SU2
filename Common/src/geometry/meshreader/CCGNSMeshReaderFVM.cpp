@@ -26,8 +26,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/toolboxes/CLinearPartitioner.hpp"
-#include "../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
+#include "../../../include/toolboxes/CLinearPartitioner.hpp"
+#include "../../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
 
 CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(CConfig        *val_config,
                                        unsigned short val_iZone,

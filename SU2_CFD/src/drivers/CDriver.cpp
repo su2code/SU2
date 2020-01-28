@@ -41,6 +41,24 @@
 
 #include "../../../Common/include/omp_structure.hpp"
 
+#include "../../include/solvers/CEulerSolver.hpp"
+#include "../../include/solvers/CIncEulerSolver.hpp"
+#include "../../include/solvers/CNSSolver.hpp"
+#include "../../include/solvers/CIncNSSolver.hpp"
+#include "../../include/solvers/CTurbSASolver.hpp"
+#include "../../include/solvers/CTurbSSTSolver.hpp"
+#include "../../include/solvers/CTransLMSolver.hpp"
+#include "../../include/solvers/CAdjEulerSolver.hpp"
+#include "../../include/solvers/CAdjNSSolver.hpp"
+#include "../../include/solvers/CAdjTurbSolver.hpp"
+#include "../../include/solvers/CHeatSolverFVM.hpp"
+#include "../../include/solvers/CFEASolver.hpp"
+#include "../../include/solvers/CTemplateSolver.hpp"
+#include "../../include/solvers/CDiscAdjSolver.hpp"
+#include "../../include/solvers/CDiscAdjFEASolver.hpp"
+#include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
+#include "../../include/solvers/CFEM_DG_NSSolver.hpp"
+
 #include <cassert>
 
 #ifdef VTUNEPROF
