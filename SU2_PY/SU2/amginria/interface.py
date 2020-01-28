@@ -88,11 +88,14 @@ def amg_call_python(mesh, config):
     if 'Triangles' in mesh:  mesh['Triangles']  = mesh['Triangles'].tolist()
     if 'Tetrahedra' in mesh: mesh['Tetrahedra'] = mesh['Tetrahedra'].tolist()   
 
-    if 'sensor' in mesh: mesh['sensor'] = mesh['sensor'].tolist()
+    if 'sensor' in mesh:
+        mesh['sensor'] = mesh['sensor'].tolist()
+        mesh['hmax']   = config['hmax']
+        mesh['hmin']   = config['hmin']
     if 'metric' in mesh: mesh['metric'] = mesh['metric'].tolist()
     
     try:
-        mesh_new = pyamg.adapt_mesh(mesh, remesh_options)        
+        mesh_new = pyamg.adapt_mesh(mesh, remesh_options)    
     except:
         sys.stderr("## ERROR : pyamg failed.\n")
         raise
