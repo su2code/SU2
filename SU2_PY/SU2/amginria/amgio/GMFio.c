@@ -370,7 +370,7 @@ int WriteGMFMesh(char *nam, Mesh *Msh, int OptBin)
 	double3*Ver = Msh->Ver;
 	int4*Tri    = Msh->Tri;
 	int3*Efr    = Msh->Efr;
-	int3*Cor    = Msh->Cor;
+	int2*Cor    = Msh->Cor;
 	int5*Tet    = Msh->Tet;
 	int5*Qua    = Msh->Qua;
 	

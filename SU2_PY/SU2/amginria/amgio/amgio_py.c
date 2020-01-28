@@ -90,7 +90,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri,
 
 	for (i=1; i<=Msh->NbrCor; i++){
 		for (j=0; j<2; j++)
-			PyList_Append(pyCor, PyInt_FromLong(Msh->Tri[i][j]));
+			PyList_Append(pyCor, PyInt_FromLong(Msh->Cor[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrTri; i++){
@@ -166,7 +166,6 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 	int is[5], siz, ref, idx;
 	double crd[3];
 	
-	int NbrCorners = 0;
 	int NbrMarkers = 0;
 	
 	for (i=0; i<GmfMaxKwd; i++)
