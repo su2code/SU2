@@ -197,7 +197,7 @@ public:
     } else {
       Non_Physical_Counter(iPoint)++;
       if (Non_Physical_Counter(iPoint) > 20) {
-        Non_Physical(iPoint) = val_value;
+        Non_Physical(iPoint) = false;
       }
     }
   }

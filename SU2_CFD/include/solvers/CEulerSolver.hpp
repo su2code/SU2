@@ -39,6 +39,9 @@
  */
 class CEulerSolver : public CSolver {
 protected:
+  enum : size_t {MAXNDIM = 3};    /*!< \brief Max number of space dimensions, used in some static arrays. */
+  enum : size_t {MAXNVAR = 12};   /*!< \brief Max number of variables, used in some static arrays. */
+
   enum : size_t {OMP_MAX_SIZE = 512};  /*!< \brief Max chunk size for light point loops. */
   enum : size_t {OMP_MIN_SIZE = 128};  /*!< \brief Min chunk size for edge loops (max is color group size). */
 
@@ -253,14 +256,6 @@ protected:
   su2double Gamma;                  /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
 
-  su2double *Primitive,    /*!< \brief Auxiliary nPrimVar vector. */
-  *Primitive_i,            /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
-  *Primitive_j;            /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
-
-  su2double *Secondary,    /*!< \brief Auxiliary nPrimVar vector. */
-  *Secondary_i,            /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
-  *Secondary_j;             /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
-
   su2double AoA_Prev, /*!< \brief Old value of the angle of attack (monitored). */
   AoA_inc;
   bool Start_AoA_FD,  /*!< \brief Boolean for start of finite differencing for FixedCL mode */
@@ -467,11 +462,34 @@ public:
                        unsigned short iMesh) final;
 
   /*!
-   * \brief Compute the extrapolated quantities, for MUSCL upwind 2nd reconstruction,
-   * in a more thermodynamic consistent way
-   * \param[in] config - Definition of the particular problem.
+   * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
+   *        in a more thermodynamically consistent way.
+   * \note This method is static to improve the chances of it being used in a
+   *       thread-safe manner.
+   * \param[in,out] fluidModel - The fluid model.
+   * \param[in] nDim - Number of physical dimensions.
+   * \param[in,out] primitive - Primitive variables.
+   * \param[out] secondary - Secondary variables.
    */
-  void ComputeConsExtrapolation(CConfig *config);
+  static void ComputeConsistentExtrapolation(CFluidModel *fluidModel,
+                                             unsigned short nDim,
+                                             su2double *primitive,
+                                             su2double *secondary);
+
+  /*!
+   * \brief Apply low Mach number correction to the primitives at two points,
+   *        usually connected by an edge.
+   * \note This method is static to improve the chances of it being used in a
+   *       thread-safe manner.
+   * \param[in,out] fluidModel - The fluid model.
+   * \param[in] nDim - Number of physical dimensions.
+   * \param[in,out] primitive_i - Primitive variables at point i.
+   * \param[in,out] primitive_j - Primitive variables at point j.
+   */
+  static void LowMachPrimitiveCorrection(CFluidModel *fluidModel,
+                                         unsigned short nDim,
+                                         su2double *primitive_i,
+                                         su2double *primitive_j);
 
   /*!
    * \brief Source term integration.
