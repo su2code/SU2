@@ -42,12 +42,6 @@
 #include <fstream>
 #include <vector>
 
-//#include "../solver_structure.hpp"
-//#include "../integration_structure.hpp"
-//#include "../../../Common/include/geometry_structure.hpp"
-//#include "../../../Common/include/fem_geometry_structure.hpp"
-//#include "../../../Common/include/fem_standard_element.hpp"
-
 #include "../../../Common/include/option_structure.hpp"
 class CGeometry;
 class CConfig;

@@ -108,7 +108,7 @@ void computeGradientsLeastSquares(CSolver* solver,
 
         /*--- Distance vector from iPoint to jPoint ---*/
 
-        su2double dist_ij[MAXNDIM];
+        su2double dist_ij[MAXNDIM] = {0.0};
 
         for (size_t iDim = 0; iDim < nDim; ++iDim)
           dist_ij[iDim] = coord_j[iDim] - coord_i[iDim];

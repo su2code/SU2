@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE];
   bool dry_run = false;
   int num_threads = omp_get_max_threads();
+  bool use_thread_mult = false;
   std::string filename = "default.cfg";
 
   /*--- Command line parsing ---*/
@@ -51,6 +52,7 @@ int main(int argc, char *argv[]) {
   app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n"
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("-t,--threads", num_threads, "Number of OpenMP threads per MPI rank.");
+  app.add_flag("--thread_multiple", use_thread_mult, "Request MPI_THREAD_MULTIPLE thread support.");
   app.add_option("configfile", filename, "A config file.")->check(CLI::ExistingFile);
 
   CLI11_PARSE(app, argc, argv)
@@ -64,7 +66,10 @@ int main(int argc, char *argv[]) {
   char *buffptr;
 #ifdef HAVE_OMP
   int provided;
-  SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+  if (use_thread_mult)
+    SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+  else
+    SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
 #else
   SU2_MPI::Init(&argc, &argv);
 #endif
