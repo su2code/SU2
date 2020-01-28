@@ -36,7 +36,7 @@
  * \author G. Gori, Politecnico di Milano
  * \version 7.0.0 "Blackbird"
  */
-class CUpwHLLC_Flow : public CNumerics {
+class CUpwHLLC_Flow final : public CNumerics {
 private:
   bool implicit, dynamic_grid;
   unsigned short iDim, jDim, iVar, jVar;
@@ -54,8 +54,11 @@ private:
   su2double Omega, RHO, OmegaSM;
   su2double *dSm_dU, *dPI_dU, *drhoStar_dU, *dpStar_dU, *dEStar_dU;
 
-public:
+  su2double* Flux;        /*!< \brief The flux accross the face. */
+  su2double** Jacobian_i; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
+public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -76,7 +79,8 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
+                       const su2double* const* &jacobian_j, CConfig *config) override;
 
 };
 
@@ -87,7 +91,7 @@ public:
  * \author G. Gori, Politecnico di Milano
  * \version 7.0.0 "Blackbird"
  */
-class CUpwGeneralHLLC_Flow : public CNumerics {
+class CUpwGeneralHLLC_Flow final : public CNumerics {
 private:
   bool implicit, dynamic_grid;
   unsigned short iDim, jDim, iVar, jVar;
@@ -106,9 +110,11 @@ private:
   su2double Omega, RHO, OmegaSM;
   su2double *dSm_dU, *dPI_dU, *drhoStar_dU, *dpStar_dU, *dEStar_dU;
 
+  su2double* Flux;        /*!< \brief The flux accross the face. */
+  su2double** Jacobian_i; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -129,7 +135,8 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
+                       const su2double* const* &jacobian_j, CConfig *config) override;
 
    /*!
    * \brief Compute the Average quantities for a general fluid flux between two nodes i and j.
