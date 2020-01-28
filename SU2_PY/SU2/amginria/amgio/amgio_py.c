@@ -226,7 +226,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 						is[j] = (int) PyInt_AS_LONG(oo);
 	       	}
 				
-				PyObject *oo = PyList_GetItem(pyCor,idx+1);
+				oo = PyList_GetItem(pyCor,idx+1);
 				ref = (int) PyInt_AS_LONG(oo);
 				
 				Msh->NbrCor++;
