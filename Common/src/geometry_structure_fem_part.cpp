@@ -27,6 +27,7 @@
 
 #include "../include/geometry/CPhysicalGeometry.hpp"
 #include "../include/fem_standard_element.hpp"
+#include "../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 
 #ifdef HAVE_CGNS

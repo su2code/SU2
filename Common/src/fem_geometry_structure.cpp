@@ -26,6 +26,7 @@
  */
 
 #include "../include/fem_geometry_structure.hpp"
+#include "../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 #include "../include/adt_structure.hpp"
 

@@ -30,7 +30,7 @@
 
 #include "../../../Common/include/mpi_structure.hpp"
 #include "../iteration_structure.hpp"
-#include "../solver_structure.hpp"
+
 #include "../integration_structure.hpp"
 
 #include "../numerics_structure.hpp"

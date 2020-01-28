@@ -93,10 +93,8 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   WAitken_Dyn_tn1 = 0.0;
   loadIncrement = 1.0;
 
-  element_container = nullptr;
-  unsigned short iTerm;
   element_container = new CElement** [MAX_TERMS]();
-  for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
+  for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++)
     element_container[iTerm] = new CElement* [MAX_FE_KINDS*omp_get_max_threads()]();
 
   nodes = nullptr;
@@ -112,9 +110,7 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
 
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
-  unsigned long iPoint;
   unsigned short iVar;
-  unsigned short iTerm;
 
   bool dynamic = (config->GetTime_Domain());
 
@@ -137,7 +133,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- First level: different possible terms of the equations ---*/
   element_container = new CElement** [MAX_TERMS]();
-  for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
+  for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++)
     element_container[iTerm] = new CElement* [MAX_FE_KINDS*omp_get_max_threads()]();
 
   SU2_OMP_PARALLEL
@@ -212,7 +208,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- Set which points are vertices and allocate boundary data. ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if (iVertex >= 0) {

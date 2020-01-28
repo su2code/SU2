@@ -42,7 +42,7 @@
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../SU2_CFD/include/output/CBaselineOutput.hpp"
-#include "../../SU2_CFD/include/solver_structure.hpp"
+#include "../../SU2_CFD/include/solvers/CBaselineSolver.hpp"
 
 using namespace std;
 

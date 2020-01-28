@@ -1,12 +1,12 @@
 /*!
- * \file solver_adjoint_elasticity.cpp
+ * \file CDiscAdjFEASolver.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
  * \version 7.0.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -26,9 +26,8 @@
  */
 
 
-#include "../include/solver_structure.hpp"
-#include "../include/variables/CDiscAdjFEAVariable.hpp"
-#include "../include/variables/CDiscAdjFEABoundVariable.hpp"
+#include "../../include/solvers/CDiscAdjFEASolver.hpp"
+#include "../../include/variables/CDiscAdjFEAVariable.hpp"
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(void) : CSolver (){
 
@@ -264,7 +263,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   Global_Sens_EField = NULL;
   Total_Sens_EField  = NULL;
   AD_Idx_EField      = NULL;
-  
+
   if (de_effects) {
     nEField = config->GetnElectric_Field();
 
@@ -446,12 +445,12 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
   if (dynamic) {
 
     /*--- Register acceleration (u'') and velocity (u') at time step n ---*/
-    
+
     direct_solver->GetNodes()->RegisterSolution_Accel(input);
     direct_solver->GetNodes()->RegisterSolution_Vel(input);
-    
+
     /*--- Register solution (u), acceleration (u'') and velocity (u') at time step n-1 ---*/
-    
+
     direct_solver->GetNodes()->Register_femSolution_time_n();
     direct_solver->GetNodes()->RegisterSolution_Accel_time_n();
     direct_solver->GetNodes()->RegisterSolution_Vel_time_n();
@@ -597,7 +596,7 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
 
 
 void CDiscAdjFEASolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
-  
+
   bool dynamic = (config->GetTime_Domain());
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   unsigned long TimeIter = config->GetTimeIter();
@@ -665,7 +664,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     /*--- FIRST: The acceleration solution ---*/
 
     /*--- Set the old acceleration solution ---*/
-    nodes->Set_OldSolution_Accel();    
+    nodes->Set_OldSolution_Accel();
 
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
@@ -683,7 +682,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
     /*--- Set the old velocity solution ---*/
     nodes->Set_OldSolution_Vel();
-    
+
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
       /*--- Extract the adjoint velocity solution u'' ---*/
@@ -932,7 +931,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
 
   unsigned short iVar;
   unsigned long iPoint;
-  
+
   su2double relax = config->GetAitkenStatRelax();
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
@@ -940,9 +939,9 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
     /*--- Extract the adjoint solution ---*/
 
     direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
-    
+
     /*--- Relax and set the solution ---*/
-    
+
     for(iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = relax*Solution[iVar] + (1.0-relax)*nodes->GetGeometry_CrossTerm_Derivative(iPoint,iVar);
 
@@ -1037,20 +1036,6 @@ void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *
   }
 
   SetResidual_BGS(geometry, config);
-
-}
-
-void CDiscAdjFEASolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
-
-  unsigned long iPoint;
-  unsigned short iVar;
-
-  /*--- To nPoint: The solution must be communicated beforehand ---*/
-  /*--- As there are geometrical crossed dependencies, we need to use the full BGS solution and not just the node Solution ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++)
-      nodes->Set_BGSSolution_k(iPoint, iVar, nodes->Get_BGSSolution(iPoint, iVar));
-  }
 
 }
 
@@ -1229,4 +1214,4 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
 }
 
-    
+
