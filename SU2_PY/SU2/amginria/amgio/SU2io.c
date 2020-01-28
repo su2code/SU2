@@ -560,7 +560,7 @@ int LoadSU2Corners(FILE *FilHdl, Mesh *Msh)
 	int  ref=1;
 	char   str[1024];
 
-	int iCorn, NbrCorn=0, typ, is[8], swi[8], buf, s, idx, res;
+	int iCor, NbrCor=0, typ, is[8], swi[8], buf, s, idx, res;
 	Msh->NbrCor = 0;
   
   rewind(FilHdl);
