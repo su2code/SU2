@@ -67,7 +67,7 @@ int py_SplitSolution(char *SolNam, int dim, char *prefix, char *adap_sensor)
 
 
 
-void py_ReadMesh (char *MshNam, char *SolNam, PyObject *pyVer, PyObject *pyTri, PyObject *pyTet, PyObject *pyEdg, PyObject *pyHex, 
+void py_ReadMesh (char *MshNam, char *SolNam, PyObject *pyVer, PyObject *pyCor, PyObject *pyTri, PyObject *pyTet, PyObject *pyEdg, PyObject *pyHex, 
 PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, 
  PyObject *pySol, PyObject *pySolHeader,  PyObject *pyMarkers)
 {
@@ -86,6 +86,11 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri,
 	for (i=1; i<=Msh->NbrVer; i++){
 		for (d=0; d<3; d++)
 			PyList_Append(pyVer, PyFloat_FromDouble(Msh->Ver[i][d]));
+	}
+
+	for (i=1; i<=Msh->NbrCor; i++){
+		for (j=0; j<2; j++)
+			PyList_Append(pyCor, PyInt_FromLong(Msh->Tri[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrTri; i++){
@@ -151,7 +156,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri,
 }
 
 
-void py_WriteMesh(char *MshNam, char *SolNam, PyObject *pyVer, PyObject *pyTri, PyObject *pyTet, PyObject *pyEdg,  PyObject *pyHex, 
+void py_WriteMesh(char *MshNam, char *SolNam, PyObject *pyVer, PyObject *pyCor, PyObject *pyTri, PyObject *pyTet, PyObject *pyEdg,  PyObject *pyHex, 
 PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *pySolHeader, PyObject *pyMarkers, int Dim)
 {
 	int i, j, NbrTag = 0;
@@ -161,6 +166,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 	int is[5], siz, ref, idx;
 	double crd[3];
 	
+	int NbrCorners = 0;
 	int NbrMarkers = 0;
 	
 	for (i=0; i<GmfMaxKwd; i++)
@@ -192,6 +198,9 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 	if ( PyList_Check(pyPri) )
 		SizMsh[GmfPrisms] = PyList_Size(pyPri);
 
+	if ( PyList_Check(pyCor) )
+		SizMsh[GmfCorners] = PyList_Size(pyCorners);
+
 	if ( PyList_Check(pyMarkers) )
 		NbrMarkers = PyList_Size(pyMarkers);
 	
@@ -202,6 +211,28 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 	Msh->Dim = Dim;
 	
 	//--- Fill mesh
+
+	if ( PyList_Check(pyCor) )
+  {
+			siz = PyList_Size(pyCor);
+			
+			for (i=0; i<siz/2; i++)
+      {
+				idx = 2*i;
+				
+	       	PyObject *oo = PyList_GetItem(pyCor,idx+0);
+	       	if ( PyInt_Check(oo) )
+	       	{
+						is[j] = (int) PyInt_AS_LONG(oo);
+	       	}
+				
+				PyObject *oo = PyList_GetItem(pyCor,idx+1);
+				ref = (int) PyInt_AS_LONG(oo);
+				
+				Msh->NbrCor++;
+				AddCorner(Msh,Msh->NbrCor,is,ref);
+      }
+  }
 	
 	if ( PyList_Check(pyTri) )
   {

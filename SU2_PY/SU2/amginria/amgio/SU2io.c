@@ -258,8 +258,6 @@ int LoadSU2Elements(FILE *FilHdl, Mesh *Msh)
 					return 0;
 				}
       }
-
-			fscanf(FilHdl, "%d", &buf);
       
       Msh->NbrTri++;
 
@@ -557,6 +555,58 @@ int LoadSU2Elements(FILE *FilHdl, Mesh *Msh)
 	return 1;
 }
 
+int LoadSU2Corners(FILE *FilHdl, Mesh *Msh)
+{
+	int  ref=1;
+	char   str[1024];
+
+	int iCorn, NbrCorn=0, typ, is[8], swi[8], buf, s, idx, res;
+	Msh->NbrCor = 0;
+  
+  rewind(FilHdl);
+  do
+	{
+		res = fscanf(FilHdl, "%s", str);
+	}while( (res != EOF) && strcmp(str, "NCORNERS=") );
+	
+	fscanf(FilHdl, "%d", &NbrCor);
+  fgets (str, sizeof str, FilHdl);
+	
+  idx=0;
+	
+  for (iCor=0; iCor<NbrCor; iCor++) {
+    fscanf(FilHdl, "%d", &typ);
+
+    if ( typ == SU2_CORNER ) {
+    	fscanf(FilHdl, "%d", &buf);
+    	swi[s] = buf+1;
+    	if ( swi[s] > Msh->NbrVer ) {
+			printf("  ## ERROR Corners: vertex out of bound (vid=%d)\n", swi[s]);
+			return 0;
+		}
+
+      	Msh->NbrCor++;
+
+      	if ( Msh->NbrCor > Msh->MaxNbrCor ) {
+			printf("  ## ERROR LoadSU2Corners: corner (id=%d, max=%d)\n", Msh->NbrCor, Msh->MaxNbrCor);
+			return 0;
+		}
+			
+      AddCorner(Msh,Msh->NbrCor,swi,ref);
+
+    }
+		else {
+			printf("  ## ERROR : Unknown element type %d\n", typ);
+			return 0;
+		}
+    
+    fgets (str, sizeof str, FilHdl); 
+
+  }//for iCor
+	
+	return 1;
+}
+
 
 int LoadSU2Mesh(char *FilNam, Mesh *Msh)
 {
@@ -594,6 +644,9 @@ int LoadSU2Mesh(char *FilNam, Mesh *Msh)
 	
 	//--- Read vertices
 	LoadSU2Vertices (FilHdl, Msh);
+
+	//--- Read corners
+	LoadSU2Corners (FilHdl, Msh);
 	
 	//--- Read Elements
 	LoadSU2Elements(FilHdl, Msh);
@@ -800,13 +853,14 @@ int LoadSU2Vertices(FILE *FilHdl, Mesh *Msh)
 void WriteSU2Mesh(char *nam, Mesh *Msh)
 {
   int       i, j, s, idx;
-  int       iVer,iTri,iEfr, iTet, iHex, iPri, iPyr, iQua, NbrElt=0;
+  int       iVer,iCor,iTri,iEfr, iTet, iHex, iPri, iPyr, iQua, NbrElt=0;
   char      OutNam[512];
   
   int Dim = Msh->Dim;
 	
 	int3 *BdrTag=NULL;
 	int NbrBdr, NbrTag, start, iTag, cpt;
+	int NbrCor;
 		
 	FILE *OutFil=NULL;
 	
@@ -1003,6 +1057,15 @@ void WriteSU2Mesh(char *nam, Mesh *Msh)
 	}
   else
 		fprintf(OutFil, "NMARK= 0\n");
+
+  //--- Write corners
+  NbrCor = Msh->NbrCor;
+  if( NbrCor > 0 ) {
+  	fprintf(OutFil, "NCORNERS= %d\n", NbrCor);
+  	for (iCor=1; iCor<=Msh->NbrCor; iCor++) {
+  	  fprintf(OutFil, "0 %d", Msh->Cor[iCor][0]-1); 
+  	}
+  }
 	
   //--- close mesh file
 	if ( OutFil )

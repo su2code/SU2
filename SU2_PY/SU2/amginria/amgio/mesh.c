@@ -103,6 +103,16 @@ void AddTriangle(Mesh *Msh, int idxTri, int *is, int ref)
   Msh->Tri[idxTri][3] = ref;
 }
 
+void AddCorner(Mesh *Msh, int idxCor, int *is, int ref)
+{
+  if ( idxCor > Msh->MaxNbrCor ) {
+    printf("  ## ERROR : Max number of triangles reached (%d, max %d).\n", idxCor, Msh->MaxNbrCor);
+    exit(1);
+  }
+  Msh->Cor[idxCor][0] = is[0];
+  Msh->Cor[idxCor][1] = ref;
+}
+
 
 void AddVertex(Mesh *Msh, int idxVer, double *Crd)
 {	
@@ -119,6 +129,7 @@ Mesh* AllocMesh (int * SizMsh)
 	Msh = (Mesh*)malloc(sizeof(struct S_Mesh));
 	
 	Msh->MaxNbrVer = SizMsh[GmfVertices];
+  Msh->MaxNbrCor = SizMsh[GmfCorners];
 	Msh->MaxNbrEfr = SizMsh[GmfEdges];
 	Msh->MaxNbrTri = SizMsh[GmfTriangles];
 	Msh->MaxNbrTet = SizMsh[GmfTetrahedra];
@@ -129,6 +140,7 @@ Mesh* AllocMesh (int * SizMsh)
 	Msh->Dim       = SizMsh[GmfDimension];
 	
 	Msh->NbrVer = 0;
+  Msh->NbrCor = 0;
 	Msh->NbrEfr = 0;
 	Msh->NbrTri = 0;
 	Msh->NbrTet = 0;
@@ -138,6 +150,7 @@ Mesh* AllocMesh (int * SizMsh)
 	Msh->NbrPyr = 0;
 	
 	Msh->Ver = NULL;
+  Msh->Cor = NULL;
 	Msh->Efr = NULL;
 	Msh->Tri = NULL;
 	Msh->Tet = NULL;
@@ -158,6 +171,10 @@ Mesh* AllocMesh (int * SizMsh)
 		Msh->Ver = (double3*)malloc(sizeof(double3)*(Msh->MaxNbrVer+1));
 	}
 	
+  if ( Msh->MaxNbrCorr > 0 ) {
+    Msh->Cor = (int2*)malloc(sizeof(int2)*(Msh->MaxNbrCor+1));
+  }
+
 	if ( Msh->MaxNbrEfr > 0 ) {
 		Msh->Efr = (int3*)malloc(sizeof(int3)*(Msh->MaxNbrEfr+1));
 	}

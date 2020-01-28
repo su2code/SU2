@@ -117,7 +117,7 @@ def read_mesh(mesh_name, solution_name):
     
     Markers = []
     
-    amgio.py_ReadMesh(mesh_name, solution_name, Ver, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag,  Markers)
+    amgio.py_ReadMesh(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag,  Markers)
         
     NbrTet = len(Tet)/5
     Tet = np.reshape(Tet,(NbrTet, 5)).astype(int)
@@ -127,6 +127,9 @@ def read_mesh(mesh_name, solution_name):
     
     NbrEdg = len(Edg)/3
     Edg = np.reshape(Edg,(NbrEdg, 3)).astype(int)
+
+    NbrCor = len(Edg)/2
+    Cor = np.reshape(Cor,(NbrCir, 2)).astype(int)
 
     NbrVer = len(Ver)/3
     Ver = np.reshape(Ver,(NbrVer, 3))
@@ -146,7 +149,7 @@ def read_mesh(mesh_name, solution_name):
     mesh['Triangles']    = Tri
     mesh['Tetrahedra']   = Tet
     mesh['Edges']        = Edg
-    mesh['Corners']      = []
+    mesh['Corners']      = Cor
     mesh['solution']     = Sol
     
     mesh['solution_tag'] = SolTag
@@ -178,6 +181,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     if 'Triangles' in mesh:     Tri     = mesh['Triangles']
     if 'Tetrahedra' in mesh:    Tet     = mesh['Tetrahedra']
     if 'Edges' in mesh:         Edg     = mesh['Edges']
+    if 'Cornerss' in mesh:      Cor     = mesh['Corners']
     if 'solution' in mesh:      Sol     = mesh['solution']
     if 'markers' in mesh:       Markers = mesh['markers']
     if 'dimension' in mesh:     Dim     = mesh['dimension']
@@ -201,7 +205,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     else:
         Sol = []
     
-    amgio.py_WriteMesh(mesh_name, solution_name, Ver, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers, Dim)
+    amgio.py_WriteMesh(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers, Dim)
     
 
 def write_solution(solution_name, solution):
