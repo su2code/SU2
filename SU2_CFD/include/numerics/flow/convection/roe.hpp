@@ -34,14 +34,21 @@
  * \class CUpwRoeBase_Flow
  * \brief Intermediate base class for Roe schemes on ideal gas.
  * \ingroup ConvDiscr
- * \author A. Bueno, F. Palacios
+ * \author A. Bueno, F. Palacios, P. Gomes
  */
 class CUpwRoeBase_Flow : public CNumerics {
 protected:
   bool implicit, dynamic_grid, roe_low_dissipation;
-  su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j, *Conservatives_i, *Conservatives_j;
-  su2double *Diff_U, *Lambda, **P_Tensor, **invP_Tensor;
-  su2double *RoeVelocity, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;
+  su2double Velocity_i[MAXNDIM] = {0.0}, Velocity_j[MAXNDIM] = {0.0}, RoeVelocity[MAXNDIM] = {0.0};
+  su2double *Diff_U = nullptr, *Lambda = nullptr;
+  su2double *ProjFlux_i = nullptr, *Conservatives_i = nullptr;
+  su2double *ProjFlux_j = nullptr, *Conservatives_j = nullptr;
+  su2double **P_Tensor = nullptr, **invP_Tensor = nullptr;
+  su2double RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;
+
+  su2double* Flux = nullptr;        /*!< \brief The flux accross the face. */
+  su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
   /*!
    * \brief Derived classes must specialize this method to add the specifics of the scheme they implement (e.g. low-Mach precond.).
@@ -74,7 +81,8 @@ public:
    * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
+                       const su2double* const* &jacobian_j, CConfig *config) final;
 
 };
 
@@ -82,9 +90,9 @@ public:
  * \class CUpwRoe_Flow
  * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
  * \ingroup ConvDiscr
- * \author A. Bueno, F. Palacios
+ * \author A. Bueno, F. Palacios, P. Gomes
  */
-class CUpwRoe_Flow : public CUpwRoeBase_Flow {
+class CUpwRoe_Flow final : public CUpwRoeBase_Flow {
 private:
   /*!
    * \brief Add standard Roe dissipation to the flux.
@@ -93,7 +101,7 @@ private:
    * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 
 public:
   /*!
@@ -111,10 +119,10 @@ public:
  * \class CUpwL2Roe_Flow
  * \brief Class for solving an approximate Riemann solver of L2Roe for the flow equations.
  * \ingroup ConvDiscr
- * \author E. Molina, A. Bueno, F. Palacios
+ * \author E. Molina, A. Bueno, F. Palacios, P. Gomes
  * \version 7.0.0 "Blackbird"
  */
-class CUpwL2Roe_Flow : public CUpwRoeBase_Flow {
+class CUpwL2Roe_Flow final : public CUpwRoeBase_Flow {
 private:
   /*!
    * \brief Add L^2 Roe dissipation to the flux (low-Mach scheme).
@@ -123,7 +131,7 @@ private:
    * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 
 public:
   /*!
@@ -140,10 +148,10 @@ public:
  * \class CUpwLMRoe_Flow
  * \brief Class for solving an approximate Riemann solver of LMRoe for the flow equations.
  * \ingroup ConvDiscr
- * \author E. Molina, A. Bueno, F. Palacios
+ * \author E. Molina, A. Bueno, F. Palacios, P. Gomes
  * \version 7.0.0 "Blackbird"
  */
-class CUpwLMRoe_Flow : public CUpwRoeBase_Flow {
+class CUpwLMRoe_Flow final : public CUpwRoeBase_Flow {
 private:
   /*!
    * \brief Add LMRoe dissipation to the flux (low-Mach scheme).
@@ -152,7 +160,7 @@ private:
    * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 
 public:
   /*!
@@ -171,7 +179,7 @@ public:
  * \ingroup ConvDiscr
  * \author A. K. Lonkar
  */
-class CUpwTurkel_Flow : public CNumerics {
+class CUpwTurkel_Flow final : public CNumerics {
 private:
   bool implicit, dynamic_grid;
   su2double *Diff_U;
@@ -187,6 +195,10 @@ private:
   su2double r_hat, s_hat, t_hat, rhoB2a2, sqr_one_m_Betasqr_Lam1;
   su2double Beta2, one_m_Betasqr, one_p_Betasqr, sqr_two_Beta_c_Area;
   su2double local_Mach;
+
+  su2double* Flux = nullptr;        /*!< \brief The flux accross the face. */
+  su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
 public:
   /*!
@@ -209,7 +221,8 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
+                       const su2double* const* &jacobian_j, CConfig *config) override;
 
 };
 
@@ -219,7 +232,7 @@ public:
  * \ingroup ConvDiscr
  * \author S.Vitale, G.Gori, M.Pini
  */
-class CUpwGeneralRoe_Flow : public CNumerics {
+class CUpwGeneralRoe_Flow final : public CNumerics {
 private:
 
   bool implicit, dynamic_grid;
@@ -236,12 +249,14 @@ private:
   ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, kappa;
   unsigned short iDim, iVar, jVar, kVar;
 
-
   su2double StaticEnthalpy_i, StaticEnergy_i, StaticEnthalpy_j, StaticEnergy_j, Kappa_i, Kappa_j, Chi_i, Chi_j, Velocity2_i, Velocity2_j;
   su2double RoeKappa, RoeChi;
 
-public:
+  su2double* Flux = nullptr;        /*!< \brief The flux accross the face. */
+  su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
+public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -262,12 +277,13 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
+                       const su2double* const* &jacobian_j, CConfig *config) override;
 
   /*!
    * \brief Compute the Average for a general fluid flux between two nodes i and j.
    * Using the approach of Vinokur and Montagne'
    */
-
   void ComputeRoeAverage();
+
 };
