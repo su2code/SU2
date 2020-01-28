@@ -344,7 +344,7 @@ def init_inria(argument_dict, modes, update = False):
     sha_version_amg = '0abd5b88a760736e6e5f2966c101a3d263ea030d'
     github_repo_amg = 'https://github.com/bmunguia/AMGIO'
 
-    amg_name = 'amg'
+    amg_name = 'AMGIO'
 
     alt_name_amg = 'externals/AMGIO'
     alt_name_amgint  = 'SU2_PY/SU2/amginria'
