@@ -1,3 +1,4 @@
+su2_cfd_include = include_directories('./')
 su2_cfd_src = files(['integration_structure.cpp',
                      'numerics_adjoint_mean.cpp',
                      'transport_model.cpp',
