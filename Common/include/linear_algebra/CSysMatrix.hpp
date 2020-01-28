@@ -550,7 +550,7 @@ public:
    */
   template<class OtherType, int Sign = 1>
   inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
-                           OtherType **block_i, OtherType **block_j) {
+                           const OtherType* const* block_i, const OtherType* const* block_j) {
 
     ScalarType *bii = &matrix[dia_ptr[iPoint]*nVar*nEqn];
     ScalarType *bjj = &matrix[dia_ptr[jPoint]*nVar*nEqn];

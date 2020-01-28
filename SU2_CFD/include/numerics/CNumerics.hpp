@@ -1020,6 +1020,18 @@ public:
                                       su2double **val_Jacobian_j, CConfig *config) { }
 
   /*!
+   * \overload For numerics classes that store the residual/flux and Jacobians internally.
+   * \param[out] residual - Pointer to the total residual.
+   * \param[out] jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ComputeResidual(const su2double*  &residual,
+                                      const su2double* const* &jacobian_i,
+                                      const su2double* const* &jacobian_j,
+                                      CConfig *config) { }
+
+  /*!
    * \overload
    * \param[out] val_residual_i - Pointer to the total residual at point i.
    * \param[out] val_residual_j - Pointer to the total viscosity residual at point j.
