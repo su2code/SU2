@@ -34,7 +34,7 @@
  * \class CUpwAUSMPLUS_SLAU_Base_Flow
  * \brief Base class for AUSM+up(2) and SLAU(2) convective schemes.
  * \ingroup ConvDiscr
- * \author Amit Sachdeva
+ * \author Amit Sachdeva, P. Gomes
  */
 class CUpwAUSMPLUS_SLAU_Base_Flow : public CNumerics {
 protected:
@@ -44,12 +44,17 @@ protected:
   su2double FinDiffStep;
 
   su2double MassFlux, DissFlux, Pressure;
-  su2double *Velocity_i, *Velocity_j;
-  su2double *psi_i, *psi_j;
+  su2double Velocity_i[MAXNDIM] = {0.0}, Velocity_j[MAXNDIM] = {0.0};
+  su2double *psi_i = nullptr, *psi_j = nullptr;
   su2double dmdot_dVi[6], dmdot_dVj[6], dpres_dVi[6], dpres_dVj[6];
 
   /*--- Roe variables (for approximate Jacobian) ---*/
-  su2double *Lambda, *Epsilon, *RoeVelocity, **P_Tensor, **invP_Tensor;
+  su2double *Lambda = nullptr, *Epsilon = nullptr, RoeVelocity[MAXNDIM] = {0.0};
+  su2double **P_Tensor = nullptr, **invP_Tensor = nullptr;
+
+  su2double* Flux = nullptr;        /*!< \brief The flux accross the face. */
+  su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
   /*!
    * \brief Compute the mass flux and pressure based on Primitives_i/j, derived classes must implement this method.
@@ -60,6 +65,7 @@ protected:
    */
   virtual void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) = 0;
 
+private:
   /*!
    * \brief Compute the flux Jacobians of the Roe scheme to use as an approximation.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
@@ -96,16 +102,17 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
+                       const su2double* const* &jacobian_j, CConfig *config) final;
 };
 
 /*!
  * \class CUpwAUSMPLUSUP_Flow
  * \brief Class for solving an approximate Riemann AUSM+ -up.
  * \ingroup ConvDiscr
- * \author Amit Sachdeva
+ * \author Amit Sachdeva, P. Gomes
  */
-class CUpwAUSMPLUSUP_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
+class CUpwAUSMPLUSUP_Flow final : public CUpwAUSMPLUS_SLAU_Base_Flow {
 private:
   su2double Kp, Ku, sigma;
 
@@ -115,7 +122,7 @@ private:
    * \param[out] mdot - The mass flux.
    * \param[out] pressure - The pressure at the control volume face.
    */
-  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
+  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) override;
 
 public:
 
@@ -133,9 +140,9 @@ public:
  * \class CUpwAUSMPLUSUP2_Flow
  * \brief Class for solving an approximate Riemann AUSM+ -up.
  * \ingroup ConvDiscr
- * \author Amit Sachdeva
+ * \author Amit Sachdeva, P. Gomes
  */
-class CUpwAUSMPLUSUP2_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
+class CUpwAUSMPLUSUP2_Flow final : public CUpwAUSMPLUS_SLAU_Base_Flow {
 private:
   su2double Kp, sigma;
 
@@ -145,7 +152,7 @@ private:
    * \param[out] mdot - The mass flux.
    * \param[out] pressure - The pressure at the control volume face.
    */
-  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
+  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) override;
 
 public:
 
@@ -163,7 +170,7 @@ public:
  * \class CUpwSLAU_Flow
  * \brief Class for solving the Low-Dissipation AUSM.
  * \ingroup ConvDiscr
- * \author E. Molina
+ * \author E. Molina, P. Gomes
  */
 class CUpwSLAU_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
 protected:
@@ -176,7 +183,7 @@ protected:
    * \param[out] mdot - The mass flux.
    * \param[out] pressure - The pressure at the control volume face.
    */
-  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
+  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) final;
 
 public:
 
@@ -194,9 +201,9 @@ public:
  * \class CUpwSLAU2_Flow
  * \brief Class for solving the Simple Low-Dissipation AUSM 2.
  * \ingroup ConvDiscr
- * \author E. Molina
+ * \author E. Molina, P. Gomes
  */
-class CUpwSLAU2_Flow : public CUpwSLAU_Flow {
+class CUpwSLAU2_Flow final : public CUpwSLAU_Flow {
 public:
   /*!
    * \brief Constructor of the class.
@@ -214,13 +221,13 @@ public:
  * \ingroup ConvDiscr
  * \author F. Palacios
  */
-class CUpwAUSM_Flow : public CNumerics {
+class CUpwAUSM_Flow final : public CNumerics {
 private:
   bool implicit;
   su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
+  su2double Velocity_i[MAXNDIM], Velocity_j[MAXNDIM], RoeVelocity[MAXNDIM];
   su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
+  su2double *delta_wave, delta_vel[MAXNDIM];
   su2double *Lambda, *Epsilon;
   su2double **P_Tensor, **invP_Tensor;
   su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
@@ -229,6 +236,9 @@ private:
   unsigned short iDim, iVar, jVar, kVar;
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
 
+  su2double* Flux;        /*!< \brief The flux accross the face. */
+  su2double** Jacobian_i; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j; /*!< \brief The Jacobian w.r.t. point j after computation. */
 public:
 
   /*!
@@ -251,5 +261,6 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
+                       const su2double* const* &jacobian_j, CConfig *config) override;
 };
