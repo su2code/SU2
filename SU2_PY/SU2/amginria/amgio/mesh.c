@@ -171,7 +171,7 @@ Mesh* AllocMesh (int * SizMsh)
 		Msh->Ver = (double3*)malloc(sizeof(double3)*(Msh->MaxNbrVer+1));
 	}
 	
-  if ( Msh->MaxNbrCorr > 0 ) {
+  if ( Msh->MaxNbrCor > 0 ) {
     Msh->Cor = (int2*)malloc(sizeof(int2)*(Msh->MaxNbrCor+1));
   }
 
