@@ -721,7 +721,8 @@ void CHeatSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
   }
 }
 
-void CHeatSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) { }
+void CHeatSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) { }
 
 void CHeatSolverFVM::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 

@@ -2028,7 +2028,10 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
 }
 
-void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
+void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
 
   unsigned short iVar;
   unsigned long iPoint;

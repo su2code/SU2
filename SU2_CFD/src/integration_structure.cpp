@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -54,13 +54,13 @@ void CIntegration::Space_Integration(CGeometry *geometry,
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem) {
   unsigned short iMarker, KindBC;
-  
+
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
 
   /*--- Compute inviscid residuals ---*/
-  
+
   switch (config->GetKind_ConvNumScheme()) {
     case SPACE_CENTERED:
       solver_container[MainSolver]->Centered_Residual(geometry, solver_container, numerics, config, iMesh, iRKStep);
@@ -72,20 +72,20 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       solver_container[MainSolver]->Convective_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
       break;
   }
-  
+
   /*--- Compute viscous residuals ---*/
-  
+
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
-  
+
   /*--- Compute source term residuals ---*/
 
-  solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
-  
+  solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics, config, iMesh);
+
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
-  
+
   if (dual_time)
     solver_container[MainSolver]->SetResidual_DualTime(geometry, solver_container, config, iRKStep, iMesh, RunTime_EqSystem);
-  
+
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config);
@@ -99,7 +99,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   }
 
   /*--- Weak boundary conditions ---*/
-  
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     KindBC = config->GetMarker_All_KindBC(iMarker);
     switch (KindBC) {
@@ -155,9 +155,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
     }
   }
-  
+
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
-  
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case ISOTHERMAL:
@@ -169,7 +169,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
-      case CHT_WALL_INTERFACE: 
+      case CHT_WALL_INTERFACE:
         if ((MainSolver == HEAT_SOL) || (MainSolver == FLOW_SOL && ((config->GetKind_Regime() == COMPRESSIBLE) || config->GetEnergy_Equation()))) {
           solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         }
@@ -178,16 +178,16 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         }
         break;
     }
-  
+
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
    adjacent periodic markers, the repeated points will have their residuals
    accumulated corectly during the communications. ---*/
-  
+
   if (config->GetnMarker_Periodic() > 0) {
     solver_container[MainSolver]->BC_Periodic(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
   }
-  
+
 }
 
 void CIntegration::Space_Integration_FEM(CGeometry *geometry,
@@ -273,24 +273,24 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 
 void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                                  unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
-  
+
   unsigned short iMGLevel;
-  
+
   if ( ( (RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) && (Iteration == 0) ) ) {
     for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
-      
+
       /*--- Set the time step in all the MG levels ---*/
-      
+
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][INST_0][iMGLevel], solver_container[iZone][INST_0][iMGLevel], config[iZone], iMGLevel, Iteration);
-      
+
       /*--- Set the force coefficients ---*/
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CD(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CL(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CT());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CQ());
-      
+
       /*--- Restrict solution and gradients to the coarse levels ---*/
-      
+
       if (iMGLevel != config[iZone]->GetnMGLevels()) {
         SetRestricted_Solution(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
                                geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
@@ -298,17 +298,17 @@ void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_con
 //        SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
 //                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
       }
-      
+
     }
   }
-  
+
 }
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
                                     unsigned short RunTime_EqSystem) {
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   unsigned short KindSolver = config->GetKind_Solver();
-  
+
   /*--- Perform the time integration ---*/
 
   /*--- Fluid time integration schemes ---*/
@@ -331,7 +331,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
     }
 
    /*--- Structural time integration schemes ---*/
-  
+
   }
   else if (KindSolver == FEM_ELASTICITY) {
 
@@ -432,74 +432,74 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
   solver->ResetCFLAdapt();
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
+
     /*--- Initialize the underrelaxation ---*/
-    
+
     solver->GetNodes()->SetUnderRelaxation(iPoint, 1.0);
-    
+
     /*--- Initialize the local CFL number ---*/
-    
+
     solver->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(iMesh));
-    
+
     geometry->node[iPoint]->SetVolume_nM1();
     geometry->node[iPoint]->SetVolume_n();
-    
+
     /*--- Store old coordinates in case there is grid movement ---*/
-    
+
     if (config->GetGrid_Movement()) {
       geometry->node[iPoint]->SetCoord_n1();
       geometry->node[iPoint]->SetCoord_n();
     }
   }
-  
+
   /*--- Store old aeroelastic solutions ---*/
   if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && (iMesh == MESH_0)) {
     config->SetAeroelastic_n1();
     config->SetAeroelastic_n();
-    
+
     /*--- Also communicate plunge and pitch to the master node. Needed for output in case of parallel run ---*/
-    
+
 #ifdef HAVE_MPI
     su2double plunge, pitch, *plunge_all = NULL, *pitch_all = NULL;
     unsigned short iMarker, iMarker_Monitoring;
     unsigned long iProcessor, owner, *owner_all = NULL;
-    
+
     string Marker_Tag, Monitoring_Tag;
     int nProcessor = size;
 
     /*--- Only if master node allocate memory ---*/
-    
+
     if (rank == MASTER_NODE) {
       plunge_all = new su2double[nProcessor];
       pitch_all  = new su2double[nProcessor];
       owner_all  = new unsigned long[nProcessor];
     }
-    
+
     /*--- Find marker and give it's plunge and pitch coordinate to the master node ---*/
-    
+
     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-      
+
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        
+
         Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
         } else {
           owner = 0;
         }
-        
+
       }
       plunge = config->GetAeroelastic_plunge(iMarker_Monitoring);
       pitch  = config->GetAeroelastic_pitch(iMarker_Monitoring);
-      
+
       /*--- Gather the data on the master node. ---*/
-      
+
       SU2_MPI::Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       SU2_MPI::Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       SU2_MPI::Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-      
+
       /*--- Set plunge and pitch on the master node ---*/
-      
+
       if (rank == MASTER_NODE) {
         for (iProcessor = 0; iProcessor < (unsigned long)nProcessor; iProcessor++) {
           if (owner_all[iProcessor] == 1) {
@@ -509,9 +509,9 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
           }
         }
       }
-      
+
     }
-    
+
     if (rank == MASTER_NODE) {
       delete [] plunge_all;
       delete [] pitch_all;
@@ -519,7 +519,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     }
 #endif
   }
-  
+
 }
 
 void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
@@ -545,9 +545,9 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
 void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
   bool fsi = config->GetFSI_Simulation();
-  
+
   /*--- Update the solution according to the integration scheme used ---*/
-  
+
   switch (config->GetKind_TimeIntScheme_FEA()) {
     case (CD_EXPLICIT):
       break;

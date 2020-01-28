@@ -3613,18 +3613,26 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
 
 }
 
-void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                   CConfig *config, unsigned short iMesh) {
+void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
+
+  const bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool rotating_frame   = config->GetRotating_Frame();
+  const bool axisymmetric     = config->GetAxisymmetric();
+  const bool gravity          = (config->GetGravityForce() == YES);
+  const bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  const bool windgust         = config->GetWind_Gust();
+  const bool body_force       = config->GetBody_Force();
+
+//  /*--- Start OpenMP parallel section. ---*/
+//
+//  SU2_OMP_PARALLEL_(reduction(+:counter_local))
+//  {
 
   unsigned short iVar;
   unsigned long iPoint;
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool rotating_frame   = config->GetRotating_Frame();
-  bool axisymmetric     = config->GetAxisymmetric();
-  bool gravity          = (config->GetGravityForce() == YES);
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
-  bool windgust         = config->GetWind_Gust();
-  bool body_force       = config->GetBody_Force();
 
   /*--- Initialize the source residual to zero ---*/
 

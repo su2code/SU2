@@ -351,8 +351,11 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
   }
 }
 
-void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                       CConfig *config, unsigned short iMesh) {
+void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
+
   unsigned long iPoint;
   su2double gamma_sep = 0.0;
 

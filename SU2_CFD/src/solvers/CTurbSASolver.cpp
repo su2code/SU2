@@ -376,8 +376,11 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
 }
 
-void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                    CConfig *config, unsigned short iMesh) {
+void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
+
   unsigned long iPoint;
 
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
