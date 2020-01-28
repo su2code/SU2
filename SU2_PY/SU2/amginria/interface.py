@@ -85,6 +85,7 @@ def amg_call_python(mesh, config):
     if 'xy' in mesh:    mesh['xy']  = mesh['xy'].tolist()
     if 'xyz' in mesh:   mesh['xyz'] = mesh['xyz'].tolist()
     
+    if 'Corners' in mesh:      mesh['Corners']      = mesh['Corners'].tolist() 
     if 'Edges' in mesh:      mesh['Edges']      = mesh['Edges'].tolist() 
     if 'Triangles' in mesh:  mesh['Triangles']  = mesh['Triangles'].tolist()
     if 'Tetrahedra' in mesh: mesh['Tetrahedra'] = mesh['Tetrahedra'].tolist()   
@@ -108,6 +109,7 @@ def read_mesh(mesh_name, solution_name):
     Tri = []
     Tet = []
     Edg = []
+    Cor = []
     Hex = []
     Pyr = []
     Pri = []
@@ -128,8 +130,8 @@ def read_mesh(mesh_name, solution_name):
     NbrEdg = len(Edg)/3
     Edg = np.reshape(Edg,(NbrEdg, 3)).astype(int)
 
-    NbrCor = len(Edg)/2
-    Cor = np.reshape(Cor,(NbrCir, 2)).astype(int)
+    NbrCor = len(Cor)/2
+    Cor = np.reshape(Cor,(NbrCor, 2)).astype(int)
 
     NbrVer = len(Ver)/3
     Ver = np.reshape(Ver,(NbrVer, 3))
@@ -168,6 +170,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     Tri     = []
     Tet     = []
     Edg     = []
+    Edg     = []
     Hex     = []
     Pyr     = []
     Pri     = []
@@ -181,7 +184,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     if 'Triangles' in mesh:     Tri     = mesh['Triangles']
     if 'Tetrahedra' in mesh:    Tet     = mesh['Tetrahedra']
     if 'Edges' in mesh:         Edg     = mesh['Edges']
-    if 'Cornerss' in mesh:      Cor     = mesh['Corners']
+    if 'Corners' in mesh:       Cor     = mesh['Corners']
     if 'solution' in mesh:      Sol     = mesh['solution']
     if 'markers' in mesh:       Markers = mesh['markers']
     if 'dimension' in mesh:     Dim     = mesh['dimension']
