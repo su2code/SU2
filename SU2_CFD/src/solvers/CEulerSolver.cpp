@@ -85,7 +85,6 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   /*--- Numerical methods array initialization ---*/
 
   LowMach_Precontioner = NULL;
-  Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
 
   DonorPrimVar = NULL; DonorGlobalIndex = NULL;
@@ -95,8 +94,6 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   nVertex = NULL;
 
   Smatrix = NULL; Cvector = NULL;
-
-  Secondary = NULL; Secondary_i = NULL; Secondary_j = NULL;
 
   /*--- Fixed CL mode initialization ---*/
 
@@ -269,14 +266,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   iPoint_UndLapl = NULL;
   jPoint_UndLapl = NULL;
   LowMach_Precontioner = NULL;
-  Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
   DonorPrimVar = NULL; DonorGlobalIndex = NULL;
   ActDisk_DeltaP = NULL; ActDisk_DeltaT = NULL;
 
   Smatrix = NULL; Cvector = NULL;
-
-  Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
 
   /*--- Fixed CL mode initialization ---*/
 
@@ -403,18 +397,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Vector   = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
   Vector_i = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
   Vector_j = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
-
-  /*--- Define some auxiliary vectors related to the primitive solution ---*/
-
-  Primitive   = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar]   = 0.0;
-  Primitive_i = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_i[iVar] = 0.0;
-  Primitive_j = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = 0.0;
-
-  /*--- Define some auxiliary vectors related to the Secondary solution ---*/
-
-  Secondary   = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar]   = 0.0;
-  Secondary_i = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_i[iVar] = 0.0;
-  Secondary_j = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_j[iVar] = 0.0;
 
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
 
@@ -956,14 +938,6 @@ CEulerSolver::~CEulerSolver(void) {
 
   delete [] Exhaust_Pressure;
   delete [] Exhaust_Temperature;
-
-  delete [] Primitive;
-  delete [] Primitive_i;
-  delete [] Primitive_j;
-
-  delete [] Secondary;
-  delete [] Secondary_i;
-  delete [] Secondary_j;
 
   if (LowMach_Precontioner != NULL) {
     for (iVar = 0; iVar < nVar; iVar ++)
@@ -3349,83 +3323,126 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  CNumerics* numerics = numerics_container[CONV_TERM];
+  assert(nDim <= MAXNDIM && nPrimVar <= MAXNVAR && nSecondaryVar <= MAXNVAR &&
+         "Oops! The CEulerSolver static array sizes are not large enough.");
 
-  su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
-  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Sensor_i, Sensor_j, Dissipation_i, Dissipation_j, *Coord_i, *Coord_j;
+  const auto InnerIter        = config->GetInnerIter();
+  const bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                                (config->GetKind_FluidModel() == IDEAL_GAS);
 
-  su2double z, velocity2_i, velocity2_j, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
+  const bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
+  const bool low_mach_corr    = config->Low_Mach_Correction();
+  const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
-  unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
-  unsigned short iDim, iVar;
+  const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
+  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
+                                (InnerIter <= config->GetLimiterIter());
+  const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
-  bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false, neg_sound_speed = false;
+  /*--- Non-physical counter. ---*/
+  unsigned long counter_local = 0;
 
-  unsigned long InnerIter = config->GetInnerIter();
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
-  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool low_mach_corr    = config->Low_Mach_Correction();
-  unsigned short kind_dissipation = config->GetKind_RoeLowDiss();
+  /*--- Start OpenMP parallel section. ---*/
+
+  SU2_OMP_PARALLEL_(reduction(+:counter_local))
+  {
+  /*--- Pick one numerics object per thread. ---*/
+  CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
   /*--- Loop over all the edges ---*/
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+#ifdef HAVE_OMP
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring)
+  {
+  SU2_OMP_FOR_DYN(chunkSize)
+  for(auto k = 0ul; k < color.size; ++k) {
+
+    auto iEdge = color.indices[k];
+#else
+  /*--- Natural coloring. ---*/
+  {
+  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
+#endif
+    unsigned short iDim, iVar;
 
     /*--- Points in edge and normal vectors ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
+    auto iPoint = geometry->edge[iEdge]->GetNode(0);
+    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+
+    auto Coord_i = geometry->node[iPoint]->GetCoord();
+    auto Coord_j = geometry->node[jPoint]->GetCoord();
 
     /*--- Roe Turkel preconditioning ---*/
 
     if (roe_turkel) {
-      sqvel = 0.0;
+      su2double sqvel = 0.0;
       for (iDim = 0; iDim < nDim; iDim ++)
-        sqvel += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
+        sqvel += pow(config->GetVelocity_FreeStream()[iDim], 2);
       numerics->SetVelocity2_Inf(sqvel);
     }
 
     /*--- Grid movement ---*/
 
-    if (dynamic_grid)
-      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+    if (dynamic_grid) {
+      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                           geometry->node[jPoint]->GetGridVel());
+    }
 
-    /*--- Get primitive variables ---*/
+    /*--- Get primitive and secondary variables ---*/
 
-    V_i = nodes->GetPrimitive(iPoint); V_j = nodes->GetPrimitive(jPoint);
-    S_i = nodes->GetSecondary(iPoint); S_j = nodes->GetSecondary(jPoint);
+    auto V_i = nodes->GetPrimitive(iPoint); auto V_j = nodes->GetPrimitive(jPoint);
+    auto S_i = nodes->GetSecondary(iPoint); auto S_j = nodes->GetSecondary(jPoint);
 
-    /*--- High order reconstruction using MUSCL strategy ---*/
+    /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    if (muscl) {
+    if (!muscl) {
 
+      numerics->SetPrimitive(V_i, V_j);
+      numerics->SetSecondary(S_i, S_j);
+
+    }
+    else {
+      /*--- Reconstruction ---*/
+
+      /*--- Static arrays of primitives and secondaries (thread safety). ---*/
+
+      su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
+      su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
+
+      su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
-        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
       }
 
-      Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
-      Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
-
-      if (limiter) {
-        Limiter_i = nodes->GetLimiter_Primitive(iPoint);
-        Limiter_j = nodes->GetLimiter_Primitive(jPoint);
-      }
+      auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+
+        su2double Project_Grad_i = 0.0;
+        su2double Project_Grad_j = 0.0;
+
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
+
         if (limiter) {
-          if (van_albada){
-            Limiter_i[iVar] = (V_j[iVar]-V_i[iVar])*(2.0*Project_Grad_i + V_j[iVar]-V_i[iVar])/(4*Project_Grad_i*Project_Grad_i+(V_j[iVar]-V_i[iVar])*(V_j[iVar]-V_i[iVar])+EPS);
-            Limiter_j[iVar] = (V_j[iVar]-V_i[iVar])*(-2.0*Project_Grad_j + V_j[iVar]-V_i[iVar])/(4*Project_Grad_j*Project_Grad_j+(V_j[iVar]-V_i[iVar])*(V_j[iVar]-V_i[iVar])+EPS);
+          auto Limiter_i = nodes->GetLimiter_Primitive(iPoint);
+          auto Limiter_j = nodes->GetLimiter_Primitive(jPoint);
+
+          if (van_albada) {
+            su2double V_ij = V_j[iVar] - V_i[iVar];
+            Limiter_i[iVar] = V_ij*( 2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
+            Limiter_j[iVar] = V_ij*(-2.0*Project_Grad_j + V_ij) / (4*pow(Project_Grad_j, 2) + pow(V_ij, 2) + EPS);
           }
           Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
           Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
@@ -3434,212 +3451,166 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
           Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
         }
+
       }
 
-      /*--- Recompute the extrapolated quantities in a
-       thermodynamic consistent way  ---*/
+      /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
-      if (!ideal_gas || low_mach_corr) { ComputeConsExtrapolation(config); }
+      if (!ideal_gas || low_mach_corr) {
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j);
+      }
 
-      /*--- Low-Mach number correction ---*/
+      /*--- Low-Mach number correction. ---*/
 
       if (low_mach_corr) {
-
-        velocity2_i = 0.0;
-        velocity2_j = 0.0;
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
-          velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
-        }
-        mach_i = sqrt(velocity2_i)/Primitive_i[nDim+4];
-        mach_j = sqrt(velocity2_j)/Primitive_j[nDim+4];
-
-        z = min(max(mach_i,mach_j),1.0);
-        velocity2_i = 0.0;
-        velocity2_j = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          vel_i_corr[iDim] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
-                  + z * ( Primitive_i[iDim+1] - Primitive_j[iDim+1] )/2.0;
-          vel_j_corr[iDim] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
-                  + z * ( Primitive_j[iDim+1] - Primitive_i[iDim+1] )/2.0;
-
-          velocity2_j += vel_j_corr[iDim]*vel_j_corr[iDim];
-          velocity2_i += vel_i_corr[iDim]*vel_i_corr[iDim];
-
-          Primitive_i[iDim+1] = vel_i_corr[iDim];
-          Primitive_j[iDim+1] = vel_j_corr[iDim];
-        }
-
-        GetFluidModel()->SetEnergy_Prho(Primitive_i[nDim+1],Primitive_i[nDim+2]);
-        Primitive_i[nDim+3]= GetFluidModel()->GetStaticEnergy() + Primitive_i[nDim+1]/Primitive_i[nDim+2] + 0.5*velocity2_i;
-
-        GetFluidModel()->SetEnergy_Prho(Primitive_j[nDim+1],Primitive_j[nDim+2]);
-        Primitive_j[nDim+3]= GetFluidModel()->GetStaticEnergy() + Primitive_j[nDim+1]/Primitive_j[nDim+2] + 0.5*velocity2_j;
-
+        LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j);
       }
 
-      /*--- Check for non-physical solutions after reconstruction. If found,
-       use the cell-average value of the solution. This results in a locally
-       first-order approximation, but this is typically only active
-       during the start-up of a calculation. If non-physical, use the
-       cell-averaged state. ---*/
+      /*--- Check for non-physical solutions after reconstruction. If found, use the
+       cell-average value of the solution. This is a locally 1st order approximation,
+       which is typically only active during the start-up of a calculation. ---*/
 
-      neg_pressure_i = (Primitive_i[nDim+1] < 0.0); neg_pressure_j = (Primitive_j[nDim+1] < 0.0);
-      neg_density_i  = (Primitive_i[nDim+2] < 0.0); neg_density_j  = (Primitive_j[nDim+2] < 0.0);
+      bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
+      bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
 
-      R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
-      sq_vel = 0.0;
+      su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
+      su2double sq_vel = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        RoeVelocity[iDim] = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/(R+1);
-        sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
+        su2double RoeVelocity = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/(R+1);
+        sq_vel += pow(RoeVelocity, 2);
       }
-      RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
-      neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+      su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
 
-      if (neg_sound_speed) {
-        for (iVar = 0; iVar < nPrimVar; iVar++) {
-          Primitive_i[iVar] = V_i[iVar];
-          Primitive_j[iVar] = V_j[iVar];
-        }
-        nodes->SetNon_Physical(iPoint, true);
-        nodes->SetNon_Physical(iPoint, true);
-        Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1];
-        Secondary_j[0] = S_i[0]; Secondary_j[1] = S_i[1];
-      }
+      bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
 
-      if (neg_density_i || neg_pressure_i) {
-        for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_i[iVar] = V_i[iVar];
-        nodes->SetNon_Physical(iPoint, true);
-        Secondary_i[0] = S_i[0]; Secondary_i[1] = S_i[1];
-      }
+      bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
+      bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
 
-      if (neg_density_j || neg_pressure_j) {
-        for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = V_j[iVar];
-        nodes->SetNon_Physical(jPoint, true);
-        Secondary_j[0] = S_j[0]; Secondary_j[1] = S_j[1];
-      }
+      nodes->SetNon_Physical(iPoint, bad_i);
+      nodes->SetNon_Physical(jPoint, bad_j);
 
-      if (!neg_sound_speed && !neg_density_i && !neg_pressure_i)
-        nodes->SetNon_Physical(iPoint, false);
+      /*--- Get updated state, in case the point recovered after the set. ---*/
+      bad_i = nodes->GetNon_Physical(iPoint);
+      bad_j = nodes->GetNon_Physical(jPoint);
 
-      if (!neg_sound_speed && !neg_density_j && !neg_pressure_j)
-        nodes->SetNon_Physical(jPoint, false);
+      counter_local += bad_i+bad_j;
 
-      /* Lastly, check for existing first-order points still active
-       from previous iterations. */
-
-      if (nodes->GetNon_Physical(iPoint)) {
-        counter_local++;
-        for (iVar = 0; iVar < nPrimVar; iVar++)
-          Primitive_i[iVar] = V_i[iVar];
-      }
-      if (nodes->GetNon_Physical(jPoint)) {
-        counter_local++;
-        for (iVar = 0; iVar < nPrimVar; iVar++)
-          Primitive_j[iVar] = V_j[iVar];
-      }
-
-      numerics->SetPrimitive(Primitive_i, Primitive_j);
-      numerics->SetSecondary(Secondary_i, Secondary_j);
-
-    }
-    else {
-
-      /*--- Set conservative variables without reconstruction ---*/
-
-      numerics->SetPrimitive(V_i, V_j);
-      numerics->SetSecondary(S_i, S_j);
+      numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
+      numerics->SetSecondary(bad_i? S_i : Secondary_i,  bad_j? S_j : Secondary_j);
 
     }
 
     /*--- Roe Low Dissipation Scheme ---*/
 
-    if (kind_dissipation != NO_ROELOWDISS){
+    if (kind_dissipation != NO_ROELOWDISS) {
 
-      Dissipation_i = nodes->GetRoe_Dissipation(iPoint);
-      Dissipation_j = nodes->GetRoe_Dissipation(jPoint);
-      numerics->SetDissipation(Dissipation_i, Dissipation_j);
+      numerics->SetDissipation(nodes->GetRoe_Dissipation(iPoint),
+                               nodes->GetRoe_Dissipation(jPoint));
 
       if (kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS){
-        Sensor_i = nodes->GetSensor(iPoint);
-        Sensor_j = nodes->GetSensor(jPoint);
-        numerics->SetSensor(Sensor_i, Sensor_j);
+        numerics->SetSensor(nodes->GetSensor(iPoint),
+                            nodes->GetSensor(jPoint));
       }
       if (kind_dissipation == NTS || kind_dissipation == NTS_DUCROS){
-        Coord_i = geometry->node[iPoint]->GetCoord();
-        Coord_j = geometry->node[jPoint]->GetCoord();
         numerics->SetCoord(Coord_i, Coord_j);
       }
     }
 
     /*--- Compute the residual ---*/
 
-    numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+    const su2double* flux;
+    const su2double* const* jacobian_i;
+    const su2double* const* jacobian_j;
+    numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
 
     /*--- Update residual value ---*/
 
-    LinSysRes.AddBlock(iPoint, Res_Conv);
-    LinSysRes.SubtractBlock(jPoint, Res_Conv);
+    LinSysRes.AddBlock(iPoint, flux);
+    LinSysRes.SubtractBlock(jPoint, flux);
 
     /*--- Set implicit Jacobians ---*/
 
     if (implicit) {
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
+      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, jacobian_i, jacobian_j);
     }
 
     /*--- Set the final value of the Roe dissipation coefficient ---*/
 
-    if (kind_dissipation != NO_ROELOWDISS){
+    if (kind_dissipation != NO_ROELOWDISS) {
       nodes->SetRoe_Dissipation(iPoint,numerics->GetDissipation());
       nodes->SetRoe_Dissipation(jPoint,numerics->GetDissipation());
     }
-
   }
+  } // end color loop
+  } // end SU2_OMP_PARALLEL
 
-  /*--- Warning message about non-physical reconstructions ---*/
+  /*--- Warning message about non-physical reconstructions. ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-
-    if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
+    if (iMesh == MESH_0) {
+      unsigned long counter_global = 0;
+      SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+      config->SetNonphysical_Reconstr(counter_global);
+    }
   }
 }
 
-void CEulerSolver::ComputeConsExtrapolation(CConfig *config) {
+void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
+                                                  su2double *primitive, su2double *secondary) {
 
+  su2double density = primitive[nDim+2];
+  su2double pressure = primitive[nDim+1];
+
+  su2double velocity2 = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    velocity2 += pow(primitive[iDim+1], 2);
+
+  fluidModel->SetTDState_Prho(pressure, density);
+
+  primitive[0] = fluidModel->GetTemperature();
+  primitive[nDim+3] = fluidModel->GetStaticEnergy() + primitive[nDim+1]/primitive[nDim+2] + 0.5*velocity2;
+  primitive[nDim+4] = fluidModel->GetSoundSpeed();
+  secondary[0] = fluidModel->GetdPdrho_e();
+  secondary[1] = fluidModel->GetdPde_rho();
+
+}
+
+void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned short nDim,
+                                              su2double *primitive_i, su2double *primitive_j) {
   unsigned short iDim;
 
-  su2double density_i = Primitive_i[nDim+2];
-  su2double pressure_i = Primitive_i[nDim+1];
   su2double velocity2_i = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
-  }
-
-  GetFluidModel()->SetTDState_Prho(pressure_i, density_i);
-
-  Primitive_i[0]= GetFluidModel()->GetTemperature();
-  Primitive_i[nDim+3]= GetFluidModel()->GetStaticEnergy() + Primitive_i[nDim+1]/Primitive_i[nDim+2] + 0.5*velocity2_i;
-  Primitive_i[nDim+4]= GetFluidModel()->GetSoundSpeed();
-  Secondary_i[0]=GetFluidModel()->GetdPdrho_e();
-  Secondary_i[1]=GetFluidModel()->GetdPde_rho();
-
-
-  su2double density_j = Primitive_j[nDim+2];
-  su2double pressure_j = Primitive_j[nDim+1];
   su2double velocity2_j = 0.0;
+
   for (iDim = 0; iDim < nDim; iDim++) {
-    velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
+    velocity2_i += pow(primitive_i[iDim+1], 2);
+    velocity2_j += pow(primitive_j[iDim+1], 2);
+  }
+  su2double mach_i = sqrt(velocity2_i)/primitive_i[nDim+4];
+  su2double mach_j = sqrt(velocity2_j)/primitive_j[nDim+4];
+
+  su2double z = min(max(mach_i,mach_j),1.0);
+  velocity2_i = 0.0;
+  velocity2_j = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    su2double vel_i_corr = ( primitive_i[iDim+1] + primitive_j[iDim+1] )/2.0
+                     + z * ( primitive_i[iDim+1] - primitive_j[iDim+1] )/2.0;
+    su2double vel_j_corr = ( primitive_i[iDim+1] + primitive_j[iDim+1] )/2.0
+                     + z * ( primitive_j[iDim+1] - primitive_i[iDim+1] )/2.0;
+
+    velocity2_i += pow(vel_i_corr, 2);
+    velocity2_j += pow(vel_j_corr, 2);
+
+    primitive_i[iDim+1] = vel_i_corr;
+    primitive_j[iDim+1] = vel_j_corr;
   }
 
-  GetFluidModel()->SetTDState_Prho(pressure_j, density_j);
+  fluidModel->SetEnergy_Prho(primitive_i[nDim+1], primitive_i[nDim+2]);
+  primitive_i[nDim+3]= fluidModel->GetStaticEnergy() + primitive_i[nDim+1]/primitive_i[nDim+2] + 0.5*velocity2_i;
 
-  Primitive_j[0]= GetFluidModel()->GetTemperature();
-  Primitive_j[nDim+3]= GetFluidModel()->GetStaticEnergy() + Primitive_j[nDim+1]/Primitive_j[nDim+2] + 0.5*velocity2_j;
-  Primitive_j[nDim+4]=GetFluidModel()->GetSoundSpeed();
-  Secondary_j[0]=GetFluidModel()->GetdPdrho_e();
-  Secondary_j[1]=GetFluidModel()->GetdPde_rho();
+  fluidModel->SetEnergy_Prho(primitive_j[nDim+1], primitive_j[nDim+2]);
+  primitive_j[nDim+3]= fluidModel->GetStaticEnergy() + primitive_j[nDim+1]/primitive_j[nDim+2] + 0.5*velocity2_j;
 
 }
 
@@ -10975,10 +10946,11 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous       = config->GetViscous();
 
-  su2double *Normal = new su2double[nDim];
-  su2double *PrimVar_i = new su2double[nPrimVar];
-  su2double *PrimVar_j = new su2double[nPrimVar];
-  su2double *tmp_residual = new su2double[nVar];
+  su2double Normal[MAXNDIM] = {0.0};
+  su2double PrimVar_i[MAXNVAR] = {0.0};
+  su2double PrimVar_j[MAXNVAR] = {0.0};
+  su2double tmp_residual[MAXNVAR] = {0.0};
+  su2double Secondary_j[MAXNVAR] = {0.0};
 
   su2double weight;
   su2double P_static, rho_static;
@@ -11019,7 +10991,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
             conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
 
             if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ) {
-              Secondary_i = nodes->GetSecondary(iPoint);
+              auto Secondary_i = nodes->GetSecondary(iPoint);
 
               P_static   = PrimVar_j[nDim+1];
               rho_static = PrimVar_j[nDim+2];
@@ -11118,12 +11090,6 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
     }
   }
 
-  /*--- Free locally allocated memory ---*/
-
-  delete [] tmp_residual;
-  delete [] Normal;
-  delete [] PrimVar_i;
-  delete [] PrimVar_j;
 }
 
 void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
