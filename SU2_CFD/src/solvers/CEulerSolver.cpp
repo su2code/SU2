@@ -7458,14 +7458,17 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
                                   nodes->GetSecondary(iPoint));
 
       /*--- Compute the residual using an upwind scheme. ---*/
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      const su2double* flux;
+      const su2double* const* jacobian_i;
+      const su2double* const* jacobian_j;
+      conv_numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
 
       /*--- Update residual value ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, flux);
 
       /*--- Jacobian contribution for implicit integration. ---*/
       if (implicit) {
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(iPoint, iPoint, jacobian_i);
       }
 
       if (viscous) {
@@ -7783,16 +7786,19 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Compute the convective residual using an upwind scheme ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      const su2double* flux;
+      const su2double* const* jacobian_i;
+      const su2double* const* jacobian_j;
+      conv_numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
 
       /*--- Update residual value ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, flux);
 
       /*--- Convective Jacobian contribution for implicit integration ---*/
 
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(iPoint, iPoint, jacobian_i);
 
       /*--- Viscous residual contribution ---*/
 
@@ -7846,7 +7852,9 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
-                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                              CNumerics *conv_numerics, CNumerics *visc_numerics,
+                              CConfig *config, unsigned short val_marker) {
+
   unsigned short iDim, iVar, jVar, kVar;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double P_Total, T_Total, P_static, T_static, Rho_static, *Mach, *Flow_Dir, Area, UnitNormal[3];
@@ -8348,7 +8356,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
 
 void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container,
-    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                                   CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                   CConfig *config, unsigned short val_marker) {
+
   unsigned short iDim, iVar, jVar, kVar, iSpan;
   unsigned long iPoint, Point_Normal, oldVertex, iVertex;
   su2double P_Total, T_Total, *Flow_Dir;
@@ -9005,8 +9015,9 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
 
 }
 
-void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
-    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                            CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
   unsigned short iDim, iVar, jVar, iSpan;
   unsigned long  iPoint, Point_Normal, oldVertex, k, kend, kend_max, iVertex;
   su2double  *UnitNormal, *turboVelocity, *turboNormal;
@@ -9640,14 +9651,17 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Compute the residual using an upwind scheme ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      const su2double* flux;
+      const su2double* const* jacobian_i;
+      const su2double* const* jacobian_j;
+      conv_numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
 
       /*--- Update residual value ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, flux);
 
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(iPoint, iPoint, jacobian_i);
 
       /*--- Viscous contribution ---*/
 
@@ -9746,7 +9760,8 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
-                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                            CNumerics *conv_numerics, CNumerics *visc_numerics,
+                            CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   su2double P_Total, T_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
@@ -9980,16 +9995,19 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Compute the residual using an upwind scheme ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      const su2double* flux;
+      const su2double* const* jacobian_i;
+      const su2double* const* jacobian_j;
+      conv_numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
 
       /*--- Update residual value ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, flux);
 
       /*--- Jacobian contribution for implicit integration ---*/
 
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(iPoint, iPoint, jacobian_i);
 
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
@@ -10041,7 +10059,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
-                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                             CNumerics *conv_numerics, CNumerics *visc_numerics,
+                             CConfig *config, unsigned short val_marker) {
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint;
   su2double Pressure, P_Exit, Velocity[3],
@@ -10155,15 +10174,16 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
       /*--- Compute the residual using an upwind scheme ---*/
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      const su2double* flux;
+      const su2double* const* jacobian_i;
+      const su2double* const* jacobian_j;
+      conv_numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
 
-      /*--- Update residual value ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+      /*--- Add Residuals and Jacobians ---*/
 
-      /*--- Jacobian contribution for implicit integration ---*/
-      if (implicit) {
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      }
+      LinSysRes.AddBlock(iPoint, flux);
+      if (implicit)
+        Jacobian.AddBlock(iPoint, iPoint, jacobian_i);
 
 //      /*--- Viscous contribution, commented out because serious convergence problems  ---*/
 //
@@ -10213,7 +10233,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
-                                       CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                                       CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                       CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain;
@@ -10297,13 +10318,16 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
       /*--- Compute the residual using an upwind scheme ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      LinSysRes.AddBlock(iPoint, Residual);
+      const su2double* flux;
+      const su2double* const* jacobian_i;
+      const su2double* const* jacobian_j;
+      conv_numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
+      LinSysRes.AddBlock(iPoint, flux);
 
       /*--- Jacobian contribution for implicit integration ---*/
 
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(iPoint, iPoint, jacobian_i);
 
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
@@ -10355,7 +10379,8 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 }
 
 void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
-                                        CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                                        CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                        CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   su2double *V_outlet, *V_domain;
@@ -10415,13 +10440,16 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 
       /*--- Compute the residual using an upwind scheme ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      LinSysRes.AddBlock(iPoint, Residual);
+      const su2double* flux;
+      const su2double* const* jacobian_i;
+      const su2double* const* jacobian_j;
+      conv_numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
+      LinSysRes.AddBlock(iPoint, flux);
 
       /*--- Jacobian contribution for implicit integration ---*/
 
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(iPoint, iPoint, jacobian_i);
 
  //     /*--- Viscous contribution, commented out because serious convergence problems ---*/
  //
@@ -10636,13 +10664,16 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Compute the residual using an upwind scheme ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      LinSysRes.AddBlock(iPoint, Residual);
+      const su2double* flux;
+      const su2double* const* jacobian_i;
+      const su2double* const* jacobian_j;
+      conv_numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
+      LinSysRes.AddBlock(iPoint, flux);
 
       /*--- Jacobian contribution for implicit integration ---*/
 
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(iPoint, iPoint, jacobian_i);
 
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
@@ -10889,13 +10920,16 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 
       /*--- Compute the residual using an upwind scheme ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      LinSysRes.AddBlock(iPoint, Residual);
+      const su2double* flux;
+      const su2double* const* jacobian_i;
+      const su2double* const* jacobian_j;
+      conv_numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
+      LinSysRes.AddBlock(iPoint, flux);
 
       /*--- Jacobian contribution for implicit integration ---*/
 
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(iPoint, iPoint, jacobian_i);
 
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
@@ -10944,11 +10978,11 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                         CConfig *config) {
+void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                      CNumerics *visc_numerics, CConfig *config) {
 
   unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
-  unsigned short iDim, iVar, iMarker, nDonorVertex;
+  unsigned short iDim, iVar, jVar, iMarker, nDonorVertex;
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous       = config->GetViscous();
@@ -10975,12 +11009,15 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
           /*--- Initialize Residual, this will serve to accumulate the average ---*/
 
-          for (iVar = 0; iVar < nVar; iVar++)
+          for (iVar = 0; iVar < nVar; iVar++) {
             Residual[iVar] = 0.0;
+            for (jVar = 0; jVar < nVar; jVar++)
+              Jacobian_i[iVar][jVar] = 0.0;
+          }
 
           /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
-          for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
+          for (jVertex = 0; jVertex < nDonorVertex; jVertex++) {
 
             Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
@@ -11023,18 +11060,24 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
             /*--- Compute the convective residual using an upwind scheme ---*/
 
-            conv_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
+            const su2double* flux;
+            const su2double* const* jacobian_i;
+            const su2double* const* jacobian_j;
+            conv_numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
 
             /*--- Accumulate the residuals to compute the average ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++)
-              Residual[iVar] += weight*tmp_residual[iVar];
-
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Residual[iVar] += weight*flux[iVar];
+              for (jVar = 0; jVar < nVar; jVar++)
+                Jacobian_i[iVar][jVar] += weight*jacobian_i[iVar][jVar];
+            }
           }
 
           /*--- Add Residuals and Jacobians ---*/
 
           LinSysRes.AddBlock(iPoint, Residual);
+
           if (implicit)
             Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
@@ -11141,12 +11184,15 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
 
       /*--- Compute the convective residual using an upwind scheme ---*/
 
-      numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      const su2double* flux;
+      const su2double* const* jacobian_i;
+      const su2double* const* jacobian_j;
+      numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
 
       /*--- Add Residuals and Jacobians ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      LinSysRes.AddBlock(iPoint, flux);
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, jacobian_i);
 
     }
 
@@ -11202,12 +11248,15 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
 
       /*--- Compute the convective residual using an upwind scheme ---*/
 
-      numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      const su2double* flux;
+      const su2double* const* jacobian_i;
+      const su2double* const* jacobian_j;
+      numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
 
       /*--- Add Residuals and Jacobians ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      LinSysRes.AddBlock(iPoint, flux);
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, jacobian_i);
 
     }
 
@@ -11330,7 +11379,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
           P_static = V_outlet[nDim+1] / (Target_Press_Jump/PressureAdj);
           T_static = V_outlet[0] / (Target_Temp_Jump/TemperatureAdj);
         }
-        else       { P_static = V_outlet[nDim+1] - Target_Press_Jump; T_static = V_outlet[0] - Target_Temp_Jump; }
+        else { P_static = V_outlet[nDim+1] - Target_Press_Jump; T_static = V_outlet[0] - Target_Temp_Jump; }
       }
       else {
         V_outlet = nodes->GetPrimitive(iPoint);
@@ -11579,15 +11628,18 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 
       /*--- Compute the residual using an upwind scheme ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      const su2double* flux;
+      const su2double* const* jacobian_i;
+      const su2double* const* jacobian_j;
+      conv_numerics->ComputeResidual(flux, jacobian_i, jacobian_j, config);
 
       /*--- Update residual value ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, flux);
 
       /*--- Jacobian contribution for implicit integration ---*/
 
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, jacobian_i);
 
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
