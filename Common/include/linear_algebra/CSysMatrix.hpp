@@ -440,7 +440,7 @@ public:
    * \param[in] val_block - Block to set to A(i, j).
    */
   template<class OtherType>
-  inline void SetBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
 
     unsigned long iVar, jVar, index;
 
@@ -503,7 +503,7 @@ public:
    * \param[in] val_block - Block to add to A(i, j).
    */
   template<class OtherType>
-  inline void AddBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+  inline void AddBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
 
     unsigned long iVar, jVar, index;
 
@@ -524,7 +524,7 @@ public:
    * \param[in] val_block - Block to subtract to A(i, j).
    */
   template<class OtherType>
-  inline void SubtractBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+  inline void SubtractBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
 
     unsigned long iVar, jVar, index;
 
