@@ -103,14 +103,13 @@ void AddTriangle(Mesh *Msh, int idxTri, int *is, int ref)
   Msh->Tri[idxTri][3] = ref;
 }
 
-void AddCorner(Mesh *Msh, int idxCor, int *is, int ref)
+void AddCorner(Mesh *Msh, int idxCor, int *is)
 {
   if ( idxCor > Msh->MaxNbrCor ) {
     printf("  ## ERROR : Max number of triangles reached (%d, max %d).\n", idxCor, Msh->MaxNbrCor);
     exit(1);
   }
-  Msh->Cor[idxCor][0] = is[0];
-  Msh->Cor[idxCor][1] = ref;
+  Msh->Cor[idxCor] = is[0];
 }
 
 
@@ -172,7 +171,7 @@ Mesh* AllocMesh (int * SizMsh)
 	}
 	
   if ( Msh->MaxNbrCor > 0 ) {
-    Msh->Cor = (int2*)malloc(sizeof(int2)*(Msh->MaxNbrCor+1));
+    Msh->Cor = (int*)malloc(sizeof(int)*(Msh->MaxNbrCor+1));
   }
 
 	if ( Msh->MaxNbrEfr > 0 ) {

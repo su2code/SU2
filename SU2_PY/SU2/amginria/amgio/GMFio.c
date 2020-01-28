@@ -120,9 +120,9 @@ int LoadGMFMesh (char *MshNam, Mesh *Msh)
 	NbrCor = GmfStatKwd(InpMsh, GmfCorners);	
 	GmfGotoKwd(InpMsh, GmfCorners);
   for (i=1; i<=NbrCor; ++i) {
-		GmfGetLin(InpMsh, GmfCorners, &bufInt[0], &ref);
+		GmfGetLin(InpMsh, GmfCorners, &bufInt[0]);
 		Msh->NbrCor++;
-		AddCorner(Msh,Msh->NbrCor,bufInt,ref);
+		AddCorner(Msh,Msh->NbrCor,bufInt);
   }
 
 	//--- Read tetrahedra
@@ -371,7 +371,7 @@ int WriteGMFMesh(char *nam, Mesh *Msh, int OptBin)
 	double3*Ver = Msh->Ver;
 	int4*Tri    = Msh->Tri;
 	int3*Efr    = Msh->Efr;
-	int2*Cor    = Msh->Cor;
+	int*Cor     = Msh->Cor;
 	int5*Tet    = Msh->Tet;
 	int5*Qua    = Msh->Qua;
 	
@@ -483,10 +483,8 @@ int WriteGMFMesh(char *nam, Mesh *Msh, int OptBin)
   	//--- Write corners
   	GmfSetKwd(OutMsh, GmfCorners, NbrCor);
   	for (iCor=1; iCor<=NbrCor; ++iCor) {
-  	  for (i=0; i<1; ++i) {
-  	    idx[i] = (long long)(Cor[iCor][i]);
-  	  }
-  	  GmfSetLin(OutMsh, GmfCorners,idx[0],Cor[iCor][1]);  
+ 	    idx[0] = (long long)(Cor[iCor]);
+  	  GmfSetLin(OutMsh, GmfCorners,idx[0]);  
   	}
   }
 

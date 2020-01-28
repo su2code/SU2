@@ -89,8 +89,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri,
 	}
 
 	for (i=1; i<=Msh->NbrCor; i++){
-		for (j=0; j<2; j++)
-			PyList_Append(pyCor, PyInt_FromLong(Msh->Cor[i][j]));
+		PyList_Append(pyCor, PyInt_FromLong(Msh->Cor[i]));
 	}
 	
 	for (i=1; i<=Msh->NbrTri; i++){
@@ -212,26 +211,23 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 	//--- Fill mesh
 
 	if ( PyList_Check(pyCor) )
-  {
-			siz = PyList_Size(pyCor);
+  	{
+		siz = PyList_Size(pyCor);
 			
-			for (i=0; i<siz/2; i++)
-      {
-				idx = 2*i;
+		for (i=0; i<siz; i++)
+      	{
 				
-	       	PyObject *oo = PyList_GetItem(pyCor,idx+0);
+	       	PyObject *oo = PyList_GetItem(pyCor,i);
 	       	if ( PyInt_Check(oo) )
 	       	{
-						is[0] = (int) PyInt_AS_LONG(oo);
+				is[0] = (int) PyInt_AS_LONG(oo);
 	       	}
 				
-				oo = PyList_GetItem(pyCor,idx+1);
-				ref = (int) PyInt_AS_LONG(oo);
 				
-				Msh->NbrCor++;
-				AddCorner(Msh,Msh->NbrCor,is,ref);
-      }
-  }
+			Msh->NbrCor++;
+			AddCorner(Msh,Msh->NbrCor,is);
+      	}
+  	}
 	
 	if ( PyList_Check(pyTri) )
   {

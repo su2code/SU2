@@ -60,7 +60,7 @@ typedef struct S_Mesh
 	int MaxNbrPyr;
 	
   double3    *Ver;
-  int2       *Cor;	    
+  int        *Cor;	    
   int4       *Tri;	    
   int3       *Efr;   
 	int5       *Tet;

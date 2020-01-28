@@ -130,8 +130,8 @@ def read_mesh(mesh_name, solution_name):
     NbrEdg = len(Edg)/3
     Edg = np.reshape(Edg,(NbrEdg, 3)).astype(int)
 
-    NbrCor = len(Cor)/2
-    Cor = np.reshape(Cor,(NbrCor, 2)).astype(int)
+    NbrCor = len(Cor)
+    Cor = np.reshape(Cor,(NbrCor, 1)).astype(int)
 
     NbrVer = len(Ver)/3
     Ver = np.reshape(Ver,(NbrVer, 3))
@@ -201,7 +201,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     Tri = np.array(Tri).reshape(4*len(Tri)).tolist()
     Tet = np.array(Tet).reshape(5*len(Tet)).tolist()
     Edg = np.array(Edg).reshape(3*len(Edg)).tolist()
-    Cor = np.array(Cor).reshape(2*len(Cor)).tolist()
+    Cor = np.array(Cor).reshape(len(Cor)).tolist()
     
     if len(Sol) > 1 :
         SolSiz = len(Sol[1])

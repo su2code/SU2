@@ -561,7 +561,6 @@ int LoadSU2Elements(FILE *FilHdl, Mesh *Msh)
 
 int LoadSU2Corners(FILE *FilHdl, Mesh *Msh)
 {
-	int  ref=1;
 	char   str[1024];
 
 	int iCor, NbrCor=0, typ, is[8], swi[8], buf, s, idx, res;
@@ -575,9 +574,7 @@ int LoadSU2Corners(FILE *FilHdl, Mesh *Msh)
 	
 	fscanf(FilHdl, "%d", &NbrCor);
   fgets (str, sizeof str, FilHdl);
-	
-  idx=0;
-	
+		
   for (iCor=0; iCor<NbrCor; iCor++) {
     fscanf(FilHdl, "%d", &typ);
 
@@ -596,7 +593,7 @@ int LoadSU2Corners(FILE *FilHdl, Mesh *Msh)
 			return 0;
 		}
 			
-      AddCorner(Msh,Msh->NbrCor,swi,ref);
+      AddCorner(Msh,Msh->NbrCor,swi);
 
     }
 		else {
@@ -1067,7 +1064,7 @@ void WriteSU2Mesh(char *nam, Mesh *Msh)
   if( NbrCor > 0 ) {
   	fprintf(OutFil, "NCORNERS= %d\n", NbrCor);
   	for (iCor=1; iCor<=Msh->NbrCor; iCor++) {
-  	  fprintf(OutFil, "0 %d", Msh->Cor[iCor][0]-1); 
+  	  fprintf(OutFil, "0 %d", Msh->Cor[iCor]-1); 
   	}
   }
 	

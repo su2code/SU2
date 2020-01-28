@@ -58,7 +58,7 @@ void  AddTetrahedron(Mesh *Msh, int idx, int *is, int ref);
 void  AddPyramid(Mesh *Msh, int idx, int *is, int ref);
 void  AddPrism(Mesh *Msh, int idx, int *is, int ref);
 void  AddTriangle(Mesh *Msh, int idxTri, int *is, int ref);
-void  AddCorner(Mesh *Msh, int idxCor, int *is, int ref);
+void  AddCorner(Mesh *Msh, int idxCor, int *is);
 void  AddVertex(Mesh *Msh, int idxVer, double *Crd);
 int   imin(int n, int *idx);
 void  PrintMeshInfo (Mesh *Msh);
