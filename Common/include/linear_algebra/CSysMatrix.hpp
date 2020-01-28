@@ -461,7 +461,7 @@ public:
    * \param[in] val_block - Block to set to A(i, j).
    */
   template<class OtherType>
-  inline void SetBlock(unsigned long block_i, unsigned long block_j, OtherType *val_block) {
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType *val_block) {
 
     unsigned long iVar, index;
 
@@ -469,6 +469,28 @@ public:
       if (col_ind[index] == block_j) {
         for (iVar = 0; iVar < nVar*nEqn; iVar++)
           matrix[index*nVar*nEqn+iVar] = PassiveAssign<ScalarType,OtherType>(val_block[iVar]);
+        break;
+      }
+    }
+  }
+
+  /*!
+   * \brief Add a scaled block (in flat format) to the sparse matrix.
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \param[in] alpha - Scale factor.
+   * \param[in] val_block - Block to set to A(i, j).
+   */
+  template<class OtherType>
+  inline void AddBlock(unsigned long block_i, unsigned long block_j,
+                       OtherType alpha, const OtherType *val_block) {
+
+    unsigned long iVar, index;
+
+    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+      if (col_ind[index] == block_j) {
+        for (iVar = 0; iVar < nVar*nEqn; iVar++)
+          matrix[index*nVar*nEqn+iVar] += PassiveAssign<ScalarType,OtherType>(alpha * val_block[iVar]);
         break;
       }
     }
@@ -556,16 +578,8 @@ public:
    */
   template<class OtherType>
   inline void AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
-
-    unsigned long iVar, index;
-
-    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-      if (col_ind[index] == block_i) { // Only elements on the diagonal
-        for (iVar = 0; iVar < nVar; iVar++)
-          matrix[index*nVar*nVar+iVar*nVar+iVar] += PassiveAssign<ScalarType,OtherType>(val_matrix);
-        break;
-      }
-    }
+    for (auto iVar = 0ul; iVar < nVar; iVar++)
+      matrix[dia_ptr[block_i]*nVar*nVar + iVar*(nVar+1)] += PassiveAssign<ScalarType,OtherType>(val_matrix);
   }
 
   /*!
@@ -577,21 +591,14 @@ public:
   template<class OtherType>
   inline void SetVal2Diag(unsigned long block_i, OtherType val_matrix) {
 
-    unsigned long iVar, jVar, index;
+    unsigned long iVar, index = dia_ptr[block_i]*nVar*nVar;
 
-    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-      if (col_ind[index] == block_i) { // Only elements on the diagonal
+    /*--- Clear entire block before setting its diagonal. ---*/
+    for (iVar = 0; iVar < nVar*nVar; iVar++)
+      matrix[index+iVar] = 0.0;
 
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            matrix[index*nVar*nVar+iVar*nVar+jVar] = 0.0;
-
-        for (iVar = 0; iVar < nVar; iVar++)
-          matrix[index*nVar*nVar+iVar*nVar+iVar] = PassiveAssign<ScalarType,OtherType>(val_matrix);
-
-        break;
-      }
-    }
+    for (iVar = 0; iVar < nVar; iVar++)
+      matrix[index+iVar*(nVar+1)] = PassiveAssign<ScalarType,OtherType>(val_matrix);
   }
 
   /*!

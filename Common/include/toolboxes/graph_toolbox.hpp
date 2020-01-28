@@ -208,6 +208,14 @@ public:
   }
 
   /*!
+   * \return Raw pointer to the inner index vector, offset for a given outer index.
+   */
+  inline const Index_t* innerIdx(Index_t iOuterIdx) const {
+    assert(!empty() && "Sparse pattern has not been built.");
+    return m_innerIdx.data() + m_outerPtr(iOuterIdx);
+  }
+
+  /*!
    * \return Raw pointer to the diagonal pointer vector.
    */
   inline const Index_t* diagPtr() const {
