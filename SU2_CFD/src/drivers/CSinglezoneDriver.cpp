@@ -280,19 +280,18 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   }
 
 
-  /*--- Check whether the outer time integration has reached the final time ---*/
-  TimeConvergence = GetTimeConvergence();
 
   if (TimeDomain == YES) {
 
     /*--- Check whether the outer time integration has reached the final time ---*/
 
+    TimeConvergence = GetTimeConvergence();
     FinalTimeReached     = CurTime >= MaxTime;
     MaxIterationsReached = TimeIter+1 >= nTimeIter;
 
     if ((FinalTimeReached || MaxIterationsReached || TimeConvergence) && (rank == MASTER_NODE)){
       cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (TimeConvergence)     cout << endl << "Windowed time averaged objective function convergence criterion is fullfilled." << endl;
+      if (TimeConvergence)     cout << endl << "All windowed time-averaged convergence criteria are fullfilled." << endl;
       if (FinalTimeReached)     cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
       if (MaxIterationsReached) cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
       cout << "-------------------------------------------------------------------------" << endl;

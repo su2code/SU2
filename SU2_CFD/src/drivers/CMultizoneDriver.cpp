@@ -656,7 +656,7 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 
   unsigned long nOuterIter, OuterIter, nTimeIter;
   su2double MaxTime, CurTime;
-  bool TimeDomain, InnerConvergence, FinalTimeReached, MaxIterationsReached;
+  bool TimeDomain, InnerConvergence, FinalTimeReached, MaxIterationsReached, TimeConvergence;
 
   OuterIter  = driver_config->GetOuterIter();
   nOuterIter = driver_config->GetnOuter_Iter();
@@ -689,12 +689,13 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
   if (TimeDomain == YES) {
 
     /*--- Check whether the outer time integration has reached the final time ---*/
-
+    TimeConvergence = GetTimeConvergence();
     FinalTimeReached     = CurTime >= MaxTime;
     MaxIterationsReached = TimeIter+1 >= nTimeIter;
 
-    if ((FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
+    if ((TimeConvergence || FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
       cout << endl << "----------------------------- Solver Exit -------------------------------";
+      if (TimeConvergence)  cout << endl << "All windowed time-averaged convergence criteria are fullfilled." << endl;
       if (FinalTimeReached) cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
       else cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
       cout << "-------------------------------------------------------------------------" << endl;
