@@ -1177,21 +1177,9 @@ void CFEMFluidIteration::Postprocess(COutput *output,
                  unsigned short val_iZone,
                  unsigned short val_iInst){}
 
-CHeatIteration::CHeatIteration(CConfig *config) : CIteration(config) { }
+CHeatIteration::CHeatIteration(CConfig *config) : CFluidIteration(config) { }
 
 CHeatIteration::~CHeatIteration(void) { }
-
-void CHeatIteration::Preprocess(COutput *output,
-                                CIntegration ****integration,
-                                CGeometry ****geometry,
-                                CSolver *****solver,
-                                CNumerics ******numerics,
-                                CConfig **config,
-                                CSurfaceMovement **surface_movement,
-                                CVolumetricMovement ***grid_movement,
-                                CFreeFormDefBox*** FFDBox,
-                                unsigned short val_iZone,
-                                unsigned short val_iInst) { }
 
 void CHeatIteration::Iterate(COutput *output,
                              CIntegration ****integration,
@@ -1226,106 +1214,20 @@ void CHeatIteration::Update(COutput *output,
                             unsigned short val_iInst)      {
   
   unsigned short iMesh;
-  su2double Physical_dt, Physical_t;
   unsigned long TimeIter = config[ZONE_0]->GetTimeIter();
   
   /*--- Dual time stepping strategy ---*/
+
   if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
       (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
     
     /*--- Update dual time solver ---*/
+
     for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       integration[val_iZone][val_iInst][HEAT_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh][HEAT_SOL], config[val_iZone], iMesh);
       integration[val_iZone][val_iInst][HEAT_SOL]->SetConvergence(false);
     }
-    
-    Physical_dt = config[val_iZone]->GetDelta_UnstTime();
-    Physical_t  = (TimeIter+1)*Physical_dt;
-    if (Physical_t >=  config[val_iZone]->GetTotal_UnstTime())
-      integration[val_iZone][val_iInst][HEAT_SOL]->SetConvergence(true);
   }
-}
-bool CHeatIteration::Monitor(COutput *output,
-    CIntegration ****integration,
-    CGeometry ****geometry,
-    CSolver *****solver,
-    CNumerics ******numerics,
-    CConfig **config,
-    CSurfaceMovement **surface_movement,
-    CVolumetricMovement ***grid_movement,
-    CFreeFormDefBox*** FFDBox,
-    unsigned short val_iZone,
-    unsigned short val_iInst)     { return false; }
-void CHeatIteration::Postprocess(COutput *output,
-                                 CIntegration ****integration,
-                                 CGeometry ****geometry,
-                                 CSolver *****solver,
-                                 CNumerics ******numerics,
-                                 CConfig **config,
-                                 CSurfaceMovement **surface_movement,
-                                 CVolumetricMovement ***grid_movement,
-                                 CFreeFormDefBox*** FFDBox,
-                                 unsigned short val_iZone,
-                                 unsigned short val_iInst) { }
-
-void CHeatIteration::Solve(COutput *output,
-                             CIntegration ****integration,
-                             CGeometry ****geometry,
-                             CSolver *****solver,
-                             CNumerics ******numerics,
-                             CConfig **config,
-                             CSurfaceMovement **surface_movement,
-                             CVolumetricMovement ***grid_movement,
-                             CFreeFormDefBox*** FFDBox,
-                             unsigned short val_iZone,
-                             unsigned short val_iInst) {
-
-  unsigned short Inner_Iter, nInner_Iter = config[val_iZone]->GetnInner_Iter();
-  bool StopCalc = false;
-
-  /*--- Preprocess the solver ---*/
-  Preprocess(output, integration, geometry,
-      solver, numerics, config,
-      surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-
-  /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
-  /*--- However, ExtIter is the number of FSI iterations, so nIntIter is used in this case ---*/
-
-  for (Inner_Iter = 0; Inner_Iter < nInner_Iter; Inner_Iter++){
-		
-    config[val_iZone]->SetInnerIter(Inner_Iter);
-
-    Iterate(output, integration, geometry,
-        solver, numerics, config,
-        surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-
-    if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()){
-      output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(), Inner_Iter);
-    }
-    
-    /*--- Output files at intermediate time positions if the problem is single zone ---*/
-
-    if (singlezone) Output(output, geometry, solver, config,
-                           config[val_iZone]->GetInnerIter(), StopCalc, val_iZone, val_iInst);
-    
-    /*--- If convergence was reached in every zone --*/
-    StopCalc = integration[val_iZone][INST_0][HEAT_SOL]->GetConvergence();
-    if (StopCalc) break;
-
-  }
-
-  if (multizone){
-    
-    Output(output, geometry, solver, config,
-           config[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
-    
-    /*--- Set the fluid convergence to false (to make sure outer subiterations converge) ---*/
-    
-    integration[val_iZone][INST_0][HEAT_SOL]->SetConvergence(false);
-  }
-  
-  //output->SetConvHistory_Body(NULL, geometry, solver, config, integration, true, 0.0, val_iZone, INST_0);
-
 }
 
 CFEAIteration::CFEAIteration(CConfig *config) : CIteration(config) { }

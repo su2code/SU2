@@ -682,7 +682,8 @@ public:
  * \brief Class for driving an iteration of the heat system.
  * \author T. Economon
  */
-class CHeatIteration : public CIteration {
+class CHeatIteration : public CFluidIteration {
+
 public:
   
   /*!
@@ -695,22 +696,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CHeatIteration(void);
-  
-  /*!
-   * \brief Preprocessing to prepare for an iteration of the physics.
-   * \param[in] ??? - Description here.
-   */
-  void Preprocess(COutput *output,
-                  CIntegration ****integration,
-                  CGeometry ****geometry,
-                  CSolver *****solver,
-                  CNumerics ******numerics,
-                  CConfig **config,
-                  CSurfaceMovement **surface_movement,
-                  CVolumetricMovement ***grid_movement,
-                  CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone,
-                  unsigned short val_iInst);
   
   /*!
    * \brief Perform a single iteration of the heat system.
@@ -737,31 +722,6 @@ public:
                unsigned short val_iInst);
 
   /*!
-   * \brief Perform a single iteration of the wave system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration - Container vector with all the integration methods.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   * \param[in] val_iZone - zone of the problem.
-   */
-  void Solve(COutput *output,
-               CIntegration ****integration,
-               CGeometry ****geometry,
-               CSolver *****solver,
-               CNumerics ******numerics,
-               CConfig **config,
-               CSurfaceMovement **surface_movement,
-               CVolumetricMovement ***grid_movement,
-               CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone,
-               unsigned short val_iInst);
-
-  /*!
    * \brief Updates the containers for the heat system.
    * \param[in] ??? - Description here.
    */
@@ -776,41 +736,6 @@ public:
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
               unsigned short val_iInst);
-  
-  /*!
-   * \brief Monitors the convergence and other metrics for the heat system.
-   * \param[in] ??? - Description here.
-   */
-  bool Monitor(COutput *output,
-      CIntegration ****integration,
-      CGeometry ****geometry,
-      CSolver *****solver,
-      CNumerics ******numerics,
-      CConfig **config,
-      CSurfaceMovement **surface_movement,
-      CVolumetricMovement ***grid_movement,
-      CFreeFormDefBox*** FFDBox,
-      unsigned short val_iZone,
-      unsigned short val_iInst);
-  
-  /*!
-   * \brief Postprocess ???.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Postprocess(COutput *output,
-                   CIntegration ****integration,
-                   CGeometry ****geometry,
-                   CSolver *****solver,
-                   CNumerics ******numerics,
-                   CConfig **config,
-                   CSurfaceMovement **surface_movement,
-                   CVolumetricMovement ***grid_movement,
-                   CFreeFormDefBox*** FFDBox,
-                   unsigned short val_iZone,
-                   unsigned short val_iInst);
-  
 };
 
 /*!
