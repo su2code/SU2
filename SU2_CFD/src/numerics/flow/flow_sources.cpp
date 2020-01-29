@@ -28,15 +28,32 @@
 
 #include "../../../include/numerics/flow/flow_sources.hpp"
 
-CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
-                          CNumerics(val_nDim, val_nVar, config) {
+CSourceBase_Flow::CSourceBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                                   CNumerics(val_nDim, val_nVar, config) {
+  residual = new su2double [nVar]();
+  jacobian = new su2double* [nVar];
+  for(unsigned short iVar = 0; iVar < nVar; ++iVar)
+    jacobian[iVar] = new su2double [nVar]();
+}
+
+CSourceBase_Flow::~CSourceBase_Flow() {
+  delete [] residual;
+  if(jacobian) {
+    for(unsigned short iVar = 0; iVar < nVar; ++iVar)
+      delete [] jacobian[iVar];
+    delete [] jacobian;
+  }
+}
+
+CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                          CSourceBase_Flow(val_nDim, val_nVar, config) {
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
 
 }
 
-void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config) {
+CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfig* config) {
 
   su2double yinv, Pressure_i, Enthalpy_i, Velocity_i, sq_vel;
   unsigned short iDim, iVar, jVar;
@@ -56,35 +73,35 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
     Pressure_i = (Gamma-1.0)*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
     Enthalpy_i = (U_i[nDim+1] + Pressure_i) / U_i[0];
 
-    val_residual[0] = yinv*Volume*U_i[2];
-    val_residual[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];
-    val_residual[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);
-    val_residual[3] = yinv*Volume*Enthalpy_i*U_i[2];
+    residual[0] = yinv*Volume*U_i[2];
+    residual[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];
+    residual[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);
+    residual[3] = yinv*Volume*Enthalpy_i*U_i[2];
 
     if (implicit) {
-      Jacobian_i[0][0] = 0.0;
-      Jacobian_i[0][1] = 0.0;
-      Jacobian_i[0][2] = 1.0;
-      Jacobian_i[0][3] = 0.0;
+      jacobian[0][0] = 0.0;
+      jacobian[0][1] = 0.0;
+      jacobian[0][2] = 1.0;
+      jacobian[0][3] = 0.0;
 
-      Jacobian_i[1][0] = -U_i[1]*U_i[2]/(U_i[0]*U_i[0]);
-      Jacobian_i[1][1] = U_i[2]/U_i[0];
-      Jacobian_i[1][2] = U_i[1]/U_i[0];
-      Jacobian_i[1][3] = 0.0;
+      jacobian[1][0] = -U_i[1]*U_i[2]/(U_i[0]*U_i[0]);
+      jacobian[1][1] = U_i[2]/U_i[0];
+      jacobian[1][2] = U_i[1]/U_i[0];
+      jacobian[1][3] = 0.0;
 
-      Jacobian_i[2][0] = -U_i[2]*U_i[2]/(U_i[0]*U_i[0]);
-      Jacobian_i[2][1] = 0.0;
-      Jacobian_i[2][2] = 2*U_i[2]/U_i[0];
-      Jacobian_i[2][3] = 0.0;
+      jacobian[2][0] = -U_i[2]*U_i[2]/(U_i[0]*U_i[0]);
+      jacobian[2][1] = 0.0;
+      jacobian[2][2] = 2*U_i[2]/U_i[0];
+      jacobian[2][3] = 0.0;
 
-      Jacobian_i[3][0] = -Gamma*U_i[2]*U_i[3]/(U_i[0]*U_i[0]) + (Gamma-1)*U_i[2]*(U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]*U_i[0]);
-      Jacobian_i[3][1] = -(Gamma-1)*U_i[2]*U_i[1]/(U_i[0]*U_i[0]);
-      Jacobian_i[3][2] = Gamma*U_i[3]/U_i[0] - 1/2*(Gamma-1)*( (U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]) + 2*U_i[2]*U_i[2]/(U_i[0]*U_i[0]) );
-      Jacobian_i[3][3] = Gamma*U_i[2]/U_i[0];
+      jacobian[3][0] = -Gamma*U_i[2]*U_i[3]/(U_i[0]*U_i[0]) + (Gamma-1)*U_i[2]*(U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]*U_i[0]);
+      jacobian[3][1] = -(Gamma-1)*U_i[2]*U_i[1]/(U_i[0]*U_i[0]);
+      jacobian[3][2] = Gamma*U_i[3]/U_i[0] - 1/2*(Gamma-1)*( (U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]) + 2*U_i[2]*U_i[2]/(U_i[0]*U_i[0]) );
+      jacobian[3][3] = Gamma*U_i[2]/U_i[0];
 
       for (iVar=0; iVar < nVar; iVar++)
         for (jVar=0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] *= yinv*Volume;
+          jacobian[iVar][jVar] *= yinv*Volume;
 
     }
 
@@ -93,21 +110,22 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
   else {
 
     for (iVar=0; iVar < nVar; iVar++)
-      val_residual[iVar] = 0.0;
+      residual[iVar] = 0.0;
 
     if (implicit) {
       for (iVar=0; iVar < nVar; iVar++) {
         for (jVar=0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
+          jacobian[iVar][jVar] = 0.0;
       }
     }
 
   }
 
+  return ResidualType<>(residual, jacobian, nullptr);
 }
 
-CSourceIncAxisymmetric_Flow::CSourceIncAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
-                             CNumerics(val_nDim, val_nVar, config) {
+CSourceIncAxisymmetric_Flow::CSourceIncAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                             CSourceBase_Flow(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   energy   = config->GetEnergy_Equation();
@@ -115,7 +133,7 @@ CSourceIncAxisymmetric_Flow::CSourceIncAxisymmetric_Flow(unsigned short val_nDim
 
 }
 
-void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config) {
+CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CConfig* config) {
 
   su2double yinv, Velocity_i[3];
   unsigned short iDim, jDim, iVar, jVar;
@@ -138,36 +156,36 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
 
     /*--- Inviscid component of the source term. ---*/
 
-    val_residual[0] = yinv*Volume*DensityInc_i*Velocity_i[1];
-    val_residual[1] = yinv*Volume*DensityInc_i*Velocity_i[0]*Velocity_i[1];
-    val_residual[2] = yinv*Volume*DensityInc_i*Velocity_i[1]*Velocity_i[1];
-    val_residual[3] = yinv*Volume*DensityInc_i*Enthalpy_i*Velocity_i[1];
+    residual[0] = yinv*Volume*DensityInc_i*Velocity_i[1];
+    residual[1] = yinv*Volume*DensityInc_i*Velocity_i[0]*Velocity_i[1];
+    residual[2] = yinv*Volume*DensityInc_i*Velocity_i[1]*Velocity_i[1];
+    residual[3] = yinv*Volume*DensityInc_i*Enthalpy_i*Velocity_i[1];
 
     if (implicit) {
 
-      Jacobian_i[0][0] = 0.0;
-      Jacobian_i[0][1] = 0.0;
-      Jacobian_i[0][2] = 1.0;
-      Jacobian_i[0][3] = 0.0;
+      jacobian[0][0] = 0.0;
+      jacobian[0][1] = 0.0;
+      jacobian[0][2] = 1.0;
+      jacobian[0][3] = 0.0;
 
-      Jacobian_i[1][0] = 0.0;
-      Jacobian_i[1][1] = Velocity_i[1];
-      Jacobian_i[1][2] = Velocity_i[0];
-      Jacobian_i[1][3] = 0.0;
+      jacobian[1][0] = 0.0;
+      jacobian[1][1] = Velocity_i[1];
+      jacobian[1][2] = Velocity_i[0];
+      jacobian[1][3] = 0.0;
 
-      Jacobian_i[2][0] = 0.0;
-      Jacobian_i[2][1] = 0.0;
-      Jacobian_i[2][2] = 2.0*Velocity_i[1];
-      Jacobian_i[2][3] = 0.0;
+      jacobian[2][0] = 0.0;
+      jacobian[2][1] = 0.0;
+      jacobian[2][2] = 2.0*Velocity_i[1];
+      jacobian[2][3] = 0.0;
 
-      Jacobian_i[3][0] = 0.0;
-      Jacobian_i[3][1] = 0.0;
-      Jacobian_i[3][2] = Enthalpy_i;
-      Jacobian_i[3][3] = Cp_i*Velocity_i[1];
+      jacobian[3][0] = 0.0;
+      jacobian[3][1] = 0.0;
+      jacobian[3][2] = Enthalpy_i;
+      jacobian[3][3] = Cp_i*Velocity_i[1];
 
       for (iVar=0; iVar < nVar; iVar++)
         for (jVar=0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] *= yinv*Volume*DensityInc_i;
+          jacobian[iVar][jVar] *= yinv*Volume*DensityInc_i;
 
     }
 
@@ -197,42 +215,44 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
 
       /*--- Viscous terms. ---*/
 
-      val_residual[0] -= 0.0;
-      val_residual[1] -= Volume*(yinv*tau[0][1] - TWO3*AuxVar_Grad_i[0]);
-      val_residual[2] -= Volume*(yinv*2.0*total_viscosity*PrimVar_Grad_i[2][1] -
+      residual[0] -= 0.0;
+      residual[1] -= Volume*(yinv*tau[0][1] - TWO3*AuxVar_Grad_i[0]);
+      residual[2] -= Volume*(yinv*2.0*total_viscosity*PrimVar_Grad_i[2][1] -
                                  yinv*yinv*2.0*total_viscosity*Velocity_i[1] -
                                  TWO3*AuxVar_Grad_i[1]);
-      val_residual[3] -= Volume*yinv*Thermal_Conductivity_i*PrimVar_Grad_i[nDim+1][1];
+      residual[3] -= Volume*yinv*Thermal_Conductivity_i*PrimVar_Grad_i[nDim+1][1];
 
     }
 
   } else {
 
     for (iVar=0; iVar < nVar; iVar++)
-      val_residual[iVar] = 0.0;
+      residual[iVar] = 0.0;
 
     if (implicit) {
       for (iVar=0; iVar < nVar; iVar++) {
         for (jVar=0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
+          jacobian[iVar][jVar] = 0.0;
       }
     }
 
   }
 
   if (!energy) {
-    val_residual[nDim+1] = 0.0;
+    residual[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {
-        Jacobian_i[iVar][nDim+1] = 0.0;
-        Jacobian_i[nDim+1][iVar] = 0.0;
+        jacobian[iVar][nDim+1] = 0.0;
+        jacobian[nDim+1][iVar] = 0.0;
       }
     }
   }
+
+  return ResidualType<>(residual, jacobian, nullptr);
 }
 
-CSourceBodyForce::CSourceBodyForce(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
-                  CNumerics(val_nDim, val_nVar, config) {
+CSourceBodyForce::CSourceBodyForce(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                  CSourceBase_Flow(val_nDim, val_nVar, config) {
 
   /*--- Store the pointer to the constant body force vector. ---*/
 
@@ -241,29 +261,31 @@ CSourceBodyForce::CSourceBodyForce(unsigned short val_nDim, unsigned short val_n
 
 }
 
-void CSourceBodyForce::ComputeResidual(su2double *val_residual, CConfig *config) {
+CNumerics::ResidualType<> CSourceBodyForce::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim;
   su2double Force_Ref = config->GetForce_Ref();
 
   /*--- Zero the continuity contribution ---*/
 
-  val_residual[0] = 0.0;
+  residual[0] = 0.0;
 
   /*--- Momentum contribution ---*/
 
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[iDim+1] = -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
+    residual[iDim+1] = -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
 
   /*--- Energy contribution ---*/
 
-  val_residual[nDim+1] = 0.0;
+  residual[nDim+1] = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
+    residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
 
+  return ResidualType<>(residual, jacobian, nullptr);
 }
 
-CSourceIncBodyForce::CSourceIncBodyForce(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CSourceIncBodyForce::CSourceIncBodyForce(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                     CSourceBase_Flow(val_nDim, val_nVar, config) {
 
   /*--- Store the pointer to the constant body force vector. ---*/
 
@@ -272,7 +294,7 @@ CSourceIncBodyForce::CSourceIncBodyForce(unsigned short val_nDim, unsigned short
 
 }
 
-void CSourceIncBodyForce::ComputeResidual(su2double *val_residual, CConfig *config) {
+CNumerics::ResidualType<> CSourceIncBodyForce::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim;
   su2double DensityInc_0 = 0.0;
@@ -286,23 +308,24 @@ void CSourceIncBodyForce::ComputeResidual(su2double *val_residual, CConfig *conf
 
   /*--- Zero the continuity contribution ---*/
 
-  val_residual[0] = 0.0;
+  residual[0] = 0.0;
 
   /*--- Momentum contribution. Note that this form assumes we have
    subtracted the operating density * gravity, i.e., removed the
    hydrostatic pressure component (important for pressure BCs). ---*/
 
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[iDim+1] = -Volume * (DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref;
+    residual[iDim+1] = -Volume * (DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref;
 
   /*--- Zero the temperature contribution ---*/
 
-  val_residual[nDim+1] = 0.0;
+  residual[nDim+1] = 0.0;
 
+  return ResidualType<>(residual, jacobian, nullptr);
 }
 
-
-CSourceBoussinesq::CSourceBoussinesq(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CSourceBoussinesq::CSourceBoussinesq(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                   CSourceBase_Flow(val_nDim, val_nVar, config) {
 
   /*--- Store the pointer to the constant body force vector. ---*/
 
@@ -315,7 +338,7 @@ CSourceBoussinesq::CSourceBoussinesq(unsigned short val_nDim, unsigned short val
 
 }
 
-void CSourceBoussinesq::ComputeResidual(su2double *val_residual, CConfig *config) {
+CNumerics::ResidualType<> CSourceBoussinesq::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim;
   su2double Force_Ref = config->GetForce_Ref();
@@ -324,48 +347,52 @@ void CSourceBoussinesq::ComputeResidual(su2double *val_residual, CConfig *config
 
   /*--- Zero the continuity contribution ---*/
 
-  val_residual[0] = 0.0;
+  residual[0] = 0.0;
 
   /*--- Momentum contribution. Note that this form assumes we have
    subtracted the operating density * gravity, i.e., removed the
    hydrostatic pressure component (important for pressure BCs). ---*/
 
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[iDim+1] = Volume * DensityInc_i * ( Beta * (U_i[nDim+1] - T0)) * Gravity_Vector[iDim] / Force_Ref;
+    residual[iDim+1] = Volume * DensityInc_i * ( Beta * (U_i[nDim+1] - T0)) * Gravity_Vector[iDim] / Force_Ref;
 
   /*--- Zero the energy contribution ---*/
 
-  val_residual[nDim+1] = 0.0;
+  residual[nDim+1] = 0.0;
 
+  return ResidualType<>(residual, jacobian, nullptr);
 }
 
-CSourceGravity::CSourceGravity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
-                CNumerics(val_nDim, val_nVar, config) { }
+CSourceGravity::CSourceGravity(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                CSourceBase_Flow(val_nDim, val_nVar, config) { }
 
-void CSourceGravity::ComputeResidual(su2double *val_residual, CConfig *config) {
+CNumerics::ResidualType<> CSourceGravity::ComputeResidual(const CConfig* config) {
+
   unsigned short iVar;
 
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = 0.0;
+    residual[iVar] = 0.0;
 
   /*--- Evaluate the source term  ---*/
-  val_residual[nDim] = Volume * U_i[0] * STANDARD_GRAVITY;
+  residual[nDim] = Volume * U_i[0] * STANDARD_GRAVITY;
 
+  return ResidualType<>(residual, jacobian, nullptr);
 }
 
-CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                           CSourceBase_Flow(val_nDim, val_nVar, config) {
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
 
 }
 
-void CSourceRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
+CNumerics::ResidualType<> CSourceRotatingFrame_Flow::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim, iVar, jVar;
-  su2double Omega[3] = {0,0,0}, Momentum[3] = {0,0,0};
+  su2double Omega[MAXNDIM] = {0}, Momentum[MAXNDIM] = {0};
 
-  bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Retrieve the angular velocity vector from config. ---*/
 
@@ -381,16 +408,16 @@ void CSourceRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2doub
   /*--- Calculate rotating frame source term as ( Omega X Rho-U ) ---*/
 
   if (nDim == 2) {
-    val_residual[0] = 0.0;
-    val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
-    val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
-    val_residual[3] = 0.0;
+    residual[0] = 0.0;
+    residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
+    residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
+    residual[3] = 0.0;
   } else {
-    val_residual[0] = 0.0;
-    val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
-    val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
-    val_residual[3] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume;
-    val_residual[4] = 0.0;
+    residual[0] = 0.0;
+    residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
+    residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
+    residual[3] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume;
+    residual[4] = 0.0;
   }
 
   /*--- Calculate the source term Jacobian ---*/
@@ -398,23 +425,25 @@ void CSourceRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2doub
   if (implicit) {
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian_i[iVar][jVar] = 0.0;
+        jacobian[iVar][jVar] = 0.0;
     if (nDim == 2) {
-      val_Jacobian_i[1][2] = -Omega[2]*Volume;
-      val_Jacobian_i[2][1] =  Omega[2]*Volume;
+      jacobian[1][2] = -Omega[2]*Volume;
+      jacobian[2][1] =  Omega[2]*Volume;
     } else {
-      val_Jacobian_i[1][2] = -Omega[2]*Volume;
-      val_Jacobian_i[1][3] =  Omega[1]*Volume;
-      val_Jacobian_i[2][1] =  Omega[2]*Volume;
-      val_Jacobian_i[2][3] = -Omega[0]*Volume;
-      val_Jacobian_i[3][1] = -Omega[1]*Volume;
-      val_Jacobian_i[3][2] =  Omega[0]*Volume;
+      jacobian[1][2] = -Omega[2]*Volume;
+      jacobian[1][3] =  Omega[1]*Volume;
+      jacobian[2][1] =  Omega[2]*Volume;
+      jacobian[2][3] = -Omega[0]*Volume;
+      jacobian[3][1] = -Omega[1]*Volume;
+      jacobian[3][2] =  Omega[0]*Volume;
     }
   }
 
+  return ResidualType<>(residual, jacobian, nullptr);
 }
 
-CSourceIncRotatingFrame_Flow::CSourceIncRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CSourceIncRotatingFrame_Flow::CSourceIncRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                              CSourceBase_Flow(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
@@ -427,11 +456,11 @@ CSourceIncRotatingFrame_Flow::CSourceIncRotatingFrame_Flow(unsigned short val_nD
 
 }
 
-void CSourceIncRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
+CNumerics::ResidualType<> CSourceIncRotatingFrame_Flow::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim, iVar, jVar;
-  su2double Momentum[3] = {0,0,0},
-            Velocity_i[3] = {0,0,0};
+  su2double Momentum[MAXNDIM] = {0},
+            Velocity_i[MAXNDIM] = {0};
 
   /*--- Primitive variables plus momentum at the node (point i) ---*/
 
@@ -439,22 +468,22 @@ void CSourceIncRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2d
 
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
-    Momentum[iDim]   = DensityInc_i*Velocity_i[iDim];
+    Momentum[iDim] = DensityInc_i*Velocity_i[iDim];
   }
 
   /*--- Calculate rotating frame source term residual as ( Omega X Rho-U ) ---*/
 
   if (nDim == 2) {
-    val_residual[0] = 0.0;
-    val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
-    val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
-    val_residual[3] = 0.0;
+    residual[0] = 0.0;
+    residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
+    residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
+    residual[3] = 0.0;
   } else {
-    val_residual[0] = 0.0;
-    val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
-    val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
-    val_residual[3] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume;
-    val_residual[4] = 0.0;
+    residual[0] = 0.0;
+    residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
+    residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
+    residual[3] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume;
+    residual[4] = 0.0;
   }
 
   /*--- Calculate the source term Jacobian ---*/
@@ -462,28 +491,30 @@ void CSourceIncRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2d
   if (implicit) {
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian_i[iVar][jVar] = 0.0;
+        jacobian[iVar][jVar] = 0.0;
     if (nDim == 2) {
-      val_Jacobian_i[1][2] = -DensityInc_i*Omega[2]*Volume;
-      val_Jacobian_i[2][1] =  DensityInc_i*Omega[2]*Volume;
+      jacobian[1][2] = -DensityInc_i*Omega[2]*Volume;
+      jacobian[2][1] =  DensityInc_i*Omega[2]*Volume;
     } else {
-      val_Jacobian_i[1][2] = -DensityInc_i*Omega[2]*Volume;
-      val_Jacobian_i[1][3] =  DensityInc_i*Omega[1]*Volume;
-      val_Jacobian_i[2][1] =  DensityInc_i*Omega[2]*Volume;
-      val_Jacobian_i[2][3] = -DensityInc_i*Omega[0]*Volume;
-      val_Jacobian_i[3][1] = -DensityInc_i*Omega[1]*Volume;
-      val_Jacobian_i[3][2] =  DensityInc_i*Omega[0]*Volume;
+      jacobian[1][2] = -DensityInc_i*Omega[2]*Volume;
+      jacobian[1][3] =  DensityInc_i*Omega[1]*Volume;
+      jacobian[2][1] =  DensityInc_i*Omega[2]*Volume;
+      jacobian[2][3] = -DensityInc_i*Omega[0]*Volume;
+      jacobian[3][1] = -DensityInc_i*Omega[1]*Volume;
+      jacobian[3][2] =  DensityInc_i*Omega[0]*Volume;
     }
   }
 
+  return ResidualType<>(residual, jacobian, nullptr);
 }
 
-CSourceWindGust::CSourceWindGust(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
-                 CNumerics(val_nDim, val_nVar, config) { }
+CSourceWindGust::CSourceWindGust(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                 CSourceBase_Flow(val_nDim, val_nVar, config) { }
 
-void CSourceWindGust::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
+CNumerics::ResidualType<> CSourceWindGust::ComputeResidual(const CConfig* config) {
 
-  su2double u_gust, v_gust, du_gust_dx, du_gust_dy, du_gust_dt, dv_gust_dx, dv_gust_dy, dv_gust_dt, smx, smy, se, rho, u, v, p;
+  su2double u_gust, v_gust, du_gust_dx, du_gust_dy, du_gust_dt, dv_gust_dx, dv_gust_dy, dv_gust_dt;
+  su2double smx, smy, se, rho, u, v, p;
   unsigned short GustDir = config->GetGust_Dir(); //Gust direction
 
   u_gust = WindGust_i[0];
@@ -518,24 +549,16 @@ void CSourceWindGust::ComputeResidual(su2double *val_residual, su2double **val_J
   se = u*smx + v*smy + p*(du_gust_dx + dv_gust_dy);
 
   if (nDim == 2) {
-    val_residual[0] = 0.0;
-    val_residual[1] = smx*Volume;
-    val_residual[2] = smy*Volume;
-    val_residual[3] = se*Volume;
+    residual[0] = 0.0;
+    residual[1] = smx*Volume;
+    residual[2] = smy*Volume;
+    residual[3] = se*Volume;
   } else {
     SU2_MPI::Error("You should only be in the gust source term in two dimensions", CURRENT_FUNCTION);
   }
 
   /*--- For now the source term Jacobian is just set to zero ---*/
+  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  unsigned short iVar, jVar;
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  /*--- Calculate the source term Jacobian ---*/
-
-  if (implicit) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian_i[iVar][jVar] = 0.0;
-  }
+  return ResidualType<>(residual, jacobian, nullptr);
 }
