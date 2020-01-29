@@ -8426,7 +8426,7 @@ bool CConfig::GetVolumetric_Movement(){
   return volumetric_movement;
 }
 
-bool CConfig::GetSurface_Movement(unsigned short kind_movement){
+bool CConfig::GetSurface_Movement(unsigned short kind_movement) const {
   for (unsigned short iMarkerMoving = 0; iMarkerMoving < nKind_SurfaceMovement; iMarkerMoving++){
     if (Kind_SurfaceMovement[iMarkerMoving] == kind_movement){
       return true;
