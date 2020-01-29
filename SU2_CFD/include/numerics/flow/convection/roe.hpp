@@ -57,7 +57,8 @@ protected:
    * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) = 0;
+  virtual void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
+                                su2double **val_Jacobian_j, const CConfig* config) = 0;
 
 public:
   /*!
@@ -67,7 +68,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_low_dissipation - Use a low dissipation formulation.
    */
-  CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
+  CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation);
 
   /*!
    * \brief Destructor of the class.
@@ -76,13 +77,10 @@ public:
 
   /*!
    * \brief Compute the flux from node i to node j, part common to most Roe schemes.
-   * \param[out] val_residual - Convective flux.
-   * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).
-   * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
-                       const su2double* const* &jacobian_j, CConfig *config) final;
+  ResidualType<> ComputeResidual(const CConfig* config) final;
 
 };
 
@@ -101,7 +99,8 @@ private:
    * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
+  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
+                        su2double **val_Jacobian_j, const CConfig* config) override;
 
 public:
   /*!
@@ -111,7 +110,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_low_dissipation - Use a low dissipation formulation.
    */
-  CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
+  CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation);
 
 };
 
@@ -131,7 +130,8 @@ private:
    * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
+  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
+                        su2double **val_Jacobian_j, const CConfig* config) override;
 
 public:
   /*!
@@ -140,7 +140,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
 };
 
@@ -160,7 +160,8 @@ private:
    * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
+  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
+                        su2double **val_Jacobian_j, const CConfig* config) override;
 
 public:
   /*!
@@ -169,7 +170,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
 };
 
@@ -207,7 +208,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -216,13 +217,10 @@ public:
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
-                       const su2double* const* &jacobian_j, CConfig *config) override;
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 
@@ -263,7 +261,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -272,13 +270,10 @@ public:
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
-                       const su2double* const* &jacobian_j, CConfig *config) override;
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
   /*!
    * \brief Compute the Average for a general fluid flux between two nodes i and j.

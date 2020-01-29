@@ -30,11 +30,11 @@
 
 CFEM_NeoHookean_Comp::CFEM_NeoHookean_Comp(unsigned short val_nDim,
                                            unsigned short val_nVar,
-                                           CConfig *config) :
+                                           const CConfig *config) :
                                            CFEANonlinearElasticity(val_nDim, val_nVar, config) {
 }
 
-void CFEM_NeoHookean_Comp::Compute_Plane_Stress_Term(CElement *element, CConfig *config) {
+void CFEM_NeoHookean_Comp::Compute_Plane_Stress_Term(CElement *element, const CConfig *config) {
 
   su2double j_red = 1.0;
   su2double fx = 0.0, fpx = 1.0;
@@ -68,7 +68,7 @@ void CFEM_NeoHookean_Comp::Compute_Plane_Stress_Term(CElement *element, CConfig 
 
 }
 
-void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element, CConfig *config) {
+void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element, const CConfig *config) {
 
   su2double Mu_p = 0.0, Lambda_p = 0.0;
 
@@ -98,7 +98,7 @@ void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element, CConfi
 
 }
 
-void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element, CConfig *config) {
+void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element, const CConfig *config) {
 
   unsigned short iVar,jVar;
   su2double Mu_J = 0.0, Lambda_J = 0.0;
@@ -119,7 +119,7 @@ void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element, CConfig *con
 }
 
 CFEM_Knowles_NearInc::CFEM_Knowles_NearInc(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CFEANonlinearElasticity(val_nDim, val_nVar, config) {
+                        const CConfig *config) : CFEANonlinearElasticity(val_nDim, val_nVar, config) {
 
   /* -- The formulation adopted for this material model has been described by:
    * --
@@ -138,13 +138,13 @@ CFEM_Knowles_NearInc::CFEM_Knowles_NearInc(unsigned short val_nDim, unsigned sho
 
 }
 
-void CFEM_Knowles_NearInc::Compute_Plane_Stress_Term(CElement *element, CConfig *config) {
+void CFEM_Knowles_NearInc::Compute_Plane_Stress_Term(CElement *element, const CConfig *config) {
 
   SU2_MPI::Error("This material model cannot (yet) be used for plane stress.",CURRENT_FUNCTION);
 
 }
 
-void CFEM_Knowles_NearInc::Compute_Constitutive_Matrix(CElement *element, CConfig *config) {
+void CFEM_Knowles_NearInc::Compute_Constitutive_Matrix(CElement *element, const CConfig *config) {
 
   /* -- Suchocki (2011) (full reference in class constructor). ---*/
 
@@ -182,7 +182,7 @@ void CFEM_Knowles_NearInc::Compute_Constitutive_Matrix(CElement *element, CConfi
 
 }
 
-void CFEM_Knowles_NearInc::Compute_Stress_Tensor(CElement *element, CConfig *config) {
+void CFEM_Knowles_NearInc::Compute_Stress_Tensor(CElement *element, const CConfig *config) {
 
   /* -- Suchocki (2011) (full reference in class constructor). ---*/
 
@@ -208,12 +208,12 @@ void CFEM_Knowles_NearInc::Compute_Stress_Tensor(CElement *element, CConfig *con
 
 }
 
-CFEM_DielectricElastomer::CFEM_DielectricElastomer(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+CFEM_DielectricElastomer::CFEM_DielectricElastomer(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) :
                           CFEANonlinearElasticity(val_nDim, val_nVar, config) {
 
 }
 
-void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element, CConfig *config) {
+void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element, const CConfig *config) {
 
   /*--- This reduces performance by now, but it is temporal ---*/
 
@@ -234,7 +234,7 @@ void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element, CC
 
 }
 
-void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, CConfig *config) {
+void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, const CConfig *config) {
 
   unsigned short iDim, jDim;
 
@@ -264,7 +264,7 @@ void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, CConfig 
 }
 
 CFEM_IdealDE::CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar,
-                           CConfig *config) : CFEANonlinearElasticity(val_nDim, val_nVar, config) {
+                           const CConfig *config) : CFEANonlinearElasticity(val_nDim, val_nVar, config) {
 
   /* -- The formulation adopted for this material model has been described by:
    * --
@@ -282,13 +282,13 @@ CFEM_IdealDE::CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar,
 
 }
 
-void CFEM_IdealDE::Compute_Plane_Stress_Term(CElement *element, CConfig *config) {
+void CFEM_IdealDE::Compute_Plane_Stress_Term(CElement *element, const CConfig *config) {
 
   SU2_MPI::Error("This material model cannot (yet) be used for plane stress.", CURRENT_FUNCTION);
 
 }
 
-void CFEM_IdealDE::Compute_Constitutive_Matrix(CElement *element, CConfig *config) {
+void CFEM_IdealDE::Compute_Constitutive_Matrix(CElement *element, const CConfig *config) {
 
   /* -- Zhao, X. and Suo, Z. (2008) (full reference in class constructor). ---*/
 
@@ -315,7 +315,7 @@ void CFEM_IdealDE::Compute_Constitutive_Matrix(CElement *element, CConfig *confi
 
 }
 
-void CFEM_IdealDE::Compute_Stress_Tensor(CElement *element, CConfig *config) {
+void CFEM_IdealDE::Compute_Stress_Tensor(CElement *element, const CConfig *config) {
 
   /* -- Zhao, X. and Suo, Z. (2008) (full reference in class constructor). ---*/
 

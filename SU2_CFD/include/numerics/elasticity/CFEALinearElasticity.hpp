@@ -53,7 +53,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -65,14 +65,14 @@ public:
    * \param[in,out] element_container - Element whose tangent matrix is being built.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Tangent_Matrix(CElement *element_container, CConfig *config) final;
+  void Compute_Tangent_Matrix(CElement *element_container, const CConfig *config) final;
 
   /*!
    * \brief Compute averaged nodal stresses (for post processing).
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) final;
+  void Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) final;
 
 private:
   /*!
@@ -80,7 +80,7 @@ private:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) final;
+  void Compute_Constitutive_Matrix(CElement *element_container, const CConfig *config) final;
 
 };
 
@@ -131,7 +131,7 @@ private:
    * \param[in] element_container - Element defining the properties.
    * \param[in] config - Definition of the problem.
    */
-  inline void SetElement_Properties(const CElement *element, CConfig *config) override {
+  inline void SetElement_Properties(const CElement *element, const CConfig *config) override {
     if (element_based) {
       E = E_i[element->Get_iProp()];
       Compute_Lame_Parameters();

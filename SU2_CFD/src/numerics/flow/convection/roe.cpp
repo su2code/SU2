@@ -27,7 +27,7 @@
 
 #include "../../../../include/numerics/flow/convection/roe.hpp"
 
-CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config,
+CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
                                    bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -81,7 +81,8 @@ CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
 
 }
 
-void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
+                                        su2double **val_Jacobian_j, const CConfig* config) {
 /*---
  CUpwRoeBase_Flow::ComputeResidual initializes the residual (flux) and its Jacobians with the standard Roe averaging
  fc_{1/2} = kappa*(fc_i+fc_j)*Normal. It then calls this method, which derived classes specialize, to account for
@@ -89,10 +90,8 @@ void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val
 ---*/
 }
 
-void CUpwRoeBase_Flow::ComputeResidual(const su2double*  &residual,
-                                       const su2double* const* &jacobian_i,
-                                       const su2double* const* &jacobian_j,
-                                       CConfig *config) {
+CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* config) {
+
   unsigned short iVar, jVar, iDim;
   su2double ProjGridVel = 0.0, Energy_i, Energy_j;
 
@@ -162,10 +161,8 @@ void CUpwRoeBase_Flow::ComputeResidual(const su2double*  &residual,
     }
     AD::SetPreaccOut(Flux, nVar);
     AD::EndPreacc();
-    residual = Flux;
-    jacobian_i = Jacobian_i;
-    jacobian_j = Jacobian_j;
-    return;
+
+    return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
   }
 
   RoeSoundSpeed = sqrt(RoeSoundSpeed2);
@@ -248,17 +245,15 @@ void CUpwRoeBase_Flow::ComputeResidual(const su2double*  &residual,
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
 
-  residual = Flux;
-  jacobian_i = Jacobian_i;
-  jacobian_j = Jacobian_j;
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 
 }
 
-CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config,
+CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
               bool val_low_dissipation) : CUpwRoeBase_Flow(val_nDim, val_nVar, config, val_low_dissipation) {}
 
 void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
-                                    su2double **val_Jacobian_j, CConfig *config) {
+                                    su2double **val_Jacobian_j, const CConfig* config) {
 
   unsigned short iVar, jVar, kVar;
 
@@ -271,7 +266,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Low dissipation formulation ---*/
   if (roe_low_dissipation)
-    SetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
+    Dissipation_ij = GetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, config);
   else
     Dissipation_ij = 1.0;
 
@@ -296,11 +291,11 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
 
 }
 
-CUpwL2Roe_Flow::CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+CUpwL2Roe_Flow::CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                 CUpwRoeBase_Flow(val_nDim, val_nVar, config, false) {}
 
 void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
-                                      su2double **val_Jacobian_j, CConfig *config) {
+                                      su2double **val_Jacobian_j, const CConfig* config) {
 
   /*--- L2Roe: a low dissipation version of Roe's approximate Riemann solver for low Mach numbers. IJNMF 2015 ---*/
 
@@ -369,11 +364,11 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
 }
 
-CUpwLMRoe_Flow::CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+CUpwLMRoe_Flow::CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                 CUpwRoeBase_Flow(val_nDim, val_nVar, config, false) {}
 
 void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
-                                      su2double **val_Jacobian_j, CConfig *config) {
+                                      su2double **val_Jacobian_j, const CConfig* config) {
 
   /*--- Rieper, A low-Mach number fix for Roe's approximate Riemman Solver, JCP 2011 ---*/
 
@@ -442,7 +437,7 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
 }
 
-CUpwTurkel_Flow::CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwTurkel_Flow::CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
@@ -511,10 +506,7 @@ CUpwTurkel_Flow::~CUpwTurkel_Flow(void) {
 
 }
 
-void CUpwTurkel_Flow::ComputeResidual(const su2double*  &residual,
-                                      const su2double* const* &jacobian_i,
-                                      const su2double* const* &jacobian_j,
-                                      CConfig *config) {
+CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config) {
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
 
@@ -682,13 +674,11 @@ void CUpwTurkel_Flow::ComputeResidual(const su2double*  &residual,
     }
   }
 
-  residual = Flux;
-  jacobian_i = Jacobian_i;
-  jacobian_j = Jacobian_j;
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 
 }
 
-CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
@@ -745,10 +735,8 @@ CUpwGeneralRoe_Flow::~CUpwGeneralRoe_Flow(void) {
 
 }
 
-void CUpwGeneralRoe_Flow::ComputeResidual(const su2double*  &residual,
-                                          const su2double* const* &jacobian_i,
-                                          const su2double* const* &jacobian_j,
-                                          CConfig *config) {
+CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* config) {
+
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(S_i, 2); AD::SetPreaccIn(S_j, 2);
@@ -830,10 +818,8 @@ void CUpwGeneralRoe_Flow::ComputeResidual(const su2double*  &residual,
     }
     AD::SetPreaccOut(Flux, nVar);
     AD::EndPreacc();
-    residual = Flux;
-    jacobian_i = Jacobian_i;
-    jacobian_j = Jacobian_j;
-    return;
+
+    return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
   }
 
   RoeSoundSpeed = sqrt(RoeSoundSpeed2);
@@ -993,9 +979,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(const su2double*  &residual,
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
 
-  residual = Flux;
-  jacobian_i = Jacobian_i;
-  jacobian_j = Jacobian_j;
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 
 }
 

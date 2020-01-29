@@ -27,7 +27,7 @@
 
 #include "../../../../include/numerics/flow/convection/centered.hpp"
 
-CCentBase_Flow::CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+CCentBase_Flow::CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                 CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -62,10 +62,7 @@ CCentBase_Flow::~CCentBase_Flow(void) {
   delete [] Jacobian_j;
 }
 
-void CCentBase_Flow::ComputeResidual(const su2double*  &residual,
-                                     const su2double* const* &jacobian_i,
-                                     const su2double* const* &jacobian_j,
-                                     CConfig *config) {
+CNumerics::ResidualType<> CCentBase_Flow::ComputeResidual(const CConfig* config) {
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
 
@@ -183,9 +180,7 @@ void CCentBase_Flow::ComputeResidual(const su2double*  &residual,
     AD::EndPreacc();
   }
 
-  residual = ProjFlux;
-  jacobian_i = Jacobian_i;
-  jacobian_j = Jacobian_j;
+  return ResidualType<>(ProjFlux, Jacobian_i, Jacobian_j);
 
 }
 
@@ -214,7 +209,7 @@ void CCentBase_Flow::ScalarDissipationJacobian(su2double **val_Jacobian_i, su2do
 
 }
 
-CCentLax_Flow::CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+CCentLax_Flow::CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                CCentBase_Flow(val_nDim, val_nVar, config) {
 
   /*--- Artifical dissipation parameters ---*/
@@ -251,7 +246,7 @@ bool CCentLax_Flow::SetPreaccInVars(void) {
   return true;
 }
 
-CCentJST_KE_Flow::CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+CCentJST_KE_Flow::CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                   CCentBase_Flow(val_nDim, val_nVar, config) {
 
   /*--- Artifical dissipation parameters ---*/
@@ -289,7 +284,7 @@ bool CCentJST_KE_Flow::SetPreaccInVars(void) {
   return true;
 }
 
-CCentJST_Flow::CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+CCentJST_Flow::CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                CCentBase_Flow(val_nDim, val_nVar, config) {
 
   /*--- Artifical dissipation parameters ---*/
@@ -338,7 +333,7 @@ bool CCentJST_Flow::SetPreaccInVars(void) {
   return true;
 }
 
-CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == VARIABLE);
@@ -379,7 +374,7 @@ CCentLaxInc_Flow::~CCentLaxInc_Flow(void) {
 
 }
 
-void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, const CConfig* config) {
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0, ProjVelocity = 0.0;
@@ -545,7 +540,7 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 }
 
 
-CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == VARIABLE);
@@ -589,7 +584,7 @@ CCentJSTInc_Flow::~CCentJSTInc_Flow(void) {
 
 }
 
-void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, const CConfig* config) {
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0;

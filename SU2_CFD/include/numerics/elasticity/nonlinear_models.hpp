@@ -46,7 +46,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_NeoHookean_Comp(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEM_NeoHookean_Comp(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -59,21 +59,21 @@ private:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) override;
+  void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config) override;
 
   /*!
    * \brief Compute the constitutive matrix.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) override;
+  void Compute_Constitutive_Matrix(CElement *element_container, const CConfig *config) override;
 
   /*!
    * \brief Compute the stress tensor.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Stress_Tensor(CElement *element_container, CConfig *config) override;
+  void Compute_Stress_Tensor(CElement *element_container, const CConfig *config) override;
 
 };
 
@@ -97,7 +97,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_Knowles_NearInc(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEM_Knowles_NearInc(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -110,21 +110,21 @@ private:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) override;
+  void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config) override;
 
   /*!
    * \brief Compute the constitutive matrix.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) override;
+  void Compute_Constitutive_Matrix(CElement *element_container, const CConfig *config) override;
 
   /*!
    * \brief Compute the stress tensor.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Stress_Tensor(CElement *element_container, CConfig *config) override;
+  void Compute_Stress_Tensor(CElement *element_container, const CConfig *config) override;
 
 };
 
@@ -145,7 +145,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_DielectricElastomer(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEM_DielectricElastomer(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -158,21 +158,21 @@ private:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  inline void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) override { };
+  inline void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config) override { };
 
   /*!
    * \brief Compute the constitutive matrix.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) override;
+  void Compute_Constitutive_Matrix(CElement *element_container, const CConfig *config) override;
 
   /*!
    * \brief Compute the stress tensor.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Stress_Tensor(CElement *element_container, CConfig *config) override;
+  void Compute_Stress_Tensor(CElement *element_container, const CConfig *config) override;
 
 };
 
@@ -195,7 +195,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -208,20 +208,20 @@ private:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) override;
+  void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config) override;
 
   /*!
    * \brief Compute the constitutive matrix.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) override;
+  void Compute_Constitutive_Matrix(CElement *element_container, const CConfig *config) override;
 
   /*!
    * \brief Compute the stress tensor.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Stress_Tensor(CElement *element_container, CConfig *config) override;
+  void Compute_Stress_Tensor(CElement *element_container, const CConfig *config) override;
 
 };

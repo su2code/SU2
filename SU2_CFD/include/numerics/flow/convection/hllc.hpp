@@ -65,7 +65,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -74,13 +74,10 @@ public:
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
-                       const su2double* const* &jacobian_j, CConfig *config) override;
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 
@@ -121,7 +118,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -130,17 +127,14 @@ public:
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
-                       const su2double* const* &jacobian_j, CConfig *config) override;
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
-   /*!
+  /*!
    * \brief Compute the Average quantities for a general fluid flux between two nodes i and j.
    * Using the approach of Vinokur and Montagne'
    */
-   void VinokurMontagne();
+  void VinokurMontagne();
 };

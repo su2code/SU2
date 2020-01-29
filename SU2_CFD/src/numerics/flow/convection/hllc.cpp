@@ -27,7 +27,7 @@
 
 #include "../../../../include/numerics/flow/convection/hllc.hpp"
 
-CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   kappa = config->GetRoe_Kappa();
@@ -81,10 +81,7 @@ CUpwHLLC_Flow::~CUpwHLLC_Flow(void) {
 
 }
 
-void CUpwHLLC_Flow::ComputeResidual(const su2double*  &residual,
-                                    const su2double* const* &jacobian_i,
-                                    const su2double* const* &jacobian_j,
-                                    CConfig *config) {
+CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) {
 
   /*--- Face area (norm or the normal vector) ---*/
 
@@ -262,12 +259,10 @@ void CUpwHLLC_Flow::ComputeResidual(const su2double*  &residual,
   for (iVar = 0; iVar < nVar; iVar++)
     Flux[iVar] *= Area;
 
-  residual = Flux;
-
   /*--- Return early if the Jacobians do not need to be computed. ---*/
 
-  if (!implicit) return;
-
+  if (implicit)
+  {
   if (sM > 0.0) {
 
     if (sL > 0.0) {
@@ -554,13 +549,13 @@ void CUpwHLLC_Flow::ComputeResidual(const su2double*  &residual,
       Jacobian_j[iVar][jVar] *=   Area;
     }
   }
+  } // end if implicit
 
-  jacobian_i = Jacobian_i;
-  jacobian_j = Jacobian_j;
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 
 }
 
-CUpwGeneralHLLC_Flow::CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwGeneralHLLC_Flow::CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   kappa = config->GetRoe_Kappa();
@@ -612,10 +607,7 @@ CUpwGeneralHLLC_Flow::~CUpwGeneralHLLC_Flow(void) {
 
 }
 
-void CUpwGeneralHLLC_Flow::ComputeResidual(const su2double*  &residual,
-                                           const su2double* const* &jacobian_i,
-                                           const su2double* const* &jacobian_j,
-                                           CConfig *config) {
+CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* config) {
 
   /*--- Face area (norm or the normal vector) ---*/
 
@@ -806,12 +798,10 @@ void CUpwGeneralHLLC_Flow::ComputeResidual(const su2double*  &residual,
   for (iVar = 0; iVar < nVar; iVar++)
     Flux[iVar] *= Area;
 
-  residual = Flux;
-
   /*--- Return early if the Jacobians do not need to be computed. ---*/
 
-  if (!implicit) return;
-
+  if (implicit)
+  {
   if (sM > 0.0) {
 
     if (sL > 0.0) {
@@ -1114,9 +1104,9 @@ void CUpwGeneralHLLC_Flow::ComputeResidual(const su2double*  &residual,
       Jacobian_j[iVar][jVar] *= Area;
     }
   }
+  } // end if implicit
 
-  jacobian_i = Jacobian_i;
-  jacobian_j = Jacobian_j;
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 
 }
 

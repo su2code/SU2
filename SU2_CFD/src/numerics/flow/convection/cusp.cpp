@@ -27,7 +27,7 @@
 
 #include "../../../../include/numerics/flow/convection/cusp.hpp"
 
-CUpwCUSP_Flow::CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwCUSP_Flow::CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
@@ -61,10 +61,8 @@ CUpwCUSP_Flow::~CUpwCUSP_Flow(void) {
   delete [] Jacobian_j;
 }
 
-void CUpwCUSP_Flow::ComputeResidual(const su2double*  &residual,
-                                    const su2double* const* &jacobian_i,
-                                    const su2double* const* &jacobian_j,
-                                    CConfig *config) {
+CNumerics::ResidualType<> CUpwCUSP_Flow::ComputeResidual(const CConfig* config) {
+
   unsigned short iDim, iVar;
   su2double Diff_U[5] = {0.0};
 
@@ -184,8 +182,6 @@ void CUpwCUSP_Flow::ComputeResidual(const su2double*  &residual,
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
 
-  residual = Flux;
-  jacobian_i = Jacobian_i;
-  jacobian_j = Jacobian_j;
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 
 }

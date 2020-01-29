@@ -63,7 +63,7 @@ protected:
    * \param[out] mdot - The mass flux.
    * \param[out] pressure - The pressure at the control volume face.
    */
-  virtual void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) = 0;
+  virtual void ComputeMassAndPressureFluxes(const CConfig* config, su2double &mdot, su2double &pressure) = 0;
 
 private:
   /*!
@@ -78,7 +78,7 @@ private:
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    */
-  void AccurateJacobian(CConfig *config, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+  void AccurateJacobian(const CConfig* config, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
 
 public:
 
@@ -88,7 +88,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -97,13 +97,11 @@ public:
 
   /*!
    * \brief Compute the AUSM+ and SLAU family of schemes.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
-                       const su2double* const* &jacobian_j, CConfig *config) final;
+  ResidualType<> ComputeResidual(const CConfig* config) final;
+
 };
 
 /*!
@@ -122,7 +120,7 @@ private:
    * \param[out] mdot - The mass flux.
    * \param[out] pressure - The pressure at the control volume face.
    */
-  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) override;
+  void ComputeMassAndPressureFluxes(const CConfig* config, su2double &mdot, su2double &pressure) override;
 
 public:
 
@@ -132,7 +130,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
 };
 
@@ -152,7 +150,7 @@ private:
    * \param[out] mdot - The mass flux.
    * \param[out] pressure - The pressure at the control volume face.
    */
-  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) override;
+  void ComputeMassAndPressureFluxes(const CConfig* config, su2double &mdot, su2double &pressure) override;
 
 public:
 
@@ -162,7 +160,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
 };
 
@@ -183,7 +181,7 @@ protected:
    * \param[out] mdot - The mass flux.
    * \param[out] pressure - The pressure at the control volume face.
    */
-  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) final;
+  void ComputeMassAndPressureFluxes(const CConfig* config, su2double &mdot, su2double &pressure) final;
 
 public:
 
@@ -193,7 +191,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
+  CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation);
 
 };
 
@@ -211,7 +209,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
+  CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation);
 
 };
 
@@ -247,7 +245,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -256,11 +254,9 @@ public:
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
-                       const su2double* const* &jacobian_j, CConfig *config) override;
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
 };

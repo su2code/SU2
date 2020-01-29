@@ -57,7 +57,7 @@ CNumerics::CNumerics(void) {
 }
 
 CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
-                     CConfig *config) {
+                     const CConfig* config) {
 
   unsigned short iVar, iDim, jDim;
 
@@ -1822,16 +1822,17 @@ void CNumerics::CreateBasis(su2double *val_Normal) {
   }
 }
 
-void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
-                                   const su2double Dissipation_j,
-                                   const su2double Sensor_i,
-                                   const su2double Sensor_j,
-                                   su2double& Dissipation_ij,
-                                   CConfig *config) {
+su2double CNumerics::GetRoe_Dissipation(const su2double Dissipation_i,
+                                        const su2double Dissipation_j,
+                                        const su2double Sensor_i,
+                                        const su2double Sensor_j,
+                                        const CConfig* config) const {
 
   /*--- Check for valid input ---*/
 
   unsigned short roe_low_diss = config->GetKind_RoeLowDiss();
+
+  su2double Dissipation_ij = 0.0;
 
   assert((Dissipation_i >= 0) && (Dissipation_i <= 1));
   assert((Dissipation_j >= 0) && (Dissipation_j <= 1));
@@ -1885,7 +1886,7 @@ void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
                    CURRENT_FUNCTION);
 
   }
-
+  return Dissipation_ij;
 }
 
 void CNumerics::EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val, unsigned short n){

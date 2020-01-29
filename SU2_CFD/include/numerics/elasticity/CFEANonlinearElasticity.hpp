@@ -92,7 +92,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEANonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEANonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -113,21 +113,21 @@ public:
    * \param[in,out] element_container - Element whose tangent matrix is being built.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Tangent_Matrix(CElement *element_container, CConfig *config) final;
+  void Compute_Tangent_Matrix(CElement *element_container, const CConfig *config) final;
 
   /*!
    * \brief Compute the nodal stress terms for an element.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_NodalStress_Term(CElement *element_container, CConfig *config) final;
+  void Compute_NodalStress_Term(CElement *element_container, const CConfig *config) final;
 
   /*!
    * \brief Compute averaged nodal stresses (for post processing).
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) final;
+  void Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) final;
 
 protected:
   /*!
@@ -135,28 +135,28 @@ protected:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  virtual void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) = 0;
+  virtual void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config) = 0;
 
   /*!
    * \brief Compute the stress tensor.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  virtual void Compute_Stress_Tensor(CElement *element_container, CConfig *config) = 0;
+  virtual void Compute_Stress_Tensor(CElement *element_container, const CConfig *config) = 0;
 
   /*!
    * \brief Update an element with Maxwell's stress.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Add_MaxwellStress(CElement *element_container, CConfig *config);
+  void Add_MaxwellStress(CElement *element_container, const CConfig *config);
 
   /*!
    * \brief Set element electric properties.
    * \param[in] element_container - Element defining the properties.
    * \param[in] config - Definition of the problem.
    */
-  void SetElectric_Properties(const CElement *element_container, CConfig *config);
+  void SetElectric_Properties(const CElement *element_container, const CConfig *config);
 
   /*!
    * \brief TODO: Describe what this does.

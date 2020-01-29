@@ -30,7 +30,7 @@
 
 
 CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                               CConfig *config) : CNumerics() {
+                               const CConfig *config) : CNumerics() {
 
   nDim = val_nDim;
   nVar = val_nVar;
@@ -178,7 +178,7 @@ CFEAElasticity::~CFEAElasticity(void) {
 }
 
 
-void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
+void CFEAElasticity::Compute_Mass_Matrix(CElement *element, const CConfig *config) {
 
   /*--- Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
@@ -230,7 +230,7 @@ void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
 }
 
 
-void CFEAElasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
+void CFEAElasticity::Compute_Dead_Load(CElement *element, const CConfig *config) {
 
   /*--- Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
@@ -282,7 +282,7 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
 }
 
 
-void CFEAElasticity::SetElement_Properties(const CElement *element, CConfig *config) {
+void CFEAElasticity::SetElement_Properties(const CElement *element, const CConfig *config) {
 
   /*--- These variables are set as preaccumulation inputs in Compute_Tangent_Matrix and
   Compute_NodalStress_Term, if you add variables here be sure to register them in those routines too. ---*/
@@ -311,7 +311,7 @@ void CFEAElasticity::SetElement_Properties(const CElement *element, CConfig *con
 }
 
 
-void CFEAElasticity::ReadDV(CConfig *config) {
+void CFEAElasticity::ReadDV(const CConfig *config) {
 
   int rank = SU2_MPI::GetRank();
   bool master_node = false;

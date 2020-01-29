@@ -91,7 +91,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -100,13 +100,11 @@ public:
 
   /*!
    * \brief Compute the flow residual using a centered method with artificial dissipation.
-   * \param[out] residual - Pointer to the convective flux contribution to the residual.
-   * \param[out] jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(const su2double*  &residual, const su2double* const* &jacobian_i,
-                       const su2double* const* &jacobian_j, CConfig *config) final;
+  ResidualType<> ComputeResidual(const CConfig* config) final;
+
 };
 
 /*!
@@ -142,7 +140,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
 };
 
@@ -180,7 +178,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
 };
 
@@ -218,7 +216,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
 };
 
@@ -261,7 +259,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -275,7 +273,7 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, const CConfig* config);
 };
 
 /*!
@@ -319,7 +317,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -333,5 +331,5 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, const CConfig* config);
 };

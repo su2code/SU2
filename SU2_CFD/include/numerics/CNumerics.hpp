@@ -220,6 +220,30 @@ protected:
   su2double *Eig_Val, *Barycentric_Coord, *New_Coord;
 
 public:
+  /*!
+   * \brief Return type used in some "ComputeResidual" overloads to give a
+   * const-view of the internally stored flux vector and Jacobians to the outside.
+   * \note The default template params make this an "all const" object, it cannot
+   * change after instantiation, nor can it be used to change the data.
+   */
+  template<class Vector_t = const su2double*,
+           class Matrix_t = const Vector_t*>
+  struct ResidualType {
+    const Vector_t residual;
+    const Matrix_t jacobian_i;
+    const Matrix_t jacobian_j;
+
+    ResidualType() = delete;
+
+    ResidualType(const Vector_t& res, const Matrix_t& jac_i, const Matrix_t& jac_j) :
+      residual(res), jacobian_i(jac_i), jacobian_j(jac_j) { }
+
+    /*!
+     * \brief The object can be directly cast to the vector type, this
+     * allows discarding the Jacobians when they are not needed.
+     */
+    operator Vector_t() { return residual; }
+  };
 
   /*!
    * \brief Constructor of the class.
@@ -232,7 +256,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNumerics(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CNumerics(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -1009,7 +1033,7 @@ public:
    * \param[out] val_residual - Pointer to the total residual.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ComputeResidual(su2double *val_residual, CConfig *config) { }
+  inline virtual void ComputeResidual(su2double *val_residual, const CConfig* config) { }
 
   /*!
    * \overload
@@ -1019,19 +1043,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
-                                      su2double **val_Jacobian_j, CConfig *config) { }
+                                      su2double **val_Jacobian_j, const CConfig* config) { }
 
   /*!
    * \overload For numerics classes that store the residual/flux and Jacobians internally.
-   * \param[out] residual - Pointer to the total residual.
-   * \param[out] jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  inline virtual void ComputeResidual(const su2double*  &residual,
-                                      const su2double* const* &jacobian_i,
-                                      const su2double* const* &jacobian_j,
-                                      CConfig *config) { }
+  inline virtual ResidualType<> ComputeResidual(const CConfig* config) { return ResidualType<>(nullptr,nullptr,nullptr); }
 
   /*!
    * \overload
@@ -1048,7 +1067,7 @@ public:
                                       su2double **val_Jacobian_ii,
                                       su2double **val_Jacobian_ij,
                                       su2double **val_Jacobian_ji,
-                                      su2double **val_Jacobian_jj, CConfig *config) { }
+                                      su2double **val_Jacobian_jj, const CConfig* config) { }
 
   /*!
    * \overload
@@ -1067,7 +1086,7 @@ public:
                                       su2double **val_Jacobian_ii,
                                       su2double **val_Jacobian_ij,
                                       su2double **val_Jacobian_ji,
-                                      su2double **val_Jacobian_jj, CConfig *config) { }
+                                      su2double **val_Jacobian_jj, const CConfig* config) { }
 
   /*!
    * \overload
@@ -1075,7 +1094,7 @@ public:
    * \param[out] val_residual - residual of the source terms
    * \param[out] val_Jacobian_i - Jacobian of the source terms
    */
-  inline virtual void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
+  inline virtual void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, const CConfig* config) { }
 
   /*!
    * \brief Residual for transition problems.
@@ -1087,7 +1106,7 @@ public:
    */
   inline virtual void ComputeResidual_TransLM(su2double *val_residual,
                                               su2double **val_Jacobian_i,
-                                              su2double **val_Jacobian_j, CConfig *config,
+                                              su2double **val_Jacobian_j, const CConfig* config,
                                               su2double &gamma_sep) { }
 
   /*!
@@ -1140,13 +1159,13 @@ public:
    * \brief A virtual member to compute the tangent matrix in structural problems
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  inline virtual void Compute_Tangent_Matrix(CElement *element_container, CConfig *config) { }
+  inline virtual void Compute_Tangent_Matrix(CElement *element_container, const CConfig* config) { }
 
   /*!
    * \brief A virtual member to compute the nodal stress term in non-linear structural problems
    * \param[in] element_container - Definition of the particular element integrated.
    */
-  inline virtual void Compute_NodalStress_Term(CElement *element_container, CConfig *config) { }
+  inline virtual void Compute_NodalStress_Term(CElement *element_container, const CConfig* config) { }
 
   /*!
    * \brief Set the element-based local Young's modulus in mesh problems
@@ -1194,19 +1213,19 @@ public:
    * \brief A virtual member to compute the mass matrix
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  inline virtual void Compute_Mass_Matrix(CElement *element_container, CConfig *config) { }
+  inline virtual void Compute_Mass_Matrix(CElement *element_container, const CConfig* config) { }
 
   /*!
    * \brief A virtual member to compute the residual component due to dead loads
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  inline virtual void Compute_Dead_Load(CElement *element_container, CConfig *config) { }
+  inline virtual void Compute_Dead_Load(CElement *element_container, const CConfig* config) { }
 
   /*!
    * \brief A virtual member to compute the averaged nodal stresses
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  inline virtual void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
+  inline virtual void Compute_Averaged_NodalStress(CElement *element_container, const CConfig* config) { }
 
   /*!
    * \brief Computes a basis of orthogonal vectors from a supplied vector
@@ -1233,12 +1252,11 @@ public:
    * \param[in] Dissipation_j - Value of the bledning function at point j
    * \param[in] Sensor_i - Shock sensor at point i
    * \param[in] Sensor_j - Shock sensor at point j
-   * \param[out] Dissipation_ij - Blending parameter at face
+   * \param[in] config - The configuration of the problem
+   * \return Dissipation_ij - Blending parameter at face
    */
-  void SetRoe_Dissipation(const su2double Dissipation_i,
-                          const su2double Dissipation_j,
-                          const su2double Sensor_i, const su2double Sensor_j,
-                          su2double& Dissipation_ij, CConfig *config);
+  su2double GetRoe_Dissipation(const su2double Dissipation_i, const su2double Dissipation_j,
+                               const su2double Sensor_i, const su2double Sensor_j, const CConfig* config) const;
 
   /*!
    * \brief Decomposes the symmetric matrix A_ij, into eigenvectors and eigenvalues

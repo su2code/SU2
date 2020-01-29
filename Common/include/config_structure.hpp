@@ -4240,7 +4240,7 @@ public:
    * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).
    * \return yes/no.
    */
-  bool GetUse_Accurate_Jacobians(void) { return Use_Accurate_Jacobians; }
+  bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4443,7 +4443,7 @@ public:
    * \brief Factor by which to multiply the dissipation contribution to Jacobians of central schemes.
    * \return The factor.
    */
-  su2double GetCent_Jac_Fix_Factor(void) { return Cent_Jac_Fix_Factor; }
+  su2double GetCent_Jac_Fix_Factor(void) const { return Cent_Jac_Fix_Factor; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -8480,7 +8480,7 @@ public:
    * \param[in] val_coeff - Index of the coefficient.
    * \return Alpha coefficient for the Runge-Kutta integration scheme.
    */
-  su2double* Get_Electric_Field_Dir(void) { return Electric_Field_Dir; }
+  const su2double* Get_Electric_Field_Dir(void) const { return Electric_Field_Dir; }
 
   /*!
    * \brief Check if the user wants to apply the load as a ramp.
