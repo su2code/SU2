@@ -91,7 +91,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -153,28 +153,28 @@ public:
    * \param[in,out] element_container - Element whose mass matrix is being built.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Mass_Matrix(CElement *element_container, CConfig *config) final;
+  void Compute_Mass_Matrix(CElement *element_container, const CConfig *config) final;
 
   /*!
    * \brief Compute the nodal gravity loads for an element.
    * \param[in,out] element_container - The element for which the dead loads are computed.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Dead_Load(CElement *element_container, CConfig *config) final;
+  void Compute_Dead_Load(CElement *element_container, const CConfig *config) final;
 
   /*!
    * \brief Build the tangent stiffness matrix of an element.
    * \param[in,out] element_container - Element whose tangent matrix is being built.
    * \param[in] config - Definition of the problem.
    */
-  inline void Compute_Tangent_Matrix(CElement *element_container, CConfig *config) override { };
+  inline void Compute_Tangent_Matrix(CElement *element_container, const CConfig *config) override { };
 
   /*!
    * \brief Compute averaged nodal stresses (for post processing).
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  inline void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) override { };
+  inline void Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) override { };
 
 protected:
   /*!
@@ -182,20 +182,20 @@ protected:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  virtual void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) = 0;
+  virtual void Compute_Constitutive_Matrix(CElement *element_container, const CConfig *config) = 0;
 
   /*!
    * \brief Set element material properties.
    * \param[in] element_container - Element defining the properties.
    * \param[in] config - Definition of the problem.
    */
-  virtual void SetElement_Properties(const CElement *element_container, CConfig *config);
+  virtual void SetElement_Properties(const CElement *element_container, const CConfig *config);
 
   /*!
    * \brief Read design variables from file.
    * \param[in] config - Definition of the problem.
    */
-  void ReadDV(CConfig *config);
+  void ReadDV(const CConfig *config);
 
   /*!
    * \brief Update the Lame parameters (required in AD to account for all dependencies).

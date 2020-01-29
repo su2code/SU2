@@ -27,7 +27,7 @@
 
 #include "../../../../include/numerics/flow/convection/ausm_slau.hpp"
 
-CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                              CNumerics(val_nDim, val_nVar, config) {
 
   if (config->GetDynamic_Grid() && (SU2_MPI::GetRank() == MASTER_NODE))
@@ -80,7 +80,7 @@ CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
 
 }
 
-void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure)
+void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su2double &mdot, su2double &pressure)
 {
   /*--- For schemes that fit in the general form of AUSM+up and SLAU schemes you can inherit from this class
    and implement only the specifics, which should be the face mass flux (per unit area) and the face pressure.
@@ -149,7 +149,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
 
 }
 
-void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
+void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(const CConfig* config, su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
   /*--- Compute Jacobians using a mixed (numerical/analytical) formulation ---*/
 
@@ -312,10 +312,8 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
 
 }
 
-void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const su2double*  &residual,
-                                                  const su2double* const* &jacobian_i,
-                                                  const su2double* const* &jacobian_j,
-                                                  CConfig *config) {
+CNumerics::ResidualType<> CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const CConfig* config) {
+
   unsigned short iDim, iVar;
 
   /*--- Space to start preaccumulation ---*/
@@ -377,22 +375,20 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const su2double*  &residual,
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
 
-  residual = Flux;
-
   /*--- If required, compute Jacobians, either approximately (Roe) or numerically ---*/
 
-  if (!implicit) return;
+  if (implicit) {
+    if (UseAccurateJacobian)
+      AccurateJacobian(config, Jacobian_i, Jacobian_j);
+    else
+      ApproximateJacobian(Jacobian_i, Jacobian_j);
+  }
 
-  if (UseAccurateJacobian)
-    AccurateJacobian(config, Jacobian_i, Jacobian_j);
-  else
-    ApproximateJacobian(Jacobian_i, Jacobian_j);
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 
-  jacobian_i = Jacobian_i;
-  jacobian_j = Jacobian_j;
 }
 
-CUpwAUSMPLUSUP_Flow::CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+CUpwAUSMPLUSUP_Flow::CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                      CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
 
   HasAnalyticalDerivatives = true;
@@ -405,7 +401,7 @@ CUpwAUSMPLUSUP_Flow::CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short
     SU2_MPI::Error("AUSM+Up requires a reference Mach number (\"MACH_NUMBER\") greater than 0.", CURRENT_FUNCTION);
 }
 
-void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) {
+void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su2double &mdot, su2double &pressure) {
 
   /*--- Projected velocities ---*/
 
@@ -618,7 +614,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
   }
 }
 
-CUpwAUSMPLUSUP2_Flow::CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+CUpwAUSMPLUSUP2_Flow::CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                       CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
 
   Minf = config->GetMach();
@@ -629,7 +625,7 @@ CUpwAUSMPLUSUP2_Flow::CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned sho
     SU2_MPI::Error("AUSM+Up2 requires a reference Mach number (\"MACH_NUMBER\") greater than 0.", CURRENT_FUNCTION);
 }
 
-void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) {
+void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su2double &mdot, su2double &pressure) {
 
   /*--- Projected velocities and squared magnitude ---*/
 
@@ -706,14 +702,14 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doub
 
 }
 
-CUpwSLAU_Flow::CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation) :
+CUpwSLAU_Flow::CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation) :
                CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
 
   slau_low_diss = val_low_dissipation;
   slau2 = false;
 }
 
-CUpwSLAU2_Flow::CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation) :
+CUpwSLAU2_Flow::CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation) :
                 CUpwSLAU_Flow(val_nDim, val_nVar, config, val_low_dissipation) {
 
   /*--- The difference between SLAU and SLAU2 is minimal, so we derive from SLAU and set this flag
@@ -722,7 +718,7 @@ CUpwSLAU2_Flow::CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar,
   slau2 = true;
 }
 
-void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) {
+void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su2double &mdot, su2double &pressure) {
 
   /*--- Project velocities and speed of sound ---*/
 
@@ -777,7 +773,7 @@ void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdo
   else                BetaR = 1.0;
 
   if (slau_low_diss)
-    SetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
+    Dissipation_ij = GetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, config);
   else
     Dissipation_ij = 1.0;
 
@@ -788,7 +784,7 @@ void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdo
 
 }
 
-CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   if (config->GetDynamic_Grid() && (SU2_MPI::GetRank() == MASTER_NODE))
     cout << "WARNING: Grid velocities are NOT yet considered in AUSM-type schemes." << endl;
@@ -839,10 +835,8 @@ CUpwAUSM_Flow::~CUpwAUSM_Flow(void) {
 
 }
 
-void CUpwAUSM_Flow::ComputeResidual(const su2double*  &residual,
-                                    const su2double* const* &jacobian_i,
-                                    const su2double* const* &jacobian_j,
-                                    CConfig *config) {
+CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) {
+
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(V_i, nDim+4);
@@ -921,8 +915,6 @@ void CUpwAUSM_Flow::ComputeResidual(const su2double*  &residual,
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
 
-  residual = Flux;
-
   /*--- Roe's Jacobian for AUSM (this must be fixed) ---*/
   if (implicit) {
 
@@ -971,8 +963,7 @@ void CUpwAUSM_Flow::ComputeResidual(const su2double*  &residual,
         Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
       }
     }
-
-    jacobian_i = Jacobian_i;
-    jacobian_j = Jacobian_j;
   }
+
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 }

@@ -30,7 +30,7 @@
 
 
 CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
+                                   const CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
 
   nearly_incompressible = (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT);
 
@@ -88,7 +88,7 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
 
   if (maxwell_stress == true) {
 
-    su2double *Electric_Field_Dir = config->Get_Electric_Field_Dir();
+    const su2double *Electric_Field_Dir = config->Get_Electric_Field_Dir();
     unsigned short iVar, iDim;
     su2double ref_Efield_mod;
 
@@ -217,7 +217,7 @@ CFEANonlinearElasticity::~CFEANonlinearElasticity(void) {
 }
 
 
-void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;
@@ -468,7 +468,7 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
 
 }
 
-void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;
@@ -599,7 +599,7 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfi
 
 }
 
-void CFEANonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::Add_MaxwellStress(CElement *element, const CConfig *config) {
 
 //  Adds the Maxwell stress to the output of the stress Sxx, Syy, Szz, SVM...
 
@@ -630,7 +630,7 @@ void CFEANonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *conf
 
 }
 
-void CFEANonlinearElasticity::SetElectric_Properties(const CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::SetElectric_Properties(const CElement *element, const CConfig *config) {
 
   // Set the modulus of the electric field in the current element
   /*--- These variables are set as preaccumulation inputs in Compute_Tangent_Matrix and
@@ -745,7 +745,7 @@ void CFEANonlinearElasticity::Assign_cijkl_D_Mat(void) {
 
 }
 
-void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;

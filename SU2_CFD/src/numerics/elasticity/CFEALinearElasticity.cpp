@@ -29,14 +29,14 @@
 
 
 CFEALinearElasticity::CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                                           CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
+                                           const CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
   if (nDim == 2)
     nodalDisplacement.resize(NNODES_2D,nDim);
   else
     nodalDisplacement.resize(NNODES_3D,nDim);
 }
 
-void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
+void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;
@@ -196,7 +196,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
 }
 
 
-void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) {
+void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_container, const CConfig *config) {
 
   /*--- Compute the D Matrix (for plane stress and 2-D)---*/
 
@@ -234,7 +234,7 @@ void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_contain
 }
 
 
-void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config) {
+void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar;
   unsigned short iGauss, nGauss;

@@ -27,7 +27,7 @@
 
 #include "../../../../include/numerics/flow/convection/fvs.hpp"
 
-CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   if (config->GetDynamic_Grid() && (SU2_MPI::GetRank() == MASTER_NODE))
     cout << "WARNING: Grid velocities are NOT yet considered in the MSW scheme." << endl;
@@ -99,10 +99,7 @@ CUpwMSW_Flow::~CUpwMSW_Flow(void) {
 
 }
 
-void CUpwMSW_Flow::ComputeResidual(const su2double*  &residual,
-                                    const su2double* const* &jacobian_i,
-                                    const su2double* const* &jacobian_j,
-                                    CConfig *config) {
+CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim, iVar, jVar, kVar;
   su2double P_i, P_j;
@@ -247,9 +244,7 @@ void CUpwMSW_Flow::ComputeResidual(const su2double*  &residual,
   for (iVar = 0; iVar < nVar; iVar++) {
     Fc_i[iVar] += Fc_j[iVar];
   }
-  residual = Fc_i;
 
-  jacobian_i = Jacobian_i;
-  jacobian_j = Jacobian_j;
+  return ResidualType<>(Fc_i, Jacobian_i, Jacobian_j);
 
 }
