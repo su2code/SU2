@@ -1917,7 +1917,7 @@ inline bool CConfig::GetJacobian_Spatial_Discretization_Only(void) {return Jacob
 
 inline bool CConfig::GetWeakly_Coupled_Heat(void) { return Weakly_Coupled_Heat; }
 
-inline bool CConfig::GetCHT_Robin(void) { return CHT_Robin; }
+inline unsigned short CConfig::GetKind_CHT_Coupling(void) const { return Kind_CHT_Coupling; }
 
 inline bool CConfig::GetIntegrated_HeatFlux(void) { return Integrated_HeatFlux; }
 
@@ -2089,3 +2089,5 @@ inline unsigned short* CConfig::GetVolumeOutputFiles() {return VolumeOutputFiles
 inline unsigned short CConfig::GetnVolumeOutputFiles() {return nVolumeOutputFiles;}
 
 inline bool CConfig::OptionIsSet(string option){ return all_options.find(option) == all_options.end();}
+
+inline const string& CConfig::GetCaseName() const { return caseName;}

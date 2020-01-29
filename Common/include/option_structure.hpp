@@ -108,7 +108,6 @@ const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of doma
 const unsigned int MAX_NUMBER_FFD = 15;	      /*!< \brief Maximum number of FFDBoxes for the FFD. */
 const unsigned int MAX_SOLS = 10;		      /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		      /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
-const unsigned int MAX_TERMS_FEA = 10;        /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;		      /*!< \brief No Runge-Kutta iteration. */
@@ -1113,6 +1112,23 @@ static const map<string, ENUM_DVFEA> DVFEA_Map = CCreateMap<string, ENUM_DVFEA>
 ("ELECTRIC_FIELD", ELECTRIC_FIELD);
 
 /*!
+ * \brief Kinds of coupling methods at CHT interfaces.
+ * The first (temperature) part determines the BC method on the fluid side, the second (heatflux) part determines
+ * the BC method on the solid side of the CHT interface.
+ */
+enum ENUM_CHT_COUPLING {
+  DIRECT_TEMPERATURE_NEUMANN_HEATFLUX = 0,
+  AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX = 1,
+  DIRECT_TEMPERATURE_ROBIN_HEATFLUX = 2,
+  AVERAGED_TEMPERATURE_ROBIN_HEATFLUX = 3
+};
+static const map<string, ENUM_CHT_COUPLING> CHT_Coupling_Map = CCreateMap<string, ENUM_CHT_COUPLING>
+("DIRECT_TEMPERATURE_NEUMANN_HEATFLUX", DIRECT_TEMPERATURE_NEUMANN_HEATFLUX)
+("AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX", AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX)
+("DIRECT_TEMPERATURE_ROBIN_HEATFLUX", DIRECT_TEMPERATURE_ROBIN_HEATFLUX)
+("AVERAGED_TEMPERATURE_ROBIN_HEATFLUX", AVERAGED_TEMPERATURE_ROBIN_HEATFLUX);
+
+/*!
  * \brief types Riemann boundary treatments
  */
 enum RIEMANN_TYPE {
@@ -1495,21 +1511,27 @@ static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
  * \brief type of solution output file formats
  */
 enum ENUM_OUTPUT {
-  TECPLOT = 1,  		         /*!< \brief Tecplot format for the solution output. */
-  TECPLOT_BINARY = 2,            /*!< \brief Tecplot binary format for the solution output. */
-  SURFACE_TECPLOT = 3,  	     /*!< \brief Tecplot format for the solution output. */
-  SURFACE_TECPLOT_BINARY = 4,    /*!< \brief Tecplot binary format for the solution output. */
-  CSV = 5,			             /*!< \brief Comma-separated values format for the solution output. */
-  SURFACE_CSV = 6,			     /*!< \brief Comma-separated values format for the solution output. */
-  PARAVIEW = 7,  		         /*!< \brief Paraview ASCII format for the solution output. */
-  PARAVIEW_BINARY = 8,           /*!< \brief Paraview binary format for the solution output. */
-  SURFACE_PARAVIEW = 9,  	     /*!< \brief Paraview ASCII format for the solution output. */
-  SURFACE_PARAVIEW_BINARY = 10,  /*!< \brief Paraview binary format for the solution output. */
-  MESH      = 11,                /*!< \brief SU2 mesh format. */
-  RESTART_BINARY = 12,           /*!< \brief SU2 binary restart format. */
-  RESTART_ASCII = 13,            /*!< \brief SU2 ASCII restart format. */
-  CGNS = 14                      /*!< \brief CGNS format. */
+  TECPLOT                 = 1,  /*!< \brief Tecplot format for the solution output. */
+  TECPLOT_BINARY          = 2,  /*!< \brief Tecplot binary format for the solution output. */
+  SURFACE_TECPLOT         = 3,  /*!< \brief Tecplot format for the solution output. */
+  SURFACE_TECPLOT_BINARY  = 4,  /*!< \brief Tecplot binary format for the solution output. */
+  CSV                     = 5,  /*!< \brief Comma-separated values format for the solution output. */
+  SURFACE_CSV             = 6,  /*!< \brief Comma-separated values format for the solution output. */
+  PARAVIEW                = 7,  /*!< \brief Paraview ASCII format for the solution output. */
+  PARAVIEW_BINARY         = 8,  /*!< \brief Paraview binary format for the solution output. */
+  SURFACE_PARAVIEW        = 9,  /*!< \brief Paraview ASCII format for the solution output. */
+  SURFACE_PARAVIEW_BINARY = 10, /*!< \brief Paraview binary format for the solution output. */
+  MESH                    = 11, /*!< \brief SU2 mesh format. */
+  RESTART_BINARY          = 12, /*!< \brief SU2 binary restart format. */
+  RESTART_ASCII           = 13, /*!< \brief SU2 ASCII restart format. */
+  CGNS                    = 14, /*!< \brief CGNS format. */
+  STL                     = 15, /*!< \brief STL ASCII format for surface solution output. */
+  STL_BINARY              = 16, /*!< \brief STL binary format for surface solution output. Not implemented yet. */
+  PARAVIEW_XML            = 17, /*!< \brief Paraview XML with binary data format */
+  SURFACE_PARAVIEW_XML    = 18, /*!< \brief Surface Paraview XML with binary data format */
+  PARAVIEW_MULTIBLOCK     = 19  /*!< \brief Paraview XML Multiblock */
 };
+
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
 ("TECPLOT_ASCII", TECPLOT)
 ("TECPLOT", TECPLOT_BINARY)
@@ -1518,12 +1540,17 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("CSV", CSV)
 ("SURFACE_CSV", SURFACE_CSV)
 ("PARAVIEW_ASCII", PARAVIEW)
-("PARAVIEW", PARAVIEW_BINARY)
+("PARAVIEW_LEGACY", PARAVIEW_BINARY)
 ("SURFACE_PARAVIEW_ASCII", SURFACE_PARAVIEW)
-("SURFACE_PARAVIEW", SURFACE_PARAVIEW_BINARY)
+("SURFACE_PARAVIEW_LEGACY", SURFACE_PARAVIEW_BINARY)
+("PARAVIEW", PARAVIEW_XML)
+("SURFACE_PARAVIEW", SURFACE_PARAVIEW_XML)
+("PARAVIEW_MULTIBLOCK", PARAVIEW_MULTIBLOCK)
 ("RESTART_ASCII", RESTART_ASCII)
 ("RESTART", RESTART_BINARY)
-("CGNS", CGNS);
+("CGNS", CGNS)
+("STL", STL)
+("STL_BINARY", STL_BINARY);
 
 /*!
  * \brief type of solution output file formats
@@ -1860,21 +1887,21 @@ static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMa
  */
 enum ENUM_DIRECTDIFF_VAR {
   NO_DERIVATIVE = 0,
-  D_MACH = 1,         /*!< \brief Derivative with respect to the mach number */
-  D_AOA = 2,		  /*!< \brief Derivative with respect to the angle of attack */
-  D_PRESSURE = 3,     /*!< \brief Derivative with respect to the freestream pressure */
-  D_TEMPERATURE = 4,  /*!< \brief Derivative with respect to the freestream temperature */
-  D_DENSITY = 5,      /*!< \brief Derivative with respect to the freestream density */
-  D_TURB2LAM = 6,     /*!< \brief Derivative with respect to the turb2lam */
-  D_SIDESLIP = 7,     /*!< \brief Derivative with respect to the sideslip angle */
-  D_VISCOSITY = 8,    /*!< \brief Derivative with respect to the viscosity */
-  D_REYNOLDS = 9,     /*!< \brief Derivative with respect to the reynolds number */
-  D_DESIGN = 10,      /*!< \brief Derivative with respect to the design?? */
-  D_YOUNG = 11,       /*!< \brief Derivative with respect to the Young's Modulus */
-  D_POISSON = 12,
-  D_RHO = 13,
-  D_RHO_DL = 14,
-  D_EFIELD = 15
+  D_MACH = 1,         /*!< \brief Derivative w.r.t. the Mach number */
+  D_AOA = 2,          /*!< \brief Derivative w.r.t. the angle of attack */
+  D_PRESSURE = 3,     /*!< \brief Derivative w.r.t. the freestream pressure */
+  D_TEMPERATURE = 4,  /*!< \brief Derivative w.r.t. the freestream temperature */
+  D_DENSITY = 5,      /*!< \brief Derivative w.r.t. the freestream density */
+  D_TURB2LAM = 6,     /*!< \brief Derivative w.r.t. the turb2lam */
+  D_SIDESLIP = 7,     /*!< \brief Derivative w.r.t. the sideslip angle */
+  D_VISCOSITY = 8,    /*!< \brief Derivative w.r.t. the viscosity */
+  D_REYNOLDS = 9,     /*!< \brief Derivative w.r.t. the reynolds number */
+  D_DESIGN = 10,      /*!< \brief Derivative w.r.t. the design?? */
+  D_YOUNG = 11,       /*!< \brief Derivative w.r.t. the Young's modulus */
+  D_POISSON = 12,     /*!< \brief Derivative w.r.t. the Poisson's ratio */
+  D_RHO = 13,         /*!< \brief Derivative w.r.t. the solid density (inertial) */
+  D_RHO_DL = 14,      /*!< \brief Derivative w.r.t. the density for dead loads */
+  D_EFIELD = 15       /*!< \brief Derivative w.r.t. the electric field */
 };
 static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<string, ENUM_DIRECTDIFF_VAR>
 ("NONE", NO_DERIVATIVE)
@@ -1933,6 +1960,7 @@ static const map<string, ENUM_INPUT_REF> Input_Ref_Map = CCreateMap<string, ENUM
  * \brief Vertex-based quantities exchanged during periodic marker communications.
  */
 enum PERIODIC_QUANTITIES {
+  PERIODIC_NONE       = 99,  /*!< \brief No periodic communication required. */
   PERIODIC_VOLUME     =  1,  /*!< \brief Volume communication for summing total CV (periodic only). */
   PERIODIC_NEIGHBORS  =  2,  /*!< \brief Communication of the number of neighbors for centered schemes (periodic only). */
   PERIODIC_RESIDUAL   =  3,  /*!< \brief Residual and Jacobian communication (periodic only). */
@@ -1947,9 +1975,9 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_SOL_2  = 12,  /*!< \brief Solution limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_1 = 13,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 = 14,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
-  PERIODIC_IMPLICIT   = 15,   /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+  PERIODIC_IMPLICIT   = 15,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
   PERIODIC_SOL_ULS    = 16,  /*!< \brief Solution gradient communication for unwieghted Least Squares (periodic only). */
-  PERIODIC_PRIM_ULS   = 17  /*!< \brief Primitive gradient communication for unweighted Least Squares (periodic only). */
+  PERIODIC_PRIM_ULS   = 17   /*!< \brief Primitive gradient communication for unweighted Least Squares (periodic only). */
 };
 
 /*!
@@ -2636,11 +2664,9 @@ class COptionConvect : public COptionBase {
   unsigned short & upwind;
 
 public:
-  COptionConvect(string option_field_name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field) : space(space_field), centered(centered_field), upwind(upwind_field) {
-    this->name = option_field_name;
-  }
+  COptionConvect(string option_field_name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field)
+    : name(option_field_name), space(space_field), centered(centered_field), upwind(upwind_field) { }
 
-  ~COptionConvect() {};
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
 
@@ -2662,9 +2688,7 @@ public:
       return "";
     }
     // Make them defined in case something weird happens
-    this->centered = NO_CENTERED;
-    this->upwind = NO_UPWIND;
-    this->space = SPACE_CENTERED;
+    SetDefault();
     return badValue(option_value, "convect", this->name);
 
   }
@@ -2672,7 +2696,7 @@ public:
   void SetDefault() {
     this->centered = NO_CENTERED;
     this->upwind = NO_UPWIND;
-    this->space = SPACE_CENTERED;
+    this->space = NO_CONVECTIVE;
   }
 };
 
