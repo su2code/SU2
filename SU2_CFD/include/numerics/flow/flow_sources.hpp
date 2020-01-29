@@ -30,12 +30,40 @@
 #include "../CNumerics.hpp"
 
 /*!
+ * \class CSourceBase_Flow
+ * \brief Intermediate source term class to allocate the internally
+ *        stored residual and Jacobian. Not for stand alone use,
+ *        just a helper to build more complicated classes.
+ * \ingroup SourceDiscr
+ */
+class CSourceBase_Flow : public CNumerics {
+protected:
+  su2double* residual = nullptr;
+  su2double** jacobian = nullptr;
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+public:
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CSourceBase_Flow();
+
+};
+
+/*!
  * \class CSourceAxisymmetric_Flow
  * \brief Class for source term for solving axisymmetric problems.
  * \ingroup SourceDiscr
  * \author F. Palacios
  */
-class CSourceAxisymmetric_Flow : public CNumerics {
+class CSourceAxisymmetric_Flow final : public CSourceBase_Flow {
 public:
   /*!
    * \brief Constructor of the class.
@@ -43,14 +71,14 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourceAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Residual of the rotational frame source term.
-   * \param[out] val_residual - Pointer to the total residual.
    * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
    */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 
@@ -60,7 +88,7 @@ public:
  * \ingroup SourceDiscr
  * \author T. Economon
  */
-class CSourceIncAxisymmetric_Flow : public CNumerics {
+class CSourceIncAxisymmetric_Flow final : public CSourceBase_Flow {
   bool implicit, /*!< \brief Implicit calculation. */
   viscous,       /*!< \brief Viscous incompressible flows. */
   energy;        /*!< \brief computation with the energy equation. */
@@ -72,14 +100,14 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceIncAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourceIncAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Residual of the rotational frame source term.
-   * \param[out] val_residual - Pointer to the total residual.
    * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
    */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 
@@ -89,24 +117,23 @@ public:
  * \ingroup SourceDiscr
  * \author T. Economon
  */
-class CSourceBodyForce : public CNumerics {
+class CSourceBodyForce final : public CSourceBase_Flow {
   su2double Body_Force_Vector[3];
 
 public:
-
   /*!
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceBodyForce(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourceBodyForce(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Source term integration for a body force.
-   * \param[out] val_residual - Pointer to the residual vector.
    * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
    */
-  void ComputeResidual(su2double *val_residual, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 
@@ -117,7 +144,7 @@ public:
  * \author T. Economon
  * \version 7.0.0 "Blackbird"
  */
-class CSourceIncBodyForce : public CNumerics {
+class CSourceIncBodyForce final : public CSourceBase_Flow {
   su2double Body_Force_Vector[3];
 
 public:
@@ -126,14 +153,14 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceIncBodyForce(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourceIncBodyForce(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Source term integration for a body force.
-   * \param[out] val_residual - Pointer to the residual vector.
    * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
    */
-  void ComputeResidual(su2double *val_residual, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 
@@ -144,7 +171,7 @@ public:
  * \author T. Economon
  * \version 7.0.0 "Blackbird"
  */
-class CSourceBoussinesq : public CNumerics {
+class CSourceBoussinesq final : public CSourceBase_Flow {
   su2double Gravity_Vector[3];
 
 public:
@@ -153,14 +180,14 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceBoussinesq(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourceBoussinesq(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Source term integration for the Boussinesq approximation.
-   * \param[out] val_residual - Pointer to the residual vector.
    * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
    */
-  void ComputeResidual(su2double *val_residual, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 
@@ -170,21 +197,22 @@ public:
  * \ingroup SourceDiscr
  * \author F. Palacios
  */
-class CSourceGravity : public CNumerics {
+class CSourceGravity final : public CSourceBase_Flow {
 public:
   /*!
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceGravity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourceGravity(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Source term integration for the poissonal potential.
-   * \param[out] val_residual - Pointer to the total residual.
    * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
    */
-  void ComputeResidual(su2double *val_residual, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
 };
 
 /*!
@@ -193,7 +221,7 @@ public:
  * \ingroup SourceDiscr
  * \author F. Palacios, T. Economon.
  */
-class CSourceRotatingFrame_Flow : public CNumerics {
+class CSourceRotatingFrame_Flow final : public CSourceBase_Flow {
 public:
   /*!
    * \brief Constructor of the class.
@@ -201,15 +229,15 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Residual of the rotational frame source term.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
 };
 
 /*!
@@ -217,7 +245,7 @@ public:
  * \brief Class for a rotating frame source term.
  * \ingroup SourceDiscr
  */
-class CSourceIncRotatingFrame_Flow : public CNumerics {
+class CSourceIncRotatingFrame_Flow final : public CSourceBase_Flow {
 
 private:
   su2double Omega[3];  /*!< \brief Angular velocity */
@@ -230,15 +258,14 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceIncRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourceIncRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Residual of the rotational frame source term.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 
@@ -248,7 +275,7 @@ public:
  * \ingroup SourceDiscr
  * \author S. Padrón
  */
-class CSourceWindGust : public CNumerics {
+class CSourceWindGust final : public CSourceBase_Flow {
 public:
   /*!
    * \brief Constructor of the class.
@@ -256,13 +283,13 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceWindGust(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourceWindGust(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Residual of the wind gust source term.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
 };
