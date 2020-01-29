@@ -151,6 +151,8 @@ if get_option('enable-autodiff')
                        install : true, 
                        dependencies : [su2_deps, codi_dep, commonAD_dep], 
                        cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args])
+  # TODO: Add support for directdiff unit tests
+  su2_cfd_dep = disabler()
 endif
 
 if get_option('enable-directdiff')
@@ -160,5 +162,7 @@ if get_option('enable-directdiff')
                        install : true, 
                        dependencies : [su2_deps, codi_dep, commonDD_dep], 
                        cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args])
+  # TODO: Add support for directdiff unit tests
+  su2_cfd_dep = disabler()
 endif
 
