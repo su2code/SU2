@@ -753,7 +753,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nodes = new CNSVariable(Density_Inf, Velocity_Inf, Energy_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
-  #ifndef HAVE_OMP
+#ifdef HAVE_OMP
   /*--- Get the edge coloring. ---*/
 
   const auto& coloring = geometry->GetEdgeColoring();
