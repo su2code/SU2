@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -29,10 +29,9 @@
 
 const string CTecplotFileWriter::fileExt = ".dat";
 
-CTecplotFileWriter::CTecplotFileWriter(vector<string> fields, unsigned short nDim,
-                                       string fileName, CParallelDataSorter *dataSorter,
-                                       unsigned long time_iter, su2double timestep) :
-  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim), time_iter(time_iter), timestep(timestep){}
+CTecplotFileWriter::CTecplotFileWriter(string valFileName, CParallelDataSorter *valDataSorter,
+                                       unsigned long valTimeIter, su2double valTimeStep) :
+  CFileWriter(std::move(valFileName), valDataSorter, fileExt), timeIter(valTimeIter), timeStep(valTimeStep){}
 
 CTecplotFileWriter::~CTecplotFileWriter(){}
 
@@ -42,6 +41,8 @@ void CTecplotFileWriter::Write_Data(){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
 
+  const vector<string> fieldNames = dataSorter->GetFieldNames();
+
   unsigned short iVar;
 
   unsigned long iPoint, iElem;
@@ -50,19 +51,18 @@ void CTecplotFileWriter::Write_Data(){
 
   ofstream Tecplot_File;
 
-  file_size = 0.0;
+  fileSize = 0.0;
 
   /*--- Set a timer for the file writing. ---*/
 
 #ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StartTime = MPI_Wtime();
+  startTime = MPI_Wtime();
 #endif
 
   /*--- Reduce the total number of each element. ---*/
 
-  unsigned long nTot_Line, nTot_Tria, nTot_Quad, nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
   unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
                 nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
                 nParallel_Quad = dataSorter->GetnElem(QUADRILATERAL),
@@ -70,24 +70,14 @@ void CTecplotFileWriter::Write_Data(){
                 nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
                 nParallel_Pris = dataSorter->GetnElem(PRISM),
                 nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nParallel_Line, &nTot_Line, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Tria, &nTot_Tria, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Quad, &nTot_Quad, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Tetr, &nTot_Tetr, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Hexa, &nTot_Hexa, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Pris, &nTot_Pris, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Pyra, &nTot_Pyra, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  nTot_Line      = nParallel_Line;
-
-  nTot_Tria = nParallel_Tria;
-  nTot_Quad = nParallel_Quad;
-  nTot_Tetr = nParallel_Tetr;
-  nTot_Hexa = nParallel_Hexa;
-  nTot_Pris = nParallel_Pris;
-  nTot_Pyra = nParallel_Pyra;
-#endif
+  
+  unsigned long nTot_Line = dataSorter->GetnElemGlobal(LINE),
+                nTot_Tria = dataSorter->GetnElemGlobal(TRIANGLE),
+                nTot_Quad = dataSorter->GetnElemGlobal(QUADRILATERAL),
+                nTot_Tetr = dataSorter->GetnElemGlobal(TETRAHEDRON),
+                nTot_Hexa = dataSorter->GetnElemGlobal(HEXAHEDRON),
+                nTot_Pris = dataSorter->GetnElemGlobal(PRISM),
+                nTot_Pyra = dataSorter->GetnElemGlobal(PYRAMID);
 
   /*--- Open Tecplot ASCII file and write the header. ---*/
 
@@ -97,22 +87,22 @@ void CTecplotFileWriter::Write_Data(){
     Tecplot_File << "TITLE = \"Visualization of the solution\"" << endl;
 
     Tecplot_File << "VARIABLES = ";
-    for (iVar = 0; iVar < fieldnames.size()-1; iVar++) {
-      Tecplot_File << "\"" << fieldnames[iVar] << "\",";
+    for (iVar = 0; iVar < fieldNames.size()-1; iVar++) {
+      Tecplot_File << "\"" << fieldNames[iVar] << "\",";
     }
-    Tecplot_File << "\"" << fieldnames[fieldnames.size()-1] << "\"" << endl;
+    Tecplot_File << "\"" << fieldNames[fieldNames.size()-1] << "\"" << endl;
 
     /*--- Write the header ---*/
 
     Tecplot_File << "ZONE ";
 
-    if (timestep > 0.0){
-      Tecplot_File << "STRANDID="<<SU2_TYPE::Int(time_iter+1)<<", SOLUTIONTIME="<< time_iter*timestep <<", ";
+    if (timeStep > 0.0){
+      Tecplot_File << "STRANDID="<<SU2_TYPE::Int(timeIter+1)<<", SOLUTIONTIME="<< timeIter*timeStep <<", ";
     }
 
-    Tecplot_File << "NODES= "<< dataSorter->GetnPointsGlobal() <<", ELEMENTS= "<< dataSorter->GetnElem();
+    Tecplot_File << "NODES= "<< dataSorter->GetnPointsGlobal() <<", ELEMENTS= "<< dataSorter->GetnElemGlobal();
 
-    if (nDim == 3){
+    if (dataSorter->GetnDim() == 3){
       if ((nTot_Quad > 0 || nTot_Tria > 0) && (nTot_Hexa + nTot_Pris + nTot_Pyra + nTot_Tetr == 0)){
         Tecplot_File << ", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL" << endl;
       }
@@ -148,7 +138,7 @@ void CTecplotFileWriter::Write_Data(){
 
 
       for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
-        for (iVar = 0; iVar < fieldnames.size(); iVar++)
+        for (iVar = 0; iVar < fieldNames.size(); iVar++)
           Tecplot_File << scientific << dataSorter->GetData(iVar, iPoint) << "\t";
         Tecplot_File << endl;
       }
@@ -227,17 +217,17 @@ void CTecplotFileWriter::Write_Data(){
   /*--- Compute and store the write time. ---*/
 
 #ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StopTime = MPI_Wtime();
+  stopTime = MPI_Wtime();
 #endif
-  UsedTime = StopTime-StartTime;
+  usedTime = stopTime-startTime;
 
-  file_size = Determine_Filesize(fileName);
+  fileSize = Determine_Filesize(fileName);
 
   /*--- Compute and store the bandwidth ---*/
 
-  Bandwidth = file_size/(1.0e6)/UsedTime;
+  bandwidth = fileSize/(1.0e6)/usedTime;
 }
 
 

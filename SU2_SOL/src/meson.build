@@ -23,6 +23,8 @@ if get_option('enable-normal')
                                         'output/filewriter/CSU2FileWriter.cpp',
                                         'output/filewriter/CSU2BinaryFileWriter.cpp',
                                         'output/filewriter/CSU2MeshFileWriter.cpp',
+                                        'output/filewriter/CParaviewXMLFileWriter.cpp',
+                                        'output/filewriter/CParaviewVTMFileWriter.cpp',
                                         'variables/CBaselineVariable.cpp',
                                         'variables/CVariable.cpp'])
 

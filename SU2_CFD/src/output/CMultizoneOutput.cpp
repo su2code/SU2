@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -67,7 +67,7 @@ CMultizoneOutput::CMultizoneOutput(CConfig* driver_config, CConfig** config, uns
 
   multiZoneHeaderString = "Multizone Summary";
 
-  historyFilename = "multizone_history";
+  historyFilename = driver_config->GetCaseName();
 
   /*--- Add the correct file extension depending on the file format ---*/
 

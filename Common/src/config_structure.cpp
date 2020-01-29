@@ -60,6 +60,10 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high) {
 
+  /*--- Set the case name to the base config file name without extension ---*/
+
+  caseName = PrintingToolbox::split(string(case_filename),'.')[0];
+
   base_config = true;
 
   /*--- Store MPI rank and size ---*/
@@ -105,7 +109,10 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 }
 
-CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high) {
+CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned short val_software,
+                 unsigned short val_iZone, unsigned short val_nZone, bool verb_high) {
+
+  caseName = config->GetCaseName();
 
   unsigned short val_nDim;
 
@@ -162,6 +169,10 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned 
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
 
+  /*--- Set the case name to the base config file name without extension ---*/
+  
+  caseName = PrintingToolbox::split(string(case_filename),'.')[0];
+  
   base_config = true;
 
   nZone = 1;
@@ -208,6 +219,10 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
+  /*--- Set the case name to the base config file name without extension ---*/
+  
+  caseName = PrintingToolbox::split(string(case_filename),'.')[0];
+  
   base_config = true;
 
   /*--- Store MPI rank and size ---*/
@@ -1029,6 +1044,7 @@ void CConfig::SetPointersNull(void) {
   HistoryOutput = NULL;
   VolumeOutput = NULL;
   VolumeOutputFiles = NULL;
+  ConvField = NULL;
 
   /*--- Variable initialization ---*/
 
@@ -7810,6 +7826,8 @@ CConfig::~CConfig(void) {
   if (VolumeOutput != NULL) delete [] VolumeOutput;
   if (Mesh_Box_Size != NULL) delete [] Mesh_Box_Size;
   if (VolumeOutputFiles != NULL) delete [] VolumeOutputFiles;
+  
+  if (ConvField != NULL) delete [] ConvField;
 
 }
 
@@ -9726,7 +9744,28 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
   if(driver_config->GetWnd_Cauchy_Crit() == true){
     SU2_MPI::Error("Option WINDOW_CAUCHY_CRIT must be deactivated for multizone problems.", CURRENT_FUNCTION);
   }
-
+  
+  bool multiblockDriver = false;  
+  for (unsigned short iFiles = 0; iFiles < driver_config->GetnVolumeOutputFiles(); iFiles++){
+    if (driver_config->GetVolumeOutputFiles()[iFiles] == PARAVIEW_MULTIBLOCK){
+      multiblockDriver = true;
+    }
+  }
+  
+  bool multiblockZone = false;
+  for (unsigned short iZone = 0; iZone < nZone; iZone++){
+    multiblockZone = false;
+    for (unsigned short iFiles = 0; iFiles < config_container[iZone]->GetnVolumeOutputFiles(); iFiles++){
+      if (config_container[iZone]->GetVolumeOutputFiles()[iFiles] == PARAVIEW_MULTIBLOCK){
+        multiblockZone = true;
+      }
+    }
+    if (multiblockZone != multiblockDriver){
+      SU2_MPI::Error("To enable PARAVIEW_MULTIBLOCK output, add it to OUTPUT_FILES option in main config and\n"
+                     "remove option from sub-config files.", CURRENT_FUNCTION);
+    }
+  }
+  
   /*--- Set the Restart iter for time dependent problems ---*/
   if (driver_config->GetRestart()){
     Unst_RestartIter = driver_config->GetRestart_Iter();

@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -42,9 +42,9 @@ public:
    * \brief Constructor
    * \param[in] config - Pointer to the current config structure
    * \param[in] geometry - Pointer to the current geometry
-   * \param[in] nFields - Number of output fields
+   * \param[in] valFieldNames - Vector containing the field names
    */
-  CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields);
+  CFVMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames);
 
   /*!
    * \brief Destructor
@@ -73,7 +73,7 @@ public:
    * \param[in] iPoint - ID of the point
    * \return <TRUE> if the point is a halo node.
    */
-  bool GetHalo(unsigned long iPoint) {return Local_Halo[iPoint];}
+  bool GetHalo(unsigned long iPoint) const {return Local_Halo[iPoint];}
 
 private:
 
