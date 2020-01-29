@@ -1033,7 +1033,7 @@ public:
    * \param[out] val_residual - Pointer to the total residual.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ComputeResidual(su2double *val_residual, const CConfig* config) { }
+  inline virtual void ComputeResidual(su2double *val_residual, CConfig* config) { }
 
   /*!
    * \overload
@@ -1043,7 +1043,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
-                                      su2double **val_Jacobian_j, const CConfig* config) { }
+                                      su2double **val_Jacobian_j, CConfig* config) { }
 
   /*!
    * \overload For numerics classes that store the residual/flux and Jacobians internally.
@@ -1067,7 +1067,7 @@ public:
                                       su2double **val_Jacobian_ii,
                                       su2double **val_Jacobian_ij,
                                       su2double **val_Jacobian_ji,
-                                      su2double **val_Jacobian_jj, const CConfig* config) { }
+                                      su2double **val_Jacobian_jj, CConfig* config) { }
 
   /*!
    * \overload
@@ -1086,7 +1086,7 @@ public:
                                       su2double **val_Jacobian_ii,
                                       su2double **val_Jacobian_ij,
                                       su2double **val_Jacobian_ji,
-                                      su2double **val_Jacobian_jj, const CConfig* config) { }
+                                      su2double **val_Jacobian_jj, CConfig* config) { }
 
   /*!
    * \overload
@@ -1094,7 +1094,7 @@ public:
    * \param[out] val_residual - residual of the source terms
    * \param[out] val_Jacobian_i - Jacobian of the source terms
    */
-  inline virtual void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, const CConfig* config) { }
+  inline virtual void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig* config) { }
 
   /*!
    * \brief Residual for transition problems.
@@ -1106,7 +1106,7 @@ public:
    */
   inline virtual void ComputeResidual_TransLM(su2double *val_residual,
                                               su2double **val_Jacobian_i,
-                                              su2double **val_Jacobian_j, const CConfig* config,
+                                              su2double **val_Jacobian_j, CConfig* config,
                                               su2double &gamma_sep) { }
 
   /*!
