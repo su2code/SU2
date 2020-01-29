@@ -1,5 +1,7 @@
 # Add any new test files here
-su2_cfd_tests = files(['SU2_CFD/numerics/CNumerics_tests.cpp'])
+su2_cfd_tests = files(['Common/geometry/primal_grid/CPrimalGrid_tests.cpp',
+                       'Common/geometry/dual_grid/CDualGrid_tests.cpp',
+                       'SU2_CFD/numerics/CNumerics_tests.cpp'])
 
 # Add the test driver (the main() definition)
 unit_test_files = su2_cfd_tests + files(['test_driver.cpp'])
