@@ -1123,6 +1123,7 @@ private:
   unsigned short pastix_verb_lvl;  /*!< \brief Verbosity level for PaStiX */
   unsigned short pastix_fill_lvl;  /*!< \brief Fill level for PaStiX ILU */
 
+  string caseName;                 /*!< \brief Name of the current case */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -9158,10 +9159,18 @@ public:
   bool OptionIsSet(string option);
 
   /*!
+   * \brief Get the name of the current case
+   * \return the case name
+   */
+  const string& GetCaseName() const;
+
+
+  /*!
    * \brief Get the number of threads per rank to use for ILU and LU_SGS preconditioners.
    * \return Number of threads per rank.
    */
   inline unsigned long GetLinear_Solver_Prec_Threads(void) const {return Linear_Solver_Prec_Threads;} 
+
 };
 
 #include "config_structure.inl"
