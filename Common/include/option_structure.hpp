@@ -41,7 +41,9 @@ using namespace std;
 
 /*!
  * \class CEmptyMap
- * \brief
+ * \brief We use this dummy class instead of std::map when
+ * we only need the enum definition and not the string to
+ * enum maps, this makes compilation much faster.
  */
 template <typename T, typename U>
 struct CEmptyMap {
@@ -231,7 +233,7 @@ static const MapType<string, ENUM_MULTIZONE> Multizone_Map = {
 };
 
 /*!
- * \brief types of fluid solvers
+ * \brief Types of fluid solvers
  */
 enum ENUM_FSI_FLUID_PROBLEM {
   NO_SOLVER_FFSI = 0,      /*!< \brief Definition of no solver. */
@@ -247,7 +249,7 @@ static const MapType<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = {
 };
 
 /*!
- * \brief types of structural solvers
+ * \brief Types of structural solvers
  */
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,           /*!< \brief Definition of no solver. */
@@ -299,7 +301,7 @@ static const MapType<string, ENUM_MAT_COMPRESS> MatComp_Map = {
 };
 
 /*!
- * \brief types of interpolators
+ * \brief Types of interpolators
  */
 enum ENUM_INTERPOLATOR {
   NEAREST_NEIGHBOR = 0,      /*!< \brief Nearest Neigbhor interpolation */
@@ -315,7 +317,7 @@ static const MapType<string, ENUM_INTERPOLATOR> Interpolator_Map = {
 };
 
 /*!
- * \brief types of radial basis functions
+ * \brief Types of radial basis functions
  */
 enum ENUM_RADIALBASIS {
   WENDLAND_C2 = 0,        /*!< \brief Wendland C2 radial basis function. */
@@ -333,7 +335,7 @@ static const MapType<string, ENUM_RADIALBASIS> RadialBasisFunction_Map = {
 };
 
 /*!
- * \brief types of (coupling) transfers between distinct physical zones
+ * \brief Types of (coupling) transfers between distinct physical zones
  */
 enum ENUM_TRANSFER {
   ZONES_ARE_EQUAL                   = 0,    /*!< \brief Zones are equal - no transfer. */
@@ -443,7 +445,7 @@ const int MESH_SOL = 8;      /*!< \brief Position of the mesh solver. */
 const int ADJMESH_SOL = 9;   /*!< \brief Position of the adjoint of the mesh solver. */
 
 /*!
- * \brief types of finite elements (in 2D or 3D)
+ * \brief Types of finite elements (in 2D or 3D)
  */
 const int EL_TRIA = 0;    /*!< \brief Elements of three nodes (2D). */
 const int EL_QUAD = 1;    /*!< \brief Elements of four nodes (2D). */
@@ -455,7 +457,7 @@ const int EL_PRISM = 3;   /*!< \brief Elements of six nodes (3D). */
 
 
 /*!
- * \brief types of mathematical problem to solve
+ * \brief Types of mathematical problem to solve
  */
 enum ENUM_MATH_PROBLEM {
   DIRECT = 0,               /*!< \brief Direct problem */
@@ -469,7 +471,7 @@ static const MapType<string, ENUM_MATH_PROBLEM> Math_Problem_Map = {
 };
 
 /*!
- * \brief types of spatial discretizations
+ * \brief Types of spatial discretizations
  */
 enum ENUM_SPACE {
   NO_CONVECTIVE = 0,   /*!< \brief No convective scheme is used. */
@@ -485,7 +487,7 @@ static const MapType<string, ENUM_SPACE> Space_Map = {
 };
 
 /*!
- * \brief types of fluid model
+ * \brief Types of fluid model
  */
 enum ENUM_FLUIDMODEL {
   STANDARD_AIR = 0,       /*!< \brief Standard air gas model. */
@@ -507,7 +509,7 @@ static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
 };
 
 /*!
- * \brief types of density models
+ * \brief Types of density models
  */
 enum ENUM_DENSITYMODEL {
   CONSTANT = 0,
@@ -521,7 +523,7 @@ static const MapType<string, ENUM_DENSITYMODEL> DensityModel_Map = {
 };
 
 /*!
- * \brief types of initialization option
+ * \brief Types of initialization option
  */
 enum ENUM_INIT_OPTION {
   REYNOLDS = 0,      /*!< \brief Reynold's number initalization. */
@@ -533,7 +535,7 @@ static const MapType<string, ENUM_INIT_OPTION> InitOption_Map = {
 };
 
 /*!
- * \brief types of initialization option
+ * \brief Types of initialization option
  */
 enum ENUM_FREESTREAM_OPTION {
   TEMPERATURE_FS = 0,  /*!< \brief Temperature initialization. */
@@ -545,7 +547,7 @@ static const MapType<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = {
 };
 
 /*!
- * \brief types of viscosity model
+ * \brief Types of viscosity model
  */
 enum ENUM_VISCOSITYMODEL {
   CONSTANT_VISCOSITY = 0,   /*!< \brief Constant viscosity. */
@@ -559,7 +561,7 @@ static const MapType<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = {
 };
 
 /*!
- * \brief types of thermal conductivity model
+ * \brief Types of thermal conductivity model
  */
 enum ENUM_CONDUCTIVITYMODEL {
   CONSTANT_CONDUCTIVITY = 0,   /*!< \brief Constant thermal conductivity. */
@@ -573,7 +575,7 @@ static const MapType<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = {
 };
 
 /*!
- * \brief types of turbulent thermal conductivity model
+ * \brief Types of turbulent thermal conductivity model
  */
 enum ENUM_CONDUCTIVITYMODEL_TURB {
   NO_CONDUCTIVITY_TURB  = 0,  /*!< \brief No turbulent contribution to the effective thermal conductivity for RANS. */
@@ -585,7 +587,7 @@ static const MapType<string, ENUM_CONDUCTIVITYMODEL_TURB> TurbConductivityModel_
 };
 
 /*!
- * \brief types of unsteady mesh motion
+ * \brief Types of unsteady mesh motion
  */
 enum ENUM_GRIDMOVEMENT {
   NO_MOVEMENT = 0,          /*!< \brief Simulation on a static mesh. */
@@ -628,7 +630,7 @@ static const MapType<string, ENUM_SURFACEMOVEMENT> SurfaceMovement_Map = {
 };
 
 /*!
- * \brief type of wind gusts
+ * \brief Type of wind gusts
  */
 enum ENUM_GUST_TYPE {
   NO_GUST = 0,      /*!< \brief No gust. */
@@ -648,7 +650,7 @@ static const MapType<string, ENUM_GUST_TYPE> Gust_Type_Map = {
 };
 
 /*!
- * \brief type of wind direction
+ * \brief Type of wind direction
  */
 enum ENUM_GUST_DIR {
   X_DIR = 0,  /*!< \brief Gust direction-X. */
@@ -661,7 +663,7 @@ static const MapType<string, ENUM_GUST_DIR> Gust_Dir_Map = {
 
 // If you add to ENUM_CENTERED, you must also add the option to ENUM_CONVECTIVE
 /*!
- * \brief types of centered spatial discretizations
+ * \brief Types of centered spatial discretizations
  */
 enum ENUM_CENTERED {
   NO_CENTERED = 0,    /*!< \brief No centered scheme is used. */
@@ -679,7 +681,7 @@ static const MapType<string, ENUM_CENTERED> Centered_Map = {
 
 // If you add to ENUM_UPWIND, you must also add the option to ENUM_CONVECTIVE
 /*!
- * \brief types of upwind spatial discretizations
+ * \brief Types of upwind spatial discretizations
  */
 enum ENUM_UPWIND {
   NO_UPWIND = 0,              /*!< \brief No upwind scheme is used. */
@@ -723,7 +725,7 @@ static const MapType<string, ENUM_UPWIND> Upwind_Map = {
 };
 
 /*!
- * \brief types of FEM spatial discretizations
+ * \brief Types of FEM spatial discretizations
  */
 enum ENUM_FEM {
   NO_FEM = 0,  /*!< \brief No finite element scheme is used. */
@@ -735,7 +737,7 @@ static const MapType<string, ENUM_FEM> FEM_Map = {
 };
 
 /*!
- * \brief types of shock capturing method in Discontinuous Galerkin numerical method.
+ * \brief Types of shock capturing method in Discontinuous Galerkin numerical method.
  */
 enum ENUM_SHOCK_CAPTURING_DG {
   NO_SHOCK_CAPTURING = 0,     /*!< \brief Shock capturing is not used. */
@@ -747,7 +749,7 @@ static const MapType<string, ENUM_SHOCK_CAPTURING_DG> ShockCapturingDG_Map = {
 };
 
 /*!
- * \brief types of matrix coloring to compute a sparse Jacobian matrix.
+ * \brief Types of matrix coloring to compute a sparse Jacobian matrix.
  */
 enum ENUM_MATRIX_COLORING {
   GREEDY_COLORING = 0,            /*!< \brief Greedy type of algorithm for the coloring. */
@@ -759,7 +761,7 @@ static const MapType<string, ENUM_MATRIX_COLORING> MatrixColoring_Map = {
 };
 
 /*!
- * \brief types of slope limiters
+ * \brief Types of slope limiters
  */
 enum ENUM_LIMITER {
   NO_LIMITER           = 0, /*!< \brief No limiter. */
@@ -781,7 +783,7 @@ static const MapType<string, ENUM_LIMITER> Limiter_Map = {
 };
 
 /*!
- * \brief types of turbulent models
+ * \brief Types of turbulent models
  */
 enum ENUM_TURB_MODEL {
   NO_TURB_MODEL = 0, /*!< \brief No turbulence model. */
@@ -805,7 +807,7 @@ static const MapType<string, ENUM_TURB_MODEL> Turb_Model_Map = {
 };
 
 /*!
- * \brief types of transition models
+ * \brief Types of transition models
  */
 enum ENUM_TRANS_MODEL {
   NO_TRANS_MODEL = 0,  /*!< \brief No transition model. */
@@ -819,7 +821,7 @@ static const MapType<string, ENUM_TRANS_MODEL> Trans_Model_Map = {
 };
 
 /*!
- * \brief types of subgrid scale models
+ * \brief Types of subgrid scale models
  */
 enum ENUM_SGS_MODEL {
   NO_SGS_MODEL = 0, /*!< \brief No subgrid scale model. */
@@ -838,7 +840,7 @@ static const MapType<string, ENUM_SGS_MODEL> SGS_Model_Map = {
 
 
 /*!
- * \brief types of window (weight) functions for cost functional
+ * \brief Types of window (weight) functions for cost functional
  */
 enum WINDOW_FUNCTION {
   SQUARE = 0,        /*!< \brief No weight function  (order 1)*/
@@ -854,7 +856,7 @@ static const MapType<string, WINDOW_FUNCTION> Window_Map = {
 };
 
 /*!
- * \brief types of hybrid RANS/LES models
+ * \brief Types of hybrid RANS/LES models
  */
 enum ENUM_HYBRIDRANSLES {
   NO_HYBRIDRANSLES = 0,  /*!< \brief No turbulence model. */
@@ -872,7 +874,7 @@ static const MapType<string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
 };
 
 /*!
- * \brief types of Roe Low Dissipation Schemes
+ * \brief Types of Roe Low Dissipation Schemes
  */
 enum ENUM_ROELOWDISS {
     NO_ROELOWDISS = 0, /*!< \brief No Roe Low Dissipation model. */
@@ -890,7 +892,7 @@ static const MapType<string, ENUM_ROELOWDISS> RoeLowDiss_Map = {
 };
 
 /*!
- * \brief types of wall functions.
+ * \brief Types of wall functions.
  */
 enum ENUM_WALL_FUNCTIONS {
   NO_WALL_FUNCTION          = 0,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
@@ -912,7 +914,7 @@ static const MapType<string, ENUM_WALL_FUNCTIONS> Wall_Functions_Map = {
 };
 
 /*!
- * \brief type of time integration schemes
+ * \brief Type of time integration schemes
  */
 enum ENUM_TIME_INT {
   RUNGE_KUTTA_EXPLICIT = 1,   /*!< \brief Explicit Runge-Kutta time integration definition. */
@@ -930,7 +932,7 @@ static const MapType<string, ENUM_TIME_INT> Time_Int_Map = {
 };
 
 /*!
- * \brief type of predictor for the ADER-DG time integration scheme.
+ * \brief Type of predictor for the ADER-DG time integration scheme.
  */
 enum ENUM_ADER_PREDICTOR {
   ADER_ALIASED_PREDICTOR     = 1, /*!< \brief Aliased predictor, easiest to do. */
@@ -942,7 +944,7 @@ static const MapType<string, ENUM_ADER_PREDICTOR> Ader_Predictor_Map = {
 };
 
 /*!
- * \brief type of heat timestep calculation
+ * \brief Type of heat timestep calculation
  */
 enum ENUM_HEAT_TIMESTEP {
   MINIMUM = 1,     /*!< \brief Local time stepping based on minimum lambda.*/
@@ -958,7 +960,7 @@ static const MapType<string, ENUM_HEAT_TIMESTEP> Heat_TimeStep_Map = {
 };
 
 /*!
- * \brief type of time integration schemes
+ * \brief Type of time integration schemes
  */
 enum ENUM_TIME_INT_FEA {
   CD_EXPLICIT = 1,       /*!< \brief Support for implementing an explicit method. */
@@ -972,7 +974,7 @@ static const MapType<string, ENUM_TIME_INT_FEA> Time_Int_Map_FEA = {
 };
 
 /*!
- * \brief type of time integration schemes
+ * \brief Type of time integration schemes
  */
 enum ENUM_SPACE_ITE_FEA {
   NEWTON_RAPHSON = 1,           /*!< \brief Full Newton-Rapshon method. */
@@ -984,7 +986,7 @@ static const MapType<string, ENUM_SPACE_ITE_FEA> Space_Ite_Map_FEA = {
 };
 
 /*!
- * \brief types of schemes to compute the flow gradient
+ * \brief Types of schemes to compute the flow gradient
  */
 enum ENUM_FLOW_GRADIENT {
   NO_GRADIENT            = 0,   /*!< \brief No gradient method. Only possible for reconstruction gradient, in which case, the option chosen for NUM_METHOD_GRAD is used. */
@@ -1000,7 +1002,7 @@ static const MapType<string, ENUM_FLOW_GRADIENT> Gradient_Map = {
 };
 
 /*!
- * \brief types of action to take on a geometry structure
+ * \brief Types of action to take on a geometry structure
  */
 enum GEOMETRY_ACTION {
   ALLOCATE = 0,     /*!< \brief Allocate geometry structure. */
@@ -1008,7 +1010,7 @@ enum GEOMETRY_ACTION {
 };
 
 /*!
- * \brief types of action to perform when doing the geometry evaluation
+ * \brief Types of action to perform when doing the geometry evaluation
  */
 enum GEOMETRY_MODE {
   FUNCTION = 0,     /*!< \brief Geometrical analysis. */
@@ -1020,7 +1022,7 @@ static const MapType<string, GEOMETRY_MODE> GeometryMode_Map = {
 };
 
 /*!
- * \brief types of boundary conditions
+ * \brief Types of boundary conditions
  */
 enum BC_TYPE {
   EULER_WALL = 1,             /*!< \brief Boundary Euler wall definition. */
@@ -1087,7 +1089,7 @@ static const MapType<string, ENUM_AITKEN> AitkenForm_Map = {
 };
 
 /*!
- * \brief types of dynamic transfer methods
+ * \brief Types of dynamic transfer methods
  */
 enum ENUM_DYN_TRANSFER_METHOD {
   INSTANTANEOUS = 1,   /*!< \brief No ramp, load is transfer instantaneously. */
@@ -1145,7 +1147,7 @@ static const MapType<string, ENUM_CHT_COUPLING> CHT_Coupling_Map = {
 };
 
 /*!
- * \brief types Riemann boundary treatments
+ * \brief Types Riemann boundary treatments
  */
 enum RIEMANN_TYPE {
   TOTAL_CONDITIONS_PT = 1,          /*!< \brief User specifies total pressure, total temperature, and flow direction. */
@@ -1198,7 +1200,7 @@ static const MapType<string, RIEMANN_TYPE> Giles_Map = {
 };
 
 /*!
- * \brief types of mixing process for averaging quantities at the boundaries.
+ * \brief Types of mixing process for averaging quantities at the boundaries.
  */
 enum AVERAGEPROCESS_TYPE {
   ALGEBRAIC = 1,  /*!< \brief an algebraic average is computed at the boundary of interest. */
@@ -1214,7 +1216,7 @@ static const MapType<string, AVERAGEPROCESS_TYPE> AverageProcess_Map = {
 };
 
 /*!
- * \brief types of mixing process for averaging quantities at the boundaries.
+ * \brief Types of mixing process for averaging quantities at the boundaries.
  */
 enum MIXINGPLANE_INTERFACE_TYPE {
   MATCHING = 1,             /*!< \brief an algebraic average is computed at the boundary of interest. */
@@ -1240,7 +1242,7 @@ static const MapType<string, SPANWISE_TYPE> SpanWise_Map = {
 };
 
 /*!
- * \brief types of mixing process for averaging quantities at the boundaries.
+ * \brief Types of mixing process for averaging quantities at the boundaries.
  */
 enum TURBOMACHINERY_TYPE {
   AXIAL = 1,              /*!< \brief axial turbomachinery. */
@@ -1258,7 +1260,7 @@ static const MapType<string, TURBOMACHINERY_TYPE> TurboMachinery_Map = {
 };
 
 /*!
- * \brief types of Turbomachinery performance flag.
+ * \brief Types of Turbomachinery performance flag.
  */
 enum TURBO_MARKER_TYPE{
   INFLOW   = 1,	  /*!< \brief flag for inflow marker for compute turboperformance. */
@@ -1266,7 +1268,7 @@ enum TURBO_MARKER_TYPE{
 };
 
 /*!
- * \brief types inlet boundary treatments
+ * \brief Types inlet boundary treatments
  */
 enum INLET_TYPE {
   TOTAL_CONDITIONS = 1,	  /*!< \brief User specifies total pressure, total temperature, and flow direction. */
@@ -1284,7 +1286,7 @@ static const MapType<string, INLET_TYPE> Inlet_Map = {
 };
 
 /*!
- * \brief types outlet boundary treatments
+ * \brief Types outlet boundary treatments
  */
 enum OUTLET_TYPE {
   PRESSURE_OUTLET = 1,    /*!< \brief Gauge pressure outlet for incompressible flow */
@@ -1296,7 +1298,7 @@ static const MapType<string, OUTLET_TYPE> Outlet_Map = {
 };
 
 /*!
- * \brief types engine inflow boundary treatments
+ * \brief Types engine inflow boundary treatments
  */
 enum ENGINE_INFLOW_TYPE {
   FAN_FACE_MACH = 1,          /*!< \brief User specifies fan face mach number. */
@@ -1310,7 +1312,7 @@ static const MapType<string, ENGINE_INFLOW_TYPE> Engine_Inflow_Map = {
 };
 
 /*!
- * \brief types actuator disk boundary treatments
+ * \brief Types actuator disk boundary treatments
  */
 enum ACTDISK_TYPE {
   VARIABLES_JUMP = 1,     /*!< \brief User specifies the variables jump. */
@@ -1330,7 +1332,7 @@ static const MapType<string, ACTDISK_TYPE> ActDisk_Map = {
 };
 
 /*!
- * \brief types of geometric entities based on VTK nomenclature
+ * \brief Types of geometric entities based on VTK nomenclature
  */
 enum GEO_TYPE {
   VERTEX = 1,         /*!< \brief VTK nomenclature for defining a vertex element. */
@@ -1344,7 +1346,7 @@ enum GEO_TYPE {
 };
 
 /*!
- * \brief types of objective functions
+ * \brief Types of objective functions
  */
 enum ENUM_OBJECTIVE {
   DRAG_COEFFICIENT = 1,         /*!< \brief Drag objective function definition. */
@@ -1448,7 +1450,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
 };
 
 /*!
- * \brief types of residual criteria equations
+ * \brief Types of residual criteria equations
  */
 enum ENUM_RESIDUAL {
     RHO_RESIDUAL = 1, 	     /*!< \brief Rho equation residual criteria equation. */
@@ -1460,7 +1462,7 @@ static const MapType<string, ENUM_RESIDUAL> Residual_Map = {
 };
 
 /*!
- * \brief types of residual criteria for structural problems
+ * \brief Types of residual criteria for structural problems
  */
 enum ENUM_RESFEM {
   RESFEM_RELATIVE = 1,         /*!< \brief Relative criteria: Res/Res0. */
@@ -1472,7 +1474,7 @@ static const MapType<string, ENUM_RESFEM> ResFem_Map = {
 };
 
 /*!
- * \brief types of sensitivities to compute
+ * \brief Types of sensitivities to compute
  */
 enum ENUM_SENS {
   SENS_GEOMETRY = 1,    /*!< \brief Geometrical sensitivity. */
@@ -1488,7 +1490,7 @@ static const MapType<string, ENUM_SENS> Sens_Map = {
 };
 
 /*!
- * \brief types of grid adaptation/refinement
+ * \brief Types of grid adaptation/refinement
  */
 enum ENUM_ADAPT {
   NO_ADAPT = 0,           /*!< \brief No grid adaptation. */
@@ -1522,7 +1524,7 @@ static const MapType<string, ENUM_ADAPT> Adapt_Map = {
 };
 
 /*!
- * \brief types of input file formats
+ * \brief Types of input file formats
  */
 enum ENUM_INPUT {
   SU2       = 1,  /*!< \brief SU2 input format. */
@@ -1538,7 +1540,7 @@ static const MapType<string, ENUM_INPUT> Input_Map = {
 };
 
 /*!
- * \brief type of solution output file formats
+ * \brief Type of solution output file formats
  */
 enum ENUM_OUTPUT {
   TECPLOT                 = 1,  /*!< \brief Tecplot format for the solution output. */
@@ -1583,7 +1585,7 @@ static const MapType<string, ENUM_OUTPUT> Output_Map = {
 };
 
 /*!
- * \brief type of solution output file formats
+ * \brief Type of solution output file formats
  */
 enum ENUM_TAB_OUTPUT {
   TAB_CSV = 1,            /*!< \brief Comma-separated values format for the solution output. */
@@ -1595,7 +1597,7 @@ static const MapType<string, ENUM_TAB_OUTPUT> TabOutput_Map = {
 };
 
 /*!
- * \brief type of volume sensitivity file formats (inout to SU2_DOT)
+ * \brief Type of volume sensitivity file formats (inout to SU2_DOT)
  */
 enum ENUM_SENSITIVITY {
   SU2_NATIVE = 1,       /*!< \brief SU2 native binary format for the volume sensitivity input. */
@@ -1607,7 +1609,7 @@ static const MapType<string, ENUM_SENSITIVITY> Sensitivity_Map = {
 };
 
 /*!
- * \brief type of jump definition
+ * \brief Type of jump definition
  */
 enum JUMP_DEFINITION {
   DIFFERENCE = 1,     /*!< \brief Jump given by a difference in values. */
@@ -1619,7 +1621,7 @@ static const MapType<string, JUMP_DEFINITION> Jump_Map = {
 };
 
 /*!
- * \brief type of multigrid cycle
+ * \brief Type of multigrid cycle
  */
 enum MG_CYCLE {
   V_CYCLE = 0,        /*!< \brief V cycle. */
@@ -1633,7 +1635,7 @@ static const MapType<string, MG_CYCLE> MG_Cycle_Map = {
 };
 
 /*!
- * \brief type of solution output variables
+ * \brief Type of solution output variables
  */
 enum ENUM_OUTPUT_VARS {
   DENSITY = 1,      /*!< \brief Density. */
@@ -1659,7 +1661,7 @@ static const MapType<string, ENUM_OUTPUT_VARS> Output_Vars_Map = {
 };
 
 /*!
- * \brief types of design parameterizations
+ * \brief Types of design parameterizations
  */
 enum ENUM_PARAM {
   NO_DEFORMATION = 0,         /*!< \brief No deformation. */
@@ -1775,7 +1777,7 @@ static const MapType<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
 };
 
 /*!
- * \brief types surface continuity at the intersection with the FFD
+ * \brief Types surface continuity at the intersection with the FFD
  */
 enum ENUM_FFD_CONTINUITY {
   DERIVATIVE_NONE = 0,    /*!< \brief No derivative continuity. */
@@ -1791,7 +1793,7 @@ static const MapType<string, ENUM_FFD_CONTINUITY> Continuity_Map = {
 };
 
 /*!
- * \brief types of coordinates systems for the FFD
+ * \brief Types of coordinates systems for the FFD
  */
 enum ENUM_FFD_COORD_SYSTEM {
   CARTESIAN = 0,    /*!< \brief Cartesian coordinate system. */
@@ -1807,7 +1809,7 @@ static const MapType<string, ENUM_FFD_COORD_SYSTEM> CoordSystem_Map = {
 };
 
 /*!
- * \brief types of sensitivity smoothing
+ * \brief Types of sensitivity smoothing
  */
 enum ENUM_SENS_SMOOTHING {
   NO_SMOOTH = 0,  /*!< \brief No smoothing. */
@@ -1821,7 +1823,7 @@ static const MapType<string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = {
 };
 
 /*!
- * \brief types of preconditioners for the linear solver
+ * \brief Types of preconditioners for the linear solver
  */
 enum ENUM_LINEAR_SOLVER_PREC {
   JACOBI = 1,        /*!< \brief Jacobi preconditioner. */
@@ -1843,7 +1845,7 @@ static const MapType<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = {
 };
 
 /*!
- * \brief types of analytic definitions for various geometries
+ * \brief Types of analytic definitions for various geometries
  */
 enum ENUM_GEO_ANALYTIC {
   NO_GEO_ANALYTIC = 0,   /*!< \brief No analytic definition of the geometry. */
@@ -1861,7 +1863,7 @@ static const MapType<string, ENUM_GEO_ANALYTIC> Geo_Analytic_Map = {
 };
 
 /*!
- * \brief types of axis orientation
+ * \brief Types of axis orientation
  */
 enum ENUM_GEO_DESCRIPTION {
   TWOD_AIRFOIL = 0, /*!< \brief Airfoil analysis. */
@@ -1877,7 +1879,7 @@ static const MapType<string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = {
 };
 
 /*!
- * \brief types of schemes for unsteady computations
+ * \brief Types of schemes for unsteady computations
  */
 enum ENUM_UNSTEADY {
   STEADY = 0,            /*!< \brief A steady computation. */
@@ -1897,7 +1899,7 @@ static const MapType<string, ENUM_UNSTEADY> TimeMarching_Map = {
 };
 
 /*!
- * \brief types of criteria to determine when the solution is converged
+ * \brief Types of criteria to determine when the solution is converged
  */
 enum ENUM_CONVERGE_CRIT {
   CAUCHY = 1,       /*!< \brief Cauchy criteria to establish the convergence of the code. */
@@ -1909,7 +1911,7 @@ static const MapType<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = {
 };
 
 /*!
- * \brief types of element stiffnesses imposed for FEA mesh deformation
+ * \brief Types of element stiffnesses imposed for FEA mesh deformation
  */
 enum ENUM_DEFORM_STIFFNESS {
   CONSTANT_STIFFNESS = 0,     /*!< \brief Impose a constant stiffness for each element (steel). */
@@ -1976,7 +1978,7 @@ enum ENUM_RECORDING {
 };
 
 /*!
- * \brief types of schemes for dynamic structural computations
+ * \brief Types of schemes for dynamic structural computations
  */
 enum ENUM_DYNAMIC {
   STATIC = 0,     /*!< \brief A static structural computation. */
@@ -1988,7 +1990,7 @@ static const MapType<string, ENUM_DYNAMIC> Dynamic_Map = {
 };
 
 /*!
- * \brief types of input file formats
+ * \brief Types of input file formats
  */
 enum ENUM_INPUT_REF {
   SU2_REF = 1,              /*!< \brief SU2 input format (from a restart). */
@@ -2074,7 +2076,7 @@ static const MapType<string, COMM_LEVEL> Comm_Map = {
 };
 
 /*
- * \brief types of filter kernels, initially intended for structural topology optimization applications
+ * \brief Types of filter kernels, initially intended for structural topology optimization applications
  */
 enum ENUM_FILTER_KERNEL {
   CONSTANT_WEIGHT_FILTER = 0,      /*!< \brief Uniform weight. */
@@ -2092,7 +2094,7 @@ static const MapType<string, ENUM_FILTER_KERNEL> Filter_Kernel_Map = {
 };
 
 /*!
- * \brief types of projection function, initially intended for structural topology optimization applications
+ * \brief Types of projection function, initially intended for structural topology optimization applications
  */
 enum ENUM_PROJECTION_FUNCTION {
   NO_PROJECTION  = 0,      /*!< \brief No projection. */
