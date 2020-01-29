@@ -3610,8 +3610,6 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
-
   const bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   const bool rotating_frame   = config->GetRotating_Frame();
   const bool axisymmetric     = config->GetAxisymmetric();
@@ -3620,21 +3618,20 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool windgust         = config->GetWind_Gust();
   const bool body_force       = config->GetBody_Force();
 
-//  /*--- Start OpenMP parallel section. ---*/
-//
-//  SU2_OMP_PARALLEL_(reduction(+:counter_local))
-//  {
+  /*--- Start OpenMP parallel section. ---*/
+
+  SU2_OMP_PARALLEL
+  {
+  /*--- Pick one numerics object per thread. ---*/
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
 
   unsigned short iVar;
   unsigned long iPoint;
 
-  /*--- Initialize the source residual to zero ---*/
-
-  for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-
   if (body_force) {
 
     /*--- Loop over all points ---*/
+    SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the conservative variables ---*/
@@ -3645,10 +3642,10 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
       /*--- Compute the rotating frame source residual ---*/
-      numerics->ComputeResidual(Residual, config);
+      auto residual = numerics->ComputeResidual(config);
 
       /*--- Add the source residual to the total ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
     }
   }
@@ -3658,9 +3655,12 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Include the residual contribution from GCL due to the static
      mesh movement that is set for rotating frame. ---*/
 
+    SU2_OMP_MASTER
     SetRotatingFrame_GCL(geometry, config);
+    SU2_OMP_BARRIER
 
     /*--- Loop over all points ---*/
+    SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the conservative variables ---*/
@@ -3671,27 +3671,21 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
       /*--- Compute the rotating frame source residual ---*/
-      numerics->ComputeResidual(Residual, Jacobian_i, config);
+      auto residual = numerics->ComputeResidual(config);
 
       /*--- Add the source residual to the total ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Add the implicit Jacobian contribution ---*/
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
 
     }
   }
 
   if (axisymmetric) {
 
-    /*--- Zero out Jacobian structure ---*/
-    if (implicit) {
-      for (iVar = 0; iVar < nVar; iVar ++)
-        for (unsigned short jVar = 0; jVar < nVar; jVar ++)
-          Jacobian_i[iVar][jVar] = 0.0;
-    }
-
     /*--- loop over points ---*/
+    SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Set solution  ---*/
@@ -3704,20 +3698,21 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
 
       /*--- Compute Source term Residual ---*/
-      numerics->ComputeResidual(Residual, Jacobian_i, config);
+      auto residual = numerics->ComputeResidual(config);
 
       /*--- Add Residual ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Implicit part ---*/
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
     }
   }
 
   if (gravity) {
 
     /*--- loop over points ---*/
+    SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Set solution  ---*/
@@ -3727,10 +3722,10 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
       /*--- Compute Source term Residual ---*/
-      numerics->ComputeResidual(Residual, config);
+      auto residual = numerics->ComputeResidual(config);
 
       /*--- Add Residual ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
     }
 
@@ -3738,29 +3733,24 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
   if (harmonic_balance) {
 
-    su2double Volume, Source;
-
     /*--- loop over points ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Get control volume ---*/
-      Volume = geometry->node[iPoint]->GetVolume();
+      su2double Volume = geometry->node[iPoint]->GetVolume();
 
-      /*--- Get stored time spectral source term ---*/
+      /*--- Get stored time spectral source term and add to residual ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
-        Source = nodes->GetHarmonicBalance_Source(iPoint,iVar);
-        Residual[iVar] = Source*Volume;
+        LinSysRes[iPoint*nVar+iVar] += Volume * nodes->GetHarmonicBalance_Source(iPoint,iVar);
       }
-
-      /*--- Add Residual ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
-
     }
   }
 
   if (windgust) {
 
     /*--- Loop over all points ---*/
+    SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the wind gust ---*/
@@ -3776,13 +3766,13 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
       /*--- Compute the rotating frame source residual ---*/
-      numerics->ComputeResidual(Residual, Jacobian_i, config);
+      auto residual = numerics->ComputeResidual(config);
 
       /*--- Add the source residual to the total ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Add the implicit Jacobian contribution ---*/
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
 
     }
   }
@@ -3797,6 +3787,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       if (config->GetTime_Marching()) time = config->GetPhysicalTime();
 
       /*--- Loop over points ---*/
+      SU2_OMP_FOR_DYN(omp_chunk_size)
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
         /*--- Get control volume size. ---*/
@@ -3809,17 +3800,15 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         vector<su2double> sourceMan(nVar,0.0);
         VerificationSolution->GetMMSSourceTerm(coor, time, sourceMan.data());
 
-        /*--- Compute the residual for this control volume. ---*/
+        /*--- Compute the residual for this control volume and subtract. ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] = sourceMan[iVar]*Volume;
+          LinSysRes[iPoint*nVar+iVar] -= sourceMan[iVar]*Volume;
         }
-
-        /*--- Subtract Residual ---*/
-        LinSysRes.SubtractBlock(iPoint, Residual);
-
       }
     }
   }
+
+  } // end SU2_OMP_PARALLEL
 
 }
 
