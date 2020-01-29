@@ -52,7 +52,6 @@ class CInletInterpolation{
     su2double AkimaInterpolation(su2double Interp_Radius, unsigned long index, unsigned long iRow_Akima); 
     su2double Interpolate(su2double Interp_Radius, unsigned long index,unsigned long iRow, CConfig *config);
 
-    void GetClosestPointFromFile();
     void Driver(CMarkerProfileReaderFVM profileReader, CGeometry *geometry, CConfig *config, unsigned short jMarker,unsigned short iMarker);
     void SetInterpolatedData(unsigned long iVertex); 
     void PrintInterpolatedData(CMarkerProfileReaderFVM profileReader, CGeometry *geometry, unsigned short jMarker,unsigned short iMarker);
