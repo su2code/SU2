@@ -29,55 +29,67 @@
 #include "../../include/toolboxes/inlet_interpolation_functions.hpp"
 
 
-CInletInterpolation::CInletInterpolation(CGeometry **geometry, CConfig *config,string profile_filename,unsigned short KIND_MARKER, unsigned short iMarker, unsigned short jMarker, unsigned short nDim){
+CInletInterpolation::CInletInterpolation(CGeometry *geometry, 
+                                         CConfig *config, 
+                                         CMarkerProfileReaderFVM profileReader,
+                                         string profile_filename,
+                                         unsigned short KIND_MARKER, 
+                                         unsigned short iMarker, 
+                                         unsigned short jMarker, 
+                                         unsigned short nDim){
  
-  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, 9);
+ 
   nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
   nRow = profileReader.GetNumberOfRowsInProfile(jMarker);
   Inlet_Data = profileReader.GetDataForProfile(jMarker);
   Inlet_Values.resize(nColumns + nDim);
-  InletInterpolatedData.resize((nColumns + nDim)*geometry[MESH_0]->nVertex[iMarker]);
+  InletInterpolatedData.resize((nColumns + nDim)*geometry->nVertex[iMarker]);
 
-  SetVertex(profileReader);
+  Driver(profileReader,geometry,config, jMarker, iMarker);
 
   if(config->GetPrintInlet_InterpolatedData() == true)
-    PrintInterpolatedData(profileReader);
+    PrintInterpolatedData(profileReader, geometry, jMarker, iMarker);
 
 }
 
-CInletInterpolation::~CInletInterpolation(void){}
+CInletInterpolation::~CInletInterpolation(){}
 
-void CInletInterpolation::Interpolate()
+su2double CInletInterpolation::Interpolate(su2double Interp_Radius, unsigned long index,unsigned long iRow, CConfig *config)
 {
   switch(config->GetKindInletInterpolationFunction()){
     case(ONED_LINEAR_SPANWISE):
-      LinearInterpolation();
+      return LinearInterpolation(Interp_Radius,index,iRow);
+    break;
     case(ONED_AKIMASPLINE_SPANWISE):
-      AkimaInterpolation(iRow);
+      return AkimaInterpolation(Interp_Radius, index, iRow);
+    break;
   }
 }
 
+void CInletInterpolation::Driver(CMarkerProfileReaderFVM profileReader, CGeometry *geometry, CConfig *config, unsigned short jMarker, unsigned short iMarker){
 
-void CInletInterpolation::SetVertex(CMarkerProfileReaderFVM profileReader){
+  su2double interpolated_value, Parameter1, Parameter2, Interp_Radius, Theta;
+  unsigned long iPoint;
+  su2double *Coord;
 
-  for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++){
-    iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-    Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();  
+  for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++){
+    iPoint   = geometry->vertex[iMarker][iVertex]->GetNode();
+    Coord    = geometry->node[iPoint]->GetCoord();  
 
     Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
-    Theta = atan2(Coord[1],Coord[0]);  
+    Theta = atan2(Coord[1],Coord[0]);
 
     for  (unsigned short iVar=0; iVar < nDim; iVar++)
       Inlet_Values[iVar]=Coord[iVar];
 
-    for (iRow = 0; iRow < profileReader.GetNumberOfRowsInProfile(jMarker); iRow++) {
+    for (unsigned long iRow = 0; iRow < profileReader.GetNumberOfRowsInProfile(jMarker); iRow++) {
     /*--- Find the two closest radii for the specific vertex. ---*/
       if (Inlet_Data[nColumns*iRow] <= Interp_Radius && Inlet_Data[nColumns*(iRow+1)] >= Interp_Radius){
 
-      for (index=1; index<nColumns; index++){
+      for (unsigned long index=1; index<nColumns; index++){
       Point_Match = true;
 
-      Interpolate();
+      interpolated_value = Interpolate(Interp_Radius, index, iRow, config);
       
       if (index > nDim+1)
         Inlet_Values[index+(nDim-1)+1]=interpolated_value;
@@ -89,13 +101,9 @@ void CInletInterpolation::SetVertex(CMarkerProfileReaderFVM profileReader){
       Parameter1=Inlet_Values[nDim+2];
       Parameter2=Inlet_Values[nDim+3];
 
-      CorrectForInterpolationType();
+      CorrectForInterpolationType(Parameter1, Parameter2, config, Theta);
 
-      Inlet_Values[nDim+2] = unit_r*cos(Theta) - unit_Theta*sin(Theta); //for ix
-      Inlet_Values[nDim+3] = unit_r*sin(Theta) + unit_Theta*cos(Theta); //for iy
-      Inlet_Values[nDim+4] = sqrt(1-pow(unit_r,2)- pow(unit_Theta,2));  //for iz
-
-      SetInterpolatedData();
+      SetInterpolatedData(iVertex);
       }
     }
 
@@ -110,8 +118,10 @@ void CInletInterpolation::SetVertex(CMarkerProfileReaderFVM profileReader){
   }
 }
 
-void CInletInterpolation::CorrectForInterpolationType()
+void CInletInterpolation::CorrectForInterpolationType(su2double Parameter1,su2double Parameter2, CConfig *config, su2double Theta)
 {
+  su2double unit_r, unit_Theta, unit_m, Alpha, Phi;
+  
     switch(config->GetKindInletInterpolationType()){
 
     case(VR_VTHETA):
@@ -130,33 +140,74 @@ void CInletInterpolation::CorrectForInterpolationType()
 
     break;
   }
+
+  Inlet_Values[nDim+2] = unit_r*cos(Theta) - unit_Theta*sin(Theta); //for ix
+  Inlet_Values[nDim+3] = unit_r*sin(Theta) + unit_Theta*cos(Theta); //for iy
+  Inlet_Values[nDim+4] = sqrt(1-pow(unit_r,2)- pow(unit_Theta,2));  //for iz
+
 }
 
-void CInletInterpolation::SetInterpolatedData()
-{
+void CInletInterpolation::SetInterpolatedData(unsigned long iVertex){
     for  (unsigned short iVar=0; iVar < (nColumns+nDim); iVar++)
       InletInterpolatedData[iVertex*(nColumns+nDim)+iVar]=Inlet_Values[iVar];
 }
 
-void CInletInterpolation::LinearInterpolation(){
+su2double CInletInterpolation::LinearInterpolation(su2double Interp_Radius, unsigned long index,unsigned long iRow){
 
-  slope = (Inlet_Data[index+nColumns*(iRow+1)]-Inlet_Data[index+nColumns*iRow])/(Inlet_Data[nColumns*(iRow+1)]-Inlet_Data[nColumns*iRow]);
+  su2double slope = (Inlet_Data[index+nColumns*(iRow+1)]-Inlet_Data[index+nColumns*iRow])/(Inlet_Data[nColumns*(iRow+1)]-Inlet_Data[nColumns*iRow]);
 
-  interpolated_value = slope*(Interp_Radius - Inlet_Data[nColumns*iRow]) + Inlet_Data[index+nColumns*iRow];;
+  su2double interpolated_value = slope*(Interp_Radius - Inlet_Data[nColumns*iRow]) + Inlet_Data[index+nColumns*iRow];;
 
+  return interpolated_value;
 }
 
-void CInletInterpolation::PrintInterpolatedData(CMarkerProfileReaderFVM profileReader)
+su2double CInletInterpolation::AkimaInterpolation(su2double Interp_Radius, unsigned long index, unsigned long iRow_Akima)
+{
+    su2double interpolated_value, dxi, ai, bi, ci ,di ,delta;
+    /*--- Finding the cofficients of the third order polynomial for Akima Interpolation ---*/
+    dxi = Inlet_Data[nColumns*(iRow_Akima+1)] - Inlet_Data[nColumns*iRow_Akima];
+    ai = Inlet_Data[nColumns*iRow_Akima + index];
+    bi = Get_Ai_dash(index, iRow_Akima);
+    ci = (3*Get_Pi(index, iRow_Akima)-2*bi-Get_Ai_dash(index, iRow_Akima+1))/dxi;
+    di = (bi + Get_Ai_dash(index, iRow_Akima+1) - 2*Get_Pi(index, iRow_Akima))/pow(dxi,2);
+    delta = Interp_Radius - Inlet_Data[nColumns*iRow_Akima];    
+
+    interpolated_value = ai+bi*delta+ci*pow(delta,2)+di*pow(delta,3);
+
+    return interpolated_value;
+}
+
+su2double CInletInterpolation::Get_Ai_dash(unsigned long index, unsigned long iRow_Akima){
+    //for Boundary conditions (two first and two last points require special definition, can vary for different codes)
+    if(iRow_Akima == 0) {return Get_Pi(index, iRow_Akima);}
+    else if (iRow_Akima == 1) {return (Get_Pi(index, iRow_Akima-1)+Get_Pi(index, iRow_Akima))/2;}
+    else if (iRow_Akima == nRow-2) {return (Get_Pi(index,nRow-2)+Get_Pi(index, nRow-3))/2;}
+    else if (iRow_Akima == nRow-1) {return Get_Pi(index,nRow-2);}
+    else{
+    if((Get_Wi(index, iRow_Akima+1)+Get_Wi(index, iRow_Akima-1)) != 0)
+      return (Get_Wi(index, iRow_Akima+1)*Get_Pi(index, iRow_Akima-1) + Get_Wi(index,iRow_Akima-1)*Get_Pi(index, iRow_Akima))/(Get_Wi(index, iRow_Akima+1) + Get_Wi(index, iRow_Akima-1));
+    else
+      return ((Get_Pi(index, iRow_Akima-1)-Get_Pi(index, iRow_Akima))/2);
+    }
+}
+
+
+su2double CInletInterpolation::Get_Pi(unsigned long index, unsigned long iRow_Akima) {
+return (Inlet_Data[nColumns*(iRow_Akima+1)+index] - Inlet_Data[nColumns*iRow_Akima+index])/(Inlet_Data[nColumns*(iRow_Akima+1)] - Inlet_Data[nColumns*iRow_Akima]);}
+
+su2double CInletInterpolation::Get_Wi(unsigned long index, unsigned long iRow_Akima) {return fabs(Get_Pi(index, iRow_Akima) - Get_Pi(index, iRow_Akima-1));}
+
+
+void CInletInterpolation::PrintInterpolatedData(CMarkerProfileReaderFVM profileReader, CGeometry *geometry, unsigned short jMarker, unsigned short iMarker)
 {
 
 ofstream myfile;
 myfile.precision(16);
 myfile.open("Interpolated_Data_"+profileReader.GetTagForProfile(jMarker)+".dat",ios_base::out);
 
-
 if (myfile.is_open())
 {  
-  for (unsigned long iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+  for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
             for  (unsigned long iVar=0; iVar < (nColumns+nDim); iVar++)
               {
@@ -169,38 +220,4 @@ if (myfile.is_open())
   else
     cout<<"file cannot be opened"<<endl;
 }
-
-
-void CInletInterpolation::AkimaInterpolation(unsigned long iRow_Akima)
-{
-    /*--- Finding the cofficients of the third order polynomial for Akima Interpolation ---*/
-    dxi = Inlet_Data[nColumns*(iRow_Akima+1)] - Inlet_Data[nColumns*iRow_Akima];
-    ai = Inlet_Data[nColumns*iRow_Akima + index];
-    bi = Get_Ai_dash(iRow_Akima);
-    ci = (3*Get_Pi(iRow_Akima)-2*bi-Get_Ai_dash(iRow_Akima+1))/dxi;
-    di = (bi + Get_Ai_dash(iRow_Akima+1) - 2*Get_Pi(iRow_Akima))/pow(dxi,2);
-    delta = Interp_Radius - Inlet_Data[nColumns*iRow_Akima];    
-
-    interpolated_value = ai+bi*delta+ci*pow(delta,2)+di*pow(delta,3);
-}
-
-su2double CInletInterpolation::Get_Ai_dash(unsigned long iRow_Akima){
-    //for Boundary conditions (two first and two last points require special definition, can vary for different codes)
-    if(iRow_Akima == 0) {return Get_Pi(iRow_Akima);}
-    else if (iRow_Akima == 1) {return (Get_Pi(iRow_Akima-1)+Get_Pi(iRow_Akima))/2;}
-    else if (iRow_Akima == nRow-2) {return (Get_Pi(nRow-2)+Get_Pi(nRow-3))/2;}
-    else if (iRow_Akima == nRow-1) {return Get_Pi( nRow-2);}
-    else{
-    if((Get_Wi(iRow_Akima+1)+Get_Wi(iRow_Akima-1)) != 0)
-      return (Get_Wi(iRow_Akima+1)*Get_Pi( iRow_Akima-1) + Get_Wi(iRow_Akima-1)*Get_Pi(iRow_Akima))/(Get_Wi(iRow_Akima+1) + Get_Wi(iRow_Akima-1));
-    else
-      return ((Get_Pi(iRow_Akima-1)-Get_Pi(iRow_Akima))/2);
-    }
-}
-
-
-su2double CInletInterpolation::Get_Pi(unsigned long iRow_Akima) {
-return (Inlet_Data[nColumns*(iRow_Akima+1)+index] - Inlet_Data[nColumns*iRow_Akima+index])/(Inlet_Data[nColumns*(iRow_Akima+1)] - Inlet_Data[nColumns*iRow_Akima]);}
-
-su2double CInletInterpolation::Get_Wi(unsigned long iRow_Akima) {return fabs(Get_Pi(iRow_Akima) - Get_Pi(iRow_Akima-1));}
 

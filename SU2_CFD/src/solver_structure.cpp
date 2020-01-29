@@ -5033,9 +5033,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   
   unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
 
-  unsigned short nColumns;
   unsigned long nRows;
-  vector<passivedouble> Inlet_Data;
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
@@ -5077,31 +5075,28 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
           Marker_Counter++;
 
-          switch(config->GetKindInletInterpolationFunction()){
+        vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
+        unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+
+        switch(config->GetKindInletInterpolationFunction()){
           case(NONE):
-                //normal continuation of program
-            Inlet_Data = profileReader.GetDataForProfile(jMarker);
-            nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
-            nRows = profileReader.GetNumberOfRowsInProfile(jMarker);
-
+          cout<<"No inlet interpolation method being used"<<endl;
           break;
-            
           case(ONED_LINEAR_SPANWISE || ONED_AKIMASPLINE_SPANWISE):
-            CInletInterpolation profileInterpolator(geometry, config, profile_filename, KIND_MARKER, iMarker, jMarker, nDim);
-
+            CInletInterpolation profileInterpolator(geometry[MESH_0], config, profileReader, profile_filename, KIND_MARKER, iMarker, jMarker, nDim);
             Inlet_Data = profileInterpolator.GetInterpolatedProfile();
-            nColumns = profileInterpolator.GetNumberofColumns();
-            nRows = profileInterpolator.GetNumberofVertexes();
-            
+            cout<<config->GetKindInletInterpolationFunction()<<" Inlet Interpolation being used"<<endl;
           break;
-          }
+        }
           
           vector<su2double> Inlet_Values(nColumns);
 
             /*--- Loop through the nodes on this marker. ---*/
 
             for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-
+            
+            switch(config->GetKindInletInterpolationFunction()){
+            case (NONE): 
               iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
               Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
 
@@ -5155,6 +5150,18 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                     local_failure++;
                     break;
                 }
+
+              break;
+
+              case(ONED_LINEAR_SPANWISE || ONED_AKIMASPLINE_SPANWISE):
+              
+                for  (unsigned short iVar=0; iVar < (nColumns+nDim); iVar++)
+                  Inlet_Values[iVar]=Inlet_Data[iVertex*(nColumns+nDim)+iVar];
+
+              solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
+              
+              break;
+            }
             }
           }
         }
