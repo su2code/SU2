@@ -35,6 +35,9 @@
 #include "../../Common/include/mpi_structure.hpp"
 #include "../../Common/include/omp_structure.hpp"
 
+#define ENABLE_MAPS
+#include "../../Common/include/config_structure.hpp"
+
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>
