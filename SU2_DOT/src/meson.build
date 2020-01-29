@@ -4,7 +4,7 @@ if get_option('enable-normal')
                                         'solvers/CBaselineSolver.cpp',
                                         'output/COutput.cpp',
                                         'output/output_structure_legacy.cpp',
-					'output/tools/CWindowingTools.cpp',
+                                        'output/tools/CWindowingTools.cpp',
                                         'output/CBaselineOutput.cpp',
                                         'output/filewriter/CParallelDataSorter.cpp',
                                         'output/filewriter/CParallelFileWriter.cpp',
@@ -22,7 +22,8 @@ if get_option('enable-normal')
                                         'output/filewriter/CSU2BinaryFileWriter.cpp',
                                         'output/filewriter/CSU2MeshFileWriter.cpp',
                                         'variables/CBaselineVariable.cpp',
-                                        'variables/CVariable.cpp'])
+                                        'variables/CVariable.cpp',
+                                        'CMarkerProfileReaderFVM.cpp'])
 
   su2_dot = executable('SU2_DOT',
                       su2_dot_src, 
@@ -58,7 +59,8 @@ if get_option('enable-autodiff')
                                               'output/filewriter/CSU2BinaryFileWriter.cpp',
                                               'output/filewriter/CSU2MeshFileWriter.cpp',
                                               'variables/CBaselineVariable.cpp',
-                                              'variables/CVariable.cpp'])
+                                              'variables/CVariable.cpp',
+                                              'CMarkerProfileReaderFVM.cpp'])
 
   su2_dot_ad = executable('SU2_DOT_AD',
                           su2_dot_src_ad, 

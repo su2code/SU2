@@ -1,28 +1,20 @@
 #include "catch.hpp"
-
+#include <sstream>
 #include "../../../SU2_CFD/include/numerics_structure.hpp"
-
-static void WriteCfgFile(unsigned short nDim, const char* filename,
-                  std::string blending) {
-  std::ofstream cfg_file;
-
-  cfg_file.open(filename, ios::out);
-  cfg_file << "SOLVER= NAVIER_STOKES" << std::endl;
-  cfg_file << "ROE_LOW_DISSIPATION= " << blending << std::endl;
-  cfg_file << "REYNOLDS_NUMBER= 5" << std::endl;
-  cfg_file.close();
-}
 
 TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
 
+  std::stringstream config_options;
+  
+  config_options << "SOLVER= NAVIER_STOKES" << std::endl;
+  config_options << "ROE_LOW_DISSIPATION= " << "NTS" << std::endl;
+  config_options << "REYNOLDS_NUMBER= 5" << std::endl;
+  
   /*--- Setup ---*/
 
   const unsigned short nDim = 3;
 
-  char cfg_filename[100] = "convective_blending_test.cfg";
-  WriteCfgFile(nDim, cfg_filename, "NTS");
-  CConfig* config = new CConfig(cfg_filename, SU2_CFD, false);
-  std::remove(cfg_filename);
+  CConfig* config = new CConfig(config_options, SU2_CFD, false);
 
   const su2double dissipation_i = 0;
   const su2double dissipation_j = 0;
