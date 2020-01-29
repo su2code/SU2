@@ -79,6 +79,10 @@ CHeatFVMVariable::CHeatFVMVariable(su2double heat, unsigned long npoint, unsigne
   Max_Lambda_Visc.resize(nPoint);
   Delta_Time.resize(nPoint);
 
+  /* Under-relaxation parameter. */
+  UnderRelaxation.resize(nPoint) = su2double(1.0);
+  LocalCFL.resize(nPoint) = su2double(0.0);
+
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 }
