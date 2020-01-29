@@ -200,7 +200,6 @@ private:
   nMarker_Fluid_Load,			  /*!< \brief Number of markers in which the flow load is computed/employed. */
   nMarker_Fluid_InterfaceBound,	  /*!< \brief Number of fluid interface markers. */
   nMarker_CHTInterface,           /*!< \brief Number of conjugate heat transfer interface markers. */
-  nMarker_Dirichlet,			  /*!< \brief Number of interface boundary markers. */
   nMarker_Inlet,				  /*!< \brief Number of inlet flow markers. */
   nMarker_Riemann,				  /*!< \brief Number of Riemann flow markers. */
   nMarker_Giles,				  /*!< \brief Number of Giles flow markers. */
@@ -220,8 +219,7 @@ private:
   nMarker_Disp_Dir,               /*!< \brief Number of load surface markers defined by magnitude and direction. */
   nMarker_Load_Sine,			  /*!< \brief Number of load surface markers defined by magnitude and direction. */
   nMarker_FlowLoad,				  /*!< \brief Number of load surface markers. */
-  nMarker_Neumann,				  /*!< \brief Number of Neumann flow markers. */
-  nMarker_Internal,				  /*!< \brief Number of Neumann flow markers. */
+  nMarker_Internal,				  /*!< \brief Number of internal flow markers. */
   nMarker_All,					  /*!< \brief Total number of markers using the grid information. */
   nMarker_Max,					  /*!< \brief Max number of number of markers using the grid information. */
   nMarker_CfgFile;				  /*!< \brief Total number of markers using the config file
@@ -248,7 +246,6 @@ private:
   *Marker_CHTInterface,           /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,           /*!< \brief Actuator disk inlet markers. */
   *Marker_ActDiskOutlet,          /*!< \brief Actuator disk outlet markers. */
-  *Marker_Dirichlet,			  /*!< \brief Interface boundaries markers. */
   *Marker_Inlet,				  /*!< \brief Inlet flow markers. */
   *Marker_Riemann,				  /*!< \brief Riemann markers. */
   *Marker_Giles,				  /*!< \brief Giles markers. */
@@ -268,11 +265,9 @@ private:
   *Marker_Disp_Dir,               /*!< \brief Load markers defined in cartesian coordinates. */
   *Marker_Load_Sine,              /*!< \brief Sine-wave loaded markers defined in cartesian coordinates. */
   *Marker_FlowLoad,				  /*!< \brief Flow Load markers. */
-  *Marker_Neumann,				  /*!< \brief Neumann flow markers. */
-  *Marker_Internal,				  /*!< \brief Neumann flow markers. */
+  *Marker_Internal,				  /*!< \brief Internal flow markers. */
   *Marker_All_TagBound;			  /*!< \brief Global index for markers using grid information. */
 
-  su2double *Dirichlet_Value;                /*!< \brief Specified Dirichlet value at the boundaries. */
   su2double *Exhaust_Temperature_Target;     /*!< \brief Specified total temperatures for nacelle boundaries. */
   su2double *Exhaust_Pressure_Target;        /*!< \brief Specified total pressures for nacelle boundaries. */
   su2double *Inlet_Ttotal;                   /*!< \brief Specified total temperatures for inlet boundaries. */
@@ -532,7 +527,8 @@ private:
   Kind_Matrix_Coloring,         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
-  Kind_BGS_RelaxMethod;				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  Kind_BGS_RelaxMethod,     /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  Kind_CHT_Coupling;        /*!< \brief Kind of coupling method used at CHT interfaces. */
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;  /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
@@ -569,16 +565,17 @@ private:
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
   su2double Inc_Inlet_Damping;     /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
   su2double Inc_Outlet_Damping;    /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
-  bool Inc_Inlet_UseNormal;                       /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
-  su2double Linear_Solver_Error;		          /*!< \brief Min error of the linear solver for the implicit formulation. */
-  su2double Deform_Linear_Solver_Error;           /*!< \brief Min error of the linear solver for the implicit formulation. */
-  su2double Linear_Solver_Error_FSI_Struc;		  /*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
-  su2double Linear_Solver_Smoother_Relaxation;    /*!< \brief Relaxation factor for iterative linear smoothers. */
-  unsigned long Linear_Solver_Iter;		          /*!< \brief Max iterations of the linear solver for the implicit formulation. */
-  unsigned long Deform_Linear_Solver_Iter;        /*!< \brief Max iterations of the linear solver for the implicit formulation. */
-  unsigned long Linear_Solver_Iter_FSI_Struc;	  /*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
-  unsigned long Linear_Solver_Restart_Frequency;  /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
-  unsigned short Linear_Solver_ILU_n;		      /*!< \brief ILU fill=in level. */
+  bool Inc_Inlet_UseNormal;        /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
+  su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
+  su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
+  su2double Linear_Solver_Error_FSI_Struc;       /*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
+  su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
+  unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
+  unsigned long Deform_Linear_Solver_Iter;       /*!< \brief Max iterations of the linear solver for the implicit formulation. */
+  unsigned long Linear_Solver_Iter_FSI_Struc;    /*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
+  unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
+  unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
+  unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
   su2double SemiSpan;		          /*!< \brief Wing Semi span. */
   su2double Roe_Kappa;		          /*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_AdjFlow;  /*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
@@ -903,7 +900,6 @@ private:
   bool Sine_Load;                 /*!< \brief option for sine load */
   su2double *SineLoad_Coeff;      /*!< \brief Stores the load coefficient */
   su2double Thermal_Diffusivity;  /*!< \brief Thermal diffusivity used in the heat solver. */
-  bool CHT_Robin;                 /*!< \brief Option for boundary condition method at CHT interfaces. */
   su2double Cyclic_Pitch,         /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;               /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;          /*!< \brief Mach number based on mesh velocity and freestream quantities. */
@@ -1127,6 +1123,7 @@ private:
   unsigned short pastix_verb_lvl;  /*!< \brief Verbosity level for PaStiX */
   unsigned short pastix_fill_lvl;  /*!< \brief Fill level for PaStiX ILU */
 
+  string caseName;                   /*!< \brief Name of the current case
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -6553,21 +6550,7 @@ public:
    * \return The inlet velocity vector.
    */
   su2double* GetInlet_Velocity(string val_index);
-  
-  /*!
-   * \brief Get the fixed value at the Dirichlet boundary.
-   * \param[in] val_index - Index corresponding to the Dirichlet boundary.
-   * \return The total temperature.
-   */
-  su2double GetDirichlet_Value(string val_index);
-  
-  /*!
-   * \brief Get whether this is a Dirichlet or a Neumann boundary.
-   * \param[in] val_index - Index corresponding to the Dirichlet boundary.
-   * \return Yes or No.
-   */
-  bool GetDirichlet_Boundary(string val_index);
-  
+
   /*!
    * \brief Get the total pressure at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
@@ -8985,10 +8968,10 @@ public:
   bool GetWeakly_Coupled_Heat(void);
 
   /*!
-   * \brief Get the boundary condition method for CHT.
-   * \return YES if Robin BC is used.
+   * \brief Get the CHT couling method.
+   * \return Kind of the method.
    */
-  bool GetCHT_Robin(void);
+  unsigned short GetKind_CHT_Coupling(void) const;
 
   /*!
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
@@ -9354,6 +9337,20 @@ public:
    * \return <TRUE> if option was set in the config file
    */
   bool OptionIsSet(string option);
+
+  /*!
+   * \brief Get the name of the current case
+   * \return the case name
+   */
+  const string& GetCaseName() const;
+
+
+  /*!
+   * \brief Get the number of threads per rank to use for ILU and LU_SGS preconditioners.
+   * \return Number of threads per rank.
+   */
+  inline unsigned long GetLinear_Solver_Prec_Threads(void) const {return Linear_Solver_Prec_Threads;} 
+
 };
 
 #include "config_structure.inl"

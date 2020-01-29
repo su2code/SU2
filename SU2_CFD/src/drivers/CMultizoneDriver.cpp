@@ -147,6 +147,10 @@ void CMultizoneDriver::StartSolver() {
 
   driver_config->Set_StartTime(StartTime);
 
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]->SetDelta_UnstTimeND(config_container[ZONE_0]->GetDelta_UnstTimeND());
+  }
+
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
   if (rank == MASTER_NODE)
