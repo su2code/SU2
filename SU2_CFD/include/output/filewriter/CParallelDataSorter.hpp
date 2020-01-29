@@ -30,6 +30,7 @@
 #include "../../../../Common/include/mpi_structure.hpp"
 #include "../../../../Common/include/option_structure.hpp"
 #include "../../../../Common/include/toolboxes/CLinearPartitioner.hpp"
+#include <array>
 
 class CGeometry;
 class CConfig;
