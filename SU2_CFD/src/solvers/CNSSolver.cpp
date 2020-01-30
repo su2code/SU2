@@ -85,9 +85,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
 
-  bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool low_mach_prec = config->Low_Mach_Preconditioning();
-
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename_ = "flow";
 
@@ -269,14 +266,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
     iPoint_UndLapl = new su2double [nPoint];
     jPoint_UndLapl = new su2double [nPoint];
-  }
-
-  /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
-
-  if (roe_turkel || low_mach_prec) {
-    LowMach_Preconditioner = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar ++)
-      LowMach_Preconditioner[iVar] = new su2double[nVar];
   }
 
   /*--- Initialize the solution and right hand side vectors for storing
