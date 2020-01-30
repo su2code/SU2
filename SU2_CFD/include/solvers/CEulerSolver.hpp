@@ -55,6 +55,9 @@ protected:
   Pressure_Inf,     /*!< \brief Pressure at the infinity. */
   *Velocity_Inf;    /*!< \brief Flow Velocity vector at the infinity. */
 
+  su2double Prandtl_Lam,    /*!< \brief Laminar Prandtl number. */
+  Prandtl_Turb;             /*!< \brief Turbulent Prandtl number. */
+
   su2double
   *CD_Inv,      /*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
   *CL_Inv,      /*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
@@ -428,7 +431,7 @@ public:
                     CSolver **solver_container,
                     CConfig *config,
                     unsigned short iMesh,
-                    unsigned long Iteration) override;
+                    unsigned long Iteration) final;
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.

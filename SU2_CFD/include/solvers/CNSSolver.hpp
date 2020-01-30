@@ -39,8 +39,6 @@ class CNSSolver final : public CEulerSolver {
 private:
   su2double Viscosity_Inf;  /*!< \brief Viscosity at the infinity. */
   su2double Tke_Inf;        /*!< \brief Turbulent kinetic energy at the infinity. */
-  su2double Prandtl_Lam,    /*!< \brief Laminar Prandtl number. */
-  Prandtl_Turb;             /*!< \brief Turbulent Prandtl number. */
   su2double *CD_Visc,       /*!< \brief Drag coefficient (viscous contribution) for each boundary. */
   *CL_Visc,            /*!< \brief Lift coefficient (viscous contribution) for each boundary. */
   *CSF_Visc,           /*!< \brief Side force coefficient (viscous contribution) for each boundary. */
@@ -291,20 +289,6 @@ public:
    * \return Value of the turbulent kinetic energy at the infinity.
    */
   inline su2double GetTke_Inf(void) const override { return Tke_Inf; }
-
-  /*!
-   * \brief Compute the time step for solving the Navier-Stokes equations with turbulence model.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] Iteration - Index of the current iteration.
-   */
-  void SetTime_Step(CGeometry *geometry,
-                    CSolver **solver_container,
-                    CConfig *config,
-                    unsigned short iMesh,
-                    unsigned long Iteration) override;
 
   /*!
    * \brief Restart residual and compute gradients.
