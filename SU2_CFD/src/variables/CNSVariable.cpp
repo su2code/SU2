@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -25,8 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CNSVariable.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 
 
 CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double energy,
@@ -46,6 +46,7 @@ CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double
 
 bool CNSVariable::SetVorticity_StrainMag() {
 
+  SU2_OMP_FOR_STAT(256)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
 
     /*--- Vorticity ---*/

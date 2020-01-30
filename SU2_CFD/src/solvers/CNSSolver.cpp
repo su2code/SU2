@@ -927,10 +927,11 @@ CNSSolver::~CNSSolver(void) {
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long iPoint, ErrorCounter = 0;
-  su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
+  /// TODO: Try to start a parallel section here encompassing all "heavy" methods.
 
-  unsigned long InnerIter     = config->GetInnerIter();
+  unsigned long ErrorCounter = 0;
+
+  unsigned long InnerIter   = config->GetInnerIter();
   bool cont_adjoint         = config->GetContinuous_Adjoint();
   bool disc_adjoint         = config->GetDiscrete_Adjoint();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -1021,19 +1022,32 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
 
-  solver_container[FLOW_SOL]->GetNodes()->SetVorticity_StrainMag();
-
   StrainMag_Max = 0.0; Omega_Max = 0.0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    StrainMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
-    Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
-    Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
+  SU2_OMP_PARALLEL
+  {
+    solver_container[FLOW_SOL]->GetNodes()->SetVorticity_StrainMag();
 
-    StrainMag_Max = max(StrainMag_Max, StrainMag);
-    Omega_Max = max(Omega_Max, Omega);
+    su2double strainMax = 0.0, omegaMax = 0.0;
 
-  }
+    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+
+      su2double StrainMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
+      const su2double* Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+      su2double Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
+
+      strainMax = max(strainMax, StrainMag);
+      omegaMax = max(omegaMax, Omega);
+
+    }
+    SU2_OMP_CRITICAL
+    {
+      StrainMag_Max = max(StrainMag_Max, strainMax);
+      Omega_Max = max(Omega_Max, omegaMax);
+    }
+
+  } // end SU2_OMP_PARALLEL
 
   /*--- Compute the TauWall from the wall functions ---*/
 
@@ -1048,20 +1062,20 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   if (config->GetComm_Level() == COMM_FULL) {
 
-#ifdef HAVE_MPI
-    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-    su2double MyOmega_Max = Omega_Max; Omega_Max = 0.0;
-    su2double MyStrainMag_Max = StrainMag_Max; StrainMag_Max = 0.0;
-
-    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#endif
-
     if (iMesh == MESH_0) {
+
+      unsigned long MyErrorCounter = ErrorCounter;
+      su2double MyOmega_Max = Omega_Max;
+      su2double MyStrainMag_Max = StrainMag_Max;
+
+      SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
       config->SetNonphysical_Points(ErrorCounter);
       solver_container[FLOW_SOL]->SetStrainMag_Max(StrainMag_Max);
       solver_container[FLOW_SOL]->SetOmega_Max(Omega_Max);
+
     }
 
   }
@@ -1982,7 +1996,8 @@ void CNSSolver::Evaluate_ObjFunc(CConfig *config) {
 }
 
 
-void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, jDim, iVar, jVar;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
@@ -2228,7 +2243,8 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
   }
 }
 
-void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                   CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar, jVar, iDim, jDim;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
@@ -2417,7 +2433,8 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 
         for (iDim = 0; iDim < nDim; iDim++)
           for (jDim = 0; jDim < nDim; jDim++) {
-            tau[iDim][jDim] = total_viscosity*( Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim] ) - TWO3*total_viscosity*div_vel*delta[iDim][jDim];
+            tau[iDim][jDim] = total_viscosity*( Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim] ) -
+                                TWO3*total_viscosity*div_vel*delta[iDim][jDim];
           }
 
         /*--- Dot product of the stress tensor with the grid velocity ---*/
