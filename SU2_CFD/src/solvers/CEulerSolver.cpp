@@ -2855,6 +2855,8 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
+  /// TODO: Try to start a parallel section here encompassing all "heavy" methods.
+
   unsigned long ErrorCounter = 0;
 
   unsigned long InnerIter = config->GetInnerIter();
@@ -2947,11 +2949,11 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Error message ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-#ifdef HAVE_MPI
-    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+    if (iMesh == MESH_0) {
+      unsigned long tmp = ErrorCounter;
+      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      config->SetNonphysical_Points(ErrorCounter);
+    }
   }
 
 }
@@ -2963,7 +2965,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
 
   unsigned long nonPhysicalPoints = 0;
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size) reduction(+:nonPhysicalPoints))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size) reduction(+:nonPhysicalPoints))
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
@@ -2983,6 +2985,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
 
   return nonPhysicalPoints;
 }
+
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
 
