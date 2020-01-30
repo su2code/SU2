@@ -1098,7 +1098,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
     // If the Newton-Raphson method has converged, assign the value of Tve.
     // Otherwise, execute a bisection root-finding method
-    // if (NRconvg){
+    if (NRconvg){
 
     //   // AD_END_PASSIVE
 
@@ -1107,8 +1107,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     //     val_eves[iSpecies]  = CalcEve(config, Tve, iSpecies);
     //     val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
     //   }
-    //   V[TVE_INDEX] = Tve;
-    // } else {
+      V[TVE_INDEX] = Tve;
+    } else {
 
     //   // Assign the bounds
     //   Tve_o = Tvemin;
@@ -1152,7 +1152,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
       // U[nSpecies+nDim]   = rhoCvtr*V[T_INDEX] + rhoCvve*V[TVE_INDEX] + rhoE_f
       //                    - rhoE_ref + 0.5*rho*sqvel;
       // U[nSpecies+nDim+1] = rhoCvve*V[TVE_INDEX];
-    // }
+    }
   }
 
   /*--- Set mixture rhoCvve ---*/
