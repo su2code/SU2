@@ -38,7 +38,7 @@
 #include <cmath>
 #include <ctime>
 
-#include "geometry_structure.hpp"
+#include "geometry/CGeometry.hpp"
 #include "config_structure.hpp"
 #include "linear_algebra/CSysMatrix.hpp"
 #include "linear_algebra/CSysVector.hpp"

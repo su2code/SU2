@@ -25,7 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/geometry_structure.hpp"
+#include "../include/geometry/CPhysicalGeometry.hpp"
+#include "../include/fem_standard_element.hpp"
+#include "../include/geometry/primal_grid/CPrimalGridFEM.hpp"
+#include "../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
+
+#ifdef HAVE_CGNS
+#include "../include/fem_cgns_elements.hpp"
+#endif
 #include "../include/adt_structure.hpp"
 #include "../include/blas_structure.hpp"
 #include <iomanip>
@@ -33,43 +40,6 @@
 #include <sys/stat.h>
 /*--- Epsilon definition ---*/
 
-bool CUnsignedLong2T::operator<(const CUnsignedLong2T &other) const {
-  if(long0 != other.long0) return (long0 < other.long0);
-  if(long1 != other.long1) return (long1 < other.long1);
-
-  return false;
-}
-
-bool CUnsignedLong2T::operator==(const CUnsignedLong2T &other) const {
-  if(long0 != other.long0) return false;
-  if(long1 != other.long1) return false;
-
-  return true;
-}
-
-void CUnsignedLong2T::Copy(const CUnsignedLong2T &other) {
-  long0 = other.long0;
-  long1 = other.long1;
-}
-
-bool CUnsignedShort2T::operator<(const CUnsignedShort2T &other) const {
-  if(short0 != other.short0) return (short0 < other.short0);
-  if(short1 != other.short1) return (short1 < other.short1);
-
-  return false;
-}
-
-bool CUnsignedShort2T::operator==(const CUnsignedShort2T &other) const {
-  if(short0 != other.short0) return false;
-  if(short1 != other.short1) return false;
-
-  return true;
-}
-
-void CUnsignedShort2T::Copy(const CUnsignedShort2T &other) {
-  short0 = other.short0;
-  short1 = other.short1;
-}
 
 CFaceOfElement::CFaceOfElement() {
   nCornerPoints   = 0;

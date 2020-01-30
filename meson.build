@@ -55,6 +55,13 @@ else
   endif
 endif
 
+# OpenMP
+omp = get_option('with-omp')
+
+if omp
+  omp_dep = dependency('openmp', language:'cpp')
+endif
+
 if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
   codi_rev_args = '-DCODI_REVERSE_TYPE'
@@ -98,6 +105,11 @@ if mpi
   if get_option('enable-autodiff') or get_option('enable-directdiff')
     codi_dep += declare_dependency(include_directories: ['externals/medi/include', 'externals/medi/src'])
   endif
+endif
+
+if omp
+  # add OpenMP dependency
+  su2_deps += omp_dep
 endif
 
 if get_option('enable-tecio')

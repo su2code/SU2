@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -28,6 +28,7 @@
 #pragma once
 
 #include "../../Common/include/mpi_structure.hpp"
+#include "../../Common/include/omp_structure.hpp"
 #include "../../Common/include/toolboxes/SU2_LOG.hpp"
 #include "CLI11.hpp"
 
@@ -39,12 +40,11 @@
 #include "drivers/CDiscAdjSinglezoneDriver.hpp"
 #include "drivers/CDiscAdjMultizoneDriver.hpp"
 #include "drivers/CDummyDriver.hpp"
-#include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "output/COutput.hpp"
 #include "numerics_structure.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/geometry/CGeometry.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/interpolation_structure.hpp"

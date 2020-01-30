@@ -28,8 +28,8 @@
 
 #include "../../include/output/COutputLegacy.hpp"
 
-#include "../../../Common/include/geometry_structure.hpp"
-#include "../../include/solver_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../include/solvers/CBaselineSolver.hpp"
 
 COutputLegacy::COutputLegacy(CConfig *config) {
 
@@ -3495,7 +3495,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
       
       /*--- Loop over this partition to collect the current variable ---*/
       
-      jPoint = 0; su2double *Stress;
+      jPoint = 0; const su2double *Stress;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Check for halos & write only if requested ---*/
@@ -3556,7 +3556,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
       
       /*--- Loop over this partition to collect the current variable ---*/
       
-      jPoint = 0; su2double *Stress;
+      jPoint = 0; const su2double *Stress;
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Check for halos & write only if requested ---*/
@@ -4326,7 +4326,7 @@ void COutputLegacy::DeallocateSolution(CConfig *config, CGeometry *geometry) {
 }
 
 void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
-  char cstr[200], buffer[50], turb_resid[1000], adj_turb_resid[1000];
+  char cstr[200], turb_resid[1000], adj_turb_resid[1000];
   unsigned short iMarker_Monitoring;
   string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
   
@@ -11823,7 +11823,7 @@ void COutputLegacy::SpecialOutput_Turbo(CSolver *****solver, CGeometry ****geome
   unsigned short iDim, iSpan;
 
   unsigned long iExtIter = config[val_iZone]->GetInnerIter();
-  su2double* SpanWiseValuesIn, *SpanWiseValuesOut;
+  const su2double* SpanWiseValuesIn, *SpanWiseValuesOut;
   ofstream myfile;
   string spanwise_performance_filename;
 
@@ -14195,7 +14195,8 @@ void COutputLegacy::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometr
   unsigned long iPoint, jPoint, FirstIndex = NONE, iMarker, iVertex;
   unsigned long nVar_First = 0, nVar_Consv_Par = 0;
   
-  su2double *Node_Vel = NULL, *Node_Accel = NULL, *Stress = NULL;
+  su2double *Node_Vel = NULL, *Node_Accel = NULL;
+  const su2double *Stress = NULL;
 
   bool Wrt_Halo   = config->GetWrt_Halo(), isPeriodic;
   int *Local_Halo = NULL;
@@ -18414,7 +18415,7 @@ void COutputLegacy::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geo
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
   su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
-  Enthalpy, Velocity[3], TangVel[3], Velocity2, MassFlow, Density, Area,
+  Enthalpy, Velocity[3]= {0.0}, TangVel[3], Velocity2, MassFlow, Density, Area,
   AxiFactor = 1.0, SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
 
   su2double Gas_Constant      = config->GetGas_ConstantND();

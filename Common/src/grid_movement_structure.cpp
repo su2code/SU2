@@ -30,6 +30,9 @@
 #include <list>
 #include "../include/toolboxes/SU2_LOG.hpp"
 
+#include "../include/linear_algebra/CMatrixVectorProduct.hpp"
+#include "../include/linear_algebra/CPreconditioner.hpp"
+
 using namespace std;
 
 CGridMovement::CGridMovement(void) { }
@@ -206,13 +209,13 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
     		StiffMatrix.BuildILUPreconditioner();
     		mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
-    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config);
+    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config, false);
     	}
     	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
     		StiffMatrix.BuildJacobiPreconditioner();
     		mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
-    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config);
+    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config, false);
     	}
 
     } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
@@ -224,13 +227,13 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
     		StiffMatrix.BuildILUPreconditioner(true);
     		mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
-    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config);
+    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config, true);
     	}
     	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
     		StiffMatrix.BuildJacobiPreconditioner(true);
     		mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
-    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config);
+    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config, true);
     	}
 
     }
@@ -244,7 +247,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
           Tot_Iter = 0; MaxIter = RestartIter;
 
-          System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false, config);
+          System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, Residual_Init, false, config);
 
           if ((rank == MASTER_NODE) && Screen_Output) {
             cout << "\n# FGMRES (with restart) residual history" << endl;
@@ -259,7 +262,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
             if (IterLinSol + RestartIter > Smoothing_Iter)
               MaxIter = Smoothing_Iter - IterLinSol;
 
-            IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false, config);
+            IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, Residual, false, config);
             Tot_Iter += IterLinSol;
 
             if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
@@ -279,7 +282,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
         case FGMRES:
 
-          Tot_Iter = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
+          Tot_Iter = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Residual, Screen_Output, config);
 
           break;
 
@@ -287,14 +290,14 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
         case BCGSTAB:
 
-          Tot_Iter = System.BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
+          Tot_Iter = System.BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Residual, Screen_Output, config);
 
           break;
 
 
         case CONJUGATE_GRADIENT:
 
-          Tot_Iter = System.CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
+          Tot_Iter = System.CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Residual, Screen_Output, config);
 
           break;
 

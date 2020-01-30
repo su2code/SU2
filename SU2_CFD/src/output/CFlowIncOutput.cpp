@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -28,8 +28,8 @@
 
 #include "../../include/output/CFlowIncOutput.hpp"
 
-#include "../../../Common/include/geometry_structure.hpp"
-#include "../../include/solver_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../include/solvers/CSolver.hpp"
 
 CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
@@ -193,7 +193,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
   AddHistoryOutput("MAX_DELTA_TIME", "Max DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum local time step");
-  
+
   AddHistoryOutput("MIN_CFL", "Min CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum of the local CFL numbers");
   AddHistoryOutput("MAX_CFL", "Max CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum of the local CFL numbers");
   AddHistoryOutput("AVG_CFL", "Avg CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current average of the local CFL numbers");
@@ -295,21 +295,21 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
-  
+
   if (config->GetDeform_Mesh()){
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
     SetHistoryOutputValue("DEFORM_MAX_VOLUME", mesh_solver->GetMaximum_Volume());
     SetHistoryOutputValue("DEFORM_ITER", mesh_solver->GetIterLinSolver());
     SetHistoryOutputValue("DEFORM_RESIDUAL", log10(mesh_solver->GetResLinSolver()));
   }
-  
+
   SetHistoryOutputValue("MIN_DELTA_TIME", flow_solver->GetMin_Delta_Time());
   SetHistoryOutputValue("MAX_DELTA_TIME", flow_solver->GetMax_Delta_Time());
-  
+
   SetHistoryOutputValue("MIN_CFL", flow_solver->GetMin_CFL_Local());
   SetHistoryOutputValue("MAX_CFL", flow_solver->GetMax_CFL_Local());
   SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
-  
+
   /*--- Set the analyse surface history values --- */
 
   SetAnalyzeSurface(flow_solver, geometry, config, false);
@@ -602,10 +602,10 @@ void CFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
 }
 
 bool CFlowIncOutput::SetInit_Residuals(CConfig *config){
-  
-  return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))|| 
-        (config->GetTime_Marching() == STEADY && (curInnerIter < 2)); 
-  
+
+  return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))||
+        (config->GetTime_Marching() == STEADY && (curInnerIter < 2));
+
 }
 
 bool CFlowIncOutput::SetUpdate_Averages(CConfig *config){
