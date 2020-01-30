@@ -1377,8 +1377,12 @@ void CFEAIteration::Iterate(COutput *output,
     integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
         config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
 
-    if (!disc_adj_fem)
+    if (!disc_adj_fem){
       Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+
+      /*--- Set the convergence monitor to true, to prevent the solver to stop in intermediate FSI subiterations ---*/
+      output->SetConvergence(true);
+    }
 
   }
   /*--- If the structure is held static and the solver is nonlinear, we don't need to solve for static time, but we need to compute Mass Matrix and Integration constants ---*/
