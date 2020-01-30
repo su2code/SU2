@@ -4939,12 +4939,16 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_cont
         /*--- "Static" switch which should be optimized at compile time. ---*/
         switch(IntegrationType) {
 
-          case CLASSICAL_RK4_EXPLICIT:
-            nodes->AddSolution(iPoint, iVar, -Res*Delta*RK_AlphaCoeff);
+          case EULER_EXPLICIT:
+            nodes->AddSolution(iPoint,iVar, -Res*Delta);
             break;
 
           case RUNGE_KUTTA_EXPLICIT:
-            {
+            nodes->AddSolution(iPoint, iVar, -Res*Delta*RK_AlphaCoeff);
+            break;
+
+          case CLASSICAL_RK4_EXPLICIT:
+          {
             su2double tmp_time = -1.0*RK_TimeCoeff[iRKStep]*Delta;
             su2double tmp_func = -1.0*RK_FuncCoeff[iRKStep]*Delta;
 
@@ -4957,12 +4961,8 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_cont
             } else {
               nodes->SetSolution(iPoint, iVar, nodes->GetSolution_New(iPoint, iVar) + tmp_func*Res);
             }
-            }
-            break;
-
-          case EULER_EXPLICIT:
-            nodes->AddSolution(iPoint,iVar, -Res*Delta);
-            break;
+          }
+          break;
         }
 
         resRMS[iVar] += Res*Res;
