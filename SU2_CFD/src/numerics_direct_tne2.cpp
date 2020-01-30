@@ -507,8 +507,10 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
                                     CConfig *config         ) {
 
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nSpecies+nDim+8);   AD::SetPreaccIn(V_j, nSpecies+nDim+8);
-  AD::SetPreaccIn(U_i, nSpecies+nDim+8);   AD::SetPreaccIn(U_j, nSpecies+nDim+8);
+  AD::SetPreaccIn(U_i, nVar);
+  AD::SetPreaccIn(U_j, nVar);
+  AD::SetPreaccIn(V_i, nSpecies+nDim+8);
+  AD::SetPreaccIn(V_j, nSpecies+nDim+8);
   AD::SetPreaccIn(Normal, nDim);
 
   unsigned short iDim, iVar, jVar, iSpecies, nHeavy, nEl;
@@ -3429,6 +3431,7 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   AD::StartPreacc();
   AD::SetPreaccIn(U_i, nVar);
   AD::SetPreaccIn(V_i, nSpecies+nDim+8);
+  AD::SetPreaccIn(Volume);
 
   /*--- Nonequilibrium chemistry ---*/
   unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, jVar;
@@ -3693,6 +3696,7 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nSpecies+nDim+8);
+  AD::SetPreaccIn(Volume);
 
   /*--- Trans.-rot. & vibrational energy exchange via inelastic collisions ---*/
   // Note: Electronic energy not implemented
