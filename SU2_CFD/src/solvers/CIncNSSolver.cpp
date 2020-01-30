@@ -1086,8 +1086,10 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
 }
 
-void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                  CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[VISC_TERM];
 
   unsigned long iPoint, jPoint, iEdge;
 

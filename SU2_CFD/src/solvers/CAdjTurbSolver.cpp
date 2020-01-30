@@ -343,8 +343,11 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                      unsigned short iMesh, unsigned short iRKStep) {
+void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[VISC_TERM];
+
   unsigned long iEdge, iPoint, jPoint;
   su2double *Coord_i, *Coord_j;
 

@@ -201,8 +201,11 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
 }
 
-void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[VISC_TERM];
+
   unsigned long iEdge, iPoint, jPoint;
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
