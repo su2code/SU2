@@ -131,4 +131,11 @@ public:
 
   bool Monitor(unsigned long TimeIter);
 
+  /*!
+     * \brief  Returns wheter all specified windowed-time-averaged ouputs have been converged
+     * \return Boolean indicating whether the problem is converged.
+     */
+  inline virtual bool GetTimeConvergence() const{
+    return driver_output->GetTimeConvergence();
+  }
 };
