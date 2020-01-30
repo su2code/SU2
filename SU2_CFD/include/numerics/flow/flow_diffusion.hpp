@@ -43,23 +43,29 @@
  */
 class CAvgGrad_Base : public CNumerics {
 protected:
-  const unsigned short nPrimVar;  /*!< \brief The size of the primitive variable array used in the numerics class. */
-  const bool correct_gradient; /*!< \brief Apply a correction to the gradient term */
-  bool implicit;               /*!< \brief Implicit calculus. */
-  su2double *heat_flux_vector, /*!< \brief Flux of total energy due to molecular and turbulent diffusion */
-  *heat_flux_jac_i,            /*!< \brief Jacobian of the molecular + turbulent heat flux vector, projected onto the normal vector. */
-  **tau_jacobian_i;            /*!< \brief Jacobian of the viscous + turbulent stress tensor, projected onto the normal vector. */
-  su2double *Mean_PrimVar,     /*!< \brief Mean primitive variables. */
-  *PrimVar_i, *PrimVar_j,      /*!< \brief Primitives variables at point i and 1. */
-  **Mean_GradPrimVar,          /*!< \brief Mean value of the gradient. */
-  Mean_Laminar_Viscosity,      /*!< \brief Mean value of the viscosity. */
-  Mean_Eddy_Viscosity,         /*!< \brief Mean value of the eddy viscosity. */
-  Mean_turb_ke,                /*!< \brief Mean value of the turbulent kinetic energy. */
-  Mean_TauWall,                /*!< \brief Mean wall shear stress (wall functions). */
-  TauWall_i, TauWall_j,        /*!< \brief Wall shear stress at point i and j (wall functions). */
-  dist_ij_2,                   /*!< \brief Length of the edge and face, squared */
-  *Proj_Mean_GradPrimVar_Edge, /*!< \brief Inner product of the Mean gradient and the edge vector. */
-  *Edge_Vector;                /*!< \brief Vector from point i to point j. */
+  const unsigned short nPrimVar;          /*!< \brief The size of the primitive variable array used in the numerics class. */
+  const bool correct_gradient;            /*!< \brief Apply a correction to the gradient term */
+  bool implicit = false;                  /*!< \brief Implicit calculus. */
+  su2double
+  heat_flux_vector[MAXNDIM] = {0.0},      /*!< \brief Flux of total energy due to molecular and turbulent diffusion */
+  *heat_flux_jac_i = nullptr,             /*!< \brief Jacobian of the molecular + turbulent heat flux vector, projected onto the normal vector. */
+  **tau_jacobian_i = nullptr;             /*!< \brief Jacobian of the viscous + turbulent stress tensor, projected onto the normal vector. */
+  su2double *Mean_PrimVar = nullptr;      /*!< \brief Mean primitive variables. */
+  const su2double
+  *PrimVar_i = nullptr,
+  *PrimVar_j = nullptr;                   /*!< \brief Primitives variables at point i and j. */
+  su2double **Mean_GradPrimVar = nullptr, /*!< \brief Mean value of the gradient. */
+  Mean_Laminar_Viscosity,                 /*!< \brief Mean value of the viscosity. */
+  Mean_Eddy_Viscosity,                    /*!< \brief Mean value of the eddy viscosity. */
+  Mean_turb_ke,                           /*!< \brief Mean value of the turbulent kinetic energy. */
+  Mean_TauWall,                           /*!< \brief Mean wall shear stress (wall functions). */
+  TauWall_i, TauWall_j,                   /*!< \brief Wall shear stress at point i and j (wall functions). */
+  dist_ij_2,                              /*!< \brief Length of the edge and face, squared */
+  Edge_Vector[MAXNDIM] = {0.0},           /*!< \brief Vector from point i to point j. */
+  *Proj_Mean_GradPrimVar_Edge = nullptr;  /*!< \brief Inner product of the Mean gradient and the edge vector. */
+
+  su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
 
   /*!
    * \brief Add a correction using a Quadratic Constitutive Relation
@@ -182,7 +188,7 @@ protected:
    * \param[in] Eig_Val_Comp: Defines type of eigenspace perturbation
    * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
    */
-  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
+  void SetPerturbedRSM(su2double turb_ke, const CConfig* config);
 
   /*!
    * \brief Get the mean rate of strain matrix based on velocity gradients
@@ -202,7 +208,7 @@ public:
    */
   CAvgGrad_Base(unsigned short val_nDim, unsigned short val_nVar,
                 unsigned short val_nPrimVar,
-                bool val_correct_grad, CConfig *config);
+                bool val_correct_grad, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -257,7 +263,7 @@ public:
  * \ingroup ViscDiscr
  * \author A. Bueno, and F. Palacios
  */
-class CAvgGrad_Flow : public CAvgGrad_Base {
+class CAvgGrad_Flow final : public CAvgGrad_Base {
 public:
   /*!
    * \brief Constructor of the class.
@@ -267,16 +273,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar,
-                bool val_correct_grad, CConfig *config);
+                bool val_correct_grad, const CConfig* config);
 
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
   /*!
    * \brief Compute the heat flux due to molecular and turbulent diffusivity
@@ -314,7 +318,7 @@ public:
  * \ingroup ViscDiscr
  * \author A. Bueno, F. Palacios, T. Economon
  */
-class CAvgGradInc_Flow : public CAvgGrad_Base {
+class CAvgGradInc_Flow final : public CAvgGrad_Base {
 private:
   su2double Mean_Thermal_Conductivity; /*!< \brief Mean value of the effective thermal conductivity. */
   bool energy;                         /*!< \brief computation with the energy equation. */
@@ -357,16 +361,15 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGradInc_Flow(unsigned short val_nDim, unsigned short val_nVar,
-                   bool val_correct_grad, CConfig *config);
+                   bool val_correct_grad, const CConfig* config);
 
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
 };
 
 
@@ -376,7 +379,7 @@ public:
  * \ingroup ViscDiscr
  * \author M.Pini, S. Vitale
  */
-class CGeneralAvgGrad_Flow : public CAvgGrad_Base {
+class CGeneralAvgGrad_Flow final : public CAvgGrad_Base {
 private:
   su2double Mean_SecVar[2],  /*!< \brief Mean secondary variables. */
   Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
@@ -425,14 +428,13 @@ public:
    * \param[in] val_correct_grad - Apply a correction to the gradient
    * \param[in] config - Definition of the particular problem.
    */
-  CGeneralAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, bool val_correct_grad, CConfig *config);
+  CGeneralAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, bool val_correct_grad, const CConfig* config);
 
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
 };

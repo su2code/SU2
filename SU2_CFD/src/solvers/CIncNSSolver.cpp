@@ -1123,15 +1123,15 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Compute and update residual ---*/
 
-    numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+    auto residual = numerics->ComputeResidual(config);
 
-    LinSysRes.SubtractBlock(iPoint, Res_Visc);
-    LinSysRes.AddBlock(jPoint, Res_Visc);
+    LinSysRes.SubtractBlock(iPoint, residual);
+    LinSysRes.AddBlock(jPoint, residual);
 
     /*--- Implicit part ---*/
 
     if (implicit) {
-      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
+      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
 
   }

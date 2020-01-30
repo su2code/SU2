@@ -1127,55 +1127,85 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
 void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                  CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
-  CNumerics* numerics = numerics_container[VISC_TERM];
+  const bool implicit  = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) ||
+                         (config->GetKind_Turb_Model() == SST_SUST);
 
-  unsigned long iPoint, jPoint, iEdge;
+  CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  /*--- Start OpenMP parallel section. ---*/
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  SU2_OMP_PARALLEL
+  {
+  /*--- Pick one numerics object per thread. ---*/
+  CNumerics* numerics = numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS];
 
+  /*--- Loop over all the edges ---*/
+
+#ifdef HAVE_OMP
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring)
+  {
+  SU2_OMP_FOR_DYN(chunkSize)
+  for(auto k = 0ul; k < color.size; ++k) {
+
+    auto iEdge = color.indices[k];
+#else
+  /*--- Natural coloring. ---*/
+  {
+  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
+#endif
     /*--- Points, coordinates and normal vector in edge ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
+    auto iPoint = geometry->edge[iEdge]->GetNode(0);
+    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                       geometry->node[jPoint]->GetCoord());
+
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-    /*--- Primitive and secondary variables ---*/
+    /*--- Primitive and secondary variables. ---*/
 
-    numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
-    numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(jPoint));
+    numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                           nodes->GetPrimitive(jPoint));
 
-    /*--- Gradient and limiters ---*/
+    numerics->SetSecondary(nodes->GetSecondary(iPoint),
+                           nodes->GetSecondary(jPoint));
 
-    numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(jPoint));
+    /*--- Gradients. ---*/
 
-    /*--- Turbulent kinetic energy ---*/
+    numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                                 nodes->GetGradient_Primitive(jPoint));
 
-    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-      numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                     solver_container[TURB_SOL]->GetNodes()->GetSolution(jPoint,0));
+    /*--- Turbulent kinetic energy. ---*/
+
+    if (tkeNeeded)
+      numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
+                                     turbNodes->GetSolution(jPoint,0));
 
     /*--- Wall shear stress values (wall functions) ---*/
 
-    numerics->SetTauWall(nodes->GetTauWall(iPoint), nodes->GetTauWall(iPoint));
+    numerics->SetTauWall(nodes->GetTauWall(iPoint),
+                         nodes->GetTauWall(iPoint));
 
     /*--- Compute and update residual ---*/
 
-    numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+    auto residual = numerics->ComputeResidual(config);
 
-    LinSysRes.SubtractBlock(iPoint, Res_Visc);
-    LinSysRes.AddBlock(jPoint, Res_Visc);
+    LinSysRes.SubtractBlock(iPoint, residual);
+    LinSysRes.AddBlock(jPoint, residual);
 
     /*--- Implicit part ---*/
 
-    if (implicit) {
-      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
-    }
-
+    if (implicit)
+      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
   }
-
+  } // end color loop
+  } // end SU2_OMP_PARALLEL
 }
 
 void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
