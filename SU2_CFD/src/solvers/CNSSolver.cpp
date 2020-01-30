@@ -1393,10 +1393,7 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     /*--- Implicit part ---*/
 
     if (implicit) {
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-      Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
     }
 
   }
@@ -2193,7 +2190,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 
           /*--- Add the block to the Global Jacobian structure ---*/
 
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
           /*--- Now the Jacobian contribution related to the shear stress ---*/
 
@@ -2254,7 +2251,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 
           /*--- Subtract the block from the Global Jacobian structure ---*/
 
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
         }
       }
@@ -2431,7 +2428,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 
         /*--- Subtract the block from the Global Jacobian structure ---*/
 
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
       }
 
@@ -2507,7 +2504,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 
           /*--- Add the block to the Global Jacobian structure ---*/
 
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
           /*--- Now the Jacobian contribution related to the shear stress ---*/
 
@@ -2551,7 +2548,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 
           /*--- Subtract the block from the Global Jacobian structure ---*/
 
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
         }
 
       }
@@ -2773,7 +2770,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
         /*--- Subtract the block from the Global Jacobian structure ---*/
 
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
       }
 
@@ -2850,7 +2847,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
           /*--- Add the block to the Global Jacobian structure ---*/
 
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
           /*--- Now the Jacobian contribution related to the shear stress ---*/
 
@@ -2894,7 +2891,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
           /*--- Subtract the block from the Global Jacobian structure ---*/
 
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
         }
 
       }

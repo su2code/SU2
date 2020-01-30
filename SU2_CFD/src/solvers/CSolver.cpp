@@ -1664,7 +1664,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               if (implicit_periodic) {
 
-                Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+                Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
                 if (iPeriodic == val_periodic_index + nPeriodic/2) {
                   for (iVar = 0; iVar < nVar; iVar++) {

@@ -571,6 +571,51 @@ public:
   }
 
   /*!
+   * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of UpdateBlocks.
+   */
+  template<class OtherType>
+  inline void UpdateBlocksSub(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
+                              const OtherType* const* block_i, const OtherType* const* block_j) {
+    UpdateBlocks<OtherType,-1>(iEdge, iPoint, jPoint, block_i, block_j);
+  }
+
+  /*!
+   * \brief Adds the specified block to the (i, i) subblock of the matrix-by-blocks structure.
+   * \param[in] block_i - Diagonal index.
+   * \param[in] val_block - Block to add to the diagonal of the matrix.
+   */
+  template<class OtherType>
+  inline void AddBlock2Diag(unsigned long block_i, const OtherType* const* val_block) {
+
+    ScalarType *bii = &matrix[dia_ptr[block_i]*nVar*nEqn];
+
+    unsigned long iVar, jVar, offset = 0;
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nEqn; jVar++)
+        bii[offset++] += PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+
+  }
+
+  /*!
+   * \brief Subtracts the specified block from the (i, i) subblock of the matrix-by-blocks structure.
+   * \param[in] block_i - Diagonal index.
+   * \param[in] val_block - Block to subtract from the diagonal of the matrix.
+   */
+  template<class OtherType>
+  inline void SubtractBlock2Diag(unsigned long block_i, const OtherType* const* val_block) {
+
+    ScalarType *bii = &matrix[dia_ptr[block_i]*nVar*nEqn];
+
+    unsigned long iVar, jVar, offset = 0;
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nEqn; jVar++)
+        bii[offset++] -= PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+
+  }
+
+  /*!
    * \brief Adds the specified value to the diagonal of the (i, i) subblock
    *        of the matrix-by-blocks structure.
    * \param[in] block_i - Diagonal index.

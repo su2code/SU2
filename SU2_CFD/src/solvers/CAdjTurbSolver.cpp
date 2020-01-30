@@ -264,7 +264,7 @@ void CAdjTurbSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
     /*--- Add Residuals and Jacobians ---*/
     conv_numerics->ComputeResidual(Residual, Jacobian_ii, NULL, config);
     LinSysRes.AddBlock(iPoint, Residual);
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+    Jacobian.AddBlock2Diag(iPoint, Jacobian_ii);
 
   }
 
@@ -334,10 +334,10 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Add and Subtract Residual ---*/
     LinSysRes.AddBlock(iPoint, Residual_i);
     LinSysRes.AddBlock(jPoint, Residual_j);
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+    Jacobian.AddBlock2Diag(iPoint, Jacobian_ii);
     Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
+    Jacobian.AddBlock2Diag(jPoint, Jacobian_jj);
 
   }
 
@@ -380,10 +380,10 @@ void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     LinSysRes.AddBlock(iPoint, Residual_i);
     LinSysRes.AddBlock(jPoint, Residual_j);
 
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+    Jacobian.AddBlock2Diag(iPoint, Jacobian_ii);
     Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
+    Jacobian.AddBlock2Diag(jPoint, Jacobian_jj);
 
   }
 
@@ -437,7 +437,7 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Add and Subtract Residual ---*/
     numerics->ComputeResidual(Residual, Jacobian_ii, NULL, config);
     LinSysRes.AddBlock(iPoint, Residual);
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+    Jacobian.AddBlock2Diag(iPoint, Jacobian_ii);
 
   }
 
@@ -468,10 +468,10 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //    second_numerics->ComputeResidual(Residual, Jacobian_ii, Jacobian_jj, config);
 //    LinSysRes.AddBlock(iPoint, Residual);
 //    LinSysRes.SubtractBlock(jPoint, Residual);
-//    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+//    Jacobian.AddBlock2Diag(iPoint, Jacobian_ii);
 //    Jacobian.AddBlock(iPoint, jPoint, Jacobian_jj);
 //    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_ii);
-//    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_jj);
+//    Jacobian.SubtractBlock2Diag(jPoint, Jacobian_jj);
 //
 //  }
 

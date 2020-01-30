@@ -290,10 +290,7 @@ void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     LinSysRes.SubtractBlock(jPoint, Residual);
 
     /*--- Implicit part ---*/
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+    Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
 
   }
 
@@ -343,10 +340,7 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     LinSysRes.SubtractBlock(iPoint, Residual);
     LinSysRes.AddBlock(jPoint, Residual);
 
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+    Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
 
   }
 }
@@ -401,7 +395,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, Residual);
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
   }
 }
@@ -456,7 +450,7 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 //      cout << "Implicit part -AA" << endl;
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit) {
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
     }
   }
