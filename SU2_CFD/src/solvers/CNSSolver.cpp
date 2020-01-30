@@ -1124,22 +1124,36 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
   return nonPhysicalPoints;
 }
 
-void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
+void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                             unsigned short iMesh, unsigned long Iteration) {
 
-  su2double *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda, Local_Delta_Time, Local_Delta_Time_Visc,
-  Global_Delta_Time = 1E6, Mean_LaminarVisc = 0.0, Mean_EddyVisc = 0.0, Mean_Density = 0.0, Lambda_1, Lambda_2, K_v = 0.25, Global_Delta_UnstTimeND;
-  unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
+  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const su2double K_v = 0.25;
+
+  /*--- Init thread-shared variables to compute min/max values.
+   *    Critical sections are used for this instead of reduction
+   *    clauses for compatibility with OpenMP 2.0 (Windows...). ---*/
+
+  Min_Delta_Time = 1e30; Max_Delta_Time = 0.0;
+
+  su2double Global_Delta_Time, Global_Delta_UnstTimeND = 1e30;
+
+  /*--- Start OpenMP parallel section. ---*/
+
+  SU2_OMP_PARALLEL
+  {
+
+  const su2double *Normal = nullptr;
+  su2double Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda, Local_Delta_Time, Local_Delta_Time_Visc,
+  Mean_LaminarVisc = 0.0, Mean_EddyVisc = 0.0, Mean_Density = 0.0, Lambda_1, Lambda_2, ProjVel;
+  unsigned long iEdge, iVertex, iPoint = 0, jPoint;
   unsigned short iDim, iMarker;
-  su2double ProjVel, ProjVel_i, ProjVel_j;
-
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                   (config->GetTime_Marching() == DT_STEPPING_2ND);
-
-  Min_Delta_Time = 1.E30; Max_Delta_Time = 0.0;
 
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     nodes->SetMax_Lambda_Inv(iPoint,0.0);
     nodes->SetMax_Lambda_Visc(iPoint,0.0);
@@ -1147,15 +1161,29 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
 
   /*--- Loop interior edges ---*/
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+#ifdef HAVE_OMP
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
 
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring)
+  {
+  SU2_OMP_FOR_DYN(chunkSize)
+  for(auto k = 0ul; k < color.size; ++k) {
+
+    iEdge = color.indices[k];
+#else
+  /*--- Natural coloring. ---*/
+  {
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+#endif
     /*--- Point identification, Normal vector and area ---*/
 
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
 
     Normal = geometry->edge[iEdge]->GetNormal();
-    Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
     /*--- Mean Values ---*/
 
@@ -1165,14 +1193,11 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     /*--- Adjustment for grid movement ---*/
 
     if (dynamic_grid) {
-      su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
-      su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
-      ProjVel_i = 0.0; ProjVel_j =0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        ProjVel_i += GridVel_i[iDim]*Normal[iDim];
-        ProjVel_j += GridVel_j[iDim]*Normal[iDim];
-      }
-      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j) ;
+      const su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
+      const su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
     }
 
     /*--- Inviscid contribution ---*/
@@ -1196,155 +1221,175 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
 
   }
+  } // end color loop
 
   /*--- Loop boundary edges ---*/
 
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
-      /*--- Point identification, Normal vector and area ---*/
+      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+        /*--- Point identification, Normal vector and area ---*/
 
-      /*--- Mean Values ---*/
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-      Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
-      Mean_SoundSpeed = nodes->GetSoundSpeed(iPoint) * Area;
+        if (!geometry->node[iPoint]->GetDomain()) continue;
 
-      /*--- Adjustment for grid movement ---*/
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
-      if (dynamic_grid) {
-        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
-        ProjVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          ProjVel += GridVel[iDim]*Normal[iDim];
-        Mean_ProjVel -= ProjVel;
-      }
+        /*--- Mean Values ---*/
 
-      /*--- Inviscid contribution ---*/
+        Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
+        Mean_SoundSpeed = nodes->GetSoundSpeed(iPoint) * Area;
 
-      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      if (geometry->node[iPoint]->GetDomain()) {
+        /*--- Adjustment for grid movement ---*/
+
+        if (dynamic_grid) {
+          su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+          ProjVel = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            ProjVel += GridVel[iDim]*Normal[iDim];
+          Mean_ProjVel -= ProjVel;
+        }
+
+        /*--- Inviscid contribution ---*/
+
+        Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
         nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+
+        /*--- Viscous contribution ---*/
+
+        Mean_LaminarVisc = nodes->GetLaminarViscosity(iPoint);
+        Mean_EddyVisc    = nodes->GetEddyViscosity(iPoint);
+        Mean_Density     = nodes->GetDensity(iPoint);
+
+        Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
+        Lambda_2 = (1.0 + (Prandtl_Lam/Prandtl_Turb)*(Mean_EddyVisc/Mean_LaminarVisc))*(Gamma*Mean_LaminarVisc/Prandtl_Lam);
+        Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
+
+        nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+
       }
-
-      /*--- Viscous contribution ---*/
-
-      Mean_LaminarVisc = nodes->GetLaminarViscosity(iPoint);
-      Mean_EddyVisc    = nodes->GetEddyViscosity(iPoint);
-      Mean_Density     = nodes->GetDensity(iPoint);
-
-      Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
-      Lambda_2 = (1.0 + (Prandtl_Lam/Prandtl_Turb)*(Mean_EddyVisc/Mean_LaminarVisc))*(Gamma*Mean_LaminarVisc/Prandtl_Lam);
-      Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
-
-      if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
-
-    }
     }
   }
 
-  /*--- Each element uses their own speed, steady state simulation ---*/
+  /*--- Each element uses their own speed, steady state simulation. ---*/
+  {
+    /*--- Thread-local variables for min/max reduction. ---*/
+    su2double minDt = 1e30, maxDt = 0.0;
 
+    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      Vol = geometry->node[iPoint]->GetVolume();
 
-    Vol = geometry->node[iPoint]->GetVolume();
+      if (Vol != 0.0) {
+        Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
+        Local_Delta_Time_Visc = nodes->GetLocalCFL(iPoint)*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
+        Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
 
-    if (Vol != 0.0) {
-      Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
-      Local_Delta_Time_Visc = nodes->GetLocalCFL(iPoint)*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
-      Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
-      Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
-      Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
-      Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
-      if (Local_Delta_Time > config->GetMax_DeltaTime())
-        Local_Delta_Time = config->GetMax_DeltaTime();
-      nodes->SetDelta_Time(iPoint,Local_Delta_Time);
+        minDt = min(minDt, Local_Delta_Time);
+        maxDt = max(maxDt, Local_Delta_Time);
+
+        nodes->SetDelta_Time(iPoint, min(Local_Delta_Time, config->GetMax_DeltaTime()));
+      }
+      else {
+        nodes->SetDelta_Time(iPoint,0.0);
+      }
     }
-    else {
-      nodes->SetDelta_Time(iPoint,0.0);
+    /*--- Min/max over threads. ---*/
+    SU2_OMP_CRITICAL
+    {
+      Min_Delta_Time = min(Min_Delta_Time, minDt);
+      Max_Delta_Time = max(Max_Delta_Time, maxDt);
+      Global_Delta_Time = Min_Delta_Time;
     }
-
+    SU2_OMP_BARRIER
   }
 
+  /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
 
-  /*--- Compute the max and the min dt (in parallel) ---*/
+  SU2_OMP_MASTER
   if (config->GetComm_Level() == COMM_FULL) {
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Min_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    su2double rbuf_time;
+    SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
     Min_Delta_Time = rbuf_time;
 
-    sbuf_time = Max_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
     Max_Delta_Time = rbuf_time;
-#endif
   }
+  SU2_OMP_BARRIER
 
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
   if (config->GetTime_Marching() == TIME_STEPPING) {
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Global_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Global_Delta_Time = rbuf_time;
-#endif
-    /*--- If the unsteady CFL is set to zero, it uses the defined
-     unsteady time step, otherwise it computes the time step based
-     on the unsteady CFL ---*/
 
-    if (config->GetUnst_CFL() == 0.0) {
-      Global_Delta_Time = config->GetDelta_UnstTime();
-    }
-    config->SetDelta_UnstTimeND(Global_Delta_Time);
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step,
+     *    otherwise it computes the time step based on the unsteady CFL. ---*/
 
-      /*--- Sets the regular CFL equal to the unsteady CFL ---*/
-
-      nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
-      nodes->SetDelta_Time(iPoint, Global_Delta_Time);
-      Min_Delta_Time = Global_Delta_Time;
+    SU2_OMP_MASTER
+    {
+      if (config->GetUnst_CFL() == 0.0) {
+        Global_Delta_Time = config->GetDelta_UnstTime();
+      }
+      else {
+        Global_Delta_Time = Min_Delta_Time;
+      }
       Max_Delta_Time = Global_Delta_Time;
 
+      config->SetDelta_UnstTimeND(Global_Delta_Time);
     }
+    SU2_OMP_BARRIER
+
+    /*--- Sets the regular CFL equal to the unsteady CFL. ---*/
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
+      nodes->SetDelta_Time(iPoint, Global_Delta_Time);
+    }
+
   }
 
   /*--- Recompute the unsteady time step for the dual time strategy
    if the unsteady CFL is diferent from 0 ---*/
   if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
 
-    Global_Delta_UnstTimeND = 1e30;
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    /*--- Thread-local variable for reduction. ---*/
+    su2double glbDtND = 1e30;
+
+    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND,config->GetUnst_CFL()*Global_Delta_Time/nodes->GetLocalCFL(iPoint));
     }
+    SU2_OMP_CRITICAL
+    Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
+    SU2_OMP_BARRIER
 
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Global_Delta_UnstTimeND;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Global_Delta_UnstTimeND = rbuf_time;
-#endif
-    config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
+    SU2_OMP_MASTER
+    {
+      SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      Global_Delta_UnstTimeND = glbDtND;
+
+      config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
+    }
+    SU2_OMP_BARRIER
   }
 
   /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
-  if (dual_time)
+
+  if (dual_time && !implicit) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      if (!implicit) {
-        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
-        nodes->SetDelta_Time(iPoint,Local_Delta_Time);
-      }
+      Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
+      nodes->SetDelta_Time(iPoint, Local_Delta_Time);
     }
+  }
+
+  } // end SU2_OMP_PARALLEL
 
 }
 
