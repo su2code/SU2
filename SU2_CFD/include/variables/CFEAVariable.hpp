@@ -79,7 +79,7 @@ public:
    * \brief Get the value of the stress.
    * \return Value of the stress.
    */
-  inline su2double *GetStress_FEM(unsigned long iPoint) final { return Stress[iPoint]; }
+  inline const su2double *GetStress_FEM(unsigned long iPoint) const final { return Stress[iPoint]; }
 
   /*!
    * \brief Set the value of the stress at the node

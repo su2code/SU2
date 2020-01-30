@@ -1459,6 +1459,10 @@ inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat
 
 inline unsigned short CConfig::GetTabular_FileFormat(void) { return Tab_FileFormat; }
 
+inline unsigned long CConfig::GetStartWindowIteration(void) const{return StartWindowIteration; }
+
+inline WINDOW_FUNCTION  CConfig::GetKindWindow(void) const{return static_cast<WINDOW_FUNCTION>(Kind_WindowFct); }
+
 inline unsigned short CConfig::GetActDisk_Jump(void) { return ActDisk_Jump; }
 
 inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
@@ -1913,7 +1917,7 @@ inline bool CConfig::GetJacobian_Spatial_Discretization_Only(void) {return Jacob
 
 inline bool CConfig::GetWeakly_Coupled_Heat(void) { return Weakly_Coupled_Heat; }
 
-inline bool CConfig::GetCHT_Robin(void) { return CHT_Robin; }
+inline unsigned short CConfig::GetKind_CHT_Coupling(void) const { return Kind_CHT_Coupling; }
 
 inline bool CConfig::GetIntegrated_HeatFlux(void) { return Integrated_HeatFlux; }
 
@@ -2052,6 +2056,18 @@ inline su2double CConfig::GetMeshBoxOffset(unsigned short val_iDim) { return Mes
 
 inline string CConfig::GetConv_Field(unsigned short iField){ return ConvField[iField]; }
 
+inline string CConfig::GetWndConv_Field(unsigned short iField) const { return WndConvField[iField]; }
+
+inline unsigned short CConfig::GetWnd_Cauchy_Elems(void) const { return Wnd_Cauchy_Elems; }
+
+inline su2double CConfig::GetWnd_Cauchy_Eps(void) const { return Wnd_Cauchy_Eps; }
+
+inline unsigned long CConfig::GetWnd_StartConv_Iter(void) const { return Wnd_StartConv_Iter; }
+
+inline bool CConfig::GetWnd_Cauchy_Crit(void) const {return Wnd_Cauchy_Crit;}
+
+inline unsigned short CConfig::GetnWndConv_Field() const{ return nWndConvField; }
+
 inline unsigned short CConfig::GetnConv_Field(){ return nConvField; }
 
 inline void  CConfig::Set_StartTime(su2double starttime){StartTime = starttime;}
@@ -2073,3 +2089,5 @@ inline unsigned short* CConfig::GetVolumeOutputFiles() {return VolumeOutputFiles
 inline unsigned short CConfig::GetnVolumeOutputFiles() {return nVolumeOutputFiles;}
 
 inline bool CConfig::OptionIsSet(string option){ return all_options.find(option) == all_options.end();}
+
+inline const string& CConfig::GetCaseName() const { return caseName;}
