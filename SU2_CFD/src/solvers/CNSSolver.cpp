@@ -1751,8 +1751,6 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
   /*--- Add buffet metric information using all the nodes ---*/
 
   su2double MyTotal_Buffet_Metric = Total_Buffet_Metric;
-  Total_Buffet_Metric = 0.0;
-
   SU2_MPI::Allreduce(&MyTotal_Buffet_Metric, &Total_Buffet_Metric, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
   /*--- Add the buffet metric on the surfaces using all the nodes ---*/
@@ -1760,10 +1758,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
   su2double *MySurface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-
     MySurface_Buffet_Metric[iMarker_Monitoring] = Surface_Buffet_Metric[iMarker_Monitoring];
-    Surface_Buffet_Metric[iMarker_Monitoring] = 0.0;
-
   }
 
   SU2_MPI::Allreduce(MySurface_Buffet_Metric, Surface_Buffet_Metric, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -1787,16 +1782,16 @@ void CNSSolver::Evaluate_ObjFunc(CConfig *config) {
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
 
-      Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-      Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
+    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
+    Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
 
-      switch(Kind_ObjFunc) {
-          case BUFFET_SENSOR:
-              Total_ComboObj +=Weight_ObjFunc*Surface_Buffet_Metric[iMarker_Monitoring];
-              break;
-          default:
-              break;
-      }
+    switch(Kind_ObjFunc) {
+      case BUFFET_SENSOR:
+          Total_ComboObj +=Weight_ObjFunc*Surface_Buffet_Metric[iMarker_Monitoring];
+          break;
+      default:
+          break;
+    }
   }
 
 }
