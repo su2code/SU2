@@ -2548,8 +2548,8 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
 
   /*--- Set the L2 Norm residual in all the processors ---*/
 
-  sbuf_residual  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
-  rbuf_residual  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = 0.0;
+  sbuf_residual = new su2double[nVar];
+  rbuf_residual = new su2double[nVar];
 
   for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = GetRes_RMS(iVar);
 
@@ -2559,15 +2559,15 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
-  } else {
-
+  }
+  else {
     /*--- Reduced MPI comms have been requested. Use a local residual only. ---*/
 
-    for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = sbuf_residual[iVar];
+    for (iVar = 0; iVar < nVar; iVar++)
+      rbuf_residual[iVar] = sbuf_residual[iVar];
     Global_nPointDomain = geometry->GetnPointDomain();
 
   }
-
 
   for (iVar = 0; iVar < nVar; iVar++) {
 
@@ -2586,13 +2586,13 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
 
   if (config->GetComm_Level() == COMM_FULL) {
 
-    sbuf_residual = new su2double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
-    sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
-    sbuf_coord = new su2double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
+    sbuf_residual = new su2double [nVar]();
+    sbuf_point = new unsigned long [nVar]();
+    sbuf_coord = new su2double[nVar*nDim]();
 
-    rbuf_residual = new su2double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
-    rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
-    rbuf_coord = new su2double[nProcessor*nVar*nDim]; for (iVar = 0; iVar < nProcessor*nVar*nDim; iVar++) rbuf_coord[iVar] = 0.0;
+    rbuf_residual = new su2double [nProcessor*nVar]();
+    rbuf_point = new unsigned long [nProcessor*nVar]();
+    rbuf_coord = new su2double[nProcessor*nVar*nDim]();
 
     for (iVar = 0; iVar < nVar; iVar++) {
       sbuf_residual[iVar] = GetRes_Max(iVar);
