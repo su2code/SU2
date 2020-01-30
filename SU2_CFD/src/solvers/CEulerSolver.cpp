@@ -4122,76 +4122,61 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *
 
 void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, jPoint;
-  unsigned short iNeigh, iDim;
+  /*--- Start OpenMP parallel section. ---*/
 
-  su2double *Vorticity;
+  SU2_OMP_PARALLEL
+  {
 
-  su2double uixi = 0.0, Ducros_i = 0.0, Ducros_j = 0.0, Omega = 0.0;
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+    /*---- Ducros sensor for iPoint and its neighbor points to avoid lower dissipation near shocks. ---*/
 
-    /*---- Dilatation for iPoint ---*/
+    su2double Ducros_i = 0.0;
+    auto nNeigh = geometry->node[iPoint]->GetnNeighbor();
 
-    uixi=0.0;
-    for(iDim = 0; iDim < nDim; iDim++){
-      uixi += nodes->GetGradient_Primitive(iPoint,iDim+1, iDim);
-    }
+    for (unsigned short iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
 
-    /*--- Compute norm of vorticity ---*/
-
-    Vorticity = nodes->GetVorticity(iPoint);
-    Omega = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++){
-      Omega += Vorticity[iDim]*Vorticity[iDim];
-    }
-    Omega = sqrt(Omega);
-
-    /*---- Ducros sensor for iPoint ---*/
-
-    if (config->GetKind_RoeLowDiss() == FD_DUCROS){
-      Ducros_i = -uixi / (fabs(uixi) + Omega + 1e-20);
-    } else if (config->GetKind_RoeLowDiss() == NTS_DUCROS){
-      Ducros_i = pow(uixi,2.0) /(pow(uixi,2.0)+ pow(Omega,2.0) + 1e-20);
-    }
-
-    nodes->SetSensor(iPoint,Ducros_i);
-
-    /*---- Ducros sensor for neighbor points of iPoint to avoid lower the dissipation in regions near the shock ---*/
-
-    for (iNeigh = 0; iNeigh > geometry->node[iPoint]->GetnNeighbor(); iNeigh++){
-
-      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      auto jPoint = iPoint;
+      if (iNeigh < nNeigh) jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
       /*---- Dilatation for jPoint ---*/
 
-      uixi=0.0;
-      for(iDim = 0; iDim < nDim; iDim++){
+      su2double uixi=0.0;
+      for(unsigned short iDim = 0; iDim < nDim; iDim++){
         uixi += nodes->GetGradient_Primitive(jPoint,iDim+1, iDim);
       }
 
       /*--- Compute norm of vorticity ---*/
 
-      Vorticity = nodes->GetVorticity(jPoint);
-      Omega = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++){
-        Omega += Vorticity[iDim]*Vorticity[iDim];
+      const su2double* Vorticity = nodes->GetVorticity(jPoint);
+      su2double Omega = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        Omega += pow(Vorticity[iDim], 2);
       }
       Omega = sqrt(Omega);
 
-      if (config->GetKind_RoeLowDiss() == FD_DUCROS){
+      su2double Ducros_j = 0.0;
+
+      if (config->GetKind_RoeLowDiss() == FD_DUCROS) {
         Ducros_j = -uixi / (fabs(uixi) + Omega + 1e-20);
-      } else if (config->GetKind_RoeLowDiss() == NTS_DUCROS){
+      }
+      else if (config->GetKind_RoeLowDiss() == NTS_DUCROS) {
         Ducros_j = pow(uixi,2.0) /(pow(uixi,2.0)+ pow(Omega,2.0) + 1e-20);
       }
-      nodes->SetSensor(iPoint, max(nodes->GetSensor(iPoint), Ducros_j));
-
+      Ducros_i = max(Ducros_i, Ducros_j);
     }
+
+    nodes->SetSensor(iPoint, Ducros_i);
   }
 
-  InitiateComms(geometry, config, SENSOR);
-  CompleteComms(geometry, config, SENSOR);
+  SU2_OMP_MASTER
+  {
+    InitiateComms(geometry, config, SENSOR);
+    CompleteComms(geometry, config, SENSOR);
+  }
 
+  } // end SU2_OMP_PARALLEL
 }
 
 void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
