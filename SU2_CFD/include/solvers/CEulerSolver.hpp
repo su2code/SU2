@@ -328,6 +328,12 @@ protected:
    */
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
+  /*!
+   * \brief Generic implementation of explicit iterations (RK, Classic RK and EULER).
+   */
+  template<ENUM_TIME_INT IntegrationType>
+  void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
+
 public:
 
 
