@@ -2133,7 +2133,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Add the implicit Jacobian contribution ---*/
 
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }
   }
@@ -2218,7 +2218,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Implicit part ---*/
 
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }
   }
@@ -3433,7 +3433,7 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
           Preconditioner[iVar][jVar] = Delta*Preconditioner[iVar][jVar];
         }
       }
-      Jacobian.AddBlock(iPoint, iPoint, Preconditioner);
+      Jacobian.AddBlock2Diag(iPoint, Preconditioner);
     } else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -4075,7 +4075,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       /*--- Convective Jacobian contribution for implicit integration ---*/
 
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
       /*--- Viscous residual contribution ---*/
 
@@ -4113,7 +4113,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
         /*--- Viscous Jacobian contribution for implicit integration ---*/
 
         if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
       }
 
@@ -4327,7 +4327,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Jacobian contribution for implicit integration ---*/
 
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
       /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
@@ -4366,7 +4366,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Jacobian contribution for implicit integration ---*/
 
         if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
       }
 
@@ -4535,7 +4535,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Jacobian contribution for implicit integration ---*/
 
       if (implicit) {
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
 
       /*--- Viscous contribution, commented out because serious convergence problems ---*/
@@ -4574,7 +4574,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Jacobian contribution for implicit integration ---*/
         if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
       }
 
@@ -4751,7 +4751,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
 
       /*--- Jacobian contribution for implicit integration. ---*/
       if (implicit) {
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
 
       if (viscous) {
@@ -4853,7 +4853,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
 
         /*--- Jacobian contribution for implicit integration. ---*/
         if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
       }//if viscous
     }//if GetDomain
   }//for iVertex
@@ -4948,7 +4948,7 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
 
           LinSysRes.AddBlock(iPoint, Residual);
           if (implicit)
-            Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+            Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
           if (viscous) {
 
@@ -5001,7 +5001,7 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
             /*--- Jacobian contribution for implicit integration ---*/
 
             if (implicit)
-              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+              Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
           }
         }
@@ -5224,7 +5224,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
             }
         }
 
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
       }
     }
@@ -5448,7 +5448,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
             Jacobian_i[nDim+1][iVar] = 0.0;
           }
         }
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
     }
   }

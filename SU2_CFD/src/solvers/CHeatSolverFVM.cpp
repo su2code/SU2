@@ -714,10 +714,7 @@ void CHeatSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     LinSysRes.SubtractBlock(iPoint, Residual);
     LinSysRes.AddBlock(jPoint, Residual);
 
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+    Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
   }
 }
 
@@ -850,7 +847,7 @@ void CHeatSolverFVM::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
         }
 
         LinSysRes.SubtractBlock(iPoint, Res_Visc);
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
     }
   }
 }
@@ -984,7 +981,7 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Jacobian contribution for implicit integration ---*/
 
         if (implicit)
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
 
       /*--- Viscous contribution ---*/
@@ -1018,7 +1015,7 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Viscous contribution to the residual at the wall ---*/
 
         LinSysRes.SubtractBlock(iPoint, Res_Visc);
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
       }
     }
   }
@@ -1087,7 +1084,7 @@ void CHeatSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Jacobian contribution for implicit integration ---*/
 
           if (implicit)
-            Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+            Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
     }
   }
@@ -1180,7 +1177,7 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
         if (implicit) {
 
           Jacobian_i[0][0] = thermal_diffusivity*Area;
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
         }
       }
     }
@@ -1810,7 +1807,7 @@ void CHeatSolverFVM::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_
             Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
         }
 
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
     }
   }
