@@ -2989,10 +2989,12 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
 
+  const bool viscous       = config->GetViscous();
   const bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
   const bool dual_time     = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                              (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const su2double K_v = 0.25;
 
   /*--- Init thread-shared variables to compute min/max values.
    *    Critical sections are used for this instead of reduction
@@ -3008,15 +3010,18 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   {
 
   const su2double *Normal = nullptr;
-  su2double Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda, Local_Delta_Time;
+  su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
+  su2double Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Lambda_1, Lambda_2;
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
 
-  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
+  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     nodes->SetMax_Lambda_Inv(iPoint,0.0);
+    nodes->SetMax_Lambda_Visc(iPoint,0.0);
+  }
 
   /*--- Loop interior edges ---*/
 
@@ -3052,8 +3057,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     /*--- Adjustment for grid movement ---*/
 
     if (dynamic_grid) {
-      const su2double* GridVel_i = geometry->node[iPoint]->GetGridVel();
-      const su2double* GridVel_j = geometry->node[jPoint]->GetGridVel();
+      const su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
+      const su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
 
       for (iDim = 0; iDim < nDim; iDim++)
         Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
@@ -3061,9 +3066,25 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Inviscid contribution ---*/
 
-    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
     if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
     if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
+
+    /*--- Viscous contribution ---*/
+
+    if (!viscous) continue;
+
+    Mean_LaminarVisc = 0.5*(nodes->GetLaminarViscosity(iPoint) + nodes->GetLaminarViscosity(jPoint));
+    Mean_EddyVisc    = 0.5*(nodes->GetEddyViscosity(iPoint) + nodes->GetEddyViscosity(jPoint));
+    Mean_Density     = 0.5*(nodes->GetDensity(iPoint) + nodes->GetDensity(jPoint));
+
+    Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
+    //TODO (REAL_GAS) removing Gamma it cannot work with FLUIDPROP
+    Lambda_2 = (1.0 + (Prandtl_Lam/Prandtl_Turb)*(Mean_EddyVisc/Mean_LaminarVisc))*(Gamma*Mean_LaminarVisc/Prandtl_Lam);
+    Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
+
+    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
 
   }
   } // end color loop
@@ -3084,7 +3105,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
         if (!geometry->node[iPoint]->GetDomain()) continue;
 
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
+        Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
         /*--- Mean Values ---*/
 
@@ -3094,15 +3115,31 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
         /*--- Adjustment for grid movement ---*/
 
         if (dynamic_grid) {
-          const su2double* GridVel = geometry->node[iPoint]->GetGridVel();
+          const su2double *GridVel = geometry->node[iPoint]->GetGridVel();
 
           for (iDim = 0; iDim < nDim; iDim++)
             Mean_ProjVel -= GridVel[iDim]*Normal[iDim];
         }
 
         /*--- Inviscid contribution ---*/
+
         Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
         nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+
+        /*--- Viscous contribution ---*/
+
+        if (!viscous) continue;
+
+        Mean_LaminarVisc = nodes->GetLaminarViscosity(iPoint);
+        Mean_EddyVisc    = nodes->GetEddyViscosity(iPoint);
+        Mean_Density     = nodes->GetDensity(iPoint);
+
+        Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
+        Lambda_2 = (1.0 + (Prandtl_Lam/Prandtl_Turb)*(Mean_EddyVisc/Mean_LaminarVisc))*(Gamma*Mean_LaminarVisc/Prandtl_Lam);
+        Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
+
+        nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+
       }
     }
   }
@@ -3119,6 +3156,11 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
       if (Vol != 0.0) {
         Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
+
+        if(viscous) {
+          Local_Delta_Time_Visc = nodes->GetLocalCFL(iPoint)*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
+          Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
+        }
 
         minDt = min(minDt, Local_Delta_Time);
         maxDt = max(maxDt, Local_Delta_Time);
@@ -3153,7 +3195,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   SU2_OMP_BARRIER
 
   /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
-
   if (time_stepping) {
 
     /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step,
@@ -3192,7 +3233,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time/nodes->GetLocalCFL(iPoint));
+      Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND,config->GetUnst_CFL()*Global_Delta_Time/nodes->GetLocalCFL(iPoint));
     }
     SU2_OMP_CRITICAL
     Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
