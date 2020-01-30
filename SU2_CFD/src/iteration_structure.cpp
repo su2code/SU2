@@ -1483,9 +1483,10 @@ void CFEAIteration::Iterate(COutput *output,
       Criteria_RTOL = config[val_iZone]->GetIncLoad_Criteria(1);
       Criteria_ETOL = config[val_iZone]->GetIncLoad_Criteria(2);
 
-      Residual_UTOL = log10(solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetRes_FEM(0));
-      Residual_RTOL = log10(solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetRes_FEM(1));
-      Residual_ETOL = log10(solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetRes_FEM(2));
+      Residual_UTOL = log10(solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->LinSysSol.norm());
+      Residual_RTOL = log10(solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->LinSysRes.norm());
+      Residual_ETOL = log10(solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->LinSysSol.dot(
+                              solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->LinSysRes));
 
       meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
                        ( Residual_RTOL <  Criteria_RTOL ) &&
@@ -1494,13 +1495,13 @@ void CFEAIteration::Iterate(COutput *output,
       /*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
       if (meetCriteria) {
 
-        for (IntIter = 2; IntIter < config[val_iZone]->GetDyn_nIntIter(); IntIter++) {
-
-          /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-          StopCalc = Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+        for (IntIter = 2; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
  
           integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
               config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
+
+          /*--- Write the convergence history (first, compute Von Mises stress) ---*/
+          StopCalc = Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
           if (StopCalc) break;
 
@@ -1527,21 +1528,20 @@ void CFEAIteration::Iterate(COutput *output,
           /*--- Set the convergence monitor to false, to force se solver to converge every subiteration ---*/
           output->SetConvergence(false);
 
-
           /*--- FEA equations ---*/
 
           config[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS);
-
 
           solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
 
           if (rank == MASTER_NODE) {
             cout << endl;
-            cout << "-- Incremental load: increment " << iIncrement + 1 << " ----------------------------------------" << endl;
+            cout << "Incremental load: increment " << iIncrement + 1 << endl;
           }
 
           /*--- Set the value of the internal iteration ---*/
           IntIter = 0;
+          config[val_iZone]->SetInnerIter(IntIter);
 
           /*--- FEA equations ---*/
 
@@ -1552,25 +1552,23 @@ void CFEAIteration::Iterate(COutput *output,
           integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
               config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
 
+          Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+
 
           /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
-          for (IntIter = 1; IntIter < config[val_iZone]->GetDyn_nIntIter(); IntIter++) {
+          for (IntIter = 1; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
 
-            /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-            StopCalc = Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+            config[val_iZone]->SetInnerIter(IntIter);
 
             integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
                 config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
 
-            if (StopCalc) break;
-
-          }
-
-          /*--- Write history for intermediate steps ---*/
-          if (iIncrement < nIncrements - 1){
             /*--- Write the convergence history (first, compute Von Mises stress) ---*/
             StopCalc = Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+
+            if (StopCalc) break;
+
           }
 
         }
