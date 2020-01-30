@@ -218,6 +218,12 @@ inline void PrintScreenInteger(std::ostream &stream, unsigned long val, unsigned
   stream << std::right << val;
 }
 
+inline void PrintScreenPercent(std::ostream &stream, su2double val, unsigned short field_width){
+  stream.precision(2); stream.setf(std::ios::fixed, std::ios::floatfield); stream.width(field_width-1);
+  stream << std::right << val << "%";
+  stream.unsetf(std::ios::fixed);
+}
+
 
 inline std::vector<std::string> split(const std::string& s, char delimiter)
 {
