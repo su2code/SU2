@@ -3431,6 +3431,7 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   AD::StartPreacc();
   AD::SetPreaccIn(U_i, nVar);
   AD::SetPreaccIn(V_i, nSpecies+nDim+8);
+  AD::SetPreaccIn(eve_i, nSpecies);
   AD::SetPreaccIn(Volume);
 
   /*--- Nonequilibrium chemistry ---*/
@@ -3696,6 +3697,7 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nSpecies+nDim+8);
+  AD::SetPreaccIn(eve_i, nSpecies);
   AD::SetPreaccIn(Volume);
 
   /*--- Trans.-rot. & vibrational energy exchange via inelastic collisions ---*/
