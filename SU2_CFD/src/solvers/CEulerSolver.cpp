@@ -3828,86 +3828,104 @@ void CEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_contain
 
 void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
-  su2double *Normal, Area, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda,
-  ProjVel, ProjVel_i, ProjVel_j, *GridVel, *GridVel_i, *GridVel_j;
-  unsigned long iEdge, iVertex, iPoint, jPoint;
-  unsigned short iDim, iMarker;
+  /*--- Start OpenMP parallel section. ---*/
 
+  SU2_OMP_PARALLEL
+  {
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     nodes->SetLambda(iPoint,0.0);
   }
 
   /*--- Loop interior edges ---*/
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  #ifdef HAVE_OMP
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
 
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring)
+  {
+  SU2_OMP_FOR_STAT(chunkSize)
+  for(auto k = 0ul; k < color.size; ++k) {
+
+    auto iEdge = color.indices[k];
+#else
+  /*--- Natural coloring. ---*/
+  {
+  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
+#endif
     /*--- Point identification, Normal vector and area ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    auto iPoint = geometry->edge[iEdge]->GetNode(0);
+    auto jPoint = geometry->edge[iEdge]->GetNode(1);
 
-    Normal = geometry->edge[iEdge]->GetNormal();
-    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    auto Normal = geometry->edge[iEdge]->GetNormal();
+    su2double Area = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Area += pow(Normal[iDim],2);
+    Area = sqrt(Area);
 
     /*--- Mean Values ---*/
 
-    Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
-    Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
+    su2double Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
+    su2double Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
 
     /*--- Adjustment for grid movement ---*/
 
     if (dynamic_grid) {
-      GridVel_i = geometry->node[iPoint]->GetGridVel();
-      GridVel_j = geometry->node[jPoint]->GetGridVel();
-      ProjVel_i = 0.0; ProjVel_j =0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        ProjVel_i += GridVel_i[iDim]*Normal[iDim];
-        ProjVel_j += GridVel_j[iDim]*Normal[iDim];
+      auto GridVel_i = geometry->node[iPoint]->GetGridVel();
+      auto GridVel_j = geometry->node[jPoint]->GetGridVel();
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim])*Normal[iDim];
       }
-      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
     }
 
     /*--- Inviscid contribution ---*/
 
-    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+    su2double Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
     if (geometry->node[iPoint]->GetDomain()) nodes->AddLambda(iPoint, Lambda);
     if (geometry->node[jPoint]->GetDomain()) nodes->AddLambda(jPoint, Lambda);
 
   }
+  } // end color loop
 
   /*--- Loop boundary edges ---*/
 
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+  for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+    for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
       /*--- Point identification, Normal vector and area ---*/
 
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+      auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      su2double Area = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Area += pow(Normal[iDim],2);
+      Area = sqrt(Area);
 
       /*--- Mean Values ---*/
 
-      Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
-      Mean_SoundSpeed = nodes->GetSoundSpeed(iPoint) * Area;
+      su2double Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
+      su2double Mean_SoundSpeed = nodes->GetSoundSpeed(iPoint) * Area;
 
       /*--- Adjustment for grid movement ---*/
 
       if (dynamic_grid) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
-        ProjVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          ProjVel += GridVel[iDim]*Normal[iDim];
-        Mean_ProjVel -= ProjVel;
+        auto GridVel = geometry->node[iPoint]->GetGridVel();
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          Mean_ProjVel -= GridVel[iDim]*Normal[iDim];
       }
 
       /*--- Inviscid contribution ---*/
 
-      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+      su2double Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
       if (geometry->node[iPoint]->GetDomain()) {
         nodes->AddLambda(iPoint,Lambda);
       }
@@ -3915,18 +3933,23 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     }
   }
 
-  /*--- Correct the eigenvalue values across any periodic boundaries. ---*/
+  SU2_OMP_BARRIER
+  SU2_OMP_MASTER
+  {
+    /*--- Correct the eigenvalue values across any periodic boundaries. ---*/
 
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
+    }
+
+    /*--- MPI parallelization ---*/
+
+    InitiateComms(geometry, config, MAX_EIGENVALUE);
+    CompleteComms(geometry, config, MAX_EIGENVALUE);
   }
 
-  /*--- MPI parallelization ---*/
-
-  InitiateComms(geometry, config, MAX_EIGENVALUE);
-  CompleteComms(geometry, config, MAX_EIGENVALUE);
-
+  } // end SU2_OMP_PARALLEL
 }
 
 void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
