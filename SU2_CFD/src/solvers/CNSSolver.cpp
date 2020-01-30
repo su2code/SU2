@@ -1084,38 +1084,36 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
 unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
 
-  unsigned long iPoint, nonPhysicalPoints = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
-  unsigned short turb_model = config->GetKind_Turb_Model();
-  bool physical = true;
+  unsigned long nonPhysicalPoints = 0;
 
-  bool tkeNeeded = ((turb_model == SST) || (turb_model == SST_SUST)) ;
+  const unsigned short turb_model = config->GetKind_Turb_Model();
+  const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
 
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size) reduction(+:nonPhysicalPoints))
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
-    /*--- Retrieve the value of the kinetic energy (if need it) ---*/
+    /*--- Retrieve the value of the kinetic energy (if needed). ---*/
+
+    su2double eddy_visc = 0.0, turb_ke = 0.0;
 
     if (turb_model != NONE) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
-      if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
-        DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
+      if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
+        su2double DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
+        nodes->SetDES_LengthScale(iPoint, DES_LengthScale);
       }
     }
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
 
-    physical = static_cast<CNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel());
+    bool physical = static_cast<CNSVariable*>(nodes)->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel());
     nodes->SetSecondaryVar(iPoint, GetFluidModel());
 
-    /* Check for non-realizable states for reporting. */
+    /*--- Check for non-realizable states for reporting. ---*/
 
-    if (!physical) nonPhysicalPoints++;
-
-    /*--- Set the DES length scale ---*/
-
-    nodes->SetDES_LengthScale(iPoint,DES_LengthScale);
+    nonPhysicalPoints += !physical;
 
     /*--- Initialize the convective, source and viscous residual vector ---*/
 
@@ -1135,8 +1133,8 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
   su2double ProjVel, ProjVel_i, ProjVel_j;
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                   (config->GetTime_Marching() == DT_STEPPING_2ND);
 
   Min_Delta_Time = 1.E30; Max_Delta_Time = 0.0;
 
