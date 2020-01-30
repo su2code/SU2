@@ -7450,13 +7450,13 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
 
         /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
               following routine based upon the velocity-component gradients. ---*/
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        auto residual = visc_numerics->ComputeResidual(config);
 
-        LinSysRes.SubtractBlock(iPoint, Residual);
+        LinSysRes.SubtractBlock(iPoint, residual);
 
         /*--- Jacobian contribution for implicit integration. ---*/
         if (implicit)
-          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
       }//if viscous
     }//if GetDomain
   }//for iVertex
@@ -7715,13 +7715,13 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Compute and update viscous residual ---*/
 
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Residual);
+        auto residual = visc_numerics->ComputeResidual(config);
+        LinSysRes.SubtractBlock(iPoint, residual);
 
         /*--- Viscous Jacobian contribution for implicit integration ---*/
 
         if (implicit)
-          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       }
 
@@ -8198,13 +8198,13 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Compute and update residual ---*/
 
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Residual);
+        auto residual = visc_numerics->ComputeResidual(config);
+        LinSysRes.SubtractBlock(iPoint, residual);
 
         /*--- Jacobian contribution for implicit integration ---*/
 
         if (implicit)
-          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       }
 
@@ -8701,13 +8701,13 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           /*--- Compute and update residual ---*/
 
-          visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-          LinSysRes.SubtractBlock(iPoint, Residual);
+          auto residual = visc_numerics->ComputeResidual(config);
+          LinSysRes.SubtractBlock(iPoint, residual);
 
           /*--- Jacobian contribution for implicit integration ---*/
 
           if (implicit)
-            Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+            Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
         }
       }
@@ -9593,13 +9593,13 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
         /*--- Compute and update residual ---*/
 
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Residual);
+        auto residual = visc_numerics->ComputeResidual(config);
+        LinSysRes.SubtractBlock(iPoint, residual);
 
         /*--- Jacobian contribution for implicit integration ---*/
 
         if (implicit)
-          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       }
 
@@ -9915,13 +9915,13 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 //
 //        /*--- Compute and update residual ---*/
 //
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
+//        auto residual = visc_numerics->ComputeResidual(config);
+//        LinSysRes.SubtractBlock(iPoint, residual);
 //
 //        /*--- Jacobian contribution for implicit integration ---*/
 //
 //        if (implicit)
-//          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+//          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 //
 //      }
 
@@ -10088,13 +10088,13 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 //
 //        /*--- Compute and update residual ---*/
 //
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
+//        auto residual = visc_numerics->ComputeResidual(config);
+//        LinSysRes.SubtractBlock(iPoint, residual);
 //
 //        /*--- Jacobian contribution for implicit integration ---*/
 //
 //        if (implicit)
-//         Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+//         Jacobian.SubtractBlock2Diag(iPoint, residual.acobian_i);
 //
 //      }
 
@@ -10231,13 +10231,13 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 //
 //        /*--- Compute and update residual ---*/
 //
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
+//        auto residual = visc_numerics->ComputeResidual(config);
+//        LinSysRes.SubtractBlock(iPoint, residual);
 //
 //        /*--- Jacobian contribution for implicit integration ---*/
 //
 //        if (implicit)
-//          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+//          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 //      }
 
     }
@@ -10351,13 +10351,13 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 //
 //        /*--- Compute and update residual ---*/
 //
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
+//        auto residual = visc_numerics->ComputeResidual(config);
+//        LinSysRes.SubtractBlock(iPoint, residual);
 //
 //        /*--- Jacobian contribution for implicit integration ---*/
 //
 //        if (implicit)
-//          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+//          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 //      }
 
     }
@@ -10573,13 +10573,13 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 //
 //        /*--- Compute and update residual ---*/
 //
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
+//        auto residual = visc_numerics->ComputeResidual(config);
+//        LinSysRes.SubtractBlock(iPoint, residual);
 //
 //        /*--- Jacobian contribution for implicit integration ---*/
 //
 //        if (implicit)
-//          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+//          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 //
 //      }
 
@@ -10827,13 +10827,13 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 //
 //        /*--- Compute and update residual ---*/
 //
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
+//        auto residual = visc_numerics->ComputeResidual(config)
+//        LinSysRes.SubtractBlock(iPoint, residual);
 //
 //        /*--- Jacobian contribution for implicit integration ---*/
 //
 //        if (implicit)
-//          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+//          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 //
 //      }
 
@@ -10856,7 +10856,6 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   su2double Normal[MAXNDIM] = {0.0};
   su2double PrimVar_i[MAXNVAR] = {0.0};
   su2double PrimVar_j[MAXNVAR] = {0.0};
-  su2double tmp_residual[MAXNVAR] = {0.0};
   su2double Secondary_j[MAXNVAR] = {0.0};
 
   su2double weight;
@@ -10948,12 +10947,15 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
             /*--- Initialize Residual, this will serve to accumulate the average ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++)
+            for (iVar = 0; iVar < nVar; iVar++) {
               Residual[iVar] = 0.0;
+              for (jVar = 0; jVar < nVar; jVar++)
+                Jacobian_i[iVar][jVar] = 0.0;
+            }
 
             /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
-            for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
+            for (jVertex = 0; jVertex < nDonorVertex; jVertex++) {
               PrimVar_j[nDim+5] = GetSlidingState(iMarker, iVertex, nDim+5, jVertex);
               PrimVar_j[nDim+6] = GetSlidingState(iMarker, iVertex, nDim+6, jVertex);
 
@@ -10982,12 +10984,15 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
               /*--- Compute and update residual ---*/
 
-              visc_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
+              auto residual = visc_numerics->ComputeResidual(config);
 
               /*--- Accumulate the residuals to compute the average ---*/
 
-              for (iVar = 0; iVar < nVar; iVar++)
-                Residual[iVar] += weight*tmp_residual[iVar];
+              for (iVar = 0; iVar < nVar; iVar++) {
+                Residual[iVar] += weight*residual.residual[iVar];
+                for (jVar = 0; jVar < nVar; jVar++)
+                  Jacobian_i[iVar][jVar] += weight*residual.jacobian_i[iVar][jVar];
+              }
             }
 
             LinSysRes.SubtractBlock(iPoint, Residual);
@@ -11535,12 +11540,12 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 //
 //        /*--- Compute and update residual ---*/
 //
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        LinSysRes.SubtractBlock(iPoint, Residual);
+//        auto residual = visc_numerics->ComputeResidual(config);
+//        LinSysRes.SubtractBlock(iPoint, residual);
 //
 //        /*--- Jacobian contribution for implicit integration ---*/
 //
-//        if (implicit) Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+//        if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 //
 //      }
 

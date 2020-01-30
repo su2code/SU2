@@ -1087,7 +1087,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
-                                 CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
   CNumerics* numerics = numerics_container[VISC_TERM];
 
@@ -1600,7 +1600,8 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, iVar, jVar;// Wall_Function;
   unsigned long iVertex, iPoint, total_index;
@@ -1701,7 +1702,8 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   }
 }
 
-void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, iVar, jVar, Wall_Function;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
