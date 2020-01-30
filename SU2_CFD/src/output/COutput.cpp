@@ -274,6 +274,8 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
 
   Postprocess_HistoryData(driver_config);
 
+  MonitorTimeConvergence(driver_config, curTimeIter);
+
   /*--- Output using only the master node ---*/
 
   if (rank == MASTER_NODE && !noWriting) {
