@@ -1112,8 +1112,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     } else {
 
       // Assign the bounds
-      // Tve_o = max(Tvemin, V[T_INDEX]/2.0); // Tve should be geq T
-      Tve_o = Tvemin;
+      Tve_o = max(Tvemin, V[T_INDEX]/2.0); // Tve should be geq T
+      // Tve_o = Tvemin;
       Tve2  = Tvemax;
       // if (rhoEve_t > rhoEve) {
       //   Tve2  = Tve;
