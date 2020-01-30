@@ -650,7 +650,10 @@ void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CHeatSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CHeatSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[VISC_TERM];
 
   su2double laminar_viscosity, Prandtl_Lam, Prandtl_Turb, eddy_viscosity_i, eddy_viscosity_j,
       thermal_diffusivity_i, thermal_diffusivity_j, Temp_i, Temp_j, **Temp_i_Grad, **Temp_j_Grad;

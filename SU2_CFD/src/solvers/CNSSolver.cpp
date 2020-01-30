@@ -1124,8 +1124,10 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
   return nonPhysicalPoints;
 }
 
-void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                  CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[VISC_TERM];
 
   unsigned long iPoint, jPoint, iEdge;
 

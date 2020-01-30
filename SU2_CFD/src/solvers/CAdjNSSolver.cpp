@@ -416,8 +416,11 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
 }
 
-void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[VISC_TERM];
+
   unsigned long iPoint, jPoint, iEdge;
 
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
