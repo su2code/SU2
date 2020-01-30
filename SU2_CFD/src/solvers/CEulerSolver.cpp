@@ -3841,7 +3841,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
   /*--- Loop interior edges ---*/
 
-  #ifdef HAVE_OMP
+#ifdef HAVE_OMP
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
   auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
 
@@ -3933,7 +3933,6 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     }
   }
 
-  SU2_OMP_BARRIER
   SU2_OMP_MASTER
   {
     /*--- Correct the eigenvalue values across any periodic boundaries. ---*/
@@ -3954,33 +3953,49 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
 void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
 
-  unsigned long iPoint, jPoint, iEdge;
-  su2double Pressure_i = 0, Pressure_j = 0, *Diff;
-  unsigned short iVar;
-  bool boundary_i, boundary_j;
+  /*--- Start OpenMP parallel section. ---*/
 
-  Diff = new su2double[nVar];
-
+  SU2_OMP_PARALLEL
+  {
+  /// TODO: Add worksharing to SetUnd_LaplZero and co.
+  SU2_OMP_MASTER
   nodes->SetUnd_LaplZero();
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  /*--- Loop interior edges ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+#ifdef HAVE_OMP
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring)
+  {
+  SU2_OMP_FOR_STAT(chunkSize)
+  for(auto k = 0ul; k < color.size; ++k) {
+
+    auto iEdge = color.indices[k];
+#else
+  /*--- Natural coloring. ---*/
+  {
+  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
+#endif
+
+    auto iPoint = geometry->edge[iEdge]->GetNode(0);
+    auto jPoint = geometry->edge[iEdge]->GetNode(1);
 
     /*--- Solution differences ---*/
 
-    for (iVar = 0; iVar < nVar; iVar++)
+    su2double Diff[MAXNVAR] = {0.0};
+
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
       Diff[iVar] = nodes->GetSolution(iPoint,iVar) - nodes->GetSolution(jPoint,iVar);
 
     /*--- Correction for compressible flows which use the enthalpy ---*/
 
-    Pressure_i = nodes->GetPressure(iPoint);
-    Pressure_j = nodes->GetPressure(jPoint);
-    Diff[nVar-1] = (nodes->GetSolution(iPoint,nVar-1) + Pressure_i) - (nodes->GetSolution(jPoint,nVar-1) + Pressure_j);
+    Diff[nVar-1] += nodes->GetPressure(iPoint) - nodes->GetPressure(jPoint);
 
-    boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+    bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
+    bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
 
     /*--- Both points inside the domain, or both in the boundary ---*/
 
@@ -4000,21 +4015,24 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
       if (geometry->node[jPoint]->GetDomain()) nodes->AddUnd_Lapl(jPoint, Diff);
 
   }
+  } // end color loop
 
-  /*--- Correct the Laplacian values across any periodic boundaries. ---*/
+  SU2_OMP_MASTER
+  {
+    /*--- Correct the Laplacian values across any periodic boundaries. ---*/
 
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+    }
+
+    /*--- MPI parallelization ---*/
+
+    InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
+    CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
   }
 
-  /*--- MPI parallelization ---*/
-
-  InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
-  CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
-
-  delete [] Diff;
-
+  } // end SU2_OMP_PARALLEL
 }
 
 void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
