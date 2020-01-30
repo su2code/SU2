@@ -250,7 +250,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
   unsigned long nInnerIter, InnerIter, nTimeIter;
   su2double MaxTime, CurTime;
-  bool TimeDomain, InnerConvergence, FinalTimeReached, MaxIterationsReached;
+  bool TimeDomain, InnerConvergence, TimeConvergence, FinalTimeReached, MaxIterationsReached;
 
   nInnerIter = config_container[ZONE_0]->GetnInner_Iter();
   InnerIter  = config_container[ZONE_0]->GetInnerIter();
@@ -271,7 +271,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
       cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
       if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << " ) before convergence." << endl;
+      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << ") before convergence." << endl;
       output_container[ZONE_0]->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
     }
@@ -280,6 +280,9 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   }
 
 
+  /*--- Check whether the outer time integration has reached the final time ---*/
+  TimeConvergence = GetTimeConvergence();
+
   if (TimeDomain == YES) {
 
     /*--- Check whether the outer time integration has reached the final time ---*/
@@ -287,14 +290,14 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
     FinalTimeReached     = CurTime >= MaxTime;
     MaxIterationsReached = TimeIter+1 >= nTimeIter;
 
-    if ((FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
+    if ((FinalTimeReached || MaxIterationsReached || TimeConvergence) && (rank == MASTER_NODE)){
       cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (FinalTimeReached) cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
-      else cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
+      if (TimeConvergence)     cout << endl << "Windowed time averaged objective function convergence criterion is fullfilled." << endl;
+      if (FinalTimeReached)     cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
+      if (MaxIterationsReached) cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
       cout << "-------------------------------------------------------------------------" << endl;
     }
-
-    StopCalc = FinalTimeReached || MaxIterationsReached;
+    StopCalc = FinalTimeReached || MaxIterationsReached|| TimeConvergence;
   }
 
   /*--- Reset the inner convergence --- */
