@@ -214,6 +214,7 @@ def amg ( config , kind='' ):
 
         #--- Run an adjoint if the adjoint solution file doesn't exist
         if not (os.path.exists(config_cfd.SOLUTION_ADJ_FILENAME)):
+            config_cfd.RESTART_SOL= 'NO'
             SU2_CFD(config_cfd)
 
         #--- Otherwise just compute the metric
