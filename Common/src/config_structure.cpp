@@ -3170,6 +3170,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
+    if (Kind_Struct_Solver == SMALL_DEFORMATIONS){
+      MinLogResidual = log10(Linear_Solver_Error);
+    }
   }
 
   /*--- Initialize the ofstream ConvHistFile. ---*/
