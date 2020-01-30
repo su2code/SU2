@@ -3015,13 +3015,18 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
 
-  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
+  /*--- Set maximum eigenvalues to zero. ---*/
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
     nodes->SetMax_Lambda_Inv(iPoint,0.0);
-    nodes->SetMax_Lambda_Visc(iPoint,0.0);
+
+  if (viscous) {
+    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+      nodes->SetMax_Lambda_Visc(iPoint,0.0);
   }
+  SU2_OMP_BARRIER
 
   /*--- Loop interior edges ---*/
 
