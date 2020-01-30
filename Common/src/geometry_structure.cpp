@@ -11762,6 +11762,10 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
               /* Donor element not found in the local ADT. This should not happen,
                  because all halo donors should have been added in the function
                  CPhysicalGeometry::AddWallModelDonorHalos. */
+              std::cout << "iMarker:      " << iMarker << ", iVertex: " << iVertex << std::endl;
+              std::cout << "Coord:        " << Coord[0] << " " << Coord[1] << " " << Coord[2] << std::endl;
+              std::cout << "normals:      " << normals[0] << " " << normals[1] << " " << normals[2] << std::endl;
+              std::cout << "coorExchange: " << coorExchange[0] << " " << coorExchange[1] << " " << coorExchange[2] << std::endl << std::endl;
               SU2_MPI::Error("Donor element not found. This should not happen",
                              CURRENT_FUNCTION);
             }

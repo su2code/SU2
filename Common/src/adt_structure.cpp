@@ -39,7 +39,7 @@
 #include "../include/adt_structure.hpp"
 
 /* Define the tolerance to decide whether or not a point is inside an element. */
-const su2double tolInsideElem   =  1.e-8;
+const su2double tolInsideElem   =  1.e-7;
 const su2double paramLowerBound = -1.0 - tolInsideElem;
 const su2double paramUpperBound =  1.0 + tolInsideElem;
 
