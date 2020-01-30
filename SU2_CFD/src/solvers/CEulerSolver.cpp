@@ -3631,7 +3631,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   if (body_force) {
 
     /*--- Loop over all points ---*/
-    SU2_OMP_FOR_DYN(omp_chunk_size)
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the conservative variables ---*/
@@ -3979,7 +3979,6 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
   {
   for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
 #endif
-
     auto iPoint = geometry->edge[iEdge]->GetNode(0);
     auto jPoint = geometry->edge[iEdge]->GetNode(1);
 
@@ -4037,29 +4036,42 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
 
 void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
 
-  unsigned long iEdge, iPoint, jPoint;
-  su2double Pressure_i = 0.0, Pressure_j = 0.0;
-  bool boundary_i, boundary_j;
+  /*--- Start OpenMP parallel section. ---*/
 
+  SU2_OMP_PARALLEL
+  {
   /*--- Reset variables to store the undivided pressure ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     iPoint_UndLapl[iPoint] = 0.0;
     jPoint_UndLapl[iPoint] = 0.0;
   }
 
-  /*--- Evaluate the pressure sensor ---*/
+#ifdef HAVE_OMP
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring)
+  {
+  SU2_OMP_FOR_STAT(chunkSize)
+  for(auto k = 0ul; k < color.size; ++k) {
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    auto iEdge = color.indices[k];
+#else
+  /*--- Natural coloring. ---*/
+  {
+  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
+#endif
+    auto iPoint = geometry->edge[iEdge]->GetNode(0);
+    auto jPoint = geometry->edge[iEdge]->GetNode(1);
 
-    Pressure_i = nodes->GetPressure(iPoint);
-    Pressure_j = nodes->GetPressure(jPoint);
+    su2double Pressure_i = nodes->GetPressure(iPoint);
+    su2double Pressure_j = nodes->GetPressure(jPoint);
 
-    boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+    bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
+    bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
 
     /*--- Both points inside the domain, or both on the boundary ---*/
 
@@ -4077,26 +4089,35 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *
 
     if (boundary_i && !boundary_j)
       if (geometry->node[jPoint]->GetDomain()) { iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j); jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j); }
-
   }
+  } // end color loop
 
   /*--- Correct the sensor values across any periodic boundaries. ---*/
 
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+  SU2_OMP_MASTER
+  {
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+    }
   }
+  SU2_OMP_BARRIER
 
   /*--- Set pressure switch for each point ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    nodes->SetSensor(iPoint,fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+    nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
 
   /*--- MPI parallelization ---*/
 
-  InitiateComms(geometry, config, SENSOR);
-  CompleteComms(geometry, config, SENSOR);
+  SU2_OMP_MASTER
+  {
+    InitiateComms(geometry, config, SENSOR);
+    CompleteComms(geometry, config, SENSOR);
+  }
 
+  } // end SU2_OMP_PARALLEL
 }
 
 void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config){
