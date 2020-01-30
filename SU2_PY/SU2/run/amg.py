@@ -211,8 +211,15 @@ def amg ( config , kind='' ):
         config_cfd.MESH_HMAX              = config.ADAP_HMAX
         config_cfd.MESH_HMIN              = config.ADAP_HMIN
         config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
-        config_cfd.ITER                   = 1
-        SU2_CFD(config_cfd)
+
+        #--- Run an adjoint if the adjoint solution file doesn't exist
+        if not (os.path.exists(config_cfd.SOLUTION_ADJ_FILENAME)):
+            SU2_CFD(config_cfd)
+
+        #--- Otherwise just compute the metric
+        else:
+            config_cfd.ITER = 1
+            SU2_CFD(config_cfd)
 
         sys.stdout = sav_stdout
         sys.stderr = sav_stderr
