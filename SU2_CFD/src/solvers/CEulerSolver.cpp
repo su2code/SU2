@@ -4582,8 +4582,7 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Surface_CL_Mnt[iMarker_Monitoring] = 0.0; Surface_CD_Mnt[iMarker_Monitoring]  = 0.0;
     Surface_CSF_Mnt[iMarker_Monitoring] = 0.0; Surface_CEff_Mnt[iMarker_Monitoring] = 0.0;
-    Surface_CFx_Mnt[iMarker_Monitoring] = 0.0; Surface_CFy_Mnt[iMarker_Monitoring]  = 0.0;
-    Surface_CFz_Mnt[iMarker_Monitoring] = 0.0;
+    Surface_CFx_Mnt[iMarker_Monitoring] = 0.0; Surface_CFy_Mnt[iMarker_Monitoring]  = 0.0; Surface_CFz_Mnt[iMarker_Monitoring] = 0.0;
     Surface_CMx_Mnt[iMarker_Monitoring] = 0.0; Surface_CMy_Mnt[iMarker_Monitoring]  = 0.0; Surface_CMz_Mnt[iMarker_Monitoring] = 0.0;
   }
 
@@ -6200,7 +6199,8 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_container,
                                        CConfig *config, unsigned short iMesh, bool Output) {
 
-  su2double Massflow = 0.0 , Target_Massflow = 0.0, DragMinusThrust = 0.0 , Target_DragMinusThrust = 0.0, Target_NetThrust = 0.0, BCThrust = 0.0, BCThrust_inc = 0.0;
+  su2double Massflow = 0.0 , Target_Massflow = 0.0, DragMinusThrust = 0.0 ,
+  Target_DragMinusThrust = 0.0, Target_NetThrust = 0.0, BCThrust = 0.0, BCThrust_inc = 0.0;
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
   su2double  *V_inlet = NULL, Pressure,
@@ -6633,11 +6633,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   if (!ActDisk_Info) config->SetInitial_BCThrust(0.0);
 
   MyBCThrust = config->GetInitial_BCThrust();
-#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&MyBCThrust, &BCThrust, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#else
-  BCThrust = MyBCThrust;
-#endif
   config->SetInitial_BCThrust(BCThrust);
 
 }
@@ -8212,18 +8208,18 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
   su2double AverageEnthalpy, AverageEntropy;
-  unsigned short  iZone     = config->GetiZone();
-  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
+  unsigned short  iZone  = config->GetiZone();
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
-  bool viscous              = config->GetViscous();
+  bool viscous = config->GetViscous();
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
   Normal = new su2double[nDim];
-  turboNormal   = new su2double[nDim];
-  UnitNormal    = new su2double[nDim];
+  turboNormal = new su2double[nDim];
+  UnitNormal = new su2double[nDim];
 
   Velocity_i = new su2double[nDim];
   Velocity_b = new su2double[nDim];
@@ -12125,9 +12121,8 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
+  delete [] Restart_Vars; Restart_Vars = nullptr;
+  delete [] Restart_Data; Restart_Data = nullptr;
 
 }
 
@@ -12212,13 +12207,8 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
   TurboVelocity      = new su2double[nDim];
   TotalAreaVelocity  = new su2double[nDim];
 
-#ifdef HAVE_MPI
-  su2double MyTotalAreaDensity, MyTotalAreaPressure;
-  su2double *MyTotalAreaVelocity = NULL;
-#endif
 
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
-
 
     for (iDim=0; iDim<nDim; iDim++) {
       TotalAreaVelocity[iDim] = 0.0;
@@ -12274,25 +12264,21 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
     /*--- Add information using all the nodes ---*/
 
-    MyTotalAreaDensity   = TotalAreaDensity;          TotalAreaDensity     = 0;
-    MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
+    su2double MyTotalAreaDensity = TotalAreaDensity;
+    su2double MyTotalAreaPressure  = TotalAreaPressure;
 
     SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-
-    MyTotalAreaVelocity    = new su2double[nDim];
-
+    su2double* MyTotalAreaVelocity = new su2double[nDim];
 
     for (iDim = 0; iDim < nDim; iDim++) {
-      MyTotalAreaVelocity[iDim]    = TotalAreaVelocity[iDim];
-      TotalAreaVelocity[iDim]      = 0.0;
+      MyTotalAreaVelocity[iDim] = TotalAreaVelocity[iDim];
     }
 
     SU2_MPI::Allreduce(MyTotalAreaVelocity, TotalAreaVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
     delete [] MyTotalAreaVelocity;
-
 
 #endif
 
@@ -12408,13 +12394,6 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   avgMassVelocity     = new su2double[nDim];
   avgMixVelocity      = new su2double[nDim];
   avgMixTurboVelocity = new su2double[nDim];
-
-
-#ifdef HAVE_MPI
-  su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, MyTotalMassPressure, MyTotalMassDensity, *MyTotalFluxes = NULL;
-  su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL, *MyTotalMassVelocity = NULL;
-  su2double MyTotalNu, MyTotalKine, MyTotalOmega, MyTotalAreaNu, MyTotalAreaKine, MyTotalAreaOmega, MyTotalMassNu, MyTotalMassKine, MyTotalMassOmega;
-#endif
 
 
   for (iSpan= 0; iSpan < nSpanWiseSections + 1; iSpan++){
@@ -12615,68 +12594,43 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
     /*--- Add information using all the nodes ---*/
 
-    MyTotalDensity       = TotalDensity;              TotalDensity         = 0;
-    MyTotalPressure      = TotalPressure;             TotalPressure        = 0;
-    MyTotalAreaDensity   = TotalAreaDensity;          TotalAreaDensity     = 0;
-    MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
-    MyTotalMassDensity   = TotalMassDensity;          TotalMassDensity     = 0;
-    MyTotalMassPressure  = TotalMassPressure;         TotalMassPressure    = 0;
-    MyTotalNu            = TotalNu;                   TotalNu              = 0;
-    MyTotalKine          = TotalKine;                 TotalKine            = 0;
-    MyTotalOmega         = TotalOmega;                TotalOmega           = 0;
-    MyTotalAreaNu        = TotalAreaNu;               TotalAreaNu          = 0;
-    MyTotalAreaKine      = TotalAreaKine;             TotalAreaKine        = 0;
-    MyTotalAreaOmega     = TotalAreaOmega;            TotalAreaOmega       = 0;
-    MyTotalMassNu        = TotalMassNu;               TotalMassNu          = 0;
-    MyTotalMassKine      = TotalMassKine;             TotalMassKine        = 0;
-    MyTotalMassOmega     = TotalMassOmega;            TotalMassOmega       = 0;
+    auto Allreduce = [](su2double x) {
+      su2double tmp = x; x = 0.0;
+      SU2_MPI::Allreduce(&tmp, &x, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      return x;
+    };
 
+    TotalDensity = Allreduce(TotalDensity);
+    TotalPressure = Allreduce(TotalPressure);
+    TotalAreaDensity = Allreduce(TotalAreaDensity);
+    TotalAreaPressure = Allreduce(TotalAreaPressure);
+    TotalMassDensity = Allreduce(TotalMassDensity);
+    TotalMassPressure = Allreduce(TotalMassPressure);
 
+    TotalNu = Allreduce(TotalNu);
+    TotalKine = Allreduce(TotalKine);
+    TotalOmega = Allreduce(TotalOmega);
+    TotalAreaNu = Allreduce(TotalAreaNu);
+    TotalAreaKine = Allreduce(TotalAreaKine);
+    TotalAreaOmega = Allreduce(TotalAreaOmega);
 
+    TotalMassNu = Allreduce(TotalMassNu);
+    TotalMassKine = Allreduce(TotalMassKine);
+    TotalMassOmega = Allreduce(TotalMassOmega);
 
-    SU2_MPI::Allreduce(&MyTotalDensity, &TotalDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalPressure, &TotalPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalMassDensity, &TotalMassDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalMassPressure, &TotalMassPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalNu, &TotalNu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalKine, &TotalKine, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalOmega, &TotalOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalAreaNu, &TotalAreaNu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalAreaKine, &TotalAreaKine, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalAreaOmega, &TotalAreaOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalMassNu, &TotalMassNu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalMassKine, &TotalMassKine, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalMassOmega, &TotalMassOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    su2double* buffer = new su2double[max(nVar,nDim)];
 
+    auto Allreduce_inplace = [buffer](int size, su2double* x) {
+      SU2_MPI::Allreduce(x, buffer, size, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      for(int i=0; i<size; ++i) x[i] = buffer[i];
+    };
 
-    MyTotalFluxes          = new su2double[nVar];
-    MyTotalVelocity        = new su2double[nDim];
-    MyTotalAreaVelocity    = new su2double[nDim];
-    MyTotalMassVelocity    = new su2double[nDim];
+    Allreduce_inplace(nVar, TotalFluxes);
+    Allreduce_inplace(nDim, TotalVelocity);
+    Allreduce_inplace(nDim, TotalAreaVelocity);
+    Allreduce_inplace(nDim, TotalMassVelocity);
 
-    for (iVar = 0; iVar < nVar; iVar++) {
-      MyTotalFluxes[iVar]  = TotalFluxes[iVar];
-      TotalFluxes[iVar]    = 0.0;
-    }
-
-    for (iDim = 0; iDim < nDim; iDim++) {
-      MyTotalVelocity[iDim]        = TotalVelocity[iDim];
-      TotalVelocity[iDim]          = 0.0;
-      MyTotalAreaVelocity[iDim]    = TotalAreaVelocity[iDim];
-      TotalAreaVelocity[iDim]      = 0.0;
-      MyTotalMassVelocity[iDim]    = TotalMassVelocity[iDim];
-      TotalMassVelocity[iDim]      = 0.0;
-    }
-
-    SU2_MPI::Allreduce(MyTotalFluxes, TotalFluxes, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(MyTotalVelocity, TotalVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(MyTotalAreaVelocity, TotalAreaVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(MyTotalMassVelocity, TotalMassVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-    delete [] MyTotalFluxes; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity; delete [] MyTotalMassVelocity;
-
+    delete [] buffer;
 
 #endif
 
@@ -13083,7 +13037,6 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       TurbPerfOut[i]   = -1.0;
 #endif
 
-
     densityIn            = -1.0;
     pressureIn           = -1.0;
     normalVelocityIn     = -1.0;
@@ -13100,7 +13053,6 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     kineOut              = -1.0;
     omegaOut             = -1.0;
     nuOut                = -1.0;
-
 
     markerTP             = -1;
 
@@ -13119,7 +13071,6 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             kineIn              = KineIn[iMarkerTP -1][iSpan];
             omegaIn             = OmegaIn[iMarkerTP -1][iSpan];
             nuIn                = NuIn[iMarkerTP -1][iSpan];
-
 
 #ifdef HAVE_MPI
             TurbPerfIn[0]  = densityIn;
@@ -13145,8 +13096,6 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             kineOut              = KineOut[iMarkerTP -1][iSpan];
             omegaOut             = OmegaOut[iMarkerTP -1][iSpan];
             nuOut                = NuOut[iMarkerTP -1][iSpan];
-
-
 
 #ifdef HAVE_MPI
             TurbPerfOut[0]  = densityOut;
@@ -13186,43 +13135,25 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     if (rank == MASTER_NODE){
       for (i=0;i<size;i++){
         if(TotTurbPerfIn[n1*i] > 0.0){
-          densityIn        = 0.0;
           densityIn        = TotTurbPerfIn[n1*i];
-          pressureIn       = 0.0;
           pressureIn       = TotTurbPerfIn[n1*i+1];
-          normalVelocityIn = 0.0;
           normalVelocityIn = TotTurbPerfIn[n1*i+2];
-          tangVelocityIn   = 0.0;
           tangVelocityIn   = TotTurbPerfIn[n1*i+3];
-          radialVelocityIn = 0.0;
           radialVelocityIn = TotTurbPerfIn[n1*i+4];
-          kineIn           = 0.0;
           kineIn           = TotTurbPerfIn[n1*i+5];
-          omegaIn          = 0.0;
           omegaIn          = TotTurbPerfIn[n1*i+6];
-          nuIn             = 0.0;
           nuIn             = TotTurbPerfIn[n1*i+7];
-
-          markerTP         = -1;
           markerTP         = TotMarkerTP[i];
         }
 
         if(TotTurbPerfOut[n2*i] > 0.0){
-          densityOut        = 0.0;
           densityOut        = TotTurbPerfOut[n1*i];
-          pressureOut       = 0.0;
           pressureOut       = TotTurbPerfOut[n1*i+1];
-          normalVelocityOut = 0.0;
           normalVelocityOut = TotTurbPerfOut[n1*i+2];
-          tangVelocityOut   = 0.0;
           tangVelocityOut   = TotTurbPerfOut[n1*i+3];
-          radialVelocityOut = 0.0;
           radialVelocityOut = TotTurbPerfOut[n1*i+4];
-          kineOut           = 0.0;
           kineOut           = TotTurbPerfOut[n1*i+5];
-          omegaOut          = 0.0;
           omegaOut          = TotTurbPerfOut[n1*i+6];
-          nuOut             = 0.0;
           nuOut             = TotTurbPerfOut[n1*i+7];
         }
       }
