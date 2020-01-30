@@ -2036,17 +2036,12 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   unsigned short iVar;
   unsigned long iPoint;
 
-  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool rotating_frame = config->GetRotating_Frame();
-  bool axisymmetric   = config->GetAxisymmetric();
-  bool body_force     = config->GetBody_Force();
-  bool boussinesq     = (config->GetKind_DensityModel() == BOUSSINESQ);
-  bool viscous        = config->GetViscous();
-
-
-  /*--- Initialize the source residual to zero ---*/
-
-  for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+  const bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool rotating_frame = config->GetRotating_Frame();
+  const bool axisymmetric   = config->GetAxisymmetric();
+  const bool body_force     = config->GetBody_Force();
+  const bool boussinesq     = (config->GetKind_DensityModel() == BOUSSINESQ);
+  const bool viscous        = config->GetViscous();
 
   if (body_force) {
 
@@ -2070,11 +2065,11 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Compute the rotating frame source residual ---*/
 
-      numerics->ComputeResidual(Residual, config);
+      auto residual = numerics->ComputeResidual(config);
 
       /*--- Add the source residual to the total ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
     }
   }
@@ -2101,11 +2096,11 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Compute the rotating frame source residual ---*/
 
-      numerics->ComputeResidual(Residual, config);
+      auto residual = numerics->ComputeResidual(config);
 
       /*--- Add the source residual to the total ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
     }
   }
@@ -2130,51 +2125,38 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Compute the rotating frame source residual ---*/
 
-      numerics->ComputeResidual(Residual, Jacobian_i, config);
+      auto residual = numerics->ComputeResidual(config);
 
       /*--- Add the source residual to the total ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Add the implicit Jacobian contribution ---*/
 
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
 
     }
   }
 
   if (axisymmetric) {
 
-    /*--- Zero out Jacobian structure ---*/
-
-    if (implicit) {
-      for (iVar = 0; iVar < nVar; iVar ++)
-        for (unsigned short jVar = 0; jVar < nVar; jVar ++)
-          Jacobian_i[iVar][jVar] = 0.0;
-    }
-
     /*--- For viscous problems, we need an additional gradient. ---*/
 
     if (viscous) {
 
-      su2double AuxVar, Total_Viscosity, yCoord, yVelocity;
-
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-        yCoord          = geometry->node[iPoint]->GetCoord(1);
-        yVelocity       = nodes->GetVelocity(iPoint,1);
-        Total_Viscosity = (nodes->GetLaminarViscosity(iPoint) +
-                           nodes->GetEddyViscosity(iPoint));
-
-        if (yCoord > EPS) {
+        su2double yCoord          = geometry->node[iPoint]->GetCoord(1);
+        su2double yVelocity       = nodes->GetVelocity(iPoint,1);
+        su2double Total_Viscosity = (nodes->GetLaminarViscosity(iPoint) +
+                                     nodes->GetEddyViscosity(iPoint));
+        su2double AuxVar = 0.0;
+        if (yCoord > EPS)
           AuxVar = Total_Viscosity*yVelocity/yCoord;
-        } else {
-          AuxVar = 0.0;
-        }
 
         /*--- Set the auxilairy variable for this node. ---*/
 
-        nodes->SetAuxVar(iPoint,AuxVar);
+        nodes->SetAuxVar(iPoint, AuxVar);
 
       }
 
@@ -2227,15 +2209,16 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Compute Source term Residual ---*/
 
-      numerics->ComputeResidual(Residual, Jacobian_i, config);
+      auto residual = numerics->ComputeResidual(config);
 
       /*--- Add Residual ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Implicit part ---*/
 
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if (implicit)
+        Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
 
     }
   }
@@ -2262,13 +2245,10 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         vector<su2double> sourceMan(nVar,0.0);
         VerificationSolution->GetMMSSourceTerm(coor, time, sourceMan.data());
 
-        /*--- Compute the residual for this control volume. ---*/
+        /*--- Compute the residual for this control volume and subtract. ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] = sourceMan[iVar]*Volume;
+          LinSysRes[iPoint*nVar+iVar] -= sourceMan[iVar]*Volume;
         }
-
-        /*--- Subtract Residual ---*/
-        LinSysRes.SubtractBlock(iPoint, Residual);
 
       }
     }
