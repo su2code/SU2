@@ -1088,7 +1088,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
       Tve2 = Tve - (f/df)*scale;
   
       // Check for convergence
-      if ((fabs(f) < NRtol) && (Tve > Tvemin) & (Tve < Tvemax)) {
+      if ((fabs(Tve2-Tve) < NRtol) && (Tve > Tvemin) & (Tve < Tvemax)) {
         NRconvg = true;
         break;
       } else {
