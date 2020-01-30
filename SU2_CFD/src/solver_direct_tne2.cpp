@@ -6643,6 +6643,11 @@ void CTNE2EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
   solver[MESH_0][TNE2_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][TNE2_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TNE2_SYS, false);
 
+  /*--- Set old solution to solution ---*/
+  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
+    nodes->SetSolution_Old(iPoint,Solution);
+  }
+
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
