@@ -243,7 +243,6 @@ protected:
   *Surface_HF_Visc,     /*!< \brief Total (integrated) heat flux for each monitored surface. */
   *Surface_MaxHF_Visc;  /*!< \brief Maximum heat flux for each monitored surface. */
 
-  su2double **LowMach_Preconditioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
   bool space_centered,  /*!< \brief True if space centered scheeme used. */
   euler_implicit,       /*!< \brief True if euler implicit scheme used. */
   least_squares;        /*!< \brief True if computing gradients by least squares. */
@@ -606,10 +605,13 @@ public:
 
   /*!
    * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
-   * \param[in] iPoint - Index of the grid point
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of the grid point.
+   * \param[in] delta - Volume over delta t.
+   * \param[in,out] preconditioner - The preconditioner matrix, must be allocated outside.
    */
-  void SetPreconditioner(CConfig *config, unsigned long iPoint) final;
+  void SetPreconditioner(const CConfig *config, unsigned long iPoint,
+                         su2double delta, su2double** preconditioner) const;
 
   /*!
    * \brief Compute the undivided laplacian for the solution, except the energy equation.

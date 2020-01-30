@@ -84,7 +84,6 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 
   /*--- Numerical methods array initialization ---*/
 
-  LowMach_Preconditioner = NULL;
   CharacPrimVar = NULL;
 
   DonorPrimVar = NULL; DonorGlobalIndex = NULL;
@@ -160,7 +159,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool rans = (config->GetKind_Turb_Model() != NONE);
   unsigned short direct_diff = config->GetDirectDiff();
   int Unst_RestartIter = 0;
@@ -170,8 +168,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
-
-  bool low_mach_prec = config->Low_Mach_Preconditioning();
 
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   bool fsi     = config->GetFSI_Simulation();
@@ -265,7 +261,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   iPoint_UndLapl = NULL;
   jPoint_UndLapl = NULL;
-  LowMach_Preconditioner = NULL;
   CharacPrimVar = NULL;
   DonorPrimVar = NULL; DonorGlobalIndex = NULL;
   ActDisk_DeltaP = NULL; ActDisk_DeltaT = NULL;
@@ -403,14 +398,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
     iPoint_UndLapl = new su2double [nPoint];
     jPoint_UndLapl = new su2double [nPoint];
-  }
-
-  /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
-
-  if (roe_turkel || low_mach_prec) {
-    LowMach_Preconditioner = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar ++)
-      LowMach_Preconditioner[iVar] = new su2double[nVar];
   }
 
   /*--- Initialize the solution and right hand side vectors for storing
@@ -938,12 +925,6 @@ CEulerSolver::~CEulerSolver(void) {
 
   delete [] Exhaust_Pressure;
   delete [] Exhaust_Temperature;
-
-  if (LowMach_Preconditioner != NULL) {
-    for (iVar = 0; iVar < nVar; iVar ++)
-      delete [] LowMach_Preconditioner[iVar];
-    delete [] LowMach_Preconditioner;
-  }
 
   if (CPressure != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
@@ -4965,6 +4946,7 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_cont
           break;
         }
 
+        /*--- Update residual information for current thread. ---*/
         resRMS[iVar] += Res*Res;
         if (fabs(Res) > resMax[iVar]) {
           resMax[iVar] = fabs(Res);
@@ -4975,10 +4957,11 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_cont
     }
   }
   if (!adjoint) {
+    /*--- Reduce residual information over all threads in this rank. ---*/
     SU2_OMP_CRITICAL
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       AddRes_RMS(iVar, resRMS[iVar]);
-      AddRes_Max(iVar, resMax[iVar], idxMax[iVar], coordMax[iVar]);
+      AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
     }
   }
   SU2_OMP_BARRIER
@@ -5021,45 +5004,58 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
 void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned short iVar, jVar;
-  unsigned long iPoint, total_index, IterLinSol = 0;
-  su2double Delta, *local_Res_TruncError, Vol;
+  const bool adjoint = config->GetContinuous_Adjoint();
+  const bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
+  const bool low_mach_prec = config->Low_Mach_Preconditioning();
 
-  bool adjoint = config->GetContinuous_Adjoint();
-  bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
-  bool low_mach_prec = config->Low_Mach_Preconditioning();
+  /*--- Start OpenMP parallel section. ---*/
 
-  /*--- Set maximum residual to zero ---*/
+  SU2_OMP_PARALLEL
+  {
+  /*--- Local matrix for preconditioning. ---*/
+  su2double** LowMachPrec = nullptr;
+  if (roe_turkel || low_mach_prec) {
+    LowMachPrec = new su2double* [nVar];
+    for(unsigned short iVar = 0; iVar < nVar; ++iVar)
+      LowMachPrec[iVar] = new su2double [nVar];
+  }
 
-  for (iVar = 0; iVar < nVar; iVar++) {
+  /*--- Set shared residual variables to 0 and declare
+   *    local ones for current thread to work on. ---*/
+
+  SU2_OMP_MASTER
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
+  SU2_OMP_BARRIER
+
+  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+  const su2double* coordMax[MAXNVAR] = {nullptr};
+  unsigned long idxMax[MAXNVAR] = {0};
 
   /*--- Build implicit system ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Read the residual ---*/
 
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
+    su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
 
     /*--- Read the volume ---*/
 
-    Vol = (geometry->node[iPoint]->GetVolume() +
-           geometry->node[iPoint]->GetPeriodicVolume());
+    su2double Vol = geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume();
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-
     if (nodes->GetDelta_Time(iPoint) != 0.0) {
-      Delta = Vol / nodes->GetDelta_Time(iPoint);
+
+      su2double Delta = Vol / nodes->GetDelta_Time(iPoint);
+
       if (roe_turkel || low_mach_prec) {
-        SetPreconditioner(config, iPoint);
-        for (iVar = 0; iVar < nVar; iVar ++ )
-          for (jVar = 0; jVar < nVar; jVar ++ )
-            LowMach_Preconditioner[iVar][jVar] = Delta*LowMach_Preconditioner[iVar][jVar];
-        Jacobian.AddBlock2Diag(iPoint, LowMach_Preconditioner);
+        SetPreconditioner(config, iPoint, Delta, LowMachPrec);
+        Jacobian.AddBlock2Diag(iPoint, LowMachPrec);
       }
       else {
         Jacobian.AddVal2Diag(iPoint, Delta);
@@ -5067,76 +5063,104 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     }
     else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar + iVar;
-        LinSysRes[total_index] = 0.0;
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        LinSysRes[iPoint*nVar + iVar] = 0.0;
         local_Res_TruncError[iVar] = 0.0;
       }
     }
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      unsigned long total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+
+      su2double Res = fabs(LinSysRes[total_index]);
+      resRMS[iVar] += Res*Res;
+      if (fabs(Res) > resMax[iVar]) {
+        resMax[iVar] = fabs(Res);
+        idxMax[iVar] = iPoint;
+        coordMax[iVar] = geometry->node[iPoint]->GetCoord();
+      }
     }
+  }
+  SU2_OMP_CRITICAL
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    AddRes_RMS(iVar, resRMS[iVar]);
+    AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
   }
 
   /*--- Initialize residual and solution at the ghost points ---*/
 
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
-    }
+  SU2_OMP(sections nowait)
+  {
+    SU2_OMP(section)
+    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+      LinSysRes.SetBlock_Zero(iPoint);
+
+    SU2_OMP(section)
+    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+      LinSysSol.SetBlock_Zero(iPoint);
   }
 
-  /*--- Solve or smooth the linear system ---*/
+  /*--- Free local preconditioner. ---*/
+  if (LowMachPrec) {
+    for(unsigned short iVar = 0; iVar < nVar; ++iVar)
+      delete [] LowMachPrec[iVar];
+    delete [] LowMachPrec;
+  }
 
-  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  } // end SU2_OMP_PARALLEL
 
-  /*--- Store the value of the residual. ---*/
+  /// TODO: We should be able to call the linear solver inside the parallel region.
 
+  /*--- Solve or smooth the linear system. ---*/
+
+  auto IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   SetResLinSolver(System.GetResidual());
-
-  /*--- The the number of iterations of the linear solver ---*/
-
   SetIterLinSolver(IterLinSol);
+
+  /*--- Go back to parallel. ---*/
+
+  SU2_OMP_PARALLEL
+  {
 
   ComputeUnderRelaxationFactor(solver_container, config);
 
   /*--- Update solution (system written in terms of increments) ---*/
 
   if (!adjoint) {
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
       }
     }
   }
 
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  SU2_OMP_MASTER
+  {
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    }
+
+    /*--- MPI solution ---*/
+
+    InitiateComms(geometry, config, SOLUTION);
+    CompleteComms(geometry, config, SOLUTION);
+
+    /*--- Compute the root mean square residual ---*/
+
+    SetResidual_RMS(geometry, config);
+
+    /*--- For verification cases, compute the global error metrics. ---*/
+
+    ComputeVerificationError(geometry, config);
   }
 
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /*--- Compute the root mean square residual ---*/
-
-  SetResidual_RMS(geometry, config);
-
-  /*--- For verification cases, compute the global error metrics. ---*/
-
-  ComputeVerificationError(geometry, config);
-
+  } // end SU2_OMP_PARALLEL
 }
 
 void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
@@ -5144,11 +5168,13 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CCon
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  su2double localUnderRelaxation = 1.0;
   const su2double allowableRatio = 0.2;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    localUnderRelaxation = 1.0;
+    su2double localUnderRelaxation = 1.0;
+
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 
       /* We impose a limit on the maximum percentage that the
@@ -5224,7 +5250,9 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
             *geometry, *config, 0, nPrimVarGrad, primitives, gradient, primMin, primMax, limiter);
 }
 
-void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
+void CEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint,
+                                     su2double delta, su2double** preconditioner) const {
+
   unsigned short iDim, jDim, iVar, jVar;
   su2double local_Mach, rho, enthalpy, soundspeed, sq_vel;
   su2double *U_i = NULL;
@@ -5248,30 +5276,32 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   sq_vel = nodes->GetVelocity2(iPoint);
 
   /*---Calculating the inverse of the preconditioning matrix that multiplies the time derivative  */
-  LowMach_Preconditioner[0][0] = 0.5*sq_vel;
-  LowMach_Preconditioner[0][nVar-1] = 1.0;
+  preconditioner[0][0] = 0.5*sq_vel;
+  preconditioner[0][nVar-1] = 1.0;
   for (iDim = 0; iDim < nDim; iDim ++)
-    LowMach_Preconditioner[0][1+iDim] = -1.0*U_i[iDim+1]/rho;
+    preconditioner[0][1+iDim] = -1.0*U_i[iDim+1]/rho;
 
   for (iDim = 0; iDim < nDim; iDim ++) {
-    LowMach_Preconditioner[iDim+1][0] = 0.5*sq_vel*U_i[iDim+1]/rho;
-    LowMach_Preconditioner[iDim+1][nVar-1] = U_i[iDim+1]/rho;
+    preconditioner[iDim+1][0] = 0.5*sq_vel*U_i[iDim+1]/rho;
+    preconditioner[iDim+1][nVar-1] = U_i[iDim+1]/rho;
     for (jDim = 0; jDim < nDim; jDim ++) {
-      LowMach_Preconditioner[iDim+1][1+jDim] = -1.0*U_i[jDim+1]/rho*U_i[iDim+1]/rho;
+      preconditioner[iDim+1][1+jDim] = -1.0*U_i[jDim+1]/rho*U_i[iDim+1]/rho;
     }
   }
 
-  LowMach_Preconditioner[nVar-1][0] = 0.5*sq_vel*enthalpy;
-  LowMach_Preconditioner[nVar-1][nVar-1] = enthalpy;
+  preconditioner[nVar-1][0] = 0.5*sq_vel*enthalpy;
+  preconditioner[nVar-1][nVar-1] = enthalpy;
   for (iDim = 0; iDim < nDim; iDim ++)
-    LowMach_Preconditioner[nVar-1][1+iDim] = -1.0*U_i[iDim+1]/rho*enthalpy;
+    preconditioner[nVar-1][1+iDim] = -1.0*U_i[iDim+1]/rho*enthalpy;
 
 
   for (iVar = 0; iVar < nVar; iVar ++ ) {
     for (jVar = 0; jVar < nVar; jVar ++ ) {
-      LowMach_Preconditioner[iVar][jVar] = (parameter - 1.0) * ((Gamma-1.0)/(soundspeed*soundspeed))*LowMach_Preconditioner[iVar][jVar];
+      preconditioner[iVar][jVar] = (parameter - 1.0) * ((Gamma-1.0)/(soundspeed*soundspeed))*preconditioner[iVar][jVar];
       if (iVar == jVar)
-        LowMach_Preconditioner[iVar][iVar] += 1.0;
+        preconditioner[iVar][iVar] += 1.0;
+
+      preconditioner[iVar][jVar] *= delta;
     }
   }
 
