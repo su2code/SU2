@@ -944,7 +944,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
                                       su2double *val_dTvedU, su2double *val_eves,
                                       su2double *val_Cvves) {
 
-  bool ionization, errT, errTve, NRconvg, Bconvg, nonPhys;
+  bool ionization, errT, errTve, NRconvg = false, Bconvg = false, nonPhys;
   unsigned short iDim, iEl, iSpecies, nHeavy, nEl, iIter, maxBIter, maxNIter;
   su2double rho, rhoE, rhoEve, rhoE_f, rhoE_ref, rhoEve_min, rhoEve_max, rhoEve_t;
   su2double RuSI, Ru, sqvel, rhoCvtr, rhoCvve;
@@ -1072,79 +1072,69 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     // Tve   = V[TVE_INDEX];
 
     // Execute the root-finding method
-    NRconvg = false;
-       // for (iIter = 0; iIter < maxNIter; iIter++) {
-       //   rhoEve_t = 0.0;
-       //   rhoCvve  = 0.0;
-       //   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-       //     val_eves[iSpecies]  = CalcEve(config, Tve, iSpecies);
-       //     val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
-       //     rhoEve_t += U[iSpecies]*val_eves[iSpecies];
-       //     rhoCvve  += U[iSpecies]*val_Cvves[iSpecies];
-       //   }
-    
-       //   // Find the root
-       //   f  = U[nSpecies+nDim+1] - rhoEve_t;
-       //   df = -rhoCvve;
-       //   Tve2 = Tve - (f/df)*scale;
-    
-       //   // Check for convergence
-       //   if ((fabs(f) < NRtol) && (Tve > Tvemin) & (Tve < Tvemax)) {
-       //     NRconvg = true;
-       //     break;
-       //   } else {
-       //     Tve = Tve2;
-       //   }
-       // }
-
-    // If the Newton-Raphson method has converged, assign the value of Tve.
-    // Otherwise, execute a bisection root-finding method
-    if (NRconvg){
-
-      // AD_END_PASSIVE
-
-      // Recompute Eve and Cvve after search
+    for (iIter = 0; iIter < maxNIter; iIter++) {
+      rhoEve_t = 0.0;
+      rhoCvve  = 0.0;
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
         val_eves[iSpecies]  = CalcEve(config, Tve, iSpecies);
         val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
+        rhoEve_t += U[iSpecies]*val_eves[iSpecies];
+        rhoCvve  += U[iSpecies]*val_Cvves[iSpecies];
       }
-      V[TVE_INDEX] = Tve;
-    } else {
-
-      // Assign the bounds
-      // Tve_o = max(Tvemin, V[T_INDEX]/2.0); // Tve should be geq T
-      Tve_o = Tvemin;
-      Tve2  = Tvemax;
-      // if (rhoEve_t > rhoEve) {
-      //   Tve2  = Tve;
-      //   Tve_o = Tvemin;
-      // }
-      // else{
-      //   Tve_o = Tve;
-      //   Tve2  = Tvemax;
-      // }
-
-      // Execute the root-finding method
-      Bconvg = false;
-      for (iIter = 0; iIter < maxBIter; iIter++) {
-        Tve      = (Tve_o+Tve2)/2.0;
-        rhoEve_t = 0.0;
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          val_eves[iSpecies] = CalcEve(config, Tve, iSpecies);
-          rhoEve_t          += U[iSpecies] * val_eves[iSpecies];
-        }
-
-        if (fabs(rhoEve_t - U[nSpecies+nDim+1]) < Btol) {
-          V[TVE_INDEX] = Tve;
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-            val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
-          Bconvg = true;
-          break;
-        } else {
-          if (rhoEve_t > rhoEve) Tve2 = Tve;
-          else                  Tve_o = Tve;
-        }
+  
+      // Find the root
+      f  = U[nSpecies+nDim+1] - rhoEve_t;
+      df = -rhoCvve;
+      Tve2 = Tve - (f/df)*scale;
+  
+      // Check for convergence
+      if ((fabs(f) < NRtol) && (Tve > Tvemin) & (Tve < Tvemax)) {
+        NRconvg = true;
+        break;
+      } else {
+        Tve = Tve2;
       }
+    }
+
+    // If the Newton-Raphson method has converged, assign the value of Tve.
+    // Otherwise, execute a bisection root-finding method
+    // if (NRconvg){
+
+    //   // AD_END_PASSIVE
+
+    //   // Recompute Eve and Cvve after search
+    //   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    //     val_eves[iSpecies]  = CalcEve(config, Tve, iSpecies);
+    //     val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
+    //   }
+    //   V[TVE_INDEX] = Tve;
+    // } else {
+
+    //   // Assign the bounds
+    //   Tve_o = Tvemin;
+    //   Tve2  = Tvemax;
+
+    //   // Execute the root-finding method
+    //   Bconvg = false;
+    //   for (iIter = 0; iIter < maxBIter; iIter++) {
+    //     Tve      = (Tve_o+Tve2)/2.0;
+    //     rhoEve_t = 0.0;
+    //     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    //       val_eves[iSpecies] = CalcEve(config, Tve, iSpecies);
+    //       rhoEve_t          += U[iSpecies] * val_eves[iSpecies];
+    //     }
+
+    //     if (fabs(rhoEve_t - U[nSpecies+nDim+1]) < Btol) {
+    //       V[TVE_INDEX] = Tve;
+    //       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    //         val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
+    //       Bconvg = true;
+    //       break;
+    //     } else {
+    //       if (rhoEve_t > rhoEve) Tve2 = Tve;
+    //       else                  Tve_o = Tve;
+    //     }
+    //   }
 
       // AD_END_PASSIVE
 
