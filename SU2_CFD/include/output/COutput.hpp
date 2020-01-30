@@ -85,7 +85,8 @@ protected:
   enum class ScreenOutputFormat {
     INTEGER,         /*!< \brief Integer format. Example: 34 */
     FIXED,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
-    SCIENTIFIC       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */
+    SCIENTIFIC,      /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */
+    PERCENT          /*!< \brief Format with fixed precision for floating point values with a % signs. Example: 99.52% */
   };
 
   /** \brief Enum to identify the screen/history field type. */
