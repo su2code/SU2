@@ -2688,7 +2688,7 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solv
 
   /*--- Update displacement components of the solution. ---*/
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
@@ -2707,7 +2707,7 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **
 
   /*--- Compute solution at t_n+1, and update velocities and accelerations ---*/
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     unsigned short iVar;
@@ -2802,7 +2802,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry,
     cout << "Higher order predictor not implemented. Solving with order 0." << endl;
 
   /*--- To nPointDomain: we need to communicate the predicted solution after setting it. ---*/
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
 
     unsigned short iDim;
@@ -2937,7 +2937,7 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry,
   const su2double WAitken = GetWAitken_Dyn();
 
   // To nPointDomain; we need to communicate the solutions (predicted, old and old predicted) after this routine
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Retrieve pointers to the predicted and calculated solutions ---*/
@@ -2962,7 +2962,7 @@ void CFEASolver::Update_StructSolution(CGeometry **fea_geometry,
                                        CConfig *fea_config,
                                        CSolver ***fea_solution) {
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
 
     auto valSolutionPred = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred(iPoint);
@@ -3055,7 +3055,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
 
   su2double objective_function = 0.0;
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size) reduction(+:objective_function))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size) reduction(+:objective_function))
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -3192,7 +3192,7 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_contain
 
   su2double total_volume = 0.0, integral = 0.0, discreteness = 0.0;
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size) reduction(+:total_volume,integral,discreteness))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size) reduction(+:total_volume,integral,discreteness))
   for (unsigned long iElem = 0; iElem < nElement; ++iElem) {
     /*--- count only elements that belong to the partition ---*/
     if ( geometry->node[geometry->elem[iElem]->GetNode(0)]->GetDomain() ){
@@ -3247,7 +3247,7 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
 
   su2double compliance = 0.0;
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size) reduction(+:compliance))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size) reduction(+:compliance))
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     unsigned short iVar;
@@ -3299,7 +3299,7 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
   su2double totalVolume_reduce = 0.0;
 
   /*--- Loop over the elements in the domain. ---*/
-  SU2_OMP(parallel for schedule(dynamic,omp_chunk_size) reduction(+:weightedValue,totalVolume))
+  SU2_OMP_PARALLEL_(for schedule(dynamic,omp_chunk_size) reduction(+:weightedValue,totalVolume))
   for (unsigned long iElem = 0; iElem < nElement; iElem++) {
 
     int thread = omp_get_thread_num();
@@ -3531,7 +3531,7 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
 
   /*--- "Rectify" the input, initialize the physical density with
   the design density (the filter function works in-place). ---*/
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (auto iElem=0ul; iElem<nElement; ++iElem) {
     su2double rho = element_properties[iElem]->GetDesignDensity();
     if      (rho > 1.0) physical_rho[iElem] = 1.0;

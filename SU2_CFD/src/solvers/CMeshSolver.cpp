@@ -483,7 +483,7 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
   /*--- Update the grid coordinates using the solution of the linear system ---*/
 
   /*--- LinSysSol contains the absolute x, y, z displacements. ---*/
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       auto total_index = iPoint*nDim + iDim;
@@ -528,7 +528,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
   /*--- Compute the velocity of each node in the domain of the current rank
    (halo nodes are not computed as the grid velocity is later communicated). ---*/
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Coordinates of the current point at n+1, n, & n-1 time levels. ---*/
