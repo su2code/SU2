@@ -651,17 +651,17 @@ void CTNE2CompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   if(nSpecies == 2){
-    AddVolumeOutput("SOURCE_N2", iPoint, Node_Flow->GetSource(iPoint)[0]);
-    AddVolumeOutput("SOURCE_N",  iPoint, Node_Flow->GetSource(iPoint)[1]);
+    SetVolumeOutputValue("SOURCE_N2", iPoint, Node_Flow->GetSource(iPoint)[0]);
+    SetVolumeOutputValue("SOURCE_N",  iPoint, Node_Flow->GetSource(iPoint)[1]);
   }
   if (nSpecies == 5){
-    AddVolumeOutput("SOURCE_N2", iPoint, Node_Flow->GetSource(iPoint)[0]);
-    AddVolumeOutput("SOURCE_O2", iPoint, Node_Flow->GetSource(iPoint)[1]);
-    AddVolumeOutput("SOURCE_NO", iPoint, Node_Flow->GetSource(iPoint)[2]);
-    AddVolumeOutput("SOURCE_N",  iPoint, Node_Flow->GetSource(iPoint)[3]);
-    AddVolumeOutput("SOURCE_O",  iPoint, Node_Flow->GetSource(iPoint)[4]);
+    SetVolumeOutputValue("SOURCE_N2", iPoint, Node_Flow->GetSource(iPoint)[0]);
+    SetVolumeOutputValue("SOURCE_O2", iPoint, Node_Flow->GetSource(iPoint)[1]);
+    SetVolumeOutputValue("SOURCE_NO", iPoint, Node_Flow->GetSource(iPoint)[2]);
+    SetVolumeOutputValue("SOURCE_N",  iPoint, Node_Flow->GetSource(iPoint)[3]);
+    SetVolumeOutputValue("SOURCE_O",  iPoint, Node_Flow->GetSource(iPoint)[4]);
   }
-  AddVolumeOutput("SOURCE_EVE", iPoint, Node_Flow->GetSource(iPoint)[nSpecies+nDim+1]);
+  SetVolumeOutputValue("SOURCE_EVE", iPoint, Node_Flow->GetSource(iPoint)[nSpecies+nDim+1]);
 
   if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET) {
     if (nDim == 2){
