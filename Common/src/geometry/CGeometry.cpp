@@ -3357,7 +3357,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
   the recursion limit is reached and the full neighborhood is not considered. ---*/
   unsigned long limited_searches = 0;
 
-  SU2_OMP(parallel reduction(+:limited_searches))
+  SU2_OMP_PARALLEL_(reduction(+:limited_searches))
   {
 
   /*--- Initialize ---*/
