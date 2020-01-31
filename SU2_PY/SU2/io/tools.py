@@ -436,6 +436,7 @@ def get_adjointSuffix(objective_function=None):
                  "INVERSE_DESIGN_HEAT"         : "invheat"   ,
                  "MAXIMUM_HEATFLUX"            : "maxheat"   ,
                  "TOTAL_HEATFLUX"              : "totheat"   ,
+                 "TOTAL_AVG_TEMPERATURE"       : "avtp"      ,
                  "EQUIVALENT_AREA"             : "ea"        ,
                  "NEARFIELD_PRESSURE"          : "nfp"       ,
                  "THRUST"                      : "ct"        ,
