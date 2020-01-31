@@ -748,6 +748,11 @@ public:
 	 */		
 	virtual void SetElement_Connectivity(void);
 
+  /*!
+   * \brief A virtual member.
+   */
+  void SetMaskedEdges(void);
+  
 	/*! 
 	 * \brief A virtual member.
 	 */

@@ -1581,6 +1581,40 @@ bool CGeometry::CheckEdge(unsigned long first_point, unsigned long second_point)
   
 }
 
+void CGeometry::SetMaskedEdges(void) {
+  // Mask MaskNeighbors
+  unsigned long iPoint, jPoint;
+  long iEdge;
+  unsigned short jNode, iNode;
+  long TestEdge = 0;
+  
+  nEdge = 0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    
+    for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
+      jPoint = node[iPoint]->GetPoint(iNode);
+      for (jNode = 0; jNode < node[jPoint]->GetnPoint(); jNode++)
+        if (node[jPoint]->GetPoint(jNode) == iPoint) {
+          TestEdge = node[jPoint]->GetEdge(jNode);
+          break;
+        }
+      if (TestEdge == -1) {
+        node[iPoint]->SetEdge(nEdge, iNode);
+        node[jPoint]->SetEdge(nEdge, jNode);
+        nEdge++;
+      }
+    }
+  
+  edge = new CEdge*[nEdge];
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
+      jPoint = node[iPoint]->GetPoint(iNode);
+      iEdge = FindEdge(iPoint, jPoint);
+      if (iPoint < jPoint) edge[iEdge] = new CEdge(iPoint, jPoint, nDim);
+    }
+}
+
 void CGeometry::SetEdges(void) {
   unsigned long iPoint, jPoint;
   long iEdge;

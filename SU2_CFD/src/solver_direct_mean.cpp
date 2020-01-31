@@ -3492,6 +3492,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool jst_scheme = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
+  bool rom = (config->GetReduced_Model());
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -3532,7 +3533,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     LinSysRes.SubtractBlock(jPoint, Res_Conv);
     
     /*--- Set implicit computation ---*/
-    if (implicit) {
+    if (implicit or rom) {
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
       Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
