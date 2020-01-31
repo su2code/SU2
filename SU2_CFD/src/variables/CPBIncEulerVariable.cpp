@@ -82,7 +82,7 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double pressure, const su2double *ve
   /*--- Solution initialization ---*/
 
   su2double val_solution[3] = {velocity[0], velocity[1], 0.0};
-  if(nDim==3) val_solution[3] = velocity[2];
+  if(nDim==3) val_solution[2] = velocity[2];
 
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
