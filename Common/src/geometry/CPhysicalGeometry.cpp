@@ -4315,19 +4315,11 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig        *config,
          which is stored ---*/
 
         vtk_type = (int)connElems[jElem*SU2_CONN_SIZE + 1];
-<<<<<<< HEAD:Common/src/geometry_structure.cpp
-      
-        /*--- Store the loop size more easily. ---*/
-      
-        npe = (int)(SU2_CONN_SIZE-SU2_CONN_SKIP);
-      
-=======
 
         /*--- Store the loop size more easily. ---*/
 
         npe = (int)(SU2_CONN_SIZE-SU2_CONN_SKIP);
 
->>>>>>> 06ef322d41c01d8c0b4b0087fc77432362764764:Common/src/geometry/CPhysicalGeometry.cpp
         /*--- Store the nodes for this element more clearly. ---*/
 
         for (int j = 0; j < npe; j++) {

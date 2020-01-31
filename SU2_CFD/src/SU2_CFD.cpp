@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
   bool dry_run = false;
   int num_threads = omp_get_max_threads();
   bool use_thread_mult = false;
+  int verb = 0;
   std::string filename = "default.cfg";
 
   /*--- Command line parsing ---*/
