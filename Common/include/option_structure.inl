@@ -1308,7 +1308,7 @@ protected:
 
 public:
   COptionRiemann(string option_field_name, unsigned short & nMarker_Riemann, string* & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir) : size(nMarker_Riemann),
-  	  	  	  	  marker(Marker_Riemann), field(option_field), var1(var1), var2(var2), flowdir(FlowDir) {
+                  marker(Marker_Riemann), field(option_field), var1(var1), var2(var2), flowdir(FlowDir) {
     this->name = option_field_name;
     this->m = m;
   }
@@ -1416,7 +1416,7 @@ class COptionGiles : public COptionBase{
 
 public:
   COptionGiles(string option_field_name, unsigned short & nMarker_Giles, string* & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relfac1, su2double* & relfac2) : size(nMarker_Giles),
-  	  	  	  	  marker(Marker_Giles), field(option_field), var1(var1), var2(var2), flowdir(FlowDir), relfac1(relfac1), relfac2(relfac2) {
+               marker(Marker_Giles), field(option_field), var1(var1), var2(var2), flowdir(FlowDir), relfac1(relfac1), relfac2(relfac2) {
     this->name = option_field_name;
     this->m = m;
   }
