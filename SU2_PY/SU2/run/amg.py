@@ -214,7 +214,6 @@ def amg ( config , kind='' ):
 
         #--- Run an adjoint if the adjoint solution file doesn't exist
         solution_adj_ini = config_cfd.SOLUTION_ADJ_FILENAME           
-        solution_adj_ini = solution_adj_ini.split('.')[0]
         func_name         = config.OBJECTIVE_FUNCTION
         suffix            = su2io.get_adjointSuffix(func_name)
         solution_adj_ini  = su2io.add_suffix(solution_adj_ini,suffix)
