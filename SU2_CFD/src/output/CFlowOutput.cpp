@@ -242,6 +242,14 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
             TotalTemperature  = Temperature + 0.5*Velocity2/solver->GetNodes()->GetSpecificHeatCp(iPoint);
             TotalPressure     = Pressure + 0.5*Density*Velocity2;
           }
+          else if ((config->GetKind_Solver() == TNE2_EULER) ||
+                   (config->GetKind_Solver() == DISC_ADJ_TNE2_EULER)) {
+            Mach              = sqrt(solver->GetNodes()->GetVelocity2(iPoint))/solver->GetNodes()->GetSoundSpeed(iPoint);
+            Temperature       = solver->GetNodes()->GetTemperature(iPoint);
+            Enthalpy          = solver->GetNodes()->GetEnthalpy(iPoint);
+            TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
+            TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
+          }
           else{
             Mach              = sqrt(Velocity2)/SoundSpeed;
             Temperature       = Pressure / (Gas_Constant * Density);
