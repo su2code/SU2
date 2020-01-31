@@ -5846,73 +5846,73 @@ public:
    * \brief Get information about the streamwise periodicity (None, Pressure_Drop, Massflow).
    * \return Driving force identification.
    */
-  unsigned short GetKind_Streamwise_Periodic(void);
+  unsigned short GetKind_Streamwise_Periodic(void) const { return Kind_Streamwise_Periodic; }
 
   /*!
    * \brief Get information about the streamwise periodicity Energy equation handling.
    * \return Real periodic treatment of energy equation.
    */
-  bool GetStreamwise_Periodic_Temperature(void);
+  bool GetStreamwise_Periodic_Temperature(void) const { return Streamwise_Periodic_Temperature; }
 
   /*!
    * \brief Get the value of the artificial periodic outlet heat.
    * \return Heat value.
    */
-  su2double GetStreamwise_Periodic_OutletHeat(void);
+  su2double GetStreamwise_Periodic_OutletHeat(void) const { return Streamwise_Periodic_OutletHeat; }
 
   /*!
    * \brief Get the value of the pressure delta from which body force vector is computed.
    * \return Delta Pressure for body force computation.
    */
-  su2double GetStreamwise_Periodic_PressureDrop(void);
+  su2double GetStreamwise_Periodic_PressureDrop(void) const { return Streamwise_Periodic_PressureDrop; }
   
   /*!
    * \brief Set the value of the pressure delta from which body force vector is computed.
    * \param[in] delta_p - pressure difference between in- and outlet.
    */
-  void SetStreamwise_Periodic_PressureDrop(su2double delta_p);
+  void SetStreamwise_Periodic_PressureDrop(su2double delta_p) { Streamwise_Periodic_PressureDrop = delta_p; }
 
   /*!
    * \brief Get the value of the massflow from which body force vector is computed.
    * \return Massflow for body force computation.
    */
-  su2double GetStreamwise_Periodic_TargetMassFlow(void);
+  su2double GetStreamwise_Periodic_TargetMassFlow(void) const { return Streamwise_Periodic_TargetMassFlow; }
 
   /*!
    * \brief Get a pointer to the reference node coordinate vector.
    * \return A pointer to the reference node coordinate vector.
    */
-  vector<su2double> GetStreamwise_Periodic_RefNode(void);
+  vector<su2double> GetStreamwise_Periodic_RefNode(void) { return Streamwise_Periodic_RefNode; }
 
   /*!
    * \brief Get a pointer to the reference node coordinate vector.
    * \return A pointer to the reference node coordinate vector.
    */
-  void SetStreamwise_Periodic_RefNode(vector<su2double> RefNode);
+  void SetStreamwise_Periodic_RefNode(vector<su2double> RefNode) { Streamwise_Periodic_RefNode = RefNode; }
 
   /*!
    * \brief Get the massflow of the streamwise periodic donor/outlet boundary.
    * \return The streamwise periodic donor/outlet massflow.
    */
-  su2double GetStreamwise_Periodic_MassFlow();
+  su2double GetStreamwise_Periodic_MassFlow() const { return Streamwise_Periodic_MassFlow; }
   
   /*!
    * \brief Set the massflow at the streamwise periodic donor/outlet boundary.
    * \param[in] val_massflow - Massflow at the streamwise periodic donor marker.
    */
-  void SetStreamwise_Periodic_MassFlow(su2double val_massflow);
+  void SetStreamwise_Periodic_MassFlow(su2double val_massflow) { Streamwise_Periodic_MassFlow = val_massflow; }
 
   /*!
    * \brief Get the net sum of the heatflow into the domain.
    * \return The net sum of the heatflow into the domain.
    */
-  su2double GetStreamwise_Periodic_IntegratedHeatFlow();
+  su2double GetStreamwise_Periodic_IntegratedHeatFlow() const { return Streamwise_Periodic_IntegratedHeatFlow; }
   
   /*!
    * \brief Set the net sum of the heatflow into the domain.
    * \param[in] val_heatflow - Net sum of the heatflow into the domain.
    */
-  void SetStreamwise_Periodic_IntegratedHeatFlow(su2double val_heatflow);
+  void SetStreamwise_Periodic_IntegratedHeatFlow(su2double val_heatflow) { Streamwise_Periodic_IntegratedHeatFlow = val_heatflow; }
 
   /*!
    * \brief Get information about the rotational frame.
@@ -6307,14 +6307,14 @@ public:
   /*!
    * \brief Translation vector for a translational (TK:: rotational in Toms code) periodic boundary.
    */
-  su2double *GetPeriodicTranslation(string val_marker);
+  su2double *GetPeriodicTranslation(string val_marker) ;
 
   /*!
    * \brief Get the translation vector for a periodic transformation.
    * \param[in] val_index - Index corresponding to the periodic transformation.
    * \return The translation vector.
    */
-  su2double* GetPeriodicTranslation(unsigned short val_index);
+  su2double* GetPeriodicTranslation(unsigned short val_index) { return Periodic_Translation[val_index]; }
   
   /*!
    * \brief Get the rotationally periodic donor marker for boundary <i>val_marker</i>.

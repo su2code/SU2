@@ -2145,14 +2145,14 @@ static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_
  * \brief types of streamwise periodicity.
  */
 enum ENUM_STREAMWISE_PERIODIC {
-  NO_STREAMWISE_PERIODIC = 0,      /*!< \brief No projection. */
-  PRESSURE_DROP          = 1,      /*!< \brief Prescribed pressure drop. */
-  STREAMWISE_MASSFLOW    = 2,      /*!< \brief Prescribed massflow. */
+  NO_STREAMWISE_PERIODIC = 0, /*!< \brief No projection. */
+  PRESSURE_DROP          = 1, /*!< \brief Prescribed pressure drop. */
+  STREAMWISE_MASSFLOW    = 2, /*!< \brief Prescribed massflow. */
 };
 static const MapType<string, ENUM_STREAMWISE_PERIODIC> Streamwise_Periodic_Map = {
-  MakePair("NONE"          , NO_STREAMWISE_PERIODIC)
-  MakePair("PRESSURE_DROP" , PRESSURE_DROP)
-  MakePair("MASSFLOW"      , STREAMWISE_MASSFLOW);
+  MakePair("NONE",          NO_STREAMWISE_PERIODIC)
+  MakePair("PRESSURE_DROP", PRESSURE_DROP)
+  MakePair("MASSFLOW",      STREAMWISE_MASSFLOW)
 };
 
 #undef MakePair
