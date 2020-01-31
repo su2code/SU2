@@ -368,7 +368,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Reynolds stress tensor values
-  if (config->GetKind_Solver() == RANS) {
+  if ( config->GetKind_Turb_Model() == SST || config->GetKind_Turb_Model() == SST_SUST ) {
     AddVolumeOutput("U\'U\'", "u\'u\'", "REYNOLDS_STRESS_TENSOR", "u\'u\' term of Reynolds stress tensor");
     AddVolumeOutput("V\'V\'", "v\'v\'", "REYNOLDS_STRESS_TENSOR", "v\'v\' term of Reynolds stress tensor");
     if (nDim == 3){
@@ -562,7 +562,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
   }
 
-  if (config->GetKind_Solver() == RANS) {
+  if ( config->GetKind_Turb_Model() == SST || config->GetKind_Turb_Model() == SST_SUST ) {
     su2double ** Reynolds_Stress_Tensor = Node_Turb->GetReynoldsStressTensor(iPoint);
     SetVolumeOutputValue("U\'U\'", iPoint, Reynolds_Stress_Tensor[0][0]);
     SetVolumeOutputValue("V\'V\'", iPoint, Reynolds_Stress_Tensor[1][1]);
