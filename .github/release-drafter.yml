@@ -1,0 +1,20 @@
+name-template: 'v$NEXT_PATCH_VERSION'
+tag-template: 'v$NEXT_PATCH_VERSION'
+categories:
+  - title: ':rocket: Experimental Features'
+    labels:
+      - 'changelog:feature'
+  - title: ':pill: Bug Fixes'
+    labels:
+      - 'changelog:fix'
+  - title: ':wrench: Maintenance'
+    labels:
+      - 'changelog:chore'
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+branches:
+      - develop
+exclude-labels:
+  - 'changelog:none'
+template: |
+  ## Changes
+  $CHANGES

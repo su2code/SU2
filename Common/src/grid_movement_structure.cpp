@@ -2,24 +2,14 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 6.2.0 "Falcon"
+ * \version 7.0.1 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +28,9 @@
 #include "../include/grid_movement_structure.hpp"
 #include "../include/adt_structure.hpp"
 #include <list>
+
+#include "../include/linear_algebra/CMatrixVectorProduct.hpp"
+#include "../include/linear_algebra/CPreconditioner.hpp"
 
 using namespace std;
 
@@ -140,7 +133,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
   
-  Smoothing_Iter = config->GetGridDef_Linear_Iter();
+  Smoothing_Iter = config->GetDeform_Linear_Solver_Iter();
   Screen_Output  = config->GetDeform_Output();
   NumError       = config->GetDeform_Linear_Solver_Error();
   Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
@@ -215,13 +208,13 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
     		StiffMatrix.BuildILUPreconditioner();
     		mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
-    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config);
+    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config, false);
     	}
     	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
     		StiffMatrix.BuildJacobiPreconditioner();
     		mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
-    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config);
+    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config, false);
     	}
 
     } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
@@ -233,13 +226,13 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
     		StiffMatrix.BuildILUPreconditioner(true);
     		mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
-    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config);
+    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config, true);
     	}
     	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
     		StiffMatrix.BuildJacobiPreconditioner(true);
     		mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
-    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config);
+    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config, true);
     	}
 
     }
@@ -253,7 +246,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
           Tot_Iter = 0; MaxIter = RestartIter;
 
-          System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false, config);
+          System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, Residual_Init, false, config);
 
           if ((rank == MASTER_NODE) && Screen_Output) {
             cout << "\n# FGMRES (with restart) residual history" << endl;
@@ -268,7 +261,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
             if (IterLinSol + RestartIter > Smoothing_Iter)
               MaxIter = Smoothing_Iter - IterLinSol;
 
-            IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false, config);
+            IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, Residual, false, config);
             Tot_Iter += IterLinSol;
 
             if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
@@ -288,7 +281,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
         case FGMRES:
 
-          Tot_Iter = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
+          Tot_Iter = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Residual, Screen_Output, config);
 
           break;
 
@@ -296,14 +289,14 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
         case BCGSTAB:
 
-          Tot_Iter = System.BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
+          Tot_Iter = System.BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Residual, Screen_Output, config);
 
           break;
 
 
         case CONJUGATE_GRADIENT:
 
-          Tot_Iter = System.CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
+          Tot_Iter = System.CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Residual, Screen_Output, config);
 
           break;
 
@@ -1808,7 +1801,8 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) ||
+         (config->GetMarker_All_DV(iMarker) == YES)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
@@ -2702,28 +2696,27 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
           FFDBox[iFFDBox]->SetSphe2Cart_CornerPoints(config);
           FFDBox[iFFDBox]->SetSphe2Cart_ControlPoints(config);
         }
-        
-        /*--- Output original FFD FFDBox ---*/
-        
-        if (rank == MASTER_NODE) {
-          for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
-            unsigned short *FileFormat = config->GetVolumeOutputFiles();
-            if (FileFormat[iFile] == PARAVIEW || FileFormat[iFile] == PARAVIEW_BINARY) {
-              cout << "Writing a Paraview file of the FFD boxes." << endl;
-              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-                FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
-              }
-            } else if (FileFormat[iFile] == TECPLOT || FileFormat[iFile] == TECPLOT_BINARY) {
-              cout << "Writing a Tecplot file of the FFD boxes." << endl;
-              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-                FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
-              }
+      }
+      /*--- Output original FFD FFDBox ---*/
+      
+      if (rank == MASTER_NODE) {
+        for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
+          unsigned short *FileFormat = config->GetVolumeOutputFiles();
+          if (FileFormat[iFile] == PARAVIEW || FileFormat[iFile] == PARAVIEW_BINARY) {
+            cout << "Writing a Paraview file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
             }
-            else if (FileFormat[iFile] == CGNS)  {
-              cout << "Writing a CGNS file of the FFD boxes." << endl;
-              for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-                FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
-              }
+          } else if (FileFormat[iFile] == TECPLOT || FileFormat[iFile] == TECPLOT_BINARY) {
+            cout << "Writing a Tecplot file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
+            }
+          }
+          else if (FileFormat[iFile] == CGNS)  {
+            cout << "Writing a CGNS file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
             }
           }
         }  
@@ -9180,14 +9173,14 @@ CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) :
       element_container[iKind] = NULL;
     }
     if (nDim == 2){
-      element_container[EL_TRIA] = new CTRIA1(nDim, config);
-      element_container[EL_QUAD] = new CQUAD4(nDim, config);
+      element_container[EL_TRIA] = new CTRIA1();
+      element_container[EL_QUAD] = new CQUAD4();
     }
-    else if (nDim == 3){
-      element_container[EL_TETRA] = new CTETRA1(nDim, config);
-      element_container[EL_HEXA] = new CHEXA8(nDim, config);
-      element_container[EL_PYRAM] = new CPYRAM5(nDim, config);
-      element_container[EL_PRISM] = new CPRISM6(nDim, config);
+    else {
+      element_container[EL_TETRA] = new CTETRA1();
+      element_container[EL_HEXA]  = new CHEXA8();
+      element_container[EL_PYRAM] = new CPYRAM5();
+      element_container[EL_PRISM] = new CPRISM6();
     }
 
     /*--- Term ij of the Jacobian ---*/
@@ -9576,7 +9569,7 @@ void CElasticityMovement::SetMinMaxVolume(CGeometry *geometry, CConfig *config) 
 
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
 
     }
@@ -9627,7 +9620,7 @@ void CElasticityMovement::SetStiffnessMatrix(CGeometry *geometry, CConfig *confi
   su2double val_Coord;
   int EL_KIND = 0;
 
-  su2double *Kab = NULL;
+  const su2double *Kab = NULL;
   unsigned short NelNodes, jNode;
 
   su2double ElemVolume;
@@ -9651,7 +9644,7 @@ void CElasticityMovement::SetStiffnessMatrix(CGeometry *geometry, CConfig *confi
 
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
 
     }
@@ -9750,7 +9743,7 @@ void CElasticityMovement::Compute_Element_Contribution(CElement *element, CConfi
     }
   }
 
-  element->clearElement();      /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ClearElement();      /*--- Restarts the element: avoids adding over previous results in other elements --*/
   element->ComputeGrad_Linear();
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
@@ -9831,10 +9824,10 @@ void CElasticityMovement::Compute_Element_Contribution(CElement *element, CConfi
           }
         }
 
-        element->Add_Kab(KAux_ab,iNode, jNode);
+        element->Add_Kab(iNode, jNode, KAux_ab);
         /*--- Symmetric terms --*/
         if (iNode != jNode){
-          element->Add_Kab_T(KAux_ab, jNode, iNode);
+          element->Add_Kab_T(jNode, iNode, KAux_ab);
         }
 
       }

@@ -2,24 +2,14 @@
  * \file CFileWriter.hpp
  * \brief Headers fo the file writer class.
  * \author T. Albring
- * \version 6.2.0 "Falcon"
+ * \version 7.0.1 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -43,6 +33,7 @@
 #include <string>
 #include <cstring>
 #include <fstream>
+#include <time.h>
 
 #include "../../output/filewriter/CParallelDataSorter.hpp"
 
@@ -52,91 +43,149 @@ class CFileWriter{
 protected:
 
   /*!
-   * \brief Vector containing the field names
-   */
-  std::vector<std::string> fieldnames;
-  
-  /*!
-   * \brief The physical dimension of the problem
-   */
-  unsigned short nDim;
-  
-  /*!
    * \brief The MPI rank
    */
   int rank;
-  
+
   /*!
    * \brief The MPI size, aka the number of processors.
    */
   int size;
-  
+
   /*!
    * \brief The file extension to be attached to the filename.
    */
-  std::string file_ext;
-  
-  su2double StartTime, /*!< \brief Start time for time measurement  */
-            StopTime , /*!< \brief Stop time for time measurement  */
-            UsedTime , /*!< \brief Used time for time measurement  */
-            Bandwidth, /*!< \brief Used bandwidth  */
-            file_size; /*!< \brief Size of the last written file  */
-  
+  std::string fileExt;
+
+  su2double startTime, /*!< \brief Start time for time measurement  */
+            stopTime , /*!< \brief Stop time for time measurement  */
+            usedTime , /*!< \brief Used time for time measurement  */
+            bandwidth, /*!< \brief Used bandwidth  */
+            fileSize; /*!< \brief Size of the last written file  */
+
   /*!
    * \brief Determine the file size
    * \param[in] filename - Name of the file.
-   * \return 
+   * \return
    */
   inline unsigned long Determine_Filesize(std::string filename){
       struct stat stat_buf;
       int rc = stat(filename.c_str(), &stat_buf);
       return rc == 0 ? stat_buf.st_size : -1;
   }
-  
+
   /*!
    * \brief Filename
    */
   string fileName;
-  
+
   /*!
    * \brief The parallel data sorter
    */
   CParallelDataSorter* dataSorter;
   
+#ifdef HAVE_MPI
+  /*!
+   * \brief The displacement that every process has in the current file view
+   */
+  MPI_Offset disp;
+
+  /*!
+   * \brief The file handle for writing
+   */
+  MPI_File fhw;
+#else
+
+  /*!
+   * \brief The file handle for writing
+   */
+  FILE* fhw;
+#endif
+
 public:
   /*!
-   * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fields - A list of field names
-   * \param[in] file_ext - The file extension to be attached to the filename
-   * \param[in] nDim - Physical dimension
-   */  
-  CFileWriter(std::vector<std::string> fields, string fileName, CParallelDataSorter* dataSorter, string file_ext, unsigned short nDim);
-  
+   * \brief Construct a file writer using field names, the data sorter and the file extension.
+   * \param[in] valFileName - The name of the file
+   * \param[in] valDataSorter - The parallel sorted data to write
+   * \param[in] valFileExt - The file extension.
+   */
+  CFileWriter(string valFileName, CParallelDataSorter* valDataSorter, string valFileExt);
+
+  /*!
+   * \brief Construct a file writer using field names, file extension.
+   * \param[in] valFileName - The name of the file
+   * \param[in] valFileExt - The file extension to be attached to the filename
+   */
+  CFileWriter(string valFileName, string valFileExt);
+
   /*!
    * \brief Destructor
    */
   virtual ~CFileWriter();
-  
+
   /*!
    * \brief Write sorted data to file
    */
   virtual void Write_Data(){}
-  
+
   /*!
    * \brief Get the bandwith used for the last writing
    */
-  su2double Get_Bandwidth(){return Bandwidth;}
-  
+  su2double Get_Bandwidth() const {return bandwidth;}
+
   /*!
    * \brief Get the filesize of the last written file.
    */
-  su2double Get_Filesize(){return file_size;}
-  
+  su2double Get_Filesize() const {return fileSize;}
+
   /*!
    * \brief Get the used time of the last file writing.
+   * \return The time used to write to file.
+   */
+  su2double Get_UsedTime() const {return usedTime;}
+  
+protected:
+  
+  /*!
+   * \brief Collectively write a binary data array distributed over all processors to file using MPI I/O.
+   * \param[in] data - Pointer to the data to write.
+   * \param sizeInBytes - The size of the data in bytes on this processor.
+   * \param totalSizeInBytes - The total size of the array accumulated over all processors.
+   * \param offset - The offset in bytes of the chunk of data the current processor owns within the global array.
+   * \return Boolean indicating whether the writing was successful.
+   */
+  bool WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBytes, unsigned long totalSizeInBytes, unsigned long offset);
+
+  /*!
+   * \brief Write a binary data array to a currently opened file using MPI I/O. Note: routine must be called collectively,
+   * although only one processor writes its data.
+   * \param[in] data - Pointer to the beginning of the data. Can be NULL for all processors that do not write.
+   * \param[in] sizeInBytes - The size of the data in bytes.
+   * \param[in] processor - Rank of the processor that should write its data.
+   * \return Boolean indicating whether the writing was successful.
+   */
+  bool WriteMPIBinaryData(const void *data, unsigned long sizeInBytes, unsigned short processor);
+  
+  /*!
+   * \brief Write a string to a currently opened file using MPI I/O. Note: routine must be called collectively,
+   *  although only one processor writes the string.
+   * \param[in] str - The string to write to file.
+   * \param[in] processor - Rank of the processor that should the string.
    * \return 
    */
-  su2double Get_UsedTime(){return UsedTime;}
-
+  bool WriteMPIString(const std::string& str, unsigned short processor);
+  
+  /*!
+   * \brief Open a file to write using MPI I/O. Already existing file is deleted.
+   * \return Boolean indicating whether the opening was successful.
+   */
+  bool OpenMPIFile();
+  
+  /*!
+   * \brief Close a file using MPI I/O. 
+   * \return Boolean indicating whether the closing was successful.
+   */
+  bool CloseMPIFile();
+  
 };
 
