@@ -35,7 +35,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "../../../Common/include/config_structure.hpp"
+#include "../../../Common/include/CConfig.hpp"
 #include "../fluid_model.hpp"
 #include "../../../Common/include/toolboxes/C2DContainer.hpp"
 

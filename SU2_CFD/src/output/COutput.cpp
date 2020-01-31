@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -33,6 +33,8 @@
 #include "../../include/output/filewriter/CParaviewFileWriter.hpp"
 #include "../../include/output/filewriter/CSTLFileWriter.hpp"
 #include "../../include/output/filewriter/CParaviewBinaryFileWriter.hpp"
+#include "../../include/output/filewriter/CParaviewXMLFileWriter.hpp"
+#include "../../include/output/filewriter/CParaviewVTMFileWriter.hpp"
 #include "../../include/output/filewriter/CTecplotFileWriter.hpp"
 #include "../../include/output/filewriter/CTecplotBinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CCSVFileWriter.hpp"
@@ -300,19 +302,19 @@ void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){
   if (femOutput){
 
     if (volumeDataSorter == nullptr)
-      volumeDataSorter = new CFEMDataSorter(config, geometry, nVolumeFields);
+      volumeDataSorter = new CFEMDataSorter(config, geometry, volumeFieldNames);
 
     if (surfaceDataSorter == nullptr)
-      surfaceDataSorter = new CSurfaceFEMDataSorter(config, geometry, nVolumeFields,
+      surfaceDataSorter = new CSurfaceFEMDataSorter(config, geometry,
                                                   dynamic_cast<CFEMDataSorter*>(volumeDataSorter));
 
   }  else {
 
     if (volumeDataSorter == nullptr)
-      volumeDataSorter = new CFVMDataSorter(config, geometry, nVolumeFields);
+      volumeDataSorter = new CFVMDataSorter(config, geometry, volumeFieldNames);
 
     if (surfaceDataSorter == nullptr)
-      surfaceDataSorter = new CSurfaceFVMDataSorter(config, geometry, nVolumeFields,
+      surfaceDataSorter = new CSurfaceFVMDataSorter(config, geometry,
                                                   dynamic_cast<CFVMDataSorter*>(volumeDataSorter));
 
   }
@@ -358,7 +360,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         (*fileWritingTable) << "CSV file" << fileName + CSU2FileWriter::fileExt;
       }
 
-      fileWriter = new CSU2FileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      fileWriter = new CSU2FileWriter(fileName, surfaceDataSorter);
 
       break;
 
@@ -371,7 +373,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "SU2 ASCII restart" << fileName + CSU2FileWriter::fileExt;
       }
 
-      fileWriter = new CSU2FileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CSU2FileWriter(fileName, volumeDataSorter);
 
       break;
 
@@ -384,7 +386,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "SU2 restart" << fileName + CSU2BinaryFileWriter::fileExt;
       }
 
-      fileWriter = new CSU2BinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CSU2BinaryFileWriter(fileName, volumeDataSorter);
 
       break;
 
@@ -402,7 +404,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "SU2 mesh" << fileName + CSU2MeshFileWriter::fileExt;
       }
 
-      fileWriter = new CSU2MeshFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
+      fileWriter = new CSU2MeshFileWriter(fileName, volumeDataSorter,
                                           config->GetiZone(), config->GetnZone());
 
 
@@ -422,7 +424,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Tecplot binary" << fileName + CTecplotBinaryFileWriter::fileExt;
       }
 
-      fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
+      fileWriter = new CTecplotBinaryFileWriter(fileName, volumeDataSorter,
                                                 curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
@@ -441,8 +443,26 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Tecplot ASCII" << fileName + CTecplotFileWriter::fileExt;
       }
 
-      fileWriter = new CTecplotFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
+      fileWriter = new CTecplotFileWriter(fileName, volumeDataSorter,
                                           curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+
+      break;
+
+    case PARAVIEW_XML:
+
+      if (fileName.empty())
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+
+      /*--- Load and sort the output data and connectivity. ---*/
+
+      volumeDataSorter->SortConnectivity(config, geometry, true);
+
+      /*--- Write paraview binary ---*/
+      if (rank == MASTER_NODE) {
+        (*fileWritingTable) << "Paraview" << fileName + CParaviewXMLFileWriter::fileExt;
+      }
+
+      fileWriter = new CParaviewXMLFileWriter(fileName, volumeDataSorter);
 
       break;
 
@@ -460,7 +480,101 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Paraview binary" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CParaviewBinaryFileWriter(fileName, volumeDataSorter);
+
+      break;
+
+    case PARAVIEW_MULTIBLOCK:
+      {
+
+        if (fileName.empty())
+          fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+
+        /*--- Sort volume connectivity ---*/
+
+        volumeDataSorter->SortConnectivity(config, geometry, true);
+
+        /*--- The file name of the multiblock file is the case name (i.e. the config file name w/o ext.) ---*/
+
+        fileName = config->GetUnsteady_FileName(config->GetCaseName(), curTimeIter, "");
+
+        /*--- Allocate the vtm file writer ---*/
+
+        fileWriter = new CParaviewVTMFileWriter(fileName, fileName, GetHistoryFieldValue("CUR_TIME"),
+                                                config->GetiZone(), config->GetnZone());
+
+        /*--- We cast the pointer to its true type, to avoid virtual functions ---*/
+
+        CParaviewVTMFileWriter* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
+
+        if (rank == MASTER_NODE) {
+            (*fileWritingTable) << "Paraview Multiblock"
+                                << fileName + CParaviewVTMFileWriter::fileExt;
+        }
+
+        /*--- Open a block for the zone ---*/
+
+        vtmWriter->StartBlock(multiZoneHeaderString);
+
+        fileName = "Internal";
+
+        /*--- Open a block for the internal (volume) data and add the dataset ---*/
+
+        vtmWriter->StartBlock(fileName);
+        vtmWriter->AddDataset(fileName, fileName, volumeDataSorter);
+        vtmWriter->EndBlock();
+
+        /*--- Open a block for the boundary ---*/
+
+        vtmWriter->StartBlock("Boundary");
+
+        /*--- Loop over all markers used in the config file ---*/
+
+        for (unsigned short iMarker = 0; iMarker < config->GetnMarker_CfgFile(); iMarker++){
+
+          /*--- Get the name of the marker ---*/
+
+          string markerTag = config->GetMarker_CfgFile_TagBound(iMarker);
+
+          /*--- If the current marker can be found on this partition store its name.
+             * Note that we have to provide a vector of markers to the sorter routine, although we only do
+             * one marker at a time, i.e. ::marker always contains one item. ---*/
+
+          vector<string> marker;
+          for (unsigned short jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++){
+
+            /*--- We want to write all markers except send-receive markers ---*/
+
+            if (config->GetMarker_All_TagBound(jMarker) == markerTag &&
+                config->GetMarker_All_KindBC(jMarker) != SEND_RECEIVE){
+              marker.push_back(markerTag);
+            }
+          }
+
+          /*--- Only sort if there is at least one processor that has this marker ---*/
+
+          int globalMarkerSize = 0, localMarkerSize = marker.size();
+          SU2_MPI::Allreduce(&localMarkerSize, &globalMarkerSize, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+          if (globalMarkerSize > 0){
+
+            /*--- Sort connectivity of the current marker ---*/
+
+            surfaceDataSorter->SortConnectivity(config, geometry, marker);
+            surfaceDataSorter->SortOutputData();
+
+            /*--- Add the dataset ---*/
+
+            vtmWriter->AddDataset(markerTag, markerTag, surfaceDataSorter);
+
+          }
+        }
+        /*--- End "Boundary" block ---*/
+        vtmWriter->EndBlock();
+        /*--- End "Zone" block ---*/
+        vtmWriter->EndBlock();
+      }
+
 
       break;
 
@@ -478,7 +592,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Paraview ASCII" << fileName + CParaviewFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CParaviewFileWriter(fileName, volumeDataSorter);
 
       break;
 
@@ -497,7 +611,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Paraview ASCII surface" << fileName + CParaviewFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      fileWriter = new CParaviewFileWriter(fileName, surfaceDataSorter);
 
       break;
 
@@ -516,7 +630,26 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Paraview binary surface" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      fileWriter = new CParaviewBinaryFileWriter(fileName, surfaceDataSorter);
+
+      break;
+
+    case SURFACE_PARAVIEW_XML:
+
+      if (fileName.empty())
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+
+      /*--- Load and sort the output data and connectivity. ---*/
+
+      surfaceDataSorter->SortConnectivity(config, geometry);
+      surfaceDataSorter->SortOutputData();
+
+      /*--- Write paraview binary ---*/
+      if (rank == MASTER_NODE) {
+          (*fileWritingTable) << "Paraview surface" << fileName + CParaviewXMLFileWriter::fileExt;
+      }
+
+      fileWriter = new CParaviewXMLFileWriter(fileName, surfaceDataSorter);
 
       break;
 
@@ -535,7 +668,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Tecplot ASCII surface" << fileName + CTecplotFileWriter::fileExt;
       }
 
-      fileWriter = new CTecplotFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
+      fileWriter = new CTecplotFileWriter(fileName, surfaceDataSorter,
                                           curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
@@ -555,11 +688,11 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Tecplot binary surface" << fileName + CTecplotBinaryFileWriter::fileExt;
       }
 
-      fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
+      fileWriter = new CTecplotBinaryFileWriter(fileName, surfaceDataSorter,
                                                 curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
-      
+
     case STL:
 
       if (fileName.empty())
@@ -575,7 +708,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "STL ASCII" << fileName + CSTLFileWriter::fileExt;
       }
 
-      fileWriter = new CSTLFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
+      fileWriter = new CSTLFileWriter(fileName, surfaceDataSorter);
 
       break;
 
@@ -590,11 +723,18 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
     fileWriter->Write_Data();
 
+    su2double BandWidth = fileWriter->Get_Bandwidth();
+
     /*--- Compute and store the bandwidth ---*/
 
     if (format == RESTART_BINARY){
-      su2double BandWidth = fileWriter->Get_Bandwidth();
       config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+BandWidth);
+    }
+
+    if (config->GetWrt_Performance() && (rank == MASTER_NODE)){
+      fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+      (*fileWritingTable) << " " << "(" + PrintingToolbox::to_string(BandWidth) + " MB/s)";
+      fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
     }
 
     delete fileWriter;
@@ -671,19 +811,19 @@ void COutput::PrintConvergenceSummary(){
   ConvSummary.PrintHeader();
   for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
     const string &convField = convFields[iField_Conv];
-    if (historyOutput_Map[convField].fieldType == HistoryFieldType::COEFFICIENT) {
+    if (historyOutput_Map.at(convField).fieldType == HistoryFieldType::COEFFICIENT) {
       string convMark = "No";
-      if ( historyOutput_Map["CAUCHY_" + convField].value < cauchyEps) convMark = "Yes";
-      ConvSummary << historyOutput_Map["CAUCHY_" + convField].fieldName
-          <<  historyOutput_Map["CAUCHY_" + convField].value
+      if ( historyOutput_Map.at("CAUCHY_" + convField).value < cauchyEps) convMark = "Yes";
+      ConvSummary << historyOutput_Map.at("CAUCHY_" + convField).fieldName
+          <<  historyOutput_Map.at("CAUCHY_" + convField).value
           << " < " + PrintingToolbox::to_string(cauchyEps) << convMark;
     }
-    else if (historyOutput_Map[convField].fieldType == HistoryFieldType::RESIDUAL ||
-        historyOutput_Map[convField].fieldType == HistoryFieldType::AUTO_RESIDUAL)  {
+    else if (historyOutput_Map.at(convField).fieldType == HistoryFieldType::RESIDUAL ||
+        historyOutput_Map.at(convField).fieldType == HistoryFieldType::AUTO_RESIDUAL)  {
       string convMark = "No";
-      if (historyOutput_Map[convField].value < minLogResidual) convMark = "Yes";
-      ConvSummary << historyOutput_Map[convField].fieldName
-          << historyOutput_Map[convField].value
+      if (historyOutput_Map.at(convField).value < minLogResidual) convMark = "Yes";
+      ConvSummary << historyOutput_Map.at(convField).fieldName
+          << historyOutput_Map.at(convField).value
           << " < " + PrintingToolbox::to_string(minLogResidual) << convMark;
     }
   }
@@ -702,11 +842,11 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
     const string &convField = convFields[iField_Conv];
     if (historyOutput_Map.count(convField) > 0){
-      su2double monitor = historyOutput_Map[convField].value;
+      su2double monitor = historyOutput_Map.at(convField).value;
 
       /*--- Cauchy based convergence criteria ---*/
 
-      if (historyOutput_Map[convField].fieldType == HistoryFieldType::COEFFICIENT) {
+      if (historyOutput_Map.at(convField).fieldType == HistoryFieldType::COEFFICIENT) {
 
         if (Iteration == 0){
           for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++){
@@ -747,8 +887,8 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
       /*--- Residual based convergence criteria ---*/
 
-      if (historyOutput_Map[convField].fieldType == HistoryFieldType::RESIDUAL ||
-          historyOutput_Map[convField].fieldType == HistoryFieldType::AUTO_RESIDUAL) {
+      if (historyOutput_Map.at(convField).fieldType == HistoryFieldType::RESIDUAL ||
+          historyOutput_Map.at(convField).fieldType == HistoryFieldType::AUTO_RESIDUAL) {
 
         /*--- Check the convergence ---*/
 
@@ -886,7 +1026,7 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
 
   for (iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
     const string &fieldIdentifier = historyOutput_List[iField_Output];
-    const HistoryOutputField &field = historyOutput_Map[fieldIdentifier];
+    const HistoryOutputField &field = historyOutput_Map.at(fieldIdentifier);
     for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
       const string & requestedField = requestedHistoryFields[iReqField];
       if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
@@ -900,7 +1040,7 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
   for (iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
     const string &fieldIdentifier = historyOutputPerSurface_List[iField_Output];
     for (iMarker = 0; iMarker < historyOutputPerSurface_Map[fieldIdentifier].size(); iMarker++){
-      const HistoryOutputField &field = historyOutputPerSurface_Map[fieldIdentifier][iMarker];
+      const HistoryOutputField &field = historyOutputPerSurface_Map.at(fieldIdentifier)[iMarker];
       for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
         const string &requestedField = requestedHistoryFields[iReqField];
         if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
@@ -929,7 +1069,7 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
 
   for (iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
     const string &fieldIdentifier = historyOutput_List[iField_Output];
-    const HistoryOutputField &field = historyOutput_Map[fieldIdentifier];
+    const HistoryOutputField &field = historyOutput_Map.at(fieldIdentifier);
     for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
       const string &RequestedField = requestedHistoryFields[iReqField];
       if (RequestedField == field.outputGroup){
@@ -941,7 +1081,7 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
   for (iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
     const string &fieldIdentifier = historyOutputPerSurface_List[iField_Output];
     for (iMarker = 0; iMarker < historyOutputPerSurface_Map[fieldIdentifier].size(); iMarker++){
-      const HistoryOutputField &field = historyOutputPerSurface_Map[fieldIdentifier][iMarker];
+      const HistoryOutputField &field = historyOutputPerSurface_Map.at(fieldIdentifier)[iMarker];
       for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
         const string &RequestedField = requestedHistoryFields[iReqField];
         if (RequestedField == field.outputGroup){
@@ -971,28 +1111,28 @@ void COutput::SetScreen_Output(CConfig *config) {
     stringstream out;
     RequestedField = requestedScreenFields[iReqField];
     if (historyOutput_Map.count(RequestedField) > 0){
-      switch (historyOutput_Map[RequestedField].screenFormat) {
+      switch (historyOutput_Map.at(RequestedField).screenFormat) {
         case ScreenOutputFormat::INTEGER:
-          PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(historyOutput_Map[RequestedField].value), fieldWidth);
+          PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(historyOutput_Map.at(RequestedField).value), fieldWidth);
           break;
         case ScreenOutputFormat::FIXED:
-          PrintingToolbox::PrintScreenFixed(out, historyOutput_Map[RequestedField].value, fieldWidth);
+          PrintingToolbox::PrintScreenFixed(out, historyOutput_Map.at(RequestedField).value, fieldWidth);
           break;
         case ScreenOutputFormat::SCIENTIFIC:
-          PrintingToolbox::PrintScreenScientific(out, historyOutput_Map[RequestedField].value, fieldWidth);
+          PrintingToolbox::PrintScreenScientific(out, historyOutput_Map.at(RequestedField).value, fieldWidth);
           break;
       }
     }
     if (historyOutputPerSurface_Map.count(RequestedField) > 0){
-      switch (historyOutputPerSurface_Map[RequestedField][0].screenFormat) {
+      switch (historyOutputPerSurface_Map.at(RequestedField)[0].screenFormat) {
         case ScreenOutputFormat::INTEGER:
-          PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(historyOutputPerSurface_Map[RequestedField][0].value), fieldWidth);
+          PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(historyOutputPerSurface_Map.at(RequestedField)[0].value), fieldWidth);
           break;
         case ScreenOutputFormat::FIXED:
-          PrintingToolbox::PrintScreenFixed(out, historyOutputPerSurface_Map[RequestedField][0].value, fieldWidth);
+          PrintingToolbox::PrintScreenFixed(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
           break;
         case ScreenOutputFormat::SCIENTIFIC:
-          PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map[RequestedField][0].value, fieldWidth);
+          PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
           break;
       }
     }
@@ -1031,8 +1171,8 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
     if (rank == MASTER_NODE && !noWriting){
 
       /*--- Open history file and print the header ---*/
-
-      PrepareHistoryFile(config);
+      if (!config->GetMultizone_Problem() || config->GetWrt_ZoneConv())
+        PrepareHistoryFile(config);
 
       total_width = nRequestedScreenFields*fieldWidth + (nRequestedScreenFields-1);
 
@@ -1127,10 +1267,10 @@ void COutput::CheckHistoryOutput(){
   for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++){
     requestedField = requestedScreenFields[iReqField];
     if (historyOutput_Map.count(requestedField) > 0){
-      convergenceTable->AddColumn(historyOutput_Map[requestedField].fieldName, fieldWidth);
+      convergenceTable->AddColumn(historyOutput_Map.at(requestedField).fieldName, fieldWidth);
     }
     else if (historyOutputPerSurface_Map.count(requestedField) > 0){
-      convergenceTable->AddColumn(historyOutputPerSurface_Map[requestedField][0].fieldName, fieldWidth);
+      convergenceTable->AddColumn(historyOutputPerSurface_Map.at(requestedField)[0].fieldName, fieldWidth);
     }else {
       FieldsToRemove.push_back(requestedField);
     }
@@ -1174,7 +1314,7 @@ void COutput::CheckHistoryOutput(){
   for (unsigned short iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
     const string &fieldReference = historyOutput_List[iField_Output];
     if (historyOutput_Map.count(fieldReference) > 0){
-      const HistoryOutputField &field = historyOutput_Map[fieldReference];
+      const HistoryOutputField &field = historyOutput_Map.at(fieldReference);
       for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
         requestedField = requestedHistoryFields[iReqField];
         if (requestedField == field.outputGroup){
@@ -1187,8 +1327,8 @@ void COutput::CheckHistoryOutput(){
   for (unsigned short iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
     const string &fieldReference = historyOutputPerSurface_List[iField_Output];
     if (historyOutputPerSurface_Map.count(fieldReference) > 0){
-      for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map[fieldReference].size(); iMarker++){
-        const HistoryOutputField &Field = historyOutputPerSurface_Map[fieldReference][iMarker];
+      for (unsigned short iMarker = 0; iMarker < historyOutputPerSurface_Map.at(fieldReference).size(); iMarker++){
+        const HistoryOutputField &Field = historyOutputPerSurface_Map.at(fieldReference)[iMarker];
         for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
           requestedField = requestedHistoryFields[iReqField];
           if (requestedField == Field.outputGroup){
@@ -1339,7 +1479,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
     const string &fieldReference = volumeOutput_List[iField_Output];
     if (volumeOutput_Map.count(fieldReference) > 0){
-      VolumeOutputField &Field = volumeOutput_Map[fieldReference];
+      VolumeOutputField &Field = volumeOutput_Map.at(fieldReference);
 
       /*--- Loop through all fields specified in the config ---*/
 
@@ -1485,7 +1625,7 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
      * the same for every value of iPoint --- */
 
     if (volumeOutput_Map.count(name) > 0){
-      const short Offset = volumeOutput_Map[name].offset;
+      const short Offset = volumeOutput_Map.at(name).offset;
       fieldIndexCache.push_back(Offset);
       if (Offset != -1){
         volumeDataSorter->SetUnsorted_Data(iPoint, Offset, value);
@@ -1517,7 +1657,7 @@ su2double COutput::GetVolumeOutputValue(string name, unsigned long iPoint){
      * the same for every value of iPoint --- */
 
     if (volumeOutput_Map.count(name) > 0){
-      const short Offset = volumeOutput_Map[name].offset;
+      const short Offset = volumeOutput_Map.at(name).offset;
       fieldGetIndexCache.push_back(Offset);
       if (Offset != -1){
         return volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
@@ -1553,7 +1693,7 @@ void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2doub
      * the same for every value of iPoint --- */
 
     if (volumeOutput_Map.count(name) > 0){
-      const short Offset = volumeOutput_Map[name].offset;
+      const short Offset = volumeOutput_Map.at(name).offset;
       fieldIndexCache.push_back(Offset);
       if (Offset != -1){
 
@@ -1595,7 +1735,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
 
   for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
     const string &fieldIdentifier = historyOutput_List[iField];
-    const HistoryOutputField &currentField = historyOutput_Map[fieldIdentifier];
+    const HistoryOutputField &currentField = historyOutput_Map.at(fieldIdentifier);
     if (currentField.fieldType == HistoryFieldType::RESIDUAL){
       if ( SetInit_Residuals(config) || (currentField.value > initialResiduals[fieldIdentifier]) ) {
         initialResiduals[fieldIdentifier] = currentField.value;
@@ -1637,11 +1777,11 @@ void COutput::Postprocess_HistoryData(CConfig *config){
 void COutput::Postprocess_HistoryFields(CConfig *config){
 
   map<string, bool> Average;
-  map<string, string> AverageGroupName =  CCreateMap<string, string>("BGS_RES", "bgs")("RMS_RES","rms")("MAX_RES", "max");
+  map<string, string> AverageGroupName = {{"BGS_RES", "bgs"},{"RMS_RES","rms"},{"MAX_RES", "max"}};
 
   for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
     const string &fieldIdentifier = historyOutput_List[iField];
-    const HistoryOutputField &currentField = historyOutput_Map[fieldIdentifier];
+    const HistoryOutputField &currentField = historyOutput_Map.at(fieldIdentifier);
     if (currentField.fieldType == HistoryFieldType::RESIDUAL){
       AddHistoryOutput("REL_" + fieldIdentifier, "rel" + currentField.fieldName, currentField.screenFormat,
                        "REL_" + currentField.outputGroup,  "Relative residual.", HistoryFieldType::AUTO_RESIDUAL);
@@ -1660,7 +1800,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   if (config->GetTime_Domain()){
     for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
       const string &fieldIdentifier = historyOutput_List[iField];
-      const HistoryOutputField &currentField = historyOutput_Map[fieldIdentifier];
+      const HistoryOutputField &currentField = historyOutput_Map.at(fieldIdentifier);
       if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
         AddHistoryOutput("TAVG_"   + fieldIdentifier, "tavg["  + currentField.fieldName + "]",
                          currentField.screenFormat, "TAVG_"   + currentField.outputGroup, "Time averaged values.",
@@ -1672,7 +1812,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   if (config->GetDirectDiff()){
     for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
       const string &fieldIdentifier = historyOutput_List[iField];
-      const HistoryOutputField &currentField = historyOutput_Map[fieldIdentifier];
+      const HistoryOutputField &currentField = historyOutput_Map.at(fieldIdentifier);
       if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
         AddHistoryOutput("D_"      + fieldIdentifier, "d["     + currentField.fieldName + "]",
                          currentField.screenFormat, "D_"      + currentField.outputGroup,
@@ -1684,7 +1824,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   if (config->GetTime_Domain() && config->GetDirectDiff()){
     for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
       const string &fieldIdentifier = historyOutput_List[iField];
-      const HistoryOutputField &currentField = historyOutput_Map[fieldIdentifier];
+      const HistoryOutputField &currentField = historyOutput_Map.at(fieldIdentifier);
       if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
         AddHistoryOutput("D_TAVG_" + fieldIdentifier, "dtavg[" + currentField.fieldName + "]",
                          currentField.screenFormat, "D_TAVG_" + currentField.outputGroup,
@@ -1697,8 +1837,9 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
     const string &convField = convFields[iFieldConv];
     if (historyOutput_Map.count(convField) > 0){
       if (historyOutput_Map[convField].fieldType == HistoryFieldType::COEFFICIENT){
-        AddHistoryOutput("CAUCHY_" + convField, "Cauchy["  + historyOutput_Map[convField].fieldName + "]", ScreenOutputFormat::SCIENTIFIC, "CAUCHY",
-                         "Cauchy residual value of field set with CONV_FIELD." ,HistoryFieldType::AUTO_COEFFICIENT);
+        AddHistoryOutput("CAUCHY_" + convField, "Cauchy["  + historyOutput_Map.at(convField).fieldName + "]",
+                         ScreenOutputFormat::SCIENTIFIC, "CAUCHY", "Cauchy residual value of field set with CONV_FIELD.",
+                         HistoryFieldType::AUTO_COEFFICIENT);
       }
     }
   }
@@ -1809,6 +1950,12 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
   unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
   unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);
 
+  if (config->GetMultizone_Problem() && !config->GetWrt_ZoneConv()){
+
+    return false;
+
+  }
+
   /*--- Check if screen output should be written --- */
 
   if (!PrintOutput(curTimeIter, HistoryWrt_Freq_Time)&&
@@ -1870,16 +2017,17 @@ void COutput::SetCommonHistoryFields(CConfig *config){
 
 void COutput::LoadCommonHistoryData(CConfig *config){
 
+  SetHistoryOutputValue("TIME_STEP", config->GetDelta_UnstTimeND()*config->GetTime_Ref());
+
+  /*--- Update the current time only if the time iteration has changed ---*/
+
+  if (SU2_TYPE::Int(GetHistoryFieldValue("TIME_ITER")) != curTimeIter){
+    SetHistoryOutputValue("CUR_TIME",  GetHistoryFieldValue("CUR_TIME") + GetHistoryFieldValue("TIME_STEP"));
+  }
+
   SetHistoryOutputValue("TIME_ITER",  curTimeIter);
   SetHistoryOutputValue("INNER_ITER", curInnerIter);
   SetHistoryOutputValue("OUTER_ITER", curOuterIter);
-
-  if (config->GetTime_Domain()){
-    SetHistoryOutputValue("TIME_STEP", config->GetDelta_UnstTimeND()*config->GetTime_Ref());
-    if (curInnerIter == 0){
-      SetHistoryOutputValue("CUR_TIME",  GetHistoryFieldValue("CUR_TIME") + GetHistoryFieldValue("TIME_STEP"));
-    }
-  }
 
   su2double StopTime, UsedTime;
 #ifndef HAVE_MPI
@@ -1906,7 +2054,7 @@ void COutput::PrintHistoryFields(){
 
     for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
 
-      HistoryOutputField &Field = historyOutput_Map[historyOutput_List[iField]];
+      HistoryOutputField &Field = historyOutput_Map.at(historyOutput_List[iField]);
 
       if (Field.description != ""){
         if (historyOutput_List[iField].size() > NameSize){
@@ -1933,7 +2081,7 @@ void COutput::PrintHistoryFields(){
 
     for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
 
-      HistoryOutputField &Field = historyOutput_Map[historyOutput_List[iField]];
+      HistoryOutputField &Field = historyOutput_Map.at(historyOutput_List[iField]);
 
       if (Field.fieldType == HistoryFieldType::DEFAULT
           || Field.fieldType == HistoryFieldType::COEFFICIENT
@@ -1976,7 +2124,7 @@ void COutput::PrintHistoryFields(){
 
     for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
 
-      HistoryOutputField &Field = historyOutput_Map[historyOutput_List[iField]];
+      HistoryOutputField &Field = historyOutput_Map.at(historyOutput_List[iField]);
 
       if ((Field.fieldType == HistoryFieldType::AUTO_COEFFICIENT ||
            Field.fieldType == HistoryFieldType::AUTO_RESIDUAL) && (GroupVisited.count(Field.outputGroup) == 0)){
@@ -2014,7 +2162,7 @@ void COutput::PrintVolumeFields(){
 
     for (unsigned short iField = 0; iField < volumeOutput_List.size(); iField++){
 
-      VolumeOutputField &Field = volumeOutput_Map[volumeOutput_List[iField]];
+      VolumeOutputField &Field = volumeOutput_Map.at(volumeOutput_List[iField]);
 
       if (Field.description != ""){
         if (volumeOutput_List[iField].size() > NameSize){
@@ -2040,7 +2188,7 @@ void COutput::PrintVolumeFields(){
 
     for (unsigned short iField = 0; iField < volumeOutput_List.size(); iField++){
 
-      VolumeOutputField &Field = volumeOutput_Map[volumeOutput_List[iField]];
+      VolumeOutputField &Field = volumeOutput_Map.at(volumeOutput_List[iField]);
 
       if (Field.description != "")
         VolumeFieldTable << volumeOutput_List[iField] << Field.outputGroup << Field.description;

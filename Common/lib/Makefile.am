@@ -46,7 +46,7 @@ endif
 
 lib_sources = \
   ../src/fem_cgns_elements.cpp \
-  ../src/config_structure.cpp \
+  ../src/CConfig.cpp \
   ../src/blas_structure.cpp \
   ../src/fem_geometry_structure.cpp \
   ../src/fem_integration_rules.cpp \

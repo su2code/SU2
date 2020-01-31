@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../config_structure.hpp"
+#include "../CConfig.hpp"
 
 #ifdef CODI_REVERSE_TYPE
 template<class ScalarType>
