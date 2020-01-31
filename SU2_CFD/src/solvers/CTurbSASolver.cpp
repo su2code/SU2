@@ -2352,5 +2352,5 @@ void CTurbSASolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
   for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
     Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
   }
-  
+
 }
