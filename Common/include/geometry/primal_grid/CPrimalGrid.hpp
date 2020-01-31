@@ -34,7 +34,7 @@
 #include <vector>
 #include <cstdlib>
 
-#include "../../config_structure.hpp"
+#include "../../CConfig.hpp"
 
 
 /*!

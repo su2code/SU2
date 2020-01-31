@@ -37,7 +37,7 @@
 #include <limits>
 #include <cstdlib>
 
-#include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/CConfig.hpp"
 #include "../../Common/include/geometry/elements/CElement.hpp"
 #include "fluid_model.hpp"
 

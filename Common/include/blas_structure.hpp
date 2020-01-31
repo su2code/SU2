@@ -30,7 +30,7 @@
 #pragma once
 
 #include "datatype_structure.hpp"
-#include "config_structure.hpp"
+#include "CConfig.hpp"
 
 /* LIBXSMM include files, if supported. */
 #ifdef HAVE_LIBXSMM

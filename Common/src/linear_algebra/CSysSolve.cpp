@@ -29,7 +29,7 @@
 #include "../../include/linear_algebra/CSysSolve_b.hpp"
 #include "../../include/omp_structure.hpp"
 #include "../../include/option_structure.hpp"
-#include "../../include/config_structure.hpp"
+#include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/linear_algebra/CMatrixVectorProduct.hpp"

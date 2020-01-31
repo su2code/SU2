@@ -36,7 +36,7 @@
 #include <limits>
 #include <stdexcept>
 
-#include "config_structure.hpp"
+#include "CConfig.hpp"
 #include "geometry/CGeometry.hpp"
 
 using namespace std;

@@ -56,7 +56,7 @@ extern "C" {
 #include "dual_grid/CVertex.hpp"
 #include "dual_grid/CTurboVertex.hpp"
 
-#include "../config_structure.hpp"
+#include "../CConfig.hpp"
 #include "../geometry_structure_fem_part.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
 

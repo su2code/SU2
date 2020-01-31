@@ -39,7 +39,7 @@
 #include <ctime>
 
 #include "geometry/CGeometry.hpp"
-#include "config_structure.hpp"
+#include "CConfig.hpp"
 #include "linear_algebra/CSysMatrix.hpp"
 #include "linear_algebra/CSysVector.hpp"
 #include "linear_algebra/CSysSolve.hpp"

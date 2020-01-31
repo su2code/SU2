@@ -38,7 +38,7 @@
 #include "numerics_structure.hpp"
 
 #include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/CConfig.hpp"
 
 using namespace std;
 
