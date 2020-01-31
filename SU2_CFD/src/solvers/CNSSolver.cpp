@@ -1131,7 +1131,8 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
   const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) ||
                          (config->GetKind_Turb_Model() == SST_SUST);
 
-  CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   /*--- Start OpenMP parallel section. ---*/
 
