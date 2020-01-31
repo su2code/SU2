@@ -213,7 +213,16 @@ def amg ( config , kind='' ):
         config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
 
         #--- Run an adjoint if the adjoint solution file doesn't exist
-        if not (os.path.exists(config_cfd.SOLUTION_ADJ_FILENAME)):
+        solution_adj_ini = config_cfd.SOLUTION_ADJ_FILENAME           
+        solution_adj_ini = solution_adj_ini.split('.')[0]
+        if 'RESTART_ASCII' in config.get('OUTPUT_FILES', ['RESTART_BINARY']):
+            solution_adj_ini += '.csv'
+        else:
+            solution_adj_ini += '.dat'
+        func_name         = config.OBJECTIVE_FUNCTION
+        suffix            = get_adjointSuffix(func_name)
+        solution_adj_ini  = add_suffix(solution_adj_ini,suffix)
+        if not (os.path.exists(solution_adj_ini)):
             config_cfd.RESTART_SOL= 'NO'
             SU2_CFD(config_cfd)
 
