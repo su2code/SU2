@@ -44,6 +44,8 @@ def main():
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-c", "--compute",    dest="compute",    default="True",
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
+    parser.add_option("-a", "--onlyadjoint", dest="onlyadjoint", default="False",
+                      help="compute ONLY adjoint problem", metavar="ONLY_ADJ")
     parser.add_option("-s", "--step",       dest="step",       default=1E-4,
                       help="DOT finite difference STEP", metavar="STEP")
     parser.add_option("-v", "--validate", dest="validate", default="False",
@@ -55,12 +57,14 @@ def main():
     options.partitions  = int( options.partitions )
     options.step        = float( options.step )
     options.compute     = options.compute.upper() == 'TRUE'
+    options.onlyadjoint = options.onlyadjoint.upper() == 'TRUE'
     options.validate    = options.validate.upper() == 'TRUE'
     options.nzones      = int( options.nzones )
 
     discrete_adjoint( options.filename    ,
                       options.partitions  ,
                       options.compute     ,
+                      options.onlyadjoint,
                       options.step        ,
                       options.nzones       )
 
@@ -74,6 +78,7 @@ def main():
 def discrete_adjoint( filename           ,
                       partitions  = 0    , 
                       compute     = True ,
+                      onlyadjoint = False ,
                       step        = 1e-4 ,
                       nzones      = 1     ):
     # Config
@@ -101,7 +106,7 @@ def discrete_adjoint( filename           ,
     konfig = copy.deepcopy(config)
 
     # Direct Solution
-    if compute:
+    if compute and not onlyadjoint:
         info = SU2.run.direct(config)
         state.update(info)
         # Update konfig
@@ -118,10 +123,21 @@ def discrete_adjoint( filename           ,
 
     # Run all-at-once
     if compute:
+        restart_sol_activated = False
+        if konfig.get('RESTART_SOL','NO') == 'YES':
+            restart_sol_activated = True
+            konfig['TIME_ITER'] = konfig['TIME_ITER'] - int(konfig['RESTART_ITER'])
+            konfig.RESTART_SOL = 'NO'
         info = SU2.run.adjoint(konfig)
         state.update(info)
-        SU2.io.restart2solution(konfig,state)
 
+        # Workaround, since expandTime relies on UNST_ADJOINT_ITER to determine number of solution files.
+        if restart_sol_activated == True:
+            unst_adj_iter = konfig['UNST_ADJOINT_ITER']
+            konfig['UNST_ADJOINT_ITER'] =  konfig['TIME_ITER'] - int(konfig['RESTART_ITER'])
+        SU2.io.restart2solution(konfig,state)
+        if restart_sol_activated == True:
+            konfig['UNST_ADJOINT_ITER'] = unst_adj_iter
     # Gradient Projection
     info = SU2.run.projection(konfig,step)
     state.update(info)

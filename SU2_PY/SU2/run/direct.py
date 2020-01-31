@@ -87,7 +87,14 @@ def direct ( config ):
     # filenames
     plot_format      = konfig.get('TABULAR_FORMAT', 'CSV')
     plot_extension   = su2io.get_extension(plot_format)
-    history_filename = konfig['CONV_FILENAME'] + plot_extension
+
+    # adapt the history_filename, if a restart solution is chosen
+    if konfig.get('RESTART_SOL','NO') == 'YES':
+        restart_iter = '_'+str(konfig['RESTART_ITER']).zfill(5)
+        history_filename = konfig['CONV_FILENAME'] + restart_iter + plot_extension
+    else:
+        history_filename = konfig['CONV_FILENAME'] + plot_extension
+
     special_cases    = su2io.get_specialCases(konfig)
     
     # averaging final iterations
