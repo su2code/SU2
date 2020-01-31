@@ -2,7 +2,7 @@
  * \file CSTLFileWriter.cpp
  * \brief STL Writer output class
  * \author T. Kattmann, T. Albring
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,15 +34,8 @@
 const string CSTLFileWriter::fileExt = ".stl";
 
 
-CSTLFileWriter::CSTLFileWriter(const vector<string>& fields,
-                               unsigned short nDim,
-                               string fileName,
-                               CParallelDataSorter *dataSorter) :
-                CFileWriter(fields,
-                            std::move(fileName),
-                            dataSorter,
-                            fileExt,
-                            nDim){}
+CSTLFileWriter::CSTLFileWriter(string valFileName, CParallelDataSorter *valDataSorter) :
+  CFileWriter(std::move(valFileName), valDataSorter, fileExt){}
 
 
 CSTLFileWriter::~CSTLFileWriter(){}
@@ -119,6 +112,9 @@ void CSTLFileWriter::Write_Data(){
 
 void CSTLFileWriter::ReprocessElementConnectivity(){
 
+  
+  const vector<string>& fieldNames = dataSorter->GetFieldNames();
+  
   /*--- Re-process the element connectivity information and store that appropriatly such that
     this information can be accessed in step 2. It is copied from CTecplotBinaryFileWriter.cpp +162 and mildly modified. ---*/
 
@@ -189,8 +185,8 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
                      MPI_COMM_WORLD);
 
   /* Now actually send and receive the data */
-  data_to_send.resize(max<unsigned long>(1, total_num_nodes_to_send * fieldnames.size()));
-  halo_var_data.resize(max<unsigned long>(1, fieldnames.size() * num_halo_nodes));
+  data_to_send.resize(max<unsigned long>(1, total_num_nodes_to_send * fieldNames.size()));
+  halo_var_data.resize(max<unsigned long>(1, fieldNames.size() * num_halo_nodes));
   num_values_to_send.resize(size);
   values_to_send_displacements.resize(size);
   num_values_to_receive.resize(size);
@@ -199,12 +195,12 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
   for(int iRank = 0; iRank < size; ++iRank) {
 
     /* We send and receive GlobalField_Counter values per node. */
-    num_values_to_send[iRank]              = num_nodes_to_send[iRank] * fieldnames.size();
-    values_to_send_displacements[iRank]    = nodes_to_send_displacements[iRank] * fieldnames.size();
-    num_values_to_receive[iRank]           = num_nodes_to_receive[iRank] * fieldnames.size();
-    values_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank] * fieldnames.size();
+    num_values_to_send[iRank]              = num_nodes_to_send[iRank] * fieldNames.size();
+    values_to_send_displacements[iRank]    = nodes_to_send_displacements[iRank] * fieldNames.size();
+    num_values_to_receive[iRank]           = num_nodes_to_receive[iRank] * fieldNames.size();
+    values_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank] * fieldNames.size();
 
-    for(iVar = 0; iVar < fieldnames.size(); ++iVar) {
+    for(iVar = 0; iVar < fieldNames.size(); ++iVar) {
       for(int iNode = 0; iNode < num_nodes_to_send[iRank]; ++iNode) {
         unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - dataSorter->GetNodeBegin(rank);
         data_to_send[index++] = SU2_TYPE::GetValue(dataSorter->GetData(iVar,node_offset));

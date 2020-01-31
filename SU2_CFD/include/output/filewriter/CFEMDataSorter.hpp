@@ -2,11 +2,11 @@
  * \file CFEMDataSorter.hpp
  * \brief Headers fo the FEM data sorter class.
  * \author T. Albring, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -37,9 +37,9 @@ public:
    * \brief Constructor
    * \param[in] config - Pointer to the current config structure
    * \param[in] geometry - Pointer to the current geometry
-   * \param[in] nFields - Number of output fields
+   * \param[in] valFieldNames - Vector containing the field names
    */
-  CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields);
+  CFEMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames);
 
   /*!
    * \brief Destructor

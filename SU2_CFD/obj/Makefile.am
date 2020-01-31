@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.0 "Blackbird"
+# \version 7.0.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -87,6 +87,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/filewriter/CParallelDataSorter.cpp \
   ../src/output/filewriter/CParallelFileWriter.cpp \
   ../src/output/filewriter/CParaviewBinaryFileWriter.cpp \
+  ../src/output/filewriter/CParaviewXMLFileWriter.cpp \
+  ../src/output/filewriter/CParaviewVTMFileWriter.cpp \
   ../src/output/filewriter/CParaviewFileWriter.cpp \
   ../src/output/filewriter/CSurfaceFEMDataSorter.cpp \
   ../src/output/filewriter/CSurfaceFVMDataSorter.cpp \
