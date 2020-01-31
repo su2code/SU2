@@ -188,6 +188,9 @@ def amg ( config , kind='' ):
                     err += opt + '\n'
             raise RuntimeError , err
 
+        sys.stdout.write('Initial CFD solution is provided.\n')
+        sys.stdout.flush()
+
         stdout_hdl = open('ini.out','w') # new targets
         stderr_hdl = open('ini.err','w')
 
@@ -225,12 +228,11 @@ def amg ( config , kind='' ):
         else:
             config_cfd.ITER = 1
             SU2_CFD(config_cfd)
+            sys.stdout.write('Initial adjoint CFD solution is provided.\n')
+            sys.stdout.flush()
 
         sys.stdout = sav_stdout
         sys.stderr = sav_stderr
-        
-        sys.stdout.write('Initial CFD solution is provided.\n')
-        sys.stdout.flush()
         
     #--- Check existence of initial mesh, solution
     
