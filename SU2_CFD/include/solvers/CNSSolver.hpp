@@ -40,9 +40,9 @@ private:
   su2double Viscosity_Inf;  /*!< \brief Viscosity at the infinity. */
   su2double Tke_Inf;        /*!< \brief Turbulent kinetic energy at the infinity. */
 
-  CoefficientsArray ViscCoeff;          /*!< \brief Viscous contributions for each boundary. */
-  CoefficientsArray SurfaceViscCoeff;   /*!< \brief Viscous contributions for each monitoring boundary. */
-  Coefficients AllBoundViscCoeff;       /*!< \brief Total pressure contribution for all the boundaries. */
+  AeroCoeffsArray ViscCoeff;          /*!< \brief Viscous contributions for each boundary. */
+  AeroCoeffsArray SurfaceViscCoeff;   /*!< \brief Viscous contributions for each monitoring boundary. */
+  AeroCoeffs AllBoundViscCoeff;       /*!< \brief Total pressure contribution for all the boundaries. */
 
   su2double
   *Surface_Buffet_Metric = nullptr, /*!< \brief Integrated separation sensor for each monitoring surface. */
