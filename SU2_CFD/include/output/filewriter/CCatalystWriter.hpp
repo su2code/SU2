@@ -42,15 +42,14 @@ public:
    * \param[in] fileName - The name of the file
    * \param[in] data_sorter - The parallel sorted data to write
    */  
-  CCatalystWriter(vector<string> fields, unsigned short nDim, 
-                  string fileName, CParallelDataSorter* data_sorter);
+  CCatalystWriter(string fileName, CParallelDataSorter* data_sorter);
 
   ~CCatalystWriter();  
   
   void BuildVTKGrid();
   
-  void UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParallelDataSorter *data_sorter);
-  void BuildVTKDataStructures(vtkCPInputDataDescription* idd, CParallelDataSorter *data_sorter);
+  void UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParallelDataSorter *dataSorter);
+  void BuildVTKDataStructures(vtkCPInputDataDescription* idd, CParallelDataSorter *dataSorter);
   
   void Write_Data(unsigned long TimeStep, double time);
   

@@ -4,9 +4,8 @@
 #include <set>
 
 
-CCatalystWriter::CCatalystWriter(vector<string> fields, unsigned short nDim, 
-                                 string fileName, CParallelDataSorter *dataSorter): 
-  CFileWriter(std::move(fields), std::move(fileName), dataSorter, "", nDim){
+CCatalystWriter::CCatalystWriter(string fileName, CParallelDataSorter *dataSorter): 
+  CFileWriter(std::move(fileName), dataSorter, ""){
   
   Processor = vtkCPProcessor::New();
   Processor->Initialize();
@@ -36,14 +35,13 @@ void CCatalystWriter::BuildVTKGrid()
 {
   LOG_SCOPE_FUNCTION(INFO);
   
+  const vector<string>& fieldNames = dataSorter->GetFieldNames();
+  
   const int NCOORDS = 3;
   
   /*--- Compute our local number of elements, the required storage,
    and reduce the total number of elements and storage globally. ---*/
-  
-  unsigned long nTot_Line;
-  unsigned long nTot_Tria, nTot_Quad;
-  unsigned long nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
+
   unsigned long myElem, myElemStorage, GlobalElem, GlobalElemStorage;
   
   unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
@@ -53,34 +51,11 @@ void CCatalystWriter::BuildVTKGrid()
                 nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
                 nParallel_Pris = dataSorter->GetnElem(PRISM),
                 nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
-  
-  SU2_MPI::Allreduce(&nParallel_Line, &nTot_Line, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Tria, &nTot_Tria, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Quad, &nTot_Quad, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Tetr, &nTot_Tetr, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Hexa, &nTot_Hexa, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Pris, &nTot_Pris, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Pyra, &nTot_Pyra, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  
-  myElem        = (nParallel_Line + nParallel_Tria + nParallel_Quad + nParallel_Tetr +
-                   nParallel_Hexa + nParallel_Pris + nParallel_Pyra);
-  myElemStorage = (nParallel_Line*3 + nParallel_Tria*4 + nParallel_Quad*5 + nParallel_Tetr*5 +
-                   nParallel_Hexa*9 + nParallel_Pris*7 + nParallel_Pyra*6);
-  
-  GlobalElem        = (nTot_Line + nTot_Tria   + nTot_Quad   + nTot_Tetr   +
-                       nTot_Hexa   + nTot_Pris   + nTot_Pyra);
-  GlobalElemStorage = (nTot_Line*3 + nTot_Tria*4 + nTot_Quad*5 + nTot_Tetr*5 +
-                       nTot_Hexa*9 + nTot_Pris*7 + nTot_Pyra*6);
-  
 
-  
+  myElem            = dataSorter->GetnElem();
+  myElemStorage     = dataSorter->GetnConn();
+  GlobalElem        = dataSorter->GetnElemGlobal();
+  GlobalElemStorage = dataSorter->GetnConnGlobal();
   
   unsigned short iVar;
 //  NodePartitioner node_partitioner(num_nodes, size);
@@ -173,19 +148,19 @@ void CCatalystWriter::BuildVTKGrid()
                      MPI_COMM_WORLD);
   
   /* Now actually send and receive the data */
-  data_to_send.resize(max(1, total_num_nodes_to_send * (int)fieldnames.size()));
-  halo_var_data.resize(max((size_t)1, fieldnames.size() * num_halo_nodes));
+  data_to_send.resize(max(1, total_num_nodes_to_send * (int)fieldNames.size()));
+  halo_var_data.resize(max((size_t)1, fieldNames.size() * num_halo_nodes));
   num_values_to_send.resize(size);
   values_to_send_displacements.resize(size);
   num_values_to_receive.resize(size);
   size_t index = 0;
   for(int iRank = 0; iRank < size; ++iRank) {
     /* We send and receive GlobalField_Counter values per node. */
-    num_values_to_send[iRank]              = num_nodes_to_send[iRank] * fieldnames.size();
-    values_to_send_displacements[iRank]    = nodes_to_send_displacements[iRank] * fieldnames.size();
-    num_values_to_receive[iRank]           = num_nodes_to_receive[iRank] * fieldnames.size();
-    values_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank] * fieldnames.size();
-    for(iVar = 0; iVar < fieldnames.size(); ++iVar)
+    num_values_to_send[iRank]              = num_nodes_to_send[iRank] * fieldNames.size();
+    values_to_send_displacements[iRank]    = nodes_to_send_displacements[iRank] * fieldNames.size();
+    num_values_to_receive[iRank]           = num_nodes_to_receive[iRank] * fieldNames.size();
+    values_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank] * fieldNames.size();
+    for(iVar = 0; iVar < fieldNames.size(); ++iVar)
       for(int iNode = 0; iNode < num_nodes_to_send[iRank]; ++iNode) {
         unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - dataSorter->GetNodeBegin(rank);
         data_to_send[index++] = SU2_TYPE::GetValue(dataSorter->GetData(iVar,node_offset));
@@ -220,7 +195,7 @@ void CCatalystWriter::BuildVTKGrid()
   for (int iRank = 0; iRank < size; ++iRank) {
     for (int i = 0; i < num_nodes_to_receive[iRank]; i++){  
       int displ = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank]*2; 
-      if (nDim == 3) pointArray->SetValue((dataSorter->GetnPoints() + id)*NCOORDS+2, halo_var_data[displ+i]);
+      if (dataSorter->GetnDim() == 3) pointArray->SetValue((dataSorter->GetnPoints() + id)*NCOORDS+2, halo_var_data[displ+i]);
       else {pointArray->SetValue((dataSorter->GetnPoints() + id)*NCOORDS+2, 0.0);}
       id++;    
     }
@@ -229,7 +204,7 @@ void CCatalystWriter::BuildVTKGrid()
   for (unsigned long iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++){
     pointArray->SetValue(iPoint*NCOORDS+0, dataSorter->GetData(0,iPoint));
     pointArray->SetValue(iPoint*NCOORDS+1, dataSorter->GetData(1,iPoint));
-    if (nDim == 3 ) pointArray->SetValue(iPoint*NCOORDS+2, dataSorter->GetData(2,iPoint));
+    if (dataSorter->GetnDim() == 3 ) pointArray->SetValue(iPoint*NCOORDS+2, dataSorter->GetData(2,iPoint));
     else pointArray->SetValue(iPoint*NCOORDS+2, 0);
   }
  
@@ -310,11 +285,13 @@ void CCatalystWriter::BuildVTKGrid()
 }
 
 
-void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParallelDataSorter *data_sorter)
+void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParallelDataSorter *dataSorter)
 {
   LOG_SCOPE_FUNCTION(INFO);
   
-  ERROR_CONTEXT("Number of points", data_sorter->GetnPoints());
+  ERROR_CONTEXT("Number of points", dataSorter->GetnPoints());
+  
+  const vector<string>& fieldNames = dataSorter->GetFieldNames();
   
   bool allocate = false;
   
@@ -328,66 +305,66 @@ void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParal
   unsigned long index= 0;
   for(int iRank = 0; iRank < size; ++iRank) {
 
-    for(iVar = 0; iVar < fieldnames.size(); ++iVar)
+    for(iVar = 0; iVar < fieldNames.size(); ++iVar)
       for(int iNode = 0; iNode < num_nodes_to_send[iRank]; ++iNode) {
-        unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - data_sorter->GetNodeBegin(rank);
-        data_to_send[index++] = SU2_TYPE::GetValue(data_sorter->GetData(iVar,node_offset));
+        unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - dataSorter->GetNodeBegin(rank);
+        data_to_send[index++] = SU2_TYPE::GetValue(dataSorter->GetData(iVar,node_offset));
       }
   }
   SU2_MPI::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
                      &halo_var_data[0], &num_values_to_receive[0], &values_to_receive_displacements[0], MPI_DOUBLE,
                      MPI_COMM_WORLD);
   
-  unsigned long TotalnPoints = data_sorter->GetnPoints()+num_halo_nodes;
-  for (unsigned short iField = nDim; iField < fieldnames.size(); iField++){
-    string fieldname = fieldnames[iField];
+  unsigned long TotalnPoints = dataSorter->GetnPoints()+num_halo_nodes;
+  for (unsigned short iField = dataSorter->GetnDim(); iField < fieldNames.size(); iField++){
+    string fieldname = fieldNames[iField];
     
     bool output_variable = true, isVector = false;
-    size_t found = fieldnames[iField].find("_x");
+    size_t found = fieldNames[iField].find("_x");
     if (found!=string::npos) {
       output_variable = true;
       isVector = true;
     }
-    found = fieldnames[iField].find("_y");
+    found = fieldNames[iField].find("_y");
     if (found!=string::npos) {
       //skip
       output_variable = false;
     }
-    found = fieldnames[iField].find("_z");
+    found = fieldNames[iField].find("_z");
     if (found!=string::npos) {
       //skip
       output_variable = false;
     }
     
-    if (idd->IsFieldNeeded(fieldnames[iField].c_str(), vtkDataObject::POINT) == true && !isVector && output_variable){
+    if (idd->IsFieldNeeded(fieldNames[iField].c_str(), vtkDataObject::POINT) == true && !isVector && output_variable){
       if (allocate){
         
         vtkNew<vtkDoubleArray> array;
-        array->SetName(fieldnames[iField].c_str());
+        array->SetName(fieldNames[iField].c_str());
         array->SetNumberOfComponents(1);
         array->SetNumberOfValues(static_cast<vtkIdType>(TotalnPoints));
         
         VTKGrid->GetPointData()->AddArray(array.GetPointer());
         
-        SU2_INFO << "Adding catalyst output " << fieldnames[iField];
+        SU2_INFO << "Adding catalyst output " << fieldNames[iField];
       }
       
-      SU2_INFO << "Setting catalyst output " << fieldnames[iField];
+      SU2_INFO << "Setting catalyst output " << fieldNames[iField];
       
       vtkDoubleArray* data =
-          vtkDoubleArray::SafeDownCast(VTKGrid->GetPointData()->GetArray(fieldnames[iField].c_str()));
+          vtkDoubleArray::SafeDownCast(VTKGrid->GetPointData()->GetArray(fieldNames[iField].c_str()));
       //      data->SetArray(data_sorter->GetData(iField), static_cast<vtkIdType>(data_sorter->GetnPoints()), 1);
-      for (vtkIdType i = 0; i < data_sorter->GetnPoints(); i++)
+      for (vtkIdType i = 0; i < dataSorter->GetnPoints(); i++)
       {
         su2double val = 0.0;
-          val = data_sorter->GetData(iField, i);
+          val = dataSorter->GetData(iField, i);
         data->SetValue(i, val);
       }
       int id = 0;
       for (int iRank = 0; iRank < size; ++iRank) {
         for (int i = 0; i < num_nodes_to_receive[iRank]; i++){  
           int displ = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank]*iField; 
-          data->SetValue(data_sorter->GetnPoints() + id, halo_var_data[displ+i]);
+          data->SetValue(dataSorter->GetnPoints() + id, halo_var_data[displ+i]);
           id++;    
         }
       }
@@ -400,7 +377,7 @@ void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParal
           // velocity array
            vtkNew<vtkDoubleArray> array;
            array->SetName(fieldname.c_str());
-           array->SetNumberOfComponents(nDim);
+           array->SetNumberOfComponents(dataSorter->GetnDim());
            array->SetNumberOfTuples(static_cast<vtkIdType>(TotalnPoints));
            VTKGrid->GetPointData()->AddArray(array.GetPointer());
            SU2_INFO << "Adding catalyst output " << fieldname.c_str();
@@ -411,19 +388,19 @@ void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParal
         vtkDoubleArray* data =
             vtkDoubleArray::SafeDownCast(VTKGrid->GetPointData()->GetArray(fieldname.c_str()));
         
-        for (vtkIdType i = 0; i < data_sorter->GetnPoints(); i++)
+        for (vtkIdType i = 0; i < dataSorter->GetnPoints(); i++)
         {            
-          data->SetValue(i*nDim + 0, data_sorter->GetData(iField+0, i));
-          data->SetValue(i*nDim + 1, data_sorter->GetData(iField+1, i));
-          if (nDim == 3){
-            data->SetValue(i*nDim + 2, data_sorter->GetData(iField+2, i));            
+          data->SetValue(i*dataSorter->GetnDim() + 0, dataSorter->GetData(iField+0, i));
+          data->SetValue(i*dataSorter->GetnDim() + 1, dataSorter->GetData(iField+1, i));
+          if (dataSorter->GetnDim() == 3){
+            data->SetValue(i*dataSorter->GetnDim() + 2, dataSorter->GetData(iField+2, i));            
           } 
         }
         int id = 0;
         for (int iRank = 0; iRank < size; ++iRank) {
           for (int i = 0; i < num_nodes_to_receive[iRank]; i++){  
             int displ = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank]*(iField+0); 
-            data->SetValue((dataSorter->GetnPoints() + id)*nDim+0, halo_var_data[displ+i]);
+            data->SetValue((dataSorter->GetnPoints() + id)*dataSorter->GetnDim()+0, halo_var_data[displ+i]);
             id++;    
           }
         }
@@ -431,16 +408,16 @@ void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParal
         for (int iRank = 0; iRank < size; ++iRank) {
           for (int i = 0; i < num_nodes_to_receive[iRank]; i++){  
             int displ = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank]*(iField+1); 
-            data->SetValue((dataSorter->GetnPoints() + id)*nDim+1, halo_var_data[displ+i]);
+            data->SetValue((dataSorter->GetnPoints() + id)*dataSorter->GetnDim()+1, halo_var_data[displ+i]);
             id++;    
           }
         }
-        if (nDim == 3){
+        if (dataSorter->GetnDim() == 3){
           id = 0;
           for (int iRank = 0; iRank < size; ++iRank) {
             for (int i = 0; i < num_nodes_to_receive[iRank]; i++){  
               int displ = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank]*(iField+2); 
-              data->SetValue((dataSorter->GetnPoints() + id)*nDim+2, halo_var_data[displ+i]);
+              data->SetValue((dataSorter->GetnPoints() + id)*dataSorter->GetnDim()+2, halo_var_data[displ+i]);
               id++;    
             }
           }
@@ -451,7 +428,7 @@ void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParal
   }
 }
 
-void CCatalystWriter::BuildVTKDataStructures(vtkCPInputDataDescription* idd, CParallelDataSorter *data_sorter)
+void CCatalystWriter::BuildVTKDataStructures(vtkCPInputDataDescription* idd, CParallelDataSorter *dataSorter)
 {
   LOG_SCOPE_FUNCTION(INFO);
   
@@ -464,7 +441,7 @@ void CCatalystWriter::BuildVTKDataStructures(vtkCPInputDataDescription* idd, CPa
     VTKGrid = vtkUnstructuredGrid::New();
     BuildVTKGrid();
   }
-  UpdateVTKAttributes(idd, data_sorter);
+  UpdateVTKAttributes(idd, dataSorter);
   
 }
 
