@@ -220,8 +220,8 @@ def amg ( config , kind='' ):
         else:
             solution_adj_ini += '.dat'
         func_name         = config.OBJECTIVE_FUNCTION
-        suffix            = get_adjointSuffix(func_name)
-        solution_adj_ini  = add_suffix(solution_adj_ini,suffix)
+        suffix            = su2io.get_adjointSuffix(func_name)
+        solution_adj_ini  = su2io.add_suffix(solution_adj_ini,suffix)
         if not (os.path.exists(solution_adj_ini)):
             config_cfd.RESTART_SOL= 'NO'
             SU2_CFD(config_cfd)
