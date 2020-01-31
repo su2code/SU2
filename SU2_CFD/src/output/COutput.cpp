@@ -322,7 +322,7 @@ void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){
   }
   
   if (catalyst_writer == NULL){
-    catalyst_writer = new CCatalystWriter(volumeFieldNames, nDim, "", volumeDataSorter);
+    catalyst_writer = new CCatalystWriter("", volumeDataSorter);
   }
 
 }
