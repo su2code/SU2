@@ -33,7 +33,8 @@
 #include "../../Common/include/omp_structure.hpp"
 
 #define ENABLE_MAPS
-#include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/CConfig.hpp"
+#undef ENABLE_MAPS
 
 #include <cstdlib>
 #include <iostream>

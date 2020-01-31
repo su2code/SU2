@@ -33,7 +33,7 @@
 #include <cstdlib>
 #include <vector>
 
-#include "../../config_structure.hpp"
+#include "../../CConfig.hpp"
 
 /*!
  * \class CDualGrid

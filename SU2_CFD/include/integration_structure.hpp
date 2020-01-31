@@ -37,7 +37,7 @@
 
 #include "solvers/CSolver.hpp"
 #include "../../Common/include/geometry/CGeometry.hpp"
-#include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/CConfig.hpp"
 
 using namespace std;
 

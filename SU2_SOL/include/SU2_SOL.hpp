@@ -37,7 +37,7 @@
 #include "../../SU2_CFD/include/solvers/CBaselineSolver_FEM.hpp"
 #include "../../SU2_CFD/include/output/CBaselineOutput.hpp"
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
-#include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/CConfig.hpp"
 
 
 void WriteFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container, COutput* output, unsigned long TimeIter);

@@ -29,7 +29,7 @@
 #pragma once
 
 #include <cmath>
-#include "../../config_structure.hpp"
+#include "../../CConfig.hpp"
 
 /*!
  * \class CVerificationSolution

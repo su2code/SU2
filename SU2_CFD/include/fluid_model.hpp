@@ -43,7 +43,7 @@
 using namespace std;
 
 #include "../include/transport_model.hpp"
-#include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/CConfig.hpp"
 
 /*!
  * \class CFluidModel

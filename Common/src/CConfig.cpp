@@ -1,5 +1,5 @@
 /*!
- * \file config_structure.cpp
+ * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
  * \version 7.0.0 "Blackbird"
@@ -26,8 +26,9 @@
  */
 
 #define ENABLE_MAPS
+#include "../include/CConfig.hpp"
+#undef ENABLE_MAPS
 
-#include "../include/config_structure.hpp"
 #include "../include/fem_gauss_jacobi_quadrature.hpp"
 #include "../include/fem_geometry_structure.hpp"
 

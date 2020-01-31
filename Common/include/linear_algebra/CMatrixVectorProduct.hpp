@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "../config_structure.hpp"
+#include "../CConfig.hpp"
 #include "../geometry/CGeometry.hpp"
 #include "CSysVector.hpp"
 #include "CSysMatrix.hpp"
