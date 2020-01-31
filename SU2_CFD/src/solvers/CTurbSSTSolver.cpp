@@ -468,37 +468,33 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
          laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 		
       if (rough_wall) {
-		  
-		  WallShearStress = solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 0)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 0);
-		  WallShearStress += solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 1)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 1);
-		  if (nDim == 3) WallShearStress += solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 2)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 2);
-		  
-		  WallShearStress = sqrt(WallShearStress);
-		  /*--- Compute non-dimensional velocity ---*/
-          FrictionVel = sqrt(fabs(WallShearStress)/density);
 
-          /*--- Compute roughness in wall units. ---*/
-          Roughness_Height = config->GetWall_RoughnessHeight(Marker_Tag);
-          kPlus = FrictionVel*Roughness_Height*density/laminar_viscosity;
+        WallShearStress = solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 0)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 0);
+        WallShearStress += solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 1)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 1);
+        if (nDim == 3) WallShearStress += solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 2)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 2);
 
-          /*--- Reference 1 from Sandia and Aupoix ---*/
-          if (kPlus <= 25) 
-              S_R = (50/(kPlus+EPS))*(50/(kPlus+EPS));
+        WallShearStress = sqrt(WallShearStress);
+        /*--- Compute non-dimensional velocity ---*/
+        FrictionVel = sqrt(fabs(WallShearStress)/density);
+
+        /*--- Compute roughness in wall units. ---*/
+        Roughness_Height = config->GetWall_RoughnessHeight(Marker_Tag);
+        kPlus = FrictionVel*Roughness_Height*density/laminar_viscosity;
+
+        /*--- Reference 1 original Wilcox (1998) ---*/
+        /*if (kPlus <= 25) 
+            S_R = (50/(kPlus+EPS))*(50/(kPlus+EPS));
           else
-              S_R = 100/(kPlus+EPS);
+            S_R = 100/(kPlus+EPS);*/
 
-          /*--- Reference 2 from D.C. Wilcox Turbulence Modeling for CFD ---*/
-          /*if (kPlus <= 5) 
-              S_R = (200/(kPlus+EPS))*(200/(kPlus+EPS));
-          else
-              S_R = 100/(kPlus+EPS) + ((200/(kPlus+EPS))*(200/(kPlus+EPS)) - 100/(kPlus+EPS))*exp(5-kPlus);*/
-
+        /*--- Reference 2 from D.C. Wilcox Turbulence Modeling for CFD (2006) ---*/
+        if (kPlus <= 5) 
+          S_R = (200/(kPlus+EPS))*(200/(kPlus+EPS));
+        else
+          S_R = 100/(kPlus+EPS) + ((200/(kPlus+EPS))*(200/(kPlus+EPS)) - 100/(kPlus+EPS))*exp(5-kPlus);
 
          /*--- Modify the omega to account for a rough wall. ---*/
-          Solution[1] = FrictionVel*FrictionVel*S_R/(laminar_viscosity/density);
-
-
-		  
+          Solution[1] = FrictionVel*FrictionVel*S_R/(laminar_viscosity/density);	  
 		  
 	  } else {
          /*--- distance to closest neighbor ---*/

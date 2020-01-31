@@ -425,7 +425,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
       re_theta_t = (803.73 * pow((tu + 0.6067),-1.027)); //MENTER correlation
       //re_theta_t = 163.0 + exp(6.91-tu); //ABU-GHANNAM & SHAW correlation
 
-      term1 = sqrt(max(re_theta-re_theta_t,0.)/(chi_1*re_theta_t));
+      term1 = sqrt(max(re_theta-re_theta_t , 0.0)/(chi_1*re_theta_t));
       term2 = sqrt(max(nu_BC-nu_cr,0.)/(nu_cr));
       term_exponential = (term1 + term2);
       gamma_BC = 1.0 - exp(-term_exponential);
