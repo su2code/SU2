@@ -1474,13 +1474,12 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
   numerics->SetRhoCvtrIndex( nodes->GetRhoCvtrIndex() );
   numerics->SetRhoCvveIndex( nodes->GetRhoCvveIndex() );
 
-
-  /*--- Initialize the source residual to zero ---*/
-  for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
-
   /*--- loop over interior points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Initialize the source residual to zero ---*/
+    for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+    for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
 
     /*--- Set conserved & primitive variables  ---*/
     numerics->SetConservative(nodes->GetSolution(iPoint),   nodes->GetSolution(iPoint));
