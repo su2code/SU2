@@ -4,7 +4,7 @@
  *        coloring of a given graph. The functions are in the
  *        <i>graph_coloring_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,7 +31,7 @@
 
 #include "./mpi_structure.hpp"
 #include "option_structure.hpp"
-#include "config_structure.hpp"
+#include "CConfig.hpp"
 #include <cstring>
 
 using namespace std;
@@ -40,7 +40,7 @@ using namespace std;
  * \class CGraphColoringStructure
  * \brief Class, which provides graph coloring algorithms.
  * \author: E. van der Weide
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  */
 class CGraphColoringStructure {
 public:
