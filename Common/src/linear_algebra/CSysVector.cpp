@@ -207,53 +207,42 @@ void CSysVector<ScalarType>::CopyToArray(ScalarType* u_array) const {
 
 template<class ScalarType>
 ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
-#if !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
 
   /*--- All threads get the same "view" of the vectors and shared variable. ---*/
   SU2_OMP_BARRIER
   dotRes = 0.0;
   SU2_OMP_BARRIER
 
-  /*--- Reduction over all threads in this mpi rank using the shared variable. ---*/
+  /*--- Local dot product for each thread. ---*/
   ScalarType sum = 0.0;
 
   PARALLEL_FOR
   for(auto i=0ul; i<nElmDomain; ++i)
     sum += vec_val[i]*u.vec_val[i];
 
+  /*--- Reduction over all threads in this mpi rank using the
+   *    shared variable. In direct mode we use an atomic update, in
+   *    AD a critical section for compatibility with the type. ---*/
+#if !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
   SU2_OMP(atomic)
   dotRes += sum;
-
-  /*--- Wait for all atomic updates. ---*/
-  SU2_OMP_BARRIER
+#else
+  SU2_OMP_CRITICAL
+  dotRes += sum;
+#endif
 
 #ifdef HAVE_MPI
   /*--- Reduce across all mpi ranks, only master thread communicates. ---*/
+  SU2_OMP_BARRIER
   SU2_OMP_MASTER
   {
     sum = dotRes;
     SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   }
+#endif
   /*--- Make view of result consistent across threads. ---*/
   SU2_OMP_BARRIER
-#endif // MPI
-#else // CODI_TYPE
-  /*--- Compatible version, no OMP reductions, no atomics, master does everything. ---*/
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER
-  {
-    ScalarType sum = 0.0;
-    for(auto i=0ul; i<nElmDomain; ++i)
-      sum += vec_val[i]*u.vec_val[i];
-#ifdef HAVE_MPI
-    /*--- Reduce across all mpi ranks. ---*/
-    SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    dotRes = sum;
-#endif // MPI
-  }
-  SU2_OMP_BARRIER
-#endif // CODI
+
   return dotRes;
 }
 
