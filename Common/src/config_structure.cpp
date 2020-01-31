@@ -519,27 +519,27 @@ void CConfig::SetPointersNull(void) {
   /*--- Marker Pointers ---*/
 
   Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
-  Marker_SymWall              = NULL;    Marker_PerBound       = NULL;
+  Marker_SymWall              = NULL;    Marker_PerBound         = NULL;
   Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;
   Marker_Deform_Mesh          = NULL;    Marker_Fluid_Load       = NULL;
-  Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;    
-  Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           = NULL;
+  Marker_Inlet                = NULL;    Marker_Outlet           = NULL;
+  Marker_Supersonic_Inlet     = NULL;    Marker_Supersonic_Outlet= NULL;
   Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
-  Marker_Supersonic_Outlet    = NULL;    Marker_Load             = NULL;    Marker_Disp_Dir       = NULL;
+  Marker_Load                 = NULL;    Marker_Disp_Dir         = NULL;
   Marker_EngineExhaust        = NULL;    Marker_Displacement     = NULL;    Marker_Load           = NULL;
   Marker_Load_Dir             = NULL;    Marker_Load_Sine        = NULL;    Marker_Clamped        = NULL;
-  Marker_FlowLoad             = NULL;    Marker_Neumann          = NULL;    Marker_Internal       = NULL;
+  Marker_FlowLoad             = NULL;    Marker_Internal         = NULL;
   Marker_All_TagBound         = NULL;    Marker_CfgFile_TagBound = NULL;    Marker_All_KindBC     = NULL;
   Marker_CfgFile_KindBC       = NULL;    Marker_All_SendRecv     = NULL;    Marker_All_PerBound   = NULL;
   Marker_ZoneInterface        = NULL;    Marker_All_ZoneInterface= NULL;    Marker_Riemann        = NULL;
-  Marker_Fluid_InterfaceBound = NULL;    Marker_CHTInterface     = NULL;    Marker_Damper           = NULL;
+  Marker_Fluid_InterfaceBound = NULL;    Marker_CHTInterface     = NULL;    Marker_Damper         = NULL;
 
   
     /*--- Boundary Condition settings ---*/
 
-  Dirichlet_Value = NULL;    Isothermal_Temperature = NULL;
-  Heat_Flux       = NULL;    Displ_Value            = NULL;    Load_Value = NULL;
-  FlowLoad_Value  = NULL;    Damper_Constant        = NULL;
+  Isothermal_Temperature = NULL;
+  Heat_Flux              = NULL;    Displ_Value            = NULL;    Load_Value = NULL;
+  FlowLoad_Value         = NULL;    Damper_Constant        = NULL;
   
   /*--- Inlet Outlet Boundary Condition settings ---*/
 
@@ -565,7 +565,7 @@ void CConfig::SetPointersNull(void) {
   Engine_Power = NULL;    Engine_NetThrust    = NULL;    Engine_GrossThrust = NULL;
   Engine_Area  = NULL;    EngineInflow_Target = NULL;
   
-  Dirichlet_Value           = NULL;     Exhaust_Temperature_Target  = NULL;     Exhaust_Temperature   = NULL;
+  Exhaust_Temperature_Target  = NULL;     Exhaust_Temperature   = NULL;
   Exhaust_Pressure_Target   = NULL;     Inlet_Ttotal                = NULL;     Inlet_Ptotal          = NULL;
   Inlet_FlowDir             = NULL;     Inlet_Temperature           = NULL;     Inlet_Pressure        = NULL;
   Inlet_Velocity            = NULL;     Inflow_Mach                 = NULL;     Inflow_Pressure       = NULL;
@@ -1153,11 +1153,7 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_ZONE_INTERFACE", nMarker_ZoneInterface, Marker_ZoneInterface);
   /*!\brief MARKER_CHT_INTERFACE \n DESCRIPTION: CHT interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_CHT_INTERFACE", nMarker_CHTInterface, Marker_CHTInterface);
-  /*!\brief MARKER_DIRICHLET  \n DESCRIPTION: Dirichlet boundary marker(s) \ingroup Config*/
-  addStringListOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
-  /* DESCRIPTION: Neumann boundary marker(s) */
-  addStringListOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
-  /* DESCRIPTION: Neumann boundary marker(s) */
+  /* DESCRIPTION: Internal boundary marker(s) */
   addStringListOption("MARKER_INTERNAL", nMarker_Internal, Marker_Internal);
   /* DESCRIPTION: Custom boundary marker(s) */
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
@@ -1442,6 +1438,8 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
   /* DESCRIPTION: Relaxation factor for iterative linear smoothers (SMOOTHER_ILU/JACOBI/LU-SGS/LINELET) */
   addDoubleOption("LINEAR_SOLVER_SMOOTHER_RELAXATION", Linear_Solver_Smoother_Relaxation, 1.0);
+  /* DESCRIPTION: Custom number of threads used for additive domain decomposition for ILU and LU_SGS (0 is "auto"). */
+  addUnsignedLongOption("LINEAR_SOLVER_PREC_THREADS", Linear_Solver_Prec_Threads, 0);
   /* DESCRIPTION: Relaxation of the flow equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */
@@ -1492,6 +1490,17 @@ void CConfig::SetConfig_Options() {
   /*!\brief CONV_FIELD\n DESCRIPTION: Output field to monitor \n Default: depends on solver \ingroup Config*/
   addStringListOption("CONV_FIELD", nConvField, ConvField);
 
+  /*!\brief CONV_WINDOW_STARTITER\n DESCRIPTION: Iteration number after START_ITER_WND  to begin convergence monitoring\n DEFAULT: 15 \ingroup Config*/
+  addUnsignedLongOption("CONV_WINDOW_STARTITER", Wnd_StartConv_Iter, 15);
+  /*!\brief CONV_WINDOW_CAUCHY_ELEMS\n DESCRIPTION: Number of elements to apply the criteria. \n DEFAULT 100 \ingroup Config*/
+  addUnsignedShortOption("CONV_WINDOW_CAUCHY_ELEMS", Wnd_Cauchy_Elems, 100);
+  /*!\brief CONV_WINDOW_CAUCHY_EPS\n DESCRIPTION: Epsilon to control the series convergence \n DEFAULT: 1e-3 \ingroup Config*/
+  addDoubleOption("CONV_WINDOW_CAUCHY_EPS", Wnd_Cauchy_Eps, 1E-3);
+  /*!\brief WINDOW_CAUCHY_CRIT \n DESCRIPTION: Determines, if the cauchy convergence criterion should be used for windowed time averaged objective functions*/
+  addBoolOption("WINDOW_CAUCHY_CRIT",Wnd_Cauchy_Crit, false);
+  /*!\brief CONV_WINDOW_FIELD
+   * \n DESCRIPTION: Output fields  for the Cauchy criterium for the TIME iteration. The criterium is applied to the windowed time average of the chosen funcion. */
+  addStringListOption("CONV_WINDOW_FIELD",nWndConvField, WndConvField);
   /*!\par CONFIG_CATEGORY: Multi-grid \ingroup Config*/
   /*--- Options related to Multi-grid ---*/
 
@@ -2257,9 +2266,9 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Heat solver \ingroup Config*/
   /*--- options related to the heat solver ---*/
 
-  /* DESCRIPTION: Use Robin (default) or Neumann BC at CHT interface. */
+  /* DESCRIPTION: CHT interface coupling methods */
   /*  Options: NO, YES \ingroup Config */
-  addBoolOption("CHT_ROBIN", CHT_Robin, true);
+  addEnumOption("CHT_COUPLING_METHOD", Kind_CHT_Coupling, CHT_Coupling_Map, DIRECT_TEMPERATURE_ROBIN_HEATFLUX);
 
   /* DESCRIPTION: Thermal diffusivity constant */
   addDoubleOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
@@ -2413,6 +2422,12 @@ void CConfig::SetConfig_Options() {
     
   /* DESCRIPTION: Writing surface solution file frequency for dual time */
   addUnsignedLongOption("WRT_SURF_FREQ_DUALTIME", Wrt_Surf_Freq_DualTime, 1);
+
+  /* DESCRIPTION: Starting Iteration for windowing approach */
+  addUnsignedLongOption("WINDOW_START_ITER", StartWindowIteration, 0);
+
+  /* DESCRIPTION: Window (weight) function for the cost-functional in the reverse sweep */
+  addEnumOption("WINDOW_FUNCTION", Kind_WindowFct,Window_Map, SQUARE);
 
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
@@ -2869,7 +2884,28 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     VolumeOutputFiles[1] = PARAVIEW_BINARY;
     VolumeOutputFiles[2] = SURFACE_PARAVIEW_BINARY;
   }
-  
+
+  /*--- Check if SU2 was build with TecIO support, as that is required for Tecplot Binary output. ---*/
+#ifndef HAVE_TECIO
+  for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++){
+    if (VolumeOutputFiles[iVolumeFile] == TECPLOT_BINARY ||
+        VolumeOutputFiles[iVolumeFile] == SURFACE_TECPLOT_BINARY) {
+      SU2_MPI::Error(string("Tecplot binary file requested in option OUTPUT_FILES but SU2 was built without TecIO support.\n"), CURRENT_FUNCTION);
+    }
+  }
+#endif
+
+  /*--- STL_BINARY output not implelemted yet, but already a value in option_structure.hpp---*/
+  for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
+    if (VolumeOutputFiles[iVolumeFile] == STL_BINARY){
+      SU2_MPI::Error(string("OUTPUT_FILES: 'STL_BINARY' output not implemented. Use 'STL' for ASCII output.\n"), CURRENT_FUNCTION);
+    }
+    if (val_nDim == 2 && (VolumeOutputFiles[iVolumeFile] == STL || VolumeOutputFiles[iVolumeFile] == STL_BINARY)) {
+      SU2_MPI::Error(string("OUTPUT_FILES: 'STL(_BINARY)' output only reasonable for 3D cases.\n"), CURRENT_FUNCTION);
+    }
+  }
+
+
   if (Kind_Solver == NAVIER_STOKES && Kind_Turb_Model != NONE){
     SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= NAVIER_STOKES", CURRENT_FUNCTION);
   }
@@ -2882,15 +2918,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Kind_Solver == INC_RANS && Kind_Turb_Model == NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
   }
-
-#ifndef HAVE_TECIO
-  for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++){
-    if (VolumeOutputFiles[iVolumeFile] == TECPLOT_BINARY ||
-        VolumeOutputFiles[iVolumeFile] == SURFACE_TECPLOT_BINARY) {
-      SU2_MPI::Error(string("Tecplot binary file requested in option OUTPUT_FILES but SU2 was built without TecIO support.\n"), CURRENT_FUNCTION);
-    }
-  }
-#endif
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
    definition for the wall founctions ---*/
@@ -4608,10 +4635,10 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
-  iMarker_NearFieldBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet,
+  iMarker_NearFieldBound, iMarker_Fluid_InterfaceBound,
   iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet, iMarker_Isothermal,
   iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
-  iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal,
+  iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
@@ -4630,7 +4657,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
-  nMarker_CHTInterface + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
+  nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann +
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
@@ -4908,12 +4935,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet; iMarker_Dirichlet++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Dirichlet[iMarker_Dirichlet];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = DIRICHLET;
-    iMarker_CfgFile++;
-  }
-
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Inlet[iMarker_Inlet];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = INLET_FLOW;
@@ -5007,12 +5028,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   for (iMarker_Supersonic_Outlet = 0; iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet; iMarker_Supersonic_Outlet++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Supersonic_Outlet[iMarker_Supersonic_Outlet];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = SUPERSONIC_OUTLET;
-    iMarker_CfgFile++;
-  }
-
-  for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Neumann[iMarker_Neumann];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = NEUMANN;
     iMarker_CfgFile++;
   }
   
@@ -5233,11 +5248,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
-  iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
+  iMarker_Fluid_InterfaceBound, iMarker_Inlet, iMarker_Riemann,
   iMarker_Deform_Mesh, iMarker_Fluid_Load,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
-  iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
+  iMarker_Load, iMarker_FlowLoad, iMarker_Internal, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
   iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
@@ -6301,6 +6316,19 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Residual minimum value: 1e" << MinLogResidual << "." << endl;
     cout << "Cauchy series min. value: " << Cauchy_Eps << "." << endl;
     cout << "Number of Cauchy elements: " << Cauchy_Elems << "." << endl;
+    if(Cauchy_Elems <1){
+      SU2_MPI::Error(to_string(Cauchy_Elems) + string(" Cauchy elements are no viable input. Please check your configuration file."), CURRENT_FUNCTION);
+    }
+    cout << "Begin windowed time average at iteration " << Wnd_StartConv_Iter << "." << endl;
+
+    if(Wnd_Cauchy_Crit){
+      cout << "Begin time convergence monitoring at iteration " << Wnd_StartConv_Iter + StartWindowIteration << "." << endl;
+      cout << "Time cauchy series min. value: " << Wnd_Cauchy_Eps << "." << endl;
+      cout << "Number of Cauchy elements: " << Wnd_Cauchy_Elems << "." << endl;
+      if(Wnd_Cauchy_Elems <1){
+        SU2_MPI::Error(to_string(Wnd_Cauchy_Elems) +string(" Cauchy elements are no viable input. Please check your configuration file."), CURRENT_FUNCTION);
+      }
+    }
   }
 
   if (val_software == SU2_MSH) {
@@ -6509,15 +6537,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
   
-  if (nMarker_Dirichlet != 0) {
-    BoundaryTable << "Dirichlet boundary";
-    for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet; iMarker_Dirichlet++) {
-      BoundaryTable << Marker_Dirichlet[iMarker_Dirichlet];
-      if (iMarker_Dirichlet < nMarker_Dirichlet-1)  BoundaryTable << " ";
-    }
-    BoundaryTable.PrintFooter();
-  }
-  
   if (nMarker_FlowLoad != 0) {
     BoundaryTable << "Flow load boundary";
     for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
@@ -6694,15 +6713,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++) {
       BoundaryTable << Marker_Load_Sine[iMarker_Load_Sine];
       if (iMarker_Load_Sine < nMarker_Load_Sine-1)  BoundaryTable << " ";
-    }
-    BoundaryTable.PrintFooter();
-  }
-  
-  if (nMarker_Neumann != 0) {  
-    BoundaryTable << "Neumann boundary";
-    for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
-      BoundaryTable << Marker_Neumann[iMarker_Neumann];
-      if (iMarker_Neumann < nMarker_Neumann-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
   }
@@ -7258,7 +7268,6 @@ CConfig::~CConfig(void) {
   }
   
   if (Design_Variable != NULL)    delete[] Design_Variable;
-  if (Dirichlet_Value != NULL)    delete[] Dirichlet_Value;
   
   if (Exhaust_Temperature_Target != NULL)    delete[]  Exhaust_Temperature_Target;
   if (Exhaust_Pressure_Target != NULL)    delete[]  Exhaust_Pressure_Target;
@@ -7439,7 +7448,6 @@ CConfig::~CConfig(void) {
   if (Marker_Deform_Mesh != NULL )        delete[] Marker_Deform_Mesh;
   if (Marker_Fluid_Load != NULL )         delete[] Marker_Fluid_Load;
   if (Marker_Fluid_InterfaceBound != NULL )     delete[] Marker_Fluid_InterfaceBound;
-  if (Marker_Dirichlet != NULL )          delete[] Marker_Dirichlet;
   if (Marker_Inlet != NULL )              delete[] Marker_Inlet;
   if (Marker_Supersonic_Inlet != NULL )   delete[] Marker_Supersonic_Inlet;
   if (Marker_Supersonic_Outlet != NULL )   delete[] Marker_Supersonic_Outlet;
@@ -7454,7 +7462,6 @@ CConfig::~CConfig(void) {
   if (Marker_Disp_Dir != NULL )               delete[] Marker_Disp_Dir;
   if (Marker_Load_Sine != NULL )               delete[] Marker_Load_Sine;
   if (Marker_FlowLoad != NULL )           delete[] Marker_FlowLoad;
-  if (Marker_Neumann != NULL )            delete[] Marker_Neumann;
   if (Marker_Internal != NULL )            delete[] Marker_Internal;
   if (Marker_HeatFlux != NULL )               delete[] Marker_HeatFlux;
 
@@ -8181,24 +8188,6 @@ unsigned short CConfig::GetMarker_Fluid_Load(string val_marker) {
     if (Marker_Fluid_Load[iMarker_Fluid_Load] == val_marker) break;
 
   return iMarker_Fluid_Load;
-}
-
-su2double CConfig::GetDirichlet_Value(string val_marker) {
-  unsigned short iMarker_Dirichlet;
-  for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet; iMarker_Dirichlet++)
-    if (Marker_Dirichlet[iMarker_Dirichlet] == val_marker) break;
-  return Dirichlet_Value[iMarker_Dirichlet];
-}
-
-bool CConfig::GetDirichlet_Boundary(string val_marker) {
-  unsigned short iMarker_Dirichlet;
-  bool Dirichlet = false;
-  for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet; iMarker_Dirichlet++)
-    if (Marker_Dirichlet[iMarker_Dirichlet] == val_marker) {
-      Dirichlet = true;
-      break;
-    }
-  return Dirichlet;
 }
 
 su2double CConfig::GetExhaust_Temperature_Target(string val_marker) {
@@ -9463,6 +9452,12 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
     if (config_container[iZone]->GetMultizone_Mesh() != GetMultizone_Mesh()){
       SU2_MPI::Error("Option MULTIZONE_MESH must be the same in all zones.", CURRENT_FUNCTION);
     }
+    if(config_container[iZone]->GetWnd_Cauchy_Crit() == true){
+      SU2_MPI::Error("Option WINDOW_CAUCHY_CRIT must be deactivated for multizone problems.", CURRENT_FUNCTION);
+    }
+  }
+  if(driver_config->GetWnd_Cauchy_Crit() == true){
+    SU2_MPI::Error("Option WINDOW_CAUCHY_CRIT must be deactivated for multizone problems.", CURRENT_FUNCTION);
   }
 
   /*--- Set the Restart iter for time dependent problems ---*/

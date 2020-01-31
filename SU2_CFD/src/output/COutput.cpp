@@ -25,13 +25,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/output/COutput.hpp"
 #include "../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CFEMDataSorter.hpp"
 #include "../../include/output/filewriter/CSurfaceFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CSurfaceFEMDataSorter.hpp"
 #include "../../include/output/filewriter/CParaviewFileWriter.hpp"
+#include "../../include/output/filewriter/CSTLFileWriter.hpp"
 #include "../../include/output/filewriter/CParaviewBinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CTecplotFileWriter.hpp"
 #include "../../include/output/filewriter/CTecplotBinaryFileWriter.hpp"
@@ -42,7 +42,7 @@
 
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../include/solver_structure.hpp"
+#include "../../include/solvers/CSolver.hpp"
 
 COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutput(fem_output) {
 
@@ -129,11 +129,29 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
   cauchyValue = 0.0;
   convergence = false;
 
+  /*--- Initialize time convergence monitoring structure ---*/
+
+  nWndCauchy_Elems = config->GetWnd_Cauchy_Elems();
+  wndCauchyEps     = config->GetWnd_Cauchy_Eps();
+
+  wndConvFields.reserve(config->GetnWndConv_Field());
+  for (unsigned short iField = 0; iField < config->GetnWndConv_Field(); iField++){
+    wndConvFields.emplace_back(config->GetWndConv_Field(iField));
+  }
+
+  WndOld_Func = vector<su2double>(wndConvFields.size());
+  WndNew_Func = vector<su2double>(wndConvFields.size());
+  WndCauchy_Serie = vector<vector<su2double>>(wndConvFields.size(), vector<su2double>(nWndCauchy_Elems, 0.0));
+  WndCauchy_Value = 0.0;
+  TimeConvergence = false;
 
   /*--- Check that the number of cauchy elems is not too large ---*/
 
   if (nCauchy_Elems > 1000){
     SU2_MPI::Error("Number of Cauchy Elems must be smaller than 1000", CURRENT_FUNCTION);
+  }
+  if (nWndCauchy_Elems > 1000){
+    SU2_MPI::Error("Number of Time Cauchy Elems must be smaller than 1000", CURRENT_FUNCTION);
   }
 
   /*--- Initialize all convergence flags to false. ---*/
@@ -199,6 +217,8 @@ void COutput::SetHistory_Output(CGeometry *geometry,
 
   Postprocess_HistoryData(config);
 
+  MonitorTimeConvergence(config, curTimeIter);
+
   /*--- Output using only the master node ---*/
 
   if (rank == MASTER_NODE && !noWriting) {
@@ -232,8 +252,8 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   Convergence_Monitoring(config, curInnerIter);
 
   Postprocess_HistoryData(config);
-
 }
+
 void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
 
   curTimeIter  = TimeIter;
@@ -378,7 +398,6 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
       /*--- Set the mesh ASCII format ---*/
-
       if (rank == MASTER_NODE) {
           (*fileWritingTable) << "SU2 mesh" << fileName + CSU2MeshFileWriter::fileExt;
       }
@@ -399,9 +418,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       volumeDataSorter->SortConnectivity(config, geometry, false);
 
       /*--- Write tecplot binary ---*/
-
       if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Tecplot" << fileName + CTecplotBinaryFileWriter::fileExt;
+          (*fileWritingTable) << "Tecplot binary" << fileName + CTecplotBinaryFileWriter::fileExt;
       }
 
       fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter,
@@ -418,8 +436,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write tecplot binary ---*/
-
+      /*--- Write tecplot ascii ---*/
       if (rank == MASTER_NODE) {
           (*fileWritingTable) << "Tecplot ASCII" << fileName + CTecplotFileWriter::fileExt;
       }
@@ -440,7 +457,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       /*--- Write paraview binary ---*/
       if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Paraview" << fileName + CParaviewBinaryFileWriter::fileExt;
+          (*fileWritingTable) << "Paraview binary" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
 
       fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
@@ -456,7 +473,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write paraview binary ---*/
+      /*--- Write paraview ascii ---*/
       if (rank == MASTER_NODE) {
           (*fileWritingTable) << "Paraview ASCII" << fileName + CParaviewFileWriter::fileExt;
       }
@@ -475,7 +492,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write paraview binary ---*/
+      /*--- Write surface paraview ascii ---*/
       if (rank == MASTER_NODE) {
           (*fileWritingTable) << "Paraview ASCII surface" << fileName + CParaviewFileWriter::fileExt;
       }
@@ -494,9 +511,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write paraview binary ---*/
+      /*--- Write surface paraview binary ---*/
       if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Paraview surface" << fileName + CParaviewBinaryFileWriter::fileExt;
+          (*fileWritingTable) << "Paraview binary surface" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
 
       fileWriter = new CParaviewBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
@@ -513,7 +530,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write paraview binary ---*/
+      /*--- Write surface tecplot ascii ---*/
       if (rank == MASTER_NODE) {
           (*fileWritingTable) << "Tecplot ASCII surface" << fileName + CTecplotFileWriter::fileExt;
       }
@@ -533,13 +550,32 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write paraview binary ---*/
+      /*--- Write surface tecplot binary ---*/
       if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Tecplot surface" << fileName + CTecplotBinaryFileWriter::fileExt;
+          (*fileWritingTable) << "Tecplot binary surface" << fileName + CTecplotBinaryFileWriter::fileExt;
       }
 
       fileWriter = new CTecplotBinaryFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter,
                                                 curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+
+      break;
+      
+    case STL:
+
+      if (fileName.empty())
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+
+      /*--- Load and sort the output data and connectivity. ---*/
+
+      surfaceDataSorter->SortConnectivity(config, geometry);
+      surfaceDataSorter->SortOutputData();
+
+      /*--- Write ASCII STL ---*/
+      if (rank == MASTER_NODE) {
+          (*fileWritingTable) << "STL ASCII" << fileName + CSTLFileWriter::fileExt;
+      }
+
+      fileWriter = new CSTLFileWriter(volumeFieldNames, nDim, fileName, surfaceDataSorter);
 
       break;
 
@@ -703,6 +739,9 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
         SetHistoryOutputValue("CAUCHY_" + convField, cauchyValue);
 
+        if(Iteration == 0){
+          SetHistoryOutputValue("CAUCHY_" + convField, 1.0);
+        }
       }
 
 
@@ -728,6 +767,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
       convergence = fieldConverged && convergence;
     }
   }
+
   if (convFields.empty()) convergence = false;
 
   /*--- Apply the same convergence criteria to all the processors ---*/
@@ -762,6 +802,78 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 #endif
 
   return convergence;
+}
+
+bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteration) {
+
+  bool Inner_IterConv = GetConvergence() || config->GetnInner_Iter()-1 <= curInnerIter; //Check, if Inner_Iter is converged
+
+  if(TimeIteration == 0){
+    for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
+      const string WndConv_Field= wndConvFields[iField_Conv];
+      if (historyOutput_Map.count(WndConv_Field) > 0){
+        SetHistoryOutputValue("CAUCHY_"+ WndConv_Field, 1.0);
+      }
+    }
+  }
+  if(Inner_IterConv && TimeIteration >= config->GetStartWindowIteration()){
+    TimeConvergence = true;
+    unsigned short iCounter;
+
+    for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
+      bool fieldConverged = false;
+      const string WndConv_Field= wndConvFields[iField_Conv];
+
+      if (historyOutput_Map.count(WndConv_Field) > 0){
+        su2double monitor = historyOutput_Map[WndConv_Field].value;
+
+        /*--- Cauchy based convergence criteria ---*/
+
+        if (historyOutput_Map[WndConv_Field].fieldType == HistoryFieldType::AUTO_COEFFICIENT) { //TAVG values are AUTO_COEFF
+          if (TimeIteration == config->GetStartWindowIteration()){
+            for (iCounter = 0; iCounter < nWndCauchy_Elems; iCounter++){
+              WndCauchy_Serie[iField_Conv][iCounter] = 0.0;
+            }
+            WndNew_Func[iField_Conv] = monitor;
+          }
+          WndOld_Func[iField_Conv] = WndNew_Func[iField_Conv];
+          WndNew_Func[iField_Conv] = monitor;
+          WndCauchy_Func = fabs(WndNew_Func[iField_Conv] - WndOld_Func[iField_Conv]);
+          WndCauchy_Serie[iField_Conv][TimeIteration % nWndCauchy_Elems] = WndCauchy_Func;
+          WndCauchy_Value = 1.0;
+
+          if (TimeIteration >= nWndCauchy_Elems+config->GetStartWindowIteration()){
+            WndCauchy_Value = 0.0;
+            for (iCounter = 0; iCounter < nWndCauchy_Elems; iCounter++){
+              WndCauchy_Value += WndCauchy_Serie[iField_Conv][iCounter];
+            }
+            WndCauchy_Value /= nWndCauchy_Elems;
+          }
+          if (WndCauchy_Value >= wndCauchyEps){fieldConverged = false;}
+          else{fieldConverged = true;}
+
+          /*--- Start monitoring only if the current iteration is larger than the
+           *  number of cauchy elements and the number of start-up iterations ---*/
+
+          if (TimeIteration <  config->GetStartWindowIteration() + max(config->GetWnd_StartConv_Iter(), nWndCauchy_Elems)){
+            fieldConverged = false;
+          }
+          SetHistoryOutputValue("CAUCHY_" + WndConv_Field, WndCauchy_Value);
+        }
+        TimeConvergence = fieldConverged && TimeConvergence;
+
+        /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
+
+        if (monitor != monitor){
+          SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);}
+      }
+    }
+
+    /*--- Do not apply any convergence criterion if the option is disabled. */
+    if(!config->GetWnd_Cauchy_Crit()){TimeConvergence = false;}
+    if(wndConvFields.empty()){TimeConvergence = false;}
+  }
+  return TimeConvergence;
 }
 
 void COutput::SetHistoryFile_Header(CConfig *config) {
@@ -912,11 +1024,11 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
     fileWritingTable->AddColumn("Filename", total_width/2-1);
     fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
 
+    /*--- Check for consistency and remove fields that are requested but not available --- */
+
+    if(!noWriting) CheckHistoryOutput();
+
     if (rank == MASTER_NODE && !noWriting){
-
-      /*--- Check for consistency and remove fields that are requested but not available --- */
-
-      CheckHistoryOutput();
 
       /*--- Open history file and print the header ---*/
 
@@ -959,12 +1071,11 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
   fileWritingTable->AddColumn("Filename", total_width/2);
   fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
 
+  /*--- Check for consistency and remove fields that are requested but not available --- */
+
+  if(!noWriting) CheckHistoryOutput();
+
   if (rank == MASTER_NODE && !noWriting){
-
-
-    /*--- Check for consistency and remove fields that are requested but not available --- */
-
-    CheckHistoryOutput();
 
     /*--- Open history file and print the header ---*/
 
@@ -1130,25 +1241,63 @@ void COutput::CheckHistoryOutput(){
   for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
     if (historyOutput_Map.count(convFields[iField_Conv]) == 0){
       if (!removedField) {
-        cout << "Ignoring Convergence Field(s): ";
+        if(rank == MASTER_NODE) cout << "Ignoring Convergence Field(s): ";
         removedField = true;
       }
-      cout << convFields[iField_Conv] << " ";
+      if(rank == MASTER_NODE) cout << convFields[iField_Conv] << " ";
       FieldsToRemove.push_back(convFields[iField_Conv]);
     }
   }
-  if (removedField) cout << endl;
+  if (removedField && (rank == MASTER_NODE)) cout << endl;
   for (unsigned short iField_Conv = 0; iField_Conv < FieldsToRemove.size(); iField_Conv++){
     convFields.erase(std::find(convFields.begin(),
                                convFields.end(), FieldsToRemove[iField_Conv]));
   }
+
   if (rank == MASTER_NODE){
-    cout <<"Convergence field(s): ";
-    for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
-      cout << convFields[iField_Conv];
-      if (iField_Conv != convFields.size() - 1) cout << ", ";
+    if(wndConvFields.size() == 0){
+      cout << "Warning: No (valid) fields chosen for convergence monitoring. Convergence monitoring inactive."<<  endl;
     }
-    cout << endl;
+    else{
+      cout <<"Convergence field(s): ";
+      for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
+        cout << convFields[iField_Conv];
+        if (iField_Conv != convFields.size() - 1) cout << ", ";
+      }
+      cout << endl;
+    }
+  }
+
+  /*--- Check that the requested time convergene monitoring field(s) are available*/
+  removedField = false;
+  FieldsToRemove.clear();
+  for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
+    if (historyOutput_Map.count(wndConvFields[iField_Conv]) == 0){
+      if (!removedField) {
+        if(rank == MASTER_NODE) cout << "Ignoring Time Convergence Field(s): ";
+        removedField = true;
+      }
+      if(rank == MASTER_NODE)cout << wndConvFields[iField_Conv] << " ";
+      FieldsToRemove.push_back(wndConvFields[iField_Conv]);
+    }
+  }
+  if (removedField && rank ==MASTER_NODE) cout << endl;
+
+  for (unsigned short iField_Conv = 0; iField_Conv < FieldsToRemove.size(); iField_Conv++){
+    wndConvFields.erase(std::find(wndConvFields.begin(), wndConvFields.end(), FieldsToRemove[iField_Conv]));
+  }
+  if (rank == MASTER_NODE){
+    if(wndConvFields.size() == 0){
+      cout << "Warning: No (valid) fields chosen for time convergence monitoring. Time convergence monitoring inactive."<<  endl;
+    }
+    else{
+      cout <<"Time Convergence field(s): ";
+      for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
+        cout << wndConvFields[iField_Conv];
+        if (iField_Conv != wndConvFields.size() - 1) cout << ", ";
+      }
+      cout << endl;
+    }
   }
 }
 
@@ -1462,11 +1611,10 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
       if(SetUpdate_Averages(config)){
         if (config->GetTime_Domain()){
-          SetHistoryOutputValue("TAVG_" + fieldIdentifier,
-                                runningAverages[fieldIdentifier].Update(currentField.value));
+          windowedTimeAverages[historyOutput_List[iField]].addValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
+          SetHistoryOutputValue("TAVG_" + fieldIdentifier, windowedTimeAverages[fieldIdentifier].WindowedUpdate(config->GetKindWindow()));
           if (config->GetDirectDiff() != NO_DERIVATIVE) {
-            SetHistoryOutputValue("D_TAVG_" + fieldIdentifier,
-                                  SU2_TYPE::GetDerivative(runningAverages[fieldIdentifier].Get()));
+            SetHistoryOutputValue("D_TAVG_" + fieldIdentifier, SU2_TYPE::GetDerivative(windowedTimeAverages[fieldIdentifier].GetVal()));
           }
         }
       }
@@ -1484,7 +1632,6 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     if (historyOutput_Map.count("AVG_" + it->first) > 0 )
       SetHistoryOutputValue("AVG_" + it->first, average);
   }
-
 }
 
 void COutput::Postprocess_HistoryFields(CConfig *config){
@@ -1555,7 +1702,12 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
       }
     }
   }
-
+  for (unsigned short iFieldConv = 0; iFieldConv < wndConvFields.size(); iFieldConv++){
+    const string &wndConvField = wndConvFields[iFieldConv];
+    if (historyOutput_Map.count(wndConvField) > 0){
+      AddHistoryOutput("CAUCHY_" + wndConvField, "Cauchy[" + historyOutput_Map[wndConvField].fieldName  + "]", ScreenOutputFormat::SCIENTIFIC, "CAUCHY", "Cauchy residual value of field set with WND_CONV_FIELD.", HistoryFieldType::AUTO_COEFFICIENT);
+    }
+  }
 }
 
 bool COutput::WriteScreen_Header(CConfig *config) {

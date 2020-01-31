@@ -31,6 +31,7 @@
 #include "../datatype_structure.hpp"
 
 #include <utility>
+#include <type_traits>
 
 /*!
  * \enum StorageType
@@ -360,12 +361,16 @@ template<typename Index_t, class Scalar_t, StorageType Store, size_t AlignSize, 
 class C2DContainer :
   public container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>
 {
+  static_assert(std::is_integral<Index_t>::value,"");
+
 private:
   using Base = container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>;
   using Base::m_data;
   using Base::m_allocate;
 public:
   using Base::size;
+  using Index = Index_t;
+  using Scalar = Scalar_t;
 
 private:
   /*!
@@ -401,12 +406,9 @@ private:
       free(m_data);
     }
 
-    /*--- round up size to a multiple of the alignment specification if necessary ---*/
-    size_t bytes = reqSize*sizeof(Scalar_t);
-    size_t allocSize = (AlignSize==0)? bytes : ((bytes+AlignSize-1)/AlignSize)*AlignSize;
-
     /*--- request actual allocation to base class as it needs specialization ---*/
-    m_allocate(allocSize,rows,cols);
+    size_t bytes = reqSize*sizeof(Scalar_t);
+    m_allocate(bytes,rows,cols);
 
     return reqSize;
   }
@@ -485,6 +487,70 @@ public:
   }
 };
 
+
+/*!
+ * \class C2DDummyLastView
+ * \brief Helper class, adds dummy trailing dimension to a reference of a
+ *        vector object making it a dummy matrix.
+ * \note The constness of the object is derived from the template type, but
+ *       we allways keep a reference, never a copy of the associated vector.
+ */
+template<class T>
+struct C2DDummyLastView
+{
+  using Index = typename T::Index;
+  using Scalar = typename T::Scalar;
+
+  T& data;
+
+  C2DDummyLastView() = delete;
+
+  C2DDummyLastView(T& ref) : data(ref) {}
+
+  template<class U = T,
+           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
+  Scalar& operator() (Index i, Index) noexcept
+  {
+    return data(i);
+  }
+
+  const Scalar& operator() (Index i, Index) const noexcept
+  {
+    return data(i);
+  }
+};
+
+/*!
+ * \class C3DDummyMiddleView
+ * \brief Helper class, adds dummy middle dimension to a reference of a
+ *        matrix object making it a dummy 3D array.
+ * \note The constness of the object is derived from the template type, but
+ *       we allways keep a reference, never a copy of the associated matrix.
+ */
+template<class T>
+struct C3DDummyMiddleView
+{
+  using Index = typename T::Index;
+  using Scalar = typename T::Scalar;
+
+  T& data;
+
+  C3DDummyMiddleView() = delete;
+
+  C3DDummyMiddleView(T& ref) : data(ref) {}
+
+  template<class U = T,
+           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
+  Scalar& operator() (Index i, Index, Index k) noexcept
+  {
+    return data(i,k);
+  }
+
+  const Scalar& operator() (Index i, Index, Index k) const noexcept
+  {
+    return data(i,k);
+  }
+};
 
 /*!
  * \brief Useful typedefs with default template parameters

@@ -82,8 +82,16 @@ private:
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   su2double* Obj_ChainRuleCoeff;  /*!< \brief Array defining objective function for adjoint problem based on
                                               chain rule in terms of gradient w.r.t. density, velocity, pressure */
-  string* ConvField;              /*!< \brief Field used for convergence check.*/
-  unsigned short nConvField;      /*!< \brief Number of fields used to monitor convergence.*/
+  string* ConvField;                 /*!< \brief Field used for convergence check.*/
+
+  string* WndConvField;               /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
+  unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
+  unsigned short nWndConvField;      /*!< \brief Number of fields used to monitor time convergence.*/
+  unsigned short Wnd_Cauchy_Elems;   /*!< \brief Number of elements to evaluate in the time iteration  for convergence of the time average of the unsteady (single zone)´ flow problem.  */
+  su2double Wnd_Cauchy_Eps;          /*!< \brief Epsilon used for the convergence of the time average of the unsteady (single zone)´ flow problem. */
+  unsigned long Wnd_StartConv_Iter;  /*!< \brief Start convergence criteria at this iteration after Start_Iter_Wnd. */
+  bool Wnd_Cauchy_Crit;         /*!< \brief True => Cauchy criterion is used for time average objective function in unsteady flows. */
+
   bool MG_AdjointFlow;              /*!< \brief MG with the adjoint flow problem */
   su2double* SubsonicEngine_Cyl;    /*!< \brief Coordinates of the box subsonic region */
   su2double* SubsonicEngine_Values; /*!< \brief Values of the box subsonic region */
@@ -192,7 +200,6 @@ private:
   nMarker_Fluid_Load,			  /*!< \brief Number of markers in which the flow load is computed/employed. */
   nMarker_Fluid_InterfaceBound,	  /*!< \brief Number of fluid interface markers. */
   nMarker_CHTInterface,           /*!< \brief Number of conjugate heat transfer interface markers. */
-  nMarker_Dirichlet,			  /*!< \brief Number of interface boundary markers. */
   nMarker_Inlet,				  /*!< \brief Number of inlet flow markers. */
   nMarker_Riemann,				  /*!< \brief Number of Riemann flow markers. */
   nMarker_Giles,				  /*!< \brief Number of Giles flow markers. */
@@ -212,8 +219,7 @@ private:
   nMarker_Disp_Dir,               /*!< \brief Number of load surface markers defined by magnitude and direction. */
   nMarker_Load_Sine,			  /*!< \brief Number of load surface markers defined by magnitude and direction. */
   nMarker_FlowLoad,				  /*!< \brief Number of load surface markers. */
-  nMarker_Neumann,				  /*!< \brief Number of Neumann flow markers. */
-  nMarker_Internal,				  /*!< \brief Number of Neumann flow markers. */
+  nMarker_Internal,				  /*!< \brief Number of internal flow markers. */
   nMarker_All,					  /*!< \brief Total number of markers using the grid information. */
   nMarker_Max,					  /*!< \brief Max number of number of markers using the grid information. */
   nMarker_CfgFile;				  /*!< \brief Total number of markers using the config file
@@ -240,7 +246,6 @@ private:
   *Marker_CHTInterface,           /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,           /*!< \brief Actuator disk inlet markers. */
   *Marker_ActDiskOutlet,          /*!< \brief Actuator disk outlet markers. */
-  *Marker_Dirichlet,			  /*!< \brief Interface boundaries markers. */
   *Marker_Inlet,				  /*!< \brief Inlet flow markers. */
   *Marker_Riemann,				  /*!< \brief Riemann markers. */
   *Marker_Giles,				  /*!< \brief Giles markers. */
@@ -260,11 +265,9 @@ private:
   *Marker_Disp_Dir,               /*!< \brief Load markers defined in cartesian coordinates. */
   *Marker_Load_Sine,              /*!< \brief Sine-wave loaded markers defined in cartesian coordinates. */
   *Marker_FlowLoad,				  /*!< \brief Flow Load markers. */
-  *Marker_Neumann,				  /*!< \brief Neumann flow markers. */
-  *Marker_Internal,				  /*!< \brief Neumann flow markers. */
+  *Marker_Internal,				  /*!< \brief Internal flow markers. */
   *Marker_All_TagBound;			  /*!< \brief Global index for markers using grid information. */
 
-  su2double *Dirichlet_Value;                /*!< \brief Specified Dirichlet value at the boundaries. */
   su2double *Exhaust_Temperature_Target;     /*!< \brief Specified total temperatures for nacelle boundaries. */
   su2double *Exhaust_Pressure_Target;        /*!< \brief Specified total pressures for nacelle boundaries. */
   su2double *Inlet_Ttotal;                   /*!< \brief Specified total temperatures for inlet boundaries. */
@@ -524,7 +527,8 @@ private:
   Kind_Matrix_Coloring,         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
-  Kind_BGS_RelaxMethod;				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  Kind_BGS_RelaxMethod,     /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  Kind_CHT_Coupling;        /*!< \brief Kind of coupling method used at CHT interfaces. */
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;  /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
@@ -561,16 +565,17 @@ private:
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
   su2double Inc_Inlet_Damping;     /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
   su2double Inc_Outlet_Damping;    /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
-  bool Inc_Inlet_UseNormal;                       /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
-  su2double Linear_Solver_Error;		          /*!< \brief Min error of the linear solver for the implicit formulation. */
-  su2double Deform_Linear_Solver_Error;           /*!< \brief Min error of the linear solver for the implicit formulation. */
-  su2double Linear_Solver_Error_FSI_Struc;		  /*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
-  su2double Linear_Solver_Smoother_Relaxation;    /*!< \brief Relaxation factor for iterative linear smoothers. */
-  unsigned long Linear_Solver_Iter;		          /*!< \brief Max iterations of the linear solver for the implicit formulation. */
-  unsigned long Deform_Linear_Solver_Iter;        /*!< \brief Max iterations of the linear solver for the implicit formulation. */
-  unsigned long Linear_Solver_Iter_FSI_Struc;	  /*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
-  unsigned long Linear_Solver_Restart_Frequency;  /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
-  unsigned short Linear_Solver_ILU_n;		      /*!< \brief ILU fill=in level. */
+  bool Inc_Inlet_UseNormal;        /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
+  su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
+  su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
+  su2double Linear_Solver_Error_FSI_Struc;       /*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
+  su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
+  unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
+  unsigned long Deform_Linear_Solver_Iter;       /*!< \brief Max iterations of the linear solver for the implicit formulation. */
+  unsigned long Linear_Solver_Iter_FSI_Struc;    /*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
+  unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
+  unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
+  unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
   su2double SemiSpan;		          /*!< \brief Wing Semi span. */
   su2double Roe_Kappa;		          /*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_AdjFlow;  /*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
@@ -723,7 +728,7 @@ private:
   unsigned short Mesh_FileFormat;	  /*!< \brief Mesh input format. */
   unsigned short Tab_FileFormat;	  /*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	      /*!< \brief Format of the output files. */
-
+  unsigned long StartWindowIteration;  /*!< \brief Starting Iteration for long time Windowing apporach . */
   bool CFL_Adapt;        /*!< \brief Adaptive CFL number. */
   bool HB_Precondition;  /*< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,	 /*!< \brief Reference area for coefficient computation. */
@@ -895,7 +900,6 @@ private:
   bool Sine_Load;                 /*!< \brief option for sine load */
   su2double *SineLoad_Coeff;      /*!< \brief Stores the load coefficient */
   su2double Thermal_Diffusivity;  /*!< \brief Thermal diffusivity used in the heat solver. */
-  bool CHT_Robin;                 /*!< \brief Option for boundary condition method at CHT interfaces. */
   su2double Cyclic_Pitch,         /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;               /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;          /*!< \brief Mach number based on mesh velocity and freestream quantities. */
@@ -1002,6 +1006,7 @@ private:
   FullTape;                              /*!< \brief Full tape mode for coupled discrete adjoints. */
   unsigned long Wrt_Surf_Freq_DualTime;	 /*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
+  unsigned short Kind_WindowFct  ;    /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   bool QCR;                    /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
@@ -5426,6 +5431,19 @@ public:
   string GetConv_FileName(void);
 
   /*!
+   * \brief Get the Starting Iteration for the windowing approach
+   *        in Sensitivity Analysis for period-averaged outputs, which oscillate.
+   * \return
+   */
+  unsigned long GetStartWindowIteration(void) const;
+
+  /*!
+   * \brief Get Index of the window function used as weight in the cost functional
+   * \return
+   */
+  WINDOW_FUNCTION GetKindWindow(void) const;
+
+  /*!
    * \brief Get the name of the file with the forces breakdown of the problem.
    * \return Name of the file with forces breakdown of the problem.
    */
@@ -6531,21 +6549,7 @@ public:
    * \return The inlet velocity vector.
    */
   su2double* GetInlet_Velocity(string val_index);
-  
-  /*!
-   * \brief Get the fixed value at the Dirichlet boundary.
-   * \param[in] val_index - Index corresponding to the Dirichlet boundary.
-   * \return The total temperature.
-   */
-  su2double GetDirichlet_Value(string val_index);
-  
-  /*!
-   * \brief Get whether this is a Dirichlet or a Neumann boundary.
-   * \param[in] val_index - Index corresponding to the Dirichlet boundary.
-   * \return Yes or No.
-   */
-  bool GetDirichlet_Boundary(string val_index);
-  
+
   /*!
    * \brief Get the total pressure at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
@@ -8963,10 +8967,10 @@ public:
   bool GetWeakly_Coupled_Heat(void);
 
   /*!
-   * \brief Get the boundary condition method for CHT.
-   * \return YES if Robin BC is used.
+   * \brief Get the CHT couling method.
+   * \return Kind of the method.
    */
-  bool GetCHT_Robin(void);
+  unsigned short GetKind_CHT_Coupling(void) const;
 
   /*!
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
@@ -9199,15 +9203,55 @@ public:
   */
   string GetVolumeOutput_Field(unsigned short iField);
 
-  /*
+  /*!
   * \brief Get the convergence fields for monitoring
   * \param[in] iField - Index of the field
   * return Field name for monitoring convergence
   */
   string GetConv_Field(unsigned short iField);
   
-  /*
-  * \brief Get the number of convergence monitoring fields.
+
+  /*!
+   * \brief Get functional that is going to be used to evaluate the convergence of the windowed time average of the unsteady problem.
+   * \param[in] iField - Index of the field
+   * \return Field name for monitoring convergence
+   */
+  string GetWndConv_Field(unsigned short iField) const;
+
+  /*!
+   * \brief Get the number of iterations that are considered in the Cauchy convergence criteria for the windowed time average of the unsteady problem.
+   * \return Number of elements in the Cauchy criteria windowed time average of the unsteady problem.
+   */
+  unsigned short GetWnd_Cauchy_Elems(void) const;
+
+  /*!
+   * \brief Get the value of convergence criteria for the Cauchy method for the time averaged
+   *        windowed objective functions for unsteady flows
+   * \return Value of the convergence criteria.
+   */
+  su2double GetWnd_Cauchy_Eps(void) const;
+
+  /*!
+   * \brief Get the number of iterations that are not considered in the convergence criteria for the windowed average output function
+   * \return Number of iterations before starting with the convergence criteria for the windowed average output function.
+   */
+  unsigned long  GetWnd_StartConv_Iter(void) const;
+
+  /*!
+   * \brief Get the boolean value, whether the the Cauchy method for the time averaged
+   *        windowed objective functions for unsteady flows is used or not.
+   * \return Boolean value, if the criterion is used.
+   */
+  bool GetWnd_Cauchy_Crit(void) const;
+
+  /*!
+  * \brief Get the number of convergence monitoring fields for time convergence monitoring.
+  * return Number of convergence monitoring fields.
+  */
+  unsigned short GetnWndConv_Field() const;
+
+  /*!
+  * \brief Get the number of convergence monitoring fields for inner convergence monitoring.
   * return Number of convergence monitoring fields.
   */
   unsigned short GetnConv_Field();  
@@ -9292,6 +9336,12 @@ public:
    * \return <TRUE> if option was set in the config file
    */
   bool OptionIsSet(string option);
+
+  /*!
+   * \brief Get the number of threads per rank to use for ILU and LU_SGS preconditioners.
+   * \return Number of threads per rank.
+   */
+  inline unsigned long GetLinear_Solver_Prec_Threads(void) const {return Linear_Solver_Prec_Threads;} 
 };
 
 #include "config_structure.inl"

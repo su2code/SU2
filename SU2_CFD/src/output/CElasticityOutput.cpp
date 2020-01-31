@@ -29,7 +29,7 @@
 #include "../../include/output/CElasticityOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../include/solver_structure.hpp"
+#include "../../include/solvers/CSolver.hpp"
 
 CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
 
@@ -117,7 +117,7 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   } else if (nonlinear_analysis){
     SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->LinSysSol.norm()));
     SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->LinSysRes.norm()));
-    SetHistoryOutputValue("RMS_ETOL", log10(dotProd(fea_solver->LinSysSol, fea_solver->LinSysRes)));
+    SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->LinSysSol.dot(fea_solver->LinSysRes)));
 
   }
 

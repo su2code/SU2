@@ -103,6 +103,12 @@ public:
   inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
 
   /*!
+   * \brief Get the reconstruction gradient for primitive variable at all points.
+   * \return Reference to variable reconstruction gradient.
+   */
+  inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+
+  /*!
    * \brief Set the value of the [iDim, jDim] component of the Reynolds stress tensor at a node.
    * \param[in] iPoint - Index of the current node.
    * \param[in] iDim   - Index of the velocity variable.
