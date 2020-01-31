@@ -28,7 +28,7 @@
 #include "../../include/linear_algebra/CSysMatrix.inl"
 
 #include "../../include/geometry/CGeometry.hpp"
-#include "../../include/config_structure.hpp"
+#include "../../include/CConfig.hpp"
 #include "../../include/omp_structure.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 

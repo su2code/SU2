@@ -36,7 +36,7 @@
 #include <fstream>
 
 #include "geometry/CPhysicalGeometry.hpp"
-#include "config_structure.hpp"
+#include "CConfig.hpp"
 
 using namespace std;
 
