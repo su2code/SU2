@@ -776,15 +776,15 @@ cout << "CVC: Debug: Unst_RestartIter = " << Unst_RestartIter << endl;
       }
     }
     else {
-      string filename = config->GetUnsteady_FileName(filename, Unst_RestartIter, "");
+      string filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, "");
 
 
       /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
       if (config->GetRead_Binary_Restart()) {
-        Read_SU2_Restart_Binary(geometry, config, filename);
+        Read_SU2_Restart_Binary(geometry, config, filename_n);
       } else {
-        Read_SU2_Restart_ASCII(geometry, config, filename);
+        Read_SU2_Restart_ASCII(geometry, config, filename_n);
       }
 
       /*--- Load data from the restart into correct containers. ---*/
@@ -824,7 +824,7 @@ cout << "CVC: Debug: Unst_RestartIter = " << Unst_RestartIter << endl;
       /*--- Detect a wrong solution file. ---*/
 
       if (counter != nPointDomain) {
-        SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+        SU2_MPI::Error(string("The solution file ") + filename_n + string(" doesn't match with the mesh file!\n") +
                        string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
       }
     }
