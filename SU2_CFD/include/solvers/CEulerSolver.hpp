@@ -60,52 +60,61 @@ protected:
   Prandtl_Turb = 0.0;   /*!< \brief Turbulent Prandtl number. */
 
   /*!
-   * \brief Auxilary type to store common aero coefficients (avoids repeating oneself so much).
-   * \tparam The type can be used to store scalars (Type = su2double) or arrays
-   *         (Type = su2double*) e.g. for when the coeffs are computed over surfaces.
+   * \brief Auxilary types to store common aero coefficients (avoids repeating oneself so much).
    */
-  template<class Type>
-  struct AerodynamicCoefficients {
-    Type CD = 0;      /*!< \brief Drag coefficient. */
-    Type CL = 0;      /*!< \brief Lift coefficient. */
-    Type CSF = 0;     /*!< \brief Sideforce coefficient. */
-    Type CEff = 0;    /*!< \brief Efficiency (Cl/Cd). */
-    Type CFx = 0;     /*!< \brief x Force coefficient. */
-    Type CFy = 0;     /*!< \brief y Force coefficient. */
-    Type CFz = 0;     /*!< \brief z Force coefficient. */
-    Type CMx = 0;     /*!< \brief x Moment coefficient. */
-    Type CMy = 0;     /*!< \brief y Moment coefficient. */
-    Type CMz = 0;     /*!< \brief z Moment coefficient. */
-    Type CoPx = 0;    /*!< \brief x Moment coefficient. */
-    Type CoPy = 0;    /*!< \brief y Moment coefficient. */
-    Type CoPz = 0;    /*!< \brief z Moment coefficient. */
-    Type CT = 0;      /*!< \brief Thrust coefficient. */
-    Type CQ = 0;      /*!< \brief Torque coefficient. */
-    Type CMerit = 0;  /*!< \brief Rotor Figure of Merit. */
-    int _size;
+  struct AeroCoeffsArray {
+    su2double* CD = nullptr;      /*!< \brief Drag coefficient. */
+    su2double* CL = nullptr;      /*!< \brief Lift coefficient. */
+    su2double* CSF = nullptr;     /*!< \brief Sideforce coefficient. */
+    su2double* CEff = nullptr;    /*!< \brief Efficiency (Cl/Cd). */
+    su2double* CFx = nullptr;     /*!< \brief x Force coefficient. */
+    su2double* CFy = nullptr;     /*!< \brief y Force coefficient. */
+    su2double* CFz = nullptr;     /*!< \brief z Force coefficient. */
+    su2double* CMx = nullptr;     /*!< \brief x Moment coefficient. */
+    su2double* CMy = nullptr;     /*!< \brief y Moment coefficient. */
+    su2double* CMz = nullptr;     /*!< \brief z Moment coefficient. */
+    su2double* CoPx = nullptr;    /*!< \brief x Moment coefficient. */
+    su2double* CoPy = nullptr;    /*!< \brief y Moment coefficient. */
+    su2double* CoPz = nullptr;    /*!< \brief z Moment coefficient. */
+    su2double* CT = nullptr;      /*!< \brief Thrust coefficient. */
+    su2double* CQ = nullptr;      /*!< \brief Torque coefficient. */
+    su2double* CMerit = nullptr;  /*!< \brief Rotor Figure of Merit. */
+    int _size = 0;                /*!< \brief Array size. */
 
-    void allocate(int size); /*!< \brief Allocates arrays (for Type = su2double*). */
+    void allocate(int size);      /*!< \brief Allocates arrays. */
 
-    void setZero();          /*!< \brief Sets all values to zero for all indices. */
-    void setZero(int i);     /*!< \brief Sets all values to zero at a particular index. */
+    void setZero(int i);          /*!< \brief Sets all values to zero at a particular index. */
+    void setZero() {              /*!< \brief Sets all values to zero for all indices. */
+      for(int i=0; i<_size; ++i) setZero(i);
+    }
 
-    AerodynamicCoefficients(int size = 0) : _size(size) { allocate(size); }
+    AeroCoeffsArray(int size = 0) : _size(size) { if(size) allocate(size); }
 
-    ~AerodynamicCoefficients();
+    ~AeroCoeffsArray();
   };
-  using Coefficients = AerodynamicCoefficients<su2double>;
-  using CoefficientsArray = AerodynamicCoefficients<su2double*>;
+  /*!
+   * \brief Scalar version of the coefficients type.
+   */
+  struct AeroCoeffs {
+    su2double CD,CL,CSF,CEff,CFx,CFy,CFz,CMx,CMy,CMz,CoPx,CoPy,CoPz,CT,CQ,CMerit;
 
-  CoefficientsArray InvCoeff;          /*!< \brief Inviscid pressure contributions for each boundary. */
-  CoefficientsArray SurfaceInvCoeff;   /*!< \brief Inviscid pressure contributions for each monitoring boundary. */
-  Coefficients AllBoundInvCoeff;       /*!< \brief Total pressure contribution for all the boundaries. */
+    void setZero() {
+      CD=CL=CSF=CEff=CFx=CFy=CFz=CMx=CMy=CMz=CoPx=CoPy=CoPz=CT=CQ=CMerit=0.0;
+    }
 
-  CoefficientsArray MntCoeff;          /*!< \brief Inviscid momentum contributions for each boundary. */
-  CoefficientsArray SurfaceMntCoeff;   /*!< \brief Inviscid momentum contributions for each monitoring boundary. */
-  Coefficients AllBoundMntCoeff;       /*!< \brief Total momentum contribution for all the boundaries. */
+    AeroCoeffs() { setZero(); }
+  };
 
-  CoefficientsArray SurfaceCoeff;      /*!< \brief Totals for each monitoring surface. */
-  Coefficients TotalCoeff;             /*!< \brief Totals for all boundaries. */
+  AeroCoeffsArray InvCoeff;          /*!< \brief Inviscid pressure contributions for each boundary. */
+  AeroCoeffsArray SurfaceInvCoeff;   /*!< \brief Inviscid pressure contributions for each monitoring boundary. */
+  AeroCoeffs AllBoundInvCoeff;       /*!< \brief Total pressure contribution for all the boundaries. */
+
+  AeroCoeffsArray MntCoeff;          /*!< \brief Inviscid momentum contributions for each boundary. */
+  AeroCoeffsArray SurfaceMntCoeff;   /*!< \brief Inviscid momentum contributions for each monitoring boundary. */
+  AeroCoeffs AllBoundMntCoeff;       /*!< \brief Total momentum contribution for all the boundaries. */
+
+  AeroCoeffsArray SurfaceCoeff;      /*!< \brief Totals for each monitoring surface. */
+  AeroCoeffs TotalCoeff;             /*!< \brief Totals for all boundaries. */
 
   su2double
   AllBound_CEquivArea_Inv = 0.0,    /*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */

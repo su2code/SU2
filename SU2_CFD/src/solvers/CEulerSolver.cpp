@@ -32,6 +32,29 @@
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
 
+void CEulerSolver::AeroCoeffsArray::allocate(int size) {
+  _size = size;
+  CD = new su2double[size]; CL = new su2double[size]; CSF = new su2double[size]; CEff = new su2double[size];
+  CFx = new su2double[size]; CFy = new su2double[size]; CFz = new su2double[size]; CMx = new su2double[size];
+  CMy = new su2double[size]; CMz = new su2double[size]; CoPx = new su2double[size]; CoPy = new su2double[size];
+  CoPz = new su2double[size]; CT = new su2double[size]; CQ = new su2double[size]; CMerit = new su2double[size];
+  setZero();
+}
+
+CEulerSolver::AeroCoeffsArray::~AeroCoeffsArray() {
+  delete [] CD; delete [] CL; delete [] CSF; delete [] CEff;
+  delete [] CFx; delete [] CFy; delete [] CFz; delete [] CMx;
+  delete [] CMy; delete [] CMz; delete [] CoPx; delete [] CoPy;
+  delete [] CoPz; delete [] CT; delete [] CQ; delete [] CMerit;
+}
+
+void CEulerSolver::AeroCoeffsArray::setZero(int i) {
+  CD[i] = CL[i] = CSF[i] = CEff[i] = 0.0;
+  CFx[i] = CFy[i] = CFz[i] = CMx[i] = 0.0;
+  CMy[i] = CMz[i] = CoPx[i] = CoPy[i] = 0.0;
+  CoPz[i] = CT[i] = CQ[i] = CMerit[i] = 0.0;
+}
+
 CEulerSolver::CEulerSolver(void) : CSolver() {
 
   /*--- Fixed CL mode initialization ---*/
