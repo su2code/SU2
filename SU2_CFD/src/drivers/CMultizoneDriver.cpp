@@ -148,7 +148,11 @@ void CMultizoneDriver::StartSolver() {
   driver_config->Set_StartTime(StartTime);
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    config_container[iZone]->SetDelta_UnstTimeND(config_container[ZONE_0]->GetDelta_UnstTimeND());
+    if (config_container[iZone]->GetKind_Solver() == HEAT_EQUATION_FVM) {
+
+      config_container[iZone]->SetDelta_UnstTimeND(config_container[ZONE_0]->GetDelta_UnstTimeND());
+      config_container[iZone]->SetTime_Ref(config_container[ZONE_0]->GetTime_Ref());
+    }
   }
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
