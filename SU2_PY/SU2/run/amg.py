@@ -228,8 +228,8 @@ def amg ( config , kind='' ):
         else:
             config_cfd.ITER = 1
             SU2_CFD(config_cfd)
-            sys.stdout.write('Initial adjoint CFD solution is provided.\n')
-            sys.stdout.flush()
+            sav_stdout.write('Initial adjoint CFD solution is provided.\n')
+            sav_stdout.flush()
 
         sys.stdout = sav_stdout
         sys.stderr = sav_stderr
