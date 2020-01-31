@@ -354,6 +354,7 @@ void CTNE2CompOutput::SetVolumeOutputFields(CConfig *config){
   // Primitive variables
   AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure");
   AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE", "Temperature");
+  AddVolumeOutput("TEMPERATURE_VE", "Temperature_ve",       "PRIMITIVE", "Temperature_ve");
   AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
 
@@ -452,6 +453,20 @@ void CTNE2CompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
   }
 
+  // Sources
+  if(nSpecies == 2){
+    AddVolumeOutput("SOURCE_N2", "Source_N2", "SOURCE", "Source term of the N2 density");
+    AddVolumeOutput("SOURCE_N",  "Source_N",  "SOURCE", "Source term of the N density");
+  }
+  if (nSpecies == 5){
+    AddVolumeOutput("SOURCE_N2", "Source_N2", "SOURCE", "Source term of the N2 density");
+    AddVolumeOutput("SOURCE_O2", "Source_O2", "SOURCE", "Source term of the O2 density");
+    AddVolumeOutput("SOURCE_NO", "Source_NO", "SOURCE", "Source term of the NO density");
+    AddVolumeOutput("SOURCE_N",  "Source_N",  "SOURCE", "Source term of the N density");
+    AddVolumeOutput("SOURCE_O",  "Source_O",  "SOURCE", "Source term of the O density");
+  }
+  AddVolumeOutput("SOURCE_EVE", "Source_Eve", "SOURCE", "Source term of the vib-elec energy");
+
   // Anisotropic metric
   if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET) {
     if (nDim == 2){
@@ -536,6 +551,7 @@ void CTNE2CompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
+  SetVolumeOutputValue("TEMPERATURE_VE", iPoint, Node_Flow->GetTemperature_ve(iPoint));
   SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2(iPoint))/Node_Flow->GetSoundSpeed(iPoint));
 
   su2double VelMag = 0.0;
@@ -633,6 +649,19 @@ void CTNE2CompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     }
     SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
   }
+
+  if(nSpecies == 2){
+    AddVolumeOutput("SOURCE_N2", iPoint, Node_Flow->GetSource(iPoint)[0]);
+    AddVolumeOutput("SOURCE_N",  iPoint, Node_Flow->GetSource(iPoint)[1]);
+  }
+  if (nSpecies == 5){
+    AddVolumeOutput("SOURCE_N2", iPoint, Node_Flow->GetSource(iPoint)[0]);
+    AddVolumeOutput("SOURCE_O2", iPoint, Node_Flow->GetSource(iPoint)[1]);
+    AddVolumeOutput("SOURCE_NO", iPoint, Node_Flow->GetSource(iPoint)[2]);
+    AddVolumeOutput("SOURCE_N",  iPoint, Node_Flow->GetSource(iPoint)[3]);
+    AddVolumeOutput("SOURCE_O",  iPoint, Node_Flow->GetSource(iPoint)[4]);
+  }
+  AddVolumeOutput("SOURCE_EVE", iPoint, Node_Flow->GetSource(iPoint)[nSpecies+nDim+1]);
 
   if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET) {
     if (nDim == 2){
