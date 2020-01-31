@@ -3455,7 +3455,7 @@ public:
    * \brief A virtual member.
    * \return Value of the velocity at the infinity.
    */
-  inline virtual su2double *GetVelocity_Inf(void) const { return 0; }
+  inline virtual su2double *GetVelocity_Inf(void) { return 0; }
 
   /*!
    * \brief A virtual member.

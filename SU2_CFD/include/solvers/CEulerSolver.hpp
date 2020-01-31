@@ -48,209 +48,143 @@ protected:
   unsigned long omp_chunk_size;  /*!< \brief Chunk size used in light point loops. */
 
   su2double
-  Mach_Inf,         /*!< \brief Mach number at the infinity. */
-  Density_Inf,      /*!< \brief Density at the infinity. */
-  Energy_Inf,       /*!< \brief Energy at the infinity. */
-  Temperature_Inf,  /*!< \brief Energy at the infinity. */
-  Pressure_Inf,     /*!< \brief Pressure at the infinity. */
-  *Velocity_Inf;    /*!< \brief Flow Velocity vector at the infinity. */
-
-  su2double Prandtl_Lam,    /*!< \brief Laminar Prandtl number. */
-  Prandtl_Turb;             /*!< \brief Turbulent Prandtl number. */
+  Mach_Inf = 0.0,            /*!< \brief Mach number at the infinity. */
+  Density_Inf = 0.0,         /*!< \brief Density at the infinity. */
+  Energy_Inf = 0.0,          /*!< \brief Energy at the infinity. */
+  Temperature_Inf = 0.0,     /*!< \brief Energy at the infinity. */
+  Pressure_Inf = 0.0,        /*!< \brief Pressure at the infinity. */
+  *Velocity_Inf = nullptr;   /*!< \brief Flow Velocity vector at the infinity. */
 
   su2double
-  *CD_Inv,      /*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
-  *CL_Inv,      /*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
-  *CSF_Inv,     /*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */
-  *CMx_Inv,     /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
-  *CMy_Inv,     /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
-  *CMz_Inv,     /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
-  *CoPx_Inv,    /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
-  *CoPy_Inv,    /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
-  *CoPz_Inv,    /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
-  *CFx_Inv,     /*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
-  *CFy_Inv,     /*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
-  *CFz_Inv,     /*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
-  *Surface_CL_Inv,   /*!< \brief Lift coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CD_Inv,   /*!< \brief Drag coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CSF_Inv,  /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CEff_Inv, /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CFx_Inv,  /*!< \brief x Force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CFy_Inv,  /*!< \brief y Force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CFz_Inv,  /*!< \brief z Force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CMx_Inv,  /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CMy_Inv,  /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CMz_Inv,  /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
-  *CEff_Inv,         /*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
-  *CMerit_Inv,       /*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
-  *CT_Inv,           /*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
-  *CQ_Inv,           /*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
-  *CEquivArea_Inv,   /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
-  *CNearFieldOF_Inv, /*!< \brief Near field pressure (inviscid contribution) for each boundary. */
-  *CD_Mnt,           /*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
-  *CL_Mnt,           /*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
-  *CSF_Mnt,          /*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */
-  *CMx_Mnt,          /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
-  *CMy_Mnt,          /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
-  *CMz_Mnt,          /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
-  *CoPx_Mnt,         /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
-  *CoPy_Mnt,         /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
-  *CoPz_Mnt,         /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
-  *CFx_Mnt,          /*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
-  *CFy_Mnt,          /*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
-  *CFz_Mnt,          /*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
-  *Surface_CL_Mnt,   /*!< \brief Lift coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CD_Mnt,   /*!< \brief Drag coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CSF_Mnt,  /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CEff_Mnt, /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CFx_Mnt,  /*!< \brief x Force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CFy_Mnt,  /*!< \brief y Force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CFz_Mnt,  /*!< \brief z Force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CMx_Mnt,  /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CMy_Mnt,  /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CMz_Mnt,  /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
-  *CEff_Mnt,         /*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
-  *CMerit_Mnt,       /*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
-  *CT_Mnt,           /*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
-  *CQ_Mnt,           /*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
-  *CEquivArea_Mnt,   /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
-  **CPressure,       /*!< \brief Pressure coefficient for each boundary and vertex. */
-  **CPressureTarget, /*!< \brief Target Pressure coefficient for each boundary and vertex. */
-  **HeatFlux,        /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  **HeatFluxTarget,  /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  **YPlus,           /*!< \brief Yplus for each boundary and vertex. */
-  ***CharacPrimVar,  /*!< \brief Value of the characteristic variables at each boundary. */
-  ***DonorPrimVar,   /*!< \brief Value of the donor variables at each boundary. */
-  *ForceInviscid,    /*!< \brief Inviscid force for each boundary. */
-  *MomentInviscid,   /*!< \brief Inviscid moment for each boundary. */
-  *ForceMomentum,    /*!< \brief Inviscid force for each boundary. */
-  *MomentMomentum;   /*!< \brief Inviscid moment for each boundary. */
+  Prandtl_Lam = 0.0,    /*!< \brief Laminar Prandtl number. */
+  Prandtl_Turb = 0.0;   /*!< \brief Turbulent Prandtl number. */
+
+  /*!
+   * \brief Auxilary type to store common aero coefficients (avoids repeating oneself so much).
+   * \tparam The type can be used to store scalars (Type = su2double) or arrays
+   *         (Type = su2double*) e.g. for when the coeffs are computed over surfaces.
+   */
+  template<class Type>
+  struct AerodynamicCoefficients {
+    Type CD = 0;      /*!< \brief Drag coefficient. */
+    Type CL = 0;      /*!< \brief Lift coefficient. */
+    Type CSF = 0;     /*!< \brief Sideforce coefficient. */
+    Type CEff = 0;    /*!< \brief Efficiency (Cl/Cd). */
+    Type CFx = 0;     /*!< \brief x Force coefficient. */
+    Type CFy = 0;     /*!< \brief y Force coefficient. */
+    Type CFz = 0;     /*!< \brief z Force coefficient. */
+    Type CMx = 0;     /*!< \brief x Moment coefficient. */
+    Type CMy = 0;     /*!< \brief y Moment coefficient. */
+    Type CMz = 0;     /*!< \brief z Moment coefficient. */
+    Type CoPx = 0;    /*!< \brief x Moment coefficient. */
+    Type CoPy = 0;    /*!< \brief y Moment coefficient. */
+    Type CoPz = 0;    /*!< \brief z Moment coefficient. */
+    Type CT = 0;      /*!< \brief Thrust coefficient. */
+    Type CQ = 0;      /*!< \brief Torque coefficient. */
+    Type CMerit = 0;  /*!< \brief Rotor Figure of Merit. */
+    int _size;
+
+    void allocate(int size); /*!< \brief Allocates arrays (for Type = su2double*). */
+
+    void setZero();          /*!< \brief Sets all values to zero for all indices. */
+    void setZero(int i);     /*!< \brief Sets all values to zero at a particular index. */
+
+    AerodynamicCoefficients(int size = 0) : _size(size) { allocate(size); }
+
+    ~AerodynamicCoefficients();
+  };
+  using Coefficients = AerodynamicCoefficients<su2double>;
+  using CoefficientsArray = AerodynamicCoefficients<su2double*>;
+
+  CoefficientsArray InvCoeff;          /*!< \brief Inviscid pressure contributions for each boundary. */
+  CoefficientsArray SurfaceInvCoeff;   /*!< \brief Inviscid pressure contributions for each monitoring boundary. */
+  Coefficients AllBoundInvCoeff;       /*!< \brief Total pressure contribution for all the boundaries. */
+
+  CoefficientsArray MntCoeff;          /*!< \brief Inviscid momentum contributions for each boundary. */
+  CoefficientsArray SurfaceMntCoeff;   /*!< \brief Inviscid momentum contributions for each monitoring boundary. */
+  Coefficients AllBoundMntCoeff;       /*!< \brief Total momentum contribution for all the boundaries. */
+
+  CoefficientsArray SurfaceCoeff;      /*!< \brief Totals for each monitoring surface. */
+  Coefficients TotalCoeff;             /*!< \brief Totals for all boundaries. */
+
   su2double
-  *Inflow_MassFlow,  /*!< \brief Mass flow rate for each boundary. */
-  *Exhaust_MassFlow, /*!< \brief Mass flow rate for each boundary. */
-  *Inflow_Pressure,  /*!< \brief Fan face pressure for each boundary. */
-  *Inflow_Mach,      /*!< \brief Fan face mach number for each boundary. */
-  *Inflow_Area,      /*!< \brief Boundary total area. */
-  *Exhaust_Area,     /*!< \brief Boundary total area. */
-  *Exhaust_Pressure,      /*!< \brief Fan face pressure for each boundary. */
-  *Exhaust_Temperature,   /*!< \brief Fan face mach number for each boundary. */
-  Inflow_MassFlow_Total,  /*!< \brief Mass flow rate for each boundary. */
-  Exhaust_MassFlow_Total, /*!< \brief Mass flow rate for each boundary. */
-  Inflow_Pressure_Total,  /*!< \brief Fan face pressure for each boundary. */
-  Inflow_Mach_Total,      /*!< \brief Fan face mach number for each boundary. */
-  InverseDesign;          /*!< \brief Inverse design functional for each boundary. */
+  AllBound_CEquivArea_Inv = 0.0,    /*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CNearFieldOF_Inv = 0.0,  /*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
+  *CEquivArea_Inv = nullptr,        /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
+  *CNearFieldOF_Inv = nullptr;      /*!< \brief Near field pressure (inviscid contribution) for each boundary. */
+
+  su2double
+  *CEquivArea_Mnt = nullptr,     /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
+  **CPressure = nullptr,         /*!< \brief Pressure coefficient for each boundary and vertex. */
+  **CPressureTarget = nullptr,   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
+  **HeatFlux = nullptr,          /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  **HeatFluxTarget = nullptr,    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  **YPlus = nullptr,             /*!< \brief Yplus for each boundary and vertex. */
+  ***CharacPrimVar = nullptr,    /*!< \brief Value of the characteristic variables at each boundary. */
+  ***DonorPrimVar = nullptr;     /*!< \brief Value of the donor variables at each boundary. */
+
+  su2double
+  *Inflow_MassFlow = nullptr,    /*!< \brief Mass flow rate for each boundary. */
+  *Exhaust_MassFlow = nullptr,   /*!< \brief Mass flow rate for each boundary. */
+  *Inflow_Pressure = nullptr,    /*!< \brief Fan face pressure for each boundary. */
+  *Inflow_Mach = nullptr,        /*!< \brief Fan face mach number for each boundary. */
+  *Inflow_Area = nullptr,        /*!< \brief Boundary total area. */
+  *Exhaust_Area = nullptr,       /*!< \brief Boundary total area. */
+  *Exhaust_Pressure = nullptr,   /*!< \brief Fan face pressure for each boundary. */
+  *Exhaust_Temperature = nullptr,/*!< \brief Fan face mach number for each boundary. */
+  Inflow_MassFlow_Total = 0.0,   /*!< \brief Mass flow rate for each boundary. */
+  Exhaust_MassFlow_Total = 0.0,  /*!< \brief Mass flow rate for each boundary. */
+  Inflow_Pressure_Total = 0.0,   /*!< \brief Fan face pressure for each boundary. */
+  Inflow_Mach_Total = 0.0,       /*!< \brief Fan face mach number for each boundary. */
+  InverseDesign = 0.0;           /*!< \brief Inverse design functional for each boundary. */
   unsigned long
-  **DonorGlobalIndex;    /*!< \brief Value of the donor global index. */
+  **DonorGlobalIndex = nullptr;  /*!< \brief Value of the donor global index. */
   su2double
-  **ActDisk_DeltaP,      /*!< \brief Value of the Delta P. */
-  **ActDisk_DeltaT;      /*!< \brief Value of the Delta T. */
-  su2double
-  **Inlet_Ptotal,    /*!< \brief Value of the Total P. */
-  **Inlet_Ttotal,    /*!< \brief Value of the Total T. */
-  ***Inlet_FlowDir;  /*!< \brief Value of the Flow Direction. */
+  **ActDisk_DeltaP = nullptr,    /*!< \brief Value of the Delta P. */
+  **ActDisk_DeltaT = nullptr,    /*!< \brief Value of the Delta T. */
+  **Inlet_Ptotal = nullptr,      /*!< \brief Value of the Total P. */
+  **Inlet_Ttotal = nullptr,      /*!< \brief Value of the Total T. */
+  ***Inlet_FlowDir = nullptr;    /*!< \brief Value of the Flow Direction. */
 
   su2double
-  AllBound_CD_Inv,           /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CL_Inv,           /*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CSF_Inv,          /*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMx_Inv,          /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMy_Inv,          /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMz_Inv,          /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CoPx_Inv,         /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CoPy_Inv,         /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CoPz_Inv,         /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFx_Inv,          /*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFy_Inv,          /*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFz_Inv,          /*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CEff_Inv,         /*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMerit_Inv,       /*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
-  AllBound_CT_Inv,           /*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CQ_Inv,           /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CEquivArea_Inv,   /*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CNearFieldOF_Inv; /*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
+  Total_ComboObj = 0.0,       /*!< \brief Total 'combo' objective for all monitored boundaries */
+  Total_CL_Prev = 0.0,        /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
+  Total_SolidCD = 0.0,        /*!< \brief Total drag coefficient for all the boundaries. */
+  Total_CD_Prev = 0.0,        /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
+  Total_NetThrust = 0.0,      /*!< \brief Total drag coefficient for all the boundaries. */
+  Total_Power = 0.0,          /*!< \brief Total drag coefficient for all the boundaries. */
+  Total_ReverseFlow = 0.0,    /*!< \brief Total drag coefficient for all the boundaries. */
+  Total_IDC = 0.0,            /*!< \brief Total IDC coefficient for all the boundaries. */
+  Total_IDC_Mach = 0.0,       /*!< \brief Total IDC coefficient for all the boundaries. */
+  Total_IDR = 0.0,            /*!< \brief Total IDC coefficient for all the boundaries. */
+  Total_DC60 = 0.0,           /*!< \brief Total IDC coefficient for all the boundaries. */
+  Total_MFR = 0.0,            /*!< \brief Total Mass Flow Ratio for all the boundaries. */
+  Total_Prop_Eff = 0.0,       /*!< \brief Total Mass Flow Ratio for all the boundaries. */
+  Total_ByPassProp_Eff = 0.0, /*!< \brief Total Mass Flow Ratio for all the boundaries. */
+  Total_Adiab_Eff = 0.0,      /*!< \brief Total Mass Flow Ratio for all the boundaries. */
+  Total_Poly_Eff = 0.0,       /*!< \brief Total Mass Flow Ratio for all the boundaries. */
+  Total_Custom_ObjFunc = 0.0, /*!< \brief Total custom objective function for all the boundaries. */
+  Total_CMx_Prev = 0.0,       /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
+  Total_CMy_Prev = 0.0,       /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
+  Total_CMz_Prev = 0.0,       /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
+  Total_Heat = 0.0,           /*!< \brief Total heat load for all the boundaries. */
+  Total_MaxHeat = 0.0,        /*!< \brief Maximum heat flux on all boundaries. */
+  Total_AeroCD = 0.0,         /*!< \brief Total aero drag coefficient for all the boundaries. */
+  Total_CEquivArea = 0.0,     /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  Total_CNearFieldOF = 0.0,   /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
+  Total_CpDiff = 0.0,         /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  Total_HeatFluxDiff = 0.0,   /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  Total_MassFlowRate = 0.0;   /*!< \brief Total Mass Flow Rate on monitored boundaries. */
 
   su2double
-  AllBound_CD_Mnt,      /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CL_Mnt,      /*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CSF_Mnt,     /*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMx_Mnt,     /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMy_Mnt,     /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMz_Mnt,     /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CoPx_Mnt,    /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CoPy_Mnt,    /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CoPz_Mnt,    /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFx_Mnt,     /*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFy_Mnt,     /*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFz_Mnt,     /*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CEff_Mnt,    /*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMerit_Mnt,  /*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
-  AllBound_CT_Mnt,      /*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CQ_Mnt;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
+  *Surface_HF_Visc = nullptr,     /*!< \brief Total (integrated) heat flux for each monitored surface. */
+  *Surface_MaxHF_Visc = nullptr;  /*!< \brief Maximum heat flux for each monitored surface. */
 
-  su2double
-  Total_ComboObj,       /*!< \brief Total 'combo' objective for all monitored boundaries */
-  Total_CD,             /*!< \brief Total drag coefficient for all the boundaries. */
-  Total_CL,             /*!< \brief Total lift coefficient for all the boundaries. */
-  Total_CL_Prev,        /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
-  Total_SolidCD,        /*!< \brief Total drag coefficient for all the boundaries. */
-  Total_CD_Prev,        /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
-  Total_NetThrust,      /*!< \brief Total drag coefficient for all the boundaries. */
-  Total_Power,          /*!< \brief Total drag coefficient for all the boundaries. */
-  Total_ReverseFlow,    /*!< \brief Total drag coefficient for all the boundaries. */
-  Total_IDC,            /*!< \brief Total IDC coefficient for all the boundaries. */
-  Total_IDC_Mach,       /*!< \brief Total IDC coefficient for all the boundaries. */
-  Total_IDR,            /*!< \brief Total IDC coefficient for all the boundaries. */
-  Total_DC60,           /*!< \brief Total IDC coefficient for all the boundaries. */
-  Total_MFR,            /*!< \brief Total Mass Flow Ratio for all the boundaries. */
-  Total_Prop_Eff,       /*!< \brief Total Mass Flow Ratio for all the boundaries. */
-  Total_ByPassProp_Eff, /*!< \brief Total Mass Flow Ratio for all the boundaries. */
-  Total_Adiab_Eff,      /*!< \brief Total Mass Flow Ratio for all the boundaries. */
-  Total_Poly_Eff,       /*!< \brief Total Mass Flow Ratio for all the boundaries. */
-  Total_Custom_ObjFunc, /*!< \brief Total custom objective function for all the boundaries. */
-  Total_CSF,      /*!< \brief Total sideforce coefficient for all the boundaries. */
-  Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
-  Total_CMx_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
-  Total_CMy,      /*!< \brief Total y moment coefficient for all the boundaries. */
-  Total_CMy_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
-  Total_CMz,      /*!< \brief Total z moment coefficient for all the boundaries. */
-  Total_CMz_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
-  Total_CoPx,     /*!< \brief Total x moment coefficient for all the boundaries. */
-  Total_CoPy,     /*!< \brief Total y moment coefficient for all the boundaries. */
-  Total_CoPz,     /*!< \brief Total z moment coefficient for all the boundaries. */
-  Total_CFx,      /*!< \brief Total x force coefficient for all the boundaries. */
-  Total_CFy,      /*!< \brief Total y force coefficient for all the boundaries. */
-  Total_CFz,      /*!< \brief Total z force coefficient for all the boundaries. */
-  Total_CEff,     /*!< \brief Total efficiency coefficient for all the boundaries. */
-  Total_CMerit,   /*!< \brief Total rotor Figure of Merit for all the boundaries. */
-  Total_CT,       /*!< \brief Total thrust coefficient for all the boundaries. */
-  Total_CQ,       /*!< \brief Total torque coefficient for all the boundaries. */
-  Total_Heat,     /*!< \brief Total heat load for all the boundaries. */
-  Total_MaxHeat,  /*!< \brief Maximum heat flux on all boundaries. */
-  Total_AeroCD,   /*!< \brief Total aero drag coefficient for all the boundaries. */
-  Total_CEquivArea,   /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_CNearFieldOF, /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
-  Total_CpDiff,       /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_HeatFluxDiff, /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_MassFlowRate; /*!< \brief Total Mass Flow Rate on monitored boundaries. */
-  su2double
-  *Surface_CL,          /*!< \brief Lift coefficient for each monitoring surface. */
-  *Surface_CD,          /*!< \brief Drag coefficient for each monitoring surface. */
-  *Surface_CSF,         /*!< \brief Side-force coefficient for each monitoring surface. */
-  *Surface_CEff,        /*!< \brief Side-force coefficient for each monitoring surface. */
-  *Surface_CFx,         /*!< \brief x Force coefficient for each monitoring surface. */
-  *Surface_CFy,         /*!< \brief y Force coefficient for each monitoring surface. */
-  *Surface_CFz,         /*!< \brief z Force coefficient for each monitoring surface. */
-  *Surface_CMx,         /*!< \brief x Moment coefficient for each monitoring surface. */
-  *Surface_CMy,         /*!< \brief y Moment coefficient for each monitoring surface. */
-  *Surface_CMz,         /*!< \brief z Moment coefficient for each monitoring surface. */
-  *Surface_HF_Visc,     /*!< \brief Total (integrated) heat flux for each monitored surface. */
-  *Surface_MaxHF_Visc;  /*!< \brief Maximum heat flux for each monitored surface. */
-
-  bool space_centered,  /*!< \brief True if space centered scheeme used. */
-  euler_implicit,       /*!< \brief True if euler implicit scheme used. */
-  least_squares;        /*!< \brief True if computing gradients by least squares. */
-  su2double Gamma;                  /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-  su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
+  bool space_centered,       /*!< \brief True if space centered scheeme used. */
+  euler_implicit,            /*!< \brief True if euler implicit scheme used. */
+  least_squares;             /*!< \brief True if computing gradients by least squares. */
+  su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+  su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
 
   su2double AoA_Prev, /*!< \brief Old value of the angle of attack (monitored). */
   AoA_inc;
@@ -267,49 +201,50 @@ protected:
   vector<CFluidModel*> FluidModel;  /*!< \brief fluid model used in the solver */
 
   /*--- Turbomachinery Solver Variables ---*/
-  su2double *** AverageFlux,
-            ***SpanTotalFlux,
-            ***AverageVelocity,
-            ***AverageTurboVelocity,
-            ***OldAverageTurboVelocity,
-            ***ExtAverageTurboVelocity,
-             **AveragePressure,
-             **OldAveragePressure,
-             **RadialEquilibriumPressure,
-             **ExtAveragePressure,
-             **AverageDensity,
-             **OldAverageDensity,
-             **ExtAverageDensity,
-             **AverageNu,
-             **AverageKine,
-             **AverageOmega,
-             **ExtAverageNu,
-             **ExtAverageKine,
-             **ExtAverageOmega;
 
-  su2double  **DensityIn,
-             **PressureIn,
-             ***TurboVelocityIn,
-             **DensityOut,
-             **PressureOut,
-             ***TurboVelocityOut,
-             **KineIn,
-             **OmegaIn,
-             **NuIn,
-             **KineOut,
-             **OmegaOut,
-             **NuOut;
+  su2double ***AverageFlux = nullptr,
+            ***SpanTotalFlux = nullptr,
+            ***AverageVelocity = nullptr,
+            ***AverageTurboVelocity = nullptr,
+            ***OldAverageTurboVelocity = nullptr,
+            ***ExtAverageTurboVelocity = nullptr,
+             **AveragePressure = nullptr,
+             **OldAveragePressure = nullptr,
+             **RadialEquilibriumPressure = nullptr,
+             **ExtAveragePressure = nullptr,
+             **AverageDensity = nullptr,
+             **OldAverageDensity = nullptr,
+             **ExtAverageDensity = nullptr,
+             **AverageNu = nullptr,
+             **AverageKine = nullptr,
+             **AverageOmega = nullptr,
+             **ExtAverageNu = nullptr,
+             **ExtAverageKine = nullptr,
+             **ExtAverageOmega = nullptr;
 
-  complex<su2double> ***CkInflow,
-                     ***CkOutflow1,
-                     ***CkOutflow2;
+  su2double  **DensityIn = nullptr,
+             **PressureIn = nullptr,
+             ***TurboVelocityIn = nullptr,
+             **DensityOut = nullptr,
+             **PressureOut = nullptr,
+             ***TurboVelocityOut = nullptr,
+             **KineIn = nullptr,
+             **OmegaIn = nullptr,
+             **NuIn = nullptr,
+             **KineOut = nullptr,
+             **OmegaOut = nullptr,
+             **NuOut = nullptr;
+
+  complex<su2double> ***CkInflow = nullptr,
+                     ***CkOutflow1 = nullptr,
+                     ***CkOutflow2 = nullptr;
 
   /*--- End of Turbomachinery Solver Variables ---*/
 
   /*--- Sliding meshes variables ---*/
 
-  su2double ****SlidingState;
-  int **SlidingStateNodes;
+  su2double ****SlidingState = nullptr;
+  int **SlidingStateNodes = nullptr;
 
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
@@ -417,7 +352,7 @@ public:
    * \brief Get the velocity at the infinity.
    * \return Value of the velocity at the infinity.
    */
-  inline su2double *GetVelocity_Inf(void) const final { return Velocity_Inf; }
+  inline su2double *GetVelocity_Inf(void) final { return Velocity_Inf; }
 
   /*!
    * \brief Compute the time step for solving the Euler equations.
@@ -1154,224 +1089,224 @@ public:
    * \param val_marker Surface where the coefficient is going to be computed.
    * \return Value of the lift coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCL_Inv(unsigned short val_marker) const final { return CL_Inv[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional lift coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the lift coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CL(unsigned short val_marker) const final { return Surface_CL[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional drag coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the drag coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CD(unsigned short val_marker) const final { return Surface_CD[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional side-force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CSF(unsigned short val_marker) const final { return Surface_CSF[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional side-force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CEff(unsigned short val_marker) const final { return Surface_CEff[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional x force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the x force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CFx(unsigned short val_marker) const final { return Surface_CFx[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional y force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the y force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CFy(unsigned short val_marker) const final { return Surface_CFy[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional z force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CFz(unsigned short val_marker) const final { return Surface_CFz[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional x moment coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CMx(unsigned short val_marker) const final { return Surface_CMx[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional y moment coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CMy(unsigned short val_marker) const final { return Surface_CMy[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional z moment coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CMz(unsigned short val_marker) const final { return Surface_CMz[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional lift coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the lift coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CL_Inv(unsigned short val_marker) const final { return Surface_CL_Inv[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional drag coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the drag coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CD_Inv(unsigned short val_marker) const final { return Surface_CD_Inv[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional side-force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CSF_Inv(unsigned short val_marker) const final { return Surface_CSF_Inv[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional side-force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CEff_Inv(unsigned short val_marker) const final { return Surface_CEff_Inv[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional x force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the x force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CFx_Inv(unsigned short val_marker) const final { return Surface_CFx_Inv[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional y force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the y force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CFy_Inv(unsigned short val_marker) const final { return Surface_CFy_Inv[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional z force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CFz_Inv(unsigned short val_marker) const final { return Surface_CFz_Inv[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional x moment coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CMx_Inv(unsigned short val_marker) const final { return Surface_CMx_Inv[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional y moment coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CMy_Inv(unsigned short val_marker) const final { return Surface_CMy_Inv[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional z moment coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CMz_Inv(unsigned short val_marker) const final { return Surface_CMz_Inv[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional lift coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the lift coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CL_Mnt(unsigned short val_marker) const final { return Surface_CL_Mnt[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional drag coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the drag coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CD_Mnt(unsigned short val_marker) const final { return Surface_CD_Mnt[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional side-force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CSF_Mnt(unsigned short val_marker) const final { return Surface_CSF_Mnt[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional side-force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CEff_Mnt(unsigned short val_marker) const final { return Surface_CEff_Mnt[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional x force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the x force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CFx_Mnt(unsigned short val_marker) const final { return Surface_CFx_Mnt[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional y force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the y force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CFy_Mnt(unsigned short val_marker) const final { return Surface_CFy_Mnt[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional z force coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z force coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CFz_Mnt(unsigned short val_marker) const final { return Surface_CFz_Mnt[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional x moment coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CMx_Mnt(unsigned short val_marker) const final { return Surface_CMx_Mnt[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional y moment coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CMy_Mnt(unsigned short val_marker) const final { return Surface_CMy_Mnt[val_marker]; }
-
-  /*!
-   * \brief Provide the non dimensional z moment coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
-   */
-  inline su2double GetSurface_CMz_Mnt(unsigned short val_marker) const final { return Surface_CMz_Mnt[val_marker]; }
+  inline su2double GetCL_Inv(unsigned short val_marker) const final { return InvCoeff.CL[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional drag coefficient (inviscid contribution).
    * \param val_marker Surface where the coeficient is going to be computed.
    * \return Value of the drag coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCD_Inv(unsigned short val_marker) const final { return CD_Inv[val_marker]; }
+  inline su2double GetCD_Inv(unsigned short val_marker) const final { return InvCoeff.CD[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional lift coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the lift coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CL(unsigned short val_marker) const final { return SurfaceCoeff.CL[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional drag coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the drag coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CD(unsigned short val_marker) const final { return SurfaceCoeff.CD[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional side-force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CSF(unsigned short val_marker) const final { return SurfaceCoeff.CSF[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional side-force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CEff(unsigned short val_marker) const final { return SurfaceCoeff.CEff[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional x force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CFx(unsigned short val_marker) const final { return SurfaceCoeff.CFx[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional y force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CFy(unsigned short val_marker) const final { return SurfaceCoeff.CFy[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional z force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CFz(unsigned short val_marker) const final { return SurfaceCoeff.CFz[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional x moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CMx(unsigned short val_marker) const final { return SurfaceCoeff.CMx[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional y moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CMy(unsigned short val_marker) const final { return SurfaceCoeff.CMy[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional z moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CMz(unsigned short val_marker) const final { return SurfaceCoeff.CMz[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional lift coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the lift coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CL_Inv(unsigned short val_marker) const final { return SurfaceInvCoeff.CL[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional drag coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the drag coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CD_Inv(unsigned short val_marker) const final { return SurfaceInvCoeff.CD[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional side-force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CSF_Inv(unsigned short val_marker) const final { return SurfaceInvCoeff.CSF[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional side-force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CEff_Inv(unsigned short val_marker) const final { return SurfaceInvCoeff.CEff[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional x force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CFx_Inv(unsigned short val_marker) const final { return SurfaceInvCoeff.CFx[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional y force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CFy_Inv(unsigned short val_marker) const final { return SurfaceInvCoeff.CFy[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional z force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CFz_Inv(unsigned short val_marker) const final { return SurfaceInvCoeff.CFz[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional x moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CMx_Inv(unsigned short val_marker) const final { return SurfaceInvCoeff.CMx[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional y moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CMy_Inv(unsigned short val_marker) const final { return SurfaceInvCoeff.CMy[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional z moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CMz_Inv(unsigned short val_marker) const final { return SurfaceInvCoeff.CMz[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional lift coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the lift coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CL_Mnt(unsigned short val_marker) const final { return SurfaceMntCoeff.CL[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional drag coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the drag coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CD_Mnt(unsigned short val_marker) const final { return SurfaceMntCoeff.CD[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional side-force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CSF_Mnt(unsigned short val_marker) const final { return SurfaceMntCoeff.CSF[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional side-force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CEff_Mnt(unsigned short val_marker) const final { return SurfaceMntCoeff.CEff[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional x force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CFx_Mnt(unsigned short val_marker) const final { return SurfaceMntCoeff.CFx[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional y force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CFy_Mnt(unsigned short val_marker) const final { return SurfaceMntCoeff.CFy[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional z force coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z force coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CFz_Mnt(unsigned short val_marker) const final { return SurfaceMntCoeff.CFz[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional x moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CMx_Mnt(unsigned short val_marker) const final { return SurfaceMntCoeff.CMx[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional y moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CMy_Mnt(unsigned short val_marker) const final { return SurfaceMntCoeff.CMy[val_marker]; }
+
+  /*!
+   * \brief Provide the non dimensional z moment coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+   */
+  inline su2double GetSurface_CMz_Mnt(unsigned short val_marker) const final { return SurfaceMntCoeff.CMz[val_marker]; }
 
   /*!
    * \brief Provide the mass flow rate.
@@ -1406,26 +1341,26 @@ public:
    * \param val_marker Surface where the coeficient is going to be computed.
    * \return Value of the sideforce coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCSF_Inv(unsigned short val_marker) const final { return CSF_Inv[val_marker]; }
+  inline su2double GetCSF_Inv(unsigned short val_marker) const final { return InvCoeff.CSF[val_marker]; }
 
   /*!
    * \brief Provide the non dimensional efficiency coefficient (inviscid contribution).
    * \param val_marker Surface where the coeficient is going to be computed.
    * \return Value of the efficiency coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
-  inline su2double GetCEff_Inv(unsigned short val_marker) const final { return CEff_Inv[val_marker]; }
+  inline su2double GetCEff_Inv(unsigned short val_marker) const final { return InvCoeff.CEff[val_marker]; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional sideforce coefficient.
    * \return Value of the sideforce coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CSF() const final { return Total_CSF; }
+  inline su2double GetTotal_CSF() const final { return TotalCoeff.CSF; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CEff() const final { return Total_CEff; }
+  inline su2double GetTotal_CEff() const final { return TotalCoeff.CEff; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
@@ -1512,13 +1447,13 @@ public:
    * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.
    * \return Value of the lift coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CL() const final { return Total_CL; }
+  inline su2double GetTotal_CL() const final { return TotalCoeff.CL; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CD() const final { return Total_CD; }
+  inline su2double GetTotal_CD() const final { return TotalCoeff.CD; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -1608,73 +1543,73 @@ public:
    * \brief Provide the total (inviscid + viscous) non dimensional x moment coefficient.
    * \return Value of the moment x coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CMx() const final { return Total_CMx; }
+  inline su2double GetTotal_CMx() const final { return TotalCoeff.CMx; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional y moment coefficient.
    * \return Value of the moment y coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CMy() const final { return Total_CMy; }
+  inline su2double GetTotal_CMy() const final { return TotalCoeff.CMy; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional z moment coefficient.
    * \return Value of the moment z coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CMz() const final { return Total_CMz; }
+  inline su2double GetTotal_CMz() const final { return TotalCoeff.CMz; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional x moment coefficient.
    * \return Value of the moment x coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CoPx() const final { return Total_CoPx; }
+  inline su2double GetTotal_CoPx() const final { return TotalCoeff.CoPx; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional y moment coefficient.
    * \return Value of the moment y coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CoPy() const final { return Total_CoPy; }
+  inline su2double GetTotal_CoPy() const final { return TotalCoeff.CoPy; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional z moment coefficient.
    * \return Value of the moment z coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CoPz() const final { return Total_CoPz; }
+  inline su2double GetTotal_CoPz() const final { return TotalCoeff.CoPz; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional x force coefficient.
    * \return Value of the force x coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CFx() const final { return Total_CFx; }
+  inline su2double GetTotal_CFx() const final { return TotalCoeff.CFx; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional y force coefficient.
    * \return Value of the force y coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CFy() const final { return Total_CFy; }
+  inline su2double GetTotal_CFy() const final { return TotalCoeff.CFy; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional z force coefficient.
    * \return Value of the force z coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CFz() const final { return Total_CFz; }
+  inline su2double GetTotal_CFz() const final { return TotalCoeff.CFz; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional thrust coefficient.
    * \return Value of the rotor efficiency coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CT() const final { return Total_CT; }
+  inline su2double GetTotal_CT() const final { return TotalCoeff.CT; }
 
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional thrust coefficient.
    * \param[in] val_Total_CT - Value of the total thrust coefficient.
    */
-  inline void SetTotal_CT(su2double val_Total_CT) final { Total_CT = val_Total_CT; }
+  inline void SetTotal_CT(su2double val_Total_CT) final { TotalCoeff.CT = val_Total_CT; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional torque coefficient.
    * \return Value of the rotor efficiency coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CQ() const final { return Total_CQ; }
+  inline su2double GetTotal_CQ() const final { return TotalCoeff.CQ; }
 
   /*!
    * \brief Provide the total heat load.
@@ -1692,7 +1627,7 @@ public:
    * \brief Store the total (inviscid + viscous) non dimensional torque coefficient.
    * \param[in] val_Total_CQ - Value of the total torque coefficient.
    */
-  inline void SetTotal_CQ(su2double val_Total_CQ) final { Total_CQ = val_Total_CQ; }
+  inline void SetTotal_CQ(su2double val_Total_CQ) final { TotalCoeff.CQ = val_Total_CQ; }
 
   /*!
    * \brief Store the total heat load.
@@ -1710,19 +1645,19 @@ public:
    * \brief Provide the total (inviscid + viscous) non dimensional rotor Figure of Merit.
    * \return Value of the rotor efficiency coefficient (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_CMerit() const final { return Total_CMerit; }
+  inline su2double GetTotal_CMerit() const final { return TotalCoeff.CMerit; }
 
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
-  inline void SetTotal_CD(su2double val_Total_CD) final { Total_CD = val_Total_CD; }
+  inline void SetTotal_CD(su2double val_Total_CD) final { TotalCoeff.CD = val_Total_CD; }
 
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional lift coefficient.
    * \param[in] val_Total_CL - Value of the total lift coefficient.
    */
-  inline void SetTotal_CL(su2double val_Total_CL) final { Total_CL = val_Total_CL; }
+  inline void SetTotal_CL(su2double val_Total_CL) final { TotalCoeff.CL = val_Total_CL; }
 
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
@@ -1824,157 +1759,157 @@ public:
    * \brief Get the inviscid contribution to the lift coefficient.
    * \return Value of the lift coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CL_Inv() const final { return AllBound_CL_Inv; }
+  inline su2double GetAllBound_CL_Inv() const final { return AllBoundInvCoeff.CL; }
 
   /*!
    * \brief Get the inviscid contribution to the drag coefficient.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CD_Inv() const final { return AllBound_CD_Inv; }
+  inline su2double GetAllBound_CD_Inv() const final { return AllBoundInvCoeff.CD; }
 
   /*!
    * \brief Get the inviscid contribution to the sideforce coefficient.
    * \return Value of the sideforce coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CSF_Inv() const final { return AllBound_CSF_Inv; }
+  inline su2double GetAllBound_CSF_Inv() const final { return AllBoundInvCoeff.CSF; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CEff_Inv() const final { return AllBound_CEff_Inv; }
+  inline su2double GetAllBound_CEff_Inv() const final { return AllBoundInvCoeff.CEff; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CMx_Inv() const final { return AllBound_CMx_Inv; }
+  inline su2double GetAllBound_CMx_Inv() const final { return AllBoundInvCoeff.CMx; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CMy_Inv() const final { return AllBound_CMy_Inv; }
+  inline su2double GetAllBound_CMy_Inv() const final { return AllBoundInvCoeff.CMy; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CMz_Inv() const final { return AllBound_CMz_Inv; }
+  inline su2double GetAllBound_CMz_Inv() const final { return AllBoundInvCoeff.CMz; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CoPx_Inv() const final { return AllBound_CoPx_Inv; }
+  inline su2double GetAllBound_CoPx_Inv() const final { return AllBoundInvCoeff.CoPx; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CoPy_Inv() const final { return AllBound_CoPy_Inv; }
+  inline su2double GetAllBound_CoPy_Inv() const final { return AllBoundInvCoeff.CoPy; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CoPz_Inv() const final { return AllBound_CoPz_Inv; }
+  inline su2double GetAllBound_CoPz_Inv() const final { return AllBoundInvCoeff.CoPz; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CFx_Inv() const final { return AllBound_CFx_Inv; }
+  inline su2double GetAllBound_CFx_Inv() const final { return AllBoundInvCoeff.CFx; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CFy_Inv() const final { return AllBound_CFy_Inv; }
+  inline su2double GetAllBound_CFy_Inv() const final { return AllBoundInvCoeff.CFy; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CFz_Inv() const final { return AllBound_CFz_Inv; }
+  inline su2double GetAllBound_CFz_Inv() const final { return AllBoundInvCoeff.CFz; }
 
   /*!
    * \brief Get the inviscid contribution to the lift coefficient.
    * \return Value of the lift coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CL_Mnt() const final { return AllBound_CL_Mnt; }
+  inline su2double GetAllBound_CL_Mnt() const final { return AllBoundMntCoeff.CL; }
 
   /*!
    * \brief Get the inviscid contribution to the drag coefficient.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CD_Mnt() const final { return AllBound_CD_Mnt; }
+  inline su2double GetAllBound_CD_Mnt() const final { return AllBoundMntCoeff.CD; }
 
   /*!
    * \brief Get the inviscid contribution to the sideforce coefficient.
    * \return Value of the sideforce coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CSF_Mnt() const final { return AllBound_CSF_Mnt; }
+  inline su2double GetAllBound_CSF_Mnt() const final { return AllBoundMntCoeff.CSF; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CEff_Mnt() const final { return AllBound_CEff_Mnt; }
+  inline su2double GetAllBound_CEff_Mnt() const final { return AllBoundMntCoeff.CEff; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CMx_Mnt() const final { return AllBound_CMx_Mnt; }
+  inline su2double GetAllBound_CMx_Mnt() const final { return AllBoundMntCoeff.CMx; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CMy_Mnt() const final { return AllBound_CMy_Mnt; }
+  inline su2double GetAllBound_CMy_Mnt() const final { return AllBoundMntCoeff.CMy; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CMz_Mnt() const final { return AllBound_CMz_Mnt; }
+  inline su2double GetAllBound_CMz_Mnt() const final { return AllBoundMntCoeff.CMz; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CoPx_Mnt() const final { return AllBound_CoPx_Mnt; }
+  inline su2double GetAllBound_CoPx_Mnt() const final { return AllBoundMntCoeff.CoPx; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CoPy_Mnt() const final { return AllBound_CoPy_Mnt; }
+  inline su2double GetAllBound_CoPy_Mnt() const final { return AllBoundMntCoeff.CoPy; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CoPz_Mnt() const final { return AllBound_CoPz_Mnt; }
+  inline su2double GetAllBound_CoPz_Mnt() const final { return AllBoundMntCoeff.CoPz; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CFx_Mnt() const final { return AllBound_CFx_Mnt; }
+  inline su2double GetAllBound_CFx_Mnt() const final { return AllBoundMntCoeff.CFx; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CFy_Mnt() const final { return AllBound_CFy_Mnt; }
+  inline su2double GetAllBound_CFy_Mnt() const final { return AllBoundMntCoeff.CFy; }
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
-  inline su2double GetAllBound_CFz_Mnt() const final { return AllBound_CFz_Mnt; }
+  inline su2double GetAllBound_CFz_Mnt() const final { return AllBoundMntCoeff.CFz; }
 
   /*!
    * \brief Provide the Pressure coefficient.

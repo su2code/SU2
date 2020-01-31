@@ -374,7 +374,7 @@ public:
    * \brief Get the velocity at the infinity.
    * \return Value of the velocity at the infinity.
    */
-  inline su2double *GetVelocity_Inf(void) const final { return Velocity_Inf; }
+  inline su2double *GetVelocity_Inf(void) final { return Velocity_Inf; }
 
   /*!
    * \brief Set the freestream pressure.
