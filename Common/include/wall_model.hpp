@@ -28,7 +28,7 @@
 #pragma once
 
 #include "./mpi_structure.hpp"
-#include "./config_structure.hpp"
+#include "./CConfig.hpp"
 
 #include <iostream>
 #include <cmath>

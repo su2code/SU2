@@ -39,7 +39,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../../../Common/include/config_structure.hpp"
+#include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../solvers/CSolver.hpp"
 

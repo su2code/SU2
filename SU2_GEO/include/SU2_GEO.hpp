@@ -37,7 +37,7 @@
 #include <cmath>
 
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
-#include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/CConfig.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 
 using namespace std;

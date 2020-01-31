@@ -30,7 +30,7 @@
 
 #include <cstdlib>
 
-#include "../../../Common/include/config_structure.hpp"
+#include "../../../Common/include/CConfig.hpp"
 
 class CMeshElement {
 protected:
