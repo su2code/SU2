@@ -90,7 +90,7 @@ private:
  * \brief Particular case of linear elasticity used for mesh deformation.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  */
 class CFEAMeshElasticity final : public CFEALinearElasticity {
 
