@@ -38,22 +38,40 @@
  */
 class CTurbSolver : public CSolver {
 protected:
-  su2double *FlowPrimVar_i,    /*!< \brief Store the flow solution at point i. */
-  *FlowPrimVar_j,              /*!< \brief Store the flow solution at point j. */
-  *lowerlimit,                 /*!< \brief contains lower limits for turbulence variables. */
-  *upperlimit;                 /*!< \brief contains upper limits for turbulence variables. */
-  su2double Gamma;             /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-  su2double Gamma_Minus_One;   /*!< \brief Fluids's Gamma - 1.0  . */
-  su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
+  enum : size_t {MAXNDIM = 3};         /*!< \brief Max number of space dimensions, used in some static arrays. */
+  enum : size_t {MAXNVAR = 2};         /*!< \brief Max number of variables, used in some static arrays. */
+  enum : size_t {MAXNVARFLOW = 12};    /*!< \brief Max number of flow variables, used in some static arrays. */
 
-  CTurbVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  enum : size_t {OMP_MAX_SIZE = 512};  /*!< \brief Max chunk size for light point loops. */
+  enum : size_t {OMP_MIN_SIZE = 128};  /*!< \brief Min chunk size for edge loops (max is color group size). */
+
+  unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
+
+  su2double
+  lowerlimit[MAXNVAR] = {0.0},  /*!< \brief contains lower limits for turbulence variables. */
+  upperlimit[MAXNVAR] = {0.0},  /*!< \brief contains upper limits for turbulence variables. */
+  Gamma,                        /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+  Gamma_Minus_One,              /*!< \brief Fluids's Gamma - 1.0  . */
+  ***Inlet_TurbVars = nullptr;  /*!< \brief Turbulence variables at inlet profiles */
 
   /* Sliding meshes variables */
 
-  su2double ****SlidingState;
-  int **SlidingStateNodes;
+  su2double ****SlidingState = nullptr;
+  int **SlidingStateNodes = nullptr;
 
-  CTurbVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
+
+  struct EdgeColor {
+    unsigned long size;             /*!< \brief Number of edges with a given color. */
+    const unsigned long* indices;   /*!< \brief Array of edge indices for a given color. */
+  };
+  vector<EdgeColor> EdgeColoring;   /*!< \brief Edge colors. */
+  unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size in edge loops must be a multiple of this. */
+
+  /*!
+   * \brief The highest level in the variable hierarchy this solver can safely use.
+   */
+  CTurbVariable* nodes = nullptr;
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.

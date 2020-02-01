@@ -3621,7 +3621,7 @@ public:
    * \brief A virtual member.
    * \return A pointer to an array containing a set of constants
    */
-  inline virtual su2double* GetConstants() const { return NULL; }
+  inline virtual const su2double* GetConstants() const { return nullptr; }
 
   /*!
    * \brief A virtual member.

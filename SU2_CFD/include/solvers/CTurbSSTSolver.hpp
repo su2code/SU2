@@ -35,10 +35,10 @@
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
  */
-
 class CTurbSSTSolver final : public CTurbSolver {
 private:
-  su2double *constants,  /*!< \brief Constants for the model. */
+  su2double
+  constants[10] = {0.0}, /*!< \brief Constants for the model. */
   kine_Inf,              /*!< \brief Free-stream turbulent kinetic energy. */
   omega_Inf;             /*!< \brief Free-stream specific dissipation. */
 
@@ -246,7 +246,7 @@ public:
    * \brief Get the constants for the SST model.
    * \return A pointer to an array containing a set of constants
    */
-  inline su2double* GetConstants() const override { return constants; }
+  inline const su2double* GetConstants() const override { return constants; }
 
   /*!
    * \brief Set the solution using the Freestream values.

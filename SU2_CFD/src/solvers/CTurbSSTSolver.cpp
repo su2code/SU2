@@ -29,13 +29,7 @@
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../include/variables/CTurbSSTVariable.hpp"
 
-CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
-
-  /*--- Array initialization ---*/
-  constants = NULL;
-  Inlet_TurbVars = NULL;
-
-}
+CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() { }
 
 CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     : CTurbSolver(geometry, config) {
@@ -47,8 +41,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
-
-  constants = NULL;
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -74,34 +66,24 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     /*--- Define some auxiliary vector related with the residual ---*/
 
-    Residual = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
-    Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-    Residual_i = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
-    Residual_j = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
-    Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+    Residual = new su2double[nVar]();
+    Residual_RMS = new su2double[nVar]();
+    Residual_i = new su2double[nVar]();
+    Residual_j = new su2double[nVar]();
+    Residual_Max = new su2double[nVar]();
 
     /*--- Define some structures for locating max residuals ---*/
 
-    Point_Max = new unsigned long[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+    Point_Max = new unsigned long[nVar]();
     Point_Max_Coord = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+      Point_Max_Coord[iVar] = new su2double[nDim]();
     }
 
     /*--- Define some auxiliary vector related with the solution ---*/
 
     Solution = new su2double[nVar];
     Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
-
-    /*--- Define some auxiliary vector related with the geometry ---*/
-
-    Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
-
-    /*--- Define some auxiliary vector related with the flow solution ---*/
-
-    FlowPrimVar_i = new su2double [nDim+9]; FlowPrimVar_j = new su2double [nDim+9];
 
     /*--- Jacobians and vector structures for implicit computations ---*/
 
@@ -127,16 +109,15 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     /*--- Initialize the BGS residuals in multizone problems. ---*/
     if (multizone){
-      Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
-      Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+      Residual_BGS = new su2double[nVar]();
+      Residual_Max_BGS = new su2double[nVar]();
 
       /*--- Define some structures for locating max residuals ---*/
 
-      Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+      Point_Max_BGS = new unsigned long[nVar]();
       Point_Max_Coord_BGS = new su2double*[nVar];
       for (iVar = 0; iVar < nVar; iVar++) {
-        Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-        for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+        Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
       }
     }
 
@@ -148,15 +129,14 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
     Smatrix = new su2double* [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
-    Smatrix[iDim] = new su2double [nDim];
+      Smatrix[iDim] = new su2double [nDim];
     /*--- c vector := transpose(WA)*(Wb) ---*/
     Cvector = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++)
-    Cvector[iVar] = new su2double [nDim];
+      Cvector[iVar] = new su2double [nDim];
   }
 
   /*--- Initialize value for model constants ---*/
-  constants = new su2double[10];
   constants[0] = 0.85;   //sigma_k1
   constants[1] = 1.0;    //sigma_k2
   constants[2] = 0.5;    //sigma_om1
@@ -169,9 +149,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
 
   /*--- Initialize lower and upper limits---*/
-  lowerlimit = new su2double[nVar];
-  upperlimit = new su2double[nVar];
-
   lowerlimit[0] = 1.0e-10;
   upperlimit[0] = 1.0e10;
 
@@ -212,42 +189,33 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   unsigned long iMarker;
 
-  SlidingState       = new su2double*** [nMarker];
-  SlidingStateNodes  = new int*         [nMarker];
+  SlidingState       = new su2double*** [nMarker]();
+  SlidingStateNodes  = new int*         [nMarker]();
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
 
-    SlidingState[iMarker]      = NULL;
-    SlidingStateNodes[iMarker] = NULL;
-
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 
-      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
-      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)]();
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)]();
 
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
-
-        SlidingStateNodes[iMarker][iPoint] = 0;
-        for (iVar = 0; iVar < nPrimVar+1; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = NULL;
-      }
-
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++)
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1]();
     }
   }
 
   /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
     due to arbitrary number of turbulence variables ---*/
 
-      Inlet_TurbVars = new su2double**[nMarker];
-      for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-        Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
-        for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-          Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
-          Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
-          Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
-        }
-      }
+  Inlet_TurbVars = new su2double**[nMarker];
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
+    for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+      Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
+      Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
+      Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
+    }
+  }
 
   /*--- The turbulence models are always solved implicitly, so set the
   implicit flag in case we have periodic BCs. ---*/
@@ -270,8 +238,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 }
 
 CTurbSSTSolver::~CTurbSSTSolver(void) {
-
-  if (constants != NULL) delete [] constants;
 
   unsigned long iMarker, iVertex;
   unsigned short iVar;
