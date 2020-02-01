@@ -356,29 +356,37 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
+  const bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  const bool transition    = (config->GetKind_Trans_Model() == LM);
+  const bool transition_BC = (config->GetKind_Trans_Model() == BC);
 
-  unsigned long iPoint;
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
-  bool transition    = (config->GetKind_Trans_Model() == LM);
-  bool transition_BC = (config->GetKind_Trans_Model() == BC);
+  /*--- Start OpenMP parallel section. ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  SU2_OMP_PARALLEL
+  {
+  /*--- Pick one numerics object per thread. ---*/
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
+
+  /*--- Loop over all points. ---*/
+
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), NULL);
+    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), nullptr);
 
     /*--- Gradient of the primitive and conservative variables ---*/
 
-    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint), NULL);
+    numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
 
     /*--- Set vorticity and strain rate magnitude ---*/
 
-    numerics->SetVorticity(solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint), NULL);
+    numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
 
-    numerics->SetStrainMag(solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint), 0.0);
+    numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
 
     /*--- Set intermittency ---*/
 
@@ -388,8 +396,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
-    numerics->SetTurbVar(nodes->GetSolution(iPoint), NULL);
-    numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), NULL);
+    numerics->SetTurbVar(nodes->GetSolution(iPoint), nullptr);
+    numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nullptr);
 
     /*--- Set volume ---*/
 
@@ -413,7 +421,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Compute the source term ---*/
 
-    numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
+    auto residual = numerics->ComputeResidual(config);
 
     /*--- Store the intermittency ---*/
 
@@ -423,39 +431,29 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Subtract residual and the Jacobian ---*/
 
-    LinSysRes.SubtractBlock(iPoint, Residual);
+    LinSysRes.SubtractBlock(iPoint, residual);
 
-    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+    Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
 
   if (harmonic_balance) {
 
-    su2double Volume, Source;
-    unsigned short nVar_Turb = solver_container[TURB_SOL]->GetnVar();
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    /*--- Loop over points ---*/
-
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-      /*--- Get control volume ---*/
-
-      Volume = geometry->node[iPoint]->GetVolume();
+      su2double Volume = geometry->node[iPoint]->GetVolume();
 
       /*--- Access stored harmonic balance source term ---*/
 
-      for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
-        Source = nodes->GetHarmonicBalance_Source(iPoint,iVar);
-        Residual[iVar] = Source*Volume;
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        su2double Source = nodes->GetHarmonicBalance_Source(iPoint,iVar);
+        LinSysRes[iPoint*nVar+iVar] += Source*Volume;
       }
-
-      /*--- Add Residual ---*/
-
-      LinSysRes.AddBlock(iPoint, Residual);
-
     }
   }
 
+  } // end SU2_OMP_PARALLEL
 }
 
 void CTurbSASolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
