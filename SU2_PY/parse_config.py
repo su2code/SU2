@@ -75,7 +75,7 @@ def parse_config(config_cpp, config_hpp):
     if s.find('END_CONFIG_ENUMS')>-1:
       break   # Reached end
 
-    if s.find('CCreateMap')>-1:
+    if s.find('Struct_Map')>-1:
       dict_key = (s.split('=')[0]).split('>')[1].strip()
       dict_val = []
       while(1):

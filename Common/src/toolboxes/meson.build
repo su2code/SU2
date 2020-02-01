@@ -1,5 +1,4 @@
 common_src += files(['CLinearPartitioner.cpp',
-                     'printing_toolbox.cpp',
-                     'inlet_interpolation_functions.cpp'])
+                     'printing_toolbox.cpp'])
 
 subdir('MMS')
