@@ -1341,11 +1341,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
   const unsigned short nStress = (nDim == 2) ? 3 : 6;
 
-  /*--- Reduction variable to compute the maximum von Misses stress,
-   *    each thread uses the first element of each row, the rest of
-   *    the row is padding to prevent false sharing. ---*/
-  su2activematrix auxMaxVonMisses(omp_get_max_threads(), 64/sizeof(su2double));
-  auxMaxVonMisses.setConstant(0.0);
+  su2double MaxVonMises_Stress = 0.0;
 
   /*--- Start OpenMP parallel region. ---*/
 
@@ -1447,10 +1443,10 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
 
     /*--- Compute the von Misses stress at each point, and the maximum for the domain. ---*/
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+    su2double maxVonMises = 0.0;
 
-      int thread = omp_get_thread_num();
+    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Get the stresses, added up from all the elements that connect to the node. ---*/
 
@@ -1483,18 +1479,15 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
       /*--- Update the maximum value of the Von Mises Stress ---*/
 
-      auxMaxVonMisses(thread,0) = max(auxMaxVonMisses(thread,0), VonMises_Stress);
+      maxVonMises = max(maxVonMises, VonMises_Stress);
     }
+    SU2_OMP_CRITICAL
+    MaxVonMises_Stress = max(MaxVonMises_Stress, maxVonMises);
 
   } // end SU2_OMP_PARALLEL
 
-  /*--- Compute MaxVonMises_Stress across all threads and ranks. ---*/
-
-  for(auto thread = 1ul; thread < auxMaxVonMisses.rows(); ++thread)
-    auxMaxVonMisses(0,0) = max(auxMaxVonMisses(0,0), auxMaxVonMisses(thread,0));
-
-  su2double MaxVonMises_Stress;
-  SU2_MPI::Allreduce(auxMaxVonMisses.data(), &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  su2double tmp = MaxVonMises_Stress;
+  SU2_MPI::Allreduce(&tmp, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
   /*--- Set the value of the MaxVonMises_Stress as the CFEA coeffient ---*/
 
