@@ -45,7 +45,16 @@
  * \author C. Pederson, A. Bueno., and A. Campos.
  */
 class CUpwScalar : public CNumerics {
-private:
+protected:
+  su2double
+  q_ij = 0.0,                  /*!< \brief Projected velocity at the face. */
+  a0 = 0.0,                    /*!< \brief The maximum of the face-normal velocity and 0 */
+  a1 = 0.0,                    /*!< \brief The minimum of the face-normal velocity and 0 */
+  *Flux = nullptr,             /*!< \brief Final result, diffusive flux/residual. */
+  **Jacobian_i = nullptr,      /*!< \brief Flux Jacobian w.r.t. node i. */
+  **Jacobian_j = nullptr;      /*!< \brief Flux Jacobian w.r.t. node j. */
+
+  const bool implicit = false, incompressible = false, dynamic_grid = false;
 
   /*!
    * \brief A pure virtual function; Adds any extra variables to AD
@@ -53,35 +62,20 @@ private:
   virtual void ExtraADPreaccIn() = 0;
 
   /*!
-   * \brief Model-specific steps in the ComputeResidual method
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \brief Model-specific steps in the ComputeResidual method, derived classes
+   *        compute the Flux and its Jacobians via this method.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void FinishResidualCalc(su2double *val_residual,
-                                  su2double **Jacobian_i,
-                                  su2double **Jacobian_j,
-                                  CConfig *config) = 0;
-
-protected:
-  su2double *Velocity_i, *Velocity_j; /*!< \brief Velocity, minus any grid movement. */
-  su2double Density_i, Density_j;
-  bool implicit, dynamic_grid, incompressible;
-  su2double q_ij, /*!< \brief Projected velocity at the face. */
-            a0,   /*!< \brief The maximum of the face-normal velocity and 0 */
-            a1;   /*!< \brief The minimum of the face-normal velocity and 0 */
-  unsigned short iDim;
+  virtual void FinishResidualCalc(const CConfig* config) = 0;
 
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwScalar(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwScalar(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -90,12 +84,11 @@ public:
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config);
+
 };
 
 /*!
@@ -104,38 +97,28 @@ public:
  * \ingroup ConvDiscr
  * \author A. Bueno.
  */
-class CUpwSca_TurbSA : public CUpwScalar {
+class CUpwSca_TurbSA final : public CUpwScalar {
 private:
-
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn();
+  void ExtraADPreaccIn() override;
 
   /*!
    * \brief SA specific steps in the ComputeResidual method
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
-                                su2double **Jacobian_j, CConfig *config);
+  void FinishResidualCalc(const CConfig* config) override;
 
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CUpwSca_TurbSA(void);
 };
 
 /*!
@@ -144,36 +127,26 @@ public:
  * \ingroup ConvDiscr
  * \author A. Campos.
  */
-class CUpwSca_TurbSST : public CUpwScalar {
+class CUpwSca_TurbSST final : public CUpwScalar {
 private:
-
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn();
+  void ExtraADPreaccIn() override;
 
   /*!
    * \brief SST specific steps in the ComputeResidual method
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
-                                su2double **Jacobian_j, CConfig *config);
+  void FinishResidualCalc(const CConfig* config) override;
 
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CUpwSca_TurbSST(void);
 };
