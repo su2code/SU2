@@ -4720,8 +4720,8 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
       su2double Res = fabs(LinSysRes[total_index]);
       resRMS[iVar] += Res*Res;
-      if (fabs(Res) > resMax[iVar]) {
-        resMax[iVar] = fabs(Res);
+      if (Res > resMax[iVar]) {
+        resMax[iVar] = Res;
         idxMax[iVar] = iPoint;
         coordMax[iVar] = geometry->node[iPoint]->GetCoord();
       }
