@@ -29,14 +29,11 @@
 #include "../../include/solvers/CTurbSASolver.hpp"
 #include "../../include/variables/CTurbSAVariable.hpp"
 
-CTurbSASolver::CTurbSASolver(void) : CTurbSolver() {
-
-  Inlet_TurbVars = NULL;
-
-}
+CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
 
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
-    : CTurbSolver(geometry, config) {
+             : CTurbSolver(geometry, config) {
+
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
@@ -67,34 +64,24 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     /*--- Define some auxiliar vector related with the residual ---*/
 
-    Residual = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
-    Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-    Residual_i = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
-    Residual_j = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
-    Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+    Residual = new su2double[nVar]();
+    Residual_RMS = new su2double[nVar]();
+    Residual_i = new su2double[nVar]();
+    Residual_j = new su2double[nVar]();
+    Residual_Max = new su2double[nVar]();
 
     /*--- Define some structures for locating max residuals ---*/
 
-    Point_Max = new unsigned long[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+    Point_Max = new unsigned long[nVar]();
     Point_Max_Coord = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+      Point_Max_Coord[iVar] = new su2double[nDim]();
     }
 
     /*--- Define some auxiliar vector related with the solution ---*/
 
     Solution = new su2double[nVar];
     Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
-
-    /*--- Define some auxiliar vector related with the geometry ---*/
-
-    Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
-
-    /*--- Define some auxiliar vector related with the flow solution ---*/
-
-    FlowPrimVar_i = new su2double [nDim+9]; FlowPrimVar_j = new su2double [nDim+9];
 
     /*--- Jacobians and vector structures for implicit computations ---*/
 
@@ -141,16 +128,15 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     /*--- Initialize the BGS residuals in multizone problems. ---*/
     if (multizone){
-      Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
-      Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+      Residual_BGS      = new su2double[nVar]();
+      Residual_Max_BGS  = new su2double[nVar]();
 
       /*--- Define some structures for locating max residuals ---*/
 
-      Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+      Point_Max_BGS       = new unsigned long[nVar]();
       Point_Max_Coord_BGS = new su2double*[nVar];
       for (iVar = 0; iVar < nVar; iVar++) {
-        Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-        for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+        Point_Max_Coord_BGS[iVar] = new su2double[nDim] ();
       }
     }
 
@@ -202,28 +188,20 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   unsigned long iMarker;
 
-  SlidingState       = new su2double*** [nMarker];
-  SlidingStateNodes  = new int*         [nMarker];
+  SlidingState       = new su2double*** [nMarker] ();
+  SlidingStateNodes  = new int*         [nMarker] ();
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
 
-    SlidingState[iMarker]      = NULL;
-    SlidingStateNodes[iMarker] = NULL;
-
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 
-      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
-      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)] ();
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)] ();
 
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
-
-        SlidingStateNodes[iMarker][iPoint] = 0;
-        for (iVar = 0; iVar < nPrimVar+1; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = NULL;
-      }
-
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++)
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1] ();
     }
+
   }
 
   /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
@@ -231,11 +209,11 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   Inlet_TurbVars = new su2double**[nMarker];
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-      Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
-      for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-        Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
-        Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
-      }
+    Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
+    for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+      Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar] ();
+      Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
+    }
   }
 
   /*--- The turbulence models are always solved implicitly, so set the
@@ -263,11 +241,11 @@ CTurbSASolver::~CTurbSASolver(void) {
   unsigned long iMarker, iVertex;
   unsigned short iVar;
 
-  if ( SlidingState != NULL ) {
+  if ( SlidingState != nullptr ) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if ( SlidingState[iMarker] != NULL ) {
+      if ( SlidingState[iMarker] != nullptr ) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if ( SlidingState[iMarker][iVertex] != NULL ){
+          if ( SlidingState[iMarker][iVertex] != nullptr ){
             for (iVar = 0; iVar < nPrimVar+1; iVar++)
               delete [] SlidingState[iMarker][iVertex][iVar];
             delete [] SlidingState[iMarker][iVertex];
@@ -278,10 +256,10 @@ CTurbSASolver::~CTurbSASolver(void) {
     delete [] SlidingState;
   }
 
-  if ( SlidingStateNodes != NULL ){
+  if ( SlidingStateNodes != nullptr ){
     for (iMarker = 0; iMarker < nMarker; iMarker++){
-        if (SlidingStateNodes[iMarker] != NULL)
-            delete [] SlidingStateNodes[iMarker];
+      if (SlidingStateNodes[iMarker] != nullptr)
+        delete [] SlidingStateNodes[iMarker];
     }
     delete [] SlidingStateNodes;
   }

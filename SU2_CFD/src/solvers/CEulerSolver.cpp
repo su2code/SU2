@@ -172,35 +172,34 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Define some auxiliary vectors related to the residual ---*/
 
-  Residual      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
-  Residual_RMS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-  Residual_Max  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-  Residual_i    = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
-  Residual_j    = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
-  Res_Conv      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]      = 0.0;
-  Res_Visc      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]      = 0.0;
-  Res_Sour      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]      = 0.0;
+  Residual      = new su2double[nVar]();
+  Residual_RMS  = new su2double[nVar]();
+  Residual_Max  = new su2double[nVar]();
+  Residual_i    = new su2double[nVar]();
+  Residual_j    = new su2double[nVar]();
+  Res_Conv      = new su2double[nVar]();
+  Res_Visc      = new su2double[nVar]();
+  Res_Sour      = new su2double[nVar]();
 
   /*--- Define some structures for locating max residuals ---*/
 
-  Point_Max     = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
+  Point_Max = new unsigned long[nVar]();
   Point_Max_Coord = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+    Point_Max_Coord[iVar] = new su2double[nDim]();
   }
 
   /*--- Define some auxiliary vectors related to the solution ---*/
 
-  Solution   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
-  Solution_i = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar] = 0.0;
-  Solution_j = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar] = 0.0;
+  Solution   = new su2double[nVar]();
+  Solution_i = new su2double[nVar]();
+  Solution_j = new su2double[nVar]();
 
   /*--- Define some auxiliary vectors related to the geometry ---*/
 
-  Vector   = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
-  Vector_i = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
-  Vector_j = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
+  Vector   = new su2double[nDim]();
+  Vector_i = new su2double[nDim]();
+  Vector_j = new su2double[nDim]();
 
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
 
@@ -3082,6 +3081,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
+      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+
+      if (limiter) {
+        Limiter_i = nodes->GetLimiter_Primitive(iPoint);
+        Limiter_j = nodes->GetLimiter_Primitive(jPoint);
+      }
+
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
         su2double Project_Grad_i = 0.0;
@@ -3093,9 +3099,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         }
 
         if (limiter) {
-          auto Limiter_i = nodes->GetLimiter_Primitive(iPoint);
-          auto Limiter_j = nodes->GetLimiter_Primitive(jPoint);
-
           if (van_albada) {
             su2double V_ij = V_j[iVar] - V_i[iVar];
             Limiter_i[iVar] = V_ij*( 2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
