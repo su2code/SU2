@@ -343,11 +343,11 @@ enum ENUM_INLET_SPANWISEINTERPOLATION {
   ONED_AKIMASPLINE_SPANWISE = 2,
 };
 
-static const map<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpolation_Map = Struct_Map<string, ENUM_INLET_SPANWISEINTERPOLATION> 
-("NONE", NO_SURFACEINTERPOLATION)
-("ONED_LINEAR_SPANWISE",ONED_LINEAR_SPANWISE)
-("ONED_AKIMASPLINE_SPANWISE",ONED_AKIMASPLINE_SPANWISE);
-
+static const map<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpolation_Map{
+MakePair("NONE", NO_SURFACEINTERPOLATION)
+MakePair("ONED_LINEAR_SPANWISE",ONED_LINEAR_SPANWISE)
+MakePair("ONED_AKIMASPLINE_SPANWISE",ONED_AKIMASPLINE_SPANWISE)
+};
 
 /*!
  * \brief type of radial spanwise interpolation data type for the inlet face
@@ -358,10 +358,11 @@ enum ENUM_INLET_INTERPOLATIONTYPE {
   BETA_PHI = 2,
 };
 
-static const map<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map = Struct_Map<string, ENUM_INLET_INTERPOLATIONTYPE> 
-("VR_VTHETA",VR_VTHETA)
-("ALPHA_PHI",ALPHA_PHI)
-("BETA_PHI",BETA_PHI);
+static const map<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map{
+MakePair("VR_VTHETA",VR_VTHETA)
+MakePair("ALPHA_PHI",ALPHA_PHI)
+MakePair("BETA_PHI",BETA_PHI)
+};
 
 /*!
  * \brief types of (coupling) transfers between distinct physical zones
