@@ -548,6 +548,9 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   SetHistoryOutputValue("AVG_MASSFLOW", Tot_Surface_MassFlow);
   SetHistoryOutputValue("AVG_MACH", Tot_Surface_Mach);
   SetHistoryOutputValue("AVG_TEMP", Tot_Surface_Temperature);
+  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+    config->SetSurface_Temperature(iMarker_Analyze, Surface_Temperature_Total[iMarker_Analyze]);
+  }
   SetHistoryOutputValue("AVG_PRESS", Tot_Surface_Pressure);
   SetHistoryOutputValue("AVG_DENSITY", Tot_Surface_Density);
   SetHistoryOutputValue("AVG_ENTHALPY", Tot_Surface_Enthalpy);
