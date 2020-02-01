@@ -205,6 +205,20 @@ void CSysVector<ScalarType>::CopyToArray(ScalarType* u_array) const {
   for(auto i=0ul; i<nElm; i++) u_array[i] = vec_val[i];
 }
 
+/*--- To reduce a sum over all threads in the mpi rank using a
+ *    shared variable. For passive doubles we use an atomic,
+ *    for active (default) a critical section. ---*/
+template<class ScalarType>
+inline void reduce(ScalarType local, ScalarType& shared) {
+  SU2_OMP_CRITICAL
+  shared += local;
+}
+template<>
+inline void reduce<passivedouble>(passivedouble local, passivedouble& shared) {
+  SU2_OMP_ATOMIC
+  shared += local;
+}
+
 template<class ScalarType>
 ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
 
@@ -220,16 +234,8 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
   for(auto i=0ul; i<nElmDomain; ++i)
     sum += vec_val[i]*u.vec_val[i];
 
-  /*--- Reduction over all threads in this mpi rank using the
-   *    shared variable. In direct mode we use an atomic update, in
-   *    AD a critical section for compatibility with the type. ---*/
-#if !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
-  SU2_OMP(atomic)
-  dotRes += sum;
-#else
-  SU2_OMP_CRITICAL
-  dotRes += sum;
-#endif
+  /*--- Update shared variable with "our" partial sum. ---*/
+  reduce(sum, dotRes);
 
 #ifdef HAVE_MPI
   /*--- Reduce across all mpi ranks, only master thread communicates. ---*/

@@ -184,13 +184,16 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   /*--- Shared reduction variables. ---*/
 
   unsigned long ElemCounter = 0;
-  su2double MaxVolume = -1E22, MinVolume = -1E22;
+  su2double MaxVolume = -1E22, MinVolume = 1E22;
 
   SU2_OMP_PARALLEL
   {
+    /*--- Local min/max, final reduction outside loop. ---*/
+    su2double maxVol = -1E22, minVol = 1E22;
+
     /*--- Loop over the elements in the domain. ---*/
 
-    SU2_OMP(for schedule(dynamic,omp_chunk_size) reduction(max:MaxVolume,MinVolume))
+    SU2_OMP(for schedule(dynamic,omp_chunk_size) reduction(+:ElemCounter) nowait)
     for (unsigned long iElem = 0; iElem < nElement; iElem++) {
 
       int thread = omp_get_thread_num();
@@ -225,19 +228,21 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
       if (nDim == 2) ElemVolume = fea_elem->ComputeArea();
       else           ElemVolume = fea_elem->ComputeVolume();
 
-      MaxVolume = max(MaxVolume, ElemVolume);
-      MinVolume = max(MinVolume, -1.0*ElemVolume);
+      maxVol = max(maxVol, ElemVolume);
+      minVol = min(minVol, ElemVolume);
 
       if (updated) element[iElem].SetCurr_Volume(ElemVolume);
       else element[iElem].SetRef_Volume(ElemVolume);
 
       /*--- Count distorted elements. ---*/
-      if (ElemVolume <= 0.0) {
-        SU2_OMP(atomic)
-        ElemCounter++;
-      }
+      if (ElemVolume <= 0.0) ElemCounter++;
     }
-    MinVolume *= -1.0;
+    SU2_OMP_CRITICAL
+    {
+      MaxVolume = max(MaxVolume, maxVol);
+      MinVolume = min(MinVolume, minVol);
+    }
+    SU2_OMP_BARRIER
 
     SU2_OMP_MASTER
     {
