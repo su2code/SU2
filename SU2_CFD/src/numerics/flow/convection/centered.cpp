@@ -54,12 +54,15 @@ CCentBase_Flow::~CCentBase_Flow(void) {
   delete [] Diff_U;
   delete [] Diff_Lapl;
   delete [] ProjFlux;
-  for (iVar = 0; iVar < nVar; iVar++) {
-    delete [] Jacobian_i[iVar];
-    delete [] Jacobian_j[iVar];
+
+  if (Jacobian_i != nullptr) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      delete [] Jacobian_i[iVar];
+      delete [] Jacobian_j[iVar];
+    }
+    delete [] Jacobian_i;
+    delete [] Jacobian_j;
   }
-  delete [] Jacobian_i;
-  delete [] Jacobian_j;
 }
 
 CNumerics::ResidualType<> CCentBase_Flow::ComputeResidual(const CConfig* config) {

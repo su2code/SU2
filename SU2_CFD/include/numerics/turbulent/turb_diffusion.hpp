@@ -45,7 +45,19 @@
  * \author C. Pederson, A. Bueno, and F. Palacios
  */
 class CAvgGrad_Scalar : public CNumerics {
- private:
+protected:
+  su2double
+  Edge_Vector[MAXNDIM] = {0.0},             /*!< \brief Vector from node i to node j. */
+  *Proj_Mean_GradTurbVar_Normal = nullptr,  /*!< \brief Mean_gradTurbVar DOT normal. */
+  *Proj_Mean_GradTurbVar_Edge = nullptr,    /*!< \brief Mean_gradTurbVar DOT Edge_Vector. */
+  *Proj_Mean_GradTurbVar = nullptr,         /*!< \brief Mean_gradTurbVar DOT normal, corrected if required. */
+  dist_ij_2 = 0.0,                          /*!< \brief |Edge_Vector|^2 */
+  proj_vector_ij = 0.0,                     /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+  *Flux = nullptr,                          /*!< \brief Final result, diffusive flux/residual. */
+  **Jacobian_i = nullptr,                   /*!< \brief Flux Jacobian w.r.t. node i. */
+  **Jacobian_j = nullptr;                   /*!< \brief Flux Jacobian w.r.t. node j. */
+
+  const bool correct_gradient = false, implicit = false, incompressible = false;
 
   /*!
    * \brief A pure virtual function; Adds any extra variables to AD
@@ -53,38 +65,22 @@ class CAvgGrad_Scalar : public CNumerics {
   virtual void ExtraADPreaccIn() = 0;
 
   /*!
-   * \brief Model-specific steps in the ComputeResidual method
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \brief Model-specific steps in the ComputeResidual method, derived classes
+   *        should compute the Flux and Jacobians (i/j) inside this method.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void FinishResidualCalc(su2double *val_residual,
-                                  su2double **Jacobian_i,
-                                  su2double **Jacobian_j,
-                                  CConfig *config) = 0;
+  virtual void FinishResidualCalc(const CConfig* config) = 0;
 
- protected:
-  bool implicit, incompressible;
-  bool correct_gradient;
-  unsigned short iVar, iDim;
-  su2double **Mean_GradTurbVar;               /*!< \brief Average of gradients at cell face */
-  su2double *Edge_Vector,                     /*!< \brief Vector from node i to node j. */
-            *Proj_Mean_GradTurbVar_Normal,    /*!< \brief Mean_gradTurbVar DOT normal */
-            *Proj_Mean_GradTurbVar_Edge,      /*!< \brief Mean_gradTurbVar DOT Edge_Vector */
-            *Proj_Mean_GradTurbVar;           /*!< \brief Mean_gradTurbVar DOT normal, corrected if required*/
-  su2double  dist_ij_2,                       /*!< \brief |Edge_Vector|^2 */
-             proj_vector_ij;                  /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-
- public:
+public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] correct_gradient - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar,
-                  bool correct_gradient, CConfig *config);
+                  bool correct_gradient, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -93,13 +89,11 @@ class CAvgGrad_Scalar : public CNumerics {
 
   /*!
    * \brief Compute the viscous residual using an average of gradients without correction.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i,
-                       su2double **Jacobian_j, CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config);
+
 };
 
 /*!
@@ -108,42 +102,31 @@ class CAvgGrad_Scalar : public CNumerics {
  * \ingroup ViscDiscr
  * \author A. Bueno.
  */
-class CAvgGrad_TurbSA : public CAvgGrad_Scalar {
+class CAvgGrad_TurbSA final : public CAvgGrad_Scalar {
 private:
-
-  const su2double sigma;
-  su2double nu_i, nu_j, nu_e;
+  const su2double sigma = 2.0/3.0;
 
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn(void);
+  void ExtraADPreaccIn(void) override;
 
   /*!
    * \brief SA specific steps in the ComputeResidual method
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
-                          su2double **Jacobian_j, CConfig *config);
+  void FinishResidualCalc(const CConfig* config) override;
 
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] correct_grad - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
-                  bool correct_grad, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGrad_TurbSA(void);
+                  bool correct_grad, const CConfig* config);
 };
 
 /*!
@@ -152,44 +135,32 @@ public:
  * \ingroup ViscDiscr
  * \author F. Palacios
  */
-class CAvgGrad_TurbSA_Neg : public CAvgGrad_Scalar {
+class CAvgGrad_TurbSA_Neg final : public CAvgGrad_Scalar {
 private:
-
-  const su2double sigma;
-  const su2double cn1;
-  su2double fn, Xi;
-  su2double nu_i, nu_j, nu_ij, nu_tilde_ij, nu_e;
+  const su2double sigma = 2.0/3.0;
+  const su2double cn1 = 16.0;
 
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn(void);
+  void ExtraADPreaccIn(void) override;
 
   /*!
    * \brief SA specific steps in the ComputeResidual method
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
-                                su2double **Jacobian_j, CConfig *config);
+  void FinishResidualCalc(const CConfig* config) override;
 
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] correct_grad - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
-                      bool correct_grad, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGrad_TurbSA_Neg(void);
+                      bool correct_grad, const CConfig* config);
 };
 
 /*!
@@ -198,48 +169,38 @@ public:
  * \ingroup ViscDiscr
  * \author A. Bueno.
  */
-class CAvgGrad_TurbSST : public CAvgGrad_Scalar {
+class CAvgGrad_TurbSST final : public CAvgGrad_Scalar {
 private:
-  su2double sigma_k1, /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
-  sigma_k2,
-  sigma_om1,
-  sigma_om2;
-
-  su2double diff_kine,  /*!< \brief Diffusivity for viscous terms of tke eq */
-            diff_omega; /*!< \brief Diffusivity for viscous terms of omega eq */
+  const su2double
+  sigma_k1 = 0.0, /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
+  sigma_k2 = 0.0,
+  sigma_om1 = 0.0,
+  sigma_om2 = 0.0;
 
   su2double F1_i, F1_j; /*!< \brief Menter's first blending function */
 
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn(void);
+  void ExtraADPreaccIn(void) override;
 
   /*!
    * \brief SST specific steps in the ComputeResidual method
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
-                                su2double **Jacobian_j, CConfig *config);
+  void FinishResidualCalc(const CConfig* config) override;
 
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] constants - Constants of the model.
+   * \param[in] correct_grad - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
-                   const su2double* constants, bool correct_grad, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGrad_TurbSST(void);
+                   const su2double* constants, bool correct_grad, const CConfig* config);
 
   /*!
    * \brief Sets value of first blending function.

@@ -267,7 +267,8 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
 
 }
 
-void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+         unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long iPoint;
 
@@ -303,7 +304,9 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 }
 
-void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
+                                    CConfig *config, unsigned short iMesh) {
+
   su2double rho = 0.0, mu = 0.0, dist, omega, kine, F2, muT, zeta;
   su2double a1 = constants[7];
   unsigned long iPoint;
@@ -410,10 +413,58 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
 void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh) {
+}
+
+void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  unsigned long iPoint, jPoint, iVertex, total_index;
+  unsigned short iDim, iVar;
+  su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      /*--- distance to closest neighbor ---*/
+      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      distance = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        distance += pow(geometry->node[iPoint]->GetCoord(iDim)-
+                        geometry->node[jPoint]->GetCoord(iDim), 2);
+      }
+      distance = sqrt(distance);
+
+      /*--- Set wall values ---*/
+
+      density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
+      laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
+
+      beta_1 = constants[4];
+
+      Solution[0] = 0.0;
+      Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
+
+      /*--- Set the solution values and zero the residual ---*/
+      nodes->SetSolution_Old(iPoint,Solution);
+      nodes->SetSolution(iPoint,Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
+
+      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+
+    }
+  }
 
 }
 
-void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
@@ -460,55 +511,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
 }
 
-void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                        unsigned short val_marker) {
-
-  unsigned long iPoint, jPoint, iVertex, total_index;
-  unsigned short iDim, iVar;
-  su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
-
-      /*--- distance to closest neighbor ---*/
-      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      distance = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*
-        (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
-      }
-      distance = sqrt(distance);
-
-      /*--- Set wall values ---*/
-
-      density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-      laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
-
-      beta_1 = constants[4];
-
-      Solution[0] = 0.0;
-      Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
-
-      /*--- Set the solution values and zero the residual ---*/
-      nodes->SetSolution_Old(iPoint,Solution);
-      nodes->SetSolution(iPoint,Solution);
-      LinSysRes.SetBlock_Zero(iPoint);
-
-      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
-      }
-
-    }
-  }
-
-}
-
-void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, iVertex;
   su2double *Normal, *V_infty, *V_domain;
@@ -558,12 +562,12 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Compute residuals and Jacobians ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      auto residual = conv_numerics->ComputeResidual(config);
 
       /*--- Add residuals and Jacobians ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
-      Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      LinSysRes.AddBlock(iPoint, residual);
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }
   }
@@ -572,8 +576,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
 }
 
-void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                              unsigned short val_marker) {
+void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                              CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint;
@@ -633,12 +637,12 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
       /*--- Compute the residual using an upwind scheme ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      LinSysRes.AddBlock(iPoint, Residual);
+      auto residual = conv_numerics->ComputeResidual(config);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
 
-      Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
       //
@@ -660,12 +664,12 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       //
       //      /*--- Compute residual, and Jacobians ---*/
       //
-      //      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      //      auto residual = visc_numerics->ComputeResidual(config);
       //
       //      /*--- Subtract residual, and update Jacobians ---*/
       //
-      //      LinSysRes.SubtractBlock(iPoint, Residual);
-      //      Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+      //      LinSysRes.SubtractBlock(iPoint, residual);
+      //      Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
     }
 
@@ -677,7 +681,8 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
 }
 
-void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
@@ -731,12 +736,12 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 
       /*--- Compute the residual using an upwind scheme ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      LinSysRes.AddBlock(iPoint, Residual);
+      auto residual = conv_numerics->ComputeResidual(config);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
 
-      Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
@@ -758,12 +763,12 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 //
 //      /*--- Compute residual, and Jacobians ---*/
 //
-//      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//      auto residual = visc_numerics->ComputeResidual(config);
 //
 //      /*--- Subtract residual, and update Jacobians ---*/
 //
-//      LinSysRes.SubtractBlock(iPoint, Residual);
-//      Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+//      LinSysRes.SubtractBlock(iPoint, residual);
+//      Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
     }
   }
@@ -774,8 +779,8 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 }
 
 
-void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                              unsigned short val_marker) {
+void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                          CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar, iSpan, iDim;
   unsigned long  oldVertex, iPoint, Point_Normal, iVertex;
@@ -840,11 +845,11 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
             geometry->node[iPoint]->GetGridVel());
 
       /*--- Compute the residual using an upwind scheme ---*/
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      LinSysRes.AddBlock(iPoint, Residual);
+      auto conv_residual = conv_numerics->ComputeResidual(config);
 
       /*--- Jacobian contribution for implicit integration ---*/
-      Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      LinSysRes.AddBlock(iPoint, conv_residual);
+      Jacobian.AddBlock2Diag(iPoint, conv_residual.jacobian_i);
 
       /*--- Viscous contribution ---*/
       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
@@ -861,11 +866,11 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
 
       /*--- Compute residual, and Jacobians ---*/
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      auto visc_residual = visc_numerics->ComputeResidual(config);
 
       /*--- Subtract residual, and update Jacobians ---*/
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+      LinSysRes.SubtractBlock(iPoint, visc_residual);
+      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
   }
@@ -875,8 +880,8 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
 }
 
-void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                              unsigned short val_marker) {
+void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar, iSpan, iDim;
   unsigned long  oldVertex, iPoint, Point_Normal, iVertex;
@@ -962,14 +967,14 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-            geometry->node[iPoint]->GetGridVel());
+                                  geometry->node[iPoint]->GetGridVel());
 
       /*--- Compute the residual using an upwind scheme ---*/
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      LinSysRes.AddBlock(iPoint, Residual);
+      auto conv_residual = conv_numerics->ComputeResidual(config);
 
       /*--- Jacobian contribution for implicit integration ---*/
-      Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      LinSysRes.AddBlock(iPoint, conv_residual);
+      Jacobian.AddBlock2Diag(iPoint, conv_residual.jacobian_i);
 
       /*--- Viscous contribution ---*/
       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
@@ -986,11 +991,11 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
 
       /*--- Compute residual, and Jacobians ---*/
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      auto visc_residual = visc_numerics->ComputeResidual(config);
 
       /*--- Subtract residual, and update Jacobians ---*/
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+      LinSysRes.SubtractBlock(iPoint, visc_residual);
+      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
   }
@@ -1001,18 +1006,16 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
 }
 
-
 void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-    CNumerics *visc_numerics, CConfig *config){
+                                        CNumerics *visc_numerics, CConfig *config){
 
   unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
-  unsigned short iDim, iVar, iMarker;
+  unsigned short iDim, iVar, jVar, iMarker;
 
   unsigned short nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
-  su2double *tmp_residual = new su2double[nVar];
 
   unsigned long nDonorVertex;
   su2double weight;
@@ -1032,8 +1035,11 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
           /*--- Initialize Residual, this will serve to accumulate the average ---*/
 
-          for (iVar = 0; iVar < nVar; iVar++)
+          for (iVar = 0; iVar < nVar; iVar++) {
             Residual[iVar] = 0.0;
+            for (jVar = 0; jVar < nVar; jVar++)
+              Jacobian_i[iVar][jVar] = 0.0;
+          }
 
           /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
@@ -1071,12 +1077,15 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
             if (dynamic_grid)
               conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
-            conv_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
+            auto residual = conv_numerics->ComputeResidual(config);
 
             /*--- Accumulate the residuals to compute the average ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++)
-              Residual[iVar] += weight*tmp_residual[iVar];
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Residual[iVar] += weight*residual.residual[iVar];
+              for (jVar = 0; jVar < nVar; jVar++)
+                Jacobian_i[iVar][jVar] += weight*residual.jacobian_i[iVar][jVar];
+            }
           }
 
           /*--- Add Residuals and Jacobians ---*/
@@ -1102,13 +1111,13 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
           /*--- Compute and update residual ---*/
 
-          visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+          auto residual = visc_numerics->ComputeResidual(config);
 
-          LinSysRes.SubtractBlock(iPoint, Residual);
+          LinSysRes.SubtractBlock(iPoint, residual);
 
           /*--- Jacobian contribution for implicit integration ---*/
 
-          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
         }
       }
@@ -1117,7 +1126,6 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
   /*--- Free locally allocated memory ---*/
 
-  delete [] tmp_residual;
   delete [] Normal;
   delete [] PrimVar_i;
   delete [] PrimVar_j;

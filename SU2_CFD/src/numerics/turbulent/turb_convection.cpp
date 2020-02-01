@@ -30,30 +30,37 @@
 
 CUpwScalar::CUpwScalar(unsigned short val_nDim,
                        unsigned short val_nVar,
-                       CConfig *config) :
-            CNumerics(val_nDim, val_nVar, config) {
-
-  implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  dynamic_grid = config->GetDynamic_Grid();
-
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
-
+                       const CConfig* config) :
+  CNumerics(val_nDim, val_nVar, config),
+  implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
+  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
+  dynamic_grid(config->GetDynamic_Grid())
+{
+  Flux = new su2double [nVar];
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
+  }
 }
 
 CUpwScalar::~CUpwScalar(void) {
 
-  delete [] Velocity_i;
-  delete [] Velocity_j;
-
+  delete [] Flux;
+  if (Jacobian_i != nullptr) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      delete [] Jacobian_i[iVar];
+      delete [] Jacobian_j[iVar];
+    }
+    delete [] Jacobian_i;
+    delete [] Jacobian_j;
+  }
 }
 
-void CUpwScalar::ComputeResidual(su2double *val_residual,
-                                 su2double **val_Jacobian_i,
-                                 su2double **val_Jacobian_j,
-                                 CConfig *config) {
+CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
+
+  unsigned short iDim;
 
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
@@ -70,82 +77,69 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
   q_ij = 0.0;
   if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
-      Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
-      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
+      su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
+      su2double Velocity_j = V_j[iDim+1] - GridVel_j[iDim];
+      q_ij += 0.5*(Velocity_i+Velocity_j)*Normal[iDim];
     }
   }
   else {
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = V_i[iDim+1];
-      Velocity_j[iDim] = V_j[iDim+1];
-      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
+      q_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
     }
   }
 
   a0 = 0.5*(q_ij+fabs(q_ij));
   a1 = 0.5*(q_ij-fabs(q_ij));
 
-  FinishResidualCalc(val_residual, val_Jacobian_i, val_Jacobian_j, config);
+  FinishResidualCalc(config);
 
-
-  AD::SetPreaccOut(val_residual, nVar);
+  AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
+
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 
 }
 
 CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
                                unsigned short val_nVar,
-                               CConfig *config)
-    : CUpwScalar(val_nDim, val_nVar, config) {
-}
-
-CUpwSca_TurbSA::~CUpwSca_TurbSA(void) {
-}
+                               const CConfig* config) :
+                CUpwScalar(val_nDim, val_nVar, config) { }
 
 void CUpwSca_TurbSA::ExtraADPreaccIn() {
-  AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
+  AD::SetPreaccIn(V_i, nDim+1);
+  AD::SetPreaccIn(V_j, nDim+1);
 }
 
-void CUpwSca_TurbSA::FinishResidualCalc(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
 
-  val_residual[0] = a0*TurbVar_i[0]+a1*TurbVar_j[0];
+  Flux[0] = a0*TurbVar_i[0]+a1*TurbVar_j[0];
 
   if (implicit) {
-    val_Jacobian_i[0][0] = a0;
-    val_Jacobian_j[0][0] = a1;
+    Jacobian_i[0][0] = a0;
+    Jacobian_j[0][0] = a1;
   }
 }
 
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
                                  unsigned short val_nVar,
-                                 CConfig *config)
-    : CUpwScalar(val_nDim, val_nVar, config) {
-}
-
-CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
-}
+                                 const CConfig* config) :
+                 CUpwScalar(val_nDim, val_nVar, config) { }
 
 void CUpwSca_TurbSST::ExtraADPreaccIn() {
-
   AD::SetPreaccIn(V_i, nDim+3);
   AD::SetPreaccIn(V_j, nDim+3);
-
 }
 
-void CUpwSca_TurbSST::FinishResidualCalc(su2double *val_residual,
-                                               su2double **val_Jacobian_i,
-                                               su2double **val_Jacobian_j,
-                                               CConfig *config) {
+void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
-  val_residual[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0];
-  val_residual[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1];
+  Flux[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0];
+  Flux[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1];
 
   if (implicit) {
-    val_Jacobian_i[0][0] = a0;    val_Jacobian_i[0][1] = 0.0;
-    val_Jacobian_i[1][0] = 0.0;    val_Jacobian_i[1][1] = a0;
+    Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;
+    Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0;
 
-    val_Jacobian_j[0][0] = a1;    val_Jacobian_j[0][1] = 0.0;
-    val_Jacobian_j[1][0] = 0.0;    val_Jacobian_j[1][1] = a1;
+    Jacobian_j[0][0] = a1;    Jacobian_j[0][1] = 0.0;
+    Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1;
   }
 }
