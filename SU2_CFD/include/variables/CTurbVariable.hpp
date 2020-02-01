@@ -2,7 +2,7 @@
  * \file CTurbVariable.hpp
  * \brief Base class for defining the variables of the turbulence model.
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -100,6 +100,12 @@ public:
    * \return Array of the reconstruction variables gradient at a node.
    */
   inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
-  
+
+  /*!
+   * \brief Get the reconstruction gradient for primitive variable at all points.
+   * \return Reference to variable reconstruction gradient.
+   */
+  inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+
 };
 

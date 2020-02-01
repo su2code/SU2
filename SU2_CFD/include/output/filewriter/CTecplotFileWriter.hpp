@@ -2,11 +2,11 @@
  * \file CTecplotFileWriter.hpp
  * \brief Headers fo the tecplot ASCII writer class.
  * \author T. Albring
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -30,8 +30,8 @@
 
 class CTecplotFileWriter final: public CFileWriter{
 
-  unsigned long time_iter;  //!< Current value of the time iteration
-  su2double timestep;       //!< Current value of the time step
+  unsigned long timeIter;  //!< Current value of the time iteration
+  su2double timeStep;       //!< Current value of the time step
 
 public:
 
@@ -41,15 +41,14 @@ public:
   const static string fileExt;
 
   /*!
-   * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fields - A list of field names
-   * \param[in] nDim - Physical dimension
-   * \param[in] - The name of the file
-   * \param[in] - The parallel sorted data to write
+   * \brief Construct a file writer using field names and the data sorter.
+   * \param[in] valFileName - The name of the file
+   * \param[in] valDataSorter - The parallel sorted data to write
+   * \param[in] valTimeIter - The current time iteration
+   * \param[in] valTimeStep - The current physical time step value
    */
-  CTecplotFileWriter(vector<string> fields, unsigned short nDim,
-                     string fileName, CParallelDataSorter *dataSorter,
-                     unsigned long time_iter, su2double timestep);
+  CTecplotFileWriter(string valFileName, CParallelDataSorter* valDataSorter,
+                     unsigned long valTimeIter, su2double valTimeStep);
 
   /*!
    * \brief Destructor

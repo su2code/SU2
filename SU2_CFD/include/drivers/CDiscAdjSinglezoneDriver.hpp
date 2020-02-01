@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
  * \class CDiscAdjSinglezoneDriver
  * \brief Class for driving single-zone adjoint solvers.
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  */
 class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
 protected:
@@ -126,5 +126,11 @@ public:
    * \brief Record the secondary computational path.
    */
   void SecondaryRecording(void);
+
+  /*!
+   * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
+   * \return true, if convergence criteria has been met, else false
+   */
+  bool GetTimeConvergence() const override;
 
 };
