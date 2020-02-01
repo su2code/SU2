@@ -25,9 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../include/variables/CTurbSSTVariable.hpp"
+#include "../../../Common/include/omp_structure.hpp"
+
 
 CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() { }
 
@@ -270,22 +271,17 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long iPoint;
+  /// TODO: Try to start a parallel section here encompassing all "heavy" methods.
 
-  bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
+  const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
+                            (config->GetInnerIter() <= config->GetLimiterIter());
 
-
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-
-    /*--- Initialize the residual vector ---*/
-
-    LinSysRes.SetBlock_Zero(iPoint);
-
-  }
-
-  /*--- Initialize the Jacobian matrices ---*/
-
+  SU2_OMP_PARALLEL
+  {
+  /*--- Clear residual and system matrix. ---*/
+  LinSysRes.SetValZero();
   Jacobian.SetValZero();
+  }
 
   /*--- Upwind second order reconstruction and gradients ---*/
 
@@ -307,11 +303,9 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
                                     CConfig *config, unsigned short iMesh) {
 
-  su2double rho = 0.0, mu = 0.0, dist, omega, kine, F2, muT, zeta;
-  su2double a1 = constants[7];
-  unsigned long iPoint;
+  const su2double a1 = constants[7];
 
-  /*--- Compute mean flow and turbulence gradients ---*/
+  /*--- Compute turbulence gradients. ---*/
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     SetSolution_Gradient_GG(geometry, config);
@@ -320,30 +314,32 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     SetSolution_Gradient_LS(geometry, config);
   }
 
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Compute blending functions and cross diffusion ---*/
 
-    rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-    mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-    dist = geometry->node[iPoint]->GetWall_Distance();
+    su2double dist = geometry->node[iPoint]->GetWall_Distance();
 
-    su2double *Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+    const su2double *Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
     su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
                                   Vorticity[1]*Vorticity[1] +
                                   Vorticity[2]*Vorticity[2]);
 
-    nodes->SetBlendingFunc(iPoint,mu, dist, rho);
+    nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
-    F2 = nodes->GetF2blending(iPoint);
+    su2double F2 = nodes->GetF2blending(iPoint);
 
     /*--- Compute the eddy viscosity ---*/
 
-    kine  = nodes->GetSolution(iPoint,0);
-    omega = nodes->GetSolution(iPoint,1);
-    zeta  = min(1.0/omega, a1/(VorticityMag*F2));
-    muT   = max(rho*kine*zeta,0.0);
+    su2double kine  = nodes->GetSolution(iPoint,0);
+    su2double omega = nodes->GetSolution(iPoint,1);
+    su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
+    su2double muT   = max(rho*kine*zeta,0.0);
+
     nodes->SetmuT(iPoint,muT);
 
   }
