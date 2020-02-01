@@ -25,9 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/solvers/CTurbSASolver.hpp"
 #include "../../include/variables/CTurbSAVariable.hpp"
+#include "../../../Common/include/omp_structure.hpp"
+
 
 CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
 
@@ -269,6 +270,8 @@ CTurbSASolver::~CTurbSASolver(void) {
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
         unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
+  /// TODO: Try to start a parallel section here encompassing all "heavy" methods.
+
   unsigned long iPoint;
   bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                       (config->GetInnerIter() <= config->GetLimiterIter());
@@ -277,17 +280,12 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   su2double* Vorticity = NULL;
   su2double Laminar_Viscosity = 0;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-
-    /*--- Initialize the residual vector ---*/
-
-    LinSysRes.SetBlock_Zero(iPoint);
-
-  }
-
-  /*--- Initialize the Jacobian matrices ---*/
-
+  SU2_OMP_PARALLEL
+  {
+  /*--- Clear residual and system matrix. ---*/
+  LinSysRes.SetValZero();
   Jacobian.SetValZero();
+  }
 
   /*--- Upwind second order reconstruction and gradients ---*/
 
@@ -326,27 +324,26 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
-  su2double rho = 0.0, mu = 0.0, nu, *nu_hat, muT, Ji, Ji_3, fv1;
-  su2double cv1_3 = 7.1*7.1*7.1;
-  unsigned long iPoint;
+  const su2double cv1_3 = 7.1*7.1*7.1;
 
-  bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
+  const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
 
   /*--- Compute eddy viscosity ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
-    rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-    mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-    nu  = mu/rho;
-    nu_hat = nodes->GetSolution(iPoint);
+    su2double nu  = mu/rho;
+    su2double nu_hat = nodes->GetSolution(iPoint,0);
 
-    Ji   = nu_hat[0]/nu;
-    Ji_3 = Ji*Ji*Ji;
-    fv1  = Ji_3/(Ji_3+cv1_3);
+    su2double Ji   = nu_hat/nu;
+    su2double Ji_3 = Ji*Ji*Ji;
+    su2double fv1  = Ji_3/(Ji_3+cv1_3);
 
-    muT = rho*fv1*nu_hat[0];
+    su2double muT = rho*fv1*nu_hat;
 
     if (neg_spalart_allmaras && (muT < 0.0)) muT = 0.0;
 
