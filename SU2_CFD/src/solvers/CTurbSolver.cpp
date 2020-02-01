@@ -404,64 +404,92 @@ void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 
 void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned short iVar;
-  unsigned long iPoint, total_index;
-  su2double Delta, Vol, density_old = 0.0, density = 0.0;
+  const bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
+  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 
-  bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  /*--- Set maximum residual to zero ---*/
+  /*--- Start OpenMP parallel section. ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) {
+  SU2_OMP_PARALLEL
+  {
+  /*--- Set shared residual variables to 0 and declare
+   *    local ones for current thread to work on. ---*/
+
+  SU2_OMP_MASTER
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
+  SU2_OMP_BARRIER
+
+  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+  const su2double* coordMax[MAXNVAR] = {nullptr};
+  unsigned long idxMax[MAXNVAR] = {0};
 
   /*--- Build implicit system ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Read the volume ---*/
 
-    Vol = (geometry->node[iPoint]->GetVolume() +
-           geometry->node[iPoint]->GetPeriodicVolume());
+    su2double Vol = (geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume());
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    Delta = Vol / ((nodes->GetLocalCFL(iPoint)/solver_container[FLOW_SOL]->GetNodes()->GetLocalCFL(iPoint))*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
+    su2double Delta = Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
     Jacobian.AddVal2Diag(iPoint, Delta);
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = - LinSysRes[total_index];
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      unsigned long total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = -LinSysRes[total_index];
       LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+
+      su2double Res = fabs(LinSysRes[total_index]);
+      resRMS[iVar] += Res*Res;
+      if (Res > resMax[iVar]) {
+        resMax[iVar] = Res;
+        idxMax[iVar] = iPoint;
+        coordMax[iVar] = geometry->node[iPoint]->GetCoord();
+      }
     }
+  }
+  SU2_OMP_CRITICAL
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    AddRes_RMS(iVar, resRMS[iVar]);
+    AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
   }
 
   /*--- Initialize residual and solution at the ghost points ---*/
 
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
-    }
+  SU2_OMP(sections nowait)
+  {
+    SU2_OMP(section)
+    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+      LinSysRes.SetBlock_Zero(iPoint);
+
+    SU2_OMP(section)
+    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+      LinSysSol.SetBlock_Zero(iPoint);
   }
+
+  } // end SU2_OMP_PARALLEL
+
+  /// TODO: We should be able to call the linear solver inside the parallel region.
 
   /*--- Solve or smooth the linear system ---*/
 
   unsigned long IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   SetIterLinSolver(IterLinSol);
-
-  /*--- Store the value of the residual. ---*/
-
   SetResLinSolver(System.GetResidual());
+
+  /*--- Go back to parallel. ---*/
+
+  SU2_OMP_PARALLEL
+  {
 
   ComputeUnderRelaxationFactor(solver_container, config);
 
@@ -475,50 +503,52 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
       case SA: case SA_E: case SA_COMP: case SA_E_COMP: case SA_NEG:
 
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
           nodes->AddSolution(iPoint, 0, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint]);
         }
-
         break;
 
       case SST: case SST_SUST:
 
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-          if (compressible) {
-            density_old = solver_container[FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint,0);
-            density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          }
-          if (incompressible) {
-            density_old = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-            density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          }
+          su2double density = flowNodes->GetDensity(iPoint);
+          su2double density_old = density;
 
-          for (iVar = 0; iVar < nVar; iVar++) {
-            nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
-          }
+          if (compressible)
+            density_old = flowNodes->GetSolution_Old(iPoint,0);
 
+          for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+            nodes->AddConservativeSolution(iPoint, iVar,
+                      nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar],
+                      density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+          }
         }
-
         break;
 
     }
   }
 
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  SU2_OMP_MASTER
+  {
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    }
+
+    /*--- MPI solution ---*/
+
+    InitiateComms(geometry, config, SOLUTION_EDDY);
+    CompleteComms(geometry, config, SOLUTION_EDDY);
+
+    /*--- Compute the root mean square residual ---*/
+
+    SetResidual_RMS(geometry, config);
   }
 
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION_EDDY);
-  CompleteComms(geometry, config, SOLUTION_EDDY);
-
-  /*--- Compute the root mean square residual ---*/
-
-  SetResidual_RMS(geometry, config);
-
+  } // end SU2_OMP_PARALLEL
 }
 
 void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
@@ -539,6 +569,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
   const su2double allowableDecrease = -0.99;
   const su2double allowableIncrease =  0.99;
 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     localUnderRelaxation = 1.0;
