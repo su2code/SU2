@@ -4312,10 +4312,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
               switch(config->GetKindInletInterpolationType()){
                 case(VR_VTHETA):
-                  Interpolation_Type = VR_VTHETA;
+                  Interpolation_Type = "VR_VTHETA";
                 break;
                 case(ALPHA_PHI):
-                  Interpolation_Type = ALPHA_PHI;
+                  Interpolation_Type = "ALPHA_PHI";
                 break;
               }
 
