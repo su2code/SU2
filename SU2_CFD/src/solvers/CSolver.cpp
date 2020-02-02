@@ -4285,8 +4285,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             break;
 
             case (ONED_AKIMASPLINE_SPANWISE):
-
-            Interpolate == true;
+            case (ONED_LINEAR_SPANWISE):
+            Interpolate = true;
 
             cout<<"Switch statement confirmed, printing Interpolate bool: "<<Interpolate<<endl;
 
