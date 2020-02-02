@@ -4388,7 +4388,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
             }
 
-            else if(Interpolate == true){
+            if(Interpolate == true){
                 
               /* --- Calculating the radius and angle of the vertex ---*/
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
