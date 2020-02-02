@@ -4285,6 +4285,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
             case (ONED_LINEAR_SPANWISE || ONED_AKIMASPLINE_SPANWISE):
 
+            Interpolate == true;
+
             if(config->GetKindInletInterpolationFunction() == ONED_LINEAR_SPANWISE)
               Interpolation_Function = "Linear";
             else if (config->GetKindInletInterpolationFunction() == ONED_AKIMASPLINE_SPANWISE)
@@ -4316,6 +4318,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                   Interpolation_Type = ALPHA_PHI;
                 break;
               }
+
+              cout<<"Inlet Interpolation done using Function: "<< Interpolation_Function << "and Interpolation Type: " << Interpolation_Type << endl; 
 
               break;
           }
