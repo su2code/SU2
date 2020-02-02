@@ -4279,11 +4279,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           vector<su2double> Inlet_Radii (nRows);
 
           switch(config->GetKindInletInterpolationFunction()){
+
             case (NONE):
             Interpolate = false;
             break;
 
-            case (ONED_LINEAR_SPANWISE || ONED_AKIMASPLINE_SPANWISE):
+            case (ONED_AKIMASPLINE_SPANWISE):
 
             Interpolate == true;
 
