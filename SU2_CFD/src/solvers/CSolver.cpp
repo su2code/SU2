@@ -4190,7 +4190,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   string profile_filename = config->GetInlet_FileName();
   ifstream inlet_file;
   string Interpolation_Function, Interpolation_Type;
-  bool Interpolate = true;
+  bool Interpolate;
 
   su2double *Normal       = new su2double[nDim];
 
@@ -4286,6 +4286,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             case (ONED_LINEAR_SPANWISE || ONED_AKIMASPLINE_SPANWISE):
 
             Interpolate == true;
+
+            cout<<"Switch statement confirmed, printing Interpolate bool: "<<Interpolate<<endl;
 
             if(config->GetKindInletInterpolationFunction() == ONED_LINEAR_SPANWISE)
               Interpolation_Function = "Linear";
@@ -4389,7 +4391,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               /* --- Calculating the radius and angle of the vertex ---*/
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
               Theta = atan2(Coord[1],Coord[0]);
-
+              
+              cout<<"Running Interpolation_Evaluate"<<endl;
               /* --- Evaluating and saving the final spline data ---*/
               for  (unsigned short iVar=0; iVar < nColumns; iVar++){
                 Inlet_Interpolated[iVar]=s[iVar]->Interpolation_Evaluate(s[iVar],Interp_Radius,Interpolation_Function);
@@ -4407,11 +4410,13 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                 }
               }
               /* --- Correcting for Interpolation Type ---*/
+              cout<<"Correcting Inlet Values\n";
               Inlet_Values = s[0]->CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, Interpolation_Type);
 
               if(config->GetPrintInlet_InterpolatedData() == true)
                 s[0]->PrintInletInterpolatedData(Inlet_Values,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim);
               
+              cout<<"Applying Inlet Values to solver\n";
               solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
               
             }
