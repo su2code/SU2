@@ -4267,7 +4267,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           /*--- Get data for this profile. ---*/
 
           vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
-          unsigned long nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+          unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
 
           /*--- Define Inlet Values vectors before and after interpolation (if needed) ---*/
           vector<su2double> Inlet_Values(nCol_InletFile);
@@ -4299,6 +4299,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               for (int i=0;i<=nColumns;i++)
                 s[i] = new CInletInterpolation[nRows];
 
+              cout<<"Entering Interpolation Set for loop\n";
               /* --- Seperating the columns from Inlet_Data to set interpolation functions ---*/
               for (unsigned short iCol=0; iCol<nColumns; iCol++){
                 for (iRow = 0; iRow < nRows; iRow++){
@@ -4421,8 +4422,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               
             }
           }
-          for (iVar = 0; iVar < nColumns; iVar++)
-            s[iVar]->free_memory(s[iVar]);
+            if (s!= NULL) {
+              for (iVar = 0; iVar < nColumns; iVar++) {
+                if (s[iVar] != NULL) {
+                  delete s[iVar];
+                }
+              }
+              delete [] s;
+            }
         }
       }
       if (local_failure > 0) break;

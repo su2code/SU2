@@ -70,7 +70,7 @@ su2double Interpolation_Evaluate(CInletInterpolation *s, su2double Point_Interp,
         return s->Linear_eval(s,Point_Interp);
 }
 
-vector<su2double>& CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
+vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
                                     su2double Theta ,
                                     unsigned short nDim, 
                                     su2double *Coord, 

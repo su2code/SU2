@@ -87,7 +87,7 @@ su2double CLinearSpline::Linear_eval(CLinearSpline *s, su2double Point_Interp){
     }
 }
 
-vector<su2double>& CInletInterpolation::CorrectedInletValues(vector<su2double> &Inlet_Interpolated , 
+vector<su2double> CInletInterpolation::CorrectedInletValues(vector<su2double> &Inlet_Interpolated , 
                                                     su2double Theta ,
                                                     unsigned short nDim, 
                                                     su2double *Coord, 
