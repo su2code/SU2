@@ -4388,8 +4388,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
             }
 
-            if(Interpolate == true){
-                
+            else if(Interpolate == true){
+              
+              cout<<"Entering elseif\n";
               /* --- Calculating the radius and angle of the vertex ---*/
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
               Theta = atan2(Coord[1],Coord[0]);
@@ -4405,7 +4406,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                     if (nDim ==3) error_msg << ", " << Coord[2];
                     cout << "]" << endl;
                     cout << "with Radius: "<< Interp_Radius << endl;
-                    cout << "You can add a row for Radius" << Interp_Radius <<" in the inlet file ";
+                    cout << "You can add a row for Radius: " << Interp_Radius <<" in the inlet file ";
                     cout << "to eliminate this issue or give proper data" << endl;
                     local_failure++;
                     break;
