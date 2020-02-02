@@ -502,7 +502,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
   bool rough_wall = false;
-  su2double RoughWallBC, Roughness_Height;
+  su2double RoughWallBC, Roughness_Height, laminar_viscosity, density, sigma = 2.0/3.0, nu_total, coeff;
   su2double *Res_Wall = new su2double [nVar];
   su2double *Normal, Area;
 
@@ -538,24 +538,36 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
           Jacobian.DeleteValsRowi(iPoint);
 	   }
 	   else {
-		   /*--- Compute dual-grid area and boundary normal ---*/
-		   
-		   Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-		   
-		   Area = 0.0;
-		   for (iDim = 0; iDim < nDim; iDim++)
-		      Area += Normal[iDim]*Normal[iDim];
-		   Area = sqrt (Area);
-		   
 		   /*--- For rough walls, the boundary condition is given by 
 		    * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
 		    * where \nu is the solution variable, $n$ is the wall normal direction 
 		    * and k_s is the equivalent sand grain roughness specified. ---*/
+		   
+		   /*--- Compute dual-grid area and boundary normal ---*/
+		   
+		   Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+		   
+           Area = 0.0;
+		   for (iDim = 0; iDim < nDim; iDim++)
+		      Area += Normal[iDim]*Normal[iDim];
+		   Area = sqrt (Area);
+
+		   /*--- Get laminar_viscosity and density ---*/
+		   
+		   laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+           density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+           
+           nu_total = (laminar_viscosity/density + nodes->GetSolution(iPoint,0));
+           
+           coeff = (nu_total/sigma);
+
 		   RoughWallBC = nodes->GetSolution(iPoint,0)/(0.03*Roughness_Height);
-		   Res_Wall[0] = RoughWallBC*Area;
+
+		   Res_Wall[0] = coeff*RoughWallBC*Area;
 		   LinSysRes.SubtractBlock(iPoint, Res_Wall);
 		   
-		   Jacobian_i[0][0] = Area/(0.03*Roughness_Height);
+		   Jacobian_i[0][0] = (laminar_viscosity*Area)/(0.03*Roughness_Height*sigma);
+		   Jacobian_i[0][0] += 2.0*RoughWallBC*Area/sigma;
 		   Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
 	   }
       }
