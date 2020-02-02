@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -116,7 +116,6 @@ def shape_optimization( filename                           ,
                         optimization = 'SLSQP'             ,
                         quiet       = False                ,
                         nzones      = 1                    ):
-  
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
@@ -147,7 +146,7 @@ def shape_optimization( filename                           ,
         project.config = config
     else:
         project = SU2.opt.Project(config,state)
-    
+
     # Optimize
     if optimization == 'SLSQP':
       SU2.opt.SLSQP(project,x0,xb,its,accu)

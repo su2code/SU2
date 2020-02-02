@@ -2,11 +2,11 @@
  * \file output_flow_comp_fem.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -29,7 +29,7 @@
 #include "../../include/output/CFlowCompFEMOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../include/solver_structure.hpp"
+#include "../../include/solvers/CSolver.hpp"
 
 CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, true) {
 

@@ -3,7 +3,7 @@
 ## \file parse_config.py
 #  \brief Builds a worksheet of all SU2.cpp options
 #  \author A. Aranake, F. Palacios
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -75,7 +75,7 @@ def parse_config(config_cpp, config_hpp):
     if s.find('END_CONFIG_ENUMS')>-1:
       break   # Reached end
 
-    if s.find('CCreateMap')>-1:
+    if s.find('Struct_Map')>-1:
       dict_key = (s.split('=')[0]).split('>')[1].strip()
       dict_val = []
       while(1):

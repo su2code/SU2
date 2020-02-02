@@ -2,7 +2,7 @@
  * \file CInterface.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
