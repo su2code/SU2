@@ -44,7 +44,6 @@
 #include "../../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/CMarkerProfileReaderFVM.hpp"
-#include "../../../Common/include/toolboxes/CInletInterpolation.hpp"
 
 
 CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
