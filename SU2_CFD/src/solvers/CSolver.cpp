@@ -4190,7 +4190,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   string profile_filename = config->GetInlet_FileName();
   ifstream inlet_file;
   string Interpolation_Function, Interpolation_Type;
-  bool Interpolate = false;
+  bool Interpolate = true;
 
   su2double *Normal       = new su2double[nDim];
 
@@ -4280,7 +4280,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
           switch(config->GetKindInletInterpolationFunction()){
             case (NONE):
-            Interpolate = false;
+            Interpolate = true;
             break;
 
             case (ONED_LINEAR_SPANWISE || ONED_AKIMASPLINE_SPANWISE):
@@ -4384,7 +4384,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
             }
 
-              else if(Interpolate == true){
+            else if(Interpolate == true){
                 
               /* --- Calculating the radius and angle of the vertex ---*/
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
