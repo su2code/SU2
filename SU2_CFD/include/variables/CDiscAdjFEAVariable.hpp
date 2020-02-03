@@ -2,7 +2,7 @@
  * \file CDiscAdjFEAVariable.hpp
  * \brief Main class for defining the variables of the adjoint FEA solver.
  * \author T. Albring, R. Sanchez.
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring, R. Sanchez.
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  */
 class CDiscAdjFEAVariable : public CVariable {
 protected:

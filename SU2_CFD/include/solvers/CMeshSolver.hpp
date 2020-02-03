@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to compute the deformation of
  *        the volumetric numerical grid using the linear elasticity solver.
  * \author Ruben Sanchez, based on CVolumetricMovement developments (F. Palacios, A. Bueno, T. Economon, S. Padron)
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -71,7 +71,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   void SetWallDistance(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Update the value of the coordinates after the grid movement.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -118,21 +118,27 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config) override;
+  void DeformMesh(CGeometry **geometry,
+                  CNumerics **numerics,
+                  CConfig *config) override;
 
   /*!
    * \brief Set the stiffness of the mesh.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config) override;
+  void SetMesh_Stiffness(CGeometry **geometry,
+                         CNumerics **numerics,
+                         CConfig *config) override;
 
   /*!
    * \brief Get the value of the reference coordinate to set on the element structure.
    * \param[in] indexNode - Index of the node.
    * \param[in] iDim - Dimension required.
    */
-  inline su2double Get_ValCoord(CGeometry*, unsigned long indexNode, unsigned short iDim) const override {
+  inline su2double Get_ValCoord(CGeometry*,
+                                unsigned long indexNode,
+                                unsigned short iDim) const override {
     return nodes->GetMesh_Coord(indexNode,iDim);
   }
 
@@ -149,7 +155,11 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) override;
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) override;
 
   /*!
    * \brief Load the geometries at the previous time states n and nM1.

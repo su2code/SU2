@@ -3,7 +3,7 @@
  * \brief Class that reads a single zone of a CGNS mesh file from disk into
  *        linear partitions across all ranks.
  * \author T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,8 +26,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/toolboxes/CLinearPartitioner.hpp"
-#include "../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
+#include "../../../include/toolboxes/CLinearPartitioner.hpp"
+#include "../../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
 
 CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(CConfig        *val_config,
                                        unsigned short val_iZone,
