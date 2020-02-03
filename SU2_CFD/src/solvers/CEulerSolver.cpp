@@ -191,15 +191,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Define some auxiliary vectors related to the solution ---*/
 
-  Solution   = new su2double[nVar]();
-  Solution_i = new su2double[nVar]();
-  Solution_j = new su2double[nVar]();
+  Solution = new su2double[nVar]();
 
   /*--- Define some auxiliary vectors related to the geometry ---*/
 
-  Vector   = new su2double[nDim]();
-  Vector_i = new su2double[nDim]();
-  Vector_j = new su2double[nDim]();
+  Vector = new su2double[nDim]();
 
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
 
