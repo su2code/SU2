@@ -43,7 +43,7 @@ protected:
   enum : size_t {MAXNVARFLOW = 12};    /*!< \brief Max number of flow variables, used in some static arrays. */
 
   enum : size_t {OMP_MAX_SIZE = 512};  /*!< \brief Max chunk size for light point loops. */
-  enum : size_t {OMP_MIN_SIZE = 128};  /*!< \brief Min chunk size for edge loops (max is color group size). */
+  enum : size_t {OMP_MIN_SIZE = 32};   /*!< \brief Min chunk size for edge loops (max is color group size). */
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 

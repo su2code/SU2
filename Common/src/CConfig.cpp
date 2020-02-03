@@ -2798,6 +2798,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Level of fill for PaStiX incomplete LU factorization. */
   addUnsignedShortOption("PASTIX_FILL_LEVEL", pastix_fill_lvl, 1);
 
+  /* DESCRIPTION: Size of the edge groups colored for OpenMP parallelization of edge loops. */
+  addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
+
   /* END_CONFIG_OPTIONS */
 
 }

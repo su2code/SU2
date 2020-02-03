@@ -34,6 +34,7 @@
 #include <limits>
 #include <cassert>
 #include <algorithm>
+#include <numeric>
 
 /*!
  * \enum ConnectivityType
@@ -398,11 +399,13 @@ CEdgeToNonZeroMap<Index_t> mapEdgesToSparsePattern(Geometry_t& geometry,
  *        pattern is returned.
  * \param[in] pattern - Sparse pattern to be colored.
  * \param[in] groupSize - Size of the outer index groups, default 1.
+ * \param[in] balanceColors - Try to balance number of indexes per color,
+ *            tends to result in worse locality (thus false by default).
  * \param[out] indexColor - Optional, vector with colors given to the outer indices.
  * \return Coloring in the same type of the input pattern.
  */
 template<class T, typename Color_t = char, size_t MaxColors = 64, size_t MaxMB = 128>
-T colorSparsePattern(const T& pattern, size_t groupSize = 1,
+T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool balanceColors = false,
                      std::vector<Color_t>* indexColor = nullptr)
 {
   static_assert(std::is_integral<Color_t>::value,"");
@@ -423,12 +426,15 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1,
 
   /*--- Start with one color, with no indices assigned. ---*/
   std::vector<Index_t> colorSize(1,0);
-  Color_t color, nColor = 1;
+  Color_t nColor = 1;
 
   {
   /*--- For each color keep track of the inner indices that are in it. ---*/
   std::vector<std::vector<bool> > innerInColor;
   innerInColor.emplace_back(nInner, false);
+
+  /*--- Order in which we look for space in the colors to insert a new group. ---*/
+  std::vector<Color_t> searchOrder(MaxColors);
 
   auto outerPtr = pattern.outerPtr();
   auto innerIdx = pattern.innerIdx();
@@ -437,23 +443,40 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1,
   {
     Index_t grpEnd = std::min(iOuter+grpSz, nOuter);
 
-    for(color = 0; color < nColor; ++color)
+    searchOrder.resize(nColor);
+    std::iota(searchOrder.begin(), searchOrder.end(), 0);
+
+    /*--- Balance sizes by looking for space in smaller colors first. ---*/
+    if(balanceColors) {
+      std::sort(searchOrder.begin(), searchOrder.end(),
+        [&colorSize](Color_t a, Color_t b){return colorSize[a] < colorSize[b];});
+    }
+
+    auto it = searchOrder.begin();
+
+    for(; it != searchOrder.end(); ++it)
     {
       bool free = true;
       /*--- Traverse entire group as a large outer index. ---*/
       for(Index_t k = outerPtr[iOuter]; k < outerPtr[grpEnd] && free; ++k)
       {
-        free = !innerInColor[color][innerIdx[k]-minIdx];
+        free = !innerInColor[*it][innerIdx[k]-minIdx];
       }
       /*--- If none of the inner indices in the group appears in
        *    this color yet, it is assigned to the group. ---*/
       if(free) break;
     }
 
-    /*--- No color was free, make space for a new one. ---*/
-    if(color == nColor)
+    Color_t color;
+
+    if(it != searchOrder.end())
     {
-      ++nColor;
+      /*--- Found a free color. ---*/
+      color = *it;
+    }
+    else {
+      /*--- No color was free, make space for a new one. ---*/
+      color = nColor++;
       if(nColor == MaxColors) return T();
       colorSize.push_back(0);
       innerInColor.emplace_back(nInner, false);
@@ -480,7 +503,7 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1,
   su2vector<Index_t> outerIdx(nOuter);
 
   Index_t k = 0;
-  for(color = 0; color < nColor; ++color)
+  for(Color_t color = 0; color < nColor; ++color)
   {
     colorPtr(color+1) = colorPtr(color)+colorSize[color];
 
