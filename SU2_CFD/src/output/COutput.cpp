@@ -1397,7 +1397,7 @@ void COutput::CheckHistoryOutput(){
   }
 
   if (rank == MASTER_NODE){
-    if(wndConvFields.size() == 0){
+    if(convFields.size() == 0){
       cout << "Warning: No (valid) fields chosen for convergence monitoring. Convergence monitoring inactive."<<  endl;
     }
     else{
