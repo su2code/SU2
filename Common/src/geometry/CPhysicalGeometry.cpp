@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -123,6 +123,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   xadj      = NULL;
 #endif
 #endif
+
+  edgeColorGroupSize = config->GetEdgeColoringGroupSize();
 
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -310,6 +312,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   xadj      = NULL;
 #endif
 #endif
+
+  edgeColorGroupSize = config->GetEdgeColoringGroupSize();
 
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -7985,11 +7989,11 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   su2double rotCoord[3] = {0.0, 0.0, 0.0};
-  
+
   bool pointOnAxis = false;
-  
+
   bool chkSamePoint = false;
-  
+
   su2double distToAxis = 0.0;
 
   /*--- Tolerance for distance-based match to report warning. ---*/
@@ -8199,7 +8203,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                            rotMatrix[2][1]*dy +
                            rotMatrix[2][2]*dz + translation[2]);
 
-            /*--- Check if the point lies on the axis of rotation. If it does, 
+            /*--- Check if the point lies on the axis of rotation. If it does,
              the rotated coordinate and the original coordinate are the same. ---*/
 
             pointOnAxis = false;
@@ -8254,7 +8258,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                  and also perform checks just to be sure that this is an
                  independent periodic point (even if on the same rank),
                   unless it lies on the axis of rotation. ---*/
-                
+
                 chkSamePoint = false;
                 chkSamePoint = (((dist < mindist) && (iProcessor != rank)) ||
                                 ((dist < mindist) && (iProcessor == rank) &&

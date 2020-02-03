@@ -1124,6 +1124,8 @@ private:
 
   string caseName;                 /*!< \brief Name of the current case */
 
+  unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -9193,5 +9195,10 @@ public:
    * \return Number of threads per rank.
    */
   unsigned long GetLinear_Solver_Prec_Threads(void) const { return Linear_Solver_Prec_Threads; }
+
+  /*!
+   * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
+   */
+  unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
 
 };

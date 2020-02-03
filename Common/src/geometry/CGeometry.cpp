@@ -70,13 +70,6 @@ CGeometry::CGeometry(void) {
   nNewElem_Bound      = NULL;
   Marker_All_SendRecv = NULL;
 
-  XCoordList.clear();
-  Xcoord_plane.clear();
-  Ycoord_plane.clear();
-  Zcoord_plane.clear();
-  FaceArea_plane.clear();
-  Plane_points.clear();
-
   /*--- Arrays for defining the linear partitioning ---*/
 
   beg_node = NULL;
@@ -4057,8 +4050,9 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
 
     CCompressedSparsePatternUL pattern(move(outerPtr), move(innerIdx));
 
-    /*--- Color the edges. ---*/
-    edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize);
+    /*--- Color the edges, only balance sizes on coarse levels. ---*/
+    bool balanceColors = (MGLevel != MESH_0);
+    edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
 
     if(edgeColoring.empty())
       SU2_MPI::Error("Edge coloring failed.", CURRENT_FUNCTION);

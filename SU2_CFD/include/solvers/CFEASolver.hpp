@@ -38,7 +38,7 @@ class CFEASolver : public CSolver {
 protected:
   enum : size_t {MAXNNODE = 8};
   enum : size_t {MAXNVAR = 3};
-  enum : size_t {OMP_MIN_SIZE = 64};
+  enum : size_t {OMP_MIN_SIZE = 32};
   enum : size_t {OMP_MAX_SIZE = 512};
 
   unsigned long omp_chunk_size;     /*!< \brief Chunk size used in light point loops. */
