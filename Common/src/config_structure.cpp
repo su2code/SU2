@@ -2043,6 +2043,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief FEA_FILENAME \n DESCRIPTION: Filename to input for element-based properties \n Default: element_properties.dat \ingroup Config */
   addStringOption("FEA_FILENAME", FEA_FileName, string("element_properties.dat"));
+  /* DESCRIPTION: Determine if advanced features are used from the element-based FEA analysis (NO, YES = experimental) */
+  addBoolOption("FEA_ADVANCED_MODE", FEAAdvancedMode, false);
 
   /* DESCRIPTION: Modulus of elasticity */
   addDoubleListOption("ELASTICITY_MODULUS", nElasticityMod, ElasticityMod);

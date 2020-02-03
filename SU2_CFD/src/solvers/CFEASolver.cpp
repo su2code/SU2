@@ -433,13 +433,16 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
       if (iElem_Local >= 0) {
 
-        if (config->GetDE_Effects())
+        if (config->GetAdvanced_FEAElementBased() || topology_mode){
           point_line >> index >> elProperties[0] >> elProperties[1] >> elProperties[2] >> elProperties[3];
-        else
-          point_line >> index >> elProperties[0] >> elProperties[1] >> elProperties[2] >> elProperties[3];
+          element_properties[iElem_Local] = new CElementProperty(
+            elProperties[0], elProperties[1], elProperties[2], elProperties[3]);
+        }
+        else{
+          point_line >> index >> elProperties[0];
+          element_properties[iElem_Local] = new CElementProperty(0, elProperties[0], 0, 0);
+        }
 
-        element_properties[iElem_Local] = new CElementProperty(
-          elProperties[0], elProperties[1], elProperties[2], elProperties[3]);
 
         /*--- For backwards compatibility we only read a fifth column in topology mode ---*/
         if (topology_mode) {
