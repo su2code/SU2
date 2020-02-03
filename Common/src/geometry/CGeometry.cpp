@@ -4035,7 +4035,7 @@ const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(void)
 
 const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
 {
-  if (edgeColoring.empty()) {
+  if (edgeColoring.empty() && nEdge) {
     /*--- Create a temporary sparse pattern from the edges. ---*/
     /// TODO: Try to avoid temporary once grid information is made contiguous.
     su2vector<unsigned long> outerPtr(nEdge+1);
@@ -4062,7 +4062,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
 
 const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
 {
-  if (elemColoring.empty()) {
+  if (elemColoring.empty() && nElem) {
     /*--- Create a temporary sparse pattern from the elements. ---*/
     /// TODO: Try to avoid temporary once grid information is made contiguous.
     vector<unsigned long> outerPtr(nElem+1);

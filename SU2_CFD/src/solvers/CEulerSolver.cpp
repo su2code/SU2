@@ -420,14 +420,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   const auto& coloring = geometry->GetEdgeColoring();
 
-  auto nColor = coloring.getOuterSize();
-  EdgeColoring.resize(nColor);
+  if (!coloring.empty()) {
+    auto nColor = coloring.getOuterSize();
+    EdgeColoring.resize(nColor);
 
-  for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-    EdgeColoring[iColor].size = coloring.getNumNonZeros(iColor);
-    EdgeColoring[iColor].indices = coloring.innerIdx(iColor);
+    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
+      EdgeColoring[iColor].size = coloring.getNumNonZeros(iColor);
+      EdgeColoring[iColor].indices = coloring.innerIdx(iColor);
+    }
   }
-
   ColorGroupSize = geometry->GetEdgeColorGroupSize();
 
   omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);

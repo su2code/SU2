@@ -118,6 +118,7 @@ inline size_t computeStaticChunkSize(size_t totalWork,
                                      size_t numThreads,
                                      size_t maxChunkSize)
 {
+  if(!totalWork) return maxChunkSize;
   size_t workPerThread = roundUpDiv(totalWork, numThreads);
   size_t chunksPerThread = roundUpDiv(workPerThread, maxChunkSize);
   return roundUpDiv(workPerThread, chunksPerThread);
