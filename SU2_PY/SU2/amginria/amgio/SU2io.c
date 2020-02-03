@@ -1064,7 +1064,8 @@ void WriteSU2Mesh(char *nam, Mesh *Msh)
   if( NbrCor > 0 ) {
   	fprintf(OutFil, "NCORNERS= %d\n", NbrCor);
   	for (iCor=1; iCor<=Msh->NbrCor; iCor++) {
-  	  fprintf(OutFil, "0 %d", Msh->Cor[iCor]-1); 
+  	  fprintf(OutFil, "%d ", SU2_CORNER); 
+  	  fprintf(OutFil, "%d\n", Msh->Cor[iCor]-1); 
   	}
   }
 	
