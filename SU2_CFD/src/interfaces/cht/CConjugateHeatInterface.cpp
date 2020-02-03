@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -60,8 +60,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   bool incompressible_flow = ((donor_config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (donor_config->GetKind_Solver() == INC_RANS)
                || (donor_config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
-               || (donor_config->GetKind_Solver() == DISC_ADJ_INC_RANS)
-               && (donor_config->GetEnergy_Equation()));
+               || (donor_config->GetKind_Solver() == DISC_ADJ_INC_RANS))
+               && (donor_config->GetEnergy_Equation());
   bool heat_equation = (donor_config->GetKind_Solver() == HEAT_EQUATION_FVM
                || donor_config->GetKind_Solver() == DISC_ADJ_HEAT);
 

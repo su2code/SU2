@@ -1,7 +1,8 @@
 su2_def_src = ['SU2_DEF.cpp']
 if get_option('enable-normal')
 
-  su2_cfd_obj = su2_cfd.extract_objects(['solver_structure.cpp',
+  su2_cfd_obj = su2_cfd.extract_objects(['solvers/CSolver.cpp',
+                                        'solvers/CBaselineSolver.cpp',
                                         'CMarkerProfileReaderFVM.cpp',
                                         'output/COutput.cpp',
 					'output/tools/CWindowingTools.cpp',
@@ -23,6 +24,8 @@ if get_option('enable-normal')
                                         'output/filewriter/CSTLFileWriter.cpp',
                                         'output/filewriter/CSU2FileWriter.cpp',
                                         'output/filewriter/CSU2BinaryFileWriter.cpp',
+                                        'output/filewriter/CParaviewXMLFileWriter.cpp',
+                                        'output/filewriter/CParaviewVTMFileWriter.cpp',
                                         'output/filewriter/CSU2MeshFileWriter.cpp'])
 
   su2_def = executable('SU2_DEF',

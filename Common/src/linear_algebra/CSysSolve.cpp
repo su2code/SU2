@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 #include "../../include/linear_algebra/CSysSolve_b.hpp"
 #include "../../include/omp_structure.hpp"
 #include "../../include/option_structure.hpp"
-#include "../../include/config_structure.hpp"
+#include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/linear_algebra/CMatrixVectorProduct.hpp"
