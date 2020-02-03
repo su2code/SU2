@@ -52,14 +52,15 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
   const auto& coloring = geometry->GetEdgeColoring();
 
-  auto nColor = coloring.getOuterSize();
-  EdgeColoring.resize(nColor);
+  if (!coloring.empty()) {
+    auto nColor = coloring.getOuterSize();
+    EdgeColoring.resize(nColor);
 
-  for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-    EdgeColoring[iColor].size = coloring.getNumNonZeros(iColor);
-    EdgeColoring[iColor].indices = coloring.innerIdx(iColor);
+    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
+      EdgeColoring[iColor].size = coloring.getNumNonZeros(iColor);
+      EdgeColoring[iColor].indices = coloring.innerIdx(iColor);
+    }
   }
-
   ColorGroupSize = geometry->GetEdgeColorGroupSize();
 
   nPoint = geometry->GetnPoint();

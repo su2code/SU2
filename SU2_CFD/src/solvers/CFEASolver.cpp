@@ -246,14 +246,15 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   const auto& coloring = geometry->GetElementColoring();
 
-  auto nColor = coloring.getOuterSize();
-  ElemColoring.resize(nColor);
+  if (!coloring.empty()) {
+    auto nColor = coloring.getOuterSize();
+    ElemColoring.resize(nColor);
 
-  for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-    ElemColoring[iColor].size = coloring.getNumNonZeros(iColor);
-    ElemColoring[iColor].indices = coloring.innerIdx(iColor);
+    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
+      ElemColoring[iColor].size = coloring.getNumNonZeros(iColor);
+      ElemColoring[iColor].indices = coloring.innerIdx(iColor);
+    }
   }
-
   ColorGroupSize = geometry->GetElementColorGroupSize();
 
   omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
