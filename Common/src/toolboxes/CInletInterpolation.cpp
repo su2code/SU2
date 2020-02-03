@@ -93,8 +93,8 @@ vector<su2double> CInletInterpolation::CorrectedInletValues(vector<su2double> &I
                                                     su2double *Coord, 
                                                     unsigned short nVar_Turb,
                                                     string Interpolation_Type){
-su2double size_columns=Inlet_Interpolated.size();
-vector<su2double> Inlet_Values (size_columns+nDim);
+su2double size_columns=Inlet_Interpolated.size()+nDim;
+vector<su2double> Inlet_Values (size_columns);
 su2double unit_r, unit_Theta, unit_m, Alpha, Phi;
 
 /*---For x,y,z,T,P columns---*/
