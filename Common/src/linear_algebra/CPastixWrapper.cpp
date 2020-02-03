@@ -3,7 +3,7 @@
  * \brief An interface to the INRIA solver PaStiX
  *        (http://pastix.gforge.inria.fr/files/README-txt.html)
  * \author P. Gomes
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,7 +30,7 @@
 
 #include "../../include/mpi_structure.hpp"
 #include "../../include/omp_structure.hpp"
-#include "../../include/config_structure.hpp"
+#include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/CPastixWrapper.hpp"
 
