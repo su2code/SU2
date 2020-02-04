@@ -1,11 +1,10 @@
-name: Regression Testing
+name: Regression and Unit Testing
 
 on:
   push:
     branches:
       - 'develop'
       - 'master'
-      - 'feature_unit_testing'
   pull_request:
     branches: 
       - 'develop'
