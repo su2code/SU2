@@ -26,9 +26,10 @@
  */
  
 
-#include "../../include/toolboxes/CInletInterpolation.hpp"
+#include "../../include/toolboxes/C1DInterpolation.hpp"
 
-void CAkimaSpline::akima_spline_set (CAkimaSpline *s, vector<su2double> &x,vector<su2double> &y){
+/*--- Function for setting the cofficients for akima spline ---*/
+void CAkimaSpline::SetAkimaSpline (vector<su2double> &x,vector<su2double> &y){
 int n = x.size();
 vector<su2double> h (n-1);
 vector<su2double> p (n-1);
@@ -36,63 +37,66 @@ vector<su2double> p (n-1);
 for (int i=0; i<n-1;i ++){h[i]=x[i+1]-x[i];}
 for (int i=0; i<n-1;i++) p[i]=(y[i+1]-y[i]) / h [i] ;
 
-s->x.resize(n);
-s->y.resize(n);
-s->b.resize(n);
-s->c.resize(n-1);
-s->d.resize(n-1);
+this->x.resize(n);
+this->y.resize(n);
+this->b.resize(n);
+this->c.resize(n-1);
+this->d.resize(n-1);
 
-s->n=n; for (int i=0; i<n ; i++){s->x[i]=x[i]; s->y[i]=y[i];}
-s->b[0] = p[0] ; s->b[1] =(p[0]+ p[1])/2 ;
+this->n=n; for (int i=0; i<n ; i++){this->x[i]=x[i]; this->y[i]=y[i];}
+this->b[0] = p[0] ; this->b[1] =(p[0]+ p[1])/2 ;
 
-s->b[n-1]=p[n-2]; s->b [n-2]=(p[n-2]+p[n-3])/2;
+this->b[n-1]=p[n-2]; this->b [n-2]=(p[n-2]+p[n-3])/2;
 
 for (int i =2; i<n-2; i ++){
 su2double w1=fabs(p[i+1]-p[i]) , w2=fabs(p[i-1]-p[i-2]);
-if (w1+w2==0) s->b[i] = (p[i-1]+p[i])/2 ;
-else s->b [i] = (w1*p[i-1]+w2*p[i])/(w1+w2) ;
+if (w1+w2==0) this->b[i] = (p[i-1]+p[i])/2 ;
+else this->b [i] = (w1*p[i-1]+w2*p[i])/(w1+w2) ;
 }
 for (int i =0; i<n-1; i ++){
-s->c [i]=(3*p [i]-2*s->b [ i ]-s->b[i+1])/h[i] ;
-s->d [i]=(s->b[i+1]+s->b [ i ]-2*p[i])/h[i]/h[i];
+this->c [i]=(3*p [i]-2*this->b [ i ]-this->b[i+1])/h[i] ;
+this->d [i]=(this->b[i+1]+this->b [ i ]-2*p[i])/h[i]/h[i];
 }
 }
 
-su2double CAkimaSpline::akima_spline_eval(CAkimaSpline *s, su2double Point_Interp){
-int i =0, j=s->n-1;
-while ( j-i >1){ int m=( i+j ) / 2 ; if ( Point_Interp>s->x[m] ) i=m; else j=m; }
-su2double h=Point_Interp-s->x[i] ;
-return s->y[i]+h*(s->b[i]+h*(s->c[i]+h*s->d[i])) ;
+/*--- Function for evaluating the value for akima spline ---*/
+su2double CAkimaSpline::EvalAkimaSpline(su2double Point_Interp){
+int i =0, j=this->n-1;
+while ( j-i >1){ int m=( i+j ) / 2 ; if ( Point_Interp>this->x[m] ) i=m; else j=m; }
+su2double h=Point_Interp-this->x[i] ;
+return this->y[i]+h*(this->b[i]+h*(this->c[i]+h*this->d[i])) ;
 }
 
-void CLinearSpline::Linear_set(CLinearSpline *s,vector<su2double> &x, vector<su2double> &y){
+/*--- Function for setting the cofficients for linear 'spline' ---*/
+void CLinearSpline::SetLinearSpline(vector<su2double> &x, vector<su2double> &y){
 int n = x.size();
 vector<su2double> h (n-1);
-s->x.resize(n);
-s->y.resize(n);
-s->dydx.resize(n-1);
-s->x = x;
-s->y = y;
+this->x.resize(n);
+this->y.resize(n);
+this->dydx.resize(n-1);
+this->x = x;
+this->y = y;
 for (int i=0; i<n-1;i ++){h[i]=x[i+1]-x[i];}
-for (int i=0; i<n-1;i++) {s->dydx[i]=(y[i+1]-y[i]) / h [i];}
+for (int i=0; i<n-1;i++) {this->dydx[i]=(y[i+1]-y[i]) / h [i];}
 }
 
-su2double CLinearSpline::Linear_eval(CLinearSpline *s, su2double Point_Interp){
-    int size = s->x.size();
+/*--- Function for evaluating the value for linear 'spline' ---*/
+su2double CLinearSpline::EvalLinearSpline(su2double Point_Interp){
+    int size = this->x.size();
 
     for (int i=0;i<size-1;i++){
-        if(Point_Interp>=s->x[i] && Point_Interp<=s->x[i+1]){
-            s->Point_Match = true;
-            return (Point_Interp-s->x[i])*dydx[i]+s->y[i];}
+        if(Point_Interp>=this->x[i] && Point_Interp<=this->x[i+1]){
+            this->Point_Match = true;
+            return (Point_Interp-this->x[i])*dydx[i]+this->y[i];}
     }
 }
 
-vector<su2double> CInletInterpolation::CorrectedInletValues(vector<su2double> &Inlet_Interpolated , 
+vector<su2double> C1DInterpolation::CorrectedInletValues(vector<su2double> &Inlet_Interpolated , 
                                                     su2double Theta ,
                                                     unsigned short nDim, 
                                                     su2double *Coord, 
                                                     unsigned short nVar_Turb,
-                                                    string Interpolation_Type){
+                                                    CConfig *config){
 su2double size_columns=Inlet_Interpolated.size()+nDim;
 vector<su2double> Inlet_Values (size_columns);
 su2double unit_r, unit_Theta, unit_m, Alpha, Phi;
@@ -112,17 +116,18 @@ if (nVar_Turb == 2)
     Inlet_Values[nDim+6] = Inlet_Values[6];
 
 /*--- Correct for Interpolation Type now ---*/
-if(Interpolation_Type == "VRVTHETA"){
+switch(config->GetKindInletInterpolationType()){
+case(VR_VTHETA):
     unit_r = Inlet_Interpolated[nDim+2];
     unit_Theta = Inlet_Interpolated[nDim+3];
-}
-else if(Interpolation_Type == "ALPHA_PHI"){
+break;
+case(ALPHA_PHI):
     Alpha = Inlet_Interpolated[nDim+2];
     Phi = Inlet_Interpolated[nDim+3];
     unit_m = sqrt(1/(1+pow(tan(Alpha),2)));
-
     unit_Theta = tan(Alpha)*unit_m;
     unit_r=unit_m*sin(Phi);
+break;
 }
 
 Inlet_Values[nDim+2] = unit_r*cos(Theta) - unit_Theta*sin(Theta); //for ix
@@ -133,7 +138,7 @@ return Inlet_Values;
 
 }
 
-void CInletInterpolation::PrintInletInterpolatedData(vector<su2double> Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim){
+void C1DInterpolation::PrintInletInterpolatedData(vector<su2double> Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim){
 ofstream myfile;
 myfile.precision(16);
 myfile.open("Interpolated_Data_"+Marker+".dat",ios_base::out);

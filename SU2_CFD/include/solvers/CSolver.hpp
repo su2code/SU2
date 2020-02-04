@@ -55,7 +55,6 @@
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../variables/CVariable.hpp"
-#include "../../../Common/include/toolboxes/CInletInterpolation.hpp"
 
 using namespace std;
 
@@ -121,7 +120,6 @@ protected:
   *jPoint_UndLapl;            /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2double **Smatrix,        /*!< \brief Auxiliary structure for computing gradients by least-squares */
   **Cvector;                  /*!< \brief Auxiliary structure for computing gradients by least-squares */
-  CInletInterpolation **s;          /*!< \brief Pointer to Inlet Interpolation class */
 
   int *Restart_Vars;                /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
   int Restart_ExtIter;              /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
