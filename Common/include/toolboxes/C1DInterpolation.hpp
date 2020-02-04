@@ -58,7 +58,7 @@ class C1DInterpolation:public CAkimaSpline,public CLinearSpline{
 string Interpolation_Type, Interpolation_Function;
 public:
 void Interpolation_Set(vector<su2double> &x, vector<su2double> &y, CConfig *config){
-switch(config->GetKindInletInterpolationFunction){
+switch(config->GetKindInletInterpolationFunction()){
     case (ONED_AKIMASPLINE_SPANWISE):
         return this->SetAkimaSpline(x,y);
     case(ONED_LINEAR_SPANWISE):
