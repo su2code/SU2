@@ -2701,7 +2701,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
       Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
-
     }
 
   }
@@ -3478,65 +3477,48 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
   SU2_OMP_PARALLEL
   {
-  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  /*--- Loop domain points. ---*/
+
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    /*--- Set eigenvalues to zero. ---*/
     nodes->SetLambda(iPoint,0.0);
-  }
 
-  /*--- Loop interior edges ---*/
+    /*--- Loop over the neighbors of point i. ---*/
+    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
+    {
+      auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
-#ifdef HAVE_OMP
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+      auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+      auto Normal = geometry->edge[iEdge]->GetNormal();
+      su2double Area = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2);
+      Area = sqrt(Area);
 
-  /*--- Loop over edge colors. ---*/
-  for (auto color : EdgeColoring)
-  {
-  SU2_OMP_FOR_STAT(chunkSize)
-  for(auto k = 0ul; k < color.size; ++k) {
+      /*--- Mean Values ---*/
 
-    auto iEdge = color.indices[k];
-#else
-  /*--- Natural coloring. ---*/
-  {
-  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-#endif
-    /*--- Point identification, Normal vector and area ---*/
+      su2double Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
+      su2double Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
 
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+      /*--- Adjustment for grid movement ---*/
 
-    auto Normal = geometry->edge[iEdge]->GetNormal();
-    su2double Area = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Area += pow(Normal[iDim],2);
-    Area = sqrt(Area);
+      if (dynamic_grid) {
+        const su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
+        const su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
 
-    /*--- Mean Values ---*/
-
-    su2double Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
-    su2double Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
-
-    /*--- Adjustment for grid movement ---*/
-
-    if (dynamic_grid) {
-      auto GridVel_i = geometry->node[iPoint]->GetGridVel();
-      auto GridVel_j = geometry->node[jPoint]->GetGridVel();
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim])*Normal[iDim];
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
       }
+
+      /*--- Inviscid contribution ---*/
+
+      su2double Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
+      nodes->AddLambda(iPoint, Lambda);
     }
 
-    /*--- Inviscid contribution ---*/
-
-    su2double Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddLambda(iPoint, Lambda);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddLambda(jPoint, Lambda);
-
   }
-  } // end color loop
 
   /*--- Loop boundary edges ---*/
 
