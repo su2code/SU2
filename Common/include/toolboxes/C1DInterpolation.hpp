@@ -32,6 +32,7 @@
 #include <vector>
 #include<fstream>
 #include "../datatype_structure.hpp"
+#include "../CConfig.hpp"
 
 using namespace std;
 
@@ -40,34 +41,36 @@ protected:
 vector<su2double> x,y,b,c,d;
 int n;
 public:
-void akima_spline_set(CAkimaSpline *s, vector<su2double> &x, vector<su2double> &y);
-su2double akima_spline_eval(CAkimaSpline *s, su2double Point_Interp);
+void SetAkimaSpline(vector<su2double> &x, vector<su2double> &y);
+su2double EvalAkimaSpline(su2double Point_Interp);
 };
 
 class CLinearSpline{
     protected:
     vector<su2double> x,y,dydx;
     public:
-    void Linear_set(CLinearSpline *s,vector<su2double> &x, vector<su2double> &y);
-    su2double Linear_eval(CLinearSpline *s, su2double Point_Interp);
+    void SetLinearSpline(vector<su2double> &x, vector<su2double> &y);
+    su2double EvalLinearSpline(su2double Point_Interp);
     bool Point_Match = false;
 };
 
-class CInletInterpolation:public CAkimaSpline,public CLinearSpline{
+class C1DInterpolation:public CAkimaSpline,public CLinearSpline{
 string Interpolation_Type, Interpolation_Function;
 public:
-void Interpolation_Set(CInletInterpolation *s, vector<su2double> &x, vector<su2double> &y, string Interpolation_Function){
-    if(Interpolation_Type == "Akima")
-        return s->akima_spline_set(s,x,y);
-    else if(Interpolation_Type == "Linear")
-        return s->Linear_set(s,x,y);
+void Interpolation_Set(vector<su2double> &x, vector<su2double> &y, CConfig *config){
+switch(config->GetKindInletInterpolationFunction()){
+    case (ONED_AKIMASPLINE_SPANWISE):
+        return this->SetAkimaSpline(x,y);
+    case(ONED_LINEAR_SPANWISE):
+        return this->SetLinearSpline(x,y);
+}
 }
 
-su2double Interpolation_Evaluate(CInletInterpolation *s, su2double Point_Interp, string Interpolation_Function){
+su2double Interpolation_Evaluate(su2double Point_Interp, string Interpolation_Function){
         if(Interpolation_Type == "Akima")
-        return s->akima_spline_eval(s,Point_Interp);
+        return this->EvalAkimaSpline(Point_Interp);
     else if(Interpolation_Type == "Linear")
-        return s->Linear_eval(s,Point_Interp);
+        return this->EvalLinearSpline(Point_Interp);
 }
 
 vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
@@ -75,10 +78,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated,
                                     unsigned short nDim, 
                                     su2double *Coord, 
                                     unsigned short nVar_Turb, 
-                                    string Interpolation_Type);
+                                    CConfig *config);
 
 void PrintInletInterpolatedData(vector<su2double> Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim);
-
-void free_memory (CInletInterpolation *s){
-   delete[] s; s=NULL; }
 };

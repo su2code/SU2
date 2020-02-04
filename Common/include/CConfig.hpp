@@ -8715,18 +8715,18 @@ public:
   /*!
    * \brief Get the kind of inlet face interpolation function to use.
    */
-  inline unsigned short GetKindInletInterpolationFunction(void) {return Kind_InletInterpolationFunction;}
+  inline unsigned short GetKindInletInterpolationFunction(void) const {return Kind_InletInterpolationFunction;}
 
 
    /*!
    * \brief Get the kind of inlet face interpolation data type.
    */
-  inline unsigned short GetKindInletInterpolationType (void) {return Kind_Inlet_InterpolationType;}
+  inline unsigned short GetKindInletInterpolationType (void) const  {return Kind_Inlet_InterpolationType;}
 
    /*!
    * \brief Get whether to print inlet interpolated data or not.
    */
-  bool GetPrintInlet_InterpolatedData(void){ return PrintInlet_InterpolatedData;}
+  bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData;}
 
   /*!
    * \brief Get the amount of eigenvalue perturbation to be done
