@@ -20,13 +20,13 @@ jobs:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI]
         include:
           - config_set: BaseMPI
-            flags: '-Denable-pywrapper=true'
+            flags: '-Denable-pywrapper=true -Denable-tests=true'
           - config_set: ReverseMPI
             flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true'
           - config_set: ForwardMPI
             flags: '-Denable-directdiff=true -Denable-normal=false'          
           - config_set: BaseNoMPI
-            flags: '-Denable-pywrapper=true -Dwith-mpi=disabled'
+            flags: '-Denable-pywrapper=true -Dwith-mpi=disabled -Denable-tests=true'
           - config_set: ReverseNoMPI
             flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true'
           - config_set: ForwardNoMPI
@@ -43,9 +43,6 @@ jobs:
         uses: docker://su2code/build-su2:20191105
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
-      - name: Copy Test Driver
-        run: |
-          cp src/${{github.ref}}/docker_build/UnitTests/test_driver install/bin
       - name: Upload Binaries 
         uses: actions/upload-artifact@v1
         with:
