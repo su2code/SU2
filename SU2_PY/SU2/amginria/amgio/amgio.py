@@ -108,12 +108,12 @@ def py_SplitSolution(SolNam, dim, prefix, adap_sensor):
     return _amgio.py_SplitSolution(SolNam, dim, prefix, adap_sensor)
 py_SplitSolution = _amgio.py_SplitSolution
 
-def py_ReadMesh(MshNam, SolNam, pyVer, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pySolHeader, pyMarkers):
-    return _amgio.py_ReadMesh(MshNam, SolNam, pyVer, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pySolHeader, pyMarkers)
+def py_ReadMesh(MshNam, SolNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pySolHeader, pyMarkers):
+    return _amgio.py_ReadMesh(MshNam, SolNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pySolHeader, pyMarkers)
 py_ReadMesh = _amgio.py_ReadMesh
 
-def py_WriteMesh(MshNam, SolNam, pyVer, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pyMarkers, Dim):
-    return _amgio.py_WriteMesh(MshNam, SolNam, pyVer, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pyMarkers, Dim)
+def py_WriteMesh(MshNam, SolNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pyMarkers, Dim):
+    return _amgio.py_WriteMesh(MshNam, SolNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pyMarkers, Dim)
 py_WriteMesh = _amgio.py_WriteMesh
 
 def py_WriteSolution(SolNam, pyVer, pySol, pySolHeader, NbrVer, Dim):

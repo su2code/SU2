@@ -1934,19 +1934,21 @@ void CSolver::InitiateComms(CGeometry *geometry,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case ANISO_GRADIENT:
-      COUNT_PER_POINT  = nDim*nVar*nDim;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
     case ANISO_GRADIENT_VISC:
       COUNT_PER_POINT  = nDim*nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case ANISO_GRADIENT_SOURCE:
+      COUNT_PER_POINT  = nDim*nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     case ANISO_HESSIAN:
+    case ANISO_HESSIAN_VISC:
       COUNT_PER_POINT  = 3*(nDim-1)*nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case ANISO_HESSIAN_VISC:
-      COUNT_PER_POINT  = 3*(nDim-1)*nVar*nDim;
+    case ANISO_HESSIAN_SOURCE:
+      COUNT_PER_POINT  = 3*(nDim-1)*nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case ANISO_METRIC:
@@ -2107,6 +2109,11 @@ void CSolver::InitiateComms(CGeometry *geometry,
                 for (jDim = 0; jDim < nDim; jDim++)
                   bufDSend[buf_offset+jDim*nVar*nDim+iVar*nDim+iDim] = base_nodes->GetAnisoViscGrad(iPoint, jDim*nVar*nDim+iVar*nDim+iDim);
             break;
+          case ANISO_GRADIENT_SOURCE:
+            for (iDim = 0; iDim < nDim; iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetAnisoSourceGrad(iPoint, iVar*nDim+iDim);
+            break;
           case ANISO_HESSIAN:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
@@ -2118,6 +2125,11 @@ void CSolver::InitiateComms(CGeometry *geometry,
               for (iVar = 0; iVar < nVar; iVar++)
                 for (jDim = 0; jDim < nDim; jDim++)
                   bufDSend[buf_offset+jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim] = base_nodes->GetAnisoViscHess(iPoint, jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim);
+            break;
+          case ANISO_HESSIAN_SOURCE:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                bufDSend[buf_offset+iVar*3*(nDim-1)+iDim] = base_nodes->GetAnisoSourceHess(iPoint, iVar*3*(nDim-1)+iDim);
             break;
           case ANISO_METRIC:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
@@ -2301,6 +2313,11 @@ void CSolver::CompleteComms(CGeometry *geometry,
                 for (jDim = 0; jDim < nDim; jDim++)
                   base_nodes->SetAnisoViscGrad(iPoint, jDim*nVar*nDim+iVar*nDim+iDim, bufDRecv[buf_offset+jDim*nVar*nDim+iVar*nDim+iDim]);
             break;
+          case ANISO_GRADIENT_SOURCE:
+            for (iDim = 0; iDim < nDim; iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                base_nodes->SetAnisoSourceGrad(iPoint, iVar*nDim+iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+            break;
           case ANISO_HESSIAN:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
@@ -2312,6 +2329,11 @@ void CSolver::CompleteComms(CGeometry *geometry,
               for (iVar = 0; iVar < nVar; iVar++)
                 for (jDim = 0; jDim < nDim; jDim++)
                   base_nodes->SetAnisoViscHess(iPoint, jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim, bufDRecv[buf_offset+jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim]);
+            break;
+          case ANISO_HESSIAN_SOURCE:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                base_nodes->SetAnisoSourceHess(iPoint, iVar*3*(nDim-1)+iDim, bufDRecv[buf_offset+iVar*3*(nDim-1)+iDim]);
             break;
           case ANISO_METRIC:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
@@ -5683,7 +5705,7 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iVar, iFlux, iMetr, iMarker;
   unsigned short nMetr = 3*(nDim-1);
   unsigned long iVertex;
-  bool viscous = config->GetViscous();
+  bool viscous = config->GetViscous(), source = config->GetAdap_Source();
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
@@ -5699,13 +5721,12 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
           
           //--- Correct if any of the neighbors belong to the volume
           unsigned short iNeigh, counter = 0;
-          su2double hess[nMetr*nVar*nDim], hessvisc[nMetr*nVar*nDim];
-          // su2double dist, distsum = 0.0;
+          su2double hess[nMetr*nVar*nDim], hessvisc[nMetr*nVar*nDim], hesssource[nMetr*nVar];
           for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             if(!geometry->node[jPoint]->GetBoundary()) {
+              for(iVar = 0; iVar < nVar; iVar++){
               for(iFlux = 0; iFlux < nDim; iFlux++) {
-                for(iVar = 0; iVar < nVar; iVar++){
                   const unsigned short i = iFlux*nVar*nMetr + iVar*nMetr;
 
                   //--- Reset hessian if first volume node detected
@@ -5727,21 +5748,38 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
                     // hess[i+iMetr] += base_nodes->GetAnisoHess(jPoint, i+iMetr)/dist;
                     // if(viscous) hessvisc[i+iMetr] += base_nodes->GetAnisoViscHess(jPoint, i+iMetr)/dist;
                   }
-                  // distsum += dist;
+                }
+
+                if(source) {
+                  const unsigned short i = iVar*nMetr;
+
+                  //--- Reset hessian if first volume node detected
+                  if(counter == 0) {
+                    for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                      hesssource[i+iMetr] = base_nodes->GetAnisoSourceHess(iPoint, i+iMetr);
+                    }
+                  }
+                  for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                    hesssource[i+iMetr] += base_nodes->GetAnisoSourceHess(jPoint, i+iMetr);
+                  }
                 }
               }
               counter ++;
             }
           }
           if(counter > 0) {
+            for(iVar = 0; iVar < nVar; iVar++){
             for(iFlux = 0; iFlux < nDim; iFlux++) {
-              for(iVar = 0; iVar < nVar; iVar++){
                 const unsigned short i = iFlux*nVar*nMetr + iVar*nMetr;
                 for(iMetr = 0; iMetr < nMetr; iMetr++) {
                   base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]/su2double(counter+1));
                   if(viscous) base_nodes->SetAnisoViscHess(iPoint, i+iMetr, hessvisc[i+iMetr]/su2double(counter+1));
-                  // base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]*distsum);
-                  // if(viscous) base_nodes->SetAnisoViscHess(iPoint, i+iMetr, hessvisc[i+iMetr]*distsum);
+                }
+              }
+              if(source) {
+                const unsigned short i = iVar*nMetr;
+                for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                  base_nodes->SetAnisoSourceHess(iPoint, i+iMetr, hesssource[i+iMetr]/su2double(counter+1));
                 }
               }
             }

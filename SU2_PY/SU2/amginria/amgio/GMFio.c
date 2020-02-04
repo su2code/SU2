@@ -22,6 +22,7 @@ int AddGMFMeshSize (char *MshNam, int *SizMsh)
   SizMsh[GmfTriangles]  = GmfStatKwd(InpMsh, GmfTriangles);
 	SizMsh[GmfTetrahedra] = GmfStatKwd(InpMsh, GmfTetrahedra);
   SizMsh[GmfEdges]      = GmfStatKwd(InpMsh, GmfEdges);
+  SizMsh[GmfCorners]      = GmfStatKwd(InpMsh, GmfCorners);
 	SizMsh[GmfPrisms]     = GmfStatKwd(InpMsh, GmfPrisms);
   SizMsh[GmfPyramids]   = GmfStatKwd(InpMsh, GmfPyramids);
 	SizMsh[GmfHexahedra]   = GmfStatKwd(InpMsh, GmfHexahedra);
@@ -44,7 +45,7 @@ int LoadGMFMesh (char *MshNam, Mesh *Msh)
 	double bufDbl[3];
 	int bufInt[8], is[8];
 	
-	int NbrVer, NbrTri, NbrEfr, NbrTet, NbrHex, NbrQua, NbrPri, NbrPyr;
+	int NbrVer, NbrTri, NbrEfr, NbrCor, NbrTet, NbrHex, NbrQua, NbrPri, NbrPyr;
 	
   if ( !(InpMsh = GmfOpenMesh(MshNam,GmfRead,&FilVer,&dim)) ) {
     printf("  ## ERROR: Mesh data file %s.mesh[b] not found ! \n",MshNam);
@@ -59,9 +60,11 @@ int LoadGMFMesh (char *MshNam, Mesh *Msh)
 		
 	Msh->NbrVer = Msh->NbrTri = Msh->NbrEfr = 0;
 	Msh->NbrTet = Msh->NbrHex = Msh->NbrQua = 0;
+	Msh->NbrCor = 0;
 	
 	NbrVer = NbrTri = NbrEfr = 0;
 	NbrTet = NbrHex = NbrQua = NbrPri = NbrPyr = 0;
+	NbrCor = 0;
 	
 	//--- Read vertices
 	NbrVer = GmfStatKwd(InpMsh, GmfVertices);	
@@ -111,6 +114,15 @@ int LoadGMFMesh (char *MshNam, Mesh *Msh)
 		GmfGetLin(InpMsh, GmfEdges, &bufInt[0], &bufInt[1], &ref);
 		Msh->NbrEfr++;
 		AddEdge(Msh,Msh->NbrEfr,bufInt,ref);
+  }
+
+  //--- Read corners
+	NbrCor = GmfStatKwd(InpMsh, GmfCorners);	
+	GmfGotoKwd(InpMsh, GmfCorners);
+  for (i=1; i<=NbrCor; ++i) {
+		GmfGetLin(InpMsh, GmfCorners, &bufInt[0]);
+		Msh->NbrCor++;
+		AddCorner(Msh,Msh->NbrCor,bufInt);
   }
 
 	//--- Read tetrahedra
@@ -346,7 +358,7 @@ int LoadGMFSolution(char *SolNam, Mesh *Msh)
 int WriteGMFMesh(char *nam, Mesh *Msh, int OptBin)
 {
   int       OutMsh,FilVer,i, j;
-  int       iVer,iTri,iEfr,iTet,iQua; 
+  int       iVer,iTri,iEfr,iCor,iTet,iQua; 
   long long idx[6];
   char      OutFil[512];
   
@@ -354,10 +366,12 @@ int WriteGMFMesh(char *nam, Mesh *Msh, int OptBin)
 	int NbrVer  = Msh->NbrVer;
 	int NbrTri  = Msh->NbrTri;
 	int NbrEfr  = Msh->NbrEfr;
+	int NbrCor  = Msh->NbrCor;
 	int NbrQua  = Msh->NbrQua;
 	double3*Ver = Msh->Ver;
 	int4*Tri    = Msh->Tri;
 	int3*Efr    = Msh->Efr;
+	int*Cor     = Msh->Cor;
 	int5*Tet    = Msh->Tet;
 	int5*Qua    = Msh->Qua;
 	
@@ -462,6 +476,15 @@ int WriteGMFMesh(char *nam, Mesh *Msh, int OptBin)
   	    idx[i] = (long long)(Efr[iEfr][i]);
   	  }
   	  GmfSetLin(OutMsh, GmfEdges,idx[0],idx[1],Efr[iEfr][2]);  
+  	}
+  }
+
+  if ( Msh->NbrCor ) {
+  	//--- Write corners
+  	GmfSetKwd(OutMsh, GmfCorners, NbrCor);
+  	for (iCor=1; iCor<=NbrCor; ++iCor) {
+ 	    idx[0] = (long long)(Cor[iCor]);
+  	  GmfSetLin(OutMsh, GmfCorners,idx[0]);  
   	}
   }
 

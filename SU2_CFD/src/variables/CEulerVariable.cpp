@@ -145,6 +145,10 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
       AnisoViscGrad.resize(nPoint,nDim*nVar*nDim) = su2double(0.0);
       AnisoViscHess.resize(nPoint,3*(nDim-1)*nVar*nDim) = su2double(0.0);
     }
+    if(config->GetAdap_Source()) {
+      AnisoSourceGrad.resize(nPoint,nDim*nVar) = su2double(0.0);
+      AnisoSourceHess.resize(nPoint, 3*(nDim-1)*nVar) = su2double(0.0);
+    }
   }
 
 }

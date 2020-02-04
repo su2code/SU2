@@ -20,6 +20,7 @@ typedef int    int9[9];
 #define FILE_GEO    5
 #define FILE_MSH    6
 
+#define SU2_CORNER       1
 #define SU2_LINE         3
 #define SU2_TRIANGLE     5
 #define SU2_RECTANGLE    9
@@ -39,6 +40,7 @@ typedef int    int9[9];
 typedef struct S_Mesh
 {
   int	NbrVer;   	/* number of vertices  			  */
+  int	NbrCor;   	/* number of corners 			  */
   int	NbrTri;   	/* number of triangles 			  */
   int	NbrEfr;     /* number of boundary edges   */
 	int	NbrTet;     
@@ -48,6 +50,7 @@ typedef struct S_Mesh
 	int NbrPyr;
 	
 	int	MaxNbrVer;   	/* number of vertices  			  */
+	int	MaxNbrCor;   	/* number of corners 			  */
   int	MaxNbrTri;   	/* number of triangles 			  */
   int	MaxNbrEfr;     /* number of boundary edges   */
 	int	MaxNbrTet;
@@ -56,7 +59,8 @@ typedef struct S_Mesh
 	int MaxNbrPri;
 	int MaxNbrPyr;
 	
-  double3    *Ver;	    
+  double3    *Ver;
+  int        *Cor;	    
   int4       *Tri;	    
   int3       *Efr;   
 	int5       *Tet;

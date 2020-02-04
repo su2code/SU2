@@ -710,6 +710,37 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
         }
       }
     }
+
+    //--- add chemical source Hessian terms
+    if(config->GetAdap_Source()) {
+      for (unsigned short iVar = 0; iVar < nVarMetr; ++iVar) {
+
+        const su2double adj = solver_adjflow->GetNodes()->GetSolution(iPoint, iVar);
+
+        for (unsigned short im = 0; im < nMetr; ++im) {
+          const unsigned short ih = iVar*nMetr + im;  
+          const su2double hess = solver_flow->GetNodes()->GetAnisoSourceHess(iPoint, ih);
+          const su2double part = abs(adj)*hess;
+          solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
+        }
+      }
+
+      //--- add turbulent terms
+      if(config->GetViscous()) {
+        const unsigned short nVarTurbMetr = solver_turb->GetnVar();
+        for (unsigned short iVar = 0; iVar < nVarTurbMetr; ++iVar) {
+
+          const su2double adj = solver_adjturb->GetNodes()->GetSolution(iPoint, iVar);
+
+          for (unsigned short im = 0; im < nMetr; ++im) {
+            const unsigned short ih = iVar*nMetr + im;  
+            const su2double hess = solver_turb->GetNodes()->GetAnisoSourceHess(iPoint, ih);
+            const su2double part = abs(adj)*hess;
+            solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
+          }
+        }
+      }
+    }
   }
 
   //--- set tolerance and obtain global scaling
@@ -719,8 +750,14 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
     const su2double b = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 1);
     const su2double c = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 2);
     
+    if (fabs(a*c - b*b) < 1.0E-16) {
+      A[0][0] = 1.0E-16; A[0][1] = 1.0E-16;
+      A[1][0] = 1.0E-16; A[1][1] = 1.0E-16;
+    }
+    else {
     A[0][0] = a; A[0][1] = b;
     A[1][0] = b; A[1][1] = c;
+    }
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
@@ -742,6 +779,16 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
     const su2double b = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 1);
     const su2double c = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 2);
     
+    if (fabs(a*c - b*b) < 1.0E-16) {
+      A[0][0] = 1.0E-16; A[0][1] = 1.0E-16;
+      A[1][0] = 1.0E-16; A[1][1] = 1.0E-16;
+
+      EigVal[0] = eigmin;
+      EigVal[1] = eigmin;
+      EigVec[0][0] = 1.0; EigVec[0][1] = 0.0;
+      EigVec[1][0] = 0.0; EigVec[0][0] = 1.0;
+    }
+    else {
     A[0][0] = a; A[0][1] = b;
     A[1][0] = b; A[1][1] = c;
 
@@ -750,6 +797,7 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
 
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
+    }
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 

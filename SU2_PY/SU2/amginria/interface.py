@@ -60,6 +60,7 @@ def amg_call_met(config):
 def amg_call_python(mesh, config):
     
     remesh_options                = {}
+
     remesh_options['Lp']          = config['Lp']
     remesh_options['gradation']   = config['hgrad']
     remesh_options['logfile']     = config['amg_log']
@@ -84,18 +85,16 @@ def amg_call_python(mesh, config):
     if 'xy' in mesh:    mesh['xy']  = mesh['xy'].tolist()
     if 'xyz' in mesh:   mesh['xyz'] = mesh['xyz'].tolist()
     
+    if 'Corners' in mesh:    mesh['Corners']    = mesh['Corners'].tolist() 
     if 'Edges' in mesh:      mesh['Edges']      = mesh['Edges'].tolist() 
     if 'Triangles' in mesh:  mesh['Triangles']  = mesh['Triangles'].tolist()
     if 'Tetrahedra' in mesh: mesh['Tetrahedra'] = mesh['Tetrahedra'].tolist()   
 
-    if 'sensor' in mesh:
-        mesh['sensor'] = mesh['sensor'].tolist()
-        mesh['hmax']   = config['hmax']
-        mesh['hmin']   = config['hmin']
+    if 'sensor' in mesh: mesh['sensor'] = mesh['sensor'].tolist()
     if 'metric' in mesh: mesh['metric'] = mesh['metric'].tolist()
     
     try:
-        mesh_new = pyamg.adapt_mesh(mesh, remesh_options)    
+        mesh_new = pyamg.adapt_mesh(mesh, remesh_options)        
     except:
         sys.stderr("## ERROR : pyamg failed.\n")
         raise
@@ -110,6 +109,7 @@ def read_mesh(mesh_name, solution_name):
     Tri = []
     Tet = []
     Edg = []
+    Cor = []
     Hex = []
     Pyr = []
     Pri = []
@@ -119,7 +119,7 @@ def read_mesh(mesh_name, solution_name):
     
     Markers = []
     
-    amgio.py_ReadMesh(mesh_name, solution_name, Ver, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag,  Markers)
+    amgio.py_ReadMesh(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag,  Markers)
         
     NbrTet = len(Tet)/5
     Tet = np.reshape(Tet,(NbrTet, 5)).astype(int)
@@ -129,6 +129,9 @@ def read_mesh(mesh_name, solution_name):
     
     NbrEdg = len(Edg)/3
     Edg = np.reshape(Edg,(NbrEdg, 3)).astype(int)
+
+    NbrCor = len(Cor)
+    Cor = np.reshape(Cor,(NbrCor, 1)).astype(int)
 
     NbrVer = len(Ver)/3
     Ver = np.reshape(Ver,(NbrVer, 3))
@@ -148,7 +151,7 @@ def read_mesh(mesh_name, solution_name):
     mesh['Triangles']    = Tri
     mesh['Tetrahedra']   = Tet
     mesh['Edges']        = Edg
-    mesh['Corners']      = []
+    mesh['Corners']      = Cor
     mesh['solution']     = Sol
     
     mesh['solution_tag'] = SolTag
@@ -167,6 +170,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     Tri     = []
     Tet     = []
     Edg     = []
+    Cor     = []
     Hex     = []
     Pyr     = []
     Pri     = []
@@ -180,6 +184,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     if 'Triangles' in mesh:     Tri     = mesh['Triangles']
     if 'Tetrahedra' in mesh:    Tet     = mesh['Tetrahedra']
     if 'Edges' in mesh:         Edg     = mesh['Edges']
+    if 'Corners' in mesh:       Cor     = mesh['Corners']
     if 'solution' in mesh:      Sol     = mesh['solution']
     if 'markers' in mesh:       Markers = mesh['markers']
     if 'dimension' in mesh:     Dim     = mesh['dimension']
@@ -196,6 +201,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     Tri = np.array(Tri).reshape(4*len(Tri)).tolist()
     Tet = np.array(Tet).reshape(5*len(Tet)).tolist()
     Edg = np.array(Edg).reshape(3*len(Edg)).tolist()
+    Cor = np.array(Cor).reshape(len(Cor)).tolist()
     
     if len(Sol) > 1 :
         SolSiz = len(Sol[1])
@@ -203,7 +209,7 @@ def write_mesh(mesh_name, solution_name, mesh):
     else:
         Sol = []
     
-    amgio.py_WriteMesh(mesh_name, solution_name, Ver, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers, Dim)
+    amgio.py_WriteMesh(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers, Dim)
     
 
 def write_solution(solution_name, solution):

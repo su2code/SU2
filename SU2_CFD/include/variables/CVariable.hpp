@@ -89,6 +89,8 @@ protected:
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
 
+  MatrixType Source;         /*!< \brief Source terms of the problem */
+
   MatrixType External;       /*!< \brief External (outer) contribution in discrete adjoint multizone problems. */
   MatrixType External_Old;   /*!< \brief Old external (outer) contribution in discrete adjoint multizone problems. */
 
@@ -125,8 +127,10 @@ protected:
 
   MatrixType AnisoGrad;       /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */ 
   MatrixType AnisoViscGrad;   /*!< \brief Gradient of viscous sensor used for anisotropy in mesh adaptation. */ 
+  MatrixType AnisoSourceGrad; /*!< \brief Gradient of source term sensor used for anisotropy in mesh adaptation. */ 
   MatrixType AnisoHess;       /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */ 
   MatrixType AnisoViscHess;   /*!< \brief Hessian of viscous sensor used for anisotropy in mesh adaptation. */  
+  MatrixType AnisoSourceHess; /*!< \brief Hessian of source term sensor used for anisotropy in mesh adaptation. */  
   MatrixType AnisoMetr;       /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
 
   su2matrix<int> Input_AdjIndices;    /*!< \brief Indices of Solution variables in the adjoint vector. */
@@ -187,6 +191,15 @@ public:
    * \param[in] solution - Value of the solution for the index <i>iVar</i>.
    */
   inline void SetSolution(unsigned long iPoint, unsigned long iVar, su2double solution) { Solution(iPoint,iVar) = solution; }
+
+  /*!
+   * \brief Set the value of the source term, all variables.
+   * \param[in] iPoint - Point index.
+   * \param[in] solution - Solution of the problem.
+   */
+  inline void SetSource(unsigned long iPoint, const su2double *source) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Source(iPoint,iVar) = source[iVar];
+  }
 
   /*!
    * \brief Add the value of the solution vector to the previous solution (incremental approach).
@@ -476,6 +489,12 @@ public:
   inline su2double *GetSolution(unsigned long iPoint) { return Solution[iPoint]; }
 
   /*!
+   * \brief Get the Source Terms of the problem.
+   * \return Pointer to the solution vector.
+   */
+  inline su2double *GetSource(unsigned long iPoint) { return Source[iPoint]; }
+
+  /*!
    * \brief Get the old solution of the problem (Runge-Kutta method)
    * \return Pointer to the old solution vector.
    */
@@ -603,6 +622,26 @@ public:
   inline su2double GetAnisoViscGrad(unsigned long iPoint, unsigned short val_var) { return AnisoViscGrad(iPoint,val_var); }
 
    /*!  
+   * \brief Set the value of the sensor gradient. 
+   * \param[in] val_var  - Index value. 
+   * \param[in] val_sens - Sensor gradient value. 
+   */ 
+  inline void SetAnisoSourceGrad(unsigned long iPoint, unsigned short val_var, su2double val_sens_grad) { AnisoSourceGrad(iPoint,val_var) = val_sens_grad; }
+
+   /*!  
+   * \brief Add the value of the sensor gradient. 
+   * \param[in] val_var  - Index value. 
+   * \param[in] val_sens - Sensor gradient value. 
+   */ 
+  inline void AddAnisoSourceGrad(unsigned long iPoint, unsigned short val_var, su2double val_sens_grad) { AnisoSourceGrad(iPoint,val_var) += val_sens_grad; }
+
+   /*!  
+   * \brief Get the value of the sensor gradient. 
+   * \param[in] val_var  - Index value. 
+   */ 
+  inline su2double GetAnisoSourceGrad(unsigned long iPoint, unsigned short val_var) { return AnisoSourceGrad(iPoint,val_var); }
+
+   /*!  
    * \brief Set the value of the sensor Hessian.  
    * \param[in] val_var  - Index value. 
    * \param[in] val_sens - Sensor Hessian value.  
@@ -641,6 +680,26 @@ public:
    * \param[in] val_var  - Index value. 
    */ 
   inline su2double GetAnisoViscHess(unsigned long iPoint, unsigned short val_var) { return AnisoViscHess(iPoint,val_var); }
+
+   /*!  
+   * \brief Set the value of the sensor Hessian.  
+   * \param[in] val_var  - Index value. 
+   * \param[in] val_sens - Sensor Hessian value.  
+   */ 
+  inline void SetAnisoSourceHess(unsigned long iPoint, unsigned short val_var, su2double val_sens_hess) { AnisoSourceHess(iPoint,val_var) = val_sens_hess; }
+
+   /*!  
+   * \brief Add the value of the sensor Hessian.  
+   * \param[in] val_var  - Index value. 
+   * \param[in] val_sens - Sensor Hessian value.  
+   */ 
+  inline void AddAnisoSourceHess(unsigned long iPoint, unsigned short val_var, su2double val_sens_hess) { AnisoSourceHess(iPoint,val_var) += val_sens_hess; }
+
+   /*!  
+   * \brief Get the value of the sensor Hessian.  
+   * \param[in] val_var  - Index value. 
+   */ 
+  inline su2double GetAnisoSourceHess(unsigned long iPoint, unsigned short val_var) { return AnisoSourceHess(iPoint,val_var); }
 
    /*!  
    * \brief Set the value of the metric.  
