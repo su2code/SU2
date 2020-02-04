@@ -462,7 +462,8 @@ const int EL_PRISM = 3;   /*!< \brief Elements of six nodes (3D). */
 enum ENUM_MATH_PROBLEM {
   DIRECT = 0,               /*!< \brief Direct problem */
   CONTINUOUS_ADJOINT = 1,   /*!< \brief Continuous adjoint problem */
-  DISCRETE_ADJOINT = 2      /*!< \brief AD-based discrete adjoint problem. */
+  DISCRETE_ADJOINT = 2,     /*!< \brief AD-based discrete adjoint problem. */
+  ROM = 3
 };
 static const MapType<string, ENUM_MATH_PROBLEM> Math_Problem_Map = {
   MakePair("DIRECT", DIRECT)
@@ -2178,4 +2179,6 @@ public:
 
 inline COptionBase::~COptionBase() {}
 
-
+#ifdef ENABLE_MAPS
+#include "option_structure.inl"
+#endif

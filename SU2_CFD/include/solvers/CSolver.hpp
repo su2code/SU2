@@ -1537,15 +1537,6 @@ public:
                                               CSolver **solver_container,
                                               CConfig *config) { }
 
-  /*!
-   * \brief Update the solution for reduced order modelling.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void ROM_Iteration(CGeometry *geometry,
-                                    CSolver **solver_container,
-                                    CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1557,6 +1548,36 @@ public:
                                               CSolver **solver_container,
                                               CConfig *config) { }
 
+  /*!
+   * \brief Update the solution for reduced order modelling.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ROM_Iteration(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CConfig *config) { }
+  
+  /*!
+   * \brief Create mask for hyper-reduction.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void Mask_Selection(CGeometry *geometry,
+                                     CConfig *config) { }
+  
+  /*!
+   * \brief Set up ROM-specific variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void SetROM_Variables(unsigned long nPoint,
+                                       unsigned long nPointDomain,
+                                       unsigned short nVar,
+                                       CGeometry *geometry,
+                                       CConfig *config) { }
+  
+  
   /*!
    * \brief A virtual member.
    * \param[in] solver - Container vector with all the solutions.

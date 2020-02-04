@@ -36,7 +36,6 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-#include <Accelerate/Accelerate.h>
 #include <chrono>
 
 //extern "C" void dgels_(char*, int*, int*, int*, passivedouble*, int*, passivedouble*,
@@ -849,7 +848,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*---- Initialize ROM specific variables. ----*/
   
   if (config->GetReduced_Model() && (TrialBasis.size() == 0)) {
-    Mask_Selection(nPoint, nPointDomain, nVar, geometry, config);
+    Mask_Selection(geometry, config);
     SetROM_Variables(nPoint, nPointDomain, nVar, geometry, config);
   }
   
@@ -3126,8 +3125,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
 }
 
 // TODO: Put this function and next in more general location
-void CEulerSolver::Mask_Selection(unsigned long nPoint, unsigned long nPointDomain,
-unsigned short nVar, CGeometry *geometry, CConfig *config) {
+void CEulerSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   auto t_start = std::chrono::high_resolution_clock::now();
   // This function selects the masks E and E' using the Phi matrix and mesh data
   
@@ -5424,10 +5422,12 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   // Compute least-squares solution using QR decomposition
   // https://johnwlambert.github.io/least-squares/
   // http://www.netlib.org/lapack/explore-html/d7/d3b/group__double_g_esolve_ga225c8efde208eaf246882df48e590eac.html
-//#if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
+#if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
     int info2;
   info2 = dgels_(&TRANS, &m, &n, &NRHS, TestBasis2.data(), &m, r.data(), &m, WORK.data(), &LWORK, &INFO);
-//#endif
+#else
+  SU2_MPI::Error("Lapack necessary for ROM.", CURRENT_FUNCTION);
+#endif
 
   if (INFO < 0) std::cout << "Unsucsessful exit of least-squares for ROM" << std::endl;
   
