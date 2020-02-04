@@ -43,16 +43,24 @@ this->b.resize(n);
 this->c.resize(n-1);
 this->d.resize(n-1);
 
-this->n=n; for (int i=0; i<n ; i++){this->x[i]=x[i]; this->y[i]=y[i];}
-this->b[0] = p[0] ; this->b[1] =(p[0]+ p[1])/2 ;
-
-this->b[n-1]=p[n-2]; this->b [n-2]=(p[n-2]+p[n-3])/2;
+this->n=n; for (int i=0; i<n ; i++){this->x[i]=x[i]; 
+this->y[i]=y[i];}
+this->b[0] = p[0] ; 
+this->b[1] =(p[0]+ p[1])/2 ;
+this->b[n-1]=p[n-2]; 
+this->b [n-2]=(p[n-2]+p[n-3])/2;
 
 for (int i =2; i<n-2; i ++){
 su2double w1=fabs(p[i+1]-p[i]) , w2=fabs(p[i-1]-p[i-2]);
-if (w1+w2==0) this->b[i] = (p[i-1]+p[i])/2 ;
-else this->b [i] = (w1*p[i-1]+w2*p[i])/(w1+w2) ;
+
+if (w1+w2==0) {
+    this->b[i] = (p[i-1]+p[i])/2 ;
 }
+else {
+    this->b [i] = (w1*p[i-1]+w2*p[i])/(w1+w2);
+}
+}
+
 for (int i =0; i<n-1; i ++){
 this->c [i]=(3*p [i]-2*this->b [ i ]-this->b[i+1])/h[i] ;
 this->d [i]=(this->b[i+1]+this->b [ i ]-2*p[i])/h[i]/h[i];
@@ -62,7 +70,11 @@ this->d [i]=(this->b[i+1]+this->b [ i ]-2*p[i])/h[i]/h[i];
 /*--- Function for evaluating the value for akima spline ---*/
 su2double CAkimaSpline::EvalAkimaSpline(su2double Point_Interp){
 int i =0, j=this->n-1;
-while ( j-i >1){ int m=( i+j ) / 2 ; if ( Point_Interp>this->x[m] ) i=m; else j=m; }
+while ( j-i >1){ 
+    int m=( i+j ) / 2 ; 
+        if (Point_Interp>this->x[m]) i=m; 
+        else j=m; 
+}
 su2double h=Point_Interp-this->x[i] ;
 return this->y[i]+h*(this->b[i]+h*(this->c[i]+h*this->d[i])) ;
 }
@@ -92,11 +104,11 @@ su2double CLinearSpline::EvalLinearSpline(su2double Point_Interp){
 }
 
 vector<su2double> C1DInterpolation::CorrectedInletValues(vector<su2double> &Inlet_Interpolated , 
-                                                    su2double Theta ,
-                                                    unsigned short nDim, 
-                                                    su2double *Coord, 
-                                                    unsigned short nVar_Turb,
-                                                    CConfig *config){
+                                                        su2double Theta ,
+                                                        unsigned short nDim, 
+                                                        su2double *Coord, 
+                                                        unsigned short nVar_Turb,
+                                                        CConfig *config){
 su2double size_columns=Inlet_Interpolated.size()+nDim;
 vector<su2double> Inlet_Values (size_columns);
 su2double unit_r, unit_Theta, unit_m, Alpha, Phi;
