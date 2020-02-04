@@ -4192,7 +4192,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   ifstream inlet_file;
   string Interpolation_Function, Interpolation_Type;
   bool Interpolate;
-  C1DInterpolation **spline;
+  C1DInterpolation **spline = nullptr;
 
   su2double *Normal       = new su2double[nDim];
 
