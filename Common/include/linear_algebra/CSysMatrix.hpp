@@ -95,6 +95,7 @@ private:
   const unsigned long *row_ptr;     /*!< \brief Pointers to the first element in each row. */
   const unsigned long *dia_ptr;     /*!< \brief Pointers to the diagonal element in each row. */
   const unsigned long *col_ind;     /*!< \brief Column index for each of the elements in val(). */
+  vector<const su2double*> col_ptr; /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
 
   ScalarType *ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
@@ -580,6 +581,39 @@ public:
   }
 
   /*!
+   * \brief Update 2 blocks ij and ji (add to i* sub from j*).
+   * \note The template parameter Sign, can be used create a "subtractive"
+   *       update i.e. subtract from row i and add to row j instead.
+   * \param[in] edge - Index of edge that connects iPoint and jPoint.
+   * \param[in] block_i - Subs from ji.
+   * \param[in] block_j - Adds to ij.
+   */
+  template<class OtherType, int Sign = 1>
+  inline void UpdateBlocks(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
+
+    ScalarType *bij = &matrix[edge_ptr(iEdge,0)*nVar*nEqn];
+    ScalarType *bji = &matrix[edge_ptr(iEdge,1)*nVar*nEqn];
+
+    unsigned long iVar, jVar, offset = 0;
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nEqn; jVar++) {
+        bij[offset] += PassiveAssign<ScalarType,OtherType>(block_j[iVar][jVar]) * Sign;
+        bji[offset] -= PassiveAssign<ScalarType,OtherType>(block_i[iVar][jVar]) * Sign;
+        ++offset;
+      }
+    }
+  }
+
+  /*!
+   * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of UpdateBlocks.
+   */
+  template<class OtherType>
+  inline void UpdateBlocksSub(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
+    UpdateBlocks<OtherType,-1>(iEdge, block_i, block_j);
+  }
+
+  /*!
    * \brief Adds the specified block to the (i, i) subblock of the matrix-by-blocks structure.
    * \param[in] block_i - Diagonal index.
    * \param[in] val_block - Block to add to the diagonal of the matrix.
@@ -660,6 +694,11 @@ public:
    */
   template<class OtherType>
   void EnforceSolutionAtNode(const unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b);
+
+  /*!
+   * \brief Sets the diagonal entries of the matrix as the sum of the blocks in the corresponding column.
+   */
+  void SetDiagonalAsColumnSum();
 
   /*!
    * \brief Add a scaled sparse matrix to "this" (axpy-type operation, A = A+alpha*B).

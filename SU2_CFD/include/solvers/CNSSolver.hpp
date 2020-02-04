@@ -420,12 +420,14 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Viscous_Residual(CGeometry *geometry,
-                        CSolver **solver_container,
-                        CNumerics **numerics_container,
-                        CConfig *config,
-                        unsigned short iMesh,
-                        unsigned short iRKStep) override;
+//  void Viscous_Residual(CGeometry *geometry,
+//                        CSolver **solver_container,
+//                        CNumerics **numerics_container,
+//                        CConfig *config,
+//                        unsigned short iMesh,
+//                        unsigned short iRKStep) override;
+  void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                        CNumerics *numerics, CConfig *config) override;
 
   /*!
    * \brief Get the skin friction coefficient.
