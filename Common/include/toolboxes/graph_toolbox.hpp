@@ -518,3 +518,27 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool balanceColors 
   /*--- Move compressed coloring into result pattern instance. ---*/
   return T(std::move(colorPtr), std::move(outerIdx));
 }
+
+
+/*!
+ * \brief Create the natural coloring (equivalent to the normal sequential loop
+ *        order) for a given number of inner indexes.
+ * \note This is to reduce overhead in "OpenMP-ready" code when only 1 thread is used.
+ * \param[in] numInnerIndexes - Number of indexes that are to be colored.
+ * \return Natural (sequential) coloring of the inner indices.
+ */
+template<class T = CCompressedSparsePatternUL,
+         class Index_t = typename T::IndexType>
+T createNaturalColoring(Index_t numInnerIndexes)
+{
+  /*--- One color. ---*/
+  su2vector<Index_t> outerPtr(2);
+  outerPtr(0) = 0;
+  outerPtr(1) = numInnerIndexes;
+
+  /*--- Containing all indexes in ascending order. ---*/
+  su2vector<Index_t> innerIdx(numInnerIndexes);
+  std::iota(innerIdx.data(), innerIdx.data()+numInnerIndexes, 0);
+
+  return T(std::move(outerPtr), std::move(innerIdx));
+}
