@@ -2,7 +2,7 @@
 % SU2 configuration file                                                 %
 % PaStiX support build instructions.                                     %
 % Institution: Imperial College London                                   %
-% File Version 6.2.0 "Falcon"                                            %
+% File Version 7.0.1 "Blackbird"                                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % 1 - Download

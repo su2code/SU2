@@ -1,3 +1,30 @@
+/*!
+ * \file CTecplotBinaryFileWriter.cpp
+ * \brief Filewriter class for Tecplot binary format.
+ * \author T. Albring
+ * \version 7.0.1 "Blackbird"
+ *
+ * SU2 Project Website: https://su2code.github.io
+ *
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
+ *
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "../../../include/output/filewriter/CTecplotBinaryFileWriter.hpp"
 #ifdef HAVE_TECIO
   #include "TECIO.h"
@@ -6,32 +33,32 @@
 
 const string CTecplotBinaryFileWriter::fileExt = ".szplt";
 
-CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(vector<string> fields, unsigned short nDim,
-                                                   string fileName, CParallelDataSorter *dataSorter,
-                                                   unsigned long time_iter, su2double timestep) : 
-  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim), time_iter(time_iter), timestep(timestep){}
+CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(string valFileName, CParallelDataSorter *valDataSorter,
+                                                   unsigned long valTimeIter, su2double valTimeStep) :
+  CFileWriter(std::move(valFileName), valDataSorter, fileExt), timeIter(valTimeIter), timeStep(valTimeStep){}
 
 CTecplotBinaryFileWriter::~CTecplotBinaryFileWriter(){}
 
 void CTecplotBinaryFileWriter::Write_Data(){
-    
+
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
-  
+
   /*--- Set a timer for the binary file writing. ---*/
-  
+
 #ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-  StartTime = MPI_Wtime();
-#endif  
-  
+  startTime = MPI_Wtime();
+#endif
+
 #ifdef HAVE_TECIO
-  
+
+  const vector<string> fieldNames = dataSorter->GetFieldNames();
+
   /*--- Reduce the total number of each element. ---*/
 
-  unsigned long nTot_Line, nTot_Tria, nTot_Quad, nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
   unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
                 nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
                 nParallel_Quad = dataSorter->GetnElem(QUADRILATERAL),
@@ -39,32 +66,22 @@ void CTecplotBinaryFileWriter::Write_Data(){
                 nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
                 nParallel_Pris = dataSorter->GetnElem(PRISM),
                 nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nParallel_Line, &nTot_Line, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Tria, &nTot_Tria, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Quad, &nTot_Quad, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Tetr, &nTot_Tetr, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Hexa, &nTot_Hexa, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Pris, &nTot_Pris, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nParallel_Pyra, &nTot_Pyra, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  nTot_Line      = nParallel_Line;
-
-  nTot_Tria = nParallel_Tria;
-  nTot_Quad = nParallel_Quad;
-  nTot_Tetr = nParallel_Tetr;
-  nTot_Hexa = nParallel_Hexa;
-  nTot_Pris = nParallel_Pris;
-  nTot_Pyra = nParallel_Pyra;
-#endif
   
+  unsigned long nTot_Line = dataSorter->GetnElemGlobal(LINE),
+                nTot_Tria = dataSorter->GetnElemGlobal(TRIANGLE),
+                nTot_Quad = dataSorter->GetnElemGlobal(QUADRILATERAL),
+                nTot_Tetr = dataSorter->GetnElemGlobal(TETRAHEDRON),
+                nTot_Hexa = dataSorter->GetnElemGlobal(HEXAHEDRON),
+                nTot_Pris = dataSorter->GetnElemGlobal(PRISM),
+                nTot_Pyra = dataSorter->GetnElemGlobal(PYRAMID);
+
   string data_set_title = "Visualization of the solution";
 
   ostringstream tecplot_variable_names;
-  for (size_t iVar = 0; iVar < fieldnames.size()-1; ++iVar) {
-    tecplot_variable_names << fieldnames[iVar] << ",";
+  for (size_t iVar = 0; iVar < fieldNames.size()-1; ++iVar) {
+    tecplot_variable_names << fieldNames[iVar] << ",";
   }
-  tecplot_variable_names << fieldnames[fieldnames.size()-1];
+  tecplot_variable_names << fieldNames[fieldNames.size()-1];
 
   void* file_handle = NULL;
   int32_t err = tecFileWriterOpen(fileName.c_str(), data_set_title.c_str(), tecplot_variable_names.str().c_str(),
@@ -75,48 +92,48 @@ void CTecplotBinaryFileWriter::Write_Data(){
   err = tecMPIInitialize(file_handle, MPI_COMM_WORLD, MASTER_NODE);
   if (err) cout << "Error initializing Tecplot parallel output." << endl;
 #endif
-  
+
   /*--- Define the zone(s). For 2D, and for 3D surfaces, each rank outputs a separate zone. ---*/
 
   int64_t num_nodes;
   int64_t num_cells;
   int32_t zone_type;
-  
-  
+
+
   num_nodes = static_cast<int64_t>(dataSorter->GetnPointsGlobal());
-  num_cells = static_cast<int64_t>(dataSorter->GetnElem());
-  if (nDim == 3){
+  num_cells = static_cast<int64_t>(dataSorter->GetnElemGlobal());
+  if (dataSorter->GetnDim() == 3){
     if ((nTot_Quad > 0 || nTot_Tria > 0) && (nTot_Hexa + nTot_Pris + nTot_Pyra + nTot_Tetr == 0)){
       zone_type = ZONETYPE_FEQUADRILATERAL;
     }
     else {
-      zone_type = ZONETYPE_FEBRICK;      
+      zone_type = ZONETYPE_FEBRICK;
     }
   }
   else {
     if (nTot_Line > 0 && (nTot_Tria + nTot_Quad == 0)){
       zone_type = ZONETYPE_FELINESEG;
-      
+
     }
     else{
-      zone_type = ZONETYPE_FEQUADRILATERAL;      
+      zone_type = ZONETYPE_FEQUADRILATERAL;
     }
   }
 
   bool is_unsteady = false;
   passivedouble solution_time = 0.0;
 
-  if (timestep > 0.0){
+  if (timeStep > 0.0){
     is_unsteady = true;
-    solution_time = SU2_TYPE::GetValue(timestep)*time_iter;
+    solution_time = SU2_TYPE::GetValue(timeStep)*timeIter;
   }
-  
+
   int32_t zone;
-  vector<int32_t> value_locations(fieldnames.size(), 1); /* Nodal variables. */
+  vector<int32_t> value_locations(fieldNames.size(), 1); /* Nodal variables. */
   err = tecZoneCreateFE(file_handle, "Zone", zone_type, num_nodes, num_cells, NULL, NULL, &value_locations[0], NULL, 0, 0, 0, &zone);
   if (err) cout << rank << ": Error creating Tecplot zone." << endl;
   if (is_unsteady) {
-    err = tecZoneSetUnsteadyOptions(file_handle, zone, solution_time, time_iter + 1);
+    err = tecZoneSetUnsteadyOptions(file_handle, zone, solution_time, timeIter + 1);
     if (err) cout << rank << ": Error setting Tecplot zone unsteady options." << std::endl;
   }
 
@@ -139,42 +156,42 @@ void CTecplotBinaryFileWriter::Write_Data(){
       partition_owners.push_back(iRank);
     err = tecZoneMapPartitionsToMPIRanks(file_handle, zone, size, &partition_owners[0]);
     if (err) cout << rank << ": Error assigning MPI ranks for Tecplot zone partitions." << endl;
-  
+
     /* Gather a list of nodes we refer to but are not outputting. */
 
     for (unsigned long i = 0; i < nParallel_Tria * N_POINTS_TRIANGLE; ++i)
-      if ((unsigned long)dataSorter->GetElem_Connectivity(TRIANGLE, 0, i) <= dataSorter->GetNodeBegin(rank) || 
+      if ((unsigned long)dataSorter->GetElem_Connectivity(TRIANGLE, 0, i) <= dataSorter->GetNodeBegin(rank) ||
           dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElem_Connectivity(TRIANGLE, 0, i))
         halo_nodes.insert(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i));
-  
+
     for (unsigned long i = 0; i < nParallel_Quad * N_POINTS_QUADRILATERAL; ++i)
-      if ((unsigned long)dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i) <= dataSorter->GetNodeBegin(rank) || 
+      if ((unsigned long)dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i) <= dataSorter->GetNodeBegin(rank) ||
           dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i))
         halo_nodes.insert(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i));
 
     for (unsigned long i = 0; i < nParallel_Tetr * N_POINTS_TETRAHEDRON; ++i)
-      if ((unsigned long)dataSorter->GetElem_Connectivity(TETRAHEDRON, 0, i) <= dataSorter->GetNodeBegin(rank) || 
+      if ((unsigned long)dataSorter->GetElem_Connectivity(TETRAHEDRON, 0, i) <= dataSorter->GetNodeBegin(rank) ||
           dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElem_Connectivity(TETRAHEDRON, 0, i))
         halo_nodes.insert(dataSorter->GetElem_Connectivity(TETRAHEDRON, 0, i));
 
     for (unsigned long i = 0; i < nParallel_Hexa * N_POINTS_HEXAHEDRON; ++i)
-      if ((unsigned long)dataSorter->GetElem_Connectivity(HEXAHEDRON, 0, i) <= dataSorter->GetNodeBegin(rank) || 
+      if ((unsigned long)dataSorter->GetElem_Connectivity(HEXAHEDRON, 0, i) <= dataSorter->GetNodeBegin(rank) ||
           dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElem_Connectivity(HEXAHEDRON, 0, i))
         halo_nodes.insert(dataSorter->GetElem_Connectivity(HEXAHEDRON, 0, i));
-      
+
     for (unsigned long i = 0; i < nParallel_Pris * N_POINTS_PRISM; ++i)
-      if ((unsigned long)dataSorter->GetElem_Connectivity(PRISM, 0, i) <= dataSorter->GetNodeBegin(rank) || 
+      if ((unsigned long)dataSorter->GetElem_Connectivity(PRISM, 0, i) <= dataSorter->GetNodeBegin(rank) ||
           dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElem_Connectivity(PRISM, 0, i))
         halo_nodes.insert(dataSorter->GetElem_Connectivity(PRISM, 0, i));
-    
+
     for (unsigned long i = 0; i < nParallel_Pyra * N_POINTS_PYRAMID; ++i)
-      if ((unsigned long)dataSorter->GetElem_Connectivity(PYRAMID, 0, i) <= dataSorter->GetNodeBegin(rank) || 
+      if ((unsigned long)dataSorter->GetElem_Connectivity(PYRAMID, 0, i) <= dataSorter->GetNodeBegin(rank) ||
           dataSorter->GetNodeEnd(rank) < (unsigned long)dataSorter->GetElem_Connectivity(PYRAMID, 0, i))
         halo_nodes.insert(dataSorter->GetElem_Connectivity(PYRAMID, 0, i));
 
     /* Sorted list of halo nodes for this MPI rank. */
     sorted_halo_nodes.assign(halo_nodes.begin(), halo_nodes.end());
-        
+
     /* Have to include all nodes our cells refer to or TecIO will barf, so add the halo node count to the number of local nodes. */
     int64_t partition_num_nodes = dataSorter->GetNodeEnd(rank) - dataSorter->GetNodeBegin(rank) + static_cast<int64_t>(halo_nodes.size());
     int64_t partition_num_cells = nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
@@ -225,27 +242,27 @@ void CTecplotBinaryFileWriter::Write_Data(){
     SU2_MPI::Alltoallv(&sorted_halo_nodes[0], &num_nodes_to_receive[0], &nodes_to_receive_displacements[0], MPI_UNSIGNED_LONG,
                        &nodes_to_send[0],     &num_nodes_to_send[0],    &nodes_to_send_displacements[0],    MPI_UNSIGNED_LONG,
                        MPI_COMM_WORLD);
-    
+
     /* Now actually send and receive the data */
-    vector<passivedouble> data_to_send(max(1, total_num_nodes_to_send * (int)fieldnames.size()));
-    halo_var_data.resize(max((size_t)1, fieldnames.size() * num_halo_nodes));
+    vector<passivedouble> data_to_send(max(1, total_num_nodes_to_send * (int)fieldNames.size()));
+    halo_var_data.resize(max((size_t)1, fieldNames.size() * num_halo_nodes));
     vector<int> num_values_to_send(size);
     vector<int> values_to_send_displacements(size);
     vector<int> num_values_to_receive(size);
     size_t index = 0;
     for(int iRank = 0; iRank < size; ++iRank) {
       /* We send and receive GlobalField_Counter values per node. */
-      num_values_to_send[iRank]              = num_nodes_to_send[iRank] * fieldnames.size();
-      values_to_send_displacements[iRank]    = nodes_to_send_displacements[iRank] * fieldnames.size();
-      num_values_to_receive[iRank]           = num_nodes_to_receive[iRank] * fieldnames.size();
-      values_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank] * fieldnames.size();
-      for(iVar = 0; iVar < fieldnames.size(); ++iVar)
+      num_values_to_send[iRank]              = num_nodes_to_send[iRank] * fieldNames.size();
+      values_to_send_displacements[iRank]    = nodes_to_send_displacements[iRank] * fieldNames.size();
+      num_values_to_receive[iRank]           = num_nodes_to_receive[iRank] * fieldNames.size();
+      values_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank] * fieldNames.size();
+      for(iVar = 0; iVar < fieldNames.size(); ++iVar)
         for(int iNode = 0; iNode < num_nodes_to_send[iRank]; ++iNode) {
           unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - dataSorter->GetNodeBegin(rank) - 1;
           data_to_send[index++] =dataSorter->GetData(iVar,node_offset);
         }
     }
-    SU2_MPI::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
+    CBaseMPIWrapper::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
                        &halo_var_data[0], &num_values_to_receive[0], &values_to_receive_displacements[0], MPI_DOUBLE,
                        MPI_COMM_WORLD);
   }
@@ -256,10 +273,10 @@ void CTecplotBinaryFileWriter::Write_Data(){
   }
 
   /*--- Write surface and volumetric solution data. ---*/
-  
+
   if (zone_type == ZONETYPE_FEBRICK) {
     std::vector<passivedouble> values_to_write(dataSorter->GetnPoints());
-    for (iVar = 0; err == 0 && iVar < fieldnames.size(); iVar++) {
+    for (iVar = 0; err == 0 && iVar < fieldNames.size(); iVar++) {
       for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
         values_to_write[i] = dataSorter->GetData(iVar, i);
       err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, rank + 1, dataSorter->GetnPoints(), &values_to_write[0]);
@@ -278,25 +295,25 @@ void CTecplotBinaryFileWriter::Write_Data(){
       unsigned long nPoint = dataSorter->GetnPoints();
       vector<unsigned long> num_points(size);
       SU2_MPI::Gather(&nPoint, 1, MPI_UNSIGNED_LONG, &num_points[0], 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-      
+
       for(int iRank = 0; iRank < size; ++iRank) {
         int64_t rank_num_points = num_points[iRank];
 
         if (rank_num_points > 0) {
           if (iRank == rank) { /* Output local data. */
             std::vector<passivedouble> values_to_write;
-            for (iVar = 0; err == 0 && iVar < fieldnames.size(); iVar++) {
+            for (iVar = 0; err == 0 && iVar < fieldNames.size(); iVar++) {
               values_to_write.resize(rank_num_points);
               for(unsigned long i = 0; i < (unsigned long)rank_num_points; ++i)
                 values_to_write[i] = dataSorter->GetData(iVar,i);
-              err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &values_to_write[0]); 
+              err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &values_to_write[0]);
               if (err) cout << rank << ": Error outputting Tecplot variable values." << endl;
             }
           }
           else { /* Receive data from other rank. */
-            var_data.resize(max((int64_t)1, (int64_t)fieldnames.size() * rank_num_points));
-            CBaseMPIWrapper::Recv(&var_data[0], fieldnames.size() * rank_num_points, MPI_DOUBLE, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            for (iVar = 0; err == 0 && iVar < fieldnames.size(); iVar++) {
+            var_data.resize(max((int64_t)1, (int64_t)fieldNames.size() * rank_num_points));
+            CBaseMPIWrapper::Recv(&var_data[0], fieldNames.size() * rank_num_points, MPI_DOUBLE, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            for (iVar = 0; err == 0 && iVar < fieldNames.size(); iVar++) {
               err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &var_data[iVar * rank_num_points]);
               if (err) cout << rank << ": Error outputting Tecplot surface variable values." << endl;
             }
@@ -306,16 +323,16 @@ void CTecplotBinaryFileWriter::Write_Data(){
     }
     else { /* Send data to MASTER_NODE */
       unsigned long nPoint = dataSorter->GetnPoints();
-      
+
       SU2_MPI::Gather(&nPoint, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-    
+
       vector<passivedouble> var_data;
-      size_t var_data_size = fieldnames.size() * dataSorter->GetnPoints();
+      size_t var_data_size = fieldNames.size() * dataSorter->GetnPoints();
       var_data.reserve(var_data_size);
-      for (iVar = 0; err == 0 && iVar < fieldnames.size() ; iVar++)
+      for (iVar = 0; err == 0 && iVar < fieldNames.size() ; iVar++)
           for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
             var_data.push_back(dataSorter->GetData(iVar,i));
-      
+
       if (var_data.size() > 0)
         CBaseMPIWrapper::Send(&var_data[0], static_cast<int>(var_data.size()), MPI_DOUBLE, MASTER_NODE, rank, MPI_COMM_WORLD);
     }
@@ -324,26 +341,26 @@ void CTecplotBinaryFileWriter::Write_Data(){
 #else
 
   unsigned short iVar;
-  
-  vector<passivedouble> var_data;
-  size_t var_data_size = fieldnames.size() * dataSorter->GetnPoints();
-  var_data.reserve(var_data_size);
-  
 
-  for (iVar = 0; err == 0 && iVar <  fieldnames.size(); iVar++) {
+  vector<passivedouble> var_data;
+  size_t var_data_size = fieldNames.size() * dataSorter->GetnPoints();
+  var_data.reserve(var_data_size);
+
+
+  for (iVar = 0; err == 0 && iVar <  fieldNames.size(); iVar++) {
     for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
       var_data.push_back(dataSorter->GetData(iVar,i));
     err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, dataSorter->GetnPoints(), &var_data[iVar * dataSorter->GetnPoints()]);
     if (err) cout << rank << ": Error outputting Tecplot variable value." << endl;
   }
-  
+
 
 #endif /* HAVE_MPI */
-  
+
   /*--- Write connectivity data. ---*/
 
   unsigned long iElem;
-  
+
 #ifdef HAVE_MPI
   if (zone_type == ZONETYPE_FEBRICK) {
 
@@ -383,7 +400,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
       err = tecZoneNodeMapWrite64(file_handle, zone, rank + 1, 1, 8, nodes);
       if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
     }
-      
+
     for (iElem = 0; err == 0 && iElem < nParallel_Pris; iElem++) {
       nodes[0] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 0));
       nodes[1] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PRISM, iElem, 1));
@@ -396,7 +413,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
       err = tecZoneNodeMapWrite64(file_handle, zone, rank + 1, 1, 8, nodes);
       if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
     }
-    
+
     for (iElem = 0; err == 0 && iElem < nParallel_Pyra; iElem++) {
       nodes[0] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PYRAMID, iElem, 0));
       nodes[1] = MAKE_LOCAL(dataSorter->GetElem_Connectivity(PYRAMID, iElem, 1));
@@ -428,7 +445,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
             err = tecZoneNodeMapWrite64(file_handle, zone, 0, 1, 2, nodes);
             if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
           }
-          
+
           for (iElem = 0; err == 0 && iElem < nParallel_Tria; iElem++) {
             nodes[0] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0);
             nodes[1] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1);
@@ -437,7 +454,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
             err = tecZoneNodeMapWrite64(file_handle, zone, 0, 1, 4, nodes);
             if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
           }
-          
+
           for (iElem = 0; err == 0 && iElem < nParallel_Quad; iElem++) {
             nodes[0] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0);
             nodes[1] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1);
@@ -446,7 +463,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
             err = tecZoneNodeMapWrite64(file_handle, zone, 0, 1, 4, nodes);
             if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
           }
-          
+
         } else { /* Receive node map and write out. */
           connectivity.resize(max((unsigned long)1, connectivity_sizes[iRank]));
           SU2_MPI::Recv(&connectivity[0], connectivity_sizes[iRank], MPI_UNSIGNED_LONG, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -467,29 +484,29 @@ void CTecplotBinaryFileWriter::Write_Data(){
         connectivity.push_back(dataSorter->GetElem_Connectivity(LINE, iElem, 0));
         connectivity.push_back(dataSorter->GetElem_Connectivity(LINE, iElem, 0));
       }
-      
+
       for (iElem = 0; err == 0 && iElem < nParallel_Tria; iElem++) {
         connectivity.push_back(dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0));
         connectivity.push_back(dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1));
         connectivity.push_back(dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2));
         connectivity.push_back(dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2));
       }
-      
+
       for (iElem = 0; err == 0 && iElem < nParallel_Quad; iElem++) {
         connectivity.push_back(dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0));
         connectivity.push_back(dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1));
         connectivity.push_back(dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2));
         connectivity.push_back(dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3));
       }
-      
+
       if (connectivity.empty()) connectivity.resize(1); /* Avoid crash */
       SU2_MPI::Send(&connectivity[0], connectivity_size, MPI_UNSIGNED_LONG, MASTER_NODE, rank, MPI_COMM_WORLD);
     }
   }
 #else
-  
+
   int64_t nodes[8];
-  
+
   for (iElem = 0; err == 0 && iElem < nParallel_Tria; iElem++) {
     nodes[0] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0);
     nodes[1] = dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1);
@@ -498,7 +515,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
     err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 4, nodes);
     if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
   }
-  
+
   for (iElem = 0; err == 0 && iElem < nParallel_Quad; iElem++) {
     nodes[0] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0);
     nodes[1] = dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1);
@@ -507,7 +524,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
     err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 4, nodes);
     if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
   }
-  
+
   for (iElem = 0; err == 0 && iElem < nParallel_Tetr; iElem++) {
     nodes[0] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0);
     nodes[1] = dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1);
@@ -520,7 +537,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
     err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
     if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
   }
-  
+
   for (iElem = 0; err == 0 && iElem < nParallel_Hexa; iElem++) {
     nodes[0] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0);
     nodes[1] = dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1);
@@ -533,7 +550,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
     err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
     if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
   }
-  
+
   for (iElem = 0; err == 0 && iElem < nParallel_Pris; iElem++) {
     nodes[0] = dataSorter->GetElem_Connectivity(PRISM, iElem, 0);
     nodes[1] = dataSorter->GetElem_Connectivity(PRISM, iElem, 1);
@@ -546,7 +563,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
     err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
     if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
   }
-  
+
   for (iElem = 0; err == 0 && iElem < nParallel_Pyra; iElem++) {
     nodes[0] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 0);
     nodes[1] = dataSorter->GetElem_Connectivity(PYRAMID, iElem, 1);
@@ -559,30 +576,30 @@ void CTecplotBinaryFileWriter::Write_Data(){
     err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
     if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
   }
-  
-  
+
+
 
 #endif
-  
+
   err = tecFileWriterClose(&file_handle);
   if (err) cout << rank << ": Error finishing Tecplot file output." << endl;
-  
-#endif /* HAVE_TECIO */
-  
-  /*--- Compute and store the write time. ---*/
-  
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
-  UsedTime = StopTime-StartTime;
 
-  file_size = Determine_Filesize(fileName);
-  
+#endif /* HAVE_TECIO */
+
+  /*--- Compute and store the write time. ---*/
+
+#ifndef HAVE_MPI
+  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  stopTime = MPI_Wtime();
+#endif
+  usedTime = stopTime-startTime;
+
+  fileSize = Determine_Filesize(fileName);
+
   /*--- Compute and store the bandwidth ---*/
-  
-  Bandwidth = file_size/(1.0e6)/UsedTime;
+
+  bandwidth = fileSize/(1.0e6)/usedTime;
 }
 
 

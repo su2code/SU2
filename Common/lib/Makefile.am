@@ -3,20 +3,20 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 6.2.0 "Falcon"
+# \version 7.0.1 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -45,109 +45,58 @@ noinst_LIBRARIES += libSU2_AD.a
 endif
 
 lib_sources = \
-  ../include/datatypes/primitive_structure.hpp \
-  ../include/datatypes/primitive_structure.inl \
-  ../include/datatypes/complex_structure.hpp \
-  ../include/datatypes/complex_structure.inl \
-  ../include/ad_structure.hpp \
-  ../include/ad_structure.inl \
-  ../include/fem_cgns_elements.hpp \
-  ../include/config_structure.hpp \
-  ../include/config_structure.hpp \
-  ../include/config_structure.inl \
-  ../include/blas_structure.hpp \
-  ../include/dual_grid_structure.hpp \
-  ../include/dual_grid_structure.inl \
-  ../include/fem_geometry_structure.hpp \
-  ../include/fem_geometry_structure.inl \
-  ../include/fem_standard_element.hpp \
-  ../include/fem_standard_element.inl \
-  ../include/geometry_structure.hpp \
-  ../include/geometry_structure.inl \
-  ../include/CMultiGridQueue.hpp \
-  ../include/CMeshReaderFVM.hpp \
-  ../include/CSU2ASCIIMeshReaderFVM.hpp \
-  ../include/CCGNSMeshReaderFVM.hpp \
-  ../include/CRectangularMeshReaderFVM.hpp \
-  ../include/CBoxMeshReaderFVM.hpp \
-  ../include/graph_coloring_structure.hpp \
-  ../include/grid_adaptation_structure.hpp \
-  ../include/grid_adaptation_structure.inl \
-  ../include/grid_movement_structure.hpp \
-  ../include/grid_movement_structure.inl \
-  ../include/option_structure.hpp \
-  ../include/primal_grid_structure.hpp \
-  ../include/primal_grid_structure.inl \
-  ../include/mpi_structure.hpp \
-  ../include/mpi_structure.inl \
-  ../include/datatype_structure.hpp \
-  ../include/datatype_structure.inl \
-  ../include/interpolation_structure.hpp \
-  ../include/fem_gauss_jacobi_quadrature.hpp \
-  ../include/fem_gauss_jacobi_quadrature.inl \
-  ../include/gauss_structure.hpp \
-  ../include/gauss_structure.inl \
-  ../include/element_structure.hpp \
-  ../include/element_structure.inl \
-  ../include/adt_structure.hpp \
-  ../include/adt_structure.inl \
-  ../include/wall_model.hpp \
-  ../include/wall_model.inl \
-  ../include/toolboxes/printing_toolbox.hpp \
-  ../include/toolboxes/CLinearPartitioner.hpp \
-  ../include/toolboxes/MMS/CVerificationSolution.hpp \
-  ../include/toolboxes/MMS/CVerificationSolution.inl \
-  ../include/toolboxes/MMS/CIncTGVSolution.hpp \
-  ../include/toolboxes/MMS/CInviscidVortexSolution.hpp \
-  ../include/toolboxes/MMS/CMMSIncEulerSolution.hpp \
-  ../include/toolboxes/MMS/CMMSIncNSSolution.hpp \
-  ../include/toolboxes/MMS/CMMSNSTwoHalfCirclesSolution.hpp \
-  ../include/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.hpp \
-  ../include/toolboxes/MMS/CMMSNSUnitQuadSolution.hpp \
-  ../include/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.hpp \
-  ../include/toolboxes/MMS/CNSUnitQuadSolution.hpp \
-  ../include/toolboxes/MMS/CRinglebSolution.hpp \
-  ../include/toolboxes/MMS/CTGVSolution.hpp \
-  ../include/toolboxes/MMS/CUserDefinedSolution.hpp \
-  ../include/linear_algebra/CSysVector.hpp \
-  ../include/linear_algebra/CSysMatrix.hpp \
-  ../include/linear_algebra/CSysMatrix.inl \
-  ../include/linear_algebra/CMatrixVectorProduct.hpp \
-  ../include/linear_algebra/CPreconditioner.inl \
-  ../include/linear_algebra/CSysSolve.hpp \
-  ../include/linear_algebra/CSysSolve_b.hpp \
   ../src/fem_cgns_elements.cpp \
-  ../src/config_structure.cpp \
+  ../src/CConfig.cpp \
   ../src/blas_structure.cpp \
-  ../src/dual_grid_structure.cpp \
   ../src/fem_geometry_structure.cpp \
   ../src/fem_integration_rules.cpp \
   ../src/fem_standard_element.cpp \
   ../src/fem_wall_distance.cpp \
   ../src/fem_work_estimate_metis.cpp \
-  ../src/geometry_structure.cpp \
   ../src/CMultiGridQueue.cpp \
-  ../src/CMeshReaderFVM.cpp \
-  ../src/CSU2ASCIIMeshReaderFVM.cpp \
-  ../src/CCGNSMeshReaderFVM.cpp \
-  ../src/CRectangularMeshReaderFVM.cpp \
-  ../src/CBoxMeshReaderFVM.cpp \
   ../src/geometry_structure_fem_part.cpp \
   ../src/graph_coloring_structure.cpp \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
-  ../src/primal_grid_structure.cpp \
   ../src/mpi_structure.cpp \
   ../src/ad_structure.cpp \
   ../src/fem_gauss_jacobi_quadrature.cpp \
-  ../src/gauss_structure.cpp \
-  ../src/element_structure.cpp \
-  ../src/element_linear.cpp \
+  ../src/geometry/CGeometry.cpp \
+  ../src/geometry/CPhysicalGeometry.cpp \
+  ../src/geometry/CMultiGridGeometry.cpp \
+  ../src/geometry/CDummyGeometry.cpp \
+  ../src/geometry/elements/CElement.cpp \
+  ../src/geometry/elements/CTRIA1.cpp \
+  ../src/geometry/elements/CQUAD4.cpp \
+  ../src/geometry/elements/CTETRA1.cpp \
+  ../src/geometry/elements/CPYRAM5.cpp \
+  ../src/geometry/elements/CPRISM6.cpp \
+  ../src/geometry/elements/CHEXA8.cpp \
+  ../src/geometry/meshreader/CMeshReaderFVM.cpp \
+  ../src/geometry/meshreader/CSU2ASCIIMeshReaderFVM.cpp \
+  ../src/geometry/meshreader/CCGNSMeshReaderFVM.cpp \
+  ../src/geometry/meshreader/CRectangularMeshReaderFVM.cpp \
+  ../src/geometry/meshreader/CBoxMeshReaderFVM.cpp \
+  ../src/geometry/dual_grid/CDualGrid.cpp \
+  ../src/geometry/dual_grid/CEdge.cpp \
+  ../src/geometry/dual_grid/CPoint.cpp \
+  ../src/geometry/dual_grid/CVertex.cpp \
+  ../src/geometry/dual_grid/CTurboVertex.cpp \
+  ../src/geometry/primal_grid/CPrimalGrid.cpp \
+  ../src/geometry/primal_grid/CPrimalGridFEM.cpp \
+  ../src/geometry/primal_grid/CPrimalGridBoundFEM.cpp \
+  ../src/geometry/primal_grid/CLine.cpp \
+  ../src/geometry/primal_grid/CTriangle.cpp \
+  ../src/geometry/primal_grid/CPrism.cpp \
+  ../src/geometry/primal_grid/CPyramid.cpp \
+  ../src/geometry/primal_grid/CHexahedron.cpp \
+  ../src/geometry/primal_grid/CTetrahedron.cpp \
+  ../src/geometry/primal_grid/CQuadrilateral.cpp \
+  ../src/geometry/primal_grid/CVertexMPI.cpp \
   ../src/interpolation_structure.cpp \
   ../src/adt_structure.cpp \
   ../src/wall_model.cpp \
   ../src/toolboxes/printing_toolbox.cpp \
-  ../src/toolboxes/signal_processing_toolbox.cpp \
   ../src/toolboxes/CLinearPartitioner.cpp \
   ../src/toolboxes/MMS/CVerificationSolution.cpp \
   ../src/toolboxes/MMS/CIncTGVSolution.cpp \

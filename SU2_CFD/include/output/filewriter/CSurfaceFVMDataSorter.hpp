@@ -1,25 +1,15 @@
 /*!
  * \file CSurfaceFVMDataSorter.hpp
- * \brief Headers fo the surface FVM data sorter class.
+ * \brief Headers for the surface FVM data sorter class.
  * \author T. Albring
- * \version 6.2.0 "Falcon"
+ * \version 7.0.1 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,59 +30,105 @@
 #include "CFVMDataSorter.hpp"
 
 class CSurfaceFVMDataSorter final: public CParallelDataSorter{
-  
-  CFVMDataSorter* volume_sorter;                    //!< Pointer to the volume sorter instance
-  //! Structure to map the local sorted point ID to the global point ID
-  map<unsigned long,unsigned long> Renumber2Global; 
+
+  CFVMDataSorter* volumeSorter;                    //!< Pointer to the volume sorter instance
+  map<unsigned long,unsigned long> Renumber2Global; //! Structure to map the local sorted point ID to the global point ID
 public:
-  
+
   /*!
-   * \brief Constructor
+   * \brief Construct a file writer using field names and the data sorter.
    * \param[in] config - Pointer to the current config structure
    * \param[in] geometry - Pointer to the current geometry
-   * \param[in] nFields - Number of output fields
-   * \param[in] volume_sorter - Pointer to the corresponding volume sorter instance
+   * \param[in] valVolumeSorter - The datasorter containing the volume data
    */
-  CSurfaceFVMDataSorter(CConfig *config, CGeometry* geometry, unsigned short nFields, CFVMDataSorter* volume_sorter);
-  
+  CSurfaceFVMDataSorter(CConfig *config, CGeometry* geometry, CFVMDataSorter* valVolumeSorter);
+
   /*!
    * \brief Destructor
    */
   ~CSurfaceFVMDataSorter() override;
-  
+
   /*!
    * \brief Sort the output data for each grid node into a linear partitioning across all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void SortOutputData() override;
-  
+
   /*!
-   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
+   * \brief Sort the connectivities on the surface into data structures used for output file writing.
+   *  All markers in MARKER_PLOTTING will be sorted.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] surf - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
+   * \param[in] val_sort - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
    */
   void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) override;
-  
+
+  /*!
+   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
+   * Only markers in the markerList argument will be sorted.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] markerList - List of markers to sort.
+   */
+  void SortConnectivity(CConfig *config, CGeometry *geometry, const vector<string> &markerList) override;
+
   /*!
    * \brief Get the global index of a point.
-   * \input iPoint - the point ID.
+   * \param[in] iPoint - the local renumbered point ID.
    * \return Global index of a specific point.
    */
-  unsigned long GetGlobalIndex(unsigned long iPoint)  override{
-    return Renumber2Global[iPoint]; 
+  unsigned long GetGlobalIndex(unsigned long iPoint) const override{
+    if (iPoint > nPoints)
+      SU2_MPI::Error(string("Local renumbered iPoint ID ") + to_string(iPoint) +
+                     string(" is larger than max number of nodes ") + to_string(nPoints), CURRENT_FUNCTION);
+
+    return Renumber2Global.at(iPoint);
+  }
+
+  /*!
+   * \brief Get the beginning global renumbered node ID of the linear partition owned by a specific processor.
+   * \param[in] rank - the processor rank.
+   * \return The beginning global renumbered node ID.
+   */
+  unsigned long GetNodeBegin(unsigned short rank) const override {
+    return nPoint_Recv[rank];
+  } 
+
+  /*!
+   * \brief Get the Processor ID a Point belongs to.
+   * \param[in] iPoint - global renumbered ID of the point
+   * \return The rank/processor number.
+   */
+  unsigned short FindProcessor(unsigned long iPoint) const override {
+
+    for (unsigned short iRank = 1; iRank < size; iRank++){
+      if (nPoint_Recv[iRank] > static_cast<int>(iPoint)){
+        return iRank - 1;
+      }
+    }
+    return size-1;
+  }
+
+  /*!
+   * \brief Get the cumulated number of points
+   * \input rank - the processor rank.
+   * \return The cumulated number of points up to certain processor rank.
+   */
+  unsigned long GetnPointCumulative(unsigned short rank) const override {
+    return GetNodeBegin(rank);
   }
   
-  
 private:
-  
+
   /*!
    * \brief Sort the connectivity for a single surface element type into a linear partitioning across all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
+   * \param[in] markerList - List of markers to sort
    */
-  void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type,
+                               const vector<string> &markerList);
 
 };

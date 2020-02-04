@@ -4,24 +4,14 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.1 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,7 +35,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "../../../Common/include/config_structure.hpp"
+#include "../../../Common/include/CConfig.hpp"
 #include "../fluid_model.hpp"
 #include "../../../Common/include/toolboxes/C2DContainer.hpp"
 
@@ -90,9 +80,14 @@ protected:
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
 
   MatrixType External;       /*!< \brief External (outer) contribution in discrete adjoint multizone problems. */
-  MatrixType External_Old;   /*!< \brief Old external (outer) contribution in discrete adjoint multizone problems. */
 
   su2vector<bool> Non_Physical;  /*!< \brief Non-physical points in the solution (force first order). */
+  su2vector<unsigned short>
+  Non_Physical_Counter;          /*!< \brief Number of consecutive iterations that a point has been treated first-order.
+                                  After a specified number of successful reconstructions, the point can be returned to second-order. */
+
+  VectorType UnderRelaxation;  /*!< \brief Value of the under-relxation parameter local to the control volume. */
+  VectorType LocalCFL;         /*!< \brief Value of the CFL number local to the control volume. */
 
   MatrixType Solution_time_n;    /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   MatrixType Solution_time_n1;   /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
@@ -126,8 +121,8 @@ protected:
   MatrixType Solution_Ref;       /*!< \brief Reference solution used for reduced order modeling. */
   MatrixType Solution_Red;       /*!< \brief Solution in reduced coordinates. */
 
-  su2matrix<int> Input_AdjIndices;    /*!< \brief Indices of Solution variables in the adjoint vector. */
-  su2matrix<int> Output_AdjIndices;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+  su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
   unsigned long nPoint = {0};  /*!< \brief Number of points in the domain. */
   unsigned long nDim = {0};      /*!< \brief Number of dimension of the problem. */
@@ -136,7 +131,7 @@ protected:
   unsigned long nPrimVarGrad = {0};    /*!< \brief Number of primitives for which a gradient is computed. */
   unsigned long nSecondaryVar = {0};     /*!< \brief Number of secondary variables. */
   unsigned long nSecondaryVarGrad = {0};   /*!< \brief Number of secondaries for which a gradient is computed. */
-  
+
 public:
 
   /*--- Disable default construction copy and assignment. ---*/
@@ -198,14 +193,24 @@ public:
    * \param[in] iPoint - Point index.
    * \param[in] value - identification of the non-physical point.
    */
-  inline void SetNon_Physical(unsigned long iPoint, bool value) { Non_Physical(iPoint) = !value; }
+  inline void SetNon_Physical(unsigned long iPoint, bool val_value) {
+    if (val_value) {
+      Non_Physical(iPoint) = val_value;
+      Non_Physical_Counter(iPoint) = 0;
+    } else {
+      Non_Physical_Counter(iPoint)++;
+      if (Non_Physical_Counter(iPoint) > 20) {
+        Non_Physical(iPoint) = val_value;
+      }
+    }
+  }
 
   /*!
-   * \brief Get the value of the non-physical point.
+   * \brief Get the value of the non-physical boolean at a point.
    * \param[in] iPoint - Point index.
    * \return Value of the Non-physical point.
    */
-  inline su2double GetNon_Physical(unsigned long iPoint) const { return su2double(Non_Physical(iPoint)); }
+  inline bool GetNon_Physical(unsigned long iPoint) { return Non_Physical(iPoint); }
 
   /*!
    * \brief Get the solution.
@@ -288,6 +293,7 @@ public:
 
   /*!
    * \brief Set the variable solution at time n.
+   * \param[in] iPoint - Point index.
    */
   inline void Set_Solution_time_n(unsigned long iPoint, unsigned long iVar, su2double val_sol) {
     Solution_time_n(iPoint,iVar) = val_sol;
@@ -295,6 +301,7 @@ public:
 
   /*!
    * \brief Set the variable solution at time n-1.
+   * \param[in] iPoint - Point index.
    */
   inline void Set_Solution_time_n1(unsigned long iPoint, unsigned long iVar, su2double val_sol) {
     Solution_time_n1(iPoint,iVar) = val_sol;
@@ -319,6 +326,7 @@ public:
 
   /*!
    * \brief Set to zero velocity components of the solution.
+   * \param[in] iPoint - Point index.
    */
   inline void SetVelSolutionOldZero(unsigned long iPoint) {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution_Old(iPoint, iDim+1) = 0.0;
@@ -426,8 +434,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_var - Number of the variable.
-   * \param[in] val_solution - Value that we want to add to the solution.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Number of the variable.
    * \param[in] solution - Value that we want to add to the solution.
@@ -441,15 +447,6 @@ public:
    */
   inline void Add_External(unsigned long iPoint, const su2double* val_sol) {
     for(unsigned long iVar = 0; iVar < nVar; iVar++) External(iPoint,iVar) += val_sol[iVar];
-  }
-
-  /*!
-   * \brief Add a valaue to the old External vector.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_solution - Value that we want to add to the solution.
-   */
-  inline void Add_ExternalOld(unsigned long iPoint, const su2double* val_sol) {
-    for(unsigned long iVar = 0; iVar < nVar; iVar++) External_Old(iPoint,iVar) += val_sol[iVar];
   }
 
   /*!
@@ -486,13 +483,21 @@ public:
   }
 
   /*!
+   * \brief Get the entire solution of the problem.
+   * \return Reference to the solution matrix.
+   */
+  inline const MatrixType& GetSolution(void) { return Solution; }
+
+  /*!
    * \brief Get the solution of the problem.
+   * \param[in] iPoint - Point index.
    * \return Pointer to the solution vector.
    */
   inline su2double *GetSolution(unsigned long iPoint) { return Solution[iPoint]; }
 
   /*!
    * \brief Get the old solution of the problem (Runge-Kutta method)
+   * \param[in] iPoint - Point index.
    * \return Pointer to the old solution vector.
    */
   inline su2double *GetSolution_Old(unsigned long iPoint) { return Solution_Old[iPoint]; }
@@ -503,22 +508,17 @@ public:
    * \return Pointer to the External row for iPoint.
    */
   inline const su2double *Get_External(unsigned long iPoint) const { return External[iPoint]; }
-  
-  /*!
-   * \brief Get the old external contributions of the problem.
-   * \param[in] iPoint - Point index.
-   * \return Pointer to the External_Old row for iPoint.
-   */
-  inline const su2double *Get_ExternalOld(unsigned long iPoint) const { return External_Old[iPoint]; }
 
   /*!
    * \brief Get the solution at time n.
+   * \param[in] iPoint - Point index.
    * \return Pointer to the solution (at time n) vector.
    */
   inline su2double *GetSolution_time_n(unsigned long iPoint) { return Solution_time_n[iPoint]; }
 
   /*!
    * \brief Get the solution at time n-1.
+   * \param[in] iPoint - Point index.
    * \return Pointer to the solution (at time n-1) vector.
    */
   inline su2double *GetSolution_time_n1(unsigned long iPoint) { return Solution_time_n1[iPoint]; }
@@ -579,6 +579,34 @@ public:
   }
 
   /*!
+   * \brief Set the value of the under-relaxation parameter for the current control volume (CV).
+   * \param[in] iPoint - Point index.
+   * \param[in] val_under_relaxation - the input value of the under-relaxation parameter for this CV.
+   */
+  inline void SetUnderRelaxation(unsigned long iPoint, su2double val_under_relaxation) { UnderRelaxation(iPoint) = val_under_relaxation; }
+
+  /*!
+   * \brief Get the value of the under-relaxation parameter for the current control volume (CV).
+   * \param[in] iPoint - Point index.
+   * \return Value of the under-relaxation parameter for this CV.
+   */
+  inline su2double GetUnderRelaxation(unsigned long iPoint) const { return UnderRelaxation(iPoint); }
+
+  /*!
+   * \brief Set the value of the local CFL number for the current control volume (CV).
+   * \param[in] iPoint - Point index.
+   * \param[in] val_cfl - the input value of the local CFL number for this CV.
+   */
+  inline void SetLocalCFL(unsigned long iPoint, su2double val_cfl) { LocalCFL(iPoint) = val_cfl; }
+
+  /*!
+   * \brief Get the value of the local CFL number for the current control volume (CV).
+   * \param[in] iPoint - Point index.
+   * \return Value of the local CFL number for this CV.
+   */
+  inline su2double GetLocalCFL(unsigned long iPoint) const { return LocalCFL(iPoint); }
+
+  /*!
    * \brief Set auxiliar variables, we are looking for the gradient of that variable.
    * \param[in] iPoint - Point index.
    * \param[in] val_auxvar - Value of the auxiliar variable.
@@ -593,9 +621,12 @@ public:
   inline su2double GetAuxVar(unsigned long iPoint) const { return AuxVar(iPoint); }
 
   /*!
-   * \brief Set the auxiliary variable gradient to zero value.
+   * \brief Get the auxiliary variable.
+   * \return 2D view of the auxiliary variable.
    */
-  void SetAuxVarGradientZero();
+  inline C2DDummyLastView<const VectorType> GetAuxVar(void) const {
+    return C2DDummyLastView<const VectorType>(AuxVar);
+  }
 
   /*!
    * \brief Set the value of the auxiliary variable gradient.
@@ -614,19 +645,19 @@ public:
   inline void AddAuxVarGradient(unsigned long iPoint, unsigned long iDim, su2double val_value) { Grad_AuxVar(iPoint,iDim) += val_value;}
 
   /*!
-   * \brief Subtract a value to the auxiliary variable gradient.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient to be subtracted for the index <i>iDim</i>.
-   */
-  inline void SubtractAuxVarGradient(unsigned long iPoint, unsigned long iDim, su2double val_value) { Grad_AuxVar(iPoint,iDim) -= val_value; }
-
-  /*!
    * \brief Get the gradient of the auxiliary variable.
    * \param[in] iPoint - Point index.
    * \return Value of the gradient of the auxiliary variable.
    */
   inline su2double *GetAuxVarGradient(unsigned long iPoint) { return Grad_AuxVar[iPoint]; }
+
+  /*!
+   * \brief Get the gradient of the auxiliary variable.
+   * \return 3D view of the gradient of the auxiliary variable.
+   */
+  inline C3DDummyMiddleView<MatrixType> GetAuxVarGradient() {
+    return C3DDummyMiddleView<MatrixType>(Grad_AuxVar);
+  }
 
   /*!
    * \brief Get the gradient of the auxiliary variable.
@@ -722,11 +753,6 @@ public:
   inline void SetGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) = value; }
 
   /*!
-   * \brief Set to zero the gradient of the solution.
-   */
-  void SetGradientZero();
-
-  /*!
    * \brief Add <i>value</i> to the solution gradient.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
@@ -736,13 +762,10 @@ public:
   inline void AddGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) += value; }
 
   /*!
-   * \brief Subtract <i>value</i> to the solution gradient.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to subtract to the solution gradient.
+   * \brief Get the gradient of the entire solution.
+   * \return Reference to gradient.
    */
-  inline void SubtractGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) -= value; }
+  inline VectorOfMatrix& GetGradient(void) { return Gradient; }
 
   /*!
    * \brief Get the value of the solution gradient.
@@ -759,20 +782,6 @@ public:
    * \return Value of the solution gradient.
    */
   inline su2double GetGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return Gradient(iPoint,iVar,iDim); }
-
-  /*!
-   * \brief Set the value of an entry in the Rmatrix for least squares gradient calculations.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] jDim - Index of the dimension.
-   * \param[in] value - Value of the Rmatrix entry.
-   */
-  inline void SetRmatrix(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { Rmatrix(iPoint,iDim,jDim) = value; }
-
-  /*!
-   * \brief Set to zero the Rmatrix for least squares gradient calculations.
-   */
-  void SetRmatrixZero();
 
   /*!
    * \brief Add <i>value</i> to the Rmatrix for least squares gradient calculations.
@@ -798,6 +807,12 @@ public:
    * \return Value of the Rmatrix entry.
    */
   inline su2double **GetRmatrix(unsigned long iPoint) { return Rmatrix[iPoint]; }
+
+  /*!
+   * \brief Get the value Rmatrix for the entire domain.
+   * \return Reference to the Rmatrix.
+   */
+  inline VectorOfMatrix& GetRmatrix(void) { return Rmatrix; }
 
   /*!
    * \brief Set the value of the limiter.
@@ -841,6 +856,12 @@ public:
   inline void SetSolution_Min(unsigned long iPoint, unsigned long iVar, su2double solution) { Solution_Min(iPoint,iVar) = solution; }
 
   /*!
+   * \brief Get the slope limiter.
+   * \return Reference to the limiters vector.
+   */
+  inline MatrixType& GetLimiter(void) { return Limiter; }
+
+  /*!
    * \brief Get the value of the slope limiter.
    * \param[in] iPoint - Point index.
    * \return Pointer to the limiters vector.
@@ -864,6 +885,12 @@ public:
   inline su2double GetSolution_Max(unsigned long iPoint, unsigned long iVar) const { return Solution_Max(iPoint,iVar); }
 
   /*!
+   * \brief Get the min solution.
+   * \return Value of the min solution for the domain.
+   */
+  inline MatrixType& GetSolution_Max(void) { return Solution_Max; }
+
+  /*!
    * \brief Set the value of the preconditioner Beta.
    * \param[in] val_Beta - Value of the low Mach preconditioner variable Beta
    * \param[in] iPoint - Point index.
@@ -871,6 +898,12 @@ public:
    * \return Value of the min solution for the variable <i>iVar</i>.
    */
   inline su2double GetSolution_Min(unsigned long iPoint, unsigned long iVar) const { return Solution_Min(iPoint,iVar); }
+
+  /*!
+   * \brief Get the min solution.
+   * \return Value of the min solution for the domain.
+   */
+  inline MatrixType& GetSolution_Min(void) { return Solution_Min; }
 
   /*!
    * \brief Get the value of the wind gust
@@ -888,6 +921,7 @@ public:
 
   /*!
    * \brief Get the value of the derivatives of the wind gust
+   * \param[in] iPoint - Point index.
    * \return Value of the derivatives of the wind gust
    */
   inline virtual su2double* GetWindGustDer(unsigned long iPoint) { return nullptr;}
@@ -1744,7 +1778,7 @@ public:
    * \brief A virtual member.
 
    */
-  inline virtual su2double *GetStress_FEM(unsigned long iPoint) {return nullptr;}
+  inline virtual const su2double *GetStress_FEM(unsigned long iPoint) const {return nullptr;}
 
   /*!
    * \brief A virtual member.
@@ -1900,24 +1934,11 @@ public:
 
   /*!
    * \brief A virtual member.
-   */
-  virtual void SetGradient_PrimitiveZero() {}
-
-  /*!
-   * \brief A virtual member.
    * \param[in] iVar - Index of the variable.
    * \param[in] iDim - Index of the dimension.
    * \param[in] val_value - Value to add to the gradient of the primitive variables.
    */
   inline virtual void AddGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double val_value) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
-   */
-  inline virtual void SubtractGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double val_value) {}
 
   /*!
    * \brief A virtual member.
@@ -1960,6 +1981,34 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double *GetLimiter_Primitive(unsigned long iPoint) { return nullptr; }
+
+  /*!
+   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \return Value of the primitive variables gradient.
+   */
+  inline virtual su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the primitive gradient for MUSCL reconstruction.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \param[in] val_value - Value of the gradient.
+   */
+  inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim, su2double val_value) {}
+
+  /*!
+   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
+   * \return Value of the primitive gradient for MUSCL reconstruction.
+   */
+  inline virtual su2double **GetGradient_Reconstruction(unsigned long iPoint) { return nullptr; }
+
+  /*!
+   * \brief Get the reconstruction gradient for primitive variable at all points.
+   * \return Reference to variable reconstruction gradient.
+   */
+  inline virtual VectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
@@ -2130,7 +2179,12 @@ public:
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
   virtual void Set_BGSSolution_k();
-  
+
+  /*!
+   * \brief Restore the previous BGS subiteration to solution.
+   */
+  void Restore_BGSSolution_k();
+
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
@@ -2594,20 +2648,9 @@ public:
   /*!
    * \brief Register the variables in the solution array as input/output variable.
    * \param[in] input - input or output variables.
+   * \param[in] push_index - boolean whether we want to push the index or save it in a member variable.
    */
-  void RegisterSolution(bool input);
-
-  /*!
-   * \brief Register the variables in the solution array as input/output variable.
-   * \param[in] input - input or output variables.
-   */
-  void RegisterSolution_intIndexBased(bool input);
-
-  /*!
-   * \brief Saving the adjoint vector position with respect to the solution variables.
-   * \param[in] input - input or output variables.
-   */
-  void SetAdjIndices(bool input);
+  void RegisterSolution(bool input, bool push_index = true);
 
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
@@ -2632,9 +2675,9 @@ public:
    * \brief Set the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
-  inline void SetAdjointSolution_intIndexBased(unsigned long iPoint, const su2double *adj_sol) {
+  inline void SetAdjointSolution_LocalIndex(unsigned long iPoint, const su2double *adj_sol) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      AD::SetDerivative(Output_AdjIndices(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
+      AD::SetDerivative(AD_OutputIndex(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
   }
 
   /*!
@@ -2650,9 +2693,9 @@ public:
    * \brief Get the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
-  inline void GetAdjointSolution_intIndexBased(unsigned long iPoint, su2double *adj_sol) const {
+  inline void GetAdjointSolution_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      adj_sol[iVar] = AD::GetDerivative(Input_AdjIndices(iPoint,iVar));
+      adj_sol[iVar] = AD::GetDerivative(AD_InputIndex(iPoint,iVar));
   }
 
   /*!
