@@ -194,13 +194,16 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
    * the off-diagonal entries and then setting the diagonal ones as the sum of column
    * (excluding the diagonal itself). We use the fact that the pattern is symmetric. ---*/
 
-  col_ptr.resize(nnz, nullptr);
+  if ((geometry->GetMGLevel() != MESH_0) && (omp_get_max_threads() > 1)) {
 
-  SU2_OMP_PARALLEL_(for schedule(static,omp_heavy_size))
-  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-    for (auto k = row_ptr[iPoint]; k < row_ptr[iPoint+1]; ++k) {
-      auto jPoint = col_ind[k];
-      col_ptr[k] = GetBlock(jPoint, iPoint);
+    col_ptr.resize(nnz, nullptr);
+
+    SU2_OMP_PARALLEL_(for schedule(static,omp_heavy_size))
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      for (auto k = row_ptr[iPoint]; k < row_ptr[iPoint+1]; ++k) {
+        auto jPoint = col_ind[k];
+        col_ptr[k] = GetBlock(jPoint, iPoint);
+      }
     }
   }
 
