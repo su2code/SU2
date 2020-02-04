@@ -2620,6 +2620,7 @@ protected:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
   bool dynamic_grid;               /*!< \brief Consider grid movement. */
   bool implicit;                   /*!< \brief Implicit calculation (compute Jacobians). */
+  bool rom;                        /*!< \brief Reduced order model calculation. */
   su2double fix_factor;            /*!< \brief Fix factor for dissipation Jacobians (more diagonal dominance). */
 
   su2double *Velocity_i, *Velocity_j, *MeanVelocity; /*!< \brief Velocity at nodes i and j and mean. */

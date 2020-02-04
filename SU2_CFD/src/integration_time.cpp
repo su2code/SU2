@@ -109,6 +109,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   
   unsigned short iPreSmooth, iPostSmooth, iRKStep, iRKLimit = 1;
     unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+  bool rom = config[iZone]->GetReduced_Model();
   
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
   

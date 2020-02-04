@@ -468,6 +468,7 @@ static const MapType<string, ENUM_MATH_PROBLEM> Math_Problem_Map = {
   MakePair("DIRECT", DIRECT)
   MakePair("CONTINUOUS_ADJOINT", CONTINUOUS_ADJOINT)
   MakePair("DISCRETE_ADJOINT", DISCRETE_ADJOINT)
+  MakePair("ROM", ROM)
 };
 
 /*!

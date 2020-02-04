@@ -518,6 +518,27 @@ public:
   }
 
   /*!
+   * \brief Adds the specified block to the sparse matrix.
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \param[in] *val_block - Block to add to A(i, j).
+   */
+  template<class OtherType>
+  inline void AddBlock(unsigned long block_i, unsigned long block_j, OtherType *val_block) {
+
+    unsigned long iVar, jVar, index;
+
+    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+      if (col_ind[index] == block_j) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nEqn; jVar++)
+            matrix[index*nVar*nEqn+iVar*nEqn+jVar] += PassiveAssign<ScalarType,OtherType>(val_block[iVar*nVar+jVar]);
+        break;
+      }
+    }
+  }
+
+  /*!
    * \brief Subtracts the specified block to the sparse matrix.
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.

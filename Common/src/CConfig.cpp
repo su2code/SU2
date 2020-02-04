@@ -1137,7 +1137,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, MZ_BLOCK_GAUSS_SEIDEL);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
+  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false, Reduced_Model, false);
   /*!\brief FULL_TAPE \n DESCRIPTION: Use full (coupled) tapes for multiphysics discrete adjoint. \ingroup Config*/
   addBoolOption("FULL_TAPE", FullTape, YES);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
@@ -1951,6 +1951,16 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Automatically reorient elements that seem flipped */
   addBoolOption("REORIENT_ELEMENTS",ReorientElements, true);
 
+  /*!\par CONFIG_CATEGORY: Reduced Order Modelling specific variables  \ingroup Config */
+  /*--- Options related to reduced order modelling ---*/
+  
+  /*!\brief ROM_TESTBASIS_FILENAME\n DESCRIPTION: ROM test basis input file. \ingroup Config*/
+  addStringOption("ROM_TESTBASIS_FILENAME", Rom_FileName, string("pod.txt"));
+  /*!\brief INITIAL_SNAPSHOT_FILENAME\n DESCRIPTION: ROM initial snapshot input file. \ingroup Config*/
+  addStringOption("INITIAL_SNAPSHOT_FILENAME", Init_Snapshot_FileName, string("init_snapshot.csv"));
+  /*!\brief REF_SNAPSHOT_FILENAME\n DESCRIPTION: ROM reference snapshot input file. \ingroup Config*/
+  addStringOption("REF_SNAPSHOT_FILENAME", Ref_Snapshot_FileName, string("ref_snapshot.csv"));
+  
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
 
@@ -5657,7 +5667,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (fea) cout << "No restart solution, initialize from undeformed configuration." << endl;
         else cout << "No restart solution, use the values at infinity (freestream)." << endl;
     }
-
+    
+    if (Reduced_Model) {
+      cout << "Reduced order model definitions:" << endl;
+      cout << "   Test basis file name:         " << Rom_FileName << "." << endl;
+      cout << "   Inital solution file name:    " << Ref_Snapshot_FileName << "." << endl;
+      cout << "   Reference solution file name: " << Init_Snapshot_FileName << "." << endl;
+    }
+    
     if (ContinuousAdjoint)
       cout << "Read flow solution from: " << Solution_FileName << "." << endl;
 

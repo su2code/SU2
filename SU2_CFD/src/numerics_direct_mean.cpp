@@ -36,7 +36,8 @@ CCentBase_Flow::CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar,
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
   fix_factor = config->GetCent_Jac_Fix_Factor();
-
+  rom = config->GetReduced_Model();
+  
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
 
@@ -118,7 +119,7 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
 
-  if (implicit) {
+  if (implicit or rom) {
     GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
@@ -134,7 +135,7 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
 
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] -= ProjGridVel * 0.5*(U_i[iVar] + U_j[iVar]);
-      if (implicit) {
+      if (implicit or rom) {
         val_Jacobian_i[iVar][iVar] -= 0.5*ProjGridVel;
         val_Jacobian_j[iVar][iVar] -= 0.5*ProjGridVel;
       }

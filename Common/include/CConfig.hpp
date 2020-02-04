@@ -112,6 +112,7 @@ private:
   su2double Opt_LineSearch_Bound; /*!< \brief Bounds for the line search. */
   su2double StartTime;
   bool ContinuousAdjoint,   /*!< \brief Flag to know if the code is solving an adjoint problem. */
+  Reduced_Model,            /*!< \brief Flag to know if code is computing a reduced order model. */
   Viscous,                  /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,                /*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   Engine,                   /*!< \brief Flag to know if the code is going to compute a problem with engine. */
@@ -756,6 +757,9 @@ private:
   Solution_FileName,             /*!< \brief Flow solution input file. */
   Solution_LinFileName,          /*!< \brief Linearized flow solution input file. */
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
+  Rom_FileName,                  /*!< \brief POD modes input file for reduced order model computation. */
+  Init_Snapshot_FileName,        /*!< \brief Initial snapshot filename for reduced order model computation. */
+  Ref_Snapshot_FileName,         /*!< \brief Reference snapshot filename for reduced order model computation. */
   Volume_FileName,               /*!< \brief Flow variables output file. */
   Residual_FileName,             /*!< \brief Residual variables output file. */
   Conv_FileName,                 /*!< \brief Convergence history output file. */
@@ -1202,7 +1206,8 @@ private:
 
   void addMathProblemOption(const string name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
                             bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
-                            bool & Restart_Flow, const bool & Restart_Flow_default);
+                            bool & Restart_Flow, const bool & Restart_Flow_default,
+                            bool & Reduced_Model, const bool & Reduced_Model_default);
 
   void addDVParamOption(const string name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag,
                         unsigned short* & design_variable);
@@ -5239,8 +5244,29 @@ public:
    * \return Name of the file with the solution of the adjoint flow problem with
    *         drag objective function.
    */
-  string GetSolution_AdjFileName(void) const { return Solution_AdjFileName; }
-
+  string GetSolution_AdjFileName(void);
+  
+  /*!
+   * \brief Get the name of the file with the POD modes for the reduced order model
+   *      problem.
+   * \return Name of the file with the POD modes found externally.
+   */
+  string GetRom_FileName(void);
+  
+  /*!
+   * \brief Get the name of the file with the reference snapshot for the reduced order
+   *      model problem.
+   * \return Name of the file with the POD modes found externally.
+   */
+  string GetRef_Snapshot_FileName(void);
+  
+  /*!
+   * \brief Get the name of the file with the initial snapshot for the reduced order
+   *      model problem.
+   * \return Name of the file with the POD modes found externally.
+   */
+  string GetInit_Snapshot_FileName(void);
+  
   /*!
    * \brief Get the name of the file with the residual of the problem.
    * \return Name of the file with the residual of the problem.
@@ -6046,6 +6072,12 @@ public:
    */
   bool GetContinuous_Adjoint(void) const { return ContinuousAdjoint; }
 
+  /*!
+   * \brief Determines if problem is a reduced order modelling problem
+   * \return true if ROM
+   */
+  bool GetReduced_Model(void);
+  
   /*!
    * \brief Determines if problem is viscous
    * \return true if Viscous

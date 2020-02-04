@@ -1097,7 +1097,8 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
       spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
       template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
       fem_dg_flow, fem_dg_shock_persson,
-      e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+      e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras,
+      rom;
 
   /*--- Count the number of DOFs per solution point. ---*/
 

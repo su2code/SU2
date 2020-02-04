@@ -32,6 +32,25 @@
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
 
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <Accelerate/Accelerate.h>
+#include <chrono>
+
+//extern "C" void dgels_(char*, int*, int*, int*, passivedouble*, int*, passivedouble*,
+//                       int*, passivedouble*, int*, int*);
+/* Prototypes for Lapack functions, if MKL or LAPACK is used. */
+//#if defined (HAVE_MKL) || defined(HAVE_LAPACK)
+//extern "C" void dgeqrf_(int*, int*, passivedouble*, int*, passivedouble*,
+//                       passivedouble*, int*, int*);
+//
+//extern "C" void dormqr_(char*, char*, const int*, const int*, const int*,
+//                        const passivedouble*, const int*, const passivedouble*, const passivedouble*,
+//                        const int*, const passivedouble*, const int*, const int*);
+//#endif
+
 CEulerSolver::CEulerSolver(void) : CSolver() {
 
   /*--- Basic array initialization ---*/
@@ -822,7 +841,14 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
 
   }
-
+  
+  /*---- Initialize ROM specific variables. ----*/
+  
+  if (config->GetReduced_Model() && (TrialBasis.size() == 0)) {
+    Mask_Selection(nPoint, nPointDomain, nVar, geometry, config);
+    SetROM_Variables(nPoint, nPointDomain, nVar, geometry, config);
+  }
+  
   /*--- Initialize the BGS residuals in FSI problems. ---*/
   if (fsi || multizone){
     Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 1.0;
@@ -2970,6 +2996,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool rom              = config->GetReduced_Model();
   bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
   bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
@@ -3051,8 +3078,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Initialize the Jacobian matrices ---*/
 
-  if (implicit && !disc_adjoint) Jacobian.SetValZero();
-
   /*--- Error message ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
@@ -3092,6 +3117,173 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
 
   return nonPhysicalPoints;
 }
+
+// TODO: Put this function and next in more general location
+void CEulerSolver::Mask_Selection(unsigned long nPoint, unsigned long nPointDomain,
+unsigned short nVar, CGeometry *geometry, CConfig *config) {
+  auto t_start = std::chrono::high_resolution_clock::now();
+  // This function selects the masks E and E' using the Phi matrix and mesh data
+  
+  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+  
+  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
+  //int desired_nodes = 500; //TODO: create config file option
+  ifstream in_phi(phi_filename);
+  std::vector<std::vector<double>> Phi;
+  int firstrun = 0;
+  
+  if (in_phi) {
+    std::string line;
+    
+    while (getline(in_phi, line)) {
+      stringstream sep(line);
+      string field;
+      int s = 0;
+      while (getline(sep, field, ',')) {
+        if (firstrun == 0) Phi.push_back({});
+        Phi[s].push_back(stod(field)); // Phi[0] is 1st snapshot
+        s++;
+      }
+      firstrun++;
+    }
+  }
+  //unsigned long nsnaps = Phi.size();
+  unsigned long N = Phi[0].size();
+  //unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil
+  //unsigned long i, j, k;
+  //
+  //const auto nodewithMax = std::max_element(Phi[0].begin(), Phi[0].end());
+  
+  //for (i = 0; i < nsnaps; i++) {
+  //
+  //  std::vector<std::vector<double>> U;
+  //  for (j = 0; j < i; j++) {
+  //    U.push_back(Phi[j]);
+  //  }
+  //
+  //  for (k = 0; k < nodestoAdd; k++) {
+  //    masked_Phi =
+  //  }
+  //
+  //}
+  
+  // set mask to all nodes for now
+  for (unsigned long i = 0; i < N; i++) {
+    Mask.push_back(i);
+    MaskNeighbors.push_back(i);
+  }
+  
+  auto t_end = std::chrono::high_resolution_clock::now();
+  double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+  std::cout << "Mask selection for ROM completed in " << elapsed_time_ms/1000.0 << " seconds." << std::endl;
+}
+
+void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
+                                    unsigned short nVar, CGeometry *geometry, CConfig *config) {
+  // Explanation of certain ROM-specific variables:
+  // TrialBasis   ...POD-built reduced basis, Phi
+  // GenCoordsY   ...generalized coordinate vector, y
+  // Solution_Ref ...reference solution, w, typically a snapshot
+  
+  std::cout << "Setting up ROM variables" << std::endl;
+  
+  /*--- Read data from the following three files: ---*/
+  
+  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
+  string ref_filename  = config->GetRef_Snapshot_FileName();
+  string init_filename = config->GetInit_Snapshot_FileName();
+  
+  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+  
+  ifstream in_phi(phi_filename);
+  int s = 0;
+  
+  if (in_phi) {
+    std::string line;
+    
+    while (getline(in_phi, line)) {
+      stringstream sep(line);
+      string field;
+      TrialBasis.push_back({});
+      while (getline(sep, field, ',')) {
+        TrialBasis[s].push_back(stod(field));
+      }
+      s++;
+    }
+  }
+  
+  unsigned long nsnaps = TrialBasis[0].size();
+  unsigned long iPoint, i;
+  double *ref_sol = new double[nPointDomain * nVar]();
+  double *init_sol = new double[nPointDomain * nVar]();
+  
+  /*--- Reference Solution (read from file) ---*/
+  
+  ifstream in_ref(ref_filename);
+  s = 0;
+  
+  if (in_ref) {
+    std::string line;
+    
+    while (getline(in_ref, line)) {
+      stringstream sep(line);
+      string field;
+      while (getline(sep, field, ',')) {
+        ref_sol[s] = stod(field);
+        s++;
+      }
+    }
+  }
+  
+  /*--- Initial Solution (read from file) ---*/
+  
+  ifstream in_init(init_filename);
+  s = 0;
+  
+  if (in_init) {
+    std::string line;
+    
+    while (getline(in_init, line)) {
+      stringstream sep(line);
+      string field;
+      while (getline(sep, field, ',')) {
+        init_sol[s] = stod(field);
+        s++;
+      }
+    }
+  }
+  
+  /*--- Use reference solution from file to overwrite the solution and solution_old ---*/
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    su2double node_sol[nVar];
+    
+    for (unsigned long iVar = 0; iVar < nVar; iVar++){
+      node_sol[iVar] = ref_sol[iVar + iPoint*nVar];
+      nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+      nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+    }
+    
+    nodes->Set_RefSolution(iPoint, &node_sol[0]);
+  }
+  
+  
+  /*--- Compute initial generalized coordinates solution, y0 = Phi^T * (w0 - w_ref) ---*/
+  
+  for (i = 0; i < nsnaps; i++) {
+    double sum = 0.0;
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        sum += TrialBasis[iPoint*nVar + iVar][i] * (init_sol[iVar + iPoint*nVar] - nodes->Get_RefSolution(iPoint, iVar));
+      }
+    }
+    GenCoordsY.push_back(sum);
+  }
+  
+  delete[] ref_sol;
+  delete[] init_sol;
+}
+
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
 
@@ -3333,8 +3525,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     LinSysRes.SubtractBlock(jPoint, Res_Conv);
 
     /*--- Set implicit computation ---*/
-    if (implicit) {
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
+
     }
   }
 
@@ -5081,7 +5272,8 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     if (!adjoint) {
       for (iVar = 0; iVar < nVar; iVar++) {
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
-        nodes->AddSolution(iPoint,iVar, -Res*Delta);
+        
+        nodes->AddSolution(iPoint, iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
@@ -5102,6 +5294,189 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   ComputeVerificationError(geometry, config);
 
+}
+
+void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  unsigned short iVar, jVar;
+  unsigned long iPoint, kNeigh, kPoint, jPoint;
+  su2double *local_Residual, *local_Res_TruncError, Res;
+  
+  int m = (int)nPointDomain * nVar;
+  int n = (int)TrialBasis[0].size();
+  
+  su2double* prod = new su2double[nVar];
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+  
+  /*--- Compute Test Basis: W = J * Phi ---*/
+  
+  vector<double> TestBasis2(m*n, 0.0);
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (kNeigh = 0; kNeigh < geometry->node[iPoint]->GetnPoint(); kNeigh++) {
+      kPoint = geometry->node[iPoint]->GetPoint(kNeigh);
+      for (jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
+        
+        su2double* mat_i = Jacobian.GetBlock(iPoint, kPoint);
+        
+        // format phi matrix into su2double*
+        su2double phi[nVar];
+        for (unsigned long i = 0; i < nVar; i++){
+          phi[i] = TrialBasis[kPoint*nVar + i][jPoint];
+        }
+        
+        // TODO: try .MatrixVectorProduct(vec,prod,geometry,config) function for speed
+        for (iVar = 0; iVar < nVar; iVar++) {
+          prod[iVar] = 0.0;
+          for (jVar = 0; jVar < nVar; jVar++) {
+            prod[iVar] += mat_i[iVar*nVar+jVar] * phi[jVar];
+          }
+        }
+        
+        for (unsigned long i = 0; i < nVar; i++){ // column order
+          TestBasis2[jPoint*m + iPoint*nVar + i] += prod[i];
+        }
+        
+        // Jacobian is defined for (iPoint, k=iPoint) but won't be listed as a neighbor
+        if (kNeigh == 0) {
+          unsigned long k = iPoint;
+          su2double* mat = Jacobian.GetBlock(iPoint, k);
+          
+          // format phi matrix into su2double*
+          su2double phi[nVar];
+          for (unsigned long i = 0; i < nVar; i++){
+            phi[i] = TrialBasis[k*nVar + i][jPoint];
+          }
+          
+          for (iVar = 0; iVar < nVar; iVar++) {
+            prod[iVar] = 0.0;
+            for (jVar = 0; jVar < nVar; jVar++) {
+              prod[iVar] += mat[iVar*nVar+jVar] * phi[jVar];
+            }
+          }
+          
+          for (unsigned long i = 0; i < nVar; i++){
+            TestBasis2[jPoint*m + iPoint*nVar + i] += prod[i];
+          }
+        }
+      }
+    }
+  }
+  
+  
+  // Set up variables for QR decomposition, A = QR
+  char TRANS = 'N';
+  int NRHS = 1;
+  int LWORK = n+n;
+  vector<double> WORK(LWORK,0.0);
+  int INFO = 1;
+  
+  vector<double> r(m,0.0);
+  //for (int i=0; i < m; i++){
+  //  r[i] = LinSysRes[i];
+  //}
+  int index = 0;
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    //local_Res_TruncError = nodes->GetResTruncError(iPoint);
+    local_Residual = LinSysRes.GetBlock(iPoint);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      r[index] = local_Residual[iVar];// + local_Res_TruncError[iVar];
+      index++;
+    }
+  }
+  
+
+  if (true) {
+    ofstream fs;
+    std::string fname = "check_testbasis.csv";
+    fs.open(fname);
+    for(int i=0; i < m; i++){
+      for(int j=0; j < n; j++){
+        fs << TestBasis2[i +j*m] << "," ;
+        TestBasis2[i +j*m] = TestBasis2[i +j*m] * (-1.0);
+      }
+      fs << "\n";
+    }
+    fs.close();
+    
+    std::string fname2 = "check_residual.csv";
+    fs.open(fname2);
+    for(int i=0; i < m; i++){
+      fs << r[i] << "\n" ;
+    }
+    fs.close();
+  }
+  
+  // Compute least-squares solution using QR decomposition
+  // https://johnwlambert.github.io/least-squares/
+  // http://www.netlib.org/lapack/explore-html/d7/d3b/group__double_g_esolve_ga225c8efde208eaf246882df48e590eac.html
+//#if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
+    int info2;
+  info2 = dgels_(&TRANS, &m, &n, &NRHS, TestBasis2.data(), &m, r.data(), &m, WORK.data(), &LWORK, &INFO);
+//#endif
+
+  if (INFO < 0) std::cout << "Unsucsessful exit of least-squares for ROM" << std::endl;
+  
+  ofstream fs;
+  std::string fname3 = "check_LS_solution.csv";
+  fs.open(fname3);
+  for(int i=0; i < m; i++){
+    fs << r[i] << "\n" ;
+  }
+  fs.close();
+  
+  // backtracking line search to find step size:
+  double a =  0.1;
+  
+  for (int i = 0; i < n; i++) {
+    GenCoordsY[i] += a * r[i];
+  }
+  
+  std::string fname4 = "check_red_coords_y.csv";
+  fs.open(fname4);
+  for(int i=0; i < n; i++){
+    fs << GenCoordsY[i] << "\n" ;
+  }
+  fs.close();
+  
+  delete [] prod;
+  
+  /*--- Update solution ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    local_Res_TruncError = nodes->GetResTruncError(iPoint);
+    local_Residual = LinSysRes.GetBlock(iPoint);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      su2double sum = 0.0;
+      Res = local_Residual[iVar] + local_Res_TruncError[iVar];
+      
+      for (unsigned long i = 0; i < TrialBasis[0].size(); i++) {
+        sum += TrialBasis[iPoint*nVar + iVar][i] * GenCoordsY[i];
+      }
+      nodes->AddROMSolution(iPoint, iVar, sum);
+      AddRes_RMS(iVar, Res*Res);
+      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+    }
+  }
+
+  /*--- MPI solution ---*/
+  
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+  
+  /*--- Compute the root mean square residual ---*/
+  
+  SetResidual_RMS(geometry, config);
+  
+  /*--- For verification cases, compute the global error metrics. ---*/
+  
+  ComputeVerificationError(geometry, config);
 }
 
 void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -5191,8 +5566,6 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- The the number of iterations of the linear solver ---*/
 
   SetIterLinSolver(IterLinSol);
-
-  ComputeUnderRelaxationFactor(solver_container, config);
 
   /*--- Update solution (system written in terms of increments) ---*/
 
