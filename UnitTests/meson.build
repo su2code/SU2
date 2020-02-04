@@ -12,22 +12,23 @@ unit_test_files = su2_cfd_tests + files(['test_driver.cpp'])
 # always compile the tests. Changing the behavior is an an open issue /
 # pull request on the meson Github.
 
-if get_option('enable-normal')
-  test_driver = executable(
-      'test_driver',
-      unit_test_files,
-      install : false,
-      dependencies : [su2_cfd_dep, common_dep, su2_deps, catch2_dep],
-      cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
-  )
-test('Catch2 test driver', test_driver)
-endif
+if get_option('enable-tests')
+  if get_option('enable-normal')
+    test_driver = executable(
+        'test_driver',
+        unit_test_files,
+        install : true,
+        dependencies : [su2_cfd_dep, common_dep, su2_deps, catch2_dep],
+        cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
+    )
+  test('Catch2 test driver', test_driver)
+  endif
 
-if get_option('enable-autodiff')
-  # TODO: Add support for autodiff unit tests
-endif
+  if get_option('enable-autodiff')
+    # TODO: Add support for autodiff unit tests
+  endif
 
-if get_option('enable-directdiff')
-  # TODO: Add support for autodiff unit tests
+  if get_option('enable-directdiff')
+    # TODO: Add support for autodiff unit tests
+  endif
 endif
-
