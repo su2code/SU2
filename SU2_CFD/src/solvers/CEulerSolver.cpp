@@ -416,7 +416,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   SetBaseClassPointerToNodes();
 
 #ifdef HAVE_OMP
-  /*--- Get the edge coloring. ---*/
+  /*--- On the fine grid get the edge coloring, on coarse grids (which are difficult to color)
+   *    setup the reducer strategy, i.e. one loop over edges followed by a point loop to sum
+   *    the fluxes for each cell and set the diagonal of the system matrix. ---*/
 
   const auto& coloring = geometry->GetEdgeColoring();
 
@@ -430,6 +432,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
   }
   ColorGroupSize = geometry->GetEdgeColorGroupSize();
+
+  if (MGLevel != MESH_0) {
+    EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+  }
 
   omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
 #endif
@@ -2945,15 +2951,52 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Update convective and artificial dissipation residuals ---*/
 
-    LinSysRes.AddBlock(iPoint, residual);
-    LinSysRes.SubtractBlock(jPoint, residual);
-
-    /*--- Set implicit computation ---*/
-    if (implicit) {
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+#ifdef HAVE_OMP
+    if (MGLevel != MESH_0) {
+      EdgeFluxes.SetBlock(iEdge, residual);
+      if (implicit)
+        Jacobian.UpdateBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
     }
+    else {
+#else
+    {
+#endif
+      LinSysRes.AddBlock(iPoint, residual);
+      LinSysRes.SubtractBlock(jPoint, residual);
+
+      /*--- Set implicit computation ---*/
+      if (implicit)
+        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+    }
+
+    /*--- Viscous contribution. ---*/
+
+    Viscous_Residual(iEdge, geometry, solver_container,
+                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
   } // end color loop
+
+#ifdef HAVE_OMP
+  if (MGLevel != MESH_0) {
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+      for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
+
+        auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+
+        if (iPoint == geometry->edge[iEdge]->GetNode(0))
+          LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+        else
+          LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+      }
+    }
+
+    if (implicit) Jacobian.SetDiagonalAsColumnSum();
+  }
+#endif
+
   } // end SU2_OMP_PARALLEL
 
 }
@@ -3162,25 +3205,61 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     auto residual = numerics->ComputeResidual(config);
 
-    /*--- Update residual value ---*/
-
-    LinSysRes.AddBlock(iPoint, residual);
-    LinSysRes.SubtractBlock(jPoint, residual);
-
-    /*--- Set implicit Jacobians ---*/
-
-    if (implicit) {
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-    }
-
     /*--- Set the final value of the Roe dissipation coefficient ---*/
 
     if (kind_dissipation != NO_ROELOWDISS) {
       nodes->SetRoe_Dissipation(iPoint,numerics->GetDissipation());
       nodes->SetRoe_Dissipation(jPoint,numerics->GetDissipation());
     }
+
+    /*--- Update residual value ---*/
+
+#ifdef HAVE_OMP
+    if (MGLevel != MESH_0) {
+      EdgeFluxes.SetBlock(iEdge, residual);
+      if (implicit)
+        Jacobian.UpdateBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
+    }
+    else {
+#else
+    {
+#endif
+      LinSysRes.AddBlock(iPoint, residual);
+      LinSysRes.SubtractBlock(jPoint, residual);
+
+      /*--- Set implicit computation ---*/
+      if (implicit)
+        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+    }
+
+    /*--- Viscous contribution. ---*/
+
+    Viscous_Residual(iEdge, geometry, solver_container,
+                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
   } // end color loop
+
+#ifdef HAVE_OMP
+  if (MGLevel != MESH_0) {
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+      for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
+
+        auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+
+        if (iPoint == geometry->edge[iEdge]->GetNode(0))
+          LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+        else
+          LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+      }
+    }
+
+    if (implicit) Jacobian.SetDiagonalAsColumnSum();
+  }
+#endif
+
   } // end SU2_OMP_PARALLEL
 
   /*--- Warning message about non-physical reconstructions. ---*/

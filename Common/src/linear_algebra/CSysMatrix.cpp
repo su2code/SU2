@@ -189,6 +189,21 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     omp_partitions[part] = part * pts_per_part;
   omp_partitions[omp_num_parts] = nPointDomain;
 
+  /*--- For coarse grid levels setup a structure that allows doing a column sum efficiently,
+   * essentially the transpose of the col_ind, this allows populating the matrix by setting
+   * the off-diagonal entries and then setting the diagonal ones as the sum of column
+   * (excluding the diagonal itself). We use the fact that the pattern is symmetric. ---*/
+
+  col_ptr.resize(nnz, nullptr);
+
+  SU2_OMP_PARALLEL_(for schedule(static,omp_heavy_size))
+  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+    for (auto k = row_ptr[iPoint]; k < row_ptr[iPoint+1]; ++k) {
+      auto jPoint = col_ind[k];
+      col_ptr[k] = GetBlock(jPoint, iPoint);
+    }
+  }
+
   /*--- Generate MKL Kernels ---*/
 
 #ifdef USE_MKL
@@ -1305,6 +1320,21 @@ void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, c
   /*--- Set know solution in rhs vector. ---*/
   b.SetBlock(node_i, x_i);
 
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
+
+  SU2_OMP_FOR_DYN(omp_heavy_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+
+    su2double* block_ii = &matrix[dia_ptr[iPoint]*nVar*nEqn];
+
+    for (auto k = row_ptr[iPoint]; k < row_ptr[iPoint+1]; ++k) {
+      auto block_ji = col_ptr[k];
+      if (block_ji != block_ii) MatrixSubtraction(block_ii, block_ji, block_ii);
+    }
+  }
 }
 
 template<class ScalarType>

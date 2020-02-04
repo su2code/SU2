@@ -264,6 +264,11 @@ protected:
   vector<EdgeColor> EdgeColoring;   /*!< \brief Edge colors. */
   unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size in edge loops must be a multiple of this. */
 
+  /*--- Edge fluxes, for OpenMP parallelization on coarse grids. As it is difficult to
+   * color them, we first store the fluxes and then compute the sum for each cell. ---*/
+
+  CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
+
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use.
    */
@@ -406,6 +411,9 @@ public:
                        CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) final;
+
+  virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                CNumerics *numerics, CConfig *config) {}
 
   /*!
    * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,

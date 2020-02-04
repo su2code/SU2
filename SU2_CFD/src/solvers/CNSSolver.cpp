@@ -442,7 +442,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   SetBaseClassPointerToNodes();
 
 #ifdef HAVE_OMP
-  /*--- Get the edge coloring. ---*/
+  /*--- On the fine grid get the edge coloring, on coarse grids (which are difficult to color)
+   *    setup the reducer strategy, i.e. one loop over edges followed by a point loop to sum
+   *    the fluxes for each cell and set the diagonal of the system matrix. ---*/
 
   const auto& coloring = geometry->GetEdgeColoring();
 
@@ -456,6 +458,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     }
   }
   ColorGroupSize = geometry->GetEdgeColorGroupSize();
+
+  if (MGLevel != MESH_0) {
+    EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+  }
 
   omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
 #endif
@@ -796,8 +802,8 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
   return nonPhysicalPoints;
 }
 
-void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
-                                 CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                 CNumerics *numerics, CConfig *config) {
 
   const bool implicit  = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) ||
@@ -806,79 +812,61 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
-  /*--- Start OpenMP parallel section. ---*/
+  /*--- Points, coordinates and normal vector in edge ---*/
 
-  SU2_OMP_PARALLEL
-  {
-  /*--- Pick one numerics object per thread. ---*/
-  CNumerics* numerics = numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS];
+  auto iPoint = geometry->edge[iEdge]->GetNode(0);
+  auto jPoint = geometry->edge[iEdge]->GetNode(1);
 
-  /*--- Loop over all the edges ---*/
+  numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                     geometry->node[jPoint]->GetCoord());
+
+  numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+
+  /*--- Primitive and secondary variables. ---*/
+
+  numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                         nodes->GetPrimitive(jPoint));
+
+  numerics->SetSecondary(nodes->GetSecondary(iPoint),
+                         nodes->GetSecondary(jPoint));
+
+  /*--- Gradients. ---*/
+
+  numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                               nodes->GetGradient_Primitive(jPoint));
+
+  /*--- Turbulent kinetic energy. ---*/
+
+  if (tkeNeeded)
+    numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
+                                   turbNodes->GetSolution(jPoint,0));
+
+  /*--- Wall shear stress values (wall functions) ---*/
+
+  numerics->SetTauWall(nodes->GetTauWall(iPoint),
+                       nodes->GetTauWall(iPoint));
+
+  /*--- Compute and update residual ---*/
+
+  auto residual = numerics->ComputeResidual(config);
 
 #ifdef HAVE_OMP
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
-
-  /*--- Loop over edge colors. ---*/
-  for (auto color : EdgeColoring)
-  {
-  SU2_OMP_FOR_DYN(chunkSize)
-  for(auto k = 0ul; k < color.size; ++k) {
-
-    auto iEdge = color.indices[k];
+  if (MGLevel != MESH_0) {
+    EdgeFluxes.SubtractBlock(iEdge, residual);
+    if (implicit)
+      Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
+  }
+  else {
 #else
-  /*--- Natural coloring. ---*/
   {
-  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
 #endif
-    /*--- Points, coordinates and normal vector in edge ---*/
-
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
-
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                       geometry->node[jPoint]->GetCoord());
-
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
-
-    /*--- Primitive and secondary variables. ---*/
-
-    numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
-                           nodes->GetPrimitive(jPoint));
-
-    numerics->SetSecondary(nodes->GetSecondary(iPoint),
-                           nodes->GetSecondary(jPoint));
-
-    /*--- Gradients. ---*/
-
-    numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                 nodes->GetGradient_Primitive(jPoint));
-
-    /*--- Turbulent kinetic energy. ---*/
-
-    if (tkeNeeded)
-      numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
-                                     turbNodes->GetSolution(jPoint,0));
-
-    /*--- Wall shear stress values (wall functions) ---*/
-
-    numerics->SetTauWall(nodes->GetTauWall(iPoint),
-                         nodes->GetTauWall(iPoint));
-
-    /*--- Compute and update residual ---*/
-
-    auto residual = numerics->ComputeResidual(config);
-
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
-
-    /*--- Implicit part ---*/
 
     if (implicit)
       Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
   }
-  } // end color loop
-  } // end SU2_OMP_PARALLEL
+
 }
 
 void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {

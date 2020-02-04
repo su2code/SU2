@@ -4038,7 +4038,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
   if (edgeColoring.empty() && nEdge) {
 
     /*--- When not using threading use the natural coloring. ---*/
-    if (omp_get_max_threads() == 1) {
+    if ((omp_get_max_threads() == 1) || (MGLevel != MESH_0)) {
       edgeColoring = createNaturalColoring(nEdge);
       return edgeColoring;
     }
