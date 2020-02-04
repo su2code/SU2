@@ -195,19 +195,19 @@ protected:
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
 
-  su2double AoA_Prev, /*!< \brief Old value of the angle of attack (monitored). */
+  su2double AoA_Prev,  /*!< \brief Old value of the angle of attack (monitored). */
   AoA_inc;
-  bool Start_AoA_FD,  /*!< \brief Boolean for start of finite differencing for FixedCL mode */
-  End_AoA_FD,         /*!< \brief Boolean for end of finite differencing for FixedCL mode */
-  Update_AoA;         /*!< \brief Boolean to signal Angle of Attack Update */
-  unsigned long Iter_Update_AoA; /*!< \brief Iteration at which AoA was updated last */
-  su2double dCL_dAlpha;          /*!< \brief Value of dCL_dAlpha used to control CL in fixed CL mode */
+  bool Start_AoA_FD = false,  /*!< \brief Boolean for start of finite differencing for FixedCL mode */
+  End_AoA_FD = false,         /*!< \brief Boolean for end of finite differencing for FixedCL mode */
+  Update_AoA = false;         /*!< \brief Boolean to signal Angle of Attack Update */
+  unsigned long Iter_Update_AoA = 0; /*!< \brief Iteration at which AoA was updated last */
+  su2double dCL_dAlpha;              /*!< \brief Value of dCL_dAlpha used to control CL in fixed CL mode */
   unsigned long BCThrust_Counter;
   unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
   unsigned short nSpanMax;           /*!< \brief Max number of maximum span-wise sections for all zones */
   unsigned short nMarkerTurboPerf;   /*!< \brief Number of turbo performance. */
 
-  vector<CFluidModel*> FluidModel;  /*!< \brief fluid model used in the solver */
+  vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver */
 
   /*--- Turbomachinery Solver Variables ---*/
 
@@ -297,8 +297,10 @@ public:
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Grid level.
+   * \param[in] navier_stokes - True when the constructor is called by the derived class CNSSolver.
    */
-  CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, const bool navier_stokes = false);
 
   /*!
    * \brief Destructor of the class.

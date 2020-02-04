@@ -27,6 +27,7 @@
 
 
 #include "../../include/solvers/CEulerSolver.hpp"
+#include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
@@ -55,37 +56,40 @@ void CEulerSolver::AeroCoeffsArray::setZero(int i) {
   CoPz[i] = CT[i] = CQ[i] = CMerit[i] = 0.0;
 }
 
-CEulerSolver::CEulerSolver(void) : CSolver() {
+CEulerSolver::CEulerSolver(void) : CSolver() { }
 
-  /*--- Fixed CL mode initialization ---*/
+CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
+                           unsigned short iMesh, const bool navier_stokes) : CSolver() {
 
-  Start_AoA_FD = false;
-  End_AoA_FD = false;
-  Update_AoA = false;
-  Iter_Update_AoA = 0;
-
-}
-
-CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
+  /*--- Based on the navier_stokes boolean, determine if this constructor is
+   *    being called by itself, or by its derived class CNSSolver. ---*/
+  string description;
+  unsigned short nSecVar;
+  if (navier_stokes) {
+    description = "Navier-Stokes";
+    nSecVar = 8;
+  }
+  else {
+    description = "Euler";
+    nSecVar = 2;
+  }
 
   unsigned long iPoint, counter_local = 0, counter_global = 0;
   unsigned short iVar, iDim, iMarker, nLineLets;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
   unsigned short nZone = geometry->GetnZone();
-  bool restart   = (config->GetRestart() || config->GetRestart_Flow());
+  bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool rans = (config->GetKind_Turb_Model() != NONE);
   unsigned short direct_diff = config->GetDirectDiff();
   int Unst_RestartIter = 0;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                   (config->GetTime_Marching() == DT_STEPPING_2ND);
+  bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
 
-  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
   dynamic_grid = config->GetDynamic_Grid();
 
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  bool fsi     = config->GetFSI_Simulation();
-  bool multizone = config->GetMultizone_Problem();
   string filename_ = "flow";
 
   /*--- Store the multigrid level. ---*/
@@ -121,13 +125,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   }
 
-  /*--- Fixed CL mode initialization ---*/
-
-  Start_AoA_FD = false;
-  End_AoA_FD = false;
-  Update_AoA = false;
-  Iter_Update_AoA = 0;
-
   /*--- Set the gamma value ---*/
 
   Gamma = config->GetGamma();
@@ -141,7 +138,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   nVar = nDim+2;
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
-  nSecondaryVar = 2; nSecondaryVarGrad = 2;
+  nSecondaryVar = nSecVar; nSecondaryVarGrad = 2;
 
   /*--- Initialize nVarGrad for deallocation ---*/
 
@@ -170,7 +167,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   SetVerificationSolution(nDim, nVar, config);
 
-  /*--- Define some auxiliary vectors related to the residual ---*/
+  /*--- Define some auxiliar vector related with the residual ---*/
 
   Residual      = new su2double[nVar]();
   Residual_RMS  = new su2double[nVar]();
@@ -197,7 +194,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Vector = new su2double[nDim]();
 
-  /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
+  /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
 
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
     iPoint_UndLapl = new su2double [nPoint];
@@ -222,18 +219,22 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       Jacobian_j[iVar] = new su2double [nVar];
     }
 
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
+    if (rank == MASTER_NODE)
+      cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
+
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+      if (rank == MASTER_NODE)
+        cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
 
   }
 
   else {
-    if (rank == MASTER_NODE) cout << "Explicit scheme. No Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
+    if (rank == MASTER_NODE)
+      cout << "Explicit scheme. No Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
   }
 
   /*--- Define some auxiliary vectors for computing flow variable
@@ -335,7 +336,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Exhaust_Temperature = new su2double[nMarker];
   Exhaust_Area        = new su2double[nMarker];
 
-  /*--- Read farfield conditions ---*/
+  /*--- Read farfield conditions from config ---*/
 
   Density_Inf     = config->GetDensity_FreeStreamND();
   Pressure_Inf    = config->GetPressure_FreeStreamND();
@@ -412,7 +413,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
-  nodes = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nPoint, nDim, nVar, config);
+  if (navier_stokes) {
+    nodes = new CNSVariable(Density_Inf, Velocity_Inf, Energy_Inf, nPoint, nDim, nVar, config);
+  } else {
+    nodes = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nPoint, nDim, nVar, config);
+  }
   SetBaseClassPointerToNodes();
 
 #ifdef HAVE_OMP
@@ -472,20 +477,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   }
 
-  /*--- Initialize the BGS residuals in FSI problems. ---*/
-  if (fsi || multizone){
-    Residual_BGS      = new su2double[nVar];    for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 1.0;
-    Residual_Max_BGS  = new su2double[nVar];    for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS       = new unsigned long[nVar]();
-    Point_Max_Coord_BGS = new su2double*[nVar]();
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
-    }
-  }
-
   /*--- Warning message about non-physical points ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
@@ -496,16 +487,25 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
   }
 
+  /*--- Initialize the BGS residuals in FSI problems. ---*/
+  if (config->GetMultizone_Residual()){
+    Residual_BGS     = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar] = 1.0;
+    Residual_Max_BGS = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar] = 1.0;
+
+    /*--- Define some structures for locating max residuals ---*/
+
+    Point_Max_BGS = new unsigned long[nVar]();
+    Point_Max_Coord_BGS = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
+    }
+  }
+
   /*--- Define solver parameters needed for execution of destructor ---*/
 
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ) space_centered = true;
-  else space_centered = false;
-
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
-  else euler_implicit = false;
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
-  else least_squares = false;
+  space_centered = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
+  euler_implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  least_squares = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
 
   /*--- Communicate and store volume and the number of neighbors for
    any dual CVs that lie on on periodic markers. ---*/
