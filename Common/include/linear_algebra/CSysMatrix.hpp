@@ -95,7 +95,7 @@ private:
   const unsigned long *row_ptr;     /*!< \brief Pointers to the first element in each row. */
   const unsigned long *dia_ptr;     /*!< \brief Pointers to the diagonal element in each row. */
   const unsigned long *col_ind;     /*!< \brief Column index for each of the elements in val(). */
-  vector<const su2double*> col_ptr; /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
+  vector<const ScalarType*> col_ptr;/*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
 
   ScalarType *ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */

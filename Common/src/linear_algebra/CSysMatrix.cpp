@@ -1328,7 +1328,7 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
 
-    su2double* block_ii = &matrix[dia_ptr[iPoint]*nVar*nEqn];
+    auto block_ii = &matrix[dia_ptr[iPoint]*nVar*nEqn];
 
     for (auto k = row_ptr[iPoint]; k < row_ptr[iPoint+1]; ++k) {
       auto block_ji = col_ptr[k];
