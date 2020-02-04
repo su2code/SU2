@@ -2621,6 +2621,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_ADJ_ITER");
+
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_CFL");
   
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_RESIDUAL_REDUCTION");

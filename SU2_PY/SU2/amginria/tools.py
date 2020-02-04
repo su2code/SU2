@@ -59,6 +59,16 @@ def get_flow_iter(config):
         for i in range(nExt_iter):
             flow_iter.append(config['ITER'])        
         return flow_iter
+
+def get_cfl(config):
+    if 'ADAP_CFL' in config:
+        return config['ADAP_CFL'].strip('()').split(",")
+    else:
+        nExt_iter = len(config['ADAP_SIZES'].strip('()').split(","))
+        flow_iter = []
+        for i in range(nExt_iter):
+            flow_iter.append(config['CFL_NUMBER'])        
+        return flow_iter
     
 def print_adap_options(config, kwds):
     prt = '\nMesh adaptation options:\n'
