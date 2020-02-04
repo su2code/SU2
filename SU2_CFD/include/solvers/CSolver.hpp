@@ -173,6 +173,11 @@ public:
   CSysSolve<su2double>  System;
 #endif
 
+  vector<std::vector<double>> TrialBasis;   /*!< \brief vector to store trial basis / Phi from offline POD computation. (rom) */
+  vector<double> GenCoordsY;                /*!< \brief vector to store generalized coordinate solution. (rom) */
+  vector<double> Mask;                      /*!< \brief vector to store selected nodes. (rom)  */
+  vector<double> MaskNeighbors;             /*!< \brief vector to store selected nodes' neighbors. (rom) */
+
   CSysMatrix<su2double> StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
 
   CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
@@ -1532,6 +1537,7 @@ public:
                                               CSolver **solver_container,
                                               CConfig *config) { }
 
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1542,6 +1548,36 @@ public:
                                               CSolver **solver_container,
                                               CConfig *config) { }
 
+  /*!
+   * \brief Update the solution for reduced order modelling.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ROM_Iteration(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CConfig *config) { }
+  
+  /*!
+   * \brief Create mask for hyper-reduction.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void Mask_Selection(CGeometry *geometry,
+                                     CConfig *config) { }
+  
+  /*!
+   * \brief Set up ROM-specific variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void SetROM_Variables(unsigned long nPoint,
+                                       unsigned long nPointDomain,
+                                       unsigned short nVar,
+                                       CGeometry *geometry,
+                                       CConfig *config) { }
+  
+  
   /*!
    * \brief A virtual member.
    * \param[in] solver - Container vector with all the solutions.

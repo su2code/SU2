@@ -1180,6 +1180,10 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
       default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
 
+  /*--- Assign ROM boolean ---*/
+  
+  rom = config->GetReduced_Model();
+  
   /*--- Definition of the Class for the solution: solver[DOMAIN][INSTANCE][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
 
@@ -1261,6 +1265,12 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
       if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][FEA_SOL]->GetnVar();
     }
 
+    /*--- Allocate ROM variables ---*/
+    
+    if (rom) {
+      //solver[iMGlevel][FLOW_SOL]->SetROM_Variables(nPoint, nPointDomain, nVar, geometry[iMGlevel], config);
+    }
+    
     /*--- Allocate solution for adjoint problem ---*/
 
     if (adj_euler) {

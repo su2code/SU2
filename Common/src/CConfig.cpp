@@ -403,7 +403,8 @@ void CConfig::addConvectFEMOption(const string name, unsigned short & space_fiel
 
 void CConfig::addMathProblemOption(const string name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
                           bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
-                          bool & Restart_Flow, const bool & Restart_Flow_default) {
+                          bool & Restart_Flow, const bool & Restart_Flow_default,
+                          bool & Reduced_Model, const bool & Reduced_Model_default) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
   COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default, Restart_Flow, Restart_Flow_default);

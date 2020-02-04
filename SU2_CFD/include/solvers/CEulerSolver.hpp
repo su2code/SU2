@@ -1076,6 +1076,35 @@ public:
                                CConfig *config) final;
 
   /*!
+   * \brief Update the solution using reduced order modelling methods (LSPG).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ROM_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) final;
+  
+  /*!
+   * \brief Update the solution using reduced order modelling methods (LSPG).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Mask_Selection(CGeometry *geometry,
+                      CConfig *config) final;
+  
+  /*!
+   * \brief Set up ROM-specific variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetROM_Variables(unsigned long nPoint,
+                        unsigned long nPointDomain,
+                        unsigned short nVar,
+                        CGeometry *geometry,
+                        CConfig *config) final;
+  
+  /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.

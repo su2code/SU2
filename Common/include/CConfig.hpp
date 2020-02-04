@@ -112,7 +112,7 @@ private:
   su2double Opt_LineSearch_Bound; /*!< \brief Bounds for the line search. */
   su2double StartTime;
   bool ContinuousAdjoint,   /*!< \brief Flag to know if the code is solving an adjoint problem. */
-  Reduced_Model,            /*!< \brief Flag to know if code is computing a reduced order model. */
+  Reduced_Model,            /*!< \brief Flag to know if code is producing a reduced order model. */
   Viscous,                  /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,                /*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   Engine,                   /*!< \brief Flag to know if the code is going to compute a problem with engine. */
@@ -5244,29 +5244,29 @@ public:
    * \return Name of the file with the solution of the adjoint flow problem with
    *         drag objective function.
    */
-  string GetSolution_AdjFileName(void);
-  
+  string GetSolution_AdjFileName(void) const { return Solution_AdjFileName; }
+
   /*!
    * \brief Get the name of the file with the POD modes for the reduced order model
    *      problem.
-   * \return Name of the file with the POD modes found externally.
+   * \return Name of the file with the POD modes.
    */
-  string GetRom_FileName(void);
+  string GetRom_FileName(void) const { return Rom_FileName; }
   
   /*!
    * \brief Get the name of the file with the reference snapshot for the reduced order
    *      model problem.
-   * \return Name of the file with the POD modes found externally.
+   * \return Name of the file with the reference snapshot.
    */
-  string GetRef_Snapshot_FileName(void);
+  string GetRef_Snapshot_FileName(void) const { return Ref_Snapshot_FileName; }
   
   /*!
    * \brief Get the name of the file with the initial snapshot for the reduced order
    *      model problem.
-   * \return Name of the file with the POD modes found externally.
+   * \return Name of the file with the initial snapshot.
    */
-  string GetInit_Snapshot_FileName(void);
-  
+  string GetInit_Snapshot_FileName(void) const { return Init_Snapshot_FileName; }
+
   /*!
    * \brief Get the name of the file with the residual of the problem.
    * \return Name of the file with the residual of the problem.
@@ -6076,7 +6076,7 @@ public:
    * \brief Determines if problem is a reduced order modelling problem
    * \return true if ROM
    */
-  bool GetReduced_Model(void);
+  bool GetReduced_Model(void) const { return Reduced_Model; }
   
   /*!
    * \brief Determines if problem is viscous
