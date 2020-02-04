@@ -3,7 +3,7 @@
 ## \file SolidSolverTester.py
 #  \brief Structural solver tester (one or two degree of freedom) used for testing the Py wrapper for external FSI coupling.
 #  \author David Thomas
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
