@@ -5,6 +5,7 @@ on:
     branches:
       - 'develop'
       - 'master'
+      - 'feature_unit_testing'
   pull_request:
     branches: 
       - 'develop'
@@ -42,12 +43,15 @@ jobs:
         uses: docker://su2code/build-su2:20191105
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
+      - name: Copy Test Driver
+        run: |
+          cp src/${{github.ref}}/docker_build/UnitTests/test_driver install/bin
       - name: Upload Binaries 
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.config_set }}
           path: install/bin
-  tests:
+  regression_tests:
     runs-on: ubuntu-latest
     name: Regression Tests
     needs: build
@@ -89,3 +93,28 @@ jobs:
         with:
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
   
+  unit_tests:
+    runs-on: ubuntu-latest
+    name: Unit Tests
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix: 
+        testdriver: ['test_driver']
+        include:
+          - testscript: 'test_driver'
+            tag: MPI
+    steps:
+      - name: Download Base
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{format('Base{0}', matrix.tag)}}
+      - name: Move Binaries
+        run: |
+          mkdir -p install/bin
+          cp -r ${{format('Base{0}', matrix.tag)}}/. install/bin/
+          chmod a+x install/bin/*  
+      - name: Run Unit Tests
+        uses: docker://su2code/test-su2:20191031
+        with:
+          entrypoint: install/bin/${{testdriver}}
