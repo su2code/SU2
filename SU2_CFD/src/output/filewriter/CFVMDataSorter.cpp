@@ -27,13 +27,17 @@
 
 #include "../../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
+#include <numeric>
 
-CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields) : CParallelDataSorter(config, nFields){
+CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames) :
+  CParallelDataSorter(config, valFieldNames){
+
+  nDim = geometry->GetnDim();
 
   std::vector<unsigned long> globalID;
 
-  nGlobalPoint_Sort = geometry->GetGlobal_nPointDomain();
-  nLocalPoint_Sort  = geometry->GetnPointDomain();
+  nGlobalPointBeforeSort = geometry->GetGlobal_nPointDomain();
+  nLocalPointsBeforeSort  = geometry->GetnPointDomain();
 
   Local_Halo = new int[geometry->GetnPoint()]();
 
@@ -56,7 +60,7 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
 
   /*--- Create the linear partitioner --- */
 
-  linearPartitioner = new CLinearPartitioner(nGlobalPoint_Sort, 0);
+  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
 
   /*--- Prepare the send buffers ---*/
 
@@ -112,24 +116,18 @@ void CFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
    In these routines, we sort the connectivity into a linear partitioning
    across all processors based on the global index of the grid nodes. ---*/
 
+  nElemPerType.fill(0);
+  
   SortVolumetricConnectivity(config, geometry, TRIANGLE,      val_sort);
   SortVolumetricConnectivity(config, geometry, QUADRILATERAL, val_sort);
   SortVolumetricConnectivity(config, geometry, TETRAHEDRON,   val_sort);
   SortVolumetricConnectivity(config, geometry, HEXAHEDRON,    val_sort);
   SortVolumetricConnectivity(config, geometry, PRISM,         val_sort);
   SortVolumetricConnectivity(config, geometry, PYRAMID,       val_sort);
+  
+  SetTotalElements();
 
-
-  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
-
-  unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
-#ifndef HAVE_MPI
-  nGlobal_Elem_Par = nTotal_Elem;
-#else
-  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
-  connectivity_sorted = true;
+  connectivitySorted = true;
 
 }
 
@@ -186,16 +184,14 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    nodes, i.e., rank 0 holds the first nPoint()/nProcessors nodes.
    First, initialize a counter and flag. ---*/
 
-  int *nElem_Send = new int[size+1](); nElem_Send[0] = 0;
-  int *nElem_Recv = new int[size+1](); nElem_Recv[0] = 0;
   int *nElem_Flag = new int[size]();
 
   for (int ii=0; ii < size; ii++) {
     nElem_Send[ii] = 0;
-    nElem_Recv[ii] = 0;
+    nElem_Cum[ii] = 0;
     nElem_Flag[ii]= -1;
   }
-  nElem_Send[size] = 0; nElem_Recv[size] = 0;
+  nElem_Send[size] = 0; nElem_Cum[size] = 0;
 
   for (int ii = 0; ii < (int)geometry->GetnElem(); ii++ ) {
     if (geometry->elem[ii]->GetVTK_Type() == Elem_Type) {
@@ -244,12 +240,8 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    all processors. After this communication, each proc knows how
    many cells it will receive from each other processor. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nElem_Recv[1] = nElem_Send[1];
-#endif
+                    &(nElem_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
 
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
@@ -261,10 +253,10 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
 
   for (int ii = 0; ii < size; ii++) {
     if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
-    if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
+    if ((ii != rank) && (nElem_Cum[ii+1] > 0)) nRecvs++;
 
     nElem_Send[ii+1] += nElem_Send[ii];
-    nElem_Recv[ii+1] += nElem_Recv[ii];
+    nElem_Cum[ii+1] += nElem_Cum[ii];
   }
 
   /*--- Allocate memory to hold the connectivity that we are
@@ -365,9 +357,9 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    directly copy our own data later. ---*/
 
   unsigned long *connRecv = NULL;
-  connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]]();
+  connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Cum[size]]();
 
-  unsigned short *haloRecv = new unsigned short[nElem_Recv[size]]();
+  unsigned short *haloRecv = new unsigned short[nElem_Cum[size]]();
 
 #ifdef HAVE_MPI
 
@@ -378,9 +370,9 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
 
   unsigned long iMessage = 0;
   for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = NODES_PER_ELEMENT*nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+    if ((ii != rank) && (nElem_Cum[ii+1] > nElem_Cum[ii])) {
+      int ll     = NODES_PER_ELEMENT*nElem_Cum[ii];
+      int kk     = nElem_Cum[ii+1] - nElem_Cum[ii];
       int count  = NODES_PER_ELEMENT*kk;
       int source = ii;
       int tag    = ii + 1;
@@ -410,9 +402,9 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
 
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+    if ((ii != rank) && (nElem_Cum[ii+1] > nElem_Cum[ii])) {
+      int ll     = nElem_Cum[ii];
+      int kk     = nElem_Cum[ii+1] - nElem_Cum[ii];
       int count  = kk;
       int source = ii;
       int tag    = ii + 1;
@@ -441,13 +433,13 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
-  int mm = NODES_PER_ELEMENT*nElem_Recv[rank];
+  int mm = NODES_PER_ELEMENT*nElem_Cum[rank];
   int ll = NODES_PER_ELEMENT*nElem_Send[rank];
   int kk = NODES_PER_ELEMENT*nElem_Send[rank+1];
 
   for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
 
-  mm = nElem_Recv[rank];
+  mm = nElem_Cum[rank];
   ll = nElem_Send[rank];
   kk = nElem_Send[rank+1];
 
@@ -473,9 +465,9 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    to the connectivity for vizualization packages. First, allocate
    appropriate amount of memory for this section. ---*/
 
-  if (nElem_Recv[size] > 0) Conn_Elem = new int[NODES_PER_ELEMENT*nElem_Recv[size]]();
+  if (nElem_Cum[size] > 0) Conn_Elem = new int[NODES_PER_ELEMENT*nElem_Cum[size]]();
   int count = 0; nElem_Total = 0;
-  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
+  for (int ii = 0; ii < nElem_Cum[size]; ii++) {
     if (!haloRecv[ii]) {
       nElem_Total++;
       for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
@@ -484,40 +476,36 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
       }
     }
   }
+  
+  nElemPerType[TypeMap.at(Elem_Type)] = nElem_Total;
 
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
 
   switch (Elem_Type) {
     case TRIANGLE:
-      nParallel_Tria = nElem_Total;
       if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-      if (nParallel_Tria > 0) Conn_Tria_Par = Conn_Elem;
+      Conn_Tria_Par = Conn_Elem;
       break;
     case QUADRILATERAL:
-      nParallel_Quad = nElem_Total;
       if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-      if (nParallel_Quad > 0) Conn_Quad_Par = Conn_Elem;
+      Conn_Quad_Par = Conn_Elem;
       break;
     case TETRAHEDRON:
-      nParallel_Tetr = nElem_Total;
       if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-      if (nParallel_Tetr > 0) Conn_Tetr_Par = Conn_Elem;
+      Conn_Tetr_Par = Conn_Elem;
       break;
     case HEXAHEDRON:
-      nParallel_Hexa = nElem_Total;
       if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-      if (nParallel_Hexa > 0) Conn_Hexa_Par = Conn_Elem;
+      Conn_Hexa_Par = Conn_Elem;
       break;
     case PRISM:
-      nParallel_Pris = nElem_Total;
       if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-      if (nParallel_Pris > 0) Conn_Pris_Par = Conn_Elem;
+      Conn_Pris_Par = Conn_Elem;
       break;
     case PYRAMID:
-      nParallel_Pyra = nElem_Total;
       if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
-      if (nParallel_Pyra > 0) Conn_Pyra_Par = Conn_Elem;
+      Conn_Pyra_Par = Conn_Elem;
       break;
     default:
       SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
@@ -530,8 +518,6 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   delete [] connRecv;
   delete [] haloSend;
   delete [] haloRecv;
-  delete [] nElem_Recv;
-  delete [] nElem_Send;
   delete [] nElem_Flag;
 
 }

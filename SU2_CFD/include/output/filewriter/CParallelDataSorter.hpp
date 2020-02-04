@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -30,6 +30,7 @@
 #include "../../../../Common/include/mpi_structure.hpp"
 #include "../../../../Common/include/option_structure.hpp"
 #include "../../../../Common/include/toolboxes/CLinearPartitioner.hpp"
+#include <array>
 
 class CGeometry;
 class CConfig;
@@ -46,37 +47,46 @@ protected:
    * \brief The MPI size, aka the number of processors.
    */
   int size;
+  
+  unsigned long nGlobalPointBeforeSort; //!< Global number of points without halos before sorting
+  unsigned long nLocalPointsBeforeSort;   //!< Local number of points without halos before sorting on this proc
+ 
+  int *Conn_Line_Par;              //!< Local connectivity of line elements 
+  int *Conn_Tria_Par;              //!< Local connectivity of triangle elements 
+  int *Conn_Quad_Par;              //!< Local connectivity of quad elements
+  int *Conn_Tetr_Par;              //!< Local connectivity of tetrahedral elements 
+  int *Conn_Hexa_Par;              //!< Local connectivity of hexahedral elements
+  int *Conn_Pris_Par;              //!< Local connectivity of prism elements 
+  int *Conn_Pyra_Par;              //!< Local connectivity of pyramid elements 
 
-  unsigned long nGlobal_Poin_Par;  //!< Global number of points without halos before sorting
-  unsigned long nGlobal_Elem_Par;  //!< Global number of elems without halos before sorting
-  unsigned long nParallel_Poin;    //!< Local number of points after sorting on this proc
-  unsigned long nParallel_Line,    //!< Local number of line elements after sorting on this proc
-  nParallel_Tria,                  //!< Local number of triangle elements after sorting on this proc
-  nParallel_Quad,                  //!< Local number of quad elements after sorting on this proc
-  nParallel_Tetr,                  //!< Local number of tetrahedral elements after sorting on this proc
-  nParallel_Hexa,                  //!< Local number of hexhedral elements after sorting on this proc
-  nParallel_Pris,                  //!< Local number of prism elements after sorting on this proc
-  nParallel_Pyra;                  //!< Local number of pyramid elements after sorting on this proc
-  int *Conn_Line_Par;              //!< Local connectivity of line elements after sorting on this proc
-  int *Conn_Tria_Par;              //!< Local connectivity of triangle elements after sorting on this proc
-  int *Conn_Quad_Par;              //!< Local connectivity of quad elements after sorting on this proc
-  int *Conn_Tetr_Par;              //!< Local connectivity of tetrahedral elements after sorting on this proc
-  int *Conn_Hexa_Par;              //!< Local connectivity of hexahedral elements after sorting on this proc
-  int *Conn_Pris_Par;              //!< Local connectivity of prism elements after sorting on this proc
-  int *Conn_Pyra_Par;              //!< Local connectivity of pyramid elements after sorting on this proc
-
-  unsigned long nGlobalPoint_Sort; //!< Global number of points without halos after sorting
-  unsigned long nLocalPoint_Sort;  //!< Local number of points without halos after sorting on this proc
-
-
+  array<unsigned long, N_ELEM_TYPES> nElemPerTypeGlobal;   //!< Global number of elements after sorting on this proc
+  array<unsigned long, N_ELEM_TYPES> nElemPerType; //!< Local number of elements after sorting on this proc
+  
+  /*!
+   * \brief Map that stores the index for each GEO_TYPE type where to find information
+   * in the element arrays.
+   */
+  static const map<unsigned short, unsigned short> TypeMap; 
+ 
+  unsigned long nPointsGlobal;   //!< Global number of points without halos 
+  unsigned long nElemGlobal;    //!< Global number of elems without halos
+  unsigned long nConnGlobal;    //!< Global size of the connectivity array
+  unsigned long nPoints;    //!< Local number of points 
+  unsigned long nElem;     //!< Local number of elements
+  unsigned long nConn;     //!< Local size of the connectivity array
+  
   CLinearPartitioner* linearPartitioner;  //!< Linear partitioner based on the global number of points.
 
   unsigned short GlobalField_Counter;  //!< Number of output fields
 
-  bool connectivity_sorted;            //!< Boolean to store information on whether the connectivity is sorted
+  bool connectivitySorted;            //!< Boolean to store information on whether the connectivity is sorted
 
   int *nPoint_Send;                    //!< Number of points this processor has to send to other processors
   int *nPoint_Recv;                    //!< Number of points this processor receives from other processors
+  int *nElem_Send;                     //!< Number of elements this processor has to send to other processors
+  int *nElem_Cum;                      //!< Cumulative number of elements
+  int *nElemConn_Send;                 //!< Number of element connectivity this processor has to send to other processors
+  int *nElemConn_Cum;                  //!< Cumulative number of element connectivity entries
   unsigned long *Index;                //!< Index each point has in the send buffer
   su2double *connSend;                 //!< Send buffer holding the data that will be send to other processors
   passivedouble *passiveDoubleBuffer;  //!< Buffer holding the sorted, partitioned data as passivedouble types
@@ -86,6 +96,10 @@ protected:
   unsigned long *idSend;               //!< Send buffer holding global indices that will be send to other processors
   int nSends,                          //!< Number of sends
   nRecvs;                              //!< Number of receives
+
+  vector<string> fieldNames;           //!< Vector with names of the output fields
+
+  unsigned short nDim;                 //!< Spatial dimension of the data
 
   /*!
    * \brief Prepare the send buffers by filling them with the global indices.
@@ -100,9 +114,9 @@ public:
   /*!
    * \brief Constructor
    * \param[in] config - Pointer to the current config structure
-   * \param[in] nFields - Number of output fields
+   * \param[in] valFieldNames - Vector containing the field names
    */
-  CParallelDataSorter(CConfig *config, unsigned short nFields);
+  CParallelDataSorter(CConfig *config, const vector<string> &valFieldNames);
 
   /*!
    * \brief Destructor
@@ -123,35 +137,96 @@ public:
   virtual void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort = true){}
 
   /*!
+   * \brief Sort the connectivities into data structures (only for surface data sorters).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] markerList - A list of marker names that should be sorted.
+   */
+  virtual void SortConnectivity(CConfig *config, CGeometry *geometry, const vector<string> &markerList){}
+
+  /*!
    * \brief Get the number of points the local rank owns.
    * \return local number of points.
    */
-  unsigned long GetnPoints(){return nParallel_Poin;}
+  unsigned long GetnPoints() const {return nPoints;}
 
   /*!
    * \brief Get the number of points to sort.
    * \return local number of points.
    */
-  unsigned long GetnLocalPointSort(){return nLocalPoint_Sort;}
+  unsigned long GetnLocalPointsBeforeSort() const {return nLocalPointsBeforeSort;}
 
   /*!
    * \brief Get the global number of points (accumulated from all ranks)
    * \return Global number of points.
    */
-  unsigned long GetnPointsGlobal(){return nGlobal_Poin_Par;}
+  unsigned long GetnPointsGlobal() const {return nPointsGlobal;}
 
   /*!
    * \brief Get the global of elements (accumulated from all ranks and element types)
    * \return Global number elements.
    */
-  unsigned long GetnElem(){return nGlobal_Elem_Par;}
+  unsigned long GetnElem() const {return nElem;}
 
   /*!
    * \brief Get the local number of elements of a specific type that the current rank owns
    * \input type - The type of element, ref GEO_TYPE
    * \return Local number of elements of a specific type.
    */
-  unsigned long GetnElem(GEO_TYPE type);
+  unsigned long GetnElem(GEO_TYPE type) const {
+    return nElemPerType[TypeMap.at(type)];
+  }
+  
+  /*!
+   * \brief Get the global number of elements of a specific type 
+   * \input type - The type of element, ref GEO_TYPE
+   * \return global number of elements of a specific type.
+   */
+  unsigned long GetnElemGlobal(GEO_TYPE type) const {
+    return nElemPerTypeGlobal[TypeMap.at(type)];
+  }
+  
+  /*!
+   * \brief Get the global number of elements
+   * \return global number of elements.
+   */
+  unsigned long GetnElemGlobal() const {
+    return nElemGlobal;
+  }
+  
+  /*!
+   * \brief Get the global number entries of the connectivity array
+   * \return global number of entries of the connectivity array
+   */
+  unsigned long GetnConnGlobal() const {
+    return nConnGlobal;
+  }
+  
+  /*!
+   * \brief Get the local number entries of the connectivity array
+   * \return local number of entries of the connectivity array
+   */
+  unsigned long GetnConn() const {
+    return nConn;
+  }
+  
+  /*!
+   * \brief Get the cumulated number of elements
+   * \input rank - the processor rank.
+   * \return The cumulated number of elements
+   */
+  unsigned long GetnElemCumulative(unsigned short rank) const {
+    return nElem_Cum[rank];
+  }
+  
+  /*!
+   * \brief Get the cumulated number of entries of the connectivity array
+   * \input rank - the processor rank.
+   * \return The cumulated number of entries of the connectivity array
+   */
+  unsigned long GetnElemConnCumulative(unsigned short rank) const {
+    return nElemConn_Cum[rank];
+  }
 
   /*!
    * \brief Get the connectivity of specific element.
@@ -160,7 +235,7 @@ public:
    * \input iNode - The node ID
    * \return the connected node.
    */
-  unsigned long GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode);
+  unsigned long GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode) const ;
 
   /*!
    * \brief Beginning node ID of the linear partition owned by a specific processor.
@@ -186,13 +261,13 @@ public:
    * \input iPoint - the point ID.
    * \return the value of the data field at a point.
    */
-  passivedouble GetData(unsigned short iField, unsigned long iPoint) {return passiveDoubleBuffer[iPoint*GlobalField_Counter + iField];}
+  passivedouble GetData(unsigned short iField, unsigned long iPoint) const  {return passiveDoubleBuffer[iPoint*GlobalField_Counter + iField];}
 
   /*!
    * \brief Get the pointer to the sorted linear partitioned data.
    * \return Pointer to the sorted data.
    */
-  const passivedouble *GetData() {return passiveDoubleBuffer;}
+  const passivedouble *GetData() const {return passiveDoubleBuffer;}
 
   /*!
    * \brief Get the global index of a point.
@@ -206,20 +281,20 @@ public:
    * \input rank - the processor rank.
    * \return The cumulated number of points up to certain processor rank.
    */
-  unsigned long GetnPointCumulative(unsigned short rank){return linearPartitioner->GetCumulativeSizeBeforeRank(rank);}
+  virtual unsigned long GetnPointCumulative(unsigned short rank) const {return linearPartitioner->GetCumulativeSizeBeforeRank(rank);}
 
   /*!
    * \brief Get the linear number of points
    * \input rank - the processor rank.
    * \return The linear number of points up to certain processor rank.
    */
-  unsigned long GetnPointLinear(unsigned short rank){return linearPartitioner->GetSizeOnRank(rank);}
+  unsigned long GetnPointLinear(unsigned short rank) const {return linearPartitioner->GetSizeOnRank(rank);}
 
   /*!
    * \brief Check whether the current connectivity is sorted (i.e. if SortConnectivity has been called)
    * \return <TRUE> if the connectivity is sorted.
    */
-  bool GetConnectivitySorted(){return connectivity_sorted;}
+  bool GetConnectivitySorted() const {return connectivitySorted;}
 
   /*!
    * \brief Set the value of a specific field at a point.
@@ -233,7 +308,7 @@ public:
     connSend[Index[iPoint] + iField] = data;
   }
 
-  su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField){
+  su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField) const {
     return connSend[Index[iPoint] + iField];
   }
 
@@ -245,5 +320,26 @@ public:
   virtual unsigned short FindProcessor(unsigned long iPoint) const {
     return linearPartitioner->GetRankContainingIndex(iPoint);
   }
+
+  /*!
+   * \brief Get the vector containing the names of the output fields
+   * \return Vector of strings containing the field names
+   */
+  const vector<string>& GetFieldNames() const{
+    return fieldNames;
+  }
+
+  /*!
+   * \brief Get the spatial dimension
+   * \return The spatial dimension
+   */
+  unsigned short GetnDim() const {
+    return nDim;
+  }
+  
+  /*!
+   * \brief Set the total number of elements after sorting individual element types
+   */
+  void SetTotalElements();
 
 };
