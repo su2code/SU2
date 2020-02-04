@@ -2642,84 +2642,69 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
 
-  /*--- Set maximum eigenvalues to zero. ---*/
+  /*--- Loop domain points. ---*/
 
-  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    auto node_i = geometry->node[iPoint];
+
+    /*--- Set maximum eigenvalues to zero. ---*/
+
     nodes->SetMax_Lambda_Inv(iPoint,0.0);
 
-  if (viscous) {
-    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+    if (viscous)
       nodes->SetMax_Lambda_Visc(iPoint,0.0);
-  }
-  SU2_OMP_BARRIER
 
-  /*--- Loop interior edges ---*/
+    /*--- Loop over the neighbors of point i. ---*/
 
-#ifdef HAVE_OMP
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for (unsigned short iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
+    {
+      jPoint = node_i->GetPoint(iNeigh);
+      auto node_j = geometry->node[jPoint];
 
-  /*--- Loop over edge colors. ---*/
-  for (auto color : EdgeColoring)
-  {
-  SU2_OMP_FOR_DYN(chunkSize)
-  for(auto k = 0ul; k < color.size; ++k) {
+      iEdge = node_i->GetEdge(iNeigh);
+      Normal = geometry->edge[iEdge]->GetNormal();
+      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
-    iEdge = color.indices[k];
-#else
-  /*--- Natural coloring. ---*/
-  {
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-#endif
-    /*--- Point identification, Normal vector and area ---*/
+      /*--- Mean Values ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+      Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
+      Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
 
-    Normal = geometry->edge[iEdge]->GetNormal();
-    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
+      /*--- Adjustment for grid movement ---*/
 
-    /*--- Mean Values ---*/
+      if (dynamic_grid) {
+        const su2double *GridVel_i = node_i->GetGridVel();
+        const su2double *GridVel_j = node_j->GetGridVel();
 
-    Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
-    Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
+      }
 
-    /*--- Adjustment for grid movement ---*/
+      /*--- Inviscid contribution ---*/
 
-    if (dynamic_grid) {
-      const su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
-      const su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
+      nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
-      for (iDim = 0; iDim < nDim; iDim++)
-        Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
+      /*--- Viscous contribution ---*/
+
+      if (!viscous) continue;
+
+      Mean_LaminarVisc = 0.5*(nodes->GetLaminarViscosity(iPoint) + nodes->GetLaminarViscosity(jPoint));
+      Mean_EddyVisc    = 0.5*(nodes->GetEddyViscosity(iPoint) + nodes->GetEddyViscosity(jPoint));
+      Mean_Density     = 0.5*(nodes->GetDensity(iPoint) + nodes->GetDensity(jPoint));
+
+      Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
+      //TODO (REAL_GAS) removing Gamma it cannot work with FLUIDPROP
+      Lambda_2 = (1.0 + (Prandtl_Lam/Prandtl_Turb)*(Mean_EddyVisc/Mean_LaminarVisc))*(Gamma*Mean_LaminarVisc/Prandtl_Lam);
+
+      Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
+      nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+
     }
 
-    /*--- Inviscid contribution ---*/
-
-    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
-
-    /*--- Viscous contribution ---*/
-
-    if (!viscous) continue;
-
-    Mean_LaminarVisc = 0.5*(nodes->GetLaminarViscosity(iPoint) + nodes->GetLaminarViscosity(jPoint));
-    Mean_EddyVisc    = 0.5*(nodes->GetEddyViscosity(iPoint) + nodes->GetEddyViscosity(jPoint));
-    Mean_Density     = 0.5*(nodes->GetDensity(iPoint) + nodes->GetDensity(jPoint));
-
-    Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
-    //TODO (REAL_GAS) removing Gamma it cannot work with FLUIDPROP
-    Lambda_2 = (1.0 + (Prandtl_Lam/Prandtl_Turb)*(Mean_EddyVisc/Mean_LaminarVisc))*(Gamma*Mean_LaminarVisc/Prandtl_Lam);
-    Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
-
-    if (geometry->node[iPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(iPoint, Lambda);
-    if (geometry->node[jPoint]->GetDomain()) nodes->AddMax_Lambda_Visc(jPoint, Lambda);
-
   }
-  } // end color loop
 
   /*--- Loop boundary edges ---*/
 
@@ -3621,6 +3606,7 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
   /// TODO: Add worksharing to SetUnd_LaplZero and co.
   SU2_OMP_MASTER
   nodes->SetUnd_LaplZero();
+  SU2_OMP_BARRIER
 
   /*--- Loop interior edges ---*/
 
