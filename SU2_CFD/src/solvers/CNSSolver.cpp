@@ -413,16 +413,12 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
   auto residual = numerics->ComputeResidual(config);
 
-#ifdef HAVE_OMP
-  if (MGLevel != MESH_0) {
+  if ((MGLevel != MESH_0) && (omp_get_num_threads() > 1)) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
     if (implicit)
       Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
   }
   else {
-#else
-  {
-#endif
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
 

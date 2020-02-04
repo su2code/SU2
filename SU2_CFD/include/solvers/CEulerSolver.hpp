@@ -265,7 +265,10 @@ protected:
   unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size in edge loops must be a multiple of this. */
 
   /*--- Edge fluxes, for OpenMP parallelization on coarse grids. As it is difficult to
-   * color them, we first store the fluxes and then compute the sum for each cell. ---*/
+   * color them, we first store the fluxes and then compute the sum for each cell.
+   * This strategy is thread-safe but lower performance than writting to both end
+   * points of each edge, so we only use it when necessary, i.e. coarse grids and
+   * with more than one thread per MPI rank. ---*/
 
   CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
 
@@ -285,8 +288,13 @@ protected:
   template<ENUM_TIME_INT IntegrationType>
   void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
 
-public:
+  /*!
+   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SumEdgeFluxes(CGeometry* geometry);
 
+public:
 
   /*!
    * \brief Constructor of the class.
@@ -294,7 +302,7 @@ public:
   CEulerSolver(void);
 
   /*!
-   * \overload
+   * \overload Main constructor of this class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Grid level.
@@ -414,8 +422,18 @@ public:
                        CConfig *config,
                        unsigned short iMesh) final;
 
-  virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                CNumerics *numerics, CConfig *config) {}
+  /*!
+   * \brief Compute the viscous contribution for a particular edge.
+   * \note The convective residual methods include a call to this for each edge,
+   *       this allows convective and viscous loops to be "fused".
+   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                       CNumerics *numerics, CConfig *config) { }
 
   /*!
    * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
