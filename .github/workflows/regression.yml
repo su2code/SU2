@@ -102,7 +102,7 @@ jobs:
       matrix: 
         testdriver: ['test_driver']
         include:
-          - testscript: 'test_driver'
+          - testdriver: 'test_driver'
             tag: MPI
     steps:
       - name: Download Base
