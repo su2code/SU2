@@ -32,183 +32,25 @@
 
 CNSSolver::CNSSolver(void) : CEulerSolver() { }
 
-CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
+CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
+           CEulerSolver(geometry, config, iMesh, true) {
 
-  unsigned long iPoint, counter_local = 0, counter_global = 0, iVertex;
-  unsigned short iVar, iDim, iMarker, nLineLets;
-  su2double Density, Velocity2, Pressure, Temperature, StaticEnergy;
-  ifstream restart_file;
-  unsigned short nZone = geometry->GetnZone();
-  bool restart    = (config->GetRestart() || config->GetRestart_Flow());
-  int Unst_RestartIter = 0;
-  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                   (config->GetTime_Marching() == DT_STEPPING_2ND);
-  bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
+  /*--- This constructor only allocates/inits what is extra to CEulerSolver. ---*/
 
-  /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
-  dynamic_grid = config->GetDynamic_Grid();
+  unsigned short iMarker, iDim;
+  unsigned long iVertex;
 
-  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  string filename_ = "flow";
+  /*--- Store the values of the temperature and the heat flux density at the boundaries,
+   used for coupling with a solid donor cell ---*/
+  unsigned short nHeatConjugateVar = 4;
 
-  unsigned short direct_diff = config->GetDirectDiff();
-  bool rans = (config->GetKind_Turb_Model() != NONE);
-
-  /*--- Store the multigrid level. ---*/
-  MGLevel = iMesh;
-
-  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
-   before computing all the non-dimesional quantities. ---*/
-
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1) &&
-      (config->GetFixed_CL_Mode() || config->GetFixed_CM_Mode())) {
-
-    /*--- Modify file name for a dual-time unsteady restart ---*/
-
-    if (dual_time) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetTime_Marching() == DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+  HeatConjugateVar = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    HeatConjugateVar[iMarker] = new su2double* [nVertex[iMarker]];
+    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      HeatConjugateVar[iMarker][iVertex] = new su2double [nHeatConjugateVar]();
+      HeatConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
     }
-
-    /*--- Modify file name for a time stepping unsteady restart ---*/
-
-    if (time_stepping) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-    }
-
-    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
-
-    /*--- Read and store the restart metadata. ---*/
-
-    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
-
-  }
-
-  /*--- Set the gamma value ---*/
-
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
-  /*--- Define geometry constants in the solver structure
-   Compressible flow, primitive variables (T, vx, vy, vz, P, rho, h, c, lamMu, EddyMu, ThCond, Cp).
-   ---*/
-
-  nDim = geometry->GetnDim();
-
-  nVar = nDim+2;
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
-  nSecondaryVar = 8; nSecondaryVarGrad = 2;
-
-
-  /*--- Initialize nVarGrad for deallocation ---*/
-
-  nVarGrad = nPrimVarGrad;
-
-  nMarker      = config->GetnMarker_All();
-  nPoint       = geometry->GetnPoint();
-  nPointDomain = geometry->GetnPointDomain();
-
-  /*--- Store the number of vertices on each marker for deallocation later ---*/
-
-  nVertex = new unsigned long[nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
-    nVertex[iMarker] = geometry->nVertex[iMarker];
-
-  /*--- Perform the non-dimensionalization for the flow equations using the
-   specified reference values. ---*/
-
-  SetNondimensionalization(config, iMesh);
-
-  /*--- Check if we are executing a verification case. If so, the
-   VerificationSolution object will be instantiated for a particular
-   option from the available library of verification solutions. Note
-   that this is done after SetNondim(), as problem-specific initial
-   parameters are needed by the solution constructors. ---*/
-
-  SetVerificationSolution(nDim, nVar, config);
-
-  /*--- Define some auxiliar vector related with the residual ---*/
-
-  Residual      = new su2double[nVar]();
-  Residual_RMS  = new su2double[nVar]();
-  Residual_Max  = new su2double[nVar]();
-  Residual_i    = new su2double[nVar]();
-  Residual_j    = new su2double[nVar]();
-  Res_Conv      = new su2double[nVar]();
-  Res_Visc      = new su2double[nVar]();
-  Res_Sour      = new su2double[nVar]();
-
-  /*--- Define some structures for locating max residuals ---*/
-
-  Point_Max = new unsigned long[nVar];
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim]();
-  }
-
-  /*--- Define some auxiliary vectors related to the solution ---*/
-
-  Solution = new su2double[nVar]();
-
-  /*--- Define some auxiliary vectors related to the geometry ---*/
-
-  Vector = new su2double[nDim]();
-
-  /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
-
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-    iPoint_UndLapl = new su2double [nPoint];
-    jPoint_UndLapl = new su2double [nPoint];
-  }
-
-  /*--- Initialize the solution and right hand side vectors for storing
-   the residuals and updating the solution (always needed even for
-   explicit schemes). ---*/
-
-  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-
-  /*--- Jacobians and vector structures for implicit computations ---*/
-
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
-
-    Jacobian_i = new su2double* [nVar];
-    Jacobian_j = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new su2double [nVar];
-      Jacobian_j[iVar] = new su2double [nVar];
-    }
-
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-
-  }
-
-  else {
-    if (rank == MASTER_NODE)
-      cout << "Explicit scheme. No Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
-  }
-
-  /*--- Define some auxiliary vectors for computing flow variable
-   gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
-   c vector := transpose(WA)*(Wb) ---*/
-
-  if (config->GetLeastSquaresRequired()) {
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-
-    Cvector = new su2double* [nPrimVarGrad];
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      Cvector[iVar] = new su2double [nDim];
   }
 
   /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
@@ -218,75 +60,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     for(unsigned long i = 0; i < M; ++i)
       X[i] = new su2double [N[i]] ();
   };
-
-  /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
-
-  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, su2double***& X) {
-    X = new su2double** [M];
-    for(unsigned long i = 0; i < M; ++i) {
-      X[i] = new su2double* [N[i]];
-      for(unsigned long j = 0; j < N[i]; ++j)
-        X[i][j] = new su2double [P] ();
-    }
-  };
-
-  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
-
-  Alloc3D(nMarker, nVertex, nPrimVar, CharacPrimVar);
-
-  /*--- Store the value of the primitive variables + 2 turb variables at the boundaries,
-   used for IO with a donor cell ---*/
-
-  Alloc3D(nMarker, nVertex, (rans? nPrimVar+2 : nPrimVar), DonorPrimVar);
-
-  /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
-
-  DonorGlobalIndex = new unsigned long* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorGlobalIndex[iMarker] = new unsigned long [geometry->nVertex[iMarker]]();
-  }
-
-  /*--- Store the values of the temperature and the heat flux density at the boundaries,
-   used for coupling with a solid donor cell ---*/
-  unsigned short nHeatConjugateVar = 4;
-
-  HeatConjugateVar = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    HeatConjugateVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-      HeatConjugateVar[iMarker][iVertex] = new su2double [nHeatConjugateVar];
-      for (iVar = 1; iVar < nHeatConjugateVar ; iVar++) {
-        HeatConjugateVar[iMarker][iVertex][iVar] = 0.0;
-      }
-      HeatConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
-    }
-  }
-
-  /*--- Store the value of the Delta P at the Actuator Disk ---*/
-
-  Alloc2D(nMarker, nVertex, ActDisk_DeltaP);
-
-  /*--- Store the value of the Delta T at the Actuator Disk ---*/
-
-  Alloc2D(nMarker, nVertex, ActDisk_DeltaT);
-
-  /*--- Store the value of the Total Pressure at the inlet BC ---*/
-
-  Alloc2D(nMarker, nVertex, Inlet_Ttotal);
-
-  /*--- Store the value of the Total Temperature at the inlet BC ---*/
-
-  Alloc2D(nMarker, nVertex, Inlet_Ptotal);
-
-  /*--- Store the value of the Flow direction at the inlet BC ---*/
-
-  Alloc3D(nMarker, nVertex, nDim, Inlet_FlowDir);
-
-  /*--- Inviscid force definition and coefficient in all the markers ---*/
-
-  Alloc2D(nMarker, nVertex, CPressure);
-  Alloc2D(nMarker, nVertex, CPressureTarget);
 
   /*--- Heat flux in all the markers ---*/
 
@@ -303,19 +76,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     CSkinFriction[iMarker] = new su2double*[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
-      CSkinFriction[iMarker][iDim] = new su2double[geometry->nVertex[iMarker]] ();
+      CSkinFriction[iMarker][iDim] = new su2double[nVertex[iMarker]] ();
     }
   }
 
   /*--- Non dimensional aerodynamic coefficients ---*/
 
-  InvCoeff.allocate(nMarker);
-  MntCoeff.allocate(nMarker);
   ViscCoeff.allocate(nMarker);
-  SurfaceInvCoeff.allocate(config->GetnMarker_Monitoring());
-  SurfaceMntCoeff.allocate(config->GetnMarker_Monitoring());
   SurfaceViscCoeff.allocate(config->GetnMarker_Monitoring());
-  SurfaceCoeff.allocate(config->GetnMarker_Monitoring());
 
   /*--- Heat flux and buffet coefficients ---*/
 
@@ -335,228 +103,23 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   }
 
-  /*--- Supersonic coefficients ---*/
-
-  CEquivArea_Inv   = new su2double[nMarker];
-  CNearFieldOF_Inv = new su2double[nMarker];
-
-  /*--- Engine simulation ---*/
-
-  Inflow_MassFlow     = new su2double[nMarker];
-  Inflow_Pressure     = new su2double[nMarker];
-  Inflow_Mach         = new su2double[nMarker];
-  Inflow_Area         = new su2double[nMarker];
-
-  Exhaust_MassFlow    = new su2double[nMarker];
-  Exhaust_Pressure    = new su2double[nMarker];
-  Exhaust_Temperature = new su2double[nMarker];
-  Exhaust_Area        = new su2double[nMarker];
-
   /*--- Read farfield conditions from config ---*/
 
-  Density_Inf     = config->GetDensity_FreeStreamND();
-  Pressure_Inf    = config->GetPressure_FreeStreamND();
-  Velocity_Inf    = config->GetVelocity_FreeStreamND();
-  Energy_Inf      = config->GetEnergy_FreeStreamND();
-  Temperature_Inf = config->GetTemperature_FreeStreamND();
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-  Mach_Inf        = config->GetMach();
   Prandtl_Lam     = config->GetPrandtl_Lam();
   Prandtl_Turb    = config->GetPrandtl_Turb();
   Tke_Inf         = config->GetTke_FreeStreamND();
 
-  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+  /*--- Initialize the seed values for forward mode differentiation. ---*/
 
-  switch(direct_diff) {
-    case NO_DERIVATIVE:
-      break;
-    case D_DENSITY:
-      SU2_TYPE::SetDerivative(Density_Inf, 1.0);
-      break;
-    case D_PRESSURE:
-      SU2_TYPE::SetDerivative(Pressure_Inf, 1.0);
-      break;
-    case D_TEMPERATURE:
-      SU2_TYPE::SetDerivative(Temperature_Inf, 1.0);
-      break;
+  switch(config->GetDirectDiff()) {
     case D_VISCOSITY:
       SU2_TYPE::SetDerivative(Viscosity_Inf, 1.0);
       break;
-    case D_MACH: case D_AOA:
-    case D_SIDESLIP: case D_REYNOLDS:
-    case D_TURB2LAM: case D_DESIGN:
-      /*--- Already done in postprocessing of config ---*/
-      break;
     default:
+      /*--- Already done upstream. ---*/
       break;
   }
-
-  /*--- Initialize fan face pressure, fan face mach number, and mass flow rate ---*/
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inflow_MassFlow[iMarker]     = 0.0;
-    Inflow_Mach[iMarker]         = Mach_Inf;
-    Inflow_Pressure[iMarker]     = Pressure_Inf;
-    Inflow_Area[iMarker]         = 0.0;
-
-    Exhaust_MassFlow[iMarker]    = 0.0;
-    Exhaust_Temperature[iMarker] = Temperature_Inf;
-    Exhaust_Pressure[iMarker]    = Pressure_Inf;
-    Exhaust_Area[iMarker]        = 0.0;
-
-  }
-  /*--- Initializate quantities for SlidingMesh Interface ---*/
-
-  SlidingState       = new su2double*** [nMarker];
-  SlidingStateNodes  = new int*         [nMarker];
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
-
-    SlidingState[iMarker]      = NULL;
-    SlidingStateNodes[iMarker] = NULL;
-
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
-
-      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)]();
-      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)]();
-
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++)
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1]();
-    }
-  }
-
-  /*--- Only initialize when there is a Marker_Fluid_Load
-   *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
-  if((config->GetnMarker_Fluid_Load() > 0) && (MGLevel == MESH_0)){
-
-    InitVertexTractionContainer(geometry, config);
-
-    if (config->GetDiscrete_Adjoint())
-      InitVertexTractionAdjointContainer(geometry, config);
-
-  }
-
-  /*--- Initialize the solution to the far-field state everywhere. ---*/
-
-  nodes = new CNSVariable(Density_Inf, Velocity_Inf, Energy_Inf, nPoint, nDim, nVar, config);
-  SetBaseClassPointerToNodes();
-
-#ifdef HAVE_OMP
-  /*--- On the fine grid get the edge coloring, on coarse grids (which are difficult to color)
-   *    setup the reducer strategy, i.e. one loop over edges followed by a point loop to sum
-   *    the fluxes for each cell and set the diagonal of the system matrix. ---*/
-
-  const auto& coloring = geometry->GetEdgeColoring();
-
-  if (!coloring.empty()) {
-    auto nColor = coloring.getOuterSize();
-    EdgeColoring.resize(nColor);
-
-    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      EdgeColoring[iColor].size = coloring.getNumNonZeros(iColor);
-      EdgeColoring[iColor].indices = coloring.innerIdx(iColor);
-    }
-  }
-  ColorGroupSize = geometry->GetEdgeColorGroupSize();
-
-  if (MGLevel != MESH_0) {
-    EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
-  }
-
-  omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
-#endif
-
-  /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
-
-  counter_local = 0;
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    Density = nodes->GetDensity(iPoint);
-
-    Velocity2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Velocity2 += pow(nodes->GetSolution(iPoint,iDim+1)/Density,2);
-
-    StaticEnergy= nodes->GetEnergy(iPoint) - 0.5*Velocity2;
-
-    GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
-    Pressure= GetFluidModel()->GetPressure();
-    Temperature= GetFluidModel()->GetTemperature();
-
-    /*--- Use the values at the infinity ---*/
-
-    if ((Pressure < 0.0) || (Density < 0.0) || (Temperature < 0.0)) {
-      Solution[0] = Density_Inf;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
-      Solution[nDim+1] = Energy_Inf*Density_Inf;
-      nodes->SetSolution(iPoint,Solution);
-      nodes->SetSolution_Old(iPoint,Solution);
-      counter_local++;
-    }
-
-  }
-
-  /*--- Warning message about non-physical points ---*/
-
-  if (config->GetComm_Level() == COMM_FULL) {
-
-    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-
-    if ((rank == MASTER_NODE) && (counter_global != 0))
-      cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
-  }
-
-  /*--- Initialize the BGS residuals in FSI problems. ---*/
-  if (config->GetMultizone_Residual()){
-    Residual_BGS      = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 1.0;
-    Residual_Max_BGS  = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS = new unsigned long[nVar]();
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
-    }
-  }
-
-  /*--- Define solver parameters needed for execution of destructor ---*/
-
-  space_centered = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  euler_implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  least_squares = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
-
-  /*--- Communicate and store volume and the number of neighbors for
-   any dual CVs that lie on on periodic markers. ---*/
-
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
-  }
-  SetImplicitPeriodic(euler_implicit);
-  if (iMesh == MESH_0) SetRotatePeriodic(true);
-
-  /*--- Perform the MPI communication of the solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /* Store the initial CFL number for all grid points. */
-
-  const su2double CFL = config->GetCFL(MGLevel);
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    nodes->SetLocalCFL(iPoint, CFL);
-  }
-  Min_CFL_Local = CFL;
-  Max_CFL_Local = CFL;
-  Avg_CFL_Local = CFL;
-
-  /*--- Add the solver name (max 8 characters) ---*/
-  SolverName = "C.FLOW";
 
 }
 
