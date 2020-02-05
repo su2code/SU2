@@ -41,7 +41,7 @@ def main():
     #########################
 
     # Dry run test Euler
-    channel_d           = TestCase('Dry run Euler')
+    channel_d           = TestCase('dry run Euler')
     channel_d.cfg_dir   = "euler/channel"
     channel_d.cfg_file  = "inv_channel_RK.cfg"
     channel_d.su2_exec  = "SU2_CFD -d"
@@ -138,7 +138,7 @@ def main():
     ##########################
 
     # Dry run test NS
-    flatplate_d           = TestCase('Dry run NS')
+    flatplate_d           = TestCase('dry run NS')
     flatplate_d.cfg_dir   = "navierstokes/flatplate"
     flatplate_d.cfg_file  = "lam_flatplate.cfg"
     flatplate_d.su2_exec  = "SU2_CFD -d"
@@ -210,7 +210,7 @@ def main():
     ##########################
 
     # Dry run RANS
-    rae2822_sa_d           = TestCase('Dry run RANS')
+    rae2822_sa_d           = TestCase('dry run RANS')
     rae2822_sa_d .cfg_dir   = "rans/rae2822"
     rae2822_sa_d .cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa_d .su2_exec  = "SU2_CFD -d"
@@ -345,7 +345,7 @@ def main():
     #############################
 
     # Dry run Inc Euler
-    inc_euler_naca0012_d           = TestCase('Dry run Inc Euler')
+    inc_euler_naca0012_d           = TestCase('dry run Inc Euler')
     inc_euler_naca0012_d.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012_d.cfg_file  = "incomp_NACA0012.cfg"
     inc_euler_naca0012_d.su2_exec  = "SU2_CFD -d"
@@ -381,7 +381,7 @@ def main():
     #############################
 
     # Dry Run Inc. NS
-    inc_lam_cylinder_d          = TestCase('Dry run Inc. NS')
+    inc_lam_cylinder_d          = TestCase('dry run Inc. NS')
     inc_lam_cylinder_d.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_lam_cylinder_d.cfg_file  = "incomp_cylinder.cfg"
     inc_lam_cylinder_d.su2_exec  = "SU2_CFD -d"
@@ -440,7 +440,7 @@ def main():
     ############################
 
     # Dry run Inc. RANS
-    inc_turb_naca0012_d           = TestCase('Dry run Inc. RANS')
+    inc_turb_naca0012_d           = TestCase('dry run Inc. RANS')
     inc_turb_naca0012_d.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012_d.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012_d.su2_exec  = "SU2_CFD -d"
@@ -475,7 +475,7 @@ def main():
     ####################
     
     # Dry run DG Euler
-    fem_euler_naca0012_d           = TestCase('Dry run DG Euler')
+    fem_euler_naca0012_d           = TestCase('dry run DG Euler')
     fem_euler_naca0012_d.cfg_dir   = "hom_euler/NACA0012_5thOrder"
     fem_euler_naca0012_d.cfg_file  = "fem_NACA0012_reg.cfg"
     fem_euler_naca0012_d.su2_exec  = "SU2_CFD -d"
@@ -499,7 +499,7 @@ def main():
     ############################
     
     # Dry run DG NS
-    fem_ns_flatplate_d           = TestCase('Dry run DG NS')
+    fem_ns_flatplate_d           = TestCase('dry run DG NS')
     fem_ns_flatplate_d.cfg_dir   = "hom_navierstokes/FlatPlate/nPoly4"
     fem_ns_flatplate_d.cfg_file  = "lam_flatplate_reg.cfg"
     fem_ns_flatplate_d.su2_exec  = "SU2_CFD -d"
@@ -602,7 +602,7 @@ def main():
     #####################################
 
     # Dry run Cont. Adj. Euler
-    contadj_naca0012_d           = TestCase('Dry run Cont. Adj. Euler')
+    contadj_naca0012_d           = TestCase('dry run Cont. Adj. Euler')
     contadj_naca0012_d.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012_d.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012_d.su2_exec  = "SU2_CFD -d"
@@ -662,7 +662,7 @@ def main():
     ###################################
 
     # Dry run Cont. Adj. NS
-    contadj_ns_cylinder_d           = TestCase('Dry run Cont. Adj. NS')
+    contadj_ns_cylinder_d           = TestCase('dry run Cont. Adj. NS')
     contadj_ns_cylinder_d.cfg_dir   = "cont_adj_navierstokes/cylinder"
     contadj_ns_cylinder_d.cfg_file  = "lam_cylinder.cfg"
     contadj_ns_cylinder_d.su2_exec  = "SU2_CFD -d"
@@ -1044,7 +1044,7 @@ def main():
     ######################################
 
     # Dry run Multizone
-    uniform_flow_d         = TestCase('Dry run Multizone')
+    uniform_flow_d         = TestCase('dry run Multizone')
     uniform_flow_d.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow_d.cfg_file  = "uniform_NN.cfg"
     uniform_flow_d.su2_exec  = "SU2_CFD -d"
@@ -1170,7 +1170,7 @@ def main():
     ##########################
 
     # Dry run FEA
-    statbeam3d_d           = TestCase('Dry run FEA')
+    statbeam3d_d           = TestCase('dry run FEA')
     statbeam3d_d.cfg_dir   = "fea_fsi/StatBeam_3d"
     statbeam3d_d.cfg_file  = "configBeam_3d.cfg"
     statbeam3d_d.su2_exec  = "SU2_CFD -d"
@@ -1280,7 +1280,7 @@ def main():
     # ###############################
 
     # Dry run CHT
-    cht_incompressible_d           = TestCase('Dry run CHT')
+    cht_incompressible_d           = TestCase('dry run CHT')
     cht_incompressible_d.cfg_dir   = "coupled_cht/incomp_2d"
     cht_incompressible_d.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible_d.su2_exec  = "SU2_CFD -d"
