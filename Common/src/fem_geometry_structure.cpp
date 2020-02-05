@@ -5437,6 +5437,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
      config->GetTime_Marching() == ROTATIONAL_FRAME) {
     if( UseLumpedMassMatrix) LumpedMassMatrix      = true;
     else                     FullInverseMassMatrix = true;
+    if(config->GetKind_TimeIntScheme_Flow()==EULER_IMPLICIT) FullMassMatrix = true;
   }
   else if(config->GetTime_Marching() == DT_STEPPING_1ST ||
           config->GetTime_Marching() == DT_STEPPING_2ND ||
