@@ -59,7 +59,7 @@ def main():
     channel.new_output = True
     channel.tol       = 0.00001
     test_list.append(channel)
-    
+   
     # NACA0012 
     naca0012           = TestCase('naca0012')
     naca0012.cfg_dir   = "euler/naca0012"
