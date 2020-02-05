@@ -3757,6 +3757,10 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
     case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
       StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
+  
+  /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
+  
+  StopCalc = (ExtIter == Max_Iter - 1);
 
   return StopCalc;
 
@@ -3764,7 +3768,7 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
 
 
 void CFluidDriver::Output(unsigned long InnerIter) {
-
+  
   for (iZone = 0; iZone < nZone; iZone++) {
     const auto inst = config_container[iZone]->GetiInst();
 
