@@ -217,6 +217,9 @@ protected:
   vector<vector<unsigned long> > nonZeroEntriesJacobian; /*!< \brief The ID's of the DOFs for the
                                                                      non-zero entries of the Jacobian
                                                                      for the locally owned DOFs. */
+  vector<passivedouble> SpatialJacobian;    /*!< \brief Vector containing the Spatial Jacobian used for implicit schemes. */
+
+  vector<su2double> ResRMSinitial;       /*!< \brief Vector containing the initial RMS residuals used for implicit schemes. */
 
   int nGlobalColors;              /*!< \brief Number of global colors for the Jacobian computation. */
 
@@ -900,6 +903,14 @@ public:
                               CConfig *config,
                               unsigned short iRKStep) final;
 
+  /*!
+   * \brief Update the solution using an implicit Euler scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
   /*!
    * \brief Update the solution using the classical fourth-order Runge-Kutta scheme.
    * \param[in] geometry - Geometrical definition of the problem.

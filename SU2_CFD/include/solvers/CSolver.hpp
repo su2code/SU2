@@ -181,6 +181,10 @@ public:
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
 
   vector<string> fields;
+
+  su2double Time_JACOBIAN;
+  su2double Time_LINSOL;
+  
   /*!
    * \brief Constructor of the class.
    */

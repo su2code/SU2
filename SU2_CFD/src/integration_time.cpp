@@ -966,6 +966,15 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
                                                                                               numerics_container[iZone][iInst][iMesh][SolContainer_Position],
                                                                                               config[iZone], iMesh, RunTime_EqSystem);
     }
+    else if (config[iZone]->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
+      solver_container[iZone][iInst][iMesh][SolContainer_Position]->ComputeSpatialJacobian(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
+                                                                                           numerics_container[iZone][iInst][iMesh][SolContainer_Position],
+                                                                                           config[iZone], iMesh, RunTime_EqSystem);
+      
+      Time_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
+                         config[iZone], iStep, RunTime_EqSystem);
+
+    }
     else {
 
       /*--- Time and space integration can be decoupled. ---*/
@@ -1037,6 +1046,9 @@ void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver
       break;
     case (CLASSICAL_RK4_EXPLICIT):
       solver_container[MainSolver]->ClassicalRK4_Iteration(geometry, solver_container, config, iStep);
+      break;
+    case (EULER_IMPLICIT):
+      solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
       break;
     default:
       SU2_MPI::Error("Time integration scheme not implemented.", CURRENT_FUNCTION);
