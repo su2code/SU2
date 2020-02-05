@@ -336,7 +336,7 @@ void CDiscAdjMultizoneDriver::Run() {
     bool checkSensitivity = StopCalc || ((iOuterIter % wrt_sol_freq == 0) && (iOuterIter != 0));
 
     if (checkSensitivity)
-      EvaluateSensitivities(iOuterIter, StopCalc);//Pass TimeIter instead?
+      EvaluateSensitivities(iOuterIter, StopCalc);
   }
 }
 
@@ -385,7 +385,7 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
       case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
 
-        if(Has_Deformation(iZone)) {
+        if(Has_Deformation(iZone) && config_container[iZone]->GetDeform_Mesh()) {
           solvers[ADJMESH_SOL]->SetSensitivity(geometry, solvers, config);
         } else {
           solvers[ADJFLOW_SOL]->SetSensitivity(geometry, solvers, config);
@@ -465,7 +465,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
       unsigned short type_recording = kind_recording;
 
-      if (Has_Deformation(iZone) && (kind_recording == MESH_COORDS)) {
+      if (Has_Deformation(iZone) && (kind_recording == MESH_COORDS) && config_container[iZone]->GetDeform_Mesh()) {
         type_recording = MESH_DEFORM;
       }
 

@@ -744,8 +744,6 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   if (nZone > 1)
     filename = config->GetMultizone_FileName(filename, iZone, "");
-//  if (config->GetTime_Domain())
-//    filename = GetUnsteady_FileName(filename, (int)Iter, ext);
 
   /*--- Determine how many files need to be read. ---*/
 
@@ -759,7 +757,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     int Unst_RestartIter;
     if (config->GetRestart()) Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter()) - SU2_TYPE::Int(config->GetTimeIter())-iStep-1;
     else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - SU2_TYPE::Int(config->GetTimeIter())-iStep-1;
-cout << "CVC: Debug: Unst_RestartIter = " << Unst_RestartIter << endl;
+
     if (Unst_RestartIter < 0) {
 
       if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting initial mesh" << endl;
