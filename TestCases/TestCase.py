@@ -129,7 +129,7 @@ class TestCase:
                     pass
                 timed_out = True
                 passed    = False
-        
+
         # Examine the output
         f = open(logfilename,'r')
         output = f.readlines()
@@ -185,7 +185,7 @@ class TestCase:
 
 
         process.communicate()
-        if not process.returncode == 0:
+        if process.returncode != 0:
             passed = False
         if passed:
             print("%s: PASSED"%self.tag)
