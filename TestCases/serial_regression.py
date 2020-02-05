@@ -1204,6 +1204,7 @@ def main():
     cht_incompressible_unsteady.su2_exec  = "SU2_CFD"
     cht_incompressible_unsteady.timeout   = 1600
     cht_incompressible_unsteady.multizone = True
+    cht_incompressible_unsteady.unsteady  = True
     cht_incompressible_unsteady.tol       = 0.00001
     test_list.append(cht_incompressible_unsteady)
 
