@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_SOL.
  *        The subroutines and functions are in the <i>SU2_SOL.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@
 #include "../../SU2_CFD/include/solvers/CBaselineSolver_FEM.hpp"
 #include "../../SU2_CFD/include/output/CBaselineOutput.hpp"
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
-#include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/CConfig.hpp"
 
 
 void WriteFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container, COutput* output, unsigned long TimeIter);
