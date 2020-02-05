@@ -760,7 +760,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     if (Unst_RestartIter < 0) {
 
-      if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting initial mesh" << endl;
+      if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting known solution" << endl;
 
       /*--- Set loaded solution into correct previous time containers. ---*/
       unsigned long iPoint;
@@ -769,7 +769,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
           if(iStep==1)
             nodes->Set_Solution_time_n(iPoint, iDim, nodes->GetSolution(iPoint, iDim));
           else
-            nodes->Set_Solution_time_n1(iPoint, iDim, nodes->GetSolution(iPoint, iDim));
+            nodes->Set_Solution_time_n1(iPoint, iDim, nodes->GetSolution_time_n(iPoint, iDim));
         }
       }
     }
