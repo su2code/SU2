@@ -3,7 +3,7 @@
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -46,7 +46,7 @@
 #include "../sgs_model.hpp"
 #include "../../../Common/include/fem_geometry_structure.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../../Common/include/config_structure.hpp"
+#include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/linear_algebra/CSysMatrix.hpp"
 #include "../../../Common/include/linear_algebra/CSysVector.hpp"
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"

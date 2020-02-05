@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -694,7 +694,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
                                                 curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
-      
+
     case STL:
 
       if (fileName.empty())
@@ -724,19 +724,19 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
     /*--- Write data to file ---*/
 
     fileWriter->Write_Data();
-    
-    su2double BandWidth = fileWriter->Get_Bandwidth();    
+
+    su2double BandWidth = fileWriter->Get_Bandwidth();
 
     /*--- Compute and store the bandwidth ---*/
 
     if (format == RESTART_BINARY){
       config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+BandWidth);
     }
-    
+
     if (config->GetWrt_Performance() && (rank == MASTER_NODE)){
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
       (*fileWritingTable) << " " << "(" + PrintingToolbox::to_string(BandWidth) + " MB/s)";
-      fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);      
+      fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
     }
 
     delete fileWriter;
@@ -1779,7 +1779,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
 void COutput::Postprocess_HistoryFields(CConfig *config){
 
   map<string, bool> Average;
-  map<string, string> AverageGroupName =  CCreateMap<string, string>("BGS_RES", "bgs")("RMS_RES","rms")("MAX_RES", "max");
+  map<string, string> AverageGroupName = {{"BGS_RES", "bgs"},{"RMS_RES","rms"},{"MAX_RES", "max"}};
 
   for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
     const string &fieldIdentifier = historyOutput_List[iField];
