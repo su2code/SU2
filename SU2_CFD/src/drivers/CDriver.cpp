@@ -4016,6 +4016,10 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
     StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
+  
+  /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
+  
+  StopCalc = StopCalc || (ExtIter == Max_Iter - 1);
 
   return StopCalc;
 
