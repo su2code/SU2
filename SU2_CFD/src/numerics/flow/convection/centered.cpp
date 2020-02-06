@@ -357,9 +357,13 @@ CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_n
   MeanVelocity = new su2double[nDim];
   ProjFlux     = new su2double[nVar];
   Precon       = new su2double*[nVar];
-
-  for (iVar = 0; iVar < nVar; iVar++)
+  Jacobian_i   = new su2double* [nVar];
+  Jacobian_j   = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
     Precon[iVar] = new su2double[nVar];
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
+  }
 
 }
 
@@ -375,9 +379,18 @@ CCentLaxInc_Flow::~CCentLaxInc_Flow(void) {
     delete [] Precon[iVar];
   delete [] Precon;
 
+  if (Jacobian_i != nullptr) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      delete [] Jacobian_i[iVar];
+      delete [] Jacobian_j[iVar];
+    }
+    delete [] Jacobian_i;
+    delete [] Jacobian_j;
+  }
+
 }
 
-void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, const CConfig* config) {
+CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* config) {
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0, ProjVelocity = 0.0;
@@ -427,19 +440,13 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   GetInviscidIncProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, &MeanEnthalpy, Normal, ProjFlux);
 
-  /*--- Compute inviscid residual ---*/
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = ProjFlux[iVar];
-  }
-
   /*--- Jacobians of the inviscid flux ---*/
 
   if (implicit) {
-    GetInviscidIncProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanTemperature, &MeandRhodT, Normal, 0.5, val_Jacobian_i);
+    GetInviscidIncProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanTemperature, &MeandRhodT, Normal, 0.5, Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
+        Jacobian_j[iVar][jVar] = Jacobian_i[iVar][jVar];
       }
     }
   }
@@ -460,17 +467,17 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
     /*--- Residual contributions ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
+      ProjFlux[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
 
       /*--- Jacobian contributions ---*/
       /*--- Implicit terms ---*/
       if (implicit) {
         for (iDim = 0; iDim < nDim; iDim++){
-          val_Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
-          val_Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
+          Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
+          Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
         }
-        val_Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
-        val_Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
+        Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
+        Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
       }
     }
   }
@@ -518,10 +525,10 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
-      val_residual[iVar] += Precon[iVar][jVar]*Epsilon_0*Diff_V[jVar]*StretchingFactor*MeanLambda;
+      ProjFlux[iVar] += Precon[iVar][jVar]*Epsilon_0*Diff_V[jVar]*StretchingFactor*MeanLambda;
       if (implicit) {
-        val_Jacobian_i[iVar][jVar] += Precon[iVar][jVar]*Epsilon_0*StretchingFactor*MeanLambda;
-        val_Jacobian_j[iVar][jVar] -= Precon[iVar][jVar]*Epsilon_0*StretchingFactor*MeanLambda;
+        Jacobian_i[iVar][jVar] += Precon[iVar][jVar]*Epsilon_0*StretchingFactor*MeanLambda;
+        Jacobian_j[iVar][jVar] -= Precon[iVar][jVar]*Epsilon_0*StretchingFactor*MeanLambda;
       }
     }
   }
@@ -529,17 +536,20 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   /*--- Remove energy contributions if we aren't solving the energy equation. ---*/
 
   if (!energy) {
-    val_residual[nDim+1] = 0.0;
+    ProjFlux[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {
-        val_Jacobian_i[iVar][nDim+1] = 0.0;
-        val_Jacobian_j[iVar][nDim+1] = 0.0;
+        Jacobian_i[iVar][nDim+1] = 0.0;
+        Jacobian_j[iVar][nDim+1] = 0.0;
 
-        val_Jacobian_i[nDim+1][iVar] = 0.0;
-        val_Jacobian_j[nDim+1][iVar] = 0.0;
+        Jacobian_i[nDim+1][iVar] = 0.0;
+        Jacobian_j[nDim+1][iVar] = 0.0;
       }
     }
   }
+
+  return ResidualType<>(ProjFlux, Jacobian_i, Jacobian_j);
+
 }
 
 
@@ -566,9 +576,13 @@ CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_n
   MeanVelocity = new su2double [nDim];
   ProjFlux     = new su2double [nVar];
   Precon       = new su2double*[nVar];
-
-  for (iVar = 0; iVar < nVar; iVar++)
+  Jacobian_i   = new su2double* [nVar];
+  Jacobian_j   = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
     Precon[iVar] = new su2double[nVar];
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
+  }
 
 }
 
@@ -585,9 +599,18 @@ CCentJSTInc_Flow::~CCentJSTInc_Flow(void) {
     delete [] Precon[iVar];
   delete [] Precon;
 
+  if (Jacobian_i != nullptr) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      delete [] Jacobian_i[iVar];
+      delete [] Jacobian_j[iVar];
+    }
+    delete [] Jacobian_i;
+    delete [] Jacobian_j;
+  }
+
 }
 
-void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, const CConfig* config) {
+CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* config) {
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0;
@@ -637,17 +660,13 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   GetInviscidIncProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, &MeanEnthalpy, Normal, ProjFlux);
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = ProjFlux[iVar];
-  }
-
   /*--- Jacobians of the inviscid flux ---*/
 
   if (implicit) {
-    GetInviscidIncProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanTemperature, &MeandRhodT, Normal, 0.5, val_Jacobian_i);
+    GetInviscidIncProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanTemperature, &MeandRhodT, Normal, 0.5, Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
+        Jacobian_j[iVar][jVar] = Jacobian_i[iVar][jVar];
       }
     }
   }
@@ -669,17 +688,17 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
     /*--- Residual contributions ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
+      ProjFlux[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
 
       /*--- Jacobian contributions ---*/
       /*--- Implicit terms ---*/
       if (implicit) {
         for (iDim = 0; iDim < nDim; iDim++){
-          val_Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
-          val_Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
+          Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
+          Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
         }
-        val_Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
-        val_Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
+        Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
+        Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
       }
     }
   }
@@ -732,10 +751,10 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
-      val_residual[iVar] += Precon[iVar][jVar]*(Epsilon_2*Diff_V[jVar] - Epsilon_4*Diff_Lapl[jVar])*StretchingFactor*MeanLambda;
+      ProjFlux[iVar] += Precon[iVar][jVar]*(Epsilon_2*Diff_V[jVar] - Epsilon_4*Diff_Lapl[jVar])*StretchingFactor*MeanLambda;
       if (implicit) {
-        val_Jacobian_i[iVar][jVar] += Precon[iVar][jVar]*(Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
-        val_Jacobian_j[iVar][jVar] -= Precon[iVar][jVar]*(Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
+        Jacobian_i[iVar][jVar] += Precon[iVar][jVar]*(Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
+        Jacobian_j[iVar][jVar] -= Precon[iVar][jVar]*(Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
       }
     }
   }
@@ -743,15 +762,18 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   /*--- Remove energy contributions if not solving the energy equation. ---*/
 
   if (!energy) {
-    val_residual[nDim+1] = 0.0;
+    ProjFlux[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {
-        val_Jacobian_i[iVar][nDim+1] = 0.0;
-        val_Jacobian_j[iVar][nDim+1] = 0.0;
+        Jacobian_i[iVar][nDim+1] = 0.0;
+        Jacobian_j[iVar][nDim+1] = 0.0;
 
-        val_Jacobian_i[nDim+1][iVar] = 0.0;
-        val_Jacobian_j[nDim+1][iVar] = 0.0;
+        Jacobian_i[nDim+1][iVar] = 0.0;
+        Jacobian_j[nDim+1][iVar] = 0.0;
       }
     }
   }
+
+  return ResidualType<>(ProjFlux, Jacobian_i, Jacobian_j);
+
 }

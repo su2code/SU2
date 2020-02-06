@@ -36,7 +36,7 @@
  * \ingroup ConvDiscr
  * \author F. Palacios, T. Economon
  */
-class CUpwFDSInc_Flow : public CNumerics {
+class CUpwFDSInc_Flow final : public CNumerics {
 private:
   bool implicit,     /*!< \brief Implicit calculation. */
   dynamic_grid,      /*!< \brief Modification for grid movement. */
@@ -54,6 +54,10 @@ private:
   MeanDensity, MeanPressure, MeanSoundSpeed, MeanBetaInc2, MeanEnthalpy, MeanCp, MeanTemperature; /*!< \brief Mean values of primitive variables. */
   unsigned short iDim, iVar, jVar, kVar;
 
+  su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
+  su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
+
 public:
 
   /*!
@@ -62,7 +66,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -71,11 +75,9 @@ public:
 
   /*!
    * \brief Compute the upwind flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the residual array.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                       CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
 };
