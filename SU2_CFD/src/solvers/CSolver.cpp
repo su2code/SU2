@@ -4322,6 +4322,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                   else
                     Inlet_Columns[iRow]=Inlet_Data[index+iCol];
                 }
+                cout<<"in the SetSpline CSolver for loop"<<endl;
               /* --- Interpolation functions made for all columns ---*/
                 interpolator[iCol]->SetSpline(Inlet_Radii,Inlet_Columns);
               }
