@@ -2474,7 +2474,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
     tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_OWNED,          0,  1));               // Task 10
     tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION,           0,  2, 8));            // Task 11
     tasksList.push_back(CTaskDefinition(CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS, 0,  2, 6, 9, 10, 11)); // Task 12
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX,                 0, 12));               // Task 13
+    // tasksList.push_back(CTaskDefinition(CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX,                 0, 12));               // Task 13
   }
 }
 
@@ -7513,7 +7513,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
       Time_LINSOL = Timer_end - Timer_start;
     }
 
-    PStatPrint(&options, &stat, &grid);
+    // PStatPrint(&options, &stat, &grid);
 
     // std::cout << "berr: " << berr[0] << std::endl;
     // Eigen::VectorXd mSol_delta(nDOFsLocOwned*nVar);
