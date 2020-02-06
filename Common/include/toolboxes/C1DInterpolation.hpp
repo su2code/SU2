@@ -43,24 +43,7 @@ public:
 virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
 virtual su2double EvaluateSpline(su2double Point_Interp){}
 virtual bool GetPointMatch(){return Point_Match;}
-/*
-void Interpolation_Set(vector<su2double> &x, vector<su2double> &y, CConfig *config){
-switch(config->GetKindInletInterpolationFunction()){
-    case (ONED_AKIMASPLINE_SPANWISE):
-        return this->SetAkimaSpline(x,y);
-    case(ONED_LINEAR_SPANWISE):
-        return this->SetLinearSpline(x,y);
-}
 
-}
-
-su2double Interpolation_Evaluate(su2double Point_Interp, string Interpolation_Function){
-        if(Interpolation_Type == "Akima")
-        return this->EvalAkimaSpline(Point_Interp);
-    else if(Interpolation_Type == "Linear")
-        return this->EvalLinearSpline(Point_Interp);
-}
-*/
 vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
                                     su2double Theta ,
                                     unsigned short nDim, 
@@ -77,11 +60,17 @@ protected:
     vector<su2double> x,y,b,c,d;
     int n;
 public:
-/*   CAkimaInterpolation(vector<su2double> &x, vector<su2double> &y, unsigned short nColumns){
-        SetAkimaSpline(x, y);
-
-
-}*/
+/*
+   CAkimaInterpolation(vector<su2double> Inlet_Data, unsigned short nColumns, unsigned long nRows){
+        
+    vector<CAkimaInterpolation> Interpolated_Data (nColumns);
+    
+    /*--- Sort Data Column wise for interpolation ---
+    vector<su2double> Inlet_Columns (nRows);
+    vector<su2double> Inlet_Radii (nRows);
+    SetSpline(x, y);
+}
+*/
     void SetSpline(vector<su2double> &x, vector<su2double> &y);
     su2double EvaluateSpline(su2double Point_Interp);
     bool GetPointMatch(){return Point_Match;}
