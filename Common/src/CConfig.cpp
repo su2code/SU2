@@ -407,7 +407,7 @@ void CConfig::addMathProblemOption(const string name, bool & ContinuousAdjoint, 
                           bool & Reduced_Model, const bool & Reduced_Model_default) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default, Restart_Flow, Restart_Flow_default);
+  COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default, Restart_Flow, Restart_Flow_default, Reduced_Model, Reduced_Model_default);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
