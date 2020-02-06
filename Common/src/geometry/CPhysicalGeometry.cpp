@@ -5098,6 +5098,9 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   vector<unsigned long> elemIDs;
   vector<unsigned short> VTK_TypeElem;
   vector<unsigned short> markerIDs;
+  vector<su2double> roughheights;
+  string         Marker_Tag;
+  su2double      roughness;
 
   /* Loop over the boundary markers. */
 
@@ -5106,6 +5109,9 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
     /* Check for a viscous wall. */
     if( config->GetViscous_Wall(iMarker)) {
+      
+      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      roughness = config->GetWall_RoughnessHeight(Marker_Tag);
 
       /* Loop over the surface elements of this marker. */
       for(unsigned long iElem=0; iElem < nElem_Bound[iMarker]; iElem++) {
@@ -5126,7 +5132,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
         markerIDs.push_back(iMarker);
         VTK_TypeElem.push_back(VTK_Type);
         elemIDs.push_back(iElem);
-
+        roughheights.push_back(roughness);
+        
         for (unsigned short iNode = 0; iNode < nDOFsPerElem; iNode++)
           surfaceConn.push_back(bound[iMarker][iElem]->GetNode(iNode));
       }
@@ -5163,7 +5170,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
   /* Build the ADT. */
   CADTElemClass WallADT(nDim, surfaceCoor, surfaceConn, VTK_TypeElem,
-                           markerIDs, elemIDs, true);
+                           markerIDs, elemIDs, roughheights, true);
 
   /* Release the memory of the vectors used to build the ADT. To make sure
      that all the memory is deleted, the swap function is used. */
@@ -5172,6 +5179,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   vector<unsigned long>().swap(elemIDs);
   vector<unsigned long>().swap(surfaceConn);
   vector<su2double>().swap(surfaceCoor);
+  vector<su2double>().swap(roughheights);
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Loop over all interior mesh nodes and compute minimum      ---*/
@@ -5196,11 +5204,11 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
       unsigned short markerID;
       unsigned long  elemID;
       int            rankID;
-      su2double      dist, roughness;
-      string         Marker_Tag;
+      su2double      dist;
+      su2double      localRoughness;
 
       WallADT.DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
-                                   elemID, rankID);
+                                   elemID, rankID, localRoughness);
       
       node[iPoint]->SetWall_Distance(dist);
       
@@ -5209,7 +5217,9 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 	  Marker_Tag = config->GetMarker_All_TagBound(markerID);
 	  roughness = config->GetWall_RoughnessHeight(Marker_Tag);
 
-      node[iPoint]->SetRoughnessHeight(roughness);
+      node[iPoint]->SetRoughnessHeight(localRoughness);
+      
+      //if (rank ==2) cout<<iPoint<<"\t"<<node[iPoint]->GetCoord(0)<<"\t"<<node[iPoint]->GetCoord(1)<<"\t"<<roughness<<"\t"<<localRoughness<<endl;
     }
   }
 

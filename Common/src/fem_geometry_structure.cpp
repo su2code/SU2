@@ -6220,6 +6220,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
   vector<unsigned short> subElementIDInParent;
   vector<unsigned short> VTK_TypeElem;
   vector<unsigned long>  elemConn;
+  vector<su2double>  dummyRough;
 
   /* Loop over the locally stored volume elements (including halo elements)
      to create the connectivity of the subelements. */
@@ -6256,6 +6257,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
       for(unsigned short j=0; j<nSubElems[i]; ++j, ++jj) {
         parentElement.push_back(l);
         subElementIDInParent.push_back(jj);
+        dummyRough.push_back(0.0);
         VTK_TypeElem.push_back(VTK_Type[i]);
 
         for(unsigned short k=0; k<nDOFsPerSubElem[i]; ++k, ++kk)
@@ -6275,7 +6277,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
 
   /* Build the local ADT. */
   CADTElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
-                               subElementIDInParent, parentElement, false);
+                               subElementIDInParent, parentElement, dummyRough, false);
 
   /* Release the memory of the vectors used to build the ADT. To make sure
      that all the memory is deleted, the swap function is used. */
@@ -6284,6 +6286,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
   vector<unsigned long>().swap(parentElement);
   vector<unsigned long>().swap(elemConn);
   vector<su2double>().swap(volCoor);
+  vector<su2double>().swap(dummyRough);
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3. Search for donor elements at the exchange locations in     ---*/

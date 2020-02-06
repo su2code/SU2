@@ -484,6 +484,7 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
                              vector<unsigned short> &val_VTKElem,
                              vector<unsigned short> &val_markerID,
                              vector<unsigned long>  &val_elemID,
+                             vector<su2double>      &val_roughheight,
                              const bool             globalTree) {
 
   /* Copy the dimension of the problem into nDim. */
@@ -552,6 +553,7 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
 
     elemVTK_Type.resize(sizeGlobal);
     localMarkers.resize(sizeGlobal);
+    markerRoughness.resize(sizeGlobal);
     localElemIDs.resize(sizeGlobal);
 
     SU2_MPI::Allgatherv(val_VTKElem.data(), sizeLocal, MPI_UNSIGNED_SHORT, elemVTK_Type.data(),
@@ -559,6 +561,9 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
 
     SU2_MPI::Allgatherv(val_markerID.data(), sizeLocal, MPI_UNSIGNED_SHORT, localMarkers.data(),
                         recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT, MPI_COMM_WORLD);
+    
+    SU2_MPI::Allgatherv(val_roughheight.data(), sizeLocal, MPI_DOUBLE, markerRoughness.data(),
+                        recvCounts.data(), displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
 
     SU2_MPI::Allgatherv(val_elemID.data(), sizeLocal, MPI_UNSIGNED_LONG, localElemIDs.data(),
                         recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
@@ -596,11 +601,12 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
     int rank;
     SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 
-    coorPoints   = val_coor;
-    elemConns    = val_connElem;
-    elemVTK_Type = val_VTKElem;
-    localMarkers = val_markerID;
-    localElemIDs = val_elemID;
+    coorPoints      = val_coor;
+    elemConns       = val_connElem;
+    elemVTK_Type    = val_VTKElem;
+    localMarkers    = val_markerID;
+    localElemIDs    = val_elemID;
+    markerRoughness = val_roughheight;
 
     ranksOfElems.assign(elemVTK_Type.size(), rank);
   }
@@ -608,11 +614,12 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
 
   /*--- Sequential mode. Copy the data from the arguments into the member
         variables and set the ranks to MASTER_NODE. ---*/
-  coorPoints   = val_coor;
-  elemConns    = val_connElem;
-  elemVTK_Type = val_VTKElem;
-  localMarkers = val_markerID;
-  localElemIDs = val_elemID;
+  coorPoints      = val_coor;
+  elemConns       = val_connElem;
+  elemVTK_Type    = val_VTKElem;
+  localMarkers    = val_markerID;
+  localElemIDs    = val_elemID;
+  markerRoughness = val_roughheight;
 
   ranksOfElems.assign(elemVTK_Type.size(), MASTER_NODE);
 
@@ -789,7 +796,8 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
                                             su2double       &dist,
                                             unsigned short  &markerID,
                                             unsigned long   &elemID,
-                                            int             &rankID) {
+                                            int             &rankID, 
+                                            su2double       &localRoughness) {
 
   AD_BEGIN_PASSIVE
 
@@ -965,6 +973,7 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
       markerID = localMarkers[ii];
       elemID   = localElemIDs[ii];
       rankID   = ranksOfElems[ii];
+      localRoughness = markerRoughness[ii];
     }
   }
 

@@ -510,6 +510,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
   Roughness_Height = config->GetWall_RoughnessHeight(Marker_Tag);
   if (Roughness_Height > 0.0 ) rough_wall = true;
+  unsigned short rank = SU2_MPI::GetRank();
 
   /*--- The dirichlet condition is used only without wall function, otherwise the
    convergence is compromised as we are providing nu tilde values for the
@@ -532,7 +533,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
           nodes->SetSolution_Old(iPoint,Solution);
           LinSysRes.SetBlock_Zero(iPoint);
-
+          
           /*--- Includes 1 in the diagonal ---*/
 
           Jacobian.DeleteValsRowi(iPoint);
@@ -550,7 +551,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
            Area = 0.0;
 		   for (iDim = 0; iDim < nDim; iDim++)
 		      Area += Normal[iDim]*Normal[iDim];
-		   Area = sqrt (Area);
+		   Area = sqrt(Area);
 
 		   /*--- Get laminar_viscosity and density ---*/
 		   

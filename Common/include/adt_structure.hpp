@@ -350,6 +350,7 @@ private:
   vector<CBBoxTargetClass> BBoxTargets; /*!< \brief Vector, used to store possible bounding
                                                     box candidates during the nearest element
                                                     search. */
+  vector<su2double>       markerRoughness;
 public:
   /*!
    * \brief Constructor of the class.
@@ -370,6 +371,7 @@ public:
                 vector<unsigned short> &val_VTKElem,
                 vector<unsigned short> &val_markerID,
                 vector<unsigned long>  &val_elemID,
+                vector<su2double>      &val_roughheight,
                 const bool             globalTree);
 
   /*!
@@ -410,7 +412,8 @@ public:
                                su2double       &dist,
                                unsigned short  &markerID,
                                unsigned long   &elemID,
-                               int             &rankID);
+                               int             &rankID,
+                               su2double       &localRoughness);
 private:
 
   /*!

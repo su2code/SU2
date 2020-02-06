@@ -48,6 +48,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
   vector<unsigned long> elemIDs;
   vector<unsigned short> VTK_TypeElem;
   vector<unsigned short> markerIDs;
+  vector<su2double> dummyRoughs;
 
   /* Loop over the boundary markers. */
   for(unsigned short iMarker=0; iMarker<boundaries.size(); ++iMarker) {
@@ -78,6 +79,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
           unsigned short ii = 0;
           for(unsigned short j=0; j<nSubFaces; ++j) {
             markerIDs.push_back(iMarker);
+            dummyRoughs.push_back(0.0);
             VTK_TypeElem.push_back(VTK_Type);
             elemIDs.push_back(i);
 
@@ -118,7 +120,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
 
   /* Build the ADT. */
   CADTElemClass WallADT(nDim, surfaceCoor, surfaceConn, VTK_TypeElem,
-                        markerIDs, elemIDs, true);
+                        markerIDs, elemIDs, dummyRoughs, true);
 
   /* Release the memory of the vectors used to build the ADT. To make sure
      that all the memory is deleted, the swap function is used. */
@@ -127,6 +129,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
   vector<unsigned long>().swap(elemIDs);
   vector<unsigned long>().swap(surfaceConn);
   vector<su2double>().swap(surfaceCoor);
+  vector<su2double>().swap(dummyRoughs);
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Determine the wall distance of the integration points of   ---*/
@@ -162,7 +165,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
         unsigned long  elemID;
         int            rankID;
         su2double      dist;
-        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+        su2double      dumRough;
+        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID, dumRough);
 
         volElem[l].wallDistance[i] = dist;
       }
@@ -202,7 +206,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
         unsigned long  elemID;
         int            rankID;
         su2double      dist;
-        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+        su2double      dumRough;
+        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID, dumRough);
 
         volElem[l].wallDistanceSolDOFs[i] = dist;
       }
@@ -242,7 +247,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
         unsigned long  elemID;
         int            rankID;
         su2double      dist;
-        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+        su2double      dumRough;
+        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID, dumRough);
 
         matchingFaces[l].wallDistance[i] = dist;
       }
@@ -296,7 +302,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
             unsigned long  elemID;
             int            rankID;
             su2double      dist;
-            WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+            su2double      dumRough;
+            WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID, dumRough);
 
             surfElem[l].wallDistance[i] = dist;
           }
