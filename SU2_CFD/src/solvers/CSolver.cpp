@@ -4279,7 +4279,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           vector<su2double> Inlet_Columns (nRows);
           vector<su2double> Inlet_Radii (nRows);
 
+          /*--- Pointer to call Set and Evaluate functions. ---*/
           C1DInterpolation *interpolator[nColumns];
+          /*--- Object to call Corrected Inlet Values and Print Interpolated Data functions ---*/
+          C1DInterpolation *corrector = nullptr;
 
           switch(config->GetKindInletInterpolationFunction()){
 
@@ -4414,10 +4417,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
               /* --- Correcting for Interpolation Type ---*/
               cout<<"Correcting Inlet Values\n";
-              Inlet_Values = interpolator[0]->CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, config);
+              Inlet_Values = corrector->CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, config);
 
               if(config->GetPrintInlet_InterpolatedData() == true)
-                interpolator[0]->PrintInletInterpolatedData(Inlet_Values,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim);
+                corrector->PrintInletInterpolatedData(Inlet_Values,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim);
               
               cout<<"Applying Inlet Values to solver\n";
               solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
@@ -4426,7 +4429,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           }
             
             for (iVar = 0; iVar < nColumns; iVar++) {delete interpolator[iVar];}
-            delete interpolator;
+            delete corrector;
         }
       }
       if (local_failure > 0) break;

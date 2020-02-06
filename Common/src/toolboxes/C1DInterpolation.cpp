@@ -81,8 +81,9 @@ void CAkimaInterpolation::SetSpline (vector<su2double> &x,vector<su2double> &y){
     this->b.resize(n);
     this->c.resize(n-1);
     this->d.resize(n-1);
+    this->n=n; 
 
-    this->n=n; for (int i=0; i<n ; i++){
+    for (int i=0; i<n ; i++){
         this->x[i]=x[i]; 
         this->y[i]=y[i];
     }
@@ -104,8 +105,8 @@ void CAkimaInterpolation::SetSpline (vector<su2double> &x,vector<su2double> &y){
     }
 
     for (int i =0; i<n-1; i ++){
-    this->c [i]=(3*p [i]-2*this->b [ i ]-this->b[i+1])/h[i] ;
-    this->d [i]=(this->b[i+1]+this->b [ i ]-2*p[i])/h[i]/h[i];
+        this->c [i]=(3*p [i]-2*this->b [ i ]-this->b[i+1])/h[i] ;
+        this->d [i]=(this->b[i+1]+this->b [ i ]-2*p[i])/h[i]/h[i];
     }
 }
 
