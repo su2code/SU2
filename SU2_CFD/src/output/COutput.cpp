@@ -1543,8 +1543,6 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
     }
     cout << endl;
   }
-  
-  
 }
 
 void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver** solver){

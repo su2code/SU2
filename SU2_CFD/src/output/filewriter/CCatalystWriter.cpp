@@ -1,6 +1,5 @@
 #include "../../../include/output/filewriter/CCatalystWriter.hpp"
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
-#include "../../../Common/include/toolboxes/SU2_LOG.hpp"
 #include <set>
 
 
@@ -18,8 +17,7 @@ CCatalystWriter::CCatalystWriter(string fileName, CParallelDataSorter *dataSorte
 CCatalystWriter::~CCatalystWriter(){}
 
 void CCatalystWriter::Write_Data(unsigned long TimeStep, double time){
-  LOG_SCOPE_FUNCTION(INFO);
-  SU2_INFO << "Time Step: " << TimeStep << ", Time: " << time; 
+
   vtkNew<vtkCPDataDescription> dataDescription;
   dataDescription->AddInput("input");
   dataDescription->SetTimeData(time, TimeStep);
@@ -33,7 +31,6 @@ void CCatalystWriter::Write_Data(unsigned long TimeStep, double time){
 
 void CCatalystWriter::BuildVTKGrid()
 {
-  LOG_SCOPE_FUNCTION(INFO);
   
   const vector<string>& fieldNames = dataSorter->GetFieldNames();
   
@@ -287,9 +284,6 @@ void CCatalystWriter::BuildVTKGrid()
 
 void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParallelDataSorter *dataSorter)
 {
-  LOG_SCOPE_FUNCTION(INFO);
-  
-  ERROR_CONTEXT("Number of points", dataSorter->GetnPoints());
   
   const vector<string>& fieldNames = dataSorter->GetFieldNames();
   
@@ -346,10 +340,7 @@ void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParal
         
         VTKGrid->GetPointData()->AddArray(array.GetPointer());
         
-        SU2_INFO << "Adding catalyst output " << fieldNames[iField];
       }
-      
-      SU2_INFO << "Setting catalyst output " << fieldNames[iField];
       
       vtkDoubleArray* data =
           vtkDoubleArray::SafeDownCast(VTKGrid->GetPointData()->GetArray(fieldNames[iField].c_str()));
@@ -380,10 +371,8 @@ void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParal
            array->SetNumberOfComponents(dataSorter->GetnDim());
            array->SetNumberOfTuples(static_cast<vtkIdType>(TotalnPoints));
            VTKGrid->GetPointData()->AddArray(array.GetPointer());
-           SU2_INFO << "Adding catalyst output " << fieldname.c_str();
           
         }
-        SU2_INFO << "Setting catalyst output " << fieldname;
         
         vtkDoubleArray* data =
             vtkDoubleArray::SafeDownCast(VTKGrid->GetPointData()->GetArray(fieldname.c_str()));
@@ -430,7 +419,6 @@ void CCatalystWriter::UpdateVTKAttributes(vtkCPInputDataDescription* idd, CParal
 
 void CCatalystWriter::BuildVTKDataStructures(vtkCPInputDataDescription* idd, CParallelDataSorter *dataSorter)
 {
-  LOG_SCOPE_FUNCTION(INFO);
   
   if (VTKGrid == NULL)
   {

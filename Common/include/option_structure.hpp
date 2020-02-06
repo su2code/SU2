@@ -28,8 +28,7 @@
 #pragma once
 
 #include "./mpi_structure.hpp"
-#define LOGURU_WITH_STREAMS 1
-#include <loguru.hpp>
+
 #include <iostream>
 #include <sstream>
 #include <string>

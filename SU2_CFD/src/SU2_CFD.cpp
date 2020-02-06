@@ -44,7 +44,6 @@ int main(int argc, char *argv[]) {
   bool dry_run = false;
   int num_threads = omp_get_max_threads();
   bool use_thread_mult = false;
-  int verb = 0;
   std::string filename = "default.cfg";
 
   /*--- Command line parsing ---*/
@@ -54,7 +53,6 @@ int main(int argc, char *argv[]) {
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("-t,--threads", num_threads, "Number of OpenMP threads per MPI rank.");
   app.add_flag("--thread_multiple", use_thread_mult, "Request MPI_THREAD_MULTIPLE thread support.");
-  app.add_option("-v,--verbosity", verb, "Set the verbosity level for logfile.")->default_val("0");
   app.add_option("configfile", filename, "A config file.")->check(CLI::ExistingFile);
 
   CLI11_PARSE(app, argc, argv)
@@ -80,16 +78,6 @@ int main(int argc, char *argv[]) {
 #else
   SU2_Comm MPICommunicator(0);
 #endif
-  
-  loguru::g_preamble_thread  = false;
-  loguru::g_stderr_verbosity = -1;
-  loguru::g_preamble_date    = false; // The date field
-  loguru::g_preamble_time    = false; // The time of the current day
-  loguru::init(argc, argv, NULL);
-  
-  loguru::add_file("info.log", loguru::Truncate, verb);
-  
-  
   
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW);

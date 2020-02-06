@@ -64,7 +64,6 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
   passiveDoubleBuffer = NULL;
   doubleBuffer = NULL;
   idSend       = NULL;
-  
   nSends = 0;
   nRecvs = 0;
 

@@ -33,8 +33,6 @@ CDummyDriver::CDummyDriver(char* confFile,
                                                              val_nZone,
                                                              MPICommunicator,
                                                              true) {
-  LOG_SCOPE_FUNCTION(INFO);
-  
 }
 
 void CDummyDriver::StartSolver(){

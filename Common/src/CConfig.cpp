@@ -2803,9 +2803,6 @@ void CConfig::SetConfig_Options() {
 }
 
 void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
-  
-  ERROR_CONTEXT("Config filename", case_filename);
-  
   string text_line, option_name;
   ifstream case_file;
   vector<string> option_value;
@@ -2822,13 +2819,12 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
   int  err_count = 0;  // How many errors have we found in the config file
   int max_err_count = 30; // Maximum number of errors to print before stopping
-  int line_number = 0;
+
   map<string, bool> included_options;
 
   /*--- Parse the configuration file and set the options ---*/
 
   while (getline (case_file, text_line)) {
-    line_number++;
     
     if (err_count >= max_err_count) {
       errorString.append("too many errors. Stopping parse");
@@ -2843,7 +2839,6 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
       if (option_map.find(option_name) == option_map.end()) {
           string newString;
-          newString.append(string("Line ") + to_string(line_number) + string(" "));
           newString.append(option_name);
           newString.append(": invalid option name");
           newString.append(". Check current SU2 options in config_template.cfg.");
@@ -2871,8 +2866,6 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
       if (included_options.find(option_name) != included_options.end()) {
         string newString;
-        newString.append(string("Line ") + to_string(line_number) + string(" "));
-        newString.append(option_name);
         newString.append(option_name);
         newString.append(": option appears twice");
         newString.append("\n");
@@ -2891,10 +2884,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
       string out = option_map[option_name]->SetValue(option_value);
       if (out.compare("") != 0) {
-        string newString;
-        newString.append(string("Line ") + to_string(line_number) + string(" "));
-        newString.append(out);
-        errorString.append(newString);
+        errorString.append(out);
         errorString.append("\n");
         err_count++;
       }
@@ -2903,10 +2893,9 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
   /*--- See if there were any errors parsing the config file ---*/
       
-//  if (errorString.size() != 0) {
-//    SU2_MPI::Error(errorString, CURRENT_FUNCTION);
-//  }
-  CHECK_S(errorString.size() == 0) << endl << endl << errorString;
+  if (errorString.size() != 0) {
+    SU2_MPI::Error(errorString, CURRENT_FUNCTION);
+  }
 
   case_file.close();
 

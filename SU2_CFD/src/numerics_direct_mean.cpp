@@ -211,8 +211,6 @@ void CCentBase_Flow::ScalarDissipationJacobian(su2double **val_Jacobian_i, su2do
 CCentJST_Flow::CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
                CCentBase_Flow(val_nDim, val_nVar, config) {
  
-  LOG_SCOPE_FUNCTION(INFO);
-
   /*--- Artifical dissipation parameters ---*/
   Param_p = 0.3;
   Param_Kappa_2 = config->GetKappa_2nd_Flow();
@@ -307,7 +305,6 @@ bool CCentJST_KE_Flow::SetPreaccInVars(void) {
 
 CCentLax_Flow::CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
                CCentBase_Flow(val_nDim, val_nVar, config) {
-  LOG_SCOPE_FUNCTION(INFO);
 
   /*--- Artifical dissipation parameters ---*/
   Param_p = 0.3;
@@ -348,7 +345,6 @@ bool CCentLax_Flow::SetPreaccInVars(void) {
 }
 
 CUpwCUSP_Flow::CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  LOG_SCOPE_FUNCTION(INFO);
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
@@ -496,7 +492,6 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 }
 
 CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  LOG_SCOPE_FUNCTION(INFO);
   
   if (config->GetDynamic_Grid() && (SU2_MPI::GetRank() == MASTER_NODE))
     cout << "WARNING: Grid velocities are NOT yet considered in AUSM-type schemes." << endl;
@@ -3050,8 +3045,7 @@ void CUpwRoeBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 }
 
 CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config,
-              bool val_low_dissipation) : CUpwRoeBase_Flow(val_nDim, val_nVar, config, val_low_dissipation) {  LOG_SCOPE_FUNCTION(INFO);
-}
+              bool val_low_dissipation) : CUpwRoeBase_Flow(val_nDim, val_nVar, config, val_low_dissipation) {}
 
 CUpwRoe_Flow::~CUpwRoe_Flow() {}
 
@@ -4558,7 +4552,6 @@ CAvgGrad_Flow::CAvgGrad_Flow(unsigned short val_nDim,
                              bool val_correct_grad,
                              CConfig *config)
     : CAvgGrad_Base(val_nDim, val_nVar, val_nDim+3, val_correct_grad, config) {
-  LOG_SCOPE_FUNCTION(INFO);
 
 }
 
@@ -4754,7 +4747,6 @@ CGeneralAvgGrad_Flow::CGeneralAvgGrad_Flow(unsigned short val_nDim,
                                            bool val_correct_grad,
                                            CConfig *config)
     : CAvgGrad_Base(val_nDim, val_nVar, val_nDim+4, val_correct_grad, config) {
-  LOG_SCOPE_FUNCTION(INFO);
   
   Mean_SecVar = new su2double [2];
   

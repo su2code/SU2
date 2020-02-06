@@ -31,7 +31,6 @@
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
-#include "../../Common/include/toolboxes/SU2_LOG.hpp"
 
 CEulerSolver::CEulerSolver(void) : CSolver() {
 
@@ -160,8 +159,6 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 }
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-  
-  LOG_SCOPE_FUNCTION(INFO);
   
   unsigned long iPoint, counter_local = 0, counter_global = 0, iVertex;
   unsigned short iVar, iDim, iMarker, nLineLets;

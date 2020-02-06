@@ -28,7 +28,6 @@
 
 #include "../include/iteration_structure.hpp"
 #include "../include/solvers/CFEASolver.hpp"
-#include "../../Common/include/toolboxes/SU2_LOG.hpp"
 
 CIteration::CIteration(CConfig *config) {
   rank = SU2_MPI::GetRank();
@@ -69,7 +68,7 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
   case RIGID_MOTION:
 
       if (rank == MASTER_NODE) {
-        SU2_INFO << "Performing rigid mesh transformation.";
+        cout << endl << " Performing rigid mesh transformation." << endl;
       }
 
       /*--- Move each node in the volume mesh using the specified type
@@ -467,9 +466,7 @@ void CIteration::Postprocess(COutput *output,
 
 
 
-CFluidIteration::CFluidIteration(CConfig *config) : CIteration(config) { 
-  LOG_SCOPE_FUNCTION(INFO);
- }
+CFluidIteration::CFluidIteration(CConfig *config) : CIteration(config) { }
 CFluidIteration::~CFluidIteration(void) { }
 
 void CFluidIteration::Preprocess(COutput *output,
@@ -770,8 +767,6 @@ void CFluidIteration::Solve(COutput *output,
   /*--- However, ExtIter is the number of FSI iterations, so nIntIter is used in this case ---*/
 
     for (Inner_Iter = 0; Inner_Iter < nInner_Iter; Inner_Iter++){
-      
-      LOG_SCOPE_F(1, "Inner Iteration %lu", Inner_Iter);    
 
     config[val_iZone]->SetInnerIter(Inner_Iter);
 

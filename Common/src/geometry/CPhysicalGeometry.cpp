@@ -43,7 +43,7 @@
 #include "../../include/geometry/primal_grid/CPyramid.hpp"
 #include "../../include/geometry/primal_grid/CPrism.hpp"
 #include "../../include/geometry/primal_grid/CVertexMPI.hpp"
-#include "../include/toolboxes/SU2_LOG.hpp"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iterator>
@@ -2444,7 +2444,7 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
 #endif
 
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    SU2_INFO << Global_nPoint << " vertices including ghost points. " << endl;
+    cout << Global_nPoint << " vertices including ghost points. " << endl;
 
 }
 
@@ -2740,7 +2740,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 #endif
 
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    SU2_INFO << " interior elements including halo cells. " << endl;
+    cout << Global_nElem << " interior elements including halo cells. " << endl;
 
   /*--- Set the value of Global_nElemDomain (stored in the geometry
    container that is passed in). ---*/
@@ -2790,17 +2790,17 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   if (rank == MASTER_NODE) {
     if (Global_nelem_triangle > 0)
-      SU2_INFO << Global_nelem_triangle << " triangles."      ;
+      cout << Global_nelem_triangle << " triangles."      << endl;
     if (Global_nelem_quad     > 0)
-      SU2_INFO << Global_nelem_quad     << " quadrilaterals." ;
+      cout << Global_nelem_quad     << " quadrilaterals." << endl;
     if (Global_nelem_tetra    > 0)
-      SU2_INFO << Global_nelem_tetra    << " tetrahedra."     ;
+      cout << Global_nelem_tetra    << " tetrahedra."     << endl;
     if (Global_nelem_hexa     > 0)
-      SU2_INFO << Global_nelem_hexa     << " hexahedra."      ;
+      cout << Global_nelem_hexa     << " hexahedra."      << endl;
     if (Global_nelem_prism    > 0)
-      SU2_INFO << Global_nelem_prism    << " prisms."         ;
+      cout << Global_nelem_prism    << " prisms."         << endl;
     if (Global_nelem_pyramid  > 0)
-      SU2_INFO << Global_nelem_pyramid  << " pyramids."       ;
+      cout << Global_nelem_pyramid  << " pyramids."       << endl;
   }
 
 }

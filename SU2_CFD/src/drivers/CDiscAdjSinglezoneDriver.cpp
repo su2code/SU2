@@ -34,7 +34,6 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                                                                  val_nZone,
                                                                                                  MPICommunicator) {
 
-  LOG_SCOPE_FUNCTION(INFO);
 
   /*--- Store the number of internal iterations that will be run by the adjoint solver ---*/
   nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();

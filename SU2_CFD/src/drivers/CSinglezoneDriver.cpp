@@ -35,8 +35,6 @@ CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                                                           MPICommunicator,
                                                           false) {
   
-  LOG_SCOPE_FUNCTION(INFO);
-
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;
 
@@ -47,8 +45,6 @@ CSinglezoneDriver::~CSinglezoneDriver(void) {
 }
 
 void CSinglezoneDriver::StartSolver() {
-
-  LOG_SCOPE_FUNCTION(INFO);
 
 #ifndef HAVE_MPI
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
@@ -76,8 +72,6 @@ void CSinglezoneDriver::StartSolver() {
 
   /*--- Run the problem until the number of time iterations required is reached. ---*/
   while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter() ) {
-
-    LOG_SCOPE_F(INFO, "Time Iteration %lu", TimeIter);    
     
     /*--- Perform some preprocessing before starting the time-step simulation. ---*/
 

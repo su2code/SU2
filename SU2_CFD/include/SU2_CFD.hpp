@@ -29,7 +29,6 @@
 
 #include "../../Common/include/mpi_structure.hpp"
 #include "../../Common/include/omp_structure.hpp"
-#include "../../Common/include/toolboxes/SU2_LOG.hpp"
 #include "CLI11.hpp"
 
 #include <ctime>

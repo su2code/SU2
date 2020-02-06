@@ -12,6 +12,7 @@
 #include <vtkPointData.h>
 #include <vtkPoints.h>
 #include <vtkUnstructuredGrid.h>
+#include <vtkMultiBlockDataSet.h>
 #include <set>
 class CParallelDataSorter;
 

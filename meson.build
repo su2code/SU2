@@ -9,12 +9,8 @@ project('SU2', 'c', 'cpp',
 pymod = import('python')
 python = pymod.find_installation()
 
-add_project_link_arguments(['-rdynamic'], language: 'cpp')
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
-
-subdir('externals/loguru')
-su2_deps += loguru_dep
 
 cmake_arch = ''
 if get_option('cmake-arch') != ''
