@@ -139,6 +139,26 @@ CMultizoneDriver::~CMultizoneDriver(void) {
 
 void CMultizoneDriver::StartSolver() {
 
+  /*--- Find out the minimum of all references times and then set each zone to this (same) value.
+   * (To ensure that time steps for each zone run at the same (physical) speed.) ---*/
+
+  su2double Time_Ref = config_container[ZONE_0]->GetTime_Ref();
+
+  for (iZone = 1; iZone < nZone; iZone++) {
+    if (config_container[iZone]->GetTime_Ref() < Time_Ref)
+      Time_Ref = config_container[iZone]->GetTime_Ref();
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    config_container[iZone]->SetTime_Ref(Time_Ref);
+
+    /*--- Recompute some values as the reference time might has changed in iZone ---*/
+
+    config_container[iZone]->SetDelta_UnstTimeND(config_container[iZone]->GetDelta_UnstTime() / Time_Ref);
+    config_container[iZone]->SetTotal_UnstTimeND(config_container[iZone]->GetTotal_UnstTime() / Time_Ref);
+  }
+
 #ifndef HAVE_MPI
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -146,14 +166,6 @@ void CMultizoneDriver::StartSolver() {
 #endif
 
   driver_config->Set_StartTime(StartTime);
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (config_container[iZone]->GetKind_Solver() == HEAT_EQUATION_FVM) {
-
-      config_container[iZone]->SetDelta_UnstTimeND(config_container[ZONE_0]->GetDelta_UnstTimeND());
-      config_container[iZone]->SetTime_Ref(config_container[ZONE_0]->GetTime_Ref());
-    }
-  }
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
