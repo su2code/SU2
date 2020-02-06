@@ -178,6 +178,9 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   }
   config->SetTemperature_Ref(Temperature_Ref);
 
+  /*--- We set the reference time to a fixed value of 1s. ---*/
+
+  config->SetTime_Ref(1.0);
 
   /*--- Set the reference values for heat fluxes. If the heat solver runs stand-alone,
    *    thermal conductivity is read directly from config file ---*/
