@@ -4192,7 +4192,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   ifstream inlet_file;
   string Interpolation_Function, Interpolation_Type;
   bool Interpolate;
-  C1DInterpolation **spline = nullptr;
 
   su2double *Normal       = new su2double[nDim];
 
@@ -4280,6 +4279,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           vector<su2double> Inlet_Columns (nRows);
           vector<su2double> Inlet_Radii (nRows);
 
+          C1DInterpolation *interpolator[nColumns];
+
           switch(config->GetKindInletInterpolationFunction()){
 
             case (NONE):
@@ -4287,15 +4288,26 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             break;
 
             case (ONED_AKIMASPLINE_SPANWISE):
+              for (unsigned int i=0; i < nColumns; i++)
+                interpolator[i] = new CAkimaInterpolation[i];
+              Interpolate = true;
+            break;
+
             case (ONED_LINEAR_SPANWISE):
-            Interpolate = true;
+              for (unsigned int i=0; i < nColumns; i++)
+                interpolator[i] = new CLinearInterpolation[i];
+              Interpolate = true;
+            break;
+          }
+
+          if(Interpolate == true){
 
             cout<<"Switch statement confirmed, printing Interpolate bool: "<<Interpolate<<endl;
               
               /* --- Creating and initializing a new pointer to object for class Interpolation ---*/
-              C1DInterpolation **spline = new C1DInterpolation*[nRows];
-              for (int i=0;i<=nColumns;i++)
-                spline[i] = new C1DInterpolation[nRows];
+              //C1DInterpolation **interpolator = new C1DInterpolation*[nRows];
+              //for (int i=0;i<=nColumns;i++)
+              //  interpolator[i] = new C1DInterpolation[nRows];
 
               cout<<"Entering Interpolation Set for loop\n";
               /* --- Seperating the columns from Inlet_Data to set interpolation functions ---*/
@@ -4308,13 +4320,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                     Inlet_Columns[iRow]=Inlet_Data[index+iCol];
                 }
               /* --- Interpolation functions made for all columns ---*/
-                spline[iCol]->Interpolation_Set(Inlet_Radii,Inlet_Columns,config);
+                interpolator[iCol]->SetSpline(Inlet_Radii,Inlet_Columns);
               }
 
               cout<<"Inlet Interpolation done\n";
-
-              break;
           }
+
 
             /*--- Loop through the nodes on this marker. ---*/
 
@@ -4386,8 +4397,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               cout<<"Running Interpolation_Evaluate"<<endl;
               /* --- Evaluating and saving the final spline data ---*/
               for  (unsigned short iVar=0; iVar < nColumns; iVar++){
-                Inlet_Interpolated[iVar]=spline[iVar]->Interpolation_Evaluate(Interp_Radius,Interpolation_Function);
-                if (spline[iVar]->Point_Match == false){
+                Inlet_Interpolated[iVar]=interpolator[iVar]->EvaluateSpline(Interp_Radius);
+                if (interpolator[iVar]->GetPointMatch() == false){
                     cout << "WARNING: Did not find a match between the radius in the inlet file" << endl;
                     cout << std::scientific;
                     cout << " at location: [" << Coord[0] << ", " << Coord[1];
@@ -4403,10 +4414,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
               /* --- Correcting for Interpolation Type ---*/
               cout<<"Correcting Inlet Values\n";
-              Inlet_Values = spline[0]->CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, config);
+              Inlet_Values = interpolator[0]->CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, config);
 
               if(config->GetPrintInlet_InterpolatedData() == true)
-                spline[0]->PrintInletInterpolatedData(Inlet_Values,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim);
+                interpolator[0]->PrintInletInterpolatedData(Inlet_Values,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim);
               
               cout<<"Applying Inlet Values to solver\n";
               solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
@@ -4414,8 +4425,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             }
           }
             
-            for (iVar = 0; iVar < nColumns; iVar++) {delete spline[iVar];}
-            delete [] spline;
+            for (iVar = 0; iVar < nColumns; iVar++) {delete interpolator[iVar];}
+            delete interpolator;
         }
       }
       if (local_failure > 0) break;
