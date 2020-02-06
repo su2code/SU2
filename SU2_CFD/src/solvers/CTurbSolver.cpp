@@ -612,24 +612,35 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
 void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
-  /*--- Local variables ---*/
-
-  unsigned short iVar, jVar, iMarker, iDim;
-  unsigned long iPoint, jPoint, iEdge, iVertex;
-
-  su2double *U_time_nM1, *U_time_n, *U_time_nP1;
-  su2double Volume_nM1, Volume_nP1, TimeStep;
-  su2double Density_nM1, Density_n, Density_nP1;
-  su2double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
-
-  bool implicit      = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  unsigned short turbModel = config->GetKind_Turb_Model();
+  const bool implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+  const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
+  const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const unsigned short turbModel = config->GetKind_Turb_Model();
 
   /*--- Store the physical time step ---*/
 
-  TimeStep = config->GetDelta_UnstTimeND();
+  const su2double TimeStep = config->GetDelta_UnstTimeND();
+
+  /*--- Start OpenMP parallel section. ---*/
+
+  SU2_OMP_PARALLEL
+  {
+
+  /*--- Local variables ---*/
+
+  unsigned short iVar, iMarker, iDim;
+  unsigned long iPoint, jPoint, iEdge, iVertex;
+
+  const su2double *U_time_nM1, *U_time_n, *U_time_nP1;
+  su2double Volume_nM1, Volume_nP1;
+  su2double Density_nM1, Density_n, Density_nP1;
+  const su2double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL;
+  su2double Residual_GCL;
+
+  /*--- "Allocate" local (to the thread) Residual to then write to CSysVector. ---*/
+  su2double Res_Time[MAXNVAR] = {0.0};
+
 
   /*--- Compute the dual time-stepping source term for static meshes ---*/
 
@@ -637,6 +648,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 
     /*--- Loop over all nodes (excluding halos) ---*/
 
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
@@ -675,38 +687,32 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         }
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Residual[iVar] = ( Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*Volume_nP1 / TimeStep;
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Residual[iVar] = ( 3.0*Density_nP1*U_time_nP1[iVar] - 4.0*Density_n*U_time_n[iVar]
+          if (first_order)
+            Res_Time[iVar] = ( Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*Volume_nP1 / TimeStep;
+          if (second_order)
+            Res_Time[iVar] = ( 3.0*Density_nP1*U_time_nP1[iVar] - 4.0*Density_n*U_time_n[iVar]
                               +1.0*Density_nM1*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
         }
 
       } else {
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
+          if (first_order)
+            Res_Time[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
+          if (second_order)
+            Res_Time[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
                               +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
         }
       }
 
-      /*--- Store the residual and compute the Jacobian contribution due
-       to the dual time source term. ---*/
+      /*--- Store the residual and compute the Jacobian contribution due to the dual time source term. ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, Res_Time);
       if (implicit) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
-        }
-        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+        if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1/TimeStep);
+        if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
       }
+
     }
 
   } else {
@@ -719,8 +725,22 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
      we will loop over the edges and boundaries to compute the GCL component
      of the dual time source term that depends on grid velocities. ---*/
 
-    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+#ifdef HAVE_OMP
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
 
+    /*--- Loop over edge colors. ---*/
+    for (auto color : EdgeColoring)
+    {
+    SU2_OMP_FOR_DYN(chunkSize)
+    for(auto k = 0ul; k < color.size; ++k) {
+
+      iEdge = color.indices[k];
+#else
+    /*--- Natural coloring. ---*/
+    {
+    for (iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
+#endif
       /*--- Get indices for nodes i & j plus the face normal ---*/
 
       iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -746,15 +766,19 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- Multiply by density at node i for the SST model ---*/
 
       if ((turbModel == SST) || (turbModel == SST_SUST)) {
-        if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
-        else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
+        if (incompressible)
+          Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
+        else
+          Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
+
         for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-      } else {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+          Res_Time[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
       }
-      LinSysRes.AddBlock(iPoint, Residual);
+      else {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Res_Time[iVar] = U_time_n[iVar]*Residual_GCL;
+      }
+      LinSysRes.AddBlock(iPoint, Res_Time);
 
       /*--- Compute the GCL component of the source term for node j ---*/
 
@@ -763,65 +787,77 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- Multiply by density at node j for the SST model ---*/
 
       if ((turbModel == SST) || (turbModel == SST_SUST)) {
-        if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint); // Temporary fix
-        else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(jPoint)[0];
+        if (incompressible)
+          Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint); // Temporary fix
+        else
+          Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(jPoint)[0];
+
         for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-      } else {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+          Res_Time[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
       }
-      LinSysRes.SubtractBlock(jPoint, Residual);
+      else {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Res_Time[iVar] = U_time_n[iVar]*Residual_GCL;
+      }
+      LinSysRes.SubtractBlock(jPoint, Res_Time);
 
     }
+    } // end color loop
 
     /*---  Loop over the boundary edges ---*/
 
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
-        /*--- Get the index for node i plus the boundary face normal ---*/
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          /*--- Get the index for node i plus the boundary face normal ---*/
 
-        /*--- Grid velocities stored at boundary node i ---*/
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-        GridVel_i = geometry->node[iPoint]->GetGridVel();
+          /*--- Grid velocities stored at boundary node i ---*/
 
-        /*--- Compute the GCL term by dotting the grid velocity with the face
-         normal. The normal is negated to match the boundary convention. ---*/
+          GridVel_i = geometry->node[iPoint]->GetGridVel();
 
-        Residual_GCL = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Residual_GCL -= 0.5*(GridVel_i[iDim]+GridVel_i[iDim])*Normal[iDim];
+          /*--- Compute the GCL term by dotting the grid velocity with the face
+           normal. The normal is negated to match the boundary convention. ---*/
 
-        /*--- Compute the GCL component of the source term for node i ---*/
+          Residual_GCL = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Residual_GCL -= 0.5*(GridVel_i[iDim]+GridVel_i[iDim])*Normal[iDim];
 
-        U_time_n = nodes->GetSolution_time_n(iPoint);
+          /*--- Compute the GCL component of the source term for node i ---*/
 
-        /*--- Multiply by density at node i for the SST model ---*/
+          U_time_n = nodes->GetSolution_time_n(iPoint);
 
-        if ((turbModel == SST) || (turbModel == SST_SUST)) {
-          if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
-          else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
-          for (iVar = 0; iVar < nVar; iVar++)
-            Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-        } else {
-          for (iVar = 0; iVar < nVar; iVar++)
-            Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+          /*--- Multiply by density at node i for the SST model ---*/
+
+          if ((turbModel == SST) || (turbModel == SST_SUST)) {
+            if (incompressible)
+              Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
+            else
+              Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
+
+            for (iVar = 0; iVar < nVar; iVar++)
+              Res_Time[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
+          }
+          else {
+            for (iVar = 0; iVar < nVar; iVar++)
+              Res_Time[iVar] = U_time_n[iVar]*Residual_GCL;
+          }
+          LinSysRes.AddBlock(iPoint, Res_Time);
+
         }
-        LinSysRes.AddBlock(iPoint, Residual);
-
-      }
       }
     }
 
     /*--- Loop over all nodes (excluding halos) to compute the remainder
      of the dual time-stepping source term. ---*/
 
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
@@ -847,7 +883,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/
-        if (incompressible){
+        if (incompressible) {
           /*--- This is temporary and only valid for constant-density problems:
           density could also be temperature dependent, but as it is not a part
           of the solution vector it's neither stored for previous time steps
@@ -856,47 +892,42 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
           Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
         }
-        else{
+        else {
           Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint)[0];
           Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
           Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint,0);
         }
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+          if (first_order)
+            Res_Time[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
+          if (second_order)
+            Res_Time[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
             + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
         }
 
       } else {
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+          if (first_order)
+            Res_Time[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
+          if (second_order)
+            Res_Time[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
             + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
         }
       }
 
-      /*--- Store the residual and compute the Jacobian contribution due
-       to the dual time source term. ---*/
+      /*--- Store the residual and compute the Jacobian contribution due to the dual time source term. ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, Res_Time);
       if (implicit) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
-        }
-        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+        if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1/TimeStep);
+        if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
       }
     }
   }
+
+  } // end SU2_OMP_PARALLEL
 
 }
 
