@@ -27,7 +27,7 @@
 
 #include "../../../../include/numerics/flow/convection/fds.hpp"
 
-CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == VARIABLE);
@@ -35,6 +35,7 @@ CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVa
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
 
+  Flux         = new su2double[nVar];
   Diff_V       = new su2double[nVar];
   Velocity_i   = new su2double[nDim];
   Velocity_j   = new su2double[nDim];
@@ -45,16 +46,20 @@ CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVa
   Epsilon      = new su2double[nVar];
   Precon       = new su2double*[nVar];
   invPrecon_A  = new su2double*[nVar];
-
+  Jacobian_i   = new su2double*[nVar];
+  Jacobian_j   = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
     Precon[iVar]      = new su2double[nVar];
     invPrecon_A[iVar] = new su2double[nVar];
+    Jacobian_i[iVar]  = new su2double[nVar];
+    Jacobian_j[iVar]  = new su2double[nVar];
   }
 
 }
 
 CUpwFDSInc_Flow::~CUpwFDSInc_Flow(void) {
 
+  delete [] Flux;
   delete [] Diff_V;
   delete [] Velocity_i;
   delete [] Velocity_j;
@@ -71,9 +76,18 @@ CUpwFDSInc_Flow::~CUpwFDSInc_Flow(void) {
   delete [] Precon;
   delete [] invPrecon_A;
 
+  if (Jacobian_i != nullptr) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      delete [] Jacobian_i[iVar];
+      delete [] Jacobian_j[iVar];
+    }
+    delete [] Jacobian_i;
+    delete [] Jacobian_j;
+  }
+
 }
 
-void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config) {
 
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
   su2double ProjGridVel = 0.0;
@@ -199,23 +213,23 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   /*--- Build the inviscid Jacobian w.r.t. the primitive variables ---*/
 
   if (implicit) {
-    GetInviscidIncProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, &Cp_i, &Temperature_i, &dRhodT_i, Normal, 0.5, val_Jacobian_i);
-    GetInviscidIncProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, &Cp_j, &Temperature_j, &dRhodT_j, Normal, 0.5, val_Jacobian_j);
+    GetInviscidIncProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, &Cp_i, &Temperature_i, &dRhodT_i, Normal, 0.5, Jacobian_i);
+    GetInviscidIncProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, &Cp_j, &Temperature_j, &dRhodT_j, Normal, 0.5, Jacobian_j);
   }
 
   /*--- Compute dissipation as Precon x |A_precon| x dV. If implicit,
    store Precon x |A_precon| from dissipation term. ---*/
 
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
+    Flux[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
     for (jVar = 0; jVar < nVar; jVar++) {
       Proj_ModJac_Tensor_ij = 0.0;
       for (kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_ij += Precon[iVar][kVar]*invPrecon_A[kVar][jVar];
-      val_residual[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_V[jVar];
+      Flux[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_V[jVar];
       if (implicit) {
-        val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij;
-        val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij;
+        Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij;
+        Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij;
       }
     }
   }
@@ -237,34 +251,37 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
 
     /*--- Residual contributions ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
+      Flux[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
 
       /*--- Jacobian contributions ---*/
       /*--- Implicit terms ---*/
       if (implicit) {
         for (iDim = 0; iDim < nDim; iDim++){
-          val_Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
-          val_Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
+          Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
+          Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
         }
-        val_Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
-        val_Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
+        Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
+        Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
       }
     }
   }
 
   if (!energy) {
-    val_residual[nDim+1] = 0.0;
+    Flux[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {
-        val_Jacobian_i[iVar][nDim+1] = 0.0;
-        val_Jacobian_j[iVar][nDim+1] = 0.0;
+        Jacobian_i[iVar][nDim+1] = 0.0;
+        Jacobian_j[iVar][nDim+1] = 0.0;
 
-        val_Jacobian_i[nDim+1][iVar] = 0.0;
-        val_Jacobian_j[nDim+1][iVar] = 0.0;
+        Jacobian_i[nDim+1][iVar] = 0.0;
+        Jacobian_j[nDim+1][iVar] = 0.0;
       }
     }
   }
 
-  AD::SetPreaccOut(val_residual, nVar);
+  AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
+
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+
 }

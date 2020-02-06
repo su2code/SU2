@@ -1853,17 +1853,17 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
     /*--- Compute residuals, and Jacobians ---*/
 
-    numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+    auto residual = numerics->ComputeResidual(config);
 
     /*--- Update convective and artificial dissipation residuals ---*/
 
-    LinSysRes.AddBlock(iPoint, Res_Conv);
-    LinSysRes.SubtractBlock(jPoint, Res_Conv);
+    LinSysRes.AddBlock(iPoint, residual);
+    LinSysRes.SubtractBlock(jPoint, residual);
 
     /*--- Store implicit contributions from the residual calculation. ---*/
 
     if (implicit) {
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
+      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
   }
 
@@ -2001,29 +2001,27 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Compute the residual ---*/
 
-    numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+    auto residual = numerics->ComputeResidual(config);
 
     /*--- Update residual value ---*/
 
-    LinSysRes.AddBlock(iPoint, Res_Conv);
-    LinSysRes.SubtractBlock(jPoint, Res_Conv);
+    LinSysRes.AddBlock(iPoint, residual);
+    LinSysRes.SubtractBlock(jPoint, residual);
 
     /*--- Set implicit Jacobians ---*/
 
     if (implicit) {
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
+      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
   }
 
   /*--- Warning message about non-physical reconstructions. ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-#ifdef HAVE_MPI
-    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-#else
-    counter_global = counter_local;
-#endif
-    if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
+    if (iMesh == MESH_0) {
+      SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+      config->SetNonphysical_Reconstr(counter_global);
+    }
   }
 
 }
@@ -4066,16 +4064,16 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Compute the convective residual using an upwind scheme ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      auto residual = conv_numerics->ComputeResidual(config);
 
       /*--- Update residual value ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Convective Jacobian contribution for implicit integration ---*/
 
       if (implicit)
-        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       /*--- Viscous residual contribution ---*/
 
@@ -4318,16 +4316,16 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Compute the residual using an upwind scheme ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      auto residual = conv_numerics->ComputeResidual(config);
 
       /*--- Update residual value ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
 
       if (implicit)
-        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
@@ -4526,16 +4524,16 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Compute the residual using an upwind scheme ---*/
 
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      auto residual = conv_numerics->ComputeResidual(config);
 
       /*--- Update residual value ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
 
       if (implicit) {
-        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
       }
 
       /*--- Viscous contribution, commented out because serious convergence problems ---*/
@@ -4744,14 +4742,14 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
       conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
 
       /*--- Compute the residual using an upwind scheme. ---*/
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      auto residual = conv_numerics->ComputeResidual(config);
 
       /*--- Update residual value ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration. ---*/
       if (implicit) {
-        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
       }
 
       if (viscous) {
@@ -4900,12 +4898,15 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
 
           /*--- Initialize Residual, this will serve to accumulate the average ---*/
 
-          for (iVar = 0; iVar < nVar; iVar++)
+          for (iVar = 0; iVar < nVar; iVar++) {
             Residual[iVar] = 0.0;
+            for (jVar = 0; jVar < nVar; jVar++)
+              Jacobian_i[iVar][jVar] = 0.0;
+          }
 
           /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
-          for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
+          for (jVertex = 0; jVertex < nDonorVertex; jVertex++) {
 
             Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
@@ -4935,12 +4936,15 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
 
             /*--- Compute the convective residual using an upwind scheme ---*/
 
-            conv_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
+            auto residual = conv_numerics->ComputeResidual(config);
 
             /*--- Accumulate the residuals to compute the average ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++)
-              Residual[iVar] += weight*tmp_residual[iVar];
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Residual[iVar] += weight*residual.residual[iVar];
+              for (jVar = 0; jVar < nVar; jVar++)
+                Jacobian_i[iVar][jVar] += weight*residual.jacobian_i[iVar][jVar];
+            }
 
           }
 

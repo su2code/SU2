@@ -226,7 +226,7 @@ public:
  * \ingroup ConvDiscr
  * \author F. Palacios, T. Economon
  */
-class CCentLaxInc_Flow : public CNumerics {
+class CCentLaxInc_Flow final : public CNumerics {
 private:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
   su2double *Diff_V,               /*!< \brief Difference of primitive variables. */
@@ -252,6 +252,9 @@ private:
   variable_density,                /*!< \brief Variable density incompressible flows. */
   energy;                          /*!< \brief computation with the energy equation. */
 
+  su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -268,12 +271,11 @@ public:
 
   /*!
    * \brief Compute the flow residual using a Lax method.
-   * \param[out] val_residual - Pointer to the residual array.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, const CConfig* config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
 };
 
 /*!
@@ -282,7 +284,7 @@ public:
  * \ingroup ConvDiscr
  * \author F. Palacios, T. Economon
  */
-class CCentJSTInc_Flow : public CNumerics {
+class CCentJSTInc_Flow final : public CNumerics {
 
 private:
   unsigned short iDim, iVar, jVar;   /*!< \brief Iteration on dimension and variables. */
@@ -310,6 +312,9 @@ private:
   variable_density,      /*!< \brief Variable density incompressible flows. */
   energy;                /*!< \brief computation with the energy equation. */
 
+  su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -326,10 +331,9 @@ public:
 
   /*!
    * \brief Compute the flow residual using a JST method.
-   * \param[out] val_residual - Pointer to the residual array.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, const CConfig* config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
 };
