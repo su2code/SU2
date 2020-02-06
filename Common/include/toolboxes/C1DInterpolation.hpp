@@ -40,8 +40,8 @@ class C1DInterpolation{
 protected:
     bool Point_Match = true;
 public:
-virtual void SetSpline(vector<su2double> &x, vector<su2double> &y);
-virtual su2double EvaluateSpline(su2double Point_Interp);
+virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
+virtual su2double EvaluateSpline(su2double Point_Interp){}
 virtual bool GetPointMatch(){return Point_Match;}
 /*
 void Interpolation_Set(vector<su2double> &x, vector<su2double> &y, CConfig *config){
