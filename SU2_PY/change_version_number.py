@@ -33,8 +33,8 @@ import os,sys
 
 #oldvers = '2012-2018'
 #newvers = '2012-2019'
-oldvers = '6.2.0 "Falcon"'
-newvers = '7.0.0 "Blackbird"'
+oldvers = '7.0.0 "Blackbird"'
+newvers = '7.0.1 "Blackbird"'
 
 if sys.version_info[0] > 2:
   # In PY3, raw_input is replaced with input.

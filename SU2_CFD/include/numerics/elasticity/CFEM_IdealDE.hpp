@@ -2,7 +2,7 @@
  * \file CFEM_IdealDE.hpp
  * \brief Class for computing the constitutive and stress tensors for a nearly-incompressible ideal DE.
  * \author Ruben Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for computing the constitutive and stress tensors for a nearly-incompressible ideal DE.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  */
 class CFEM_IdealDE final : public CFEANonlinearElasticity {
 

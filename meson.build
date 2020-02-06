@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.0.0',
+        version: '7.0.1',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
@@ -187,7 +187,7 @@ subdir('SU2_CFD/src')
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.0.0 'Blackbird'                         |
+         |   / __| | | |_  )   Release 7.0.1 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |

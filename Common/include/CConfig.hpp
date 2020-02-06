@@ -1,9 +1,9 @@
 /*!
- * \file config_structure.hpp
+ * \file CConfig.hpp
  * \brief All the information about the definition of the physical problem.
- *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
+ *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1236,7 +1236,7 @@ private:
                          su2double** & RotCenter, su2double** & RotAngles, su2double** & Translation);
 
   void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
-                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut);
+                          string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut);
 
   void addActDiskOption(const string & name,
                         unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string* & Marker_ActDiskInlet, string* & Marker_ActDiskOutlet,
@@ -8535,13 +8535,13 @@ public:
 
   /*!
    * \brief Get whether a predictor is used for FSI applications.
-   * \return  Bool: determines if predictor is used or not
+   * \return Bool: determines if predictor is used or not
    */
   bool GetPredictor(void) const { return Predictor; }
 
   /*!
    * \brief Get the order of the predictor for FSI applications.
-   * \return    Order of predictor
+   * \return Order of predictor
    */
   unsigned short GetPredictorOrder(void) const { return Pred_Order; }
 
@@ -8601,7 +8601,7 @@ public:
 
   /*!
    * \brief Get the number of increments for an incremental load.
-   * \return    Number of increments.
+   * \return Number of increments.
    */
   unsigned long GetNumberIncrements(void) const { return IncLoad_Nincrements; }
 
@@ -8619,8 +8619,7 @@ public:
 
   /*!
    * \brief Get the kind of Riemann solver for the DG method (FEM flow solver).
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
+   * \note This value is obtained from the config file, and it is constant during the computation.
    * \return Kind of Riemann solver for the DG method (FEM flow solver).
    */
   unsigned short GetRiemann_Solver_FEM(void) const { return Riemann_Solver_FEM; }
@@ -8682,9 +8681,9 @@ public:
    */
   unsigned short GetKindInterpolation(void) const { return Kind_Interpolation; }
 
-    /*!
-     * \brief Get option of whether to use conservative interpolation between zones.
-     */
+  /*!
+   * \brief Get option of whether to use conservative interpolation between zones.
+   */
   bool GetConservativeInterpolation(void) const { return ConservativeInterpolation; }
 
   /*!
@@ -8737,6 +8736,7 @@ public:
    * \return <code>TRUE</code> if wall functions are on; otherwise <code>FALSE</code>.
    */
   bool GetWall_Functions(void) const { return Wall_Functions; }
+
   /*!
    * \brief Get the AD support.
    */
@@ -8989,7 +8989,6 @@ public:
    */
   bool GetWrt_ZoneHist(void) const { return Wrt_ZoneHist; }
 
-
   /*!
    * \brief Check if the special output is written
    * \return YES if the special output is written.
@@ -9120,7 +9119,7 @@ public:
    */
   unsigned long GetHistory_Wrt_Freq(unsigned short iter) const { return HistoryWrtFreq[iter];}
 
-    /*!
+  /*!
    * \brief SetHistory_Wrt_Freq_Inner
    * \param[in] iter: index for Time (0), Outer (1), or Inner (2) iterations
    * \param[in] nIter: Number of iterations
