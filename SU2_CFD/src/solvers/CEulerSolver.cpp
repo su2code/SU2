@@ -32,6 +32,7 @@
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
 
+#include <Accelerate/Accelerate.h>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -3125,63 +3126,91 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
 }
 
 // TODO: Put this function and next in more general location
-void CEulerSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
-  auto t_start = std::chrono::high_resolution_clock::now();
-  // This function selects the masks E and E' using the Phi matrix and mesh data
-  
-  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
-  
-  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
-  //int desired_nodes = 500; //TODO: create config file option
-  ifstream in_phi(phi_filename);
-  std::vector<std::vector<double>> Phi;
-  int firstrun = 0;
-  
-  if (in_phi) {
-    std::string line;
-    
-    while (getline(in_phi, line)) {
-      stringstream sep(line);
-      string field;
-      int s = 0;
-      while (getline(sep, field, ',')) {
-        if (firstrun == 0) Phi.push_back({});
-        Phi[s].push_back(stod(field)); // Phi[0] is 1st snapshot
-        s++;
-      }
-      firstrun++;
-    }
-  }
-  //unsigned long nsnaps = Phi.size();
-  unsigned long N = Phi[0].size();
-  //unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil
-  //unsigned long i, j, k;
-  //
-  //const auto nodewithMax = std::max_element(Phi[0].begin(), Phi[0].end());
-  
-  //for (i = 0; i < nsnaps; i++) {
-  //
-  //  std::vector<std::vector<double>> U;
-  //  for (j = 0; j < i; j++) {
-  //    U.push_back(Phi[j]);
-  //  }
-  //
-  //  for (k = 0; k < nodestoAdd; k++) {
-  //    masked_Phi =
-  //  }
-  //
-  //}
-  
-  // set mask to all nodes for now
-  for (unsigned long i = 0; i < N; i++) {
-    Mask.push_back(i);
-    MaskNeighbors.push_back(i);
-  }
-  
-  auto t_end = std::chrono::high_resolution_clock::now();
-  double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
-  std::cout << "Mask selection for ROM completed in " << elapsed_time_ms/1000.0 << " seconds." << std::endl;
-}
+//void CEulerSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
+//  auto t_start = std::chrono::high_resolution_clock::now();
+//  // This function selects the masks E and E' using the Phi matrix and mesh data
+//
+//  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+//
+//  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
+//  //int desired_nodes = 500; //TODO: create config file option
+//  ifstream in_phi(phi_filename);
+//  std::vector<std::vector<double>> Phi;
+//  int firstrun = 0;
+//
+//  if (in_phi) {
+//    std::string line;
+//
+//    while (getline(in_phi, line)) {
+//      stringstream sep(line);
+//      string field;
+//      int s = 0;
+//      while (getline(sep, field, ',')) {
+//        if (firstrun == 0) Phi.push_back({});
+//        Phi[s].push_back(stod(field)); // Phi[0] is 1st snapshot
+//        s++;
+//      }
+//      firstrun++;
+//    }
+//  }
+//  //unsigned long nsnaps = Phi.size();
+//  unsigned long N = Phi[0].size();
+//  //unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil
+//  //unsigned long i, j, k;
+//  //
+//  //const auto nodewithMax = std::max_element(Phi[0].begin(), Phi[0].end());
+//
+//  //for (i = 0; i < nsnaps; i++) {
+//  //
+//  //  std::vector<std::vector<double>> U;
+//  //  for (j = 0; j < i; j++) {
+//  //    U.push_back(Phi[j]);
+//  //  }
+//  //
+//  //  for (k = 0; k < nodestoAdd; k++) {
+//  //    masked_Phi =
+//  //  }
+//  //
+//  //}
+//
+//  // set mask to all nodes for now
+//  for (unsigned long i = 0; i < N; i++) {
+//    Mask.push_back(i);
+//    MaskNeighbors.push_back(i);
+//  }
+//
+//  auto t_end = std::chrono::high_resolution_clock::now();
+//  double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+//  std::cout << "Mask selection for ROM completed in " << elapsed_time_ms/1000.0 << " seconds." << std::endl;
+//}
+
+//bool CEulerSolver::MaskedNode(unsigned long iPoint) {
+//  if (Mask.size() < iPoint) {
+//    std::cout << "Node " << iPoint << " is out of bounds. Returning false." << std::endl;
+//    return false;
+//  }
+//
+//  if (Mask[iPoint] == 1) return true;
+//  return false;
+//}
+
+//void CEulerSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
+//  // output: Masked Edges
+//
+//  unsigned long iEdge, iPoint, jPoint;
+//  unsigned long nEdge_masked = 0;
+//  vector<unsigned long> Edge_masked;
+//
+//  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+//    iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
+//
+//    if (MaskedNode(iPoint)) {
+//      Edge_masked.push_back(iEdge);
+//      nEdge_masked++;
+//    }
+//
+//  }
+//}
 
 void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
                                     unsigned short nVar, CGeometry *geometry, CConfig *config) {
@@ -3486,14 +3515,25 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
-  unsigned long iEdge, iPoint, jPoint;
+  unsigned long i, iEdge, iPoint, jPoint, nEdge;
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool jst_scheme = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
   bool rom = (config->GetReduced_Model());
   
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
+  if (rom)
+    nEdge = nEdge_masked;
+  else
+    nEdge = geometry->GetnEdge();
+  
+  
+  for (i = 0; i < nEdge; i++) {
+    
+    if (rom)
+      iEdge = Edge_masked[i];
+    else
+      iEdge = i;
+    
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
 
     iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
@@ -5423,7 +5463,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   // https://johnwlambert.github.io/least-squares/
   // http://www.netlib.org/lapack/explore-html/d7/d3b/group__double_g_esolve_ga225c8efde208eaf246882df48e590eac.html
 #if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
-    int info2;
+  int info2;
   info2 = dgels_(&TRANS, &m, &n, &NRHS, TestBasis2.data(), &m, r.data(), &m, WORK.data(), &LWORK, &INFO);
 #else
   SU2_MPI::Error("Lapack necessary for ROM.", CURRENT_FUNCTION);

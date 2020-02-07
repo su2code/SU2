@@ -4657,3 +4657,90 @@ void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
   /*--- To nPoint: The solution must be communicated beforehand ---*/
   base_nodes->Set_BGSSolution_k();
 }
+
+
+void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
+  auto t_start = std::chrono::high_resolution_clock::now();
+  // This function selects the masks E and E' using the Phi matrix and mesh data
+  
+  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+  
+  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
+  //int desired_nodes = 500; //TODO: create config file option
+  ifstream in_phi(phi_filename);
+  std::vector<std::vector<double>> Phi;
+  int firstrun = 0;
+  
+  if (in_phi) {
+    std::string line;
+    
+    while (getline(in_phi, line)) {
+      stringstream sep(line);
+      string field;
+      int s = 0;
+      while (getline(sep, field, ',')) {
+        if (firstrun == 0) Phi.push_back({});
+        Phi[s].push_back(stod(field)); // Phi[0] is 1st snapshot
+        s++;
+      }
+      firstrun++;
+    }
+  }
+  //unsigned long nsnaps = Phi.size();
+  unsigned long N = Phi[0].size();
+  //unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil
+  //unsigned long i, j, k;
+  //
+  //const auto nodewithMax = std::max_element(Phi[0].begin(), Phi[0].end());
+  
+  //for (i = 0; i < nsnaps; i++) {
+  //
+  //  std::vector<std::vector<double>> U;
+  //  for (j = 0; j < i; j++) {
+  //    U.push_back(Phi[j]);
+  //  }
+  //
+  //  for (k = 0; k < nodestoAdd; k++) {
+  //    masked_Phi =
+  //  }
+  //
+  //}
+  
+  // set mask to all nodes for now
+  for (unsigned long i = 0; i < N; i++) {
+    Mask.push_back(i);
+    MaskNeighbors.push_back(i);
+  }
+  
+  auto t_end = std::chrono::high_resolution_clock::now();
+  double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+  std::cout << "Mask selection for ROM completed in " << elapsed_time_ms/1000.0 << " seconds." << std::endl;
+}
+
+
+bool CSolver::MaskedNode(unsigned long iPoint) {
+  if (Mask.size() < iPoint) {
+    std::cout << "Node " << iPoint << " is out of bounds. Returning false." << std::endl;
+    return false;
+  }
+  
+  if (Mask[iPoint] == 1) return true;
+  return false;
+}
+
+
+void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
+  // output: Masked Edges
+  
+  unsigned long iEdge, iPoint, jPoint;
+  unsigned long nEdge_masked = 0;
+  
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
+    
+    if (MaskedNode(iPoint)) {
+      Edge_masked.push_back(iEdge);
+      nEdge_masked++;
+    }
+  }
+}

@@ -177,6 +177,8 @@ public:
   vector<double> GenCoordsY;                /*!< \brief vector to store generalized coordinate solution. (rom) */
   vector<double> Mask;                      /*!< \brief vector to store selected nodes. (rom)  */
   vector<double> MaskNeighbors;             /*!< \brief vector to store selected nodes' neighbors. (rom) */
+  vector<unsigned long> Edge_masked;        /*!<\brief vector to store masked edges (rom) */
+  unsigned long nEdge_masked;               /*!<\brief number of masked edges (rom) */
 
   CSysMatrix<su2double> StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
 
@@ -1558,13 +1560,6 @@ public:
                                     CSolver **solver_container,
                                     CConfig *config) { }
   
-  /*!
-   * \brief Create mask for hyper-reduction.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Mask_Selection(CGeometry *geometry,
-                                     CConfig *config) { }
   
   /*!
    * \brief Set up ROM-specific variables.
@@ -1577,6 +1572,26 @@ public:
                                        CGeometry *geometry,
                                        CConfig *config) { }
   
+  /*!
+   * \brief Create mask for hyper-reduction.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Mask_Selection(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Return true if provided point is a selected node (for hyper-reduction).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool MaskedNode(unsigned long iPoint);
+  
+  /*!
+   * \brief Convert masked nodes to masked edges.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FindMaskedEdges(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.

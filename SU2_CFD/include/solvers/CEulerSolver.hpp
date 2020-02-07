@@ -1085,13 +1085,13 @@ public:
                                CSolver **solver_container,
                                CConfig *config) final;
   
-  /*!
-   * \brief Update the solution using reduced order modelling methods (LSPG).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Mask_Selection(CGeometry *geometry,
-                      CConfig *config) final;
+  ///*!
+  // * \brief Update the solution using reduced order modelling methods (LSPG).
+  // * \param[in] geometry - Geometrical definition of the problem.
+  // * \param[in] config - Definition of the particular problem.
+  // */
+  //void Mask_Selection(CGeometry *geometry,
+  //                    CConfig *config) final;
   
   /*!
    * \brief Set up ROM-specific variables.
