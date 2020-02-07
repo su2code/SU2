@@ -145,7 +145,8 @@ void CMultizoneDriver::StartSolver() {
   su2double Time_Ref = config_container[ZONE_0]->GetTime_Ref();
 
   for (iZone = 1; iZone < nZone; iZone++) {
-    if (config_container[iZone]->GetTime_Ref() < Time_Ref)
+    if ((config_container[iZone]->GetTime_Ref() < Time_Ref)
+        && (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY))
       Time_Ref = config_container[iZone]->GetTime_Ref();
   }
 
