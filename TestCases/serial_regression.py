@@ -40,6 +40,14 @@ def main():
     ## Compressible Euler ###
     #########################
 
+    # Dry run test Euler
+    channel_d           = TestCase('dry run Euler')
+    channel_d.cfg_dir   = "euler/channel"
+    channel_d.cfg_file  = "inv_channel_RK.cfg"
+    channel_d.su2_exec  = "SU2_CFD -d"
+    channel_d.timeout   = 1600
+    test_list.append(channel_d)
+
     # Channel
     channel           = TestCase('channel')
     channel.cfg_dir   = "euler/channel"
@@ -51,7 +59,7 @@ def main():
     channel.new_output = True
     channel.tol       = 0.00001
     test_list.append(channel)
-
+   
     # NACA0012 
     naca0012           = TestCase('naca0012')
     naca0012.cfg_dir   = "euler/naca0012"
@@ -129,6 +137,14 @@ def main():
     ###  Compressible N-S  ###
     ##########################
 
+    # Dry run test NS
+    flatplate_d           = TestCase('dry run NS')
+    flatplate_d.cfg_dir   = "navierstokes/flatplate"
+    flatplate_d.cfg_file  = "lam_flatplate.cfg"
+    flatplate_d.su2_exec  = "SU2_CFD -d"
+    flatplate_d.timeout   = 1600
+    test_list.append(flatplate_d)
+
     # Laminar flat plate
     flatplate           = TestCase('flatplate')
     flatplate.cfg_dir   = "navierstokes/flatplate"
@@ -192,6 +208,14 @@ def main():
     ##########################
     ### Compressible RANS  ###
     ##########################
+
+    # Dry run RANS
+    rae2822_sa_d           = TestCase('dry run RANS')
+    rae2822_sa_d .cfg_dir   = "rans/rae2822"
+    rae2822_sa_d .cfg_file  = "turb_SA_RAE2822.cfg"
+    rae2822_sa_d .su2_exec  = "SU2_CFD -d"
+    rae2822_sa_d .timeout   = 1600
+    test_list.append(rae2822_sa_d)
 
     # RAE2822 SA
     rae2822_sa           = TestCase('rae2822_sa')
@@ -320,6 +344,14 @@ def main():
     ### Incompressible Euler  ###
     #############################
 
+    # Dry run Inc Euler
+    inc_euler_naca0012_d           = TestCase('dry run Inc Euler')
+    inc_euler_naca0012_d.cfg_dir   = "incomp_euler/naca0012"
+    inc_euler_naca0012_d.cfg_file  = "incomp_NACA0012.cfg"
+    inc_euler_naca0012_d.su2_exec  = "SU2_CFD -d"
+    inc_euler_naca0012_d.timeout   = 1600
+    test_list.append(inc_euler_naca0012_d)
+
     # NACA0012 Hydrofoil
     inc_euler_naca0012           = TestCase('inc_euler_naca0012')
     inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
@@ -347,6 +379,14 @@ def main():
     #############################
     ### Incompressible N-S    ###
     #############################
+
+    # Dry Run Inc. NS
+    inc_lam_cylinder_d          = TestCase('dry run Inc. NS')
+    inc_lam_cylinder_d.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_lam_cylinder_d.cfg_file  = "incomp_cylinder.cfg"
+    inc_lam_cylinder_d.su2_exec  = "SU2_CFD -d"
+    inc_lam_cylinder_d.timeout   = 1600
+    test_list.append(inc_lam_cylinder_d)
 
     # Laminar cylinder
     inc_lam_cylinder          = TestCase('inc_lam_cylinder')
@@ -399,6 +439,14 @@ def main():
     ### Incompressible RANS  ###
     ############################
 
+    # Dry run Inc. RANS
+    inc_turb_naca0012_d           = TestCase('dry run Inc. RANS')
+    inc_turb_naca0012_d.cfg_dir   = "incomp_rans/naca0012"
+    inc_turb_naca0012_d.cfg_file  = "naca0012.cfg"
+    inc_turb_naca0012_d.su2_exec  = "SU2_CFD -d"
+    inc_turb_naca0012_d.timeout   = 1600
+    test_list.append(inc_turb_naca0012_d)
+
     # NACA0012, SA
     inc_turb_naca0012           = TestCase('inc_turb_naca0012')
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
@@ -426,6 +474,14 @@ def main():
     ### DG-FEM Euler ###
     ####################
     
+    # Dry run DG Euler
+    fem_euler_naca0012_d           = TestCase('dry run DG Euler')
+    fem_euler_naca0012_d.cfg_dir   = "hom_euler/NACA0012_5thOrder"
+    fem_euler_naca0012_d.cfg_file  = "fem_NACA0012_reg.cfg"
+    fem_euler_naca0012_d.su2_exec  = "SU2_CFD -d"
+    fem_euler_naca0012_d.timeout   = 1600
+    test_list.append(fem_euler_naca0012_d)
+
     # NACA0012
     fem_euler_naca0012           = TestCase('fem_euler_naca0012')
     fem_euler_naca0012.cfg_dir   = "hom_euler/NACA0012_5thOrder"
@@ -442,6 +498,14 @@ def main():
     ### DG-FEM Navier-Stokes ###
     ############################
     
+    # Dry run DG NS
+    fem_ns_flatplate_d           = TestCase('dry run DG NS')
+    fem_ns_flatplate_d.cfg_dir   = "hom_navierstokes/FlatPlate/nPoly4"
+    fem_ns_flatplate_d.cfg_file  = "lam_flatplate_reg.cfg"
+    fem_ns_flatplate_d.su2_exec  = "SU2_CFD -d"
+    fem_ns_flatplate_d.timeout   = 1600
+    test_list.append(fem_ns_flatplate_d)
+
     # Flat plate
     fem_ns_flatplate           = TestCase('fem_ns_flatplate')
     fem_ns_flatplate.cfg_dir   = "hom_navierstokes/FlatPlate/nPoly4"
@@ -537,6 +601,14 @@ def main():
     ### Cont. adj. compressible Euler ###
     #####################################
 
+    # Dry run Cont. Adj. Euler
+    contadj_naca0012_d           = TestCase('dry run Cont. Adj. Euler')
+    contadj_naca0012_d.cfg_dir   = "cont_adj_euler/naca0012"
+    contadj_naca0012_d.cfg_file  = "inv_NACA0012.cfg"
+    contadj_naca0012_d.su2_exec  = "SU2_CFD -d"
+    contadj_naca0012_d.timeout   = 1600
+    test_list.append(contadj_naca0012_d)
+
     # Inviscid NACA0012
     contadj_naca0012           = TestCase('contadj_naca0012')
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
@@ -588,6 +660,14 @@ def main():
     ###################################
     ### Cont. adj. compressible N-S ###
     ###################################
+
+    # Dry run Cont. Adj. NS
+    contadj_ns_cylinder_d           = TestCase('dry run Cont. Adj. NS')
+    contadj_ns_cylinder_d.cfg_dir   = "cont_adj_navierstokes/cylinder"
+    contadj_ns_cylinder_d.cfg_file  = "lam_cylinder.cfg"
+    contadj_ns_cylinder_d.su2_exec  = "SU2_CFD -d"
+    contadj_ns_cylinder_d.timeout   = 1600
+    test_list.append(contadj_ns_cylinder_d)
 
     # Adjoint laminar cylinder
     contadj_ns_cylinder           = TestCase('contadj_ns_cylinder')
@@ -963,6 +1043,14 @@ def main():
     ### Sliding Mesh                   ###
     ######################################
 
+    # Dry run Multizone
+    uniform_flow_d         = TestCase('dry run Multizone')
+    uniform_flow_d.cfg_dir   = "sliding_interface/uniform_flow"
+    uniform_flow_d.cfg_file  = "uniform_NN.cfg"
+    uniform_flow_d.su2_exec  = "SU2_CFD -d"
+    uniform_flow_d.timeout   = 1600
+    test_list.append(uniform_flow_d) 
+
     # Uniform flow
     uniform_flow         = TestCase('uniform_flow')
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
@@ -1081,6 +1169,14 @@ def main():
     ### FEA - FSI          ###
     ##########################
 
+    # Dry run FEA
+    statbeam3d_d           = TestCase('dry run FEA')
+    statbeam3d_d.cfg_dir   = "fea_fsi/StatBeam_3d"
+    statbeam3d_d.cfg_file  = "configBeam_3d.cfg"
+    statbeam3d_d.su2_exec  = "SU2_CFD -d"
+    statbeam3d_d.timeout   = 1600
+    test_list.append(statbeam3d_d)
+
     # Static beam, 3d
     statbeam3d           = TestCase('statbeam3d')
     statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
@@ -1182,6 +1278,14 @@ def main():
     # ###############################
     # ### Conjugate heat transfer ###
     # ###############################
+
+    # Dry run CHT
+    cht_incompressible_d           = TestCase('dry run CHT')
+    cht_incompressible_d.cfg_dir   = "coupled_cht/incomp_2d"
+    cht_incompressible_d.cfg_file  = "cht_2d_3cylinders.cfg"
+    cht_incompressible_d.su2_exec  = "SU2_CFD -d"
+    cht_incompressible_d.timeout   = 1600
+    test_list.append(cht_incompressible_d)
 
     # CHT incompressible
     cht_incompressible           = TestCase('cht_incompressible')
