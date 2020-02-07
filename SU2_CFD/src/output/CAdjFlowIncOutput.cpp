@@ -190,7 +190,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   switch(rad_model){
   case P1_MODEL:
     /// DESCRIPTION: Root-mean square residual of the adjoint radiative energy tilde.
-    AddHistoryOutput("BGS_ADJ_P1", "bgs[A_P1]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual  of the P1 radiative energy.",HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("BGS_ADJ_RAD_ENERGY", "bgs[A_P1]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual  of the P1 radiative energy.",HistoryFieldType::RESIDUAL);
     break;
   default: break;
   }
