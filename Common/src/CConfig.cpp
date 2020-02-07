@@ -1062,6 +1062,8 @@ void CConfig::SetPointersNull(void) {
 
   Mesh_Box_Size = NULL;
 
+  Time_Ref = 1.0;
+
 }
 
 void CConfig::SetRunTime_Options(void) {
