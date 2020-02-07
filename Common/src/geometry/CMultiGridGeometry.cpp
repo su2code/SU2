@@ -2,7 +2,7 @@
  * \file CMultiGridGeometry.cpp
  * \brief Implementation of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1323,31 +1323,25 @@ void CMultiGridGeometry::SetMultiGridWallTemperature(CGeometry *geometry, unsign
 
 void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) {
 
-  /*--- Local variables ---*/
-  unsigned short iDim, iChild;
-  unsigned long Point_Coarse, Point_Fine;
-  su2double Area_Parent, Area_Child, Grid_Vel[3], *Grid_Vel_Fine;
+  /*--- Loop over all coarse mesh points. ---*/
+  for (unsigned long Point_Coarse = 0; Point_Coarse < nPoint; Point_Coarse++) {
+    su2double Area_Parent = node[Point_Coarse]->GetVolume();
 
-  /*--- Loop over all coarse mesh points ---*/
-  for (Point_Coarse = 0; Point_Coarse < GetnPoint(); Point_Coarse++) {
-    Area_Parent = node[Point_Coarse]->GetVolume();
-
-    /*--- Zero out the grid velocity ---*/
-    for (iDim = 0; iDim < nDim; iDim++)
-      Grid_Vel[iDim] = 0.0;
+    /*--- Initialize coarse grid velocity to zero. ---*/
+    su2double Grid_Vel[3] = {0.0, 0.0, 0.0};
 
     /*--- Loop over all of the children for this coarse CV and compute
      a grid velocity based on the values in the child CVs (fine mesh). ---*/
-    for (iChild = 0; iChild < node[Point_Coarse]->GetnChildren_CV(); iChild++) {
-      Point_Fine    = node[Point_Coarse]->GetChildren_CV(iChild);
-      Area_Child    = fine_mesh->node[Point_Fine]->GetVolume();
-      Grid_Vel_Fine = fine_mesh->node[Point_Fine]->GetGridVel();
-      for (iDim = 0; iDim < nDim; iDim++)
+    for (unsigned short iChild = 0; iChild < node[Point_Coarse]->GetnChildren_CV(); iChild++) {
+      unsigned long Point_Fine       = node[Point_Coarse]->GetChildren_CV(iChild);
+      su2double Area_Child           = fine_mesh->node[Point_Fine]->GetVolume();
+      const su2double* Grid_Vel_Fine = fine_mesh->node[Point_Fine]->GetGridVel();
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
         Grid_Vel[iDim] += Grid_Vel_Fine[iDim]*Area_Child/Area_Parent;
     }
 
     /*--- Set the grid velocity for this coarse node. ---*/
-    for (iDim = 0; iDim < nDim; iDim++)
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
       node[Point_Coarse]->SetGridVel(iDim, Grid_Vel[iDim]);
   }
 }
