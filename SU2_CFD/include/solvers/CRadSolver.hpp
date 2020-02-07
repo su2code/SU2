@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../solver_structure.hpp"
+#include "CSolver.hpp"
 #include "../variables/CRadVariable.hpp"
 
 class CRadSolver : public CSolver {

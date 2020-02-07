@@ -1408,6 +1408,26 @@ public:
   }
 
   /*!
+   * \brief Set a component of the unit vector representing the flow direction at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the flow direction is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is set.
+   * \param[in] val_dim - The component of the flow direction unit vector to be set
+   * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
+   */
+  inline void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir) final {
+    /*--- Since this call can be accessed indirectly using python, do some error
+     * checking to prevent segmentation faults ---*/
+    if (val_marker >= nMarker)
+      SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
+    else if (Inlet_FlowDir == NULL || Inlet_FlowDir[val_marker] == NULL)
+        SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
+    else if (val_vertex >= nVertex[val_marker])
+      SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
+    else
+      Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir;
+  }
+
+  /*!
    * \brief Set a uniform inlet profile
    *
    * The values at the inlet are set to match the values specified for
