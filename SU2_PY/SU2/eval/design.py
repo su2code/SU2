@@ -3,7 +3,7 @@
 ## \file design.py
 #  \brief python package for designs
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -99,7 +99,7 @@ class Design(object):
         self.folder = folder
         
         self.filename = 'design.pkl'
-            
+
         # initialize folder with files
         pull,link = state.pullnlink(config)
         with redirect_folder(folder,pull,link,force=True):
@@ -122,8 +122,19 @@ class Design(object):
         # check folder
         assert os.path.exists(folder) , 'cannot find design folder %s' % folder
         
+        konfig = copy.deepcopy(config)
+
+        ''' 
+        If the time convergence criterion was activated, we have less time iterations. 
+        Store the changed values of TIME_ITER, ITER_AVERAGE_OBJ and UNST_ADJOINT_ITER in
+        state.WND_CAUCHY_DATA'''
+        if 'TIME_ITER' in state.WND_CAUCHY_DATA:         # Use Convergence data, if we have already a direct run
+            konfig['TIME_ITER'] = state.WND_CAUCHY_DATA['TIME_ITER']
+            konfig['ITER_AVERAGE_OBJ'] = state.WND_CAUCHY_DATA['ITER_AVERAGE_OBJ']
+            konfig['UNST_ADJOINT_ITER'] = state.WND_CAUCHY_DATA['UNST_ADJOINT_ITER']
+
         # list files to pull and link
-        pull,link = state.pullnlink(config)
+        pull,link = state.pullnlink(konfig)
         
         # output redirection, don't re-pull files
         with redirect_folder(folder,pull,link,force=False) as push:
@@ -393,7 +404,7 @@ def con_ceq(dvs,config,state=None):
         or numpy array (shape n or nx1 or 1xn), a config
         and optionally a state.
         
-        Returns a list of constraint values, ordered 
+        Returns: a list of constraint values, ordered
         by the OPT_CONSTRAINT config parameter.
     """
     
@@ -403,7 +414,7 @@ def con_ceq(dvs,config,state=None):
     
     def_cons = config['OPT_CONSTRAINT']['EQUALITY']
     constraints = def_cons.keys()
-    
+
     # evaluate each constraint
     vals_out = []
     for i_obj,this_con in enumerate(constraints):

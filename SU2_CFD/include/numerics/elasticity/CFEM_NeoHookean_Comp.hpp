@@ -2,7 +2,7 @@
  * \file CFEM_NeoHookean_Comp.hpp
  * \brief Compressible Neo-Hookean FE numerics class.
  * \author Ruben Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, compressible.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  */
 class CFEM_NeoHookean_Comp final : public CFEANonlinearElasticity {
 

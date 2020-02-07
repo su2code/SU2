@@ -2,7 +2,7 @@
  * \file CEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -143,10 +143,6 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   Non_Physical.resize(nPoint) = false;
   Non_Physical_Counter.resize(nPoint) = 0;
   
-}
-
-void CEulerVariable::SetGradient_PrimitiveZero() {
-  Gradient_Primitive.storage.setConstant(0.0);
 }
 
 bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {

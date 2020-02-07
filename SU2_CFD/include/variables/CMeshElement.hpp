@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class
  *        to define the variables of the mesh movement.
  * \author Ruben Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,13 +28,9 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
-
-#include <cmath>
-#include <iostream>
 #include <cstdlib>
 
-#include "../../../Common/include/config_structure.hpp"
+#include "../../../Common/include/CConfig.hpp"
 
 class CMeshElement {
 protected:
