@@ -181,7 +181,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CEulerVariable.cpp
 
 su2_cfd_sources = \
-  ../include/SU2_CFD.cpp \
   ../src/SU2_CFD.cpp
 
 libSU2Core_cxx_flags = -fPIC -std=c++11
