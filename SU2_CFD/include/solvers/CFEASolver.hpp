@@ -85,9 +85,12 @@ protected:
   bool topol_filter_applied;        /*!< \brief True if density filtering has been performed. */
 
   unsigned long nElement;           /*!< \brief Number of elements. */
-  unsigned long IterLinSol;         /*!< \brief Number of iterations of the linear solver. */
 
-  CVariable* nodes = nullptr;       /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  /*!
+   * \brief The highest level in the variable hierarchy this solver can safely use,
+   * CVariable is the common denominator between the FEA and Mesh deformation variables.
+   */
+  CVariable* nodes = nullptr;
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.

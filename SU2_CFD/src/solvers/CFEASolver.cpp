@@ -2763,23 +2763,32 @@ void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **sol
 
 void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
+  SU2_OMP_PARALLEL
+  {
   /*--- Initialize residual and solution at the ghost points ---*/
 
-  for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    LinSysRes.SetBlock_Zero(iPoint);
-    LinSysSol.SetBlock_Zero(iPoint);
+  SU2_OMP(sections)
+  {
+    SU2_OMP(section)
+    for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+      LinSysRes.SetBlock_Zero(iPoint);
+
+    SU2_OMP(section)
+    for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+      LinSysSol.SetBlock_Zero(iPoint);
   }
 
-  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  /*--- Solve or smooth the linear system. ---*/
 
-  /*--- The the number of iterations of the linear solver ---*/
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  SU2_OMP_MASTER
+  {
+    SetIterLinSolver(iter);
+    SetResLinSolver(System.GetResidual());
+  }
+  SU2_OMP_BARRIER
 
-  SetIterLinSolver(IterLinSol);
-
-  /*--- Store the value of the residual. ---*/
-
-  SetResLinSolver(System.GetResidual());
-
+  } // end SU2_OMP_PARALLEL
 }
 
 
