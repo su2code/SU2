@@ -3452,7 +3452,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Get stored time spectral source term and add to residual ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
-        LinSysRes[iPoint*nVar+iVar] += Volume * nodes->GetHarmonicBalance_Source(iPoint,iVar);
+        LinSysRes(iPoint,iVar) += Volume * nodes->GetHarmonicBalance_Source(iPoint,iVar);
       }
     }
   }
@@ -3512,7 +3512,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
         /*--- Compute the residual for this control volume and subtract. ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
-          LinSysRes[iPoint*nVar+iVar] -= sourceMan[iVar]*Volume;
+          LinSysRes(iPoint,iVar) -= sourceMan[iVar]*Volume;
         }
       }
     }
@@ -4736,7 +4736,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        LinSysRes[iPoint*nVar + iVar] = 0.0;
+        LinSysRes(iPoint,iVar) = 0.0;
         local_Res_TruncError[iVar] = 0.0;
       }
     }

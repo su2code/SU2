@@ -909,7 +909,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
 
           auto Ta = element->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
-            LinSysRes[indexNode[iNode]*nVar+iVar] -= simp_penalty*Ta[iVar];
+            LinSysRes(indexNode[iNode], iVar) -= simp_penalty*Ta[iVar];
 
           for (jNode = 0; jNode < nNodes; jNode++) {
             auto Kab = element->Get_Kab(iNode, jNode);
@@ -1024,13 +1024,13 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
 
           auto Ta = fea_elem->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
-            LinSysRes[indexNode[iNode]*nVar+iVar] -= simp_penalty*Ta[iVar];
+            LinSysRes(indexNode[iNode], iVar) -= simp_penalty*Ta[iVar];
 
           /*--- Retrieve the electric contribution to the residual. ---*/
           if (de_effects) {
             auto Ta_DE = de_elem->Get_Kt_a(iNode);
             for (iVar = 0; iVar < nVar; iVar++)
-              LinSysRes[indexNode[iNode]*nVar+iVar] -= simp_penalty*Ta_DE[iVar];
+              LinSysRes(indexNode[iNode], iVar) -= simp_penalty*Ta_DE[iVar];
           }
 
           for (jNode = 0; jNode < nNodes; jNode++) {
@@ -1224,8 +1224,8 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CCon
             su2double Mab = simp_penalty * element->Get_Mab(iNode, jNode);
 
             for (iVar = 0; iVar < nVar; iVar++) {
-              TimeRes[indexNode[iNode]*nVar+iVar] += Mab * TimeRes_Aux.GetBlock(indexNode[iNode],iVar);
-              TimeRes[indexNode[jNode]*nVar+iVar] += Mab * TimeRes_Aux.GetBlock(indexNode[jNode],iVar);
+              TimeRes[indexNode[iNode]*nVar+iVar] += Mab * TimeRes_Aux(indexNode[iNode],iVar);
+              TimeRes[indexNode[jNode]*nVar+iVar] += Mab * TimeRes_Aux(indexNode[jNode],iVar);
             }
           }
         }
@@ -1322,7 +1322,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
         for (iNode = 0; iNode < nNodes; iNode++) {
           auto Ta = element->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
-            LinSysRes[indexNode[iNode]*nVar+iVar] -= simp_penalty*Ta[iVar];
+            LinSysRes(indexNode[iNode], iVar) -= simp_penalty*Ta[iVar];
         }
 
       } // end iElem loop
@@ -1429,7 +1429,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
           auto Ta = element->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
-            LinSysReact[iPoint*nVar+iVar] += simp_penalty*Ta[iVar];
+            LinSysReact(iPoint,iVar) += simp_penalty*Ta[iVar];
 
           /*--- Divide the nodal stress by the number of elements that will contribute to this point. ---*/
           su2double weight = simp_penalty / geometry->node[iPoint]->GetnElem();
@@ -1535,7 +1535,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
               for (iVar = 0; iVar < nVar; iVar++) {
                 /*--- Retrieve reaction ---*/
-                val_Reaction = LinSysReact.GetBlock(iPoint, iVar);
+                val_Reaction = LinSysReact(iPoint, iVar);
                 myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
               }
 
@@ -1556,7 +1556,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
           /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
           for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
             for (iVar = 0; iVar < nVar; iVar++) {
-              TimeRes_Aux[iPoint*nVar+iVar] =
+              TimeRes_Aux(iPoint,iVar) =
                 a_dt[0]*nodes->GetSolution_time_n(iPoint,iVar) -      // a0*U(t)
                 a_dt[0]*nodes->GetSolution(iPoint,iVar) +             // a0*U(t+dt)(k-1)
                 a_dt[2]*nodes->GetSolution_Vel_time_n(iPoint,iVar) +  // a2*U'(t)
@@ -1593,7 +1593,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
                   for (iVar = 0; iVar < nVar; iVar++) {
                     /*--- Retrieve the time contribution and reaction. ---*/
-                    val_Reaction = LinSysReact.GetBlock(iPoint, iVar) + TimeRes.GetBlock(iPoint, iVar);
+                    val_Reaction = LinSysReact(iPoint, iVar) + TimeRes(iPoint, iVar);
                     myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
                   }
 
@@ -2391,21 +2391,21 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
       /*--- External surface load contribution. ---*/
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_SurfaceLoad_Res(iPoint,iVar);
+        LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_SurfaceLoad_Res(iPoint,iVar);
       }
 
       /*--- Body forces contribution (dead load). ---*/
 
       if (body_forces) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
+          LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
         }
       }
 
       /*--- FSI contribution (flow loads). ---*/
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_FlowTraction(iPoint,iVar);
+        LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_FlowTraction(iPoint,iVar);
       }
 
     }
@@ -2433,7 +2433,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          TimeRes_Aux[iPoint*nVar+iVar] =
+          TimeRes_Aux(iPoint,iVar) =
             a_dt[0]*nodes->GetSolution_time_n(iPoint,iVar) -      // a0*U(t)
             a_dt[0]*nodes->GetSolution(iPoint,iVar) +             // a0*U(t+dt)(k-1)
             a_dt[2]*nodes->GetSolution_Vel_time_n(iPoint,iVar) +  // a2*U'(t)
@@ -2466,7 +2466,7 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       /*--- Displacement component of the solution. ---*/
       for (iVar = 0; iVar < nVar; iVar++)
-        nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
+        nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol(iPoint,iVar));
     }
 
     if (dynamic) {
@@ -2597,21 +2597,21 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
         /*--- External surface load contribution. ---*/
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_SurfaceLoad_Res(iPoint,iVar);
+          LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_SurfaceLoad_Res(iPoint,iVar);
         }
 
         /*--- Body forces contribution (dead load). ---*/
 
         if (body_forces) {
           for (iVar = 0; iVar < nVar; iVar++) {
-            LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
+            LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
           }
         }
 
         /*--- FSI contribution (flow loads). ---*/
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_FlowTraction(iPoint,iVar);
+          LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_FlowTraction(iPoint,iVar);
         }
 
       }
@@ -2632,7 +2632,7 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          TimeRes_Aux[iPoint*nVar+iVar] =
+          TimeRes_Aux(iPoint,iVar) =
             a_dt[0]*nodes->GetSolution_time_n(iPoint,iVar) -      // a0*U(t)
             a_dt[0]*nodes->GetSolution(iPoint,iVar) +             // a0*U(t+dt)(k-1)
             a_dt[2]*nodes->GetSolution_Vel_time_n(iPoint,iVar) +  // a2*U'(t)
@@ -2652,8 +2652,8 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
         /*--- External surface load contribution ---*/
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          LinSysRes[iPoint*nVar+iVar] += loadIncr * ( (1-alpha_f) * nodes->Get_SurfaceLoad_Res(iPoint,iVar) +
-                                                       alpha_f  * nodes->Get_SurfaceLoad_Res_n(iPoint,iVar) );
+          LinSysRes(iPoint,iVar) += loadIncr * ( (1-alpha_f) * nodes->Get_SurfaceLoad_Res(iPoint,iVar) +
+                                                    alpha_f  * nodes->Get_SurfaceLoad_Res_n(iPoint,iVar) );
         }
 
         /*--- Add the contribution to the residual due to body forces.
@@ -2661,15 +2661,15 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
 
         if (body_forces) {
           for (iVar = 0; iVar < nVar; iVar++) {
-            LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
+            LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
           }
         }
 
         /*--- Add FSI contribution. ---*/
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          LinSysRes[iPoint*nVar+iVar] += loadIncr * ( (1-alpha_f) * nodes->Get_FlowTraction(iPoint,iVar) +
-                                                       alpha_f  * nodes->Get_FlowTraction_n(iPoint,iVar) );
+          LinSysRes(iPoint,iVar) += loadIncr * ( (1-alpha_f) * nodes->Get_FlowTraction(iPoint,iVar) +
+                                                    alpha_f  * nodes->Get_FlowTraction_n(iPoint,iVar) );
         }
       }
     }
@@ -2685,7 +2685,7 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solv
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
+      nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol(iPoint,iVar));
 
   /*--- Perform the MPI communication of the solution, displacements only. ---*/
 

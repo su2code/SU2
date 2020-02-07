@@ -59,7 +59,7 @@ private:
    * \brief Generic initialization from a scalar or array.
    * \note If val==nullptr vec_val is not initialized, only allocated.
    * \param[in] numBlk - number of blocks locally
-   * \param[in] numBlkDomain - number of blocks locally (without g cells)
+   * \param[in] numBlkDomain - number of blocks locally (without ghost cells)
    * \param[in] numVar - number of variables in each block
    * \param[in] val - default value for elements
    * \param[in] valIsArray - if true val is treated as array
@@ -360,7 +360,11 @@ public:
    * \param[in] val_var - inde of the residual to be set.
    * \return Value of the residual.
    */
-  inline ScalarType GetBlock(unsigned long val_ipoint, unsigned long val_var) const {
+  inline const ScalarType& operator() (unsigned long val_ipoint, unsigned long val_var) const {
     return vec_val[val_ipoint*nVar+val_var];
   }
+  inline ScalarType& operator() (unsigned long val_ipoint, unsigned long val_var) {
+    return vec_val[val_ipoint*nVar+val_var];
+  }
+
 };

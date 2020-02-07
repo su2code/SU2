@@ -448,7 +448,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         su2double Source = nodes->GetHarmonicBalance_Source(iPoint,iVar);
-        LinSysRes[iPoint*nVar+iVar] += Source*Volume;
+        LinSysRes(iPoint,iVar) += Source*Volume;
       }
     }
   }
