@@ -78,7 +78,7 @@ void CSU2MeshFileWriter::Write_Data(){
 
     output_file << "NDIME= " << dataSorter->GetnDim() << endl;
 
-    output_file << "NELEM= " << dataSorter->GetnElem() << endl;
+    output_file << "NELEM= " << dataSorter->GetnElemGlobal() << endl;
 
     output_file.close();
   }
