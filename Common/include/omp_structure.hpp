@@ -124,3 +124,28 @@ inline size_t computeStaticChunkSize(size_t totalWork,
   return roundUpDiv(workPerThread, chunksPerThread);
 }
 
+/*!
+ * \brief Copy data from one array-like object to another in parallel.
+ * \param[in] size - Number of elements.
+ * \param[in] src - Source array.
+ * \param[in] dst - Destination array.
+ */
+template<class T, class U>
+void parallelCopy(size_t size, const T* src, U* dst)
+{
+  SU2_OMP_FOR_STAT(4196)
+  for(size_t i=0; i<size; ++i) dst[i] = src[i];
+}
+
+/*!
+ * \brief Set the entries of an array-like object to a constant value in parallel.
+ * \param[in] size - Number of elements.
+ * \param[in] val - Value to set.
+ * \param[in] dst - Destination array.
+ */
+template<class T, class U>
+void parallelSet(size_t size, T val, U* dst)
+{
+  SU2_OMP_FOR_STAT(4196)
+  for(size_t i=0; i<size; ++i) dst[i] = val;
+}

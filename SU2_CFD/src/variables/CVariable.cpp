@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -27,6 +27,7 @@
 
 
 #include "../../include/variables/CVariable.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 
 
 CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) {
@@ -79,23 +80,41 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
 }
 
-void CVariable::Set_OldSolution() { Solution_Old = Solution; }
+void CVariable::Set_OldSolution() {
+  assert(Solution_Old.size() == Solution.size());
+  parallelCopy(Solution.size(), Solution.data(), Solution_Old.data());
+}
 
-void CVariable::Set_Solution() { Solution = Solution_Old; }
+void CVariable::Set_Solution() {
+  assert(Solution.size() == Solution_Old.size());
+  parallelCopy(Solution_Old.size(), Solution_Old.data(), Solution.data());
+}
 
-void CVariable::Set_Solution_time_n() { Solution_time_n = Solution; }
+void CVariable::Set_Solution_time_n() {
+  assert(Solution_time_n.size() == Solution.size());
+  parallelCopy(Solution.size(), Solution.data(), Solution_time_n.data());
+}
 
-void CVariable::Set_Solution_time_n1() { Solution_time_n1 = Solution_time_n; }
+void CVariable::Set_Solution_time_n1() {
+  assert(Solution_time_n1.size() == Solution_time_n.size());
+  parallelCopy(Solution_time_n.size(), Solution_time_n.data(), Solution_time_n1.data());
+}
 
-void CVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution; }
+void CVariable::Set_BGSSolution_k() {
+  assert(Solution_BGS_k.size() == Solution.size());
+  parallelCopy(Solution.size(), Solution.data(), Solution_BGS_k.data());
+}
 
-void CVariable::Restore_BGSSolution_k() { Solution = Solution_BGS_k; }
+void CVariable::Restore_BGSSolution_k() {
+  assert(Solution.size() == Solution_BGS_k.size());
+  parallelCopy(Solution_BGS_k.size(), Solution_BGS_k.data(), Solution.data());
+}
 
-void CVariable::SetResidualSumZero() { Residual_Sum.setConstant(0.0); }
+void CVariable::SetResidualSumZero() { parallelSet(Residual_Sum.size(), 0.0, Residual_Sum.data()); }
 
-void CVariable::SetUnd_LaplZero() { Undivided_Laplacian.setConstant(0.0); }
+void CVariable::SetUnd_LaplZero() { parallelSet(Undivided_Laplacian.size(), 0.0, Undivided_Laplacian.data()); }
 
-void CVariable::SetExternalZero() { External.setConstant(0.0); }
+void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.data()); }
 
 void CVariable::RegisterSolution(bool input, bool push_index) {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
