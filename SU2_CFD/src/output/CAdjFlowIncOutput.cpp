@@ -245,7 +245,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   }
   switch(rad_model){
   case P1_MODEL:
-    SetHistoryOutputValue("RMS_ADJ_P1", log10(adjrad_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("RMS_ADJ_RAD_ENERGY", log10(adjrad_solver->GetRes_RMS(0)));
     break;
   default: break;
   }
@@ -303,7 +303,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     }
     switch(rad_model){
     case P1_MODEL:
-      SetHistoryOutputValue("BGS_ADJ_P1", log10(adjrad_solver->GetRes_BGS(0)));
+      SetHistoryOutputValue("BGS_ADJ_RAD_ENERGY", log10(adjrad_solver->GetRes_BGS(0)));
       break;
     default: break;
     }
