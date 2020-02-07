@@ -39,6 +39,8 @@ using namespace std;
 class C1DInterpolation{
 protected:
     bool Point_Match = true;
+    vector<su2double> Inlet_Radii;
+    vector<su2double> Inlet_Columns;
 public:
 virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
 virtual su2double EvaluateSpline(su2double Point_Interp){}
@@ -52,6 +54,9 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated,
                                     CConfig *config);
 
 void PrintInletInterpolatedData(vector<su2double> Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim);
+
+//YOU ARE GOING TO SHIFT ALL iCol separation to C1DInterpolation as Akima and Linear will be able to inherit and use them. Use this pointer to track the columns.
+
 };
 
 

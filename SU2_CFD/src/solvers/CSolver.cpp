@@ -4429,8 +4429,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               
             }
           }
-            
-            for (iVar = 0; iVar < nColumns; iVar++) {delete interpolator[iVar];}
             delete corrector;
         }
       }
