@@ -146,7 +146,7 @@ void CMultizoneDriver::StartSolver() {
 
   for (iZone = 1; iZone < nZone; iZone++) {
     if ((config_container[iZone]->GetTime_Ref() < Time_Ref)
-        && (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY))
+        && (config_container[iZone]->GetKind_Solver() != FEM_ELASTICITY))
       Time_Ref = config_container[iZone]->GetTime_Ref();
   }
 
