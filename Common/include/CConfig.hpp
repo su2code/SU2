@@ -4309,7 +4309,7 @@ public:
    *       during the computation.
    * \return Kind of integration scheme for the radiation equations.
    */
-  unsigned short GetKind_TimeIntScheme_Radiation(void);
+  unsigned short GetKind_TimeIntScheme_Radiation(void) { return Kind_TimeIntScheme_Radiation; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -9053,25 +9053,25 @@ public:
    * \brief Get the Kind of Radiation model applied.
    * \return Kind of radiation model used.
    */
-   unsigned short GetKind_RadiationModel(void);
+   unsigned short GetKind_RadiationModel(void) { return Kind_Radiation; }
 
    /*!
     * \brief Get the Kind of P1 initialization method applied.
     * \return Kind of P1 initialization method used.
     */
-    unsigned short GetKind_P1_Init(void);
+    unsigned short GetKind_P1_Init(void) { return Kind_P1_Init; }
 
   /*!
    * \brief Get the value of the absorption coefficient of the medium.
    * \return Value of the absorption coefficient of the medium.
    */
-  su2double GetAbsorption_Coeff(void);
+  su2double GetAbsorption_Coeff(void) { return Absorption_Coeff; }
 
   /*!
    * \brief Get the value of the scattering coefficient of the medium.
    * \return Value of the scattering coefficient of the medium.
    */
-  su2double GetScattering_Coeff(void);
+  su2double GetScattering_Coeff(void) { return Scattering_Coeff; }
 
   /*!
    * \brief Get the wall emissivity at a boundary.
@@ -9084,13 +9084,13 @@ public:
    * \brief Get the value of the CFL condition for radiation solvers.
    * \return Value of the CFL condition for radiation solvers.
    */
-  su2double GetCFL_Rad(void);
+  su2double GetCFL_Rad(void){ return CFL_Rad; }
 
   /*!
    * \brief Determines if radiation needs to be incorporated to the analysis.
    * \return Radiation boolean
    */
-  bool AddRadiation(void);
+  bool AddRadiation(void) { return Radiation; }
 
   /*!
    * \brief Check if the convergence history of each individual zone is written to screen
