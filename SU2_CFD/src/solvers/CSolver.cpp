@@ -511,27 +511,27 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              volume to the other side of the periodic face. ---*/
 
             for (iVar = 0; iVar < nVar; iVar++) {
-              bufDSend[buf_offset+iVar] = LinSysRes.GetBlock(iPoint, iVar);
+              bufDSend[buf_offset+iVar] = LinSysRes(iPoint, iVar);
             }
 
             /*--- Rotate the momentum components of the residual array. ---*/
 
             if (rotate_periodic) {
               if (nDim == 2) {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[0][1]*LinSysRes.GetBlock(iPoint, 2));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[1][1]*LinSysRes.GetBlock(iPoint, 2));
+                bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes(iPoint, 1) +
+                                          rotMatrix[0][1]*LinSysRes(iPoint, 2));
+                bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes(iPoint, 1) +
+                                          rotMatrix[1][1]*LinSysRes(iPoint, 2));
               } else {
-                bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[0][1]*LinSysRes.GetBlock(iPoint, 2) +
-                                          rotMatrix[0][2]*LinSysRes.GetBlock(iPoint, 3));
-                bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[1][1]*LinSysRes.GetBlock(iPoint, 2) +
-                                          rotMatrix[1][2]*LinSysRes.GetBlock(iPoint, 3));
-                bufDSend[buf_offset+3] = (rotMatrix[2][0]*LinSysRes.GetBlock(iPoint, 1) +
-                                          rotMatrix[2][1]*LinSysRes.GetBlock(iPoint, 2) +
-                                          rotMatrix[2][2]*LinSysRes.GetBlock(iPoint, 3));
+                bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes(iPoint, 1) +
+                                          rotMatrix[0][1]*LinSysRes(iPoint, 2) +
+                                          rotMatrix[0][2]*LinSysRes(iPoint, 3));
+                bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes(iPoint, 1) +
+                                          rotMatrix[1][1]*LinSysRes(iPoint, 2) +
+                                          rotMatrix[1][2]*LinSysRes(iPoint, 3));
+                bufDSend[buf_offset+3] = (rotMatrix[2][0]*LinSysRes(iPoint, 1) +
+                                          rotMatrix[2][1]*LinSysRes(iPoint, 2) +
+                                          rotMatrix[2][2]*LinSysRes(iPoint, 3));
               }
             }
             buf_offset += nVar;
