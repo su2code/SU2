@@ -466,7 +466,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   /*--- Initialize residual and solution at the ghost points ---*/
 
-  SU2_OMP(sections nowait)
+  SU2_OMP(sections)
   {
     SU2_OMP(section)
     for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
@@ -477,20 +477,16 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       LinSysSol.SetBlock_Zero(iPoint);
   }
 
-  } // end SU2_OMP_PARALLEL
-
-  /// TODO: We should be able to call the linear solver inside the parallel region.
-
   /*--- Solve or smooth the linear system ---*/
 
-  unsigned long IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-  SetIterLinSolver(IterLinSol);
-  SetResLinSolver(System.GetResidual());
-
-  /*--- Go back to parallel. ---*/
-
-  SU2_OMP_PARALLEL
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  SU2_OMP_MASTER
   {
+    SetIterLinSolver(iter);
+    SetResLinSolver(System.GetResidual());
+  }
+  SU2_OMP_BARRIER
+
 
   ComputeUnderRelaxationFactor(solver_container, config);
 

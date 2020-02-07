@@ -4782,20 +4782,16 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     delete [] LowMachPrec;
   }
 
-  } // end SU2_OMP_PARALLEL
-
-  /// TODO: We should be able to call the linear solver inside the parallel region.
-
   /*--- Solve or smooth the linear system. ---*/
 
-  auto IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-  SetResLinSolver(System.GetResidual());
-  SetIterLinSolver(IterLinSol);
-
-  /*--- Go back to parallel. ---*/
-
-  SU2_OMP_PARALLEL
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  SU2_OMP_MASTER
   {
+    SetIterLinSolver(iter);
+    SetResLinSolver(System.GetResidual());
+  }
+  SU2_OMP_BARRIER
+
 
   ComputeUnderRelaxationFactor(solver_container, config);
 
