@@ -2548,7 +2548,7 @@ void CConfig::SetConfig_Options() {
   addEnumOption("RADIATION_MODEL", Kind_Radiation, Radiation_Map, NO_RADIATION);
 
   /* DESCRIPTION: Kind of initialization of the P1 model  */
-  addEnumOption("P1_INITIALIZATION", Kind_P1_Init, P1_Init_Map, P1_INIT_ZERO);
+  addEnumOption("P1_INITIALIZATION", Kind_P1_Init, P1_Init_Map, P1_INIT_TEMP);
 
   /* DESCRIPTION: Absorption coefficient */
   addDoubleOption("ABSORPTION_COEFF", Absorption_Coeff, 1.0);
