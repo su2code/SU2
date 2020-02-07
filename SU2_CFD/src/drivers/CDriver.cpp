@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -2079,12 +2079,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   /*--- Instantiate one numerics object per thread for each required term. ---*/
 
-  SU2_OMP_PARALLEL
+  for (int thread = 0; thread < omp_get_max_threads(); ++thread)
   {
-  /// TODO: we are segfaulting when allocating in parallel...
-  SU2_OMP_CRITICAL
-  {
-  const int thread = omp_get_thread_num();
   const int offset = thread * MAX_TERMS;
 
   const int conv_term = CONV_TERM + offset;
@@ -2699,7 +2695,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     if (!spalart_allmaras)
       SU2_OMP_MASTER
       SU2_MPI::Error("Only the SA turbulence model can be used with the continuous adjoint solver.", CURRENT_FUNCTION);
-      
+
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_AdjTurb()) {
       case NO_CONVECTIVE:
@@ -2825,7 +2821,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (config->GetDeform_Mesh())
     numerics[MESH_0][MESH_SOL][fea_term] = new CFEAMeshElasticity(nDim, nDim, geometry[MESH_0]->GetnElem(), config);
 
-  }} // end SU2_OMP_PARALLEL
+  } // end "per-thread" allocation loop
 
 }
 

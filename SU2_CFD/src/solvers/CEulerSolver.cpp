@@ -2442,10 +2442,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
   }
 
-  } // end SU2_OMP_PARALLEL
-
-  /// TODO: The rest is not included in parallel region because Set_Solution_time_n* does not have worksharing yet.
-
   /*--- Make sure that the solution is well initialized for unsteady
    calculations with dual time-stepping (load additional restarts for 2nd-order). ---*/
 
@@ -2465,13 +2461,17 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
     if (restart && (TimeIter == config->GetRestart_Iter()) && (config->GetTime_Marching() == DT_STEPPING_2ND)) {
 
-      /*--- Load an additional restart file for a 2nd-order restart ---*/
+      SU2_OMP_MASTER
+      {
+        /*--- Load an additional restart file for a 2nd-order restart ---*/
 
-      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetRestart_Iter()-1), true);
+        solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, true);
 
-      /*--- Load an additional restart file for the turbulence model ---*/
-      if (rans)
-        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetRestart_Iter()-1), false);
+        /*--- Load an additional restart file for the turbulence model ---*/
+        if (rans)
+          solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, false);
+      }
+      SU2_OMP_BARRIER
 
       /*--- Push back this new solution to time level N. ---*/
 
@@ -2483,6 +2483,8 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
     }
   }
+
+  } // end SU2_OMP_PARALLEL
 
 }
 
@@ -3650,10 +3652,7 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
 
   SU2_OMP_PARALLEL
   {
-  /// TODO: Add worksharing to SetUnd_LaplZero and co.
-  SU2_OMP_MASTER
   nodes->SetUnd_LaplZero();
-  SU2_OMP_BARRIER
 
   /*--- Loop interior edges ---*/
 

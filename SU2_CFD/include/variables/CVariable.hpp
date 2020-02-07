@@ -121,13 +121,13 @@ protected:
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
-  unsigned long nPoint = {0};  /*!< \brief Number of points in the domain. */
-  unsigned long nDim = {0};      /*!< \brief Number of dimension of the problem. */
-  unsigned long nVar = {0};        /*!< \brief Number of variables of the problem. */
-  unsigned long nPrimVar = {0};      /*!< \brief Number of primitive variables. */
-  unsigned long nPrimVarGrad = {0};    /*!< \brief Number of primitives for which a gradient is computed. */
-  unsigned long nSecondaryVar = {0};     /*!< \brief Number of secondary variables. */
-  unsigned long nSecondaryVarGrad = {0};   /*!< \brief Number of secondaries for which a gradient is computed. */
+  unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
+  unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
+  unsigned long nVar = 0;        /*!< \brief Number of variables of the problem. */
+  unsigned long nPrimVar = 0;      /*!< \brief Number of primitive variables. */
+  unsigned long nPrimVarGrad = 0;    /*!< \brief Number of primitives for which a gradient is computed. */
+  unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
+  unsigned long nSecondaryVarGrad = 0;   /*!< \brief Number of secondaries for which a gradient is computed. */
 
 public:
 
