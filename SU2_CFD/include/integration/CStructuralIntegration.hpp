@@ -48,6 +48,30 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  void Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-                            CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
+  void Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container,
+                            CNumerics ******numerics_container, CConfig **config,
+                            unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
+
+private:
+  /*!
+   * \brief Do the space integration of the numerical system on a FEM framework.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   */
+  void Space_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics,
+                             CConfig *config, unsigned short RunTime_EqSystem);
+
+  /*!
+   * \brief Do the time integration (explicit or implicit) of the numerical system on a FEM framework.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Iteration - Current iteration.
+   */
+  void Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics,
+                            CConfig *config, unsigned short RunTime_EqSystem);
 };

@@ -53,6 +53,7 @@ public:
                             CNumerics ******numerics_container, CConfig **config,
                             unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
 
+private:
   /*!
    * \brief Perform the spatial integration of the numerical system.
    * \param[in] geometry - Geometrical definition of the problem.
