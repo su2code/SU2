@@ -25,8 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../include/integration_structure.hpp"
+#include "../../Common/include/omp_structure.hpp"
+
 
 CIntegration::CIntegration(CConfig *config) {
   rank = SU2_MPI::GetRank();
@@ -284,10 +285,15 @@ void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_con
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][INST_0][iMGLevel], solver_container[iZone][INST_0][iMGLevel], config[iZone], iMGLevel, Iteration);
 
       /*--- Set the force coefficients ---*/
+
+      SU2_OMP_MASTER
+      {
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CD(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CL(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CT());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CQ());
+      }
+      SU2_OMP_BARRIER
 
       /*--- Restrict solution and gradients to the coarse levels ---*/
 

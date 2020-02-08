@@ -524,7 +524,9 @@ public:
   /*!
    * \brief Set summed residual vector to zero value.
    */
-  void SetResidualSumZero();
+  inline void SetResidualSumZero(unsigned long iPoint) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Residual_Sum(iPoint,iVar) = 0.0;
+  }
 
   /*!
    * \brief Set the velocity of the truncation error to zero.
