@@ -393,7 +393,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
      * International Journal of Heat and Fluid Flow, Vol. 24, 2003, pp. 454-462. ---*/
     /* --- See https://turbmodels.larc.nasa.gov/spalart.html#sarough for detailed explanation. ---*/
     
-    Ji = TurbVar_i[0]/nu  + cr1*(roughness_i/dist_i); //roughness_i = 0 for smooth walls and Ji remains the same, changes only if roughness is specified.
+    Ji = TurbVar_i[0]/nu  + cr1*(roughness_i/(dist_i+EPS)); //roughness_i = 0 for smooth walls and Ji remains the same, changes only if roughness is specified.
     Ji_2 = Ji*Ji;
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);

@@ -366,7 +366,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     dist = geometry->node[iPoint]->GetWall_Distance();
     dist += 0.03*roughness;
 
-    Ji   = nu_hat[0]/nu + cR1*roughness/dist;
+    Ji   = nu_hat[0]/nu + cR1*roughness/(dist+EPS);
     Ji_3 = Ji*Ji*Ji;
     fv1  = Ji_3/(Ji_3+cv1_3);
 
