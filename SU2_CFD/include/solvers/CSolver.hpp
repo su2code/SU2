@@ -4334,6 +4334,13 @@ public:
   inline virtual void GatherInOutAverageValues(CConfig *config, CGeometry *geometry) { }
 
   /*!
+   * \brief virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  inline virtual void ComputeTurboPerformance(CConfig *config, CGeometry *geometry) { }
+
+  /*!
    * \brief A virtual member.
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Density on the surface <i>val_marker</i>.

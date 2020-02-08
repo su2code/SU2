@@ -1049,44 +1049,56 @@ bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSol
 
 CTurboIteration::CTurboIteration(CConfig *config) : CFluidIteration(config) { }
 CTurboIteration::~CTurboIteration(void) { }
-void CTurboIteration::Preprocess(COutput *output,
-                                    CIntegration ****integration,
-                                    CGeometry ****geometry,
-                                    CSolver *****solver,
-                                    CNumerics ******numerics,
-                                    CConfig **config,
-                                    CSurfaceMovement **surface_movement,
-                                    CVolumetricMovement ***grid_movement,
-                                    CFreeFormDefBox*** FFDBox,
-                                    unsigned short val_iZone,
-                                    unsigned short val_iInst) {
+// void CTurboIteration::Preprocess(COutput *output,
+//                                     CIntegration ****integration,
+//                                     CGeometry ****geometry,
+//                                     CSolver *****solver,
+//                                     CNumerics ******numerics,
+//                                     CConfig **config,
+//                                     CSurfaceMovement **surface_movement,
+//                                     CVolumetricMovement ***grid_movement,
+//                                     CFreeFormDefBox*** FFDBox,
+//                                     unsigned short val_iZone,
+//                                     unsigned short val_iInst) {
 
-  /*--- Average quantities at the inflow and outflow boundaries ---*/ 
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0],config[val_iZone],INFLOW);
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0],config[val_iZone],OUTFLOW);
-
-}
-
-void CTurboIteration::Postprocess( COutput *output,
-                                   CIntegration ****integration,
-                                   CGeometry ****geometry,
-                                   CSolver *****solver,
-                                   CNumerics ******numerics,
-                                   CConfig **config,
-                                   CSurfaceMovement **surface_movement,
-                                   CVolumetricMovement ***grid_movement,
-                                   CFreeFormDefBox*** FFDBox,
-                                   unsigned short val_iZone,
-                                   unsigned short val_iInst) {
-
-  /*--- Average quantities at the inflow and outflow boundaries ---*/
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0],config[val_iZone],INFLOW);
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0],config[val_iZone],OUTFLOW);
+//   /*--- Average quantities at the inflow and outflow boundaries ---*/ 
+//   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0],config[val_iZone],INFLOW);
+//   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0],config[val_iZone],OUTFLOW);
+//     /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
+//   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config[val_iZone], geometry[val_iZone][val_iInst][MESH_0]);
   
-  /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config[val_iZone], geometry[val_iZone][val_iInst][MESH_0]);
+//   /* --- compute turboperformance for each stage and the global machine ---*/
+//   if(val_iZone == ( config[ZONE_0]->GetnZone()-1)){
+//     solver[ZONE_0][INST_0][MESH_0][FLOW_SOL]->ComputeTurboPerformance(config[ZONE_0], geometry[ZONE_0][INST_0][MESH_0]);
+//   }
+// }
 
-}
+
+// void CTurboIteration::Postprocess( COutput *output,
+//                                    CIntegration ****integration,
+//                                    CGeometry ****geometry,
+//                                    CSolver *****solver,
+//                                    CNumerics ******numerics,
+//                                    CConfig **config,
+//                                    CSurfaceMovement **surface_movement,
+//                                    CVolumetricMovement ***grid_movement,
+//                                    CFreeFormDefBox*** FFDBox,
+//                                    unsigned short val_iZone,
+//                                    unsigned short val_iInst) {
+
+//   /*--- Average quantities at the inflow and outflow boundaries ---*/
+//   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0],config[val_iZone],INFLOW);
+//   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0],config[val_iZone],OUTFLOW);
+  
+//   /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
+//   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config[val_iZone], geometry[val_iZone][val_iInst][MESH_0]);
+  
+//   /* --- compute turboperformance for each stage and the global machine ---*/
+//   if(val_iZone == config[ZONE_0]->GetnZone()-1){
+//     solver[ZONE_0][INST_0][MESH_0][FLOW_SOL]->ComputeTurboPerformance(config[ZONE_0], geometry[ZONE_0][INST_0][MESH_0]);
+//   }
+  
+// }
 
 CFEMFluidIteration::CFEMFluidIteration(CConfig *config) : CFluidIteration(config) { }
 CFEMFluidIteration::~CFEMFluidIteration(void) { }

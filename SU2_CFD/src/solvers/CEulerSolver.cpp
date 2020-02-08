@@ -133,20 +133,64 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   ExtAverageOmega            = NULL;
 
 
-  /*--- Initialize primitive quantities for turboperformace ---*/
+  /*--- Initialize quantities for turboperformace ---*/
+  TurboVelocityIn               = nullptr;
+  TurboVelocityOut              = nullptr;
+  MachIn                        = nullptr;
+  MachOut                       = nullptr;
 
-  DensityIn                     = NULL;
-  PressureIn                    = NULL;
-  TurboVelocityIn               = NULL;
-  DensityOut                    = NULL;
-  PressureOut                   = NULL;
-  TurboVelocityOut              = NULL;
-  KineIn                        = NULL;
-  OmegaIn                       = NULL;
-  NuIn                          = NULL;
-  KineOut                       = NULL;
-  OmegaOut                      = NULL;
-  NuOut                         = NULL;
+  DensityIn                     = nullptr;
+  DensityOut                    = nullptr;
+  PressureIn                    = nullptr;
+  PressureOut                   = nullptr;
+  KineIn                        = nullptr;
+  KineOut                       = nullptr;
+  OmegaIn                       = nullptr;
+  OmegaOut                      = nullptr;
+  NuIn                          = nullptr;
+  NuOut                         = nullptr;
+
+  TotalStaticEfficiency         = nullptr;
+  TotalTotalEfficiency          = nullptr;
+  KineticEnergyLoss             = nullptr;
+  TRadius                       = nullptr;
+  TotalPressureLoss             = nullptr;
+  MassFlowIn                    = nullptr;
+  MassFlowOut                   = nullptr;
+  FlowAngleIn                   = nullptr;
+  FlowAngleIn_BC                = nullptr;
+  FlowAngleOut                  = nullptr;
+  EulerianWork                  = nullptr;
+  TotalEnthalpyIn               = nullptr;
+  TotalEnthalpyIn_BC            = nullptr;
+  EntropyIn                     = nullptr;
+  EntropyOut                    = nullptr;
+  EntropyIn_BC                  = nullptr; 
+  PressureRatio                 = nullptr;
+  TotalTemperatureIn            = nullptr;
+  EnthalpyOut                   = nullptr;
+  VelocityOutIs                 = nullptr;
+  EnthalpyOutIs                 = nullptr;
+  EntropyGen                    = nullptr;
+  AbsFlowAngleIn                = nullptr;
+  TotalEnthalpyOut              = nullptr;
+  RothalpyIn                    = nullptr;
+  RothalpyOut                   = nullptr;
+  TotalEnthalpyOutIs            = nullptr;
+  AbsFlowAngleOut               = nullptr;
+  PressureOut_BC                = nullptr;
+  TemperatureIn                 = nullptr;
+  TemperatureOut                = nullptr;
+  TotalPressureIn               = nullptr;
+  TotalPressureOut              = nullptr;
+  TotalTemperatureOut           = nullptr;
+  EnthalpyIn                    = nullptr;
+  TurbIntensityIn               = nullptr;
+  Turb2LamViscRatioIn           = nullptr;
+  TurbIntensityOut              = nullptr;
+  Turb2LamViscRatioOut          = nullptr;
+  NuFactorIn                    = nullptr;
+  NuFactorOut                   = nullptr;
 
 
   /*--- Initialize quantities for Giles BC---*/
@@ -312,20 +356,64 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ExtAverageOmega                   = NULL;
 
 
-  /*--- Initialize primitive quantities for turboperformace ---*/
+   /*--- Initialize quantities for turboperformace ---*/
+  TurboVelocityIn               = nullptr;
+  TurboVelocityOut              = nullptr;
+  MachIn                        = nullptr;
+  MachOut                       = nullptr;
 
-  DensityIn                     = NULL;
-  PressureIn                    = NULL;
-  TurboVelocityIn               = NULL;
-  DensityOut                    = NULL;
-  PressureOut                   = NULL;
-  TurboVelocityOut              = NULL;
-  KineIn                        = NULL;
-  OmegaIn                       = NULL;
-  NuIn                          = NULL;
-  KineOut                       = NULL;
-  OmegaOut                      = NULL;
-  NuOut                         = NULL;
+  DensityIn                     = nullptr;
+  DensityOut                    = nullptr;
+  PressureIn                    = nullptr;
+  PressureOut                   = nullptr;
+  KineIn                        = nullptr;
+  KineOut                       = nullptr;
+  OmegaIn                       = nullptr;
+  OmegaOut                      = nullptr;
+  NuIn                          = nullptr;
+  NuOut                         = nullptr;
+
+  TotalStaticEfficiency         = nullptr;
+  TotalTotalEfficiency          = nullptr;
+  KineticEnergyLoss             = nullptr;
+  TRadius                       = nullptr;
+  TotalPressureLoss             = nullptr;
+  MassFlowIn                    = nullptr;
+  MassFlowOut                   = nullptr;
+  FlowAngleIn                   = nullptr;
+  FlowAngleIn_BC                = nullptr;
+  FlowAngleOut                  = nullptr;
+  EulerianWork                  = nullptr;
+  TotalEnthalpyIn               = nullptr;
+  TotalEnthalpyIn_BC            = nullptr;
+  EntropyIn                     = nullptr;
+  EntropyOut                    = nullptr;
+  EntropyIn_BC                  = nullptr; 
+  PressureRatio                 = nullptr;
+  TotalTemperatureIn            = nullptr;
+  EnthalpyOut                   = nullptr;
+  VelocityOutIs                 = nullptr;
+  EnthalpyOutIs                 = nullptr;
+  EntropyGen                    = nullptr;
+  AbsFlowAngleIn                = nullptr;
+  TotalEnthalpyOut              = nullptr;
+  RothalpyIn                    = nullptr;
+  RothalpyOut                   = nullptr;
+  TotalEnthalpyOutIs            = nullptr;
+  AbsFlowAngleOut               = nullptr;
+  PressureOut_BC                = nullptr;
+  TemperatureIn                 = nullptr;
+  TemperatureOut                = nullptr;
+  TotalPressureIn               = nullptr;
+  TotalPressureOut              = nullptr;
+  TotalTemperatureOut           = nullptr;
+  EnthalpyIn                    = nullptr;
+  TurbIntensityIn               = nullptr;
+  Turb2LamViscRatioIn           = nullptr;
+  TurbIntensityOut              = nullptr;
+  Turb2LamViscRatioOut          = nullptr;
+  NuFactorIn                    = nullptr;
+  NuFactorOut                   = nullptr;
 
 
   /*--- Initialize quantities for Giles BC---*/
@@ -1269,6 +1357,26 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] TurboVelocityOut;
   }
 
+  if(MachIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
+      for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
+        delete [] MachIn[iMarker][iSpan];
+      }
+      delete [] MachIn[iMarker];
+    }
+    delete [] MachIn;
+  }
+
+  if(MachOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
+      for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
+        delete [] MachOut[iMarker][iSpan];
+      }
+      delete [] MachOut[iMarker];
+    }
+    delete [] MachOut;
+  }
+
   if(DensityIn !=NULL){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
       delete  [] DensityIn[iMarker];
@@ -1327,6 +1435,252 @@ CEulerSolver::~CEulerSolver(void) {
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
       delete  [] NuOut[iMarker];
     delete [] NuOut;
+  }
+
+  if(TotalStaticEfficiency !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TotalStaticEfficiency[iMarker];
+    delete [] TotalStaticEfficiency;
+  }
+
+  if(TotalTotalEfficiency !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TotalTotalEfficiency[iMarker];
+    delete [] TotalTotalEfficiency;
+  }
+
+  if(KineticEnergyLoss !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] KineticEnergyLoss[iMarker];
+    delete [] KineticEnergyLoss;
+  }
+
+  if(TRadius !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TRadius[iMarker];
+    delete [] TRadius;
+  }
+
+  if(TotalPressureLoss !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TotalPressureLoss[iMarker];
+    delete [] TotalPressureLoss;
+  }
+
+  if(MassFlowIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] MassFlowIn[iMarker];
+    delete [] MassFlowIn;
+  }
+
+  if(MassFlowOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] MassFlowOut[iMarker];
+    delete [] MassFlowOut;
+  }
+
+  if(FlowAngleIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] FlowAngleIn[iMarker];
+    delete [] FlowAngleIn;
+  }
+
+  if(FlowAngleIn_BC !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] FlowAngleIn_BC[iMarker];
+    delete [] FlowAngleIn_BC;
+  }
+
+  if(FlowAngleOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] FlowAngleOut[iMarker];
+    delete [] FlowAngleOut;
+  }
+
+  if(EulerianWork !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] EulerianWork[iMarker];
+    delete [] EulerianWork;
+  }
+
+  if(TotalEnthalpyIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TotalEnthalpyIn[iMarker];
+    delete [] TotalEnthalpyIn;
+  }
+
+  if(TotalEnthalpyIn_BC !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TotalEnthalpyIn_BC[iMarker];
+    delete [] TotalEnthalpyIn_BC;
+  }
+
+  if(EntropyIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] EntropyIn[iMarker];
+    delete [] EntropyIn;
+  }
+
+  if(EntropyOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] EntropyOut[iMarker];
+    delete [] EntropyOut;
+  }
+
+  if(EntropyIn_BC !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] EntropyIn_BC[iMarker];
+    delete [] EntropyIn_BC;
+  }
+
+  if(PressureRatio !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] PressureRatio[iMarker];
+    delete [] PressureRatio;
+  }
+
+  if(TotalTemperatureIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TotalTemperatureIn[iMarker];
+    delete [] TotalTemperatureIn;
+  }
+
+  if(EnthalpyOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] EnthalpyOut[iMarker];
+    delete [] EnthalpyOut;
+  }
+
+  if(VelocityOutIs !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] VelocityOutIs[iMarker];
+    delete [] VelocityOutIs;
+  }
+
+  if(EnthalpyOutIs !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] EnthalpyOutIs[iMarker];
+    delete [] EnthalpyOutIs;
+  }
+
+  if(EntropyGen !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] EntropyGen[iMarker];
+    delete [] EntropyGen;
+  }
+
+  if(AbsFlowAngleIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] AbsFlowAngleIn[iMarker];
+    delete [] AbsFlowAngleIn;
+  }
+
+  if(TotalEnthalpyOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TotalEnthalpyOut[iMarker];
+    delete [] TotalEnthalpyOut;
+  }
+
+  if(RothalpyIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] RothalpyIn[iMarker];
+    delete [] RothalpyIn;
+  }
+
+  if(RothalpyOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] RothalpyOut[iMarker];
+    delete [] RothalpyOut;
+  }
+
+  if(TotalEnthalpyOutIs !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TotalEnthalpyOutIs[iMarker];
+    delete [] TotalEnthalpyOutIs;
+  }
+
+  if(AbsFlowAngleOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] AbsFlowAngleOut[iMarker];
+    delete [] AbsFlowAngleOut;
+  }
+
+  if(PressureOut_BC !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] PressureOut_BC[iMarker];
+    delete [] PressureOut_BC;
+  }
+
+  if(TemperatureIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TemperatureIn[iMarker];
+    delete [] TemperatureIn;
+  }
+
+  if(TemperatureOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TemperatureOut[iMarker];
+    delete [] TemperatureOut;
+  }
+
+  if(TotalPressureIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TotalPressureIn[iMarker];
+    delete [] TotalPressureIn;
+  }
+
+  if(TotalPressureOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TotalPressureOut[iMarker];
+    delete [] TotalPressureOut;
+  }
+
+  if(TotalTemperatureOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TotalTemperatureOut[iMarker];
+    delete [] TotalTemperatureOut;
+  }
+
+  if(EnthalpyIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] EnthalpyIn[iMarker];
+    delete [] EnthalpyIn;
+  }
+
+  if(TurbIntensityIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TurbIntensityIn[iMarker];
+    delete [] TurbIntensityIn;
+  }
+
+  if(Turb2LamViscRatioIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] Turb2LamViscRatioIn[iMarker];
+    delete [] Turb2LamViscRatioIn;
+  }
+
+  if(TurbIntensityOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] TurbIntensityOut[iMarker];
+    delete [] TurbIntensityOut;
+  }
+
+  if(Turb2LamViscRatioOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] Turb2LamViscRatioOut[iMarker];
+    delete [] Turb2LamViscRatioOut;
+  }
+
+  if(NuFactorIn !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] NuFactorIn[iMarker];
+    delete [] NuFactorIn;
+  }
+
+  if(NuFactorOut !=NULL){
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
+      delete  [] NuFactorOut[iMarker];
+    delete [] NuFactorOut;
   }
 
   if(CkInflow !=NULL){
@@ -1449,52 +1803,187 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
 
   nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
 
-  DensityIn                     = new su2double*[nMarkerTurboPerf];
-  PressureIn                    = new su2double*[nMarkerTurboPerf];
   TurboVelocityIn               = new su2double**[nMarkerTurboPerf];
-  DensityOut                    = new su2double*[nMarkerTurboPerf];
-  PressureOut                   = new su2double*[nMarkerTurboPerf];
   TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
+  MachIn                        = new su2double**[nMarkerTurboPerf];
+  MachOut                       = new su2double**[nMarkerTurboPerf];
+
+  DensityIn                     = new su2double*[nMarkerTurboPerf];
+  DensityOut                    = new su2double*[nMarkerTurboPerf];
+  PressureIn                    = new su2double*[nMarkerTurboPerf];
+  PressureOut                   = new su2double*[nMarkerTurboPerf];
   KineIn                        = new su2double*[nMarkerTurboPerf];
-  OmegaIn                       = new su2double*[nMarkerTurboPerf];
-  NuIn                          = new su2double*[nMarkerTurboPerf];
   KineOut                       = new su2double*[nMarkerTurboPerf];
+  OmegaIn                       = new su2double*[nMarkerTurboPerf];
   OmegaOut                      = new su2double*[nMarkerTurboPerf];
+  NuIn                          = new su2double*[nMarkerTurboPerf];
   NuOut                         = new su2double*[nMarkerTurboPerf];
+  TotalStaticEfficiency         = new su2double*[nMarkerTurboPerf];
+  TotalTotalEfficiency          = new su2double*[nMarkerTurboPerf];
+  KineticEnergyLoss             = new su2double*[nMarkerTurboPerf];
+  TRadius                       = new su2double*[nMarkerTurboPerf];
+  TotalPressureLoss             = new su2double*[nMarkerTurboPerf];
+  MassFlowIn                    = new su2double*[nMarkerTurboPerf];
+  MassFlowOut                   = new su2double*[nMarkerTurboPerf];
+  FlowAngleIn                   = new su2double*[nMarkerTurboPerf];
+  FlowAngleIn_BC                = new su2double*[nMarkerTurboPerf];
+  FlowAngleOut                  = new su2double*[nMarkerTurboPerf];
+  EulerianWork                  = new su2double*[nMarkerTurboPerf];
+  TotalEnthalpyIn               = new su2double*[nMarkerTurboPerf];
+  TotalEnthalpyIn_BC            = new su2double*[nMarkerTurboPerf];
+  EntropyIn                     = new su2double*[nMarkerTurboPerf];
+  EntropyOut                    = new su2double*[nMarkerTurboPerf];
+  EntropyIn_BC                  = new su2double*[nMarkerTurboPerf]; 
+  PressureRatio                 = new su2double*[nMarkerTurboPerf];
+  TotalTemperatureIn            = new su2double*[nMarkerTurboPerf];
+  EnthalpyOut                   = new su2double*[nMarkerTurboPerf];
+  VelocityOutIs                 = new su2double*[nMarkerTurboPerf];
+  EnthalpyOutIs                 = new su2double*[nMarkerTurboPerf];
+  EntropyGen                    = new su2double*[nMarkerTurboPerf];
+  AbsFlowAngleIn                = new su2double*[nMarkerTurboPerf];
+  TotalEnthalpyOut              = new su2double*[nMarkerTurboPerf];
+  RothalpyIn                    = new su2double*[nMarkerTurboPerf];
+  RothalpyOut                   = new su2double*[nMarkerTurboPerf];
+  TotalEnthalpyOutIs            = new su2double*[nMarkerTurboPerf];
+  AbsFlowAngleOut               = new su2double*[nMarkerTurboPerf];
+  PressureOut_BC                = new su2double*[nMarkerTurboPerf];
+  TemperatureIn                 = new su2double*[nMarkerTurboPerf];
+  TemperatureOut                = new su2double*[nMarkerTurboPerf];
+  TotalPressureIn               = new su2double*[nMarkerTurboPerf];
+  TotalPressureOut              = new su2double*[nMarkerTurboPerf];
+  TotalTemperatureOut           = new su2double*[nMarkerTurboPerf];
+  EnthalpyIn                    = new su2double*[nMarkerTurboPerf];
+  TurbIntensityIn               = new su2double*[nMarkerTurboPerf];
+  Turb2LamViscRatioIn           = new su2double*[nMarkerTurboPerf];
+  TurbIntensityOut              = new su2double*[nMarkerTurboPerf];
+  Turb2LamViscRatioOut          = new su2double*[nMarkerTurboPerf];
+  NuFactorIn                    = new su2double*[nMarkerTurboPerf];
+  NuFactorOut                   = new su2double*[nMarkerTurboPerf];
+
 
   for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-    DensityIn[iMarker]          = new su2double [nSpanMax + 1];
-    PressureIn[iMarker]         = new su2double [nSpanMax + 1];
-    TurboVelocityIn[iMarker]    = new su2double*[nSpanMax + 1];
-    DensityOut[iMarker]         = new su2double [nSpanMax + 1];
-    PressureOut[iMarker]        = new su2double [nSpanMax + 1];
-    TurboVelocityOut[iMarker]   = new su2double*[nSpanMax + 1];
-    KineIn[iMarker]             = new su2double [nSpanMax + 1];
-    OmegaIn[iMarker]            = new su2double [nSpanMax + 1];
-    NuIn[iMarker]               = new su2double [nSpanMax + 1];
-    KineOut[iMarker]            = new su2double [nSpanMax + 1];
-    OmegaOut[iMarker]           = new su2double [nSpanMax + 1];
-    NuOut[iMarker]              = new su2double [nSpanMax + 1];
+    TurboVelocityIn[iMarker]              = new su2double* [nSpanMax + 1];
+    TurboVelocityOut[iMarker]             = new su2double* [nSpanMax + 1];
+    MachIn[iMarker]                       = new su2double* [nSpanMax + 1];
+    MachOut[iMarker]                      = new su2double* [nSpanMax + 1];
+
+    DensityIn[iMarker]                    = new su2double [nSpanMax + 1];
+    DensityOut[iMarker]                   = new su2double [nSpanMax + 1];
+    PressureIn[iMarker]                   = new su2double [nSpanMax + 1];
+    PressureOut[iMarker]                  = new su2double [nSpanMax + 1];
+    KineIn[iMarker]                       = new su2double [nSpanMax + 1];
+    KineOut[iMarker]                      = new su2double [nSpanMax + 1];
+    OmegaIn[iMarker]                      = new su2double [nSpanMax + 1];
+    OmegaOut[iMarker]                     = new su2double [nSpanMax + 1];
+    NuIn[iMarker]                         = new su2double [nSpanMax + 1];
+    NuOut[iMarker]                        = new su2double [nSpanMax + 1];
+    TotalStaticEfficiency[iMarker]        = new su2double [nSpanMax + 1];
+    TotalTotalEfficiency[iMarker]         = new su2double [nSpanMax + 1];
+    KineticEnergyLoss[iMarker]            = new su2double [nSpanMax + 1];
+    TRadius[iMarker]                      = new su2double [nSpanMax + 1];
+    TotalPressureLoss[iMarker]            = new su2double [nSpanMax + 1];
+    MassFlowIn[iMarker]                   = new su2double [nSpanMax + 1];
+    MassFlowOut[iMarker]                  = new su2double [nSpanMax + 1];
+    FlowAngleIn[iMarker]                  = new su2double [nSpanMax + 1];
+    FlowAngleIn_BC[iMarker]               = new su2double [nSpanMax + 1];
+    FlowAngleOut[iMarker]                 = new su2double [nSpanMax + 1];
+    EulerianWork[iMarker]                 = new su2double [nSpanMax + 1];
+    TotalEnthalpyIn[iMarker]              = new su2double [nSpanMax + 1];
+    TotalEnthalpyIn_BC[iMarker]           = new su2double [nSpanMax + 1];
+    EntropyIn[iMarker]                    = new su2double [nSpanMax + 1];
+    EntropyOut[iMarker]                   = new su2double [nSpanMax + 1];
+    EntropyIn_BC[iMarker]                 = new su2double [nSpanMax + 1];
+    PressureRatio[iMarker]                = new su2double [nSpanMax + 1];
+    TotalTemperatureIn[iMarker]           = new su2double [nSpanMax + 1];
+    EnthalpyOut[iMarker]                  = new su2double [nSpanMax + 1];
+    VelocityOutIs[iMarker]                = new su2double [nSpanMax + 1];
+    EnthalpyOutIs[iMarker]                = new su2double [nSpanMax + 1];
+    EntropyGen[iMarker]                   = new su2double [nSpanMax + 1];
+    AbsFlowAngleIn[iMarker]               = new su2double [nSpanMax + 1];
+    TotalEnthalpyOut[iMarker]             = new su2double [nSpanMax + 1];
+    RothalpyIn[iMarker]                   = new su2double [nSpanMax + 1];
+    RothalpyOut[iMarker]                  = new su2double [nSpanMax + 1];
+    TotalEnthalpyOutIs[iMarker]           = new su2double [nSpanMax + 1];
+    AbsFlowAngleOut[iMarker]              = new su2double [nSpanMax + 1];
+    PressureOut_BC[iMarker]               = new su2double [nSpanMax + 1];
+    TemperatureIn[iMarker]                = new su2double [nSpanMax + 1];
+    TemperatureOut[iMarker]               = new su2double [nSpanMax + 1];
+    TotalPressureIn[iMarker]              = new su2double [nSpanMax + 1];
+    TotalPressureOut[iMarker]             = new su2double [nSpanMax + 1];
+    TotalTemperatureOut[iMarker]          = new su2double [nSpanMax + 1];
+    EnthalpyIn[iMarker]                   = new su2double [nSpanMax + 1];
+    TurbIntensityIn[iMarker]              = new su2double [nSpanMax + 1];
+    Turb2LamViscRatioIn[iMarker]          = new su2double [nSpanMax + 1];
+    TurbIntensityOut[iMarker]             = new su2double [nSpanMax + 1];
+    Turb2LamViscRatioOut[iMarker]         = new su2double [nSpanMax + 1];
+    NuFactorIn[iMarker]                   = new su2double [nSpanMax + 1];
+    NuFactorOut[iMarker]                  = new su2double [nSpanMax + 1];
 
 
 
     for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
-      DensityIn[iMarker][iSpan]          = 0.0;
-      PressureIn[iMarker][iSpan]         = 0.0;
-      TurboVelocityIn[iMarker][iSpan]    = new su2double[nDim];
-      DensityOut[iMarker][iSpan]         = 0.0;
-      PressureOut[iMarker][iSpan]        = 0.0;
-      TurboVelocityOut [iMarker][iSpan]  = new su2double[nDim];
-      KineIn[iMarker][iSpan]             = 0.0;
-      OmegaIn[iMarker][iSpan]            = 0.0;
-      NuIn[iMarker][iSpan]               = 0.0;
-      KineOut[iMarker][iSpan]            = 0.0;
-      OmegaOut[iMarker][iSpan]           = 0.0;
-      NuOut[iMarker][iSpan]              = 0.0;
+      TurboVelocityIn[iMarker][iSpan]              = new su2double[nDim+1];
+      TurboVelocityOut [iMarker][iSpan]            = new su2double[nDim+1];
+      MachIn[iMarker][iSpan]                       = new su2double[nDim+1];
+      MachOut[iMarker][iSpan]                      = new su2double[nDim+1];
+
+      DensityIn[iMarker][iSpan]                    = 0.0;
+      PressureIn[iMarker][iSpan]                   = 0.0;
+      DensityOut[iMarker][iSpan]                   = 0.0;
+      PressureOut[iMarker][iSpan]                  = 0.0;
+      KineIn[iMarker][iSpan]                       = 0.0;
+      OmegaIn[iMarker][iSpan]                      = 0.0;
+      NuIn[iMarker][iSpan]                         = 0.0;
+      KineOut[iMarker][iSpan]                      = 0.0;
+      OmegaOut[iMarker][iSpan]                     = 0.0;
+      NuOut[iMarker][iSpan]                        = 0.0;
+      TotalStaticEfficiency[iMarker][iSpan]        = 0.0;
+      TotalTotalEfficiency[iMarker][iSpan]         = 0.0;
+      KineticEnergyLoss[iMarker][iSpan]            = 0.0;
+      TRadius[iMarker][iSpan]                      = 0.0;
+      TotalPressureLoss[iMarker][iSpan]            = 0.0;
+      MassFlowIn[iMarker][iSpan]                   = 0.0;
+      MassFlowOut[iMarker][iSpan]                  = 0.0;
+      FlowAngleIn[iMarker][iSpan]                  = 0.0;
+      FlowAngleIn_BC[iMarker][iSpan]               = 0.0;
+      FlowAngleOut[iMarker][iSpan]                 = 0.0;
+      EulerianWork[iMarker][iSpan]                 = 0.0;
+      TotalEnthalpyIn[iMarker][iSpan]              = 0.0;
+      TotalEnthalpyIn_BC[iMarker][iSpan]           = 0.0;
+      EntropyIn[iMarker][iSpan]                    = 0.0;
+      EntropyOut[iMarker][iSpan]                   = 0.0;
+      EntropyIn_BC[iMarker][iSpan]                 = 0.0;
+      PressureRatio[iMarker][iSpan]                = 0.0;
+      TotalTemperatureIn[iMarker][iSpan]           = 0.0;
+      EnthalpyOut[iMarker][iSpan]                  = 0.0;
+      VelocityOutIs[iMarker][iSpan]                = 0.0;
+      EnthalpyOutIs[iMarker][iSpan]                = 0.0;
+      EntropyGen[iMarker][iSpan]                   = 0.0;
+      AbsFlowAngleIn[iMarker][iSpan]               = 0.0;
+      TotalEnthalpyOut[iMarker][iSpan]             = 0.0;
+      RothalpyIn[iMarker][iSpan]                   = 0.0;
+      RothalpyOut[iMarker][iSpan]                  = 0.0;
+      TotalEnthalpyOutIs[iMarker][iSpan]           = 0.0;
+      AbsFlowAngleOut[iMarker][iSpan]              = 0.0;
+      PressureOut_BC[iMarker][iSpan]               = 0.0;
+      TemperatureIn[iMarker][iSpan]                = 0.0;
+      TemperatureOut[iMarker][iSpan]               = 0.0;
+      TotalPressureIn[iMarker][iSpan]              = 0.0;
+      TotalPressureOut[iMarker][iSpan]             = 0.0;
+      TotalTemperatureOut[iMarker][iSpan]          = 0.0;
+      EnthalpyIn[iMarker][iSpan]                   = 0.0;
+      TurbIntensityIn[iMarker][iSpan]              = 0.0;
+      Turb2LamViscRatioIn[iMarker][iSpan]          = 0.0;
+      TurbIntensityOut[iMarker][iSpan]             = 0.0;
+      Turb2LamViscRatioOut[iMarker][iSpan]         = 0.0;
+      NuFactorIn[iMarker][iSpan]                   = 0.0;
+      NuFactorOut[iMarker][iSpan]                  = 0.0;
 
       for (iDim = 0; iDim < nDim; iDim++){
-        TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
-        TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
+        TurboVelocityIn[iMarker][iSpan][iDim]      = 0.0;
+        TurboVelocityOut[iMarker][iSpan][iDim]     = 0.0;
+        MachIn[iMarker][iSpan][iDim]               = 0.0;
+        MachOut[iMarker][iSpan][iDim]              = 0.0;
       }
     }
   }
@@ -13407,4 +13896,247 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       NuOut[markerTP -1][iSpan]                  = nuOut;
     }
   }
+}
+
+void CEulerSolver::ComputeTurboPerformance(CConfig *config, CGeometry *geometry) {
+
+  unsigned short nDim = geometry->GetnDim();
+  unsigned short iMarkerTP, iSpan, iDim, iStage, iBlade;
+  unsigned short nMarkerTP = config->GetnMarker_Turbomachinery();
+  su2double area, absVel2, soundSpeed, mach, tangVel, tangVel2, *relVel, relVel2;
+  su2double relPressureIn, relPressureOut, enthalpyOutIs, relVelOutIs2;
+  relVel = new su2double[nDim];
+  su2double muLam, kine, omega, nu;
+  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool menter_sst       = (config->GetKind_Turb_Model() == SST);
+
+  unsigned short nBladesRow, nStages;
+
+  nBladesRow = config->GetnMarker_Turbomachinery();
+  nStages    = SU2_TYPE::Int(nBladesRow/2);
+
+
+
+  /*--- Compute BC imposed value for convergence monitoring ---*/
+  for(iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ){
+    for(iSpan = 0; iSpan < config->GetnSpan_iZones(iMarkerTP) + 1; iSpan++){
+      if(config->GetRampOutletPressure() && config->GetInnerIter() > 0){
+        PressureOut_BC[iMarkerTP][iSpan] = config->GetMonitorOutletPressure()/config->GetPressure_Ref();
+      }
+      FluidModel->SetTDState_PT(config->GetTotalPressureIn_BC(), config->GetTotalTemperatureIn_BC());
+      TotalEnthalpyIn_BC[iMarkerTP][iSpan] = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+      EntropyIn_BC[iMarkerTP][iSpan]       = FluidModel->GetEntropy();
+    }
+  }
+
+  if (rank == MASTER_NODE){
+    /*--- Compute performance for each blade ---*/
+    for(iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ){
+      for(iSpan = 0; iSpan < config->GetnSpan_iZones(iMarkerTP) + 1; iSpan++){
+
+        /*--- INFLOW ---*/
+        absVel2 = 0.0;
+
+        for (iDim = 0; iDim < nDim; iDim++){
+          absVel2   += TurboVelocityIn[iMarkerTP][iSpan][iDim]*TurboVelocityIn[iMarkerTP][iSpan][iDim];
+        }
+        TurboVelocityIn[iMarkerTP][iSpan][nDim] = sqrt(absVel2);
+
+        TRadius[iMarkerTP][iSpan]  = geometry->GetTurboRadiusIn(iMarkerTP, iSpan);
+        area                       = geometry->GetSpanAreaIn(iMarkerTP, iSpan);
+
+        /*--- Compute static Inflow quantities ---*/
+        FluidModel->SetTDState_Prho(PressureIn[iMarkerTP][iSpan], DensityIn[iMarkerTP][iSpan]);
+        EntropyIn[iMarkerTP][iSpan]          = FluidModel->GetEntropy();
+        MassFlowIn[iMarkerTP][iSpan]         = config->GetnBlades(iMarkerTP)*DensityIn[iMarkerTP][iSpan]*TurboVelocityIn[iMarkerTP][iSpan][0]*area;
+        AbsFlowAngleIn[iMarkerTP][iSpan]     = atan(TurboVelocityIn[iMarkerTP][iSpan][1]/TurboVelocityIn[iMarkerTP][iSpan][0]);
+        EnthalpyIn[iMarkerTP][iSpan]         = FluidModel->GetStaticEnergy() + PressureIn[iMarkerTP][iSpan]/DensityIn[iMarkerTP][iSpan];
+        soundSpeed                           = FluidModel->GetSoundSpeed();
+
+
+        /*--- Compute Total Inflow quantities ---*/
+        TotalEnthalpyIn[iMarkerTP][iSpan]    = EnthalpyIn[iMarkerTP][iSpan] + 0.5*absVel2;
+        FluidModel->SetTDState_hs(TotalEnthalpyIn[iMarkerTP][iSpan], EntropyIn[iMarkerTP][iSpan]);
+        TotalPressureIn[iMarkerTP][iSpan]    = FluidModel->GetPressure();
+        TotalTemperatureIn[iMarkerTP][iSpan] = FluidModel->GetTemperature();
+
+        /*--- Retrieve Inflow relative quantities ---*/
+        tangVel = geometry->GetTangGridVelIn(iMarkerTP, iSpan);
+        tangVel2 = tangVel*tangVel;
+
+        for (iDim = 0; iDim < nDim; iDim++){
+          relVel[iDim] = TurboVelocityIn[iMarkerTP][iSpan][iDim];
+        }
+        relVel[1] -= tangVel;
+
+        relVel2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++){
+          relVel2 += relVel[iDim]*relVel[iDim];
+        }
+
+        /*--- Compute Total relative Inflow quantities ---*/
+        RothalpyIn[iMarkerTP][iSpan]  = EnthalpyIn[iMarkerTP][iSpan] + 0.5*relVel2 - 0.5*tangVel2;
+        FluidModel->SetTDState_hs(RothalpyIn[iMarkerTP][iSpan], EntropyIn[iMarkerTP][iSpan]);
+        relPressureIn   = FluidModel->GetPressure();
+
+        /*--- Compute kinematic relative Inflow quantities ---*/
+        FlowAngleIn[iMarkerTP][iSpan]    = atan(relVel[1]/relVel[0]);
+        mach          = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++){
+          MachIn[iMarkerTP][iSpan][iDim] = relVel[iDim]/soundSpeed;
+          mach = MachIn[iMarkerTP][iSpan][iDim]*MachIn[iMarkerTP][iSpan][iDim];
+        }
+        MachIn[iMarkerTP][iSpan][nDim]   = sqrt(mach);
+
+        /*--- Compute Turbulent Inflow quantities ---*/
+        if(turbulent){
+          FluidModel->SetTDState_Prho(PressureIn[iMarkerTP][iSpan], DensityIn[iMarkerTP][iSpan]);
+          muLam  = FluidModel->GetLaminarViscosity();
+          if(menter_sst){
+            kine   = KineIn[iMarkerTP][iSpan];
+            omega  = OmegaIn[iMarkerTP][iSpan];
+            TurbIntensityIn[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
+            Turb2LamViscRatioIn[iMarkerTP][iSpan] = DensityIn[iMarkerTP][iSpan]*kine/(muLam*omega);
+          }
+          else{
+            NuFactorIn[iMarkerTP][iSpan]          = NuIn[iMarkerTP][iSpan]*DensityIn[iMarkerTP][iSpan]/muLam;
+          }
+        }
+
+        /*--- OUTFLOW ---*/
+        absVel2 = 0.0;
+
+        for (iDim = 0; iDim < nDim; iDim++){
+          absVel2   += TurboVelocityOut[iMarkerTP][iSpan][iDim]*TurboVelocityOut[iMarkerTP][iSpan][iDim];
+        }
+        TurboVelocityOut[iMarkerTP][iSpan][nDim] = sqrt(absVel2);
+
+        area   = geometry->GetSpanAreaOut(iMarkerTP, iSpan);
+
+        /*--- Compute all the Outflow quantities ---*/
+        FluidModel->SetTDState_Prho(PressureOut[iMarkerTP][iSpan], DensityOut[iMarkerTP][iSpan]);
+        EntropyOut[iMarkerTP][iSpan]          = FluidModel->GetEntropy();
+        MassFlowOut[iMarkerTP][iSpan]         = config->GetnBlades(iMarkerTP)*DensityOut[iMarkerTP][iSpan]*TurboVelocityOut[iMarkerTP][iSpan][0]*area;
+        AbsFlowAngleOut[iMarkerTP][iSpan]     = atan(TurboVelocityOut[iMarkerTP][iSpan][1]/TurboVelocityOut[iMarkerTP][iSpan][0]);
+        EnthalpyOut[iMarkerTP][iSpan]         = FluidModel->GetStaticEnergy() + PressureOut[iMarkerTP][iSpan]/DensityOut[iMarkerTP][iSpan];
+        soundSpeed                            = FluidModel->GetSoundSpeed();
+
+        /*--- Compute Total Outflow quantities ---*/
+        TotalEnthalpyOut[iMarkerTP][iSpan]    = EnthalpyOut[iMarkerTP][iSpan] + 0.5*absVel2;
+        FluidModel->SetTDState_hs(TotalEnthalpyOut[iMarkerTP][iSpan], EntropyOut[iMarkerTP][iSpan]);
+        TotalPressureOut[iMarkerTP][iSpan]    = FluidModel->GetPressure();
+        TotalTemperatureOut[iMarkerTP][iSpan] = FluidModel->GetTemperature();
+
+        /*--- Retrieve relative Outflow  quantities ---*/
+        tangVel  = geometry->GetTangGridVelOut(iMarkerTP, iSpan);
+        tangVel2 = tangVel*tangVel;
+
+        for (iDim = 0; iDim < nDim; iDim++){
+          relVel[iDim] = TurboVelocityOut[iMarkerTP][iSpan][iDim];
+        }
+        relVel[1] -= tangVel;
+
+        relVel2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++){
+          relVel2 += relVel[iDim]*relVel[iDim];
+        }
+
+        /*--- Compute Total relative Outflow quantities ---*/
+        RothalpyOut[iMarkerTP][iSpan] = EnthalpyOut[iMarkerTP][iSpan] + 0.5*relVel2 - 0.5*tangVel2;
+        FluidModel->SetTDState_hs(RothalpyOut[iMarkerTP][iSpan], EntropyOut[iMarkerTP][iSpan]);
+        relPressureOut  = FluidModel->GetPressure();
+
+        /*--- Compute isentropic Outflow quantities ---*/
+        FluidModel->SetTDState_Ps(PressureOut[iMarkerTP][iSpan], EntropyIn[iMarkerTP][iSpan]);
+        enthalpyOutIs   = FluidModel->GetStaticEnergy() + PressureOut[iMarkerTP][iSpan]/FluidModel->GetDensity();
+        relVelOutIs2    = 2*(RothalpyOut[iMarkerTP][iSpan] - enthalpyOutIs) + tangVel2;
+
+
+        /*--- Compute kinematic relative Outflow quantities ---*/
+        FlowAngleOut[iMarkerTP][iSpan] = atan(relVel[1]/relVel[0]);
+        mach   = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++){
+          MachOut[iMarkerTP][iSpan][iDim] = relVel[iDim]/soundSpeed;
+          mach = MachOut[iMarkerTP][iSpan][iDim]*MachOut[iMarkerTP][iSpan][iDim];
+        }
+        MachOut[iMarkerTP][iSpan][nDim]   = sqrt(mach);
+
+        /*--- Compute Turbulent Outflow quantities ---*/
+        if(turbulent){
+          FluidModel->SetTDState_Prho(PressureOut[iMarkerTP][iSpan], DensityOut[iMarkerTP][iSpan]);
+          muLam  = FluidModel->GetLaminarViscosity();
+          if(menter_sst){
+            kine   = KineOut[iMarkerTP][iSpan];
+            omega  = OmegaOut[iMarkerTP][iSpan];
+            TurbIntensityOut[iMarkerTP][iSpan]     =  sqrt(2.0/3.0*kine/absVel2);
+            Turb2LamViscRatioOut[iMarkerTP][iSpan] = DensityOut[iMarkerTP][iSpan]*kine/(muLam*omega);
+          }
+          else{
+            NuFactorOut[iMarkerTP][iSpan]          = NuOut[iMarkerTP][iSpan]*DensityOut[iMarkerTP][iSpan]/muLam;
+            if (config->GetKind_Trans_Model() == BC) {
+              NuFactorOut[iMarkerTP][iSpan]        = NuOut[iMarkerTP][iSpan]*DensityOut[iMarkerTP][iSpan]/muLam/0.005;
+            }
+          }
+        }
+
+        // if (rank == MASTER_NODE)
+        //   cout << "OutMach "<< sqrt(mach) << endl;
+        /*--- TURBO-PERFORMANCE---*/
+        EntropyGen[iMarkerTP][iSpan]         = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
+        EulerianWork[iMarkerTP][iSpan]       = TotalEnthalpyIn[iMarkerTP][iSpan] - TotalEnthalpyOut[iMarkerTP][iSpan];
+        TotalPressureLoss[iMarkerTP][iSpan]  = (relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);
+        KineticEnergyLoss[iMarkerTP][iSpan]  = 2*(EnthalpyOut[iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;
+        PressureRatio[iMarkerTP][iSpan]      = TotalPressureOut[iMarkerTP][iSpan]/TotalPressureIn[iMarkerTP][iSpan];
+        EnthalpyOutIs[iMarkerTP][iSpan]      = (pow(TotalPressureOut[iMarkerTP][iSpan]/TotalPressureIn[iMarkerTP][iSpan], 0.4/1.4) - 1.0)/(TotalTemperatureOut[iMarkerTP][iSpan]/TotalTemperatureIn[iMarkerTP][iSpan] -1.0);
+      }
+    }
+
+    if(nBladesRow > 1){
+      /*--- Compute performance for each stage ---*/
+
+      EulerianWork[nBladesRow + nStages][nSpanWiseSections]           = 0.0;
+      /*---Comnpute performance for each stage---*/
+      for(iStage = 0; iStage < nStages; iStage++ ){
+        FluidModel->SetTDState_Ps(PressureOut[iStage*2 +1][config->GetnSpan_iZones(iStage*2 +1)], EntropyIn[iStage*2][config->GetnSpan_iZones(iStage*2)]);
+        EnthalpyOutIs[nBladesRow + iStage][nSpanWiseSections]         = FluidModel->GetStaticEnergy() + PressureOut[iStage*2 +1][config->GetnSpan_iZones(iStage*2 +1)]/FluidModel->GetDensity();
+        FluidModel->SetTDState_Prho(PressureOut[iStage*2 +1][config->GetnSpan_iZones(iStage*2 +1)], DensityOut[iStage*2 +1][config->GetnSpan_iZones(iStage*2 +1)]);
+        absVel2 = 0.0;
+        for (iDim = 0; iDim<nDim; iDim++)
+          absVel2 += TurboVelocityOut[iStage*2 +1][config->GetnSpan_iZones(iStage*2 +1)][iDim]*TurboVelocityOut[iStage*2 +1][config->GetnSpan_iZones(iStage*2 +1)][iDim];
+        TotalEnthalpyOutIs[nBladesRow + iStage][nSpanWiseSections]    = EnthalpyOutIs[nBladesRow + iStage][nSpanWiseSections] + 0.5*absVel2;
+
+        TotalTotalEfficiency[nBladesRow + iStage][nSpanWiseSections]  = (TotalEnthalpyIn[iStage*2][config->GetnSpan_iZones(iStage*2)] - TotalEnthalpyOut[iStage*2 + 1][config->GetnSpan_iZones(iStage*2 +1)]);
+        TotalTotalEfficiency[nBladesRow + iStage][nSpanWiseSections]  /= (TotalEnthalpyIn[iStage*2][config->GetnSpan_iZones(iStage*2)] - TotalEnthalpyOutIs[nBladesRow + iStage][nSpanWiseSections]);
+        TotalStaticEfficiency[nBladesRow + iStage][nSpanWiseSections] = (TotalEnthalpyIn[iStage*2][config->GetnSpan_iZones(iStage*2)] - TotalEnthalpyOut[iStage*2 + 1][config->GetnSpan_iZones(iStage*2+1)]);
+        TotalStaticEfficiency[nBladesRow + iStage][nSpanWiseSections] /= (TotalEnthalpyIn[iStage*2][config->GetnSpan_iZones(iStage*2)] - EnthalpyOutIs[nBladesRow + iStage][nSpanWiseSections]);
+        PressureRatio[nBladesRow + iStage][nSpanWiseSections]         = (PressureRatio[iStage*2][config->GetnSpan_iZones(iStage*2)]*PressureOut[iStage*2][config->GetnSpan_iZones(iStage*2)]/PressureOut[iStage*2 + 1][config->GetnSpan_iZones(iStage*2+1)]);
+        MassFlowIn[nBladesRow + iStage][nSpanWiseSections]            = MassFlowIn[iStage*2][config->GetnSpan_iZones(iStage*2)];
+        MassFlowOut[nBladesRow + iStage][nSpanWiseSections]           = MassFlowOut[iStage*2 + 1][config->GetnSpan_iZones(iStage*2+1)];
+        EntropyGen[nBladesRow + iStage][nSpanWiseSections]            = EntropyGen[iStage*2 + 1][config->GetnSpan_iZones(iStage*2 +1)] + EntropyGen[iStage*2][config->GetnSpan_iZones(iStage*2)];
+
+      }
+
+      /*---Compute turbo performance for full machine---*/
+      FluidModel->SetTDState_Ps(PressureOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)], EntropyIn[0][config->GetnSpan_iZones(0)]);
+      EnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections]          = FluidModel->GetStaticEnergy() + PressureOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)]/FluidModel->GetDensity();
+      FluidModel->SetTDState_Prho(PressureOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)], DensityOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)]);
+      absVel2 = 0.0;
+      for (iDim = 0; iDim<nDim;iDim++) absVel2 += TurboVelocityOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)][iDim]*TurboVelocityOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)][iDim];
+      TotalEnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections]     = EnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections] + 0.5*absVel2;
+
+      TotalTotalEfficiency[nBladesRow + nStages][nSpanWiseSections]   = (TotalEnthalpyIn[0][config->GetnSpan_iZones(0)] - TotalEnthalpyOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)]);
+      TotalTotalEfficiency[nBladesRow + nStages][nSpanWiseSections]	 /= (TotalEnthalpyIn[0][config->GetnSpan_iZones(0)] - TotalEnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections]);
+      TotalStaticEfficiency[nBladesRow +nStages][nSpanWiseSections]   = (TotalEnthalpyIn[0][config->GetnSpan_iZones(0)] - TotalEnthalpyOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)]);
+      TotalStaticEfficiency[nBladesRow +nStages][nSpanWiseSections]  /= (TotalEnthalpyIn[0][config->GetnSpan_iZones(0)] - EnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections]);
+      PressureRatio[nBladesRow + nStages][nSpanWiseSections]          = PressureRatio[0][config->GetnSpan_iZones(0)]*PressureOut[0][config->GetnSpan_iZones(0)]/PressureOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)];
+      MassFlowIn[nBladesRow + nStages][nSpanWiseSections]             = MassFlowIn[0][config->GetnSpan_iZones(0)];
+      MassFlowOut[nBladesRow + nStages][nSpanWiseSections]            = MassFlowOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)];
+
+      EntropyGen[nBladesRow + nStages][nSpanWiseSections]             = 0.0;
+      for(iBlade = 0; iBlade < nBladesRow; iBlade++ ){
+        EntropyGen[nBladesRow + nStages][nSpanWiseSections]          += EntropyGen[iBlade][config->GetnSpan_iZones(iBlade)];
+      }
+    }
+  }
+  delete [] relVel;
 }

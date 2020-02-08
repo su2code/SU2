@@ -291,18 +291,62 @@ protected:
              **ExtAverageKine,
              **ExtAverageOmega;
 
+  su2double  ***TurboVelocityIn,
+             ***TurboVelocityOut,
+             ***MachIn,
+             ***MachOut;
+             
   su2double  **DensityIn,
-             **PressureIn,
-             ***TurboVelocityIn,
+             **PressureIn,         
              **DensityOut,
              **PressureOut,
-             ***TurboVelocityOut,
              **KineIn,
              **OmegaIn,
              **NuIn,
              **KineOut,
              **OmegaOut,
-             **NuOut;
+             **NuOut,
+             **TotalStaticEfficiency,
+             **TotalTotalEfficiency,
+             **KineticEnergyLoss,
+             **TRadius,
+             **TotalPressureLoss,
+             **MassFlowIn,
+             **MassFlowOut,
+             **FlowAngleIn,
+             **FlowAngleIn_BC,
+             **FlowAngleOut,
+             **EulerianWork,
+             **TotalEnthalpyIn,
+             **TotalEnthalpyIn_BC,
+             **EntropyIn,
+             **EntropyOut,
+             **EntropyIn_BC,
+             **PressureRatio,
+             **TotalTemperatureIn,
+             **EnthalpyOut,
+             **VelocityOutIs,
+             **EnthalpyOutIs,
+             **EntropyGen,
+             **AbsFlowAngleIn,
+             **TotalEnthalpyOut,
+             **RothalpyIn,
+             **RothalpyOut,
+             **TotalEnthalpyOutIs,
+             **AbsFlowAngleOut,
+             **PressureOut_BC,
+             **TemperatureIn,
+             **TemperatureOut,
+             **TotalPressureIn,
+             **TotalPressureOut,
+             **TotalTemperatureOut,
+             **EnthalpyIn,
+             **TurbIntensityIn,
+             **Turb2LamViscRatioIn,
+             **TurbIntensityOut,
+             **Turb2LamViscRatioOut,
+             **NuFactorIn,
+             **NuFactorOut;
 
   complex<su2double> ***CkInflow,
                      ***CkOutflow1,
@@ -2407,6 +2451,13 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void GatherInOutAverageValues(CConfig *config, CGeometry *geometry) final;
+
+  /*!
+   * \brief It gathers into the master node average quantities at inflow and outflow needed for turbomachinery analysis.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void ComputeTurboPerformance(CConfig *config, CGeometry *geometry) final;
 
   /*!
    * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.

@@ -2725,17 +2725,9 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) {
 
     case EULER: case NAVIER_STOKES: case RANS:
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
-      if(config->GetBoolTurbomachinery()){
-        if (rank == MASTER_NODE)
-          cout << "Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
-        iteration = new CTurboIteration(config);
-
-      }
-      else{
-        if (rank == MASTER_NODE)
-          cout << "Euler/Navier-Stokes/RANS fluid iteration." << endl;
-        iteration = new CFluidIteration(config);
-      }
+      if (rank == MASTER_NODE)
+        cout << "Euler/Navier-Stokes/RANS fluid iteration." << endl;
+      iteration = new CFluidIteration(config);
       break;
 
     case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
