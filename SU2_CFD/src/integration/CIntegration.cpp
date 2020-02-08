@@ -1,6 +1,6 @@
 /*!
- * \file integration_structure.cpp
- * \brief This subroutine includes the space and time integration structure
+ * \file CIntegration.cpp
+ * \brief Implementation of the base class for space and time integration.
  * \author F. Palacios, T. Economon
  * \version 7.0.1 "Blackbird"
  *
@@ -25,8 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/integration_structure.hpp"
-#include "../../Common/include/omp_structure.hpp"
+#include "../../include/integration/CIntegration.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 
 
 CIntegration::CIntegration(CConfig *config) {
