@@ -701,37 +701,44 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
 void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                                           unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
 
-  unsigned short iMGLevel;
+  if ((RunTime_EqSystem != RUNTIME_ADJFLOW_SYS) || (Iteration != 0)) return;
 
-  if ( ( (RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) && (Iteration == 0) ) ) {
-    for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
+  for (unsigned short iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
 
-      /*--- Set the time step in all the MG levels ---*/
+    /*--- Set the time step in all the MG levels ---*/
 
-      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][INST_0][iMGLevel], solver_container[iZone][INST_0][iMGLevel], config[iZone], iMGLevel, Iteration);
+    solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][INST_0][iMGLevel],
+                                                                      solver_container[iZone][INST_0][iMGLevel],
+                                                                      config[iZone], iMGLevel, Iteration);
 
-      /*--- Set the force coefficients ---*/
+    /*--- Set the force coefficients ---*/
 
-      SU2_OMP_MASTER
-      {
+    SU2_OMP_MASTER
+    {
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CD(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CL(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CT());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CQ());
-      }
-      SU2_OMP_BARRIER
-
-      /*--- Restrict solution and gradients to the coarse levels ---*/
-
-      if (iMGLevel != config[iZone]->GetnMGLevels()) {
-        SetRestricted_Solution(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
-                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
-//        ToDo: The flow solvers do not use the conservative variable gradients
-//        SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
-//                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
-      }
-
     }
+    SU2_OMP_BARRIER
+
+    /*--- Restrict solution and gradients to the coarse levels ---*/
+
+    if (iMGLevel != config[iZone]->GetnMGLevels()) {
+      SetRestricted_Solution(RUNTIME_FLOW_SYS,
+                             solver_container[iZone][INST_0][iMGLevel][FLOW_SOL],
+                             solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
+                             geometry[iZone][INST_0][iMGLevel],
+                             geometry[iZone][INST_0][iMGLevel+1],
+                             config[iZone]);
+//        ToDo: The flow solvers do not use the conservative variable gradients
+//        SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL],
+//                               solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
+//                               geometry[iZone][INST_0][iMGLevel],
+//                               geometry[iZone][INST_0][iMGLevel+1],
+//                               config[iZone]);
+    }
+
   }
 
 }

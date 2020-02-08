@@ -26,6 +26,7 @@
  */
 
 #include "../../include/integration/CSingleGridIntegration.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 
 
 CSingleGridIntegration::CSingleGridIntegration(CConfig *config) : CIntegration(config) { }
@@ -103,15 +104,18 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
                                                     CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long Point_Fine, Point_Coarse;
   unsigned short iVar, iChildren;
-  su2double Area_Parent, Area_Children, *Solution_Fine, *Solution;
+  su2double Area_Parent, Area_Children;
+  const su2double *Solution_Fine;
 
   unsigned short nVar = sol_coarse->GetnVar();
 
-  Solution = new su2double[nVar];
+  su2double *Solution = new su2double[nVar];
 
   /*--- Compute coarse solution from fine solution ---*/
 
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+
     Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
 
     for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
@@ -129,12 +133,16 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
 
   }
 
+  delete [] Solution;
+
   /*--- MPI the new interpolated solution ---*/
 
-  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
-  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
-
-  delete [] Solution;
+  SU2_OMP_MASTER
+  {
+    sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
+    sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
+  }
+  SU2_OMP_BARRIER
 
 }
 
@@ -147,7 +155,9 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
 
   /*--- Compute coarse Eddy Viscosity from fine solution ---*/
 
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+
     Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
 
     EddyVisc = 0.0;
@@ -168,9 +178,11 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
    is zero on the surface ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE     )) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+
+      SU2_OMP_FOR_STAT(32)
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->GetNodes()->SetmuT(Point_Coarse,0.0);
@@ -180,7 +192,11 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
 
   /*--- MPI the new interpolated solution (this also includes the eddy viscosity) ---*/
 
-  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_EDDY);
-  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_EDDY);
+  SU2_OMP_MASTER
+  {
+    sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_EDDY);
+    sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_EDDY);
+  }
+  SU2_OMP_BARRIER
 
 }
