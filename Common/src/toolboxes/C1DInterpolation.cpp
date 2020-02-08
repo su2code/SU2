@@ -52,6 +52,8 @@ su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
             this->Point_Match = true;
             return (Point_Interp-this->x[i])*dydx[i]+this->y[i];}
     }
+
+    return 0;
 }
 
 /*--- Function for setting the cofficients for linear 'spline' ---*/
