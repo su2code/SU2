@@ -46,7 +46,7 @@ virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
 virtual su2double EvaluateSpline(su2double Point_Interp){}
 virtual bool GetPointMatch(){return Point_Match;}
 
-vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
+vector<su2double>& CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
                                     su2double Theta ,
                                     unsigned short nDim, 
                                     su2double *Coord, 

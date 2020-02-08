@@ -119,7 +119,7 @@ void CAkimaInterpolation::SetSpline (vector<su2double> &X,vector<su2double> &Dat
 }
 
 /*--- Correcting for Interpolation Type ---*/
-vector<su2double> C1DInterpolation::CorrectedInletValues(vector<su2double> &Inlet_Interpolated , 
+vector<su2double>& C1DInterpolation::CorrectedInletValues(vector<su2double> &Inlet_Interpolated , 
                                                         su2double Theta ,
                                                         unsigned short nDim, 
                                                         su2double *Coord, 
