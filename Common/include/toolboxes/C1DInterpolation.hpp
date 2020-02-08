@@ -38,7 +38,9 @@ using namespace std;
 
 class C1DInterpolation{
 protected:
-    bool Point_Match = true;
+    bool Point_Match = false;
+    vector<su2double> Data;
+    vector<su2double> X;
 public:
 virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
 virtual su2double EvaluateSpline(su2double Point_Interp){}
@@ -52,6 +54,8 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated,
                                     CConfig *config);
 
 void PrintInletInterpolatedData(vector<su2double> Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim);
+
+void SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol);
 };
 
 
@@ -60,17 +64,12 @@ protected:
     vector<su2double> x,y,b,c,d;
     int n;
 public:
-/*
-   CAkimaInterpolation(vector<su2double> Inlet_Data, unsigned short nColumns, unsigned long nRows){
-        
-    vector<CAkimaInterpolation> Interpolated_Data (nColumns);
+    CAkimaInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
     
-    /*--- Sort Data Column wise for interpolation ---
-    vector<su2double> Inlet_Columns (nRows);
-    vector<su2double> Inlet_Radii (nRows);
-    SetSpline(x, y);
-}
-*/
+    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol);
+    SetSpline(X, Data);
+    }
+
     void SetSpline(vector<su2double> &x, vector<su2double> &y);
     su2double EvaluateSpline(su2double Point_Interp);
     bool GetPointMatch(){return Point_Match;}
@@ -80,6 +79,12 @@ class CLinearInterpolation: public C1DInterpolation{
     protected:
     vector<su2double> x,y,dydx;
     public:
+    CLinearInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
+    
+    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol);
+    SetSpline(X, Data);
+    }
+
     void SetSpline(vector<su2double> &x, vector<su2double> &y);
     su2double EvaluateSpline(su2double Point_Interp);
     //bool Point_Match = false;

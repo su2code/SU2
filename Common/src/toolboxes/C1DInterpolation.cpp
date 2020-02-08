@@ -30,12 +30,15 @@
 
 /*--- Function for evaluating the value for akima spline ---*/
 su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
+    Point_Match = true;
     int i =0, j=this->n-1;
-    while ( j-i >1){ 
-        int m=( i+j ) / 2 ; 
+
+    while (j-i>1){ 
+        int m=(i+j) / 2 ; 
             if (Point_Interp>this->x[m]) i=m; 
             else j=m; 
     }
+
     su2double h=Point_Interp-this->x[i] ;
     return this->y[i]+h*(this->b[i]+h*(this->c[i]+h*this->d[i])) ;
 }
@@ -52,28 +55,33 @@ su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
 }
 
 /*--- Function for setting the cofficients for linear 'spline' ---*/
-void CLinearInterpolation::SetSpline(vector<su2double> &x, vector<su2double> &y){
-    int n = x.size();
+void CLinearInterpolation::SetSpline(vector<su2double> &X, vector<su2double> &Data){
+    int n = X.size();
     vector<su2double> h (n-1);
     this->x.resize(n);
     this->y.resize(n);
     this->dydx.resize(n-1);
-    this->x = x;
-    this->y = y;
-    for (int i=0; i<n-1;i ++){h[i]=x[i+1]-x[i];}
-    for (int i=0; i<n-1;i++) {this->dydx[i]=(y[i+1]-y[i]) / h [i];}
+
+    for (int i=0; i<n ; i++){
+        this->x[i] = X[i];
+        this->y[i] = Data[i];
+    }
+
+    for (int i=0; i<n-1;i ++){h[i]=X[i+1]-X[i];}
+    for (int i=0; i<n-1;i++) {this->dydx[i]=(Data[i+1]-Data[i]) / h [i];}
 }
 
 
 /*--- Function for setting the cofficients for akima spline ---*/
-void CAkimaInterpolation::SetSpline (vector<su2double> &x,vector<su2double> &y){
+void CAkimaInterpolation::SetSpline (vector<su2double> &X,vector<su2double> &Data){
 
-    int n = x.size();
+    int n = X.size();
     vector<su2double> h (n-1);
     vector<su2double> p (n-1);
 
-    for (int i=0; i<n-1;i ++){h[i]=x[i+1]-x[i];}
-    for (int i=0; i<n-1;i++) p[i]=(y[i+1]-y[i]) / h [i] ;
+    /*---calculating finite differences (h) and gradients (p) ---*/
+    for (int i=0; i<n-1;i ++){h[i]=X[i+1]-X[i];}
+    for (int i=0; i<n-1;i++) {p[i]=(Data[i+1]-Data[i])/h[i];} 
 
     /*---b,c,d are the akima spline's cofficient for the cubic equation---*/
     this->x.resize(n);
@@ -84,8 +92,8 @@ void CAkimaInterpolation::SetSpline (vector<su2double> &x,vector<su2double> &y){
     this->n=n; 
 
     for (int i=0; i<n ; i++){
-        this->x[i]=x[i]; 
-        this->y[i]=y[i];
+        this->x[i]=X[i]; 
+        this->y[i]=Data[i];
     }
 
     this->b[0] = p[0] ; 
@@ -105,8 +113,8 @@ void CAkimaInterpolation::SetSpline (vector<su2double> &x,vector<su2double> &y){
     }
 
     for (int i =0; i<n-1; i ++){
-        this->c [i]=(3*p [i]-2*this->b [ i ]-this->b[i+1])/h[i] ;
-        this->d [i]=(this->b[i+1]+this->b [ i ]-2*p[i])/h[i]/h[i];
+        this->c [i]=(3*p[i]-2*this->b[i]-this->b[i+1])/h[i] ;
+        this->d [i]=(this->b[i+1]+this->b[i]-2*p[i])/h[i]/h[i];
     }
 }
 
@@ -175,4 +183,17 @@ void C1DInterpolation::PrintInletInterpolatedData(vector<su2double> Inlet_Values
     }
     else
         cout<<"file cannot be opened"<<endl;
+}
+
+void C1DInterpolation::SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol){
+    int n = Inlet_Data.size();
+    X.resize(n);
+    Data.resize(n);
+    
+    unsigned long index;
+    for (unsigned long iRow = 0; iRow < nRows; iRow++){
+    index = iRow*nColumns;
+        this->X[iRow]=Inlet_Data[index];
+        this->Data[iRow]=Inlet_Data[index+iCol];
+    }
 }
