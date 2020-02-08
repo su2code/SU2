@@ -4642,9 +4642,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check that if the wall roughness array are compatible and set deafult values if needed. ---*/
 
   if ((nMarker_HeatFlux > 0) || (nMarker_Isothermal > 0)) {
-    /*--- If the config option is not declared, then assume smooth walls and set roughness to zero. ---*/
     if (nWall_Types != nMarker_HeatFlux + nMarker_Isothermal) {
-      /*--- If this option is not used at all, assume all walls are smooth and set roughness height to zero. ---*/
+      /*--- If the config option is not declared, then assume smooth walls and set roughness to zero. ---*/
       if (nWall_Types == 0) {
 		  if (Roughness_Height != NULL) Roughness_Height = NULL;
 		  Roughness_Height = new su2double [nWall_Types];

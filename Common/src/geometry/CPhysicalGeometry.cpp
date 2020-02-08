@@ -5218,8 +5218,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 	  roughness = config->GetWall_RoughnessHeight(Marker_Tag);
 
       node[iPoint]->SetRoughnessHeight(localRoughness);
-      
-      //if (rank ==2) cout<<iPoint<<"\t"<<node[iPoint]->GetCoord(0)<<"\t"<<node[iPoint]->GetCoord(1)<<"\t"<<roughness<<"\t"<<localRoughness<<endl;
+
     }
   }
 

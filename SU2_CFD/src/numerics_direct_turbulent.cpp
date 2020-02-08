@@ -397,7 +397,9 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     Ji_2 = Ji*Ji;
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);
-    fv2 = 1.0 - TurbVar_i[0]/(nu+TurbVar_i[0]*fv1);   //Using a modified relation so as to not change the Shat that depends on fv2.
+    /*--- Using a modified relation so as to not change the Shat that depends on fv2. ---*/
+    fv2 = 1.0 - TurbVar_i[0]/(nu+TurbVar_i[0]*fv1);   // From NASA turb modeling resource and 2003 paper
+    //fv2 = 1.0 - (Ji - cr1*(roughness_i/dist_i))/(1+Ji*fv1);   //From Spalart, Trends in Turbulence (apparently a misprint)
     
     ft2 = ct3*exp(-ct4*Ji_2);
     S = Omega;
