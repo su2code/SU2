@@ -187,8 +187,8 @@ void C1DInterpolation::PrintInletInterpolatedData(vector<su2double> Inlet_Values
 
 void C1DInterpolation::SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol){
     int n = Inlet_Data.size();
-    X.resize(n);
-    Data.resize(n);
+    this->X.resize(n);
+    this->Data.resize(n);
     
     unsigned long index;
     for (unsigned long iRow = 0; iRow < nRows; iRow++){
