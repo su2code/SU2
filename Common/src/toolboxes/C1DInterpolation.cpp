@@ -52,7 +52,6 @@ su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
             this->Point_Match = true;
             return (Point_Interp-this->x[i])*dydx[i]+this->y[i];}
     }
-
     return 0;
 }
 
@@ -169,7 +168,7 @@ vector<su2double> C1DInterpolation::CorrectedInletValues(vector<su2double> &Inle
 }
 
 /*--- For printing interpolated data to a file ---*/
-void C1DInterpolation::PrintInletInterpolatedData(vector<su2double> Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim){
+void C1DInterpolation::PrintInletInterpolatedData(vector<su2double>& Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim){
     ofstream myfile;
     myfile.precision(16);
     myfile.open("Interpolated_Data_"+Marker+".dat",ios_base::out);

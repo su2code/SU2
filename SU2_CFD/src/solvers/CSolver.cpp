@@ -4400,7 +4400,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             }
           }
             if(config->GetPrintInlet_InterpolatedData() == true)
-                corrector->PrintInletInterpolatedData(Inlet_Values,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim);
+                corrector->PrintInletInterpolatedData(Inlet_Data_Interpolated,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim);
             
             delete corrector;
         }
