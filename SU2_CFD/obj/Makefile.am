@@ -54,8 +54,11 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid_model_pvdw.cpp \
   ../src/fluid_model_ppr.cpp \
   ../src/fluid_model_inc.cpp \
-  ../src/integration_structure.cpp \
-  ../src/integration_time.cpp \
+  ../src/integration/CIntegration.cpp \
+  ../src/integration/CSingleGridIntegration.cpp \
+  ../src/integration/CMultiGridIntegration.cpp \
+  ../src/integration/CStructuralIntegration.cpp \
+  ../src/integration/CFEM_DG_Integration.cpp \
   ../src/drivers/CMultizoneDriver.cpp \
   ../src/drivers/CSinglezoneDriver.cpp \
   ../src/drivers/CDiscAdjSinglezoneDriver.cpp \

@@ -1,7 +1,5 @@
-su2_cfd_src = files(['integration_structure.cpp',
-                     'transport_model.cpp',
+su2_cfd_src = files(['transport_model.cpp',
                      'fluid_model_pvdw.cpp',
-                     'integration_time.cpp',
                      'fluid_model_pig.cpp',
                      'iteration_structure.cpp',
                      'fluid_model_inc.cpp',
@@ -136,6 +134,12 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CDiscAdjMultizoneDriver.cpp',
                       'drivers/CDiscAdjSinglezoneDriver.cpp',
                       'drivers/CDummyDriver.cpp'])
+
+su2_cfd_src += files(['integration/CIntegration.cpp',
+                      'integration/CSingleGridIntegration.cpp',
+                      'integration/CMultiGridIntegration.cpp',
+                      'integration/CStructuralIntegration.cpp',
+                      'integration/CFEM_DG_Integration.cpp'])
 
 if get_option('enable-normal')
   su2_cfd = executable('SU2_CFD',
