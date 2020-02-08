@@ -35,8 +35,8 @@ su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
 
     while (j-i>1){ 
         int m=(i+j) / 2 ; 
-            if (Point_Interp>this->x[m]) {i=m}; 
-            else {j=m}; 
+            if (Point_Interp>this->x[m]) {i=m;}
+            else {j=m;} 
     }
 
     su2double h=Point_Interp-this->x[i] ;
