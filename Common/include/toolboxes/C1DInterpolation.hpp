@@ -67,7 +67,7 @@ public:
     
     /*--- Constructor for general class usage ---*/
     CAkimaInterpolation(vector<su2double> &X, vector<su2double> &Data){
-        SetSpline(this->X, this->Data);
+        SetSpline(X,Data);
     }
 
     /*--- Constructor for inlet interpolation with correction ---*/
@@ -88,7 +88,7 @@ class CLinearInterpolation: public C1DInterpolation{
     
     /*--- Constructor for general class usage ---*/
     CLinearInterpolation(vector<su2double> &X, vector<su2double> &Data){
-        SetSpline(this->X, this->Data);
+        SetSpline(X,Data);
     }
 
     /*--- Constructor for inlet interpolation with correction ---*/
