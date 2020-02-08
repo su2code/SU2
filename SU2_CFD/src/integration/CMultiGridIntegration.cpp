@@ -38,7 +38,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                 unsigned short RunTime_EqSystem,
                                                 unsigned short iZone,
                                                 unsigned short iInst) {
-  unsigned short FinestMesh;
   su2double monitor = 1.0;
   bool FullMG = false;
 
@@ -65,7 +64,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   /*--- Full multigrid strategy and start up with fine grid only works with the direct problem ---*/
 
-  FinestMesh = config[iZone]->GetFinestMesh();
+  unsigned short FinestMesh = config[iZone]->GetFinestMesh();
 
   if (!config[iZone]->GetRestart() && FullMG && direct && ( Convergence_FullMG && (FinestMesh != MESH_0 ))) {
 
@@ -420,78 +419,6 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
 }
 
-void CMultiGridIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-                                            unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) {
-
-  /*--- Check if there is work to do. ---*/
-  if (val_nSmooth == 0) return;
-
-  const su2double *Solution_Old, *Solution_Sum, *Solution_j;
-  unsigned short iVar, iSmooth, iMarker, iNeigh;
-  unsigned long iPoint, jPoint, iVertex;
-
-  const unsigned short nVar = solver->GetnVar();
-
-  SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    Solution_Old = solver->GetNodes()->GetSolution(iPoint);
-    solver->GetNodes()->SetResidual_Old(iPoint,Solution_Old);
-  }
-
-  /*--- Jacobi iterations ---*/
-
-  for (iSmooth = 0; iSmooth < val_nSmooth; iSmooth++) {
-
-    /*--- Loop over all mesh points (sum the solutions of direct neighbors). ---*/
-
-    SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); ++iPoint) {
-
-      solver->GetNodes()->SetResidualSumZero(iPoint);
-
-      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
-        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-        Solution_j = solver->GetNodes()->GetSolution(jPoint);
-        solver->GetNodes()->AddResidual_Sum(iPoint, Solution_j);
-      }
-
-    }
-
-    /*--- Loop over all mesh points (update solutions with the neighbor averages). ---*/
-
-    SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); ++iPoint) {
-
-      su2double factor = 1.0/(1.0+val_smooth_coeff*su2double(geometry->node[iPoint]->GetnPoint()));
-
-      Solution_Sum = solver->GetNodes()->GetResidual_Sum(iPoint);
-      Solution_Old = solver->GetNodes()->GetResidual_Old(iPoint);
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-        su2double Solution = (Solution_Old[iVar] + val_smooth_coeff*Solution_Sum[iVar])*factor;
-        solver->GetNodes()->SetSolution(iPoint, iVar, Solution);
-      }
-    }
-
-    /*--- Copy boundary values ---*/
-
-    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-
-        SU2_OMP_FOR_STAT(32)
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Solution_Old = solver->GetNodes()->GetResidual_Old(iPoint);
-          solver->GetNodes()->SetSolution(iPoint,Solution_Old);
-        }
-      }
-    }
-
-  }
-
-}
-
 void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine,
                                                       CConfig *config, unsigned short iMesh) {
   unsigned long Point_Fine;
@@ -523,7 +450,6 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   SU2_OMP_BARRIER
 
 }
-
 
 void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                     CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
@@ -597,42 +523,6 @@ void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solve
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
     solver->LinSysRes.AddBlock(iPoint, solver->GetNodes()->GetResTruncError(iPoint));
 
-}
-
-void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
-  unsigned long iVertex, Point_Fine, Point_Coarse;
-  unsigned short iMarker, iVar, iChildren;
-  su2double *Residual_Fine;
-
-  const unsigned short nVar = sol_coarse->GetnVar();
-
-  su2double *Residual = new su2double[nVar];
-
-  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
-    sol_coarse->GetNodes()->SetRes_TruncErrorZero(Point_Coarse);
-
-    for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
-      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
-      Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
-      for (iVar = 0; iVar < nVar; iVar++)
-        Residual[iVar] += Residual_Fine[iVar];
-    }
-    sol_coarse->GetNodes()->AddRes_TruncError(Point_Coarse,Residual);
-  }
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) {
-      for (iVertex = 0; iVertex<geo_coarse->nVertex[iMarker]; iVertex++) {
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-        sol_coarse->GetNodes()->SetVel_ResTruncError_Zero(Point_Coarse);
-      }
-    }
-  }
-
-  delete [] Residual;
 }
 
 void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
@@ -764,8 +654,9 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
 
 }
 
-void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container,
-                                                      CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem,
+void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container,
+                                                      CNumerics ****numerics_container, CConfig *config,
+                                                      unsigned short FinestMesh, unsigned short RunTime_EqSystem,
                                                       su2double *monitor) {
   SU2_OMP_MASTER
   switch (RunTime_EqSystem) {
@@ -807,3 +698,40 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
 
 }
 
+void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+                                          unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
+
+  unsigned short iMGLevel;
+
+  if ( ( (RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) && (Iteration == 0) ) ) {
+    for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
+
+      /*--- Set the time step in all the MG levels ---*/
+
+      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][INST_0][iMGLevel], solver_container[iZone][INST_0][iMGLevel], config[iZone], iMGLevel, Iteration);
+
+      /*--- Set the force coefficients ---*/
+
+      SU2_OMP_MASTER
+      {
+      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CD(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD());
+      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CL(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL());
+      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CT());
+      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CQ());
+      }
+      SU2_OMP_BARRIER
+
+      /*--- Restrict solution and gradients to the coarse levels ---*/
+
+      if (iMGLevel != config[iZone]->GetnMGLevels()) {
+        SetRestricted_Solution(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
+                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
+//        ToDo: The flow solvers do not use the conservative variable gradients
+//        SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
+//                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
+      }
+
+    }
+  }
+
+}

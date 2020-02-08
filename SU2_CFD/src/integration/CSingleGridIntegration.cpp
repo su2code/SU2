@@ -31,54 +31,76 @@
 CSingleGridIntegration::CSingleGridIntegration(CConfig *config) : CIntegration(config) { }
 
 void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
-                                                  CNumerics ******numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) {
-  unsigned short iMesh;
+                                                  CNumerics ******numerics_container, CConfig **config,
+                                                  unsigned short RunTime_EqSystem, unsigned short iZone,
+                                                  unsigned short iInst) {
 
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
 
+  CGeometry* geometry_fine = geometry[iZone][iInst][FinestMesh];
+  CSolver** solvers_fine = solver_container[iZone][iInst][FinestMesh];
+
   /*--- Preprocessing ---*/
 
-  solver_container[iZone][iInst][FinestMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][FinestMesh], solver_container[iZone][iInst][FinestMesh], config[iZone], FinestMesh, 0, RunTime_EqSystem, false);
+  solvers_fine[SolContainer_Position]->Preprocessing(geometry_fine, solvers_fine, config[iZone],
+                                                     FinestMesh, 0, RunTime_EqSystem, false);
 
   /*--- Set the old solution ---*/
 
-  solver_container[iZone][iInst][FinestMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][iInst][FinestMesh]);
+  solvers_fine[SolContainer_Position]->Set_OldSolution(geometry_fine);
 
   /*--- Time step evaluation ---*/
 
-  solver_container[iZone][iInst][FinestMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][FinestMesh], solver_container[iZone][iInst][FinestMesh], config[iZone], FinestMesh, config[iZone]->GetTimeIter());
+  solvers_fine[SolContainer_Position]->SetTime_Step(geometry_fine, solvers_fine, config[iZone],
+                                                    FinestMesh, config[iZone]->GetTimeIter());
 
   /*--- Space integration ---*/
 
-  Space_Integration(geometry[iZone][iInst][FinestMesh], solver_container[iZone][iInst][FinestMesh], numerics_container[iZone][iInst][FinestMesh][SolContainer_Position],
+  Space_Integration(geometry_fine, solvers_fine,
+                    numerics_container[iZone][iInst][FinestMesh][SolContainer_Position],
                     config[iZone], FinestMesh, NO_RK_ITER, RunTime_EqSystem);
 
   /*--- Time integration ---*/
 
-  Time_Integration(geometry[iZone][iInst][FinestMesh], solver_container[iZone][iInst][FinestMesh], config[iZone], NO_RK_ITER,
-                   RunTime_EqSystem);
+  Time_Integration(geometry_fine, solvers_fine, config[iZone], NO_RK_ITER, RunTime_EqSystem);
 
   /*--- Postprocessing ---*/
 
-  solver_container[iZone][iInst][FinestMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iInst][FinestMesh], solver_container[iZone][iInst][FinestMesh], config[iZone], FinestMesh);
+  solvers_fine[SolContainer_Position]->Postprocessing(geometry_fine, solvers_fine, config[iZone], FinestMesh);
 
   if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {
-    solver_container[iZone][iInst][FinestMesh][HEAT_SOL]->Heat_Fluxes(geometry[iZone][iInst][FinestMesh], solver_container[iZone][iInst][FinestMesh], config[iZone]);
+    solvers_fine[HEAT_SOL]->Heat_Fluxes(geometry_fine, solvers_fine, config[iZone]);
   }
 
   /*--- If turbulence model, copy the turbulence variables to the coarse levels ---*/
 
   if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
-    for (iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
-      SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iInst][iMesh][SolContainer_Position], solver_container[iZone][iInst][iMesh+1][SolContainer_Position], geometry[iZone][iInst][iMesh], geometry[iZone][iInst][iMesh+1], config[iZone]);
-      SetRestricted_EddyVisc(RunTime_EqSystem, solver_container[iZone][iInst][iMesh][SolContainer_Position], solver_container[iZone][iInst][iMesh+1][SolContainer_Position], geometry[iZone][iInst][iMesh], geometry[iZone][iInst][iMesh+1], config[iZone]);
+
+    for (unsigned short iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
+
+      SetRestricted_Solution(RunTime_EqSystem,
+                             solver_container[iZone][iInst][iMesh][SolContainer_Position],
+                             solver_container[iZone][iInst][iMesh+1][SolContainer_Position],
+                             geometry[iZone][iInst][iMesh],
+                             geometry[iZone][iInst][iMesh+1],
+                             config[iZone]);
+
+      SetRestricted_EddyVisc(RunTime_EqSystem,
+                             solver_container[iZone][iInst][iMesh][SolContainer_Position],
+                             solver_container[iZone][iInst][iMesh+1][SolContainer_Position],
+                             geometry[iZone][iInst][iMesh],
+                             geometry[iZone][iInst][iMesh+1],
+                             config[iZone]);
     }
+
   }
+
 }
 
-void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long Point_Fine, Point_Coarse;
   unsigned short iVar, iChildren;
   su2double Area_Parent, Area_Children, *Solution_Fine, *Solution;
@@ -116,7 +138,8 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
 
 }
 
-void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
 
   unsigned long iVertex, Point_Fine, Point_Coarse;
   unsigned short iMarker, iChildren;
@@ -161,4 +184,3 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
   sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_EDDY);
 
 }
-

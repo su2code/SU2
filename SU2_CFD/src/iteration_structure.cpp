@@ -1630,7 +1630,7 @@ void CFEAIteration::Update(COutput *output,
   /*----------------- Update structural solver ----------------------*/
 
   if (dynamic) {
-    integration[val_iZone][val_iInst][FEA_SOL]->SetFEM_StructuralSolver(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
+    integration[val_iZone][val_iInst][FEA_SOL]->SetStructural_Solver(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
     integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);
 
     /*--- Verify convergence criteria (based on total time) ---*/
