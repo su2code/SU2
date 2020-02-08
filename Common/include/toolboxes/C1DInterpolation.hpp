@@ -53,7 +53,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated,
                                     unsigned short nVar_Turb, 
                                     CConfig *config);
 
-void PrintInletInterpolatedData(vector<su2double> Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim);
+void PrintInletInterpolatedData(vector<su2double>& Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim);
 
 void SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol);
 };
