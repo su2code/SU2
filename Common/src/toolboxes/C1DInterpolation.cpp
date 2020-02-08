@@ -35,8 +35,8 @@ su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
 
     while (j-i>1){ 
         int m=(i+j) / 2 ; 
-            if (Point_Interp>this->x[m]) i=m; 
-            else j=m; 
+            if (Point_Interp>this->x[m]) {i=m}; 
+            else {j=m}; 
     }
 
     su2double h=Point_Interp-this->x[i] ;
@@ -186,15 +186,17 @@ void C1DInterpolation::PrintInletInterpolatedData(vector<su2double>& Inlet_Value
         cout<<"file cannot be opened"<<endl;
 }
 
-void C1DInterpolation::SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol){
+void C1DInterpolation::SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol, vector<su2double> &X, vector<su2double> &Data){
     int n = Inlet_Data.size();
-    this->X.resize(n);
-    this->Data.resize(n);
+    X.resize(n);
+    Data.resize(n);
     
     unsigned long index;
     for (unsigned long iRow = 0; iRow < nRows; iRow++){
     index = iRow*nColumns;
-        this->X[iRow]=Inlet_Data[index];
-        this->Data[iRow]=Inlet_Data[index+iCol];
+        X[iRow]=Inlet_Data[index];
+        Data[iRow]=Inlet_Data[index+iCol];
     }
+
+    SetSpline(X,Data);
 }
