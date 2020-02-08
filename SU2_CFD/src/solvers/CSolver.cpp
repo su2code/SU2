@@ -4305,8 +4305,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             break;
           }
 
-            cout<<"past the constructor for interpolation\n";
-
             /*--- Loop through the nodes on this marker. ---*/
 
             for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
@@ -4368,13 +4366,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             }
 
             else if(Interpolate == true){
-              
-              cout<<"Entering elseif\n";
               /* --- Calculating the radius and angle of the vertex ---*/
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
               Theta = atan2(Coord[1],Coord[0]);
-              
-              cout<<"Running Interpolation_Evaluate"<<endl;
+
               /* --- Evaluating and saving the final spline data ---*/
               for  (unsigned short iVar=0; iVar < nColumns; iVar++){
               //Evaluate spline will get the respective value of the Data set (column) specified
@@ -4396,13 +4391,11 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               }
 
               /* --- Correcting for Interpolation Type ---*/
-              cout<<"Correcting Inlet Values\n";
               Inlet_Values = corrector->CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, config);
 
               if(config->GetPrintInlet_InterpolatedData() == true)
                 corrector->PrintInletInterpolatedData(Inlet_Values,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim);
               
-              cout<<"Applying Inlet Values to solver\n";
               solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
               
             }
