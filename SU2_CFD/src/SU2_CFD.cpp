@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
   else if (turbo) {
 
     /*--- Turbomachinery problem. ---*/
-    driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
+    driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
 
   }
   else {

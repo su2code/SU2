@@ -107,6 +107,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/CFlowCompFEMOutput.cpp \
   ../src/output/CFlowIncOutput.cpp \
   ../src/output/CHeatOutput.cpp \
+  ../src/output/CTurbomachineryOutput.cpp \
   ../src/output/CBaselineOutput.cpp \
   ../src/output/CAdjElasticityOutput.cpp \
   ../src/output/CAdjHeatOutput.cpp \

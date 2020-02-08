@@ -3294,10 +3294,18 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
     switch (config[iZone]->GetKind_Solver()) {
 
     case EULER: case NAVIER_STOKES: case RANS:
-      if (rank == MASTER_NODE)
+      if(config[ZONE_0]->GetBoolTurbomachinery()){
+        if (rank == MASTER_NODE)
+        cout << "Turbomachinery output structure." << endl;
+      output[iZone] = new CTurbomachineryOutput(config[iZone], nDim);
+      break;
+      }
+      else{
+          if (rank == MASTER_NODE)
         cout << "Euler/Navier-Stokes/RANS output structure." << endl;
       output[iZone] = new CFlowCompOutput(config[iZone], nDim);
       break;
+      }
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
       if (rank == MASTER_NODE)
         cout << "Euler/Navier-Stokes/RANS output structure." << endl;

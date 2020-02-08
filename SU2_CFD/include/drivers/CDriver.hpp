@@ -65,6 +65,7 @@
 #include "../output/CAdjFlowIncOutput.hpp"
 #include "../output/CHeatOutput.hpp"
 #include "../output/CAdjHeatOutput.hpp"
+#include "../output/CTurbomachineryOutput.hpp"
 
 using namespace std;
 
