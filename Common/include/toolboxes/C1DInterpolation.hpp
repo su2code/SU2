@@ -43,7 +43,7 @@ protected:
     vector<su2double> X;
 public:
 virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
-virtual su2double EvaluateSpline(su2double Point_Interp){}
+virtual su2double EvaluateSpline(su2double Point_Interp){return 0;}
 virtual bool GetPointMatch(){return Point_Match;}
 
 vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
@@ -53,9 +53,9 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated,
                                     unsigned short nVar_Turb, 
                                     CConfig *config);
 
-void PrintInletInterpolatedData(vector<su2double> Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim);
+void PrintInletInterpolatedData(vector<su2double>& Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim);
 
-void SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol);
+void SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol, vector<su2double> &X, vector<su2double> &Data);
 };
 
 
@@ -64,10 +64,16 @@ protected:
     vector<su2double> x,y,b,c,d;
     int n;
 public:
+    
+    /*--- Constructor for general class usage ---*/
+    CAkimaInterpolation(vector<su2double> &X, vector<su2double> &Data){
+        SetSpline(this->X, this->Data);
+    }
+
+    /*--- Constructor for inlet interpolation with correction ---*/
     CAkimaInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
     
-    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol);
-    SetSpline(X, Data);
+    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, this->X, this->Data);
     }
 
     void SetSpline(vector<su2double> &x, vector<su2double> &y);
@@ -79,10 +85,15 @@ class CLinearInterpolation: public C1DInterpolation{
     protected:
     vector<su2double> x,y,dydx;
     public:
-    CLinearInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
     
-    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol);
-    SetSpline(X, Data);
+    /*--- Constructor for general class usage ---*/
+    CLinearInterpolation(vector<su2double> &X, vector<su2double> &Data){
+        SetSpline(this->X, this->Data);
+    }
+
+    /*--- Constructor for inlet interpolation with correction ---*/
+    CLinearInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
+    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, this->X, this->Data);
     }
 
     void SetSpline(vector<su2double> &x, vector<su2double> &y);

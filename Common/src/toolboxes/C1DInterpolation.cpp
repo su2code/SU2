@@ -35,8 +35,8 @@ su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
 
     while (j-i>1){ 
         int m=(i+j) / 2 ; 
-            if (Point_Interp>this->x[m]) i=m; 
-            else j=m; 
+            if (Point_Interp>this->x[m]) {i=m;}
+            else {j=m;} 
     }
 
     su2double h=Point_Interp-this->x[i] ;
@@ -52,6 +52,7 @@ su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
             this->Point_Match = true;
             return (Point_Interp-this->x[i])*dydx[i]+this->y[i];}
     }
+    return 0;
 }
 
 /*--- Function for setting the cofficients for linear 'spline' ---*/
@@ -167,7 +168,7 @@ vector<su2double> C1DInterpolation::CorrectedInletValues(vector<su2double> &Inle
 }
 
 /*--- For printing interpolated data to a file ---*/
-void C1DInterpolation::PrintInletInterpolatedData(vector<su2double> Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim){
+void C1DInterpolation::PrintInletInterpolatedData(vector<su2double>& Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim){
     ofstream myfile;
     myfile.precision(16);
     myfile.open("Interpolated_Data_"+Marker+".dat",ios_base::out);
@@ -185,7 +186,7 @@ void C1DInterpolation::PrintInletInterpolatedData(vector<su2double> Inlet_Values
         cout<<"file cannot be opened"<<endl;
 }
 
-void C1DInterpolation::SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol){
+void C1DInterpolation::SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol, vector<su2double> &X, vector<su2double> &Data){
     int n = Inlet_Data.size();
     X.resize(n);
     Data.resize(n);
@@ -193,7 +194,9 @@ void C1DInterpolation::SetDataFromInletColumns(vector<su2double>& Inlet_Data, un
     unsigned long index;
     for (unsigned long iRow = 0; iRow < nRows; iRow++){
     index = iRow*nColumns;
-        this->X[iRow]=Inlet_Data[index];
-        this->Data[iRow]=Inlet_Data[index+iCol];
+        X[iRow]=Inlet_Data[index];
+        Data[iRow]=Inlet_Data[index+iCol];
     }
+
+    SetSpline(X,Data);
 }
