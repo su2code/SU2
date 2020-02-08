@@ -110,8 +110,6 @@ void CVariable::Restore_BGSSolution_k() {
   parallelCopy(Solution_BGS_k.size(), Solution_BGS_k.data(), Solution.data());
 }
 
-void CVariable::SetResidualSumZero() { parallelSet(Residual_Sum.size(), 0.0, Residual_Sum.data()); }
-
 void CVariable::SetUnd_LaplZero() { parallelSet(Undivided_Laplacian.size(), 0.0, Undivided_Laplacian.data()); }
 
 void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.data()); }
