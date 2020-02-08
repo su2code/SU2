@@ -233,7 +233,6 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 
 }
 
-
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
 
   unsigned long iPoint;
@@ -242,6 +241,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
   solver->GetNodes()->Set_Solution_time_n();
   solver->ResetCFLAdapt();
 
+  SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 
     /*--- Initialize the underrelaxation ---*/
@@ -264,6 +264,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
   }
 
   /*--- Store old aeroelastic solutions ---*/
+  SU2_OMP_MASTER
   if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && (iMesh == MESH_0)) {
 
     config->SetAeroelastic_n1();
@@ -331,6 +332,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     }
 #endif
   }
+  SU2_OMP_BARRIER
 
 }
 
