@@ -43,7 +43,7 @@ protected:
     vector<su2double> X;
 public:
 virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
-virtual su2double EvaluateSpline(su2double Point_Interp){}
+virtual su2double EvaluateSpline(su2double Point_Interp){return 0;}
 virtual bool GetPointMatch(){return Point_Match;}
 
 vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
