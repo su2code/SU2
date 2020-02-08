@@ -2,7 +2,7 @@
  * \file inlet_interpolation_functions.hpp
  * \brief Inlet_interpolation_functions
  * \author Aman Baig
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,42 +36,15 @@
 
 using namespace std;
 
-class CAkimaSpline{ 
+class C1DInterpolation{
 protected:
-vector<su2double> x,y,b,c,d;
-int n;
-public:
-void SetAkimaSpline(vector<su2double> &x, vector<su2double> &y);
-su2double EvalAkimaSpline(su2double Point_Interp);
-};
-
-class CLinearSpline{
-    protected:
-    vector<su2double> x,y,dydx;
-    public:
-    void SetLinearSpline(vector<su2double> &x, vector<su2double> &y);
-    su2double EvalLinearSpline(su2double Point_Interp);
     bool Point_Match = false;
-};
-
-class C1DInterpolation:public CAkimaSpline,public CLinearSpline{
-string Interpolation_Type, Interpolation_Function;
+    vector<su2double> Data;
+    vector<su2double> X;
 public:
-void Interpolation_Set(vector<su2double> &x, vector<su2double> &y, CConfig *config){
-switch(config->GetKindInletInterpolationFunction()){
-    case (ONED_AKIMASPLINE_SPANWISE):
-        return this->SetAkimaSpline(x,y);
-    case(ONED_LINEAR_SPANWISE):
-        return this->SetLinearSpline(x,y);
-}
-}
-
-su2double Interpolation_Evaluate(su2double Point_Interp, string Interpolation_Function){
-        if(Interpolation_Type == "Akima")
-        return this->EvalAkimaSpline(Point_Interp);
-    else if(Interpolation_Type == "Linear")
-        return this->EvalLinearSpline(Point_Interp);
-}
+virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
+virtual su2double EvaluateSpline(su2double Point_Interp){}
+virtual bool GetPointMatch(){return Point_Match;}
 
 vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
                                     su2double Theta ,
@@ -81,4 +54,39 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated,
                                     CConfig *config);
 
 void PrintInletInterpolatedData(vector<su2double> Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim);
+
+void SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol);
+};
+
+
+class CAkimaInterpolation: public C1DInterpolation{ 
+protected:
+    vector<su2double> x,y,b,c,d;
+    int n;
+public:
+    CAkimaInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
+    
+    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol);
+    SetSpline(X, Data);
+    }
+
+    void SetSpline(vector<su2double> &x, vector<su2double> &y);
+    su2double EvaluateSpline(su2double Point_Interp);
+    bool GetPointMatch(){return Point_Match;}
+};
+
+class CLinearInterpolation: public C1DInterpolation{
+    protected:
+    vector<su2double> x,y,dydx;
+    public:
+    CLinearInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
+    
+    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol);
+    SetSpline(X, Data);
+    }
+
+    void SetSpline(vector<su2double> &x, vector<su2double> &y);
+    su2double EvaluateSpline(su2double Point_Interp);
+    //bool Point_Match = false;
+    bool GetPointMatch(){return Point_Match;}
 };
