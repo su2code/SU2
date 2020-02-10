@@ -86,15 +86,15 @@ for imarker in range(nmarker):
             # Determine VTK type
             # Line element
             if int(line[0]) == 3:
-                marker_points[imarker].extende([int(line[1]),int(line[2])])
+                marker_points[imarker].extend([int(line[1]),int(line[2])])
                 ielem += 2
             # Tri element
             elif int(line[0]) == 5:
-                marker_points[imarker].extende([int(line[1]),int(line[2]),int(line[3])])
+                marker_points[imarker].extend([int(line[1]),int(line[2]),int(line[3])])
                 ielem += 3
             # Quad element
             elif int(line[0]) == 9:
-                marker_points[imarker].extende([int(line[1]),int(line[2]),int(line[3]),int(line[4])])
+                marker_points[imarker].extend([int(line[1]),int(line[2]),int(line[3]),int(line[4])])
                 ielem += 4
             # Other element
             else:
