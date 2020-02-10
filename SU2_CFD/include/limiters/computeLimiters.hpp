@@ -58,13 +58,10 @@ computeLimiters_impl<FieldType, GradientType, KIND>(solver, kindMpiComm, \
   switch (LimiterKind) {
     case NO_LIMITER:
     {
-      SU2_OMP_PARALLEL
-      {
-        SU2_OMP_FOR_STAT(512)
-        for(size_t iPoint = 0; iPoint < geometry.GetnPoint(); ++iPoint)
-          for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
-           limiter(iPoint, iVar) = 1.0;
-      }
+      SU2_OMP_FOR_STAT(512)
+      for(size_t iPoint = 0; iPoint < geometry.GetnPoint(); ++iPoint)
+        for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
+         limiter(iPoint, iVar) = 1.0;
       break;
     }
     case BARTH_JESPERSEN:
