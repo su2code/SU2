@@ -27,14 +27,23 @@
 
 # make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
 from __future__ import print_function
-
+from optparse import OptionParser
 # Run the script from the base directory (ie $SU2HOME). Grep will search directories recursively for matches in version number
 import os,sys
 
+parser = OptionParser()
+parser.add_option("-v", "--version", dest="version",
+                  help="the new version number", metavar="VERSION")
+parser.add_option("-y", action="store_true", dest="yes", help="Answer yes to all questions", metavar="YES")
+(options, args)=parser.parse_args()
+
+if not options.version:
+    parser.error("new version number must me provided with -v option")
+
 #oldvers = '2012-2018'
 #newvers = '2012-2019'
-oldvers = '7.0.0 "Blackbird"'
-newvers = '7.0.1 "Blackbird"'
+oldvers = '7.0.1 "Blackbird"'
+newvers = options.version
 
 if sys.version_info[0] > 2:
   # In PY3, raw_input is replaced with input.
@@ -60,14 +69,14 @@ filelist = []
 f = open('version.txt','r')
 for line in f.readlines():
   candidate = line.split(':')[0]
-  if not candidate in filelist and candidate.find(sys.argv[0])<0:
+  if not candidate in filelist:
     filelist.append(candidate)
 f.close()
 print(filelist)
 
 # Prompt user before continuing 
 yorn = ''
-while(not yorn.lower()=='y'):
+while(not yorn.lower()=='y' and not options.yes):
   yorn = raw_input('Replace %s with %s in the listed files? [Y/N]: '%(oldvers,newvers))
   if yorn.lower()=='n':
     print('The file version.txt contains matches of oldvers')
