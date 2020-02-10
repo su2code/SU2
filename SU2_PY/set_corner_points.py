@@ -48,10 +48,10 @@ parser.add_option("-f", "--file", dest="filename",
 (options, args)=parser.parse_args()
 
 # Process options
-options.file = str(options.file)
+options.filename = str(options.filename)
 
 # Open mesh for reading
-meshfile = open(options.file, "r")
+meshfile = open(options.filename, "r")
 
 # Find number of markers
 for num, line in enumerate(meshfile, 1):
