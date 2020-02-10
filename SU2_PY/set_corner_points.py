@@ -108,7 +108,7 @@ meshfile.close()
 
 # Remove duplicate points
 for imarker in range(nmarker):
-    marker_points[imarker] = list(set(marker_points[imarker]))
+    marker_points[imarker] = set(marker_points[imarker])
 
 # Compare lists for each marker
 corners = []
