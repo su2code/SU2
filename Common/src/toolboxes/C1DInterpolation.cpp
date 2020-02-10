@@ -58,7 +58,7 @@ su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
 /*--- Function for setting the cofficients for linear 'spline' ---*/
 void CLinearInterpolation::SetSpline(vector<su2double> &X, vector<su2double> &Data){
     int n = X.size();
-    vector<su2double> h (n-1);
+    su2double h;
     x.resize(n);
     y.resize(n);
     dydx.resize(n-1);
@@ -67,8 +67,8 @@ void CLinearInterpolation::SetSpline(vector<su2double> &X, vector<su2double> &Da
     y=Data;
 
     for (int i=0; i<n-1;i ++){
-        h[i]=x[i+1]-x[i];
-        dydx[i]=(y[i+1]-y[i]) / h [i];
+        h=x[i+1]-x[i];
+        dydx[i]=(y[i+1]-y[i])/h;
         }
 }
 
@@ -103,7 +103,7 @@ void CAkimaInterpolation::SetSpline (vector<su2double> &X,vector<su2double> &Dat
 
     for (int i =2; i<n-2; i ++){
         su2double w1=fabs(p[i+1]-p[i]) , w2=fabs(p[i-1]-p[i-2]);
-        if (w1+w2==0) {
+        if (w1+w2<0.0001) {
             b[i] = (p[i-1]+p[i])/2 ;
         }
         else{
@@ -125,7 +125,9 @@ vector<su2double> C1DInterpolation::CorrectedInletValues(vector<su2double> &Inle
                                                         unsigned short nVar_Turb,
                                                         CConfig *config){
     su2double size_columns=Inlet_Interpolated.size()+nDim;
-    vector<su2double> Inlet_Values (size_columns);
+    vector<su2double> Inlet_Values;
+    Inlet_Values.resize(size_columns);
+    
     su2double unit_r, unit_Theta, unit_m, Alpha, Phi;
 
     /*---For x,y,z,T,P columns---*/
