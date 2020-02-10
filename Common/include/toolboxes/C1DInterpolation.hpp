@@ -78,6 +78,8 @@ public:
     SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, this->X, this->Data);
     }
 
+    ~CAkimaInterpolation(){}
+
     void SetSpline(vector<su2double> &x, vector<su2double> &y) override;
     su2double EvaluateSpline(su2double Point_Interp) override;
 };
@@ -96,6 +98,8 @@ class CLinearInterpolation: public C1DInterpolation{
     CLinearInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
     SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, X, Data);
     }
+    
+    ~CLinearInterpolation(){}
 
     void SetSpline(vector<su2double> &x, vector<su2double> &y) override;
     su2double EvaluateSpline(su2double Point_Interp) override;
