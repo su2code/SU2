@@ -42,9 +42,11 @@ protected:
     vector<su2double> Data;
     vector<su2double> X;
 public:
+virtual ~C1DInterpolation() = default;
+
 virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
 virtual su2double EvaluateSpline(su2double Point_Interp){return 0;}
-virtual bool GetPointMatch(){return Point_Match;}
+bool GetPointMatch(){return Point_Match;}
 
 vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
                                     su2double Theta ,
@@ -76,9 +78,8 @@ public:
     SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, this->X, this->Data);
     }
 
-    void SetSpline(vector<su2double> &x, vector<su2double> &y);
-    su2double EvaluateSpline(su2double Point_Interp);
-    bool GetPointMatch(){return Point_Match;}
+    void SetSpline(vector<su2double> &x, vector<su2double> &y) override;
+    su2double EvaluateSpline(su2double Point_Interp) override;
 };
 
 class CLinearInterpolation: public C1DInterpolation{
@@ -93,11 +94,9 @@ class CLinearInterpolation: public C1DInterpolation{
 
     /*--- Constructor for inlet interpolation with correction ---*/
     CLinearInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
-    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, this->X, this->Data);
+    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, X, Data);
     }
 
-    void SetSpline(vector<su2double> &x, vector<su2double> &y);
-    su2double EvaluateSpline(su2double Point_Interp);
-    //bool Point_Match = false;
-    bool GetPointMatch(){return Point_Match;}
+    void SetSpline(vector<su2double> &x, vector<su2double> &y) override;
+    su2double EvaluateSpline(su2double Point_Interp) override;
 };
