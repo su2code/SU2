@@ -10,6 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
+    - name: Extract branch name
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/release_v})"
+      id: extract_branch  
     - name: Change the version number
       run: |
         SU2_PY/change_version_number.py -v "${GITHUB_REF##*/release_v} \"Blackbird\"" -y
@@ -22,4 +26,4 @@ jobs:
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${GITHUB_REF##*/}
+        branch: ${{ steps.extract_branch.outputs.branch }}
