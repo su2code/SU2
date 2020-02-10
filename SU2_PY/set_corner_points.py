@@ -118,8 +118,8 @@ for imarker in range(nmarker):
             corners.extend(list(marker_points[imarker] & marker_points[jmarker]))
 
 # Print corners
-tmp_str = "NCORNERS= " + str(len(corners)) + "\n"
+tmp_str = "NCORNERS= " + str(len(corners))
 print(tmp_str)
 for icorner in range(len(corners)):
-    tmp_str = "1 " + str(corners[icorner]) + "\n"
+    tmp_str = "1 " + str(corners[icorner])
     print(tmp_str)
