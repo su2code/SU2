@@ -25,7 +25,8 @@ if get_option('enable-normal')
                                          'output/filewriter/CParaviewXMLFileWriter.cpp',
                                          'output/filewriter/CParaviewVTMFileWriter.cpp',
                                          'variables/CBaselineVariable.cpp',
-                                         'variables/CVariable.cpp'])
+                                         'variables/CVariable.cpp',
+                                         'limiters/CLimiterDetails.cpp'])
 
   su2_dot = executable('SU2_DOT',
                       su2_dot_src, 
@@ -63,7 +64,8 @@ if get_option('enable-autodiff')
                                                'output/filewriter/CParaviewXMLFileWriter.cpp',
                                                'output/filewriter/CParaviewVTMFileWriter.cpp',
                                                'variables/CBaselineVariable.cpp',
-                                               'variables/CVariable.cpp'])
+                                               'variables/CVariable.cpp',
+                                               'limiters/CLimiterDetails.cpp'])
 
   su2_dot_ad = executable('SU2_DOT_AD',
                           su2_dot_src_ad, 
