@@ -28,6 +28,17 @@
 #pragma once
 #include "CMultizoneDriver.hpp"
 
+//#ifdef HAVE_EIGEN
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include <Eigen/QR>
+typedef Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic> EigenMatrix;
+typedef Eigen::Matrix<su2double, Eigen::Dynamic, 1> EigenVector;
+//#include <Eigen/LU>
+//#include <Eigen/SVD>
+//typedef Eigen::JacobiSVD<EigenMatrix> EigenSVD;
+//#endif
+
 class CDiscAdjMultizoneDriver : public CMultizoneDriver {
 
 protected:

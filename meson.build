@@ -138,6 +138,12 @@ elif get_option('enable-openblas')
 
 endif
 
+# add Eigen library
+if get_option('enable-eigen')
+  eigen_dep = [declare_dependency(include_directories: '/usr/include/eigen3')]
+  su2_deps += eigen_dep
+endif
+
 # compile common library
 subdir('Common/src')
 # compile SU2_CFD executable
@@ -176,7 +182,9 @@ message('''---------------------------------------------------------------------
          Python Wrapper: @6@
          Intel-MKL:      @7@
          OpenBlas:       @8@
-         PaStiX:         @9@
+         Eigen:          @9@
+         PaStiX:         @10@
+
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -191,5 +199,5 @@ message('''---------------------------------------------------------------------
          Use './ninja -C @10@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), meson.build_root().split('/')[-1]))
+           get_option('enable-openblas'), get_option('enable-eigen'), get_option('enable-pastix'), meson.build_root().split('/')[-1]))
 
