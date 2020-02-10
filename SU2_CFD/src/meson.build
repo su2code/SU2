@@ -141,6 +141,8 @@ su2_cfd_src += files(['integration/CIntegration.cpp',
                       'integration/CStructuralIntegration.cpp',
                       'integration/CFEM_DG_Integration.cpp'])
 
+su2_cfd_src += files(['limiters/CLimiterDetails.cpp'])
+
 if get_option('enable-normal')
   su2_cfd = executable('SU2_CFD',
                        su2_cfd_src, 

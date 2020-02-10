@@ -1,7 +1,8 @@
 /*!
  * \file computeLimiters_impl.hpp
- * \brief Generic and general computation of limiters.
- * \note Common methods are derived by defining only small details.
+ * \brief Generic computation of limiters.
+ * \note Common methods are derived by defining small details
+ *       via specialization of CLimiterDetails.
  * \author P. Gomes
  * \version 7.0.1 "Blackbird"
  *
@@ -28,7 +29,7 @@
 
 
 /*!
- * \brief General limiter computation for methods based on one limiter
+ * \brief Generic limiter computation for methods based on one limiter
  *        value per point (as opposed to one per edge) and per variable.
  * \note This implementation can be used to derive most common methods
  *       by specializing the limiter functions (e.g. Venkatakrishnan)
@@ -79,8 +80,6 @@ void computeLimiters_impl(CSolver* solver,
   if (varEnd > MAXNVAR)
     SU2_MPI::Error("Number of variables is too large, increase MAXNVAR.", CURRENT_FUNCTION);
 
-  CLimiterDetails<LimiterKind> limiterDetails;
-
   size_t nPointDomain = geometry.GetnPointDomain();
   size_t nPoint = geometry.GetnPoint();
   size_t nDim = geometry.GetnDim();
@@ -113,131 +112,130 @@ void computeLimiters_impl(CSolver* solver,
 
   SU2_OMP_PARALLEL
   {
-    limiterDetails.preprocess(geometry, config, varBegin, varEnd, field);
 
-    /*--- Courtesy barrier in case someone forgets preprocess is parallel. ---*/
-    SU2_OMP_BARRIER
+  CLimiterDetails<LimiterKind> limiterDetails;
 
-    /*--- Initialize all min/max field values if we have
-     *    periodic comms. otherwise do it inside main loop. ---*/
+  limiterDetails.preprocess(geometry, config, varBegin, varEnd, field);
 
-    if (periodic)
+  /*--- Initialize all min/max field values if we have
+   *    periodic comms. otherwise do it inside main loop. ---*/
+
+  if (periodic)
+  {
+    SU2_OMP_FOR_STAT(chunkSize)
+    for (size_t iPoint = 0; iPoint < nPoint; ++iPoint)
+      for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+        fieldMax(iPoint,iVar) = fieldMin(iPoint,iVar) = field(iPoint,iVar);
+
+    SU2_OMP_MASTER
     {
-      SU2_OMP_FOR_STAT(chunkSize)
-      for (size_t iPoint = 0; iPoint < nPoint; ++iPoint)
-        for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-          fieldMax(iPoint,iVar) = fieldMin(iPoint,iVar) = field(iPoint,iVar);
-
-      SU2_OMP_MASTER
+      for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
       {
-        for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
-        {
-          solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm1);
-          solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm1);
-        }
+        solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm1);
+        solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm1);
       }
-      SU2_OMP_BARRIER
+    }
+    SU2_OMP_BARRIER
+  }
+
+  /*--- Compute limiter for each point. ---*/
+
+  SU2_OMP_FOR_DYN(chunkSize)
+  for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
+  {
+    auto node = geometry.node[iPoint];
+    const su2double* coord_i = node->GetCoord();
+
+    AD::StartPreacc();
+    AD::SetPreaccIn(coord_i, nDim);
+
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+    {
+      AD::SetPreaccIn(field(iPoint,iVar));
+
+      if (periodic) {
+        /*--- Started outside loop, so counts as input. ---*/
+        AD::SetPreaccIn(fieldMax(iPoint,iVar));
+        AD::SetPreaccIn(fieldMin(iPoint,iVar));
+      }
+      else {
+        /*--- Initialize min/max now for iPoint if not periodic. ---*/
+        fieldMax(iPoint,iVar) = field(iPoint,iVar);
+        fieldMin(iPoint,iVar) = field(iPoint,iVar);
+      }
+
+      for(size_t iDim = 0; iDim < nDim; ++iDim)
+        AD::SetPreaccIn(gradient(iPoint,iVar,iDim));
     }
 
-    /*--- Compute limiter for each point. ---*/
+    /*--- Initialize min/max projection out of iPoint. ---*/
 
-    SU2_OMP_FOR_DYN(chunkSize)
-    for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
+    su2double projMax[MAXNVAR], projMin[MAXNVAR];
+
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+      projMax[iVar] = projMin[iVar] = 0.0;
+
+    /*--- Compute max/min projection and values over direct neighbors. ---*/
+
+    for(size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh)
     {
-      auto node = geometry.node[iPoint];
-      const su2double* coord_i = node->GetCoord();
+      size_t jPoint = node->GetPoint(iNeigh);
 
-      AD::StartPreacc();
-      AD::SetPreaccIn(coord_i, nDim);
+      const su2double* coord_j = geometry.node[jPoint]->GetCoord();
+      AD::SetPreaccIn(coord_j, nDim);
 
-      for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-      {
-        AD::SetPreaccIn(field(iPoint,iVar));
+      /*--- Distance vector from iPoint to face (middle of the edge). ---*/
 
-        if (periodic) {
-          /*--- Started outside loop, so counts as input. ---*/
-          AD::SetPreaccIn(fieldMax(iPoint,iVar));
-          AD::SetPreaccIn(fieldMin(iPoint,iVar));
-        }
-        else {
-          /*--- Initialize min/max now for iPoint if not periodic. ---*/
-          fieldMax(iPoint,iVar) = field(iPoint,iVar);
-          fieldMin(iPoint,iVar) = field(iPoint,iVar);
-        }
+      su2double dist_ij[MAXNDIM] = {0.0};
 
-        for(size_t iDim = 0; iDim < nDim; ++iDim)
-          AD::SetPreaccIn(gradient(iPoint,iVar,iDim));
-      }
+      for(size_t iDim = 0; iDim < nDim; ++iDim)
+        dist_ij[iDim] = 0.5 * (coord_j[iDim] - coord_i[iDim]);
 
-      /*--- Initialize min/max projection out of iPoint. ---*/
-
-      su2double projMax[MAXNVAR], projMin[MAXNVAR];
-
-      for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-        projMax[iVar] = projMin[iVar] = 0.0;
-
-      /*--- Compute max/min projection and values over direct neighbors. ---*/
-
-      for(size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh)
-      {
-        size_t jPoint = node->GetPoint(iNeigh);
-
-        const su2double* coord_j = geometry.node[jPoint]->GetCoord();
-        AD::SetPreaccIn(coord_j, nDim);
-
-        /*--- Distance vector from iPoint to face (middle of the edge). ---*/
-
-        su2double dist_ij[MAXNDIM] = {0.0};
-
-        for(size_t iDim = 0; iDim < nDim; ++iDim)
-          dist_ij[iDim] = 0.5 * (coord_j[iDim] - coord_i[iDim]);
-
-        /*--- Project each variable, update min/max. ---*/
-
-        for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
-        {
-          su2double proj = 0.0;
-
-          for(size_t iDim = 0; iDim < nDim; ++iDim)
-            proj += dist_ij[iDim] * gradient(iPoint,iVar,iDim);
-
-          projMax[iVar] = max(projMax[iVar], proj);
-          projMin[iVar] = min(projMin[iVar], proj);
-
-          AD::SetPreaccIn(field(jPoint,iVar));
-
-          fieldMax(iPoint,iVar) = max(fieldMax(iPoint,iVar), field(jPoint,iVar));
-          fieldMin(iPoint,iVar) = min(fieldMin(iPoint,iVar), field(jPoint,iVar));
-        }
-      }
-
-      /*--- Compute the geometric factor. ---*/
-
-      su2double geoFactor = limiterDetails.geometricFactor(iPoint, geometry);
-
-      /*--- Final limiter computation for each variable, get the min limiter
-       *    out of the positive/negative projections and deltas. ---*/
+      /*--- Project each variable, update min/max. ---*/
 
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
       {
-        su2double limMax = limiterDetails.limiterFunction(iVar, projMax[iVar],
-                           fieldMax(iPoint,iVar) - field(iPoint,iVar));
+        su2double proj = 0.0;
 
-        su2double limMin = limiterDetails.limiterFunction(iVar, projMin[iVar],
-                           fieldMin(iPoint,iVar) - field(iPoint,iVar));
+        for(size_t iDim = 0; iDim < nDim; ++iDim)
+          proj += dist_ij[iDim] * gradient(iPoint,iVar,iDim);
 
-        limiter(iPoint,iVar) = geoFactor * min(limMax, limMin);
+        projMax[iVar] = max(projMax[iVar], proj);
+        projMin[iVar] = min(projMin[iVar], proj);
 
-        AD::SetPreaccOut(limiter(iPoint,iVar));
+        AD::SetPreaccIn(field(jPoint,iVar));
+
+        fieldMax(iPoint,iVar) = max(fieldMax(iPoint,iVar), field(jPoint,iVar));
+        fieldMin(iPoint,iVar) = min(fieldMin(iPoint,iVar), field(jPoint,iVar));
       }
-
-      AD::EndPreacc();
     }
 
-  } // end SU2_OMP_PARALLEL
+    /*--- Compute the geometric factor. ---*/
+
+    su2double geoFactor = limiterDetails.geometricFactor(iPoint, geometry);
+
+    /*--- Final limiter computation for each variable, get the min limiter
+     *    out of the positive/negative projections and deltas. ---*/
+
+    for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
+    {
+      su2double limMax = limiterDetails.limiterFunction(iVar, projMax[iVar],
+                         fieldMax(iPoint,iVar) - field(iPoint,iVar));
+
+      su2double limMin = limiterDetails.limiterFunction(iVar, projMin[iVar],
+                         fieldMin(iPoint,iVar) - field(iPoint,iVar));
+
+      limiter(iPoint,iVar) = geoFactor * min(limMax, limMin);
+
+      AD::SetPreaccOut(limiter(iPoint,iVar));
+    }
+
+    AD::EndPreacc();
+  }
 
   /*--- If no solver was provided we do not communicate. ---*/
 
+  SU2_OMP_MASTER
   if (solver != nullptr)
   {
     /*--- Account for periodic effects, take the minimum limiter on each periodic pair. ---*/
@@ -253,8 +251,12 @@ void computeLimiters_impl(CSolver* solver,
     solver->InitiateComms(&geometry, &config, kindMpiComm);
     solver->CompleteComms(&geometry, &config, kindMpiComm);
   }
+  SU2_OMP_BARRIER
 
 #ifdef CODI_REVERSE_TYPE
   if (tapeActive) AD::StartRecording();
 #endif
+
+  } // end SU2_OMP_PARALLEL
+
 }

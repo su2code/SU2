@@ -73,117 +73,121 @@ void computeGradientsGreenGauss(CSolver* solver,
 
   SU2_OMP_PARALLEL
   {
-    /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
 
-    SU2_OMP_FOR_DYN(chunkSize)
-    for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
+  /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
+
+  SU2_OMP_FOR_DYN(chunkSize)
+  for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
+  {
+    auto node = geometry.node[iPoint];
+
+    AD::StartPreacc();
+    AD::SetPreaccIn(node->GetVolume());
+    AD::SetPreaccIn(node->GetPeriodicVolume());
+
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+      AD::SetPreaccIn(field(iPoint,iVar));
+
+    /*--- Clear the gradient. --*/
+
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+      for (size_t iDim = 0; iDim < nDim; ++iDim)
+        gradient(iPoint, iVar, iDim) = 0.0;
+
+    /*--- Handle averaging and division by volume in one constant. ---*/
+
+    su2double halfOnVol = 0.5 / (node->GetVolume()+node->GetPeriodicVolume());
+
+    /*--- Add a contribution due to each neighbor. ---*/
+
+    for (size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh)
     {
-      auto node = geometry.node[iPoint];
+      size_t iEdge = node->GetEdge(iNeigh);
+      size_t jPoint = node->GetPoint(iNeigh);
 
-      AD::StartPreacc();
-      AD::SetPreaccIn(node->GetVolume());
-      AD::SetPreaccIn(node->GetPeriodicVolume());
+      /*--- Determine if edge points inwards or outwards of iPoint.
+       *    If inwards we need to flip the area vector. ---*/
+
+      su2double dir = (iPoint == geometry.edge[iEdge]->GetNode(0))? 1.0 : -1.0;
+      su2double weight = dir * halfOnVol;
+
+      const su2double* area = geometry.edge[iEdge]->GetNormal();
+      AD::SetPreaccIn(area, nDim);
 
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-        AD::SetPreaccIn(field(iPoint,iVar));
-
-      /*--- Clear the gradient. --*/
-
-      for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-        for (size_t iDim = 0; iDim < nDim; ++iDim)
-          gradient(iPoint, iVar, iDim) = 0.0;
-
-      /*--- Handle averaging and division by volume in one constant. ---*/
-
-      su2double halfOnVol = 0.5 / (node->GetVolume()+node->GetPeriodicVolume());
-
-      /*--- Add a contribution due to each neighbor. ---*/
-
-      for (size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh)
       {
-        size_t iEdge = node->GetEdge(iNeigh);
-        size_t jPoint = node->GetPoint(iNeigh);
+        AD::SetPreaccIn(field(jPoint,iVar));
 
-        /*--- Determine if edge points inwards or outwards of iPoint.
-         *    If inwards we need to flip the area vector. ---*/
+        su2double flux = weight * (field(iPoint,iVar) + field(jPoint,iVar));
 
-        su2double dir = (iPoint == geometry.edge[iEdge]->GetNode(0))? 1.0 : -1.0;
-        su2double weight = dir * halfOnVol;
-
-        const su2double* area = geometry.edge[iEdge]->GetNormal();
-        AD::SetPreaccIn(area, nDim);
-
-        for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-        {
-          AD::SetPreaccIn(field(jPoint,iVar));
-
-          su2double flux = weight * (field(iPoint,iVar) + field(jPoint,iVar));
-
-          for (size_t iDim = 0; iDim < nDim; ++iDim)
-            gradient(iPoint, iVar, iDim) += flux * area[iDim];
-        }
-
+        for (size_t iDim = 0; iDim < nDim; ++iDim)
+          gradient(iPoint, iVar, iDim) += flux * area[iDim];
       }
 
-      for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-        for (size_t iDim = 0; iDim < nDim; ++iDim)
-          AD::SetPreaccOut(gradient(iPoint,iVar,iDim));
-
-      AD::EndPreacc();
     }
 
-    /*--- Add boundary fluxes. ---*/
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+      for (size_t iDim = 0; iDim < nDim; ++iDim)
+        AD::SetPreaccOut(gradient(iPoint,iVar,iDim));
 
-    for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
+    AD::EndPreacc();
+  }
+
+  /*--- Add boundary fluxes. ---*/
+
+  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
+  {
+    if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
     {
-      if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-          (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
+      /*--- Work is shared in inner loop as two markers
+       *    may try to update the same point. ---*/
+
+      SU2_OMP_FOR_STAT(32)
+      for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
       {
-        /*--- Work is shared in inner loop as two markers
-         *    may try to update the same point. ---*/
+        size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
+        auto node = geometry.node[iPoint];
 
-        SU2_OMP_FOR_STAT(OMP_MAX_CHUNK)
-        for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
+        /*--- Halo points do not need to be considered. ---*/
+
+        if (!node->GetDomain()) continue;
+
+        su2double volume = node->GetVolume() + node->GetPeriodicVolume();
+
+        const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
+
+        for (size_t iVar = varBegin; iVar < varEnd; iVar++)
         {
-          size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
-          auto node = geometry.node[iPoint];
+          su2double flux = field(iPoint,iVar) / volume;
 
-          /*--- Halo points do not need to be considered. ---*/
-
-          if (!node->GetDomain()) continue;
-
-          su2double volume = node->GetVolume() + node->GetPeriodicVolume();
-
-          const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
-
-          for (size_t iVar = varBegin; iVar < varEnd; iVar++)
-          {
-            su2double flux = field(iPoint,iVar) / volume;
-
-            for (size_t iDim = 0; iDim < nDim; iDim++)
-              gradient(iPoint, iVar, iDim) -= flux * area[iDim];
-          }
+          for (size_t iDim = 0; iDim < nDim; iDim++)
+            gradient(iPoint, iVar, iDim) -= flux * area[iDim];
         }
       }
     }
-
-  } // end SU2_OMP_PARALLEL
+  }
 
   /*--- If no solver was provided we do not communicate ---*/
 
-  if (solver == nullptr) return;
-
-  /*--- Account for periodic contributions. ---*/
-
-  for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
+  SU2_OMP_MASTER
+  if (solver != nullptr)
   {
-    solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
-    solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+    /*--- Account for periodic contributions. ---*/
+
+    for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
+    {
+      solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+      solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+    }
+
+    /*--- Obtain the gradients at halo points from the MPI ranks that own them. ---*/
+
+    solver->InitiateComms(&geometry, &config, kindMpiComm);
+    solver->CompleteComms(&geometry, &config, kindMpiComm);
   }
+  SU2_OMP_BARRIER
 
-  /*--- Obtain the gradients at halo points from the MPI ranks that own them. ---*/
-
-  solver->InitiateComms(&geometry, &config, kindMpiComm);
-  solver->CompleteComms(&geometry, &config, kindMpiComm);
+  } // end SU2_OMP_PARALLEL
 
 }

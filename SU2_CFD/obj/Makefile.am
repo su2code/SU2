@@ -147,6 +147,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CTurbSolver.cpp \
   ../src/solvers/CTurbSASolver.cpp \
   ../src/solvers/CTurbSSTSolver.cpp \
+  ../src/limiters/CLimiterDetails.cpp \
   ../src/CMarkerProfileReaderFVM.cpp \
   ../src/interfaces/CInterface.cpp \
   ../src/interfaces/cfd/CConservativeVarsInterface.cpp \
