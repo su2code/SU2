@@ -87,15 +87,15 @@ for imarker in range(nmarker):
             # Line element
             if int(line[0]) == 3:
                 marker_points[imarker].extend([int(line[1]),int(line[2])])
-                ielem += 2
+                ielem += 1
             # Tri element
             elif int(line[0]) == 5:
                 marker_points[imarker].extend([int(line[1]),int(line[2]),int(line[3])])
-                ielem += 3
+                ielem += 1
             # Quad element
             elif int(line[0]) == 9:
                 marker_points[imarker].extend([int(line[1]),int(line[2]),int(line[3]),int(line[4])])
-                ielem += 4
+                ielem += 1
             # Other element
             else:
                 raise RuntimeError , "\n\n##ERROR : Unknown marker type in marker %s, line %s.\n\n" % (str(imarker), str(num))
