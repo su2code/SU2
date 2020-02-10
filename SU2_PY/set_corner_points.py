@@ -115,7 +115,7 @@ corners = []
 for imarker in range(nmarker):
     for jmarker in range(nmarker):
         if imarker < jmarker:
-            corners.extend(marker_points[imarker]-marker_points[jmarker])
+            corners.extend(list(marker_points[imarker] & marker_points[jmarker]))
 
 # Print corners
 tmp_str = "NCORNERS= " + len(corners) + "\n"
