@@ -70,12 +70,12 @@ for imarker in range(nmarker):
     for num, line in enumerate(meshfile, num_mark):
         if "MARKER_ELEMS" in line:
             num_mark = num+1
-        if not "=" in line:
-            raise RuntimeError , "\n\n##ERROR : MARKER_ELEMS has no equals sign, line %s.\n\n" % str(num_mark-1)
-        # split across equals sign
-        line  = line.split("=",1)
-        nelem = int(line[1].strip())
-        break
+            if not "=" in line:
+                raise RuntimeError , "\n\n##ERROR : MARKER_ELEMS has no equals sign, line %s.\n\n" % str(num_mark-1)
+            # split across equals sign
+            line  = line.split("=",1)
+            nelem = int(line[1].strip())
+            break
 
     ielem = 0
     for num, line in enumerate(meshfile, num_mark):
