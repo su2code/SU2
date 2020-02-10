@@ -38,12 +38,12 @@ using namespace std;
 
 class C1DInterpolation{
 protected:
-    bool Point_Match = true;
-    vector<su2double> Inlet_Radii;
-    vector<su2double> Inlet_Columns;
+    bool Point_Match = false;
+    vector<su2double> Data;
+    vector<su2double> X;
 public:
 virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
-virtual su2double EvaluateSpline(su2double Point_Interp){}
+virtual su2double EvaluateSpline(su2double Point_Interp){return 0;}
 virtual bool GetPointMatch(){return Point_Match;}
 
 vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
@@ -53,10 +53,9 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated,
                                     unsigned short nVar_Turb, 
                                     CConfig *config);
 
-void PrintInletInterpolatedData(vector<su2double> Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim);
+void PrintInletInterpolatedData(vector<su2double>& Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim);
 
-//YOU ARE GOING TO SHIFT ALL iCol separation to C1DInterpolation as Akima and Linear will be able to inherit and use them. Use this pointer to track the columns.
-
+void SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol, vector<su2double> &X, vector<su2double> &Data);
 };
 
 
@@ -65,17 +64,18 @@ protected:
     vector<su2double> x,y,b,c,d;
     int n;
 public:
-/*
-   CAkimaInterpolation(vector<su2double> Inlet_Data, unsigned short nColumns, unsigned long nRows){
-        
-    vector<CAkimaInterpolation> Interpolated_Data (nColumns);
     
-    /*--- Sort Data Column wise for interpolation ---
-    vector<su2double> Inlet_Columns (nRows);
-    vector<su2double> Inlet_Radii (nRows);
-    SetSpline(x, y);
-}
-*/
+    /*--- Constructor for general class usage ---*/
+    CAkimaInterpolation(vector<su2double> &X, vector<su2double> &Data){
+        SetSpline(X,Data);
+    }
+
+    /*--- Constructor for inlet interpolation with correction ---*/
+    CAkimaInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
+    
+    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, this->X, this->Data);
+    }
+
     void SetSpline(vector<su2double> &x, vector<su2double> &y);
     su2double EvaluateSpline(su2double Point_Interp);
     bool GetPointMatch(){return Point_Match;}
@@ -85,6 +85,17 @@ class CLinearInterpolation: public C1DInterpolation{
     protected:
     vector<su2double> x,y,dydx;
     public:
+    
+    /*--- Constructor for general class usage ---*/
+    CLinearInterpolation(vector<su2double> &X, vector<su2double> &Data){
+        SetSpline(X,Data);
+    }
+
+    /*--- Constructor for inlet interpolation with correction ---*/
+    CLinearInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
+    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, this->X, this->Data);
+    }
+
     void SetSpline(vector<su2double> &x, vector<su2double> &y);
     su2double EvaluateSpline(su2double Point_Interp);
     //bool Point_Match = false;
