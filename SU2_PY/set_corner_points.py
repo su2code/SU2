@@ -2,7 +2,7 @@
 
 ## \file set_corner_points.py
 #  \brief Python script for automatically generating a list of FFD variables.
-#  \author B. Munguía
+#  \author B. Munguia
 #  \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
