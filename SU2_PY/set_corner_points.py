@@ -82,7 +82,7 @@ for imarker in range(nmarker):
         if "MARKER_TAG" in line:
             break
         else:
-            line = line.split(" ")
+            line = line.split()
             # Determine VTK type
             # Line element
             if int(line[0]) == 3:
