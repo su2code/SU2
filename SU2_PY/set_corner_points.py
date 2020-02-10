@@ -61,7 +61,7 @@ for num, line in enumerate(meshfile, 1):
             raise RuntimeError , "\n\n##ERROR : NMARK has no equals sign, line %s.\n\n" % str(num_mark-1)
         # split across equals sign
         line    = line.split("=",1)
-        nmarker = line[1].strip()
+        nmarker = int(line[1].strip())
         break
 
 # Build list of points in each marker
@@ -74,7 +74,7 @@ for imarker in range(nmarker):
             raise RuntimeError , "\n\n##ERROR : MARKER_ELEMS has no equals sign, line %s.\n\n" % str(num_mark-1)
         # split across equals sign
         line  = line.split("=",1)
-        nelem = line[1].strip()
+        nelem = int(line[1].strip())
         break
 
     ielem = 0
