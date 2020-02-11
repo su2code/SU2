@@ -12,7 +12,7 @@ jobs:
     - uses: actions/checkout@master
     - name: Extract branch name
       shell: bash
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/release_v})"
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
       id: extract_branch  
     - name: Change the version number
       run: |
