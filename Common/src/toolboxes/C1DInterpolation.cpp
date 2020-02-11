@@ -118,15 +118,14 @@ void CAkimaInterpolation::SetSpline (vector<su2double> &X,vector<su2double> &Dat
 }
 
 /*--- Correcting for Interpolation Type ---*/
-vector<su2double> C1DInterpolation::CorrectedInletValues(vector<su2double> &Inlet_Interpolated , 
+vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated , 
                                                         su2double Theta ,
                                                         unsigned short nDim, 
                                                         su2double *Coord, 
                                                         unsigned short nVar_Turb,
                                                         CConfig *config){
     su2double size_columns=Inlet_Interpolated.size()+nDim;
-    vector<su2double> Inlet_Values;
-    Inlet_Values.resize(size_columns);
+    vector<su2double> Inlet_Values(size_columns);
     
     su2double unit_r, unit_Theta, unit_m, Alpha, Phi;
 
@@ -168,7 +167,7 @@ vector<su2double> C1DInterpolation::CorrectedInletValues(vector<su2double> &Inle
 }
 
 /*--- For printing interpolated data to a file ---*/
-void C1DInterpolation::PrintInletInterpolatedData(vector<su2double>& Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim){
+void PrintInletInterpolatedData(vector<su2double>& Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim){
     ofstream myfile;
     myfile.precision(16);
     myfile.open("Interpolated_Data_"+Marker+".dat",ios_base::out);
