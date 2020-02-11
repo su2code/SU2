@@ -124,6 +124,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
                                                         su2double *Coord, 
                                                         unsigned short nVar_Turb,
                                                         CConfig *config){
+
     su2double size_columns=Inlet_Interpolated.size()+nDim;
     vector<su2double> Inlet_Values(size_columns);
     

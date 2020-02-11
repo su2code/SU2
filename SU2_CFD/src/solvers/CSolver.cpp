@@ -4269,7 +4269,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
           vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
           unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
-          vector<su2double> Inlet_Data_Interpolated (nCol_InletFile);
+          vector<su2double> Inlet_Data_Interpolated (nCol_InletFile*geometry[MESH_0]->nVertex[iMarker]);
 
           /*--- Define Inlet Values vectors before and after interpolation (if needed) ---*/
           vector<su2double> Inlet_Values(nCol_InletFile);
@@ -4394,7 +4394,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               /* --- Correcting for Interpolation Type ---*/
               Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, config);
               solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
-
               for (unsigned short iVar=0; iVar < nCol_InletFile; iVar++)
                 Inlet_Data_Interpolated[iVertex*nCol_InletFile+iVar] = Inlet_Values[iVar];
             }
