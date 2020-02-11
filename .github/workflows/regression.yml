@@ -19,7 +19,7 @@ jobs:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI]
         include:
           - config_set: BaseMPI
-            flags: '-Denable-pywrapper=true -werror'
+            flags: '-Denable-pywrapper=true --werror'
           - config_set: ReverseMPI
             flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true --werror'
           - config_set: ForwardMPI
