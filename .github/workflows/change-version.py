@@ -1,4 +1,4 @@
-name: Prepare Release
+name: Change Version
 
 on:
   create:
