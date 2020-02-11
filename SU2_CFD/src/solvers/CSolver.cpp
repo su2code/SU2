@@ -4393,13 +4393,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
               /* --- Correcting for Interpolation Type ---*/
               Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, config);
-              cout<<"Corrected Inlet_Values assigned"<<endl;
               solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
-              cout<<"Inlet_Values assigned to Vertex\n";
               for (unsigned short iVar=0; iVar < nCol_InletFile; iVar++)
                 Inlet_Data_Interpolated[iVertex*nCol_InletFile+iVar] = Inlet_Values[iVar];
-
-              cout<<"Data transferred to Inlet_Data_Interpolated\n";
             }
           }
             if(config->GetPrintInlet_InterpolatedData() == true)
