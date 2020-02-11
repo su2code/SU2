@@ -4269,11 +4269,11 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
           vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
           unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
-          vector<su2double> Inlet_Data_Interpolated (nCol_InletFile*geometry[MESH_0]->nVertex[iMarker]);
+          vector<su2double> Inlet_Data_Interpolated ((nCol_InletFile+nDim)*geometry[MESH_0]->nVertex[iMarker]);
 
           /*--- Define Inlet Values vectors before and after interpolation (if needed) ---*/
-          vector<su2double> Inlet_Values(nCol_InletFile);
-          vector<su2double> Inlet_Interpolated(nColumns);
+          vector<su2double> Inlet_Values(nCol_InletFile+nDim);
+          vector<su2double> Inlet_Interpolated(nCol_InletFile+nDim);
 
           unsigned long nRows = profileReader.GetNumberOfRowsInProfile(jMarker);
 
@@ -4395,12 +4395,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, config);
               solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
               
-              for (unsigned short iVar=0; iVar < nCol_InletFile; iVar++)
-                Inlet_Data_Interpolated[iVertex*nCol_InletFile+iVar] = Inlet_Values[iVar];
+              for (unsigned short iVar=0; iVar < (nCol_InletFile+nDim); iVar++)
+                Inlet_Data_Interpolated[iVertex*(nCol_InletFile+nDim)+iVar] = Inlet_Values[iVar];
             }
           }
             if(config->GetPrintInlet_InterpolatedData() == true)
-                PrintInletInterpolatedData(Inlet_Data_Interpolated,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim, nCol_InletFile);
+                PrintInletInterpolatedData(Inlet_Data_Interpolated,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim, nCol_InletFile+nDim);
             
             for (int i=0; i<nColumns;i++)
               delete interpolator[i];
