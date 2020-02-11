@@ -1172,7 +1172,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
     /*--- Check for consistency and remove fields that are requested but not available --- */
 
-    if(!noWriting) CheckHistoryOutput();
+    CheckHistoryOutput();
 
     if (rank == MASTER_NODE && !noWriting){
 
@@ -1219,7 +1219,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   /*--- Check for consistency and remove fields that are requested but not available --- */
 
-  if(!noWriting) CheckHistoryOutput();
+  CheckHistoryOutput();
 
   if (rank == MASTER_NODE && !noWriting){
 
