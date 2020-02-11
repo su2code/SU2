@@ -65,11 +65,12 @@ public:
 
     /*--- Constructor for inlet interpolation with correction ---*/
     CAkimaInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
-    
+    cout<<"start of constructor"<<endl;
     SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, X, Data);
+    cout<<"end of constructor"<<endl;
     }
 
-    ~CAkimaInterpolation(){}
+    ~CAkimaInterpolation(){cout<<"inside destructor"<<endl;}
 
     void SetSpline(vector<su2double> &x, vector<su2double> &y) override;
     su2double EvaluateSpline(su2double Point_Interp) override;
