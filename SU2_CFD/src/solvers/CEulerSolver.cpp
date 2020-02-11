@@ -2490,9 +2490,8 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  /// TODO: Try to start a parallel section here encompassing all "heavy" methods.
-
-  unsigned long ErrorCounter = 0;
+  SU2_OMP_PARALLEL
+  {
 
   unsigned long InnerIter = config->GetInnerIter();
   bool cont_adjoint     = config->GetContinuous_Adjoint();
@@ -2515,28 +2514,59 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
 
-  if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if (fixed_cl && !disc_adjoint && !cont_adjoint) {
+    SU2_OMP_MASTER
+    SetFarfield_AoA(geometry, solver_container, config, iMesh, Output);
+    SU2_OMP_BARRIER
+  }
 
   /*--- Set the primitive variables ---*/
 
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
+  SU2_OMP_MASTER
+  ErrorCounter = 0;
+  SU2_OMP_BARRIER
+
+  SU2_OMP_ATOMIC
+  ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
+
+  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    {
+      unsigned long tmp = ErrorCounter;
+      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      config->SetNonphysical_Points(ErrorCounter);
+    }
+    SU2_OMP_BARRIER
+  }
 
   /*--- Compute the engine properties ---*/
 
-  if (engine) { GetPower_Properties(geometry, config, iMesh, Output); }
+  if (engine) {
+    SU2_OMP_MASTER
+    GetPower_Properties(geometry, config, iMesh, Output);
+    SU2_OMP_BARRIER
+  }
 
   /*--- Compute the actuator disk properties and distortion levels ---*/
 
   if (actuator_disk) {
-    Set_MPI_ActDisk(solver_container, geometry, config);
-    GetPower_Properties(geometry, config, iMesh, Output);
-    SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
+    SU2_OMP_MASTER
+    {
+      Set_MPI_ActDisk(solver_container, geometry, config);
+      GetPower_Properties(geometry, config, iMesh, Output);
+      SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
+    }
+    SU2_OMP_BARRIER
   }
 
   /*--- Compute NearField MPI ---*/
 
-  if (nearfield) { Set_MPI_Nearfield(geometry, config); }
-
+  if (nearfield) {
+    SU2_OMP_MASTER
+    Set_MPI_Nearfield(geometry, config);
+    SU2_OMP_BARRIER
+  }
 
   /*--- Upwind second order reconstruction ---*/
 
@@ -2553,9 +2583,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
     /*--- Limiter computation ---*/
 
-    if (limiter && (iMesh == MESH_0)
-        && !Output && !van_albada) { SetPrimitive_Limiter(geometry, config); }
-
+    if (limiter && (iMesh == MESH_0) && !Output && !van_albada)
+      SetPrimitive_Limiter(geometry, config);
   }
 
   /*--- Artificial dissipation ---*/
@@ -2570,7 +2599,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Roe Low Dissipation Sensor ---*/
 
-  if (roe_low_dissipation){
+  if (roe_low_dissipation) {
     SetRoe_Dissipation(geometry, config);
     if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
       SetUpwind_Ducros_Sensor(geometry, config);
@@ -2581,15 +2610,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   if (implicit && !disc_adjoint) Jacobian.SetValZero();
 
-  /*--- Error message ---*/
-
-  if (config->GetComm_Level() == COMM_FULL) {
-    if (iMesh == MESH_0) {
-      unsigned long tmp = ErrorCounter;
-      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-      config->SetNonphysical_Points(ErrorCounter);
-    }
-  }
+  } // end SU2_OMP_PARALLEL
 
 }
 
@@ -2598,9 +2619,11 @@ void CEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
 
 unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
 
+  /*--- Number of non-physical points, local to the thread, needs
+   *    further reduction if function is called in parallel ---*/
   unsigned long nonPhysicalPoints = 0;
 
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size) reduction(+:nonPhysicalPoints))
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
@@ -3540,11 +3563,6 @@ void CEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_contain
 
 void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
-
   /*--- Loop domain points. ---*/
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
@@ -3642,16 +3660,12 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     InitiateComms(geometry, config, MAX_EIGENVALUE);
     CompleteComms(geometry, config, MAX_EIGENVALUE);
   }
+  SU2_OMP_BARRIER
 
-  } // end SU2_OMP_PARALLEL
 }
 
 void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
   nodes->SetUnd_LaplZero();
 
   /*--- Loop interior edges ---*/
@@ -3723,16 +3737,12 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
     InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
     CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
   }
+  SU2_OMP_BARRIER
 
-  } // end SU2_OMP_PARALLEL
 }
 
 void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
   /*--- Reset variables to store the undivided pressure ---*/
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -3809,16 +3819,11 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *
     InitiateComms(geometry, config, SENSOR);
     CompleteComms(geometry, config, SENSOR);
   }
+  SU2_OMP_BARRIER
 
-  } // end SU2_OMP_PARALLEL
 }
 
 void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config){
-
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -3868,8 +3873,8 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
     InitiateComms(geometry, config, SENSOR);
     CompleteComms(geometry, config, SENSOR);
   }
+  SU2_OMP_BARRIER
 
-  } // end SU2_OMP_PARALLEL
 }
 
 void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {

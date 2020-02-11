@@ -168,9 +168,8 @@ CNSSolver::~CNSSolver(void) {
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  /// TODO: Try to start a parallel section here encompassing all "heavy" methods.
-
-  unsigned long ErrorCounter = 0;
+  SU2_OMP_PARALLEL
+  {
 
   unsigned long InnerIter   = config->GetInnerIter();
   bool cont_adjoint         = config->GetContinuous_Adjoint();
@@ -195,26 +194,58 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
 
-  if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if (fixed_cl && !disc_adjoint && !cont_adjoint) {
+    SU2_OMP_MASTER
+    SetFarfield_AoA(geometry, solver_container, config, iMesh, Output);
+    SU2_OMP_BARRIER
+  }
 
   /*--- Set the primitive variables ---*/
 
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
+  SU2_OMP_MASTER
+  ErrorCounter = 0;
+  SU2_OMP_BARRIER
+
+  SU2_OMP_ATOMIC
+  ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
+
+  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    {
+      unsigned long tmp = ErrorCounter;
+      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      config->SetNonphysical_Points(ErrorCounter);
+    }
+    SU2_OMP_BARRIER
+  }
 
   /*--- Compute the engine properties ---*/
 
-  if (engine) { GetPower_Properties(geometry, config, iMesh, Output); }
+  if (engine) {
+    SU2_OMP_MASTER
+    GetPower_Properties(geometry, config, iMesh, Output);
+    SU2_OMP_BARRIER
+  }
 
   /*--- Compute the actuator disk properties and distortion levels ---*/
 
   if (actuator_disk) {
-    Set_MPI_ActDisk(solver_container, geometry, config);
-    SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
+    SU2_OMP_MASTER
+    {
+      Set_MPI_ActDisk(solver_container, geometry, config);
+      SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
+    }
+    SU2_OMP_BARRIER
   }
 
   /*--- Compute NearField MPI ---*/
 
-  if (nearfield) { Set_MPI_Nearfield(geometry, config); }
+  if (nearfield) {
+    SU2_OMP_MASTER
+    Set_MPI_Nearfield(geometry, config);
+    SU2_OMP_BARRIER
+  }
 
   /*--- Artificial dissipation ---*/
 
@@ -258,79 +289,81 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow)
-      && !Output && !van_albada) { SetPrimitive_Limiter(geometry, config); }
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
+    SetPrimitive_Limiter(geometry, config);
+  }
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
 
-  StrainMag_Max = 0.0; Omega_Max = 0.0;
-
-  SU2_OMP_PARALLEL
+  SU2_OMP_MASTER
   {
-    solver_container[FLOW_SOL]->GetNodes()->SetVorticity_StrainMag();
+    StrainMag_Max = 0.0;
+    Omega_Max = 0.0;
+  }
+  SU2_OMP_BARRIER
 
-    su2double strainMax = 0.0, omegaMax = 0.0;
+  solver_container[FLOW_SOL]->GetNodes()->SetVorticity_StrainMag();
 
-    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+  su2double strainMax = 0.0, omegaMax = 0.0;
 
-      su2double StrainMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
-      const su2double* Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
-      su2double Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
+  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
-      strainMax = max(strainMax, StrainMag);
-      omegaMax = max(omegaMax, Omega);
+    su2double StrainMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
+    const su2double* Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+    su2double Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
 
-    }
-    SU2_OMP_CRITICAL
+    strainMax = max(strainMax, StrainMag);
+    omegaMax = max(omegaMax, Omega);
+
+  }
+  SU2_OMP_CRITICAL
+  {
+    StrainMag_Max = max(StrainMag_Max, strainMax);
+    Omega_Max = max(Omega_Max, omegaMax);
+  }
+
+  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
     {
-      StrainMag_Max = max(StrainMag_Max, strainMax);
-      Omega_Max = max(Omega_Max, omegaMax);
-    }
+      su2double MyOmega_Max = Omega_Max;
+      su2double MyStrainMag_Max = StrainMag_Max;
 
-  } // end SU2_OMP_PARALLEL
+      SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+      solver_container[FLOW_SOL]->SetStrainMag_Max(StrainMag_Max);
+      solver_container[FLOW_SOL]->SetOmega_Max(Omega_Max);
+    }
+    SU2_OMP_BARRIER
+  }
 
   /*--- Compute the TauWall from the wall functions ---*/
 
-  if (wall_functions)
+  if (wall_functions) {
+    SU2_OMP_MASTER
     SetTauWall_WF(geometry, solver_container, config);
+    SU2_OMP_BARRIER
+  }
 
   /*--- Initialize the Jacobian matrices ---*/
 
   if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
 
-  /*--- Error message ---*/
-
-  if (config->GetComm_Level() == COMM_FULL) {
-
-    if (iMesh == MESH_0) {
-
-      unsigned long MyErrorCounter = ErrorCounter;
-      su2double MyOmega_Max = Omega_Max;
-      su2double MyStrainMag_Max = StrainMag_Max;
-
-      SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-
-      config->SetNonphysical_Points(ErrorCounter);
-      solver_container[FLOW_SOL]->SetStrainMag_Max(StrainMag_Max);
-      solver_container[FLOW_SOL]->SetOmega_Max(Omega_Max);
-
-    }
-
-  }
-
+  } // end SU2_OMP_PARALLEL
 }
 
 unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
 
+  /*--- Number of non-physical points, local to the thread, needs
+   *    further reduction if function is called in parallel ---*/
   unsigned long nonPhysicalPoints = 0;
 
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
 
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size) reduction(+:nonPhysicalPoints))
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Retrieve the value of the kinetic energy (if needed). ---*/
@@ -1554,7 +1587,7 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
 
   const unsigned short kind_roe_dissipation = config->GetKind_RoeLowDiss();
 
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
     if (kind_roe_dissipation == FD || kind_roe_dissipation == FD_DUCROS){

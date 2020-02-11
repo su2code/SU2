@@ -204,10 +204,12 @@ protected:
   su2double dCL_dAlpha;              /*!< \brief Value of dCL_dAlpha used to control CL in fixed CL mode */
   unsigned long BCThrust_Counter;
   unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
-  unsigned short nSpanMax;           /*!< \brief Max number of maximum span-wise sections for all zones */
+  unsigned short nSpanMax;           /*!< \brief Max number of maximum span-wise sections for all zones. */
   unsigned short nMarkerTurboPerf;   /*!< \brief Number of turbo performance. */
 
-  vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver */
+  vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
+
+  unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
 
   /*--- Turbomachinery Solver Variables ---*/
 
@@ -293,6 +295,94 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void SumEdgeFluxes(CGeometry* geometry);
+
+  /*!
+   * \brief Update the AoA and freestream velocity at the farfield.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
+                       CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief Compute a pressure sensor switch.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute Ducros Sensor for Roe Dissipation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the Fan face Mach number.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Container vector with all the solutions.
+   */
+  void GetPower_Properties(CGeometry *geometry, CConfig *config,
+                           unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief Parallelization of Undivided Laplacian.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Update the AoA and freestream velocity at the farfield.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_container,
+                           CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief Compute the max eigenvalue.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the undivided laplacian for the solution, except the energy equation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void SetRoe_Dissipation(CGeometry *geometry, CConfig *config) { }
+
+private:
+  /*!
+   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - boolean to determine whether to print output.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                       CConfig *config,
+                                       bool Output);
+
+protected:
 
 public:
 
@@ -523,33 +613,6 @@ public:
                       unsigned short iMesh) final;
 
   /*!
-   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
-   * \return - The number of non-physical points.
-   */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       CConfig *config,
-                                       bool Output) override;
-
-  /*!
-   * \brief Compute a pressure sensor switch.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) final;
-
-  /*!
-   * \brief Compute Ducros Sensor for Roe Dissipation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config) final;
-
-  /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -587,27 +650,6 @@ public:
    */
   void SetPreconditioner(const CConfig *config, unsigned long iPoint,
                          su2double delta, su2double** preconditioner) const;
-
-  /*!
-   * \brief Compute the undivided laplacian for the solution, except the energy equation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) final;
-
-  /*!
-   * \brief Compute the max eigenvalue.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) final;
-
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Parallelization of Undivided Laplacian.
@@ -983,44 +1025,6 @@ public:
                               CSolver **solver_container,
                               CConfig *config,
                               unsigned short iRKStep) final;
-
-  /*!
-   * \brief Compute the Fan face Mach number.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Container vector with all the solutions.
-   */
-  void GetPower_Properties(CGeometry *geometry,
-                           CConfig *config,
-                           unsigned short iMesh,
-                           bool Output) final;
-
-  /*!
-   * \brief Update the AoA and freestream velocity at the farfield.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void SetActDisk_BCThrust(CGeometry *geometry,
-                           CSolver **solver_container,
-                           CConfig *config,
-                           unsigned short iMesh,
-                           bool Output) final;
-
-  /*!
-   * \brief Update the AoA and freestream velocity at the farfield.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void SetFarfield_AoA(CGeometry *geometry,
-                       CSolver **solver_container,
-                       CConfig *config,
-                       unsigned short iMesh,
-                       bool Output) final;
 
   /*!
    * \brief Check for convergence of the Fixed CL mode to the target CL

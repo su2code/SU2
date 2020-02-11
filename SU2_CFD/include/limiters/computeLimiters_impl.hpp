@@ -108,11 +108,6 @@ void computeLimiters_impl(CSolver* solver,
   }
 #endif
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
-
   CLimiterDetails<LimiterKind> limiterDetails;
 
   limiterDetails.preprocess(geometry, config, varBegin, varEnd, field);
@@ -256,7 +251,5 @@ void computeLimiters_impl(CSolver* solver,
 #ifdef CODI_REVERSE_TYPE
   if (tapeActive) AD::StartRecording();
 #endif
-
-  } // end SU2_OMP_PARALLEL
 
 }
