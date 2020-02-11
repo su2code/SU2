@@ -61,6 +61,27 @@ private:
   StrainMag_Max,
   Omega_Max;             /*!< \brief Maximum Strain Rate magnitude and Omega. */
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetRoe_Dissipation(CGeometry *geometry, CConfig *config) override;
+
+private:
+  /*!
+   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - boolean to determine whether to print output.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                       CConfig *config,
+                                       bool Output);
+
+protected:
+
 public:
 
   /*!
@@ -269,17 +290,6 @@ public:
                     unsigned short iRKStep,
                     unsigned short RunTime_EqSystem,
                     bool Output) override;
-
-  /*!
-   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
-   * \return - The number of non-physical points.
-   */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       CConfig *config,
-                                       bool Output) override;
 
   /*!
    * \brief Compute weighted-sum "combo" objective output
@@ -507,13 +517,6 @@ public:
    * \return Value of the Omega_Max
    */
   inline void SetOmega_Max(su2double val_omega_max) override { Omega_Max = val_omega_max; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetRoe_Dissipation(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.

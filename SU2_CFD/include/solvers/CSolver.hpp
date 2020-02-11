@@ -825,46 +825,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Set_MPI_ActDisk(CSolver **solver_container,
-                                      CGeometry *geometry,
-                                      CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
   inline virtual void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -2271,36 +2232,10 @@ public:
    * \param[in] iMesh - current mesh level for the multigrid.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  inline virtual void GetPower_Properties(CGeometry *geometry,
-                                          CConfig *config,
-                                          unsigned short iMesh,
-                                          bool Output) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
   inline virtual void GetOutlet_Properties(CGeometry *geometry,
                                            CConfig *config,
                                            unsigned short iMesh,
                                            bool Output) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  inline virtual void SetFarfield_AoA(CGeometry *geometry,
-                                      CSolver **solver_container,
-                                      CConfig *config,
-                                      unsigned short iMesh,
-                                      bool Output) { }
 
   /*!
    * \brief A virtual member.
@@ -2339,20 +2274,6 @@ public:
    * \return value of CL Driver control command (AoA_inc)
    */
   inline virtual su2double GetAoA_inc(void) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  inline virtual void SetActDisk_BCThrust(CGeometry *geometry,
-                                          CSolver **solver_container,
-                                          CConfig *config,
-                                          unsigned short iMesh,
-                                          bool Output) { }
 
   /*!
    * \brief A virtual member.
@@ -4191,16 +4112,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  inline virtual unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                                      CConfig *config,
-                                                      bool Output) { return 0; }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] Value of freestream pressure.
    */
   inline virtual void SetPressure_Inf(su2double p_inf){}
@@ -4659,13 +4570,6 @@ public:
                                         CSolver **solver_container,
                                         CConfig *config,
                                         unsigned short iMesh) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetRoe_Dissipation(CGeometry *geometry, CConfig *config) {}
 
   /*!
    * \brief A virtual member.

@@ -70,11 +70,6 @@ void computeGradientsLeastSquares(CSolver* solver,
                      omp_get_max_threads(), OMP_MAX_CHUNK);
 #endif
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
-
   /*--- First loop over non-halo points of the grid. ---*/
 
   SU2_OMP_FOR_DYN(chunkSize)
@@ -311,7 +306,5 @@ void computeGradientsLeastSquares(CSolver* solver,
     solver->CompleteComms(&geometry, &config, kindMpiComm);
   }
   SU2_OMP_BARRIER
-
-  } // end SU2_OMP_PARALLEL
 
 }

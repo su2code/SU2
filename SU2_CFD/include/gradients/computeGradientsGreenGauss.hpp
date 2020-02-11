@@ -69,11 +69,6 @@ void computeGradientsGreenGauss(CSolver* solver,
                      omp_get_max_threads(), OMP_MAX_CHUNK);
 #endif
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
-
   /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
 
   SU2_OMP_FOR_DYN(chunkSize)
@@ -187,7 +182,5 @@ void computeGradientsGreenGauss(CSolver* solver,
     solver->CompleteComms(&geometry, &config, kindMpiComm);
   }
   SU2_OMP_BARRIER
-
-  } // end SU2_OMP_PARALLEL
 
 }
