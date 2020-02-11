@@ -1,4 +1,9 @@
-cgns_c_args = ['-Wno-unused-result']
+if build_machine.system() == 'windows'
+  cgns_default_warnings = []
+else
+  cgns_default_warnings = ['-Wno-unused-result']
+endif
+
 cgns_include = include_directories('adf', './')
 
 lib_cgns = static_library('cgns',
@@ -9,7 +14,7 @@ lib_cgns = static_library('cgns',
 			                    'adf/ADF_interface.c',
 			                    'adf/ADF_internals.c',
                           install : false,
-                          c_args: cgns_c_args)
+                          c_args: cgns_default_warnings)
 
 cgns_dep = declare_dependency(link_with: lib_cgns, 
                               include_directories: cgns_include)
