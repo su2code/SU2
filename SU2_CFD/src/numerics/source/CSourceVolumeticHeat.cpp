@@ -2,7 +2,7 @@
  * \file CSourceVolumetricHeat.cpp
  * \brief Numerical methods for volumetric heat source term integration.
  * \author Ruben Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

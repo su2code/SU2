@@ -2,7 +2,7 @@
  * \file CNumericsRadiation.cpp
  * \brief This file contains the parent class of the numerical methods for radiation.
  * \author Ruben Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,7 @@ CNumericsRadiation::CNumericsRadiation(unsigned short val_nDim,
   Absorption_Coeff = config->GetAbsorption_Coeff();
   Scattering_Coeff = config->GetScattering_Coeff();
 
-  Absorption_Coeff = max(Absorption_Coeff,0.01);
+  Absorption_Coeff = max(Absorption_Coeff,0.001);
 
   Temperature_Ref = config->GetTemperature_Ref();
 
