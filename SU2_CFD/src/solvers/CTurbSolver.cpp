@@ -93,10 +93,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
@@ -233,7 +229,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
   }
   } // end color loop
-  } // end SU2_OMP_PARALLEL
+
 }
 
 void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
@@ -241,10 +237,6 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS];
 
@@ -307,7 +299,7 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
   }
   } // end color loop
-  } // end SU2_OMP_PARALLEL
+
 }
 
 void CTurbSolver::BC_Sym_Plane(CGeometry      *geometry,
@@ -410,10 +402,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
   /*--- Set shared residual variables to 0 and declare
    *    local ones for current thread to work on. ---*/
 
@@ -544,8 +532,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     SetResidual_RMS(geometry, config);
   }
+  SU2_OMP_BARRIER
 
-  } // end SU2_OMP_PARALLEL
 }
 
 void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
@@ -617,11 +605,6 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   /*--- Store the physical time step ---*/
 
   const su2double TimeStep = config->GetDelta_UnstTimeND();
-
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
 
   /*--- Local variables ---*/
 
@@ -912,8 +895,6 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
     }
 
   } // end dynamic grid
-
-  } // end SU2_OMP_PARALLEL
 
 }
 

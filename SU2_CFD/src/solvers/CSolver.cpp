@@ -2317,7 +2317,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
 }
 
-void CSolver::ResetCFLAdapt(){
+void CSolver::ResetCFLAdapt() {
   NonLinRes_Series.clear();
   NonLinRes_Value = 0;
   NonLinRes_Func = 0;

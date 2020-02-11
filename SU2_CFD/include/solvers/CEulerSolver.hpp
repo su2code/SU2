@@ -211,6 +211,9 @@ protected:
 
   unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
 
+  su2double Global_Delta_Time = 0.0, /*!< \brief Time-step for TIME_STEPPING time marching strategy. */
+  Global_Delta_UnstTimeND = 0.0;     /*!< \brief Unsteady time step for the dual time strategy. */
+
   /*--- Turbomachinery Solver Variables ---*/
 
   su2double ***AverageFlux = nullptr,
@@ -599,18 +602,6 @@ public:
                      unsigned short iRKStep,
                      unsigned short RunTime_EqSystem,
                      bool Output) override;
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Postprocessing(CGeometry *geometry,
-                      CSolver **solver_container,
-                      CConfig *config,
-                      unsigned short iMesh) final;
 
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
