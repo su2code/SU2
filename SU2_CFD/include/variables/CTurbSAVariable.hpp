@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -108,7 +108,8 @@ public:
    * \brief Set the vortex tilting measure for computation of the EDDES length scale
    * \param[in] iPoint - Point index.
    */
-  void SetVortex_Tilting(unsigned long iPoint, su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity) override;
+  void SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
+                         const su2double* Vorticity, su2double LaminarViscosity) override;
 
   /*!
    * \brief Get the vortex tilting measure for computation of the EDDES length scale
