@@ -156,7 +156,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: BGS residual of the adjoint Pressure.
   AddHistoryOutput("BGS_ADJ_PRESSURE",    "bgs[A_Rho]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Pressure.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: BGS residual of the adjoint Velocity x-component
-  AddHistoryOutput("BGS_ADJ_VELOCITY-X", "bsg[A_RhoU]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Velocity x-component", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("BGS_ADJ_VELOCITY-X", "bgs[A_RhoU]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Velocity x-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: BGS residual of the adjoint Velocity y-component
   AddHistoryOutput("BGS_ADJ_VELOCITY-Y", "bgs[A_RhoV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Velocity y-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: BGS residual of the adjoint Velocity z-component
@@ -167,7 +167,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       /// DESCRIPTION: BGS residual of the adjoint nu tilde.
-      AddHistoryOutput("BGS_ADJ_NU_TILDE", "bsg[A_nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("BGS_ADJ_NU_TILDE", "bgs[A_nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
       break;
     case SST:
       /// DESCRIPTION: BGS residual of the adjoint kinetic energy.
