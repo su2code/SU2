@@ -625,7 +625,7 @@ void CFluidIteration::Update(COutput *output,
 
     /*--- Update dual time solver for the dynamic mesh solver ---*/
     if (config[val_iZone]->GetDeform_Mesh()) {
-        solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetDualTime_Mesh();
+      solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetDualTime_Mesh();
     }
     
     /*--- Update dual time solver for the turbulence model ---*/

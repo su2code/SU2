@@ -83,6 +83,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   if (dual_time)
     solver_container[MainSolver]->SetResidual_DualTime(geometry, solver_container, config, iRKStep, iMesh, RunTime_EqSystem);
 
+  /// TODO: No boundary condition supports hybrid parallelism yet, master thread does all the work.
+
+  SU2_OMP_MASTER
+  {
+
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config);
@@ -185,10 +190,14 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     solver_container[MainSolver]->BC_Periodic(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
   }
 
+  } // end SU2_OMP_MASTER
+  SU2_OMP_BARRIER
+
 }
 
-void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
-                                    unsigned short RunTime_EqSystem) {
+void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                    unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   unsigned short KindSolver = config->GetKind_Solver();
 
@@ -235,11 +244,17 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
 
+  SU2_OMP_PARALLEL
+  {
+
   unsigned long iPoint;
 
   solver->GetNodes()->Set_Solution_time_n1();
   solver->GetNodes()->Set_Solution_time_n();
+
+  SU2_OMP_MASTER
   solver->ResetCFLAdapt();
+  SU2_OMP_BARRIER
 
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -333,6 +348,8 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 #endif
   }
   SU2_OMP_BARRIER
+
+  } // end SU2_OMP_PARALLEL
 
 }
 

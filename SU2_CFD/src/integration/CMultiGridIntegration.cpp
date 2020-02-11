@@ -38,6 +38,12 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                 unsigned short RunTime_EqSystem,
                                                 unsigned short iZone,
                                                 unsigned short iInst) {
+
+  /*--- Start an OpenMP parallel region covering the entire MG iteration. ---*/
+
+  SU2_OMP_PARALLEL
+  {
+
   su2double monitor = 1.0;
   bool FullMG = false;
 
@@ -75,7 +81,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                             geometry[iZone][iInst][FinestMesh],
                             config[iZone]);
 
+    SU2_OMP_MASTER
     config[iZone]->SubtractFinestMesh();
+    SU2_OMP_BARRIER
   }
 
   /*--- Set the current finest grid (full multigrid strategy) ---*/
@@ -99,6 +107,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   NonDimensional_Parameters(geometry[iZone][iInst], solver_container[iZone][iInst],
                             numerics_container[iZone][iInst], config[iZone],
                             FinestMesh, RunTime_EqSystem, &monitor);
+
+  } // end SU2_OMP_PARALLEL
 
 }
 

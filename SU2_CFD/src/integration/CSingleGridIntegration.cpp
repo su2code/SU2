@@ -36,6 +36,11 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
                                                   unsigned short RunTime_EqSystem, unsigned short iZone,
                                                   unsigned short iInst) {
 
+  /*--- Start an OpenMP parallel region covering the entire iteration. ---*/
+
+  SU2_OMP_PARALLEL
+  {
+
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
@@ -72,7 +77,9 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   solvers_fine[SolContainer_Position]->Postprocessing(geometry_fine, solvers_fine, config[iZone], FinestMesh);
 
   if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {
+    SU2_OMP_MASTER
     solvers_fine[HEAT_SOL]->Heat_Fluxes(geometry_fine, solvers_fine, config[iZone]);
+    SU2_OMP_BARRIER
   }
 
   /*--- If turbulence model, copy the turbulence variables to the coarse levels ---*/
@@ -97,6 +104,8 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
     }
 
   }
+
+  } // end SU2_OMP_PARALLEL
 
 }
 

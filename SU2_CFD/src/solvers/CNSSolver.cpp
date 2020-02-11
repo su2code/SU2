@@ -166,10 +166,8 @@ CNSSolver::~CNSSolver(void) {
 
 }
 
-void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-
-  SU2_OMP_PARALLEL
-  {
+void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                              unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long InnerIter   = config->GetInnerIter();
   bool cont_adjoint         = config->GetContinuous_Adjoint();
@@ -351,7 +349,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
 
-  } // end SU2_OMP_PARALLEL
 }
 
 unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
