@@ -2331,6 +2331,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CSolver   ***solver_container,
                              CConfig   *config) {
 
+  /// TODO: Add OpenMP stuff to this method
+
   /* Adapt the CFL number on all multigrid levels using an
    exponential progression with under-relaxation approach. */
 
