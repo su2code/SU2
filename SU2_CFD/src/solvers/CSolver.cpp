@@ -4394,12 +4394,13 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               /* --- Correcting for Interpolation Type ---*/
               Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, config);
               solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
+              
               for (unsigned short iVar=0; iVar < nCol_InletFile; iVar++)
                 Inlet_Data_Interpolated[iVertex*nCol_InletFile+iVar] = Inlet_Values[iVar];
             }
           }
             if(config->GetPrintInlet_InterpolatedData() == true)
-                PrintInletInterpolatedData(Inlet_Data_Interpolated,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim);
+                PrintInletInterpolatedData(Inlet_Data_Interpolated,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim, nCol_InletFile);
             
             for (int i=0; i<nColumns;i++)
               delete interpolator[i];

@@ -168,15 +168,15 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
 }
 
 /*--- For printing interpolated data to a file ---*/
-void PrintInletInterpolatedData(vector<su2double>& Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim){
+void PrintInletInterpolatedData(vector<su2double>& Inlet_Data_Interpolated, string Marker, unsigned long nVertex, unsigned short nDim, unsigned short nColumns){
     ofstream myfile;
     myfile.precision(16);
     myfile.open("Interpolated_Data_"+Marker+".dat",ios_base::out);
 
     if (myfile.is_open()){  
     for (unsigned long iVertex = 0; iVertex < nVertex; iVertex++) {
-                for  (unsigned long iVar=0; iVar < Inlet_Values.size(); iVar++){
-                    myfile<<Inlet_Values[iVertex*Inlet_Values.size()+iVar]<<"\t";
+                for  (unsigned short iVar=0; iVar < nColumns; iVar++){
+                    myfile<<Inlet_Data_Interpolated[iVertex*nColumns+iVar]<<"\t";
                 }
                 myfile<<endl;
             }
