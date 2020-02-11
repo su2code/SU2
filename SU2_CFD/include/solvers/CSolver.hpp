@@ -4573,16 +4573,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] solver - Solver container
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetDES_LengthScale(CSolver** solver,
-                                         CGeometry *geometry,
-                                         CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config - Definition of the particular problem.
    * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.

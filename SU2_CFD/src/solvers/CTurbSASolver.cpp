@@ -270,22 +270,19 @@ CTurbSASolver::~CTurbSASolver(void) {
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
         unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  /// TODO: Try to start a parallel section here encompassing all "heavy" methods.
+  SU2_OMP_PARALLEL
+  {
 
-  unsigned long iPoint;
   bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                       (config->GetInnerIter() <= config->GetLimiterIter());
   unsigned short kind_hybridRANSLES = config->GetKind_HybridRANSLES();
-  su2double** PrimGrad_Flow = NULL;
-  su2double* Vorticity = NULL;
-  su2double Laminar_Viscosity = 0;
+  const su2double* const* PrimGrad_Flow = nullptr;
+  const su2double* Vorticity = nullptr;
+  su2double Laminar_Viscosity = 0.0;
 
-  SU2_OMP_PARALLEL
-  {
   /*--- Clear residual and system matrix. ---*/
   LinSysRes.SetValZero();
   Jacobian.SetValZero();
-  }
 
   /*--- Upwind second order reconstruction and gradients ---*/
 
@@ -297,21 +294,26 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
       SetSolution_Gradient_LS(geometry, config, true);
   }
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
+    SetSolution_Gradient_GG(geometry, config);
+
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
+    SetSolution_Gradient_LS(geometry, config);
 
   if (limiter_turb) SetSolution_Limiter(geometry, config);
 
-  if (kind_hybridRANSLES != NO_HYBRIDRANSLES){
+  if (kind_hybridRANSLES != NO_HYBRIDRANSLES) {
 
     /*--- Set the vortex tilting coefficient at every node if required ---*/
 
     if (kind_hybridRANSLES == SA_EDDES){
-      for (iPoint = 0; iPoint < nPoint; iPoint++){
-        PrimGrad_Flow      = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
-        Vorticity          = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+        Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+        PrimGrad_Flow = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
         Laminar_Viscosity  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-        nodes->SetVortex_Tilting(iPoint,PrimGrad_Flow, Vorticity, Laminar_Viscosity);
+        nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
       }
     }
 
@@ -320,9 +322,15 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     SetDES_LengthScale(solver_container, geometry, config);
 
   }
+
+  } // end SU2_OMP_PARALLEL
+
 }
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+
+  SU2_OMP_PARALLEL
+  {
 
   const su2double cv1_3 = 7.1*7.1*7.1;
 
@@ -330,7 +338,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Compute eddy viscosity ---*/
 
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
@@ -345,11 +353,13 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
     su2double muT = rho*fv1*nu_hat;
 
-    if (neg_spalart_allmaras && (muT < 0.0)) muT = 0.0;
+    if (neg_spalart_allmaras) muT = max(muT,0.0);
 
     nodes->SetmuT(iPoint,muT);
 
   }
+
+  } // end SU2_OMP_PARALLEL
 
 }
 
@@ -2087,17 +2097,17 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   su2double density = 0.0, laminarViscosity = 0.0, kinematicViscosity = 0.0,
       eddyViscosity = 0.0, kinematicViscosityTurb = 0.0, wallDistance = 0.0, lengthScale = 0.0;
 
-  su2double maxDelta = 0.0, deltaAux = 0.0, distDES = 0.0, uijuij = 0.0, k2 = 0.0, r_d = 0.0, f_d = 0.0,
-      deltaDDES = 0.0, omega = 0.0, ln_max = 0.0, ln[3] = {0.0, 0.0, 0.0},
-      aux_ln = 0.0, f_kh = 0.0;
+  su2double maxDelta = 0.0, deltaAux = 0.0, distDES = 0.0, uijuij = 0.0, k2 = 0.0, r_d = 0.0, f_d = 0.0;
+  su2double deltaDDES = 0.0, omega = 0.0, ln_max = 0.0, ln[3] = {0.0}, aux_ln = 0.0, f_kh = 0.0;
 
   su2double nu_hat, fw_star = 0.424, cv1_3 = pow(7.1, 3.0); k2 = pow(0.41, 2.0);
   su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5;
   su2double sigma = 2./3., cb2 = 0.622, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
   su2double cw1 = 0.0, Ji = 0.0, Ji_2 = 0.0, Ji_3 = 0.0, fv1 = 0.0, fv2 = 0.0, ft2 = 0.0, psi_2 = 0.0;
-  su2double *coord_i = NULL, *coord_j = NULL, **primVarGrad = NULL, *vorticity = NULL, delta[3] = {0.0,0.0,0.0},
-      ratioOmega[3] = {0.0, 0.0, 0.0}, vortexTiltingMeasure = 0.0;
+  const su2double *coord_i = nullptr, *coord_j = nullptr, *const *primVarGrad = nullptr, *vorticity = nullptr;
+  su2double delta[3] = {0.0}, ratioOmega[3] = {0.0}, vortexTiltingMeasure = 0.0;
 
+  SU2_OMP_FOR_DYN(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
 
     coord_i                 = geometry->node[iPoint]->GetCoord();
@@ -2142,7 +2152,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         ---*/
 
         maxDelta = geometry->node[iPoint]->GetMaxLength();
-        distDES         = constDES * maxDelta;
+        distDES = constDES * maxDelta;
         lengthScale = min(distDES,wallDistance);
 
         break;
@@ -2172,8 +2182,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
             jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             coord_j = geometry->node[jPoint]->GetCoord();
             for ( iDim = 0; iDim < nDim; iDim++){
-              deltaAux       = abs(coord_j[iDim] - coord_i[iDim]);
-              delta[iDim]     = max(delta[iDim], deltaAux);
+              deltaAux = abs(coord_j[iDim] - coord_i[iDim]);
+              delta[iDim] = max(delta[iDim], deltaAux);
             }
             deltaDDES = geometry->node[iPoint]->GetMaxLength();
         }
@@ -2255,7 +2265,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
     }
 
-    nodes->SetDES_LengthScale(iPoint,lengthScale);
+    nodes->SetDES_LengthScale(iPoint, lengthScale);
 
   }
 }
