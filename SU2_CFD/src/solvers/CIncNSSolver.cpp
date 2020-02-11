@@ -1265,6 +1265,8 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint,nDim+1, iDim);
         }
 
+        /*--- TurbViscosity is usually zero on the walls, except when the SA roughness model is used. 
+         *    If the SA roughness model is not active, this term will be zero and will not affect the solution---*/
         TurbViscosity = nodes->GetEddyViscosity(iPoint);
         Viscosity = nodes->GetLaminarViscosity(iPoint);
         Viscosity += TurbViscosity;
