@@ -1563,7 +1563,6 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
     default: SU2_MPI::Error("Specified radiation model unavailable or none selected", CURRENT_FUNCTION); break;
   }
 
-
   /*--- Load restarts for any of the active solver containers. Note that
    these restart routines fill the fine grid and interpolate to all MG levels. ---*/
 
@@ -2334,7 +2333,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       else
         numerics[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
 
-      // At this moment it is necessary to have the RTE equation in order to have a volumetric heat source
+      // At this moment it is necessary to have the RHT equation in order to have a volumetric heat source
       if (radiation)
         numerics[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceRadiation(nDim, nVar_Flow, config);
       else

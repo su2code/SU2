@@ -817,7 +817,7 @@ void CConfig::SetPointersNull(void) {
     /*--- Boundary Condition settings ---*/
 
   Isothermal_Temperature = NULL;
-  Heat_Flux              = NULL;    Displ_Value            = NULL;    Load_Value = NULL;
+  Heat_Flux              = NULL;    Displ_Value            = NULL;    Load_Value      = NULL;
   FlowLoad_Value         = NULL;    Damper_Constant        = NULL;    Wall_Emissivity = NULL;
 
   /*--- Inlet Outlet Boundary Condition settings ---*/
