@@ -1285,7 +1285,7 @@ def main():
     p1rad.cfg_file  = "config.cfg"
     p1rad.new_output= True
     p1rad.test_iter = 100
-    p1rad.test_vals = [-7.750053, -7.917666, -2.118093, 0.092236] #last 4 columns
+    p1rad.test_vals = [-7.751309, -7.923059, -2.119084, 0.091733] #last 4 columns
     p1rad.su2_exec  = "SU2_CFD"
     p1rad.timeout   = 1600
     p1rad.tol       = 0.00001
