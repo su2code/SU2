@@ -2,7 +2,7 @@
  * \file CSU2MeshFileWriter.cpp
  * \brief Filewriter class SU2 native mesh format.
  * \author T. Albring
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -78,7 +78,7 @@ void CSU2MeshFileWriter::Write_Data(){
 
     output_file << "NDIME= " << dataSorter->GetnDim() << endl;
 
-    output_file << "NELEM= " << dataSorter->GetnElem() << endl;
+    output_file << "NELEM= " << dataSorter->GetnElemGlobal() << endl;
 
     output_file.close();
   }

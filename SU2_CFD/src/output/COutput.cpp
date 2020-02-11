@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1166,7 +1166,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
     /*--- Check for consistency and remove fields that are requested but not available --- */
 
-    if(!noWriting) CheckHistoryOutput();
+    CheckHistoryOutput();
 
     if (rank == MASTER_NODE && !noWriting){
 
@@ -1213,7 +1213,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   /*--- Check for consistency and remove fields that are requested but not available --- */
 
-  if(!noWriting) CheckHistoryOutput();
+  CheckHistoryOutput();
 
   if (rank == MASTER_NODE && !noWriting){
 
