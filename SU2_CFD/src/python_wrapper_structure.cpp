@@ -1251,6 +1251,5 @@ void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha){
     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, 1, sin(alpha_rad));
   }
 
-
 }
 

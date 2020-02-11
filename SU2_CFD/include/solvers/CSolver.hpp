@@ -3180,7 +3180,6 @@ public:
                                             unsigned long val_vertex,
                                             unsigned short val_dim) const { return 0; }
 
-
   /*!
    * \brief A virtual member
    * \param[in] val_marker - Surface marker where the total temperature is set.
@@ -4146,7 +4145,6 @@ public:
   inline virtual void Compute_DeadLoad(CGeometry *geometry,
                                        CNumerics **numerics,
                                        CConfig *config) { }
-
 
   /*!
    * \brief A virtual member. Set the volumetric heat source
