@@ -13,7 +13,7 @@ jobs:
     - name: Extract branch name
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
-      id: extract_branch 
+      id: extract_branch
     - name: Change the version number
       run: |
         SU2_PY/change_version_number.py -v "${GITHUB_REF##*/release_v} \"Blackbird\"" -y
