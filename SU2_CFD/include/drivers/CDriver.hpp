@@ -125,7 +125,7 @@ protected:
             PyWrapNodalForce[3],                /*!< \brief This is used to store the force at each vertex. */
             PyWrapNodalForceDensity[3],         /*!< \brief This is used to store the force density at each vertex. */
             PyWrapNodalHeatFlux[3];             /*!< \brief This is used to store the heat flux at each vertex. */
-  bool dummy_geometry;
+  bool dry_run;                                 /*!< \brief Flag if SU2_CFD was started as dry-run via "SU2_CFD -d <config>.cfg" */
 
 public:
 
