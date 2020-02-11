@@ -367,20 +367,6 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     break;
   }
 
-  // Reynolds stress tensor values
-  if ( config->GetKind_Turb_Model() == SST || config->GetKind_Turb_Model() == SST_SUST ) {
-    AddVolumeOutput("U\'U\'", "u\'u\'", "REYNOLDS_STRESS_TENSOR", "u\'u\' term of Reynolds stress tensor");
-    AddVolumeOutput("V\'V\'", "v\'v\'", "REYNOLDS_STRESS_TENSOR", "v\'v\' term of Reynolds stress tensor");
-    if (nDim == 3){
-      AddVolumeOutput("W\'W\'", "w\'w\'", "REYNOLDS_STRESS_TENSOR", "w\'w\' term of Reynolds stress tensor");
-    }
-    AddVolumeOutput("U\'V\'", "u\'v\'", "REYNOLDS_STRESS_TENSOR", "u\'v\' term of Reynolds stress tensor");
-    if (nDim == 3){
-      AddVolumeOutput("U\'W\'", "u\'w\'", "REYNOLDS_STRESS_TENSOR", "u\'w\' term of Reynolds stress tensor");
-      AddVolumeOutput("V\'W\'", "v\'w\'", "REYNOLDS_STRESS_TENSOR", "v\'w\' term of Reynolds stress tensor");
-    }
-  }
-
   // Limiter values
   AddVolumeOutput("LIMITER_DENSITY", "Limiter_Density", "LIMITER", "Limiter value of the density");
   AddVolumeOutput("LIMITER_MOMENTUM-X", "Limiter_Momentum_x", "LIMITER", "Limiter value of the x-momentum");
@@ -402,7 +388,6 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     break;
   }
 
-
   // Hybrid RANS-LES
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
@@ -421,6 +406,20 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
     }
     AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
+  }
+
+  // Reynolds stress tensor values
+  if ( config->GetKind_Turb_Model() == SST || config->GetKind_Turb_Model() == SST_SUST ) {
+    AddVolumeOutput("U\'U\'", "u\'u\'", "REYNOLDS_STRESS_TENSOR", "u\'u\' term of Reynolds stress tensor");
+    AddVolumeOutput("V\'V\'", "v\'v\'", "REYNOLDS_STRESS_TENSOR", "v\'v\' term of Reynolds stress tensor");
+    if (nDim == 3){
+      AddVolumeOutput("W\'W\'", "w\'w\'", "REYNOLDS_STRESS_TENSOR", "w\'w\' term of Reynolds stress tensor");
+    }
+    AddVolumeOutput("U\'V\'", "u\'v\'", "REYNOLDS_STRESS_TENSOR", "u\'v\' term of Reynolds stress tensor");
+    if (nDim == 3){
+      AddVolumeOutput("U\'W\'", "u\'w\'", "REYNOLDS_STRESS_TENSOR", "u\'w\' term of Reynolds stress tensor");
+      AddVolumeOutput("V\'W\'", "v\'w\'", "REYNOLDS_STRESS_TENSOR", "v\'w\' term of Reynolds stress tensor");
+    }
   }
 
   if (config->GetTime_Domain()){
@@ -574,7 +573,6 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
       SetVolumeOutputValue("U\'W\'", iPoint, Reynolds_Stress_Tensor[0][2]);
       SetVolumeOutputValue("V\'W\'", iPoint, Reynolds_Stress_Tensor[1][2]);
     }
-    
   }
   
   if (config->GetTime_Domain()){

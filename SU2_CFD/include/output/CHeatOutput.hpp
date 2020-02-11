@@ -86,5 +86,5 @@ public:
    * \param[in] iVertex - Index of the vertex on the marker.
    */
   void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint,
-                       unsigned short iMarker, unsigned long iVertex);
+                       unsigned short iMarker, unsigned long iVertex) override;
 };

@@ -921,7 +921,7 @@ public:
   * \brief Function to compute the distance to the nearest viscous wall.
   * \param[in] config - Definition of the particular problem.
   */
-  void ComputeWall_Distance(CConfig *config);
+  void ComputeWall_Distance(CConfig *config) override;
 
  /*!
   * \brief Function to create the faces used in the DG formulation.
@@ -1036,12 +1036,12 @@ public:
   * \brief Set the send receive boundaries of the grid.
   * \param[in] config - Definition of the particular problem.
   */
-  void SetSendReceive(CConfig *config);
+  void SetSendReceive(CConfig *config) override;
 
   /*!
    * \brief Set the local index that correspond with the global numbering index.
    */
-  void SetGlobal_to_Local_Point();
+  void SetGlobal_to_Local_Point() override;
 
   /*!
    * \brief Get the local index that correspond with the global numbering index.

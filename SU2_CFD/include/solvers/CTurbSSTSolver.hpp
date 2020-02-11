@@ -298,6 +298,16 @@ public:
   void SetUniformInlet(CConfig* config, unsigned short iMarker) override;
 
   /*!
+   * \brief Compute Reynolds stress tensor for a point
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - point index 
+   */
+  void SetReynoldsStressTensor(CSolver **solver_container,
+                               CConfig *config,
+                               unsigned long iPoint);
+
+  /*!
    * \brief Get the value of the turbulent kinetic energy.
    * \return Value of the turbulent kinetic energy.
    */

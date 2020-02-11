@@ -77,17 +77,17 @@ public:
    * \brief Preprocess the single-zone iteration
    * \param[in] TimeIter - index of the current time-step.
    */
-  void Preprocess(unsigned long TimeIter);
+  void Preprocess(unsigned long TimeIter) override;
 
   /*!
    * \brief Run a single iteration of the discrete adjoint solver with a single zone.
    */
-  void Run(void);
+  void Run(void) override;
 
   /*!
    * \brief Postprocess the adjoint iteration for ZONE_0.
    */
-  void Postprocess(void);
+  void Postprocess(void) override;
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.

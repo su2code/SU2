@@ -337,14 +337,4 @@ public:
       Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
   }
 
-  /*!
-   * \brief Compute Reynolds stress tensor for a point
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iPoint - point index 
-   */
-  void SetReynoldsStressTensor(CSolver **solver_container,
-                               CConfig *config,
-                               unsigned long iPoint);
-
 };
