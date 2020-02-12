@@ -11255,7 +11255,7 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
 
   /*--- Local variables ---*/
 
-  unsigned short iVar, jVar, iMarker, iDim;
+  unsigned short iVar, iMarker, iDim, iNeigh;
   unsigned long iPoint, jPoint, iEdge, iVertex;
 
   const su2double *U_time_nM1 = nullptr, *U_time_n = nullptr, *U_time_nP1 = nullptr;
@@ -11297,9 +11297,9 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
        time discretization scheme (1st- or 2nd-order).---*/
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        if (config->GetTime_Marching() == DT_STEPPING_1ST)
+        if (first_order)
           LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
-        if (config->GetTime_Marching() == DT_STEPPING_2ND)
+        if (second_order)
           LinSysRes(iPoint,iVar) += ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
                                      +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
       }
@@ -11323,46 +11323,31 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
      we will loop over the edges and boundaries to compute the GCL component
      of the dual time source term that depends on grid velocities. ---*/
 
-    /// TODO: This edge loop needs to be transformed to point loop as contrary
-    /// to turbulence solvers, this method is also called for coarse grids.
-
-    SU2_OMP_MASTER
-    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-      /*--- Get indices for nodes i & j plus the face normal ---*/
-
-      iPoint = geometry->edge[iEdge]->GetNode(0);
-      jPoint = geometry->edge[iEdge]->GetNode(1);
-      Normal = geometry->edge[iEdge]->GetNormal();
-
-      /*--- Grid velocities stored at nodes i & j ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
       GridVel_i = geometry->node[iPoint]->GetGridVel();
-      GridVel_j = geometry->node[jPoint]->GetGridVel();
-
-      /*--- Compute the GCL term by averaging the grid velocities at the
-       edge mid-point and dotting with the face normal. ---*/
-
-      Residual_GCL = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Residual_GCL += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
-
-      /*--- Compute the GCL component of the source term for node i ---*/
-
       U_time_n = nodes->GetSolution_time_n(iPoint);
-      for (iVar = 0; iVar < nVar; iVar++)
-        Residual[iVar] = U_time_n[iVar]*Residual_GCL;
-      LinSysRes.AddBlock(iPoint, Residual);
 
-      /*--- Compute the GCL component of the source term for node j ---*/
+      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnNeighbor(); iNeigh++) {
 
-      U_time_n = nodes->GetSolution_time_n(jPoint);
-      for (iVar = 0; iVar < nVar; iVar++)
-        Residual[iVar] = U_time_n[iVar]*Residual_GCL;
-      LinSysRes.SubtractBlock(jPoint, Residual);
+        iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+        Normal = geometry->edge[iEdge]->GetNormal();
 
+        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+        GridVel_j = geometry->node[jPoint]->GetGridVel();
+
+        /*--- Determine whether to consider the normal outward or inward. ---*/
+        su2double dir = (geometry->edge[iEdge]->GetNode(0) == iPoint)? 0.5 : -0.5;
+
+        Residual_GCL = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Residual_GCL += dir*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+
+        for (iVar = 0; iVar < nVar; iVar++)
+          LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
+      }
     }
-    SU2_OMP_BARRIER
 
     /*--- Loop over the boundary edges ---*/
 
@@ -11424,9 +11409,9 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
        due to the time discretization has a new form.---*/
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        if (config->GetTime_Marching() == DT_STEPPING_1ST)
+        if (first_order)
           LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
-        if (config->GetTime_Marching() == DT_STEPPING_2ND)
+        if (second_order)
           LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
                                      + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
       }

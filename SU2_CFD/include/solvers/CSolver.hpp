@@ -4717,6 +4717,13 @@ public:
    */
   virtual su2double GetMaximum_Volume() const { return 0.0; }
 
+  /*!
+   * \brief Whether the methods of the solver called by multi/single-grid
+   *        iteration can be executed by multiple threads.
+   * \return Should return true if "yes", false if "no".
+   */
+  inline virtual bool GetHasHybridParallel() const { return false; }
+
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.

@@ -36,12 +36,12 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
                                                   unsigned short RunTime_EqSystem, unsigned short iZone,
                                                   unsigned short iInst) {
 
+  const unsigned short Solver_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+
   /*--- Start an OpenMP parallel region covering the entire iteration. ---*/
 
-  SU2_OMP_PARALLEL
+  SU2_OMP_PARALLEL_(if(solver_container[iZone][iInst][MESH_0][Solver_Position]->GetHasHybridParallel()))
   {
-
-  unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
 
@@ -50,22 +50,22 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
 
   /*--- Preprocessing ---*/
 
-  solvers_fine[SolContainer_Position]->Preprocessing(geometry_fine, solvers_fine, config[iZone],
-                                                     FinestMesh, 0, RunTime_EqSystem, false);
+  solvers_fine[Solver_Position]->Preprocessing(geometry_fine, solvers_fine, config[iZone],
+                                               FinestMesh, 0, RunTime_EqSystem, false);
 
   /*--- Set the old solution ---*/
 
-  solvers_fine[SolContainer_Position]->Set_OldSolution(geometry_fine);
+  solvers_fine[Solver_Position]->Set_OldSolution(geometry_fine);
 
   /*--- Time step evaluation ---*/
 
-  solvers_fine[SolContainer_Position]->SetTime_Step(geometry_fine, solvers_fine, config[iZone],
-                                                    FinestMesh, config[iZone]->GetTimeIter());
+  solvers_fine[Solver_Position]->SetTime_Step(geometry_fine, solvers_fine, config[iZone],
+                                              FinestMesh, config[iZone]->GetTimeIter());
 
   /*--- Space integration ---*/
 
   Space_Integration(geometry_fine, solvers_fine,
-                    numerics_container[iZone][iInst][FinestMesh][SolContainer_Position],
+                    numerics_container[iZone][iInst][FinestMesh][Solver_Position],
                     config[iZone], FinestMesh, NO_RK_ITER, RunTime_EqSystem);
 
   /*--- Time integration ---*/
@@ -74,7 +74,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
 
   /*--- Postprocessing ---*/
 
-  solvers_fine[SolContainer_Position]->Postprocessing(geometry_fine, solvers_fine, config[iZone], FinestMesh);
+  solvers_fine[Solver_Position]->Postprocessing(geometry_fine, solvers_fine, config[iZone], FinestMesh);
 
   if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {
     SU2_OMP_MASTER
@@ -89,15 +89,15 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
     for (unsigned short iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
 
       SetRestricted_Solution(RunTime_EqSystem,
-                             solver_container[iZone][iInst][iMesh][SolContainer_Position],
-                             solver_container[iZone][iInst][iMesh+1][SolContainer_Position],
+                             solver_container[iZone][iInst][iMesh][Solver_Position],
+                             solver_container[iZone][iInst][iMesh+1][Solver_Position],
                              geometry[iZone][iInst][iMesh],
                              geometry[iZone][iInst][iMesh+1],
                              config[iZone]);
 
       SetRestricted_EddyVisc(RunTime_EqSystem,
-                             solver_container[iZone][iInst][iMesh][SolContainer_Position],
-                             solver_container[iZone][iInst][iMesh+1][SolContainer_Position],
+                             solver_container[iZone][iInst][iMesh][Solver_Position],
+                             solver_container[iZone][iInst][iMesh+1][Solver_Position],
                              geometry[iZone][iInst][iMesh],
                              geometry[iZone][iInst][iMesh+1],
                              config[iZone]);

@@ -2331,7 +2331,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CSolver   ***solver_container,
                              CConfig   *config) {
 
-  /// TODO: Add OpenMP stuff to this method
+  /// TODO: Add OpenMP stuff to this method.
 
   /* Adapt the CFL number on all multigrid levels using an
    exponential progression with under-relaxation approach. */
@@ -2497,26 +2497,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Reduce the min/max/avg local CFL numbers. */
 
-    su2double rbuf_min, sbuf_min;
-    sbuf_min = myCFLMin;
-    SU2_MPI::Allreduce(&sbuf_min, &rbuf_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    Min_CFL_Local = rbuf_min;
-
-    su2double rbuf_max, sbuf_max;
-    sbuf_max = myCFLMax;
-    SU2_MPI::Allreduce(&sbuf_max, &rbuf_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    Max_CFL_Local = rbuf_max;
-
-    su2double rbuf_sum, sbuf_sum;
-    sbuf_sum = myCFLSum;
-    SU2_MPI::Allreduce(&sbuf_sum, &rbuf_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    Avg_CFL_Local = rbuf_sum;
-
-    unsigned long Global_nPointDomain;
-    unsigned long Local_nPointDomain = geometry[iMesh]->GetnPointDomain();
-    SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    Avg_CFL_Local /= (su2double)Global_nPointDomain;
+    SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&myCFLMax, &Max_CFL_Local, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
 
   }
 
