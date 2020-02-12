@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the numerical grid
  *        adaptation.
  * \author F. Palacios
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@
 #include <fstream>
 
 #include "geometry/CPhysicalGeometry.hpp"
-#include "config_structure.hpp"
+#include "CConfig.hpp"
 
 using namespace std;
 

@@ -1,12 +1,12 @@
 /*!
- * \file solver_adjoint_discrete.cpp
+ * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -25,8 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/solver_structure.hpp"
-#include "../include/variables/CDiscAdjVariable.hpp"
+#include "../../include/solvers/CDiscAdjSolver.hpp"
 
 CDiscAdjSolver::CDiscAdjSolver(void) : CSolver () {
 
@@ -114,7 +113,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     unsigned long nVertex = geometry->nVertex[iMarker];
     CSensitivity[iMarker] = new su2double [nVertex];
-  
+
     for (iVertex = 0; iVertex < nVertex; iVertex++)
       CSensitivity[iMarker][iVertex] = 0.0;
   }
@@ -140,7 +139,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   }
 }
 
-CDiscAdjSolver::~CDiscAdjSolver(void) { 
+CDiscAdjSolver::~CDiscAdjSolver(void) {
 
   unsigned short iMarker;
 
@@ -278,7 +277,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     Temperature            = config->GetTemperature_FreeStreamND();
 
     su2double SoundSpeed = 0.0;
-    
+
     if (nDim == 2) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*Mach); }
     if (nDim == 3) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*cos(Beta)*Mach); }
 
@@ -527,7 +526,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
-  
+
   /*--- Extract the adjoint values of the farfield values ---*/
 
   if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
@@ -557,7 +556,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
   if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
       (KindDirect_Solver == RUNTIME_FLOW_SYS &&
        (!config->GetBoolTurbomachinery()))) {
-        
+
     su2double Local_Sens_ModVel, Local_Sens_BPress, Local_Sens_Temp;
 
     Local_Sens_ModVel = SU2_TYPE::GetDerivative(ModVel);
@@ -828,7 +827,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Sens_Geo[iMarker_Monitoring] = 0.0;
   }
-  
+
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
     /*--- Loop over boundary markers to select those for Euler walls and NS walls ---*/
@@ -897,7 +896,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
     Sens_Geo[iMarker_Monitoring] = sqrt(Sens_Geo[iMarker_Monitoring]);
     Total_Sens_Geo   += Sens_Geo[iMarker_Monitoring];
   }
-  
+
   delete [] Sens_Geo;
 
 }
@@ -930,14 +929,14 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
+
   /*--- Restart the solution from file information ---*/
 
   filename = config->GetSolution_AdjFileName();
   restart_filename = config->GetObjFunc_Extension(filename);
-  
+
   restart_filename = config->GetFilename(restart_filename, "", val_iter);
-  
+
 
   /*--- Read and store the restart metadata. ---*/
 
@@ -1072,18 +1071,3 @@ void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *con
   SetResidual_BGS(geometry, config);
 
 }
-
-void CDiscAdjSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
-
-  unsigned long iPoint;
-  unsigned short iVar;
-
-  /*--- To nPoint: The solution must be communicated beforehand ---*/
-  /*--- As there might be crossed dependencies, we need to use the full BGS solution and not just the node Solution ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++)
-      nodes->Set_BGSSolution_k(iPoint, iVar, nodes->Get_BGSSolution(iPoint, iVar));
-  }
-
-}
-

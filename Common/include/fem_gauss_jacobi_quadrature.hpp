@@ -6,7 +6,7 @@
           All the functions in this class are based on the program JACOBI_RULE
           of John Burkardt.
  * \author E. van der Weide
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -86,7 +86,7 @@ Tom
 #include <cstdlib>
 #include <vector>
 
-#include "config_structure.hpp"
+#include "CConfig.hpp"
 
 using namespace std;
 
@@ -95,7 +95,7 @@ using namespace std;
  * \brief Class used to determine the quadrature points of the Gauss Jacobi
           integration rules.
  * \author E. van der Weide
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  */
 class CGaussJacobiQuadrature {
 public:

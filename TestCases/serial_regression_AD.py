@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -213,8 +213,8 @@ def main():
     discadj_fea           = TestCase('discadj_fea')
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
-    discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-6.352150, -6.402687, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_iter = 4
+    discadj_fea.test_vals = [-2.849531, -3.238474, -3.6413e-04, -8.7087] #last 4 columns
     discadj_fea.su2_exec  = "SU2_CFD_AD"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
@@ -260,7 +260,7 @@ def main():
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
     discadj_cht.test_vals = [-2.381658, -3.099873, -3.099844, -3.099841] #last 4 columns
-    discadj_cht.su2_exec  = "parallel_computation.py -f"
+    discadj_cht.su2_exec  = "SU2_CFD_AD"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
     test_list.append(discadj_cht)

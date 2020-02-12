@@ -3,7 +3,7 @@
  * \brief Declararion of the vector class used in the solution of
  *        large, distributed, sparse linear systems.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -274,13 +274,13 @@ public:
    * \brief indexing operator with assignment permitted
    * \param[in] i = local index to access
    */
-  inline ScalarType & operator[](const unsigned long & i) { return vec_val[i]; }
+  inline ScalarType & operator[](unsigned long i) { return vec_val[i]; }
 
   /*!
    * \brief indexing operator with assignment not permitted
    * \param[in] i = local index to access
    */
-  inline const ScalarType & operator[](const unsigned long & i) const { return vec_val[i]; }
+  inline const ScalarType & operator[](unsigned long i) const { return vec_val[i]; }
 
   /*!
    * \brief copies the contents of the calling CSysVector into an array

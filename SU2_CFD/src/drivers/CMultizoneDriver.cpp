@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving multi-zone problems.
  * \author R. Sanchez, O. Burghardt
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -159,7 +159,7 @@ void CMultizoneDriver::StartSolver() {
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
-  if (driver_config->GetRestart())
+  if (driver_config->GetRestart() && driver_config->GetTime_Domain())
     TimeIter = driver_config->GetRestart_Iter();
 
   /*--- Run the problem until the number of time iterations required is reached. ---*/

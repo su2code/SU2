@@ -2,7 +2,7 @@
  * \file CPrimalGridFEM.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/geometry/primal_grid/CPrimalGridFEM.hpp"
+#include "../../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 
 CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
                                unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
