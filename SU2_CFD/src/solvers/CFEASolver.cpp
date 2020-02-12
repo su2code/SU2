@@ -3058,7 +3058,11 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
 
   su2double objective_function = 0.0;
 
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size) reduction(+:objective_function))
+  SU2_OMP_PARALLEL
+  {
+  su2double obj_fun_local = 0.0;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -3070,9 +3074,10 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
       su2double current_solution = nodes->GetSolution(iPoint,iVar);
 
       /*--- The objective function is the sum of the difference between solution and difference, squared ---*/
-      objective_function += pow(current_solution - reference_geometry, 2);
+      obj_fun_local += pow(current_solution - reference_geometry, 2);
     }
-
+  }
+  safeAdd(obj_fun_local, objective_function);
   }
 
   SU2_MPI::Allreduce(&objective_function, &Total_OFRefGeom, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -3195,16 +3200,24 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_contain
 
   su2double total_volume = 0.0, integral = 0.0, discreteness = 0.0;
 
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size) reduction(+:total_volume,integral,discreteness))
+  SU2_OMP_PARALLEL
+  {
+  su2double tot_vol_loc = 0.0, integral_loc = 0.0, discrete_loc = 0.0;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iElem = 0; iElem < nElement; ++iElem) {
     /*--- count only elements that belong to the partition ---*/
-    if ( geometry->node[geometry->elem[iElem]->GetNode(0)]->GetDomain() ){
+    if (geometry->node[geometry->elem[iElem]->GetNode(0)]->GetDomain()) {
       su2double volume = geometry->elem[iElem]->GetVolume();
       su2double rho = element_properties[iElem]->GetPhysicalDensity();
-      total_volume += volume;
-      integral += volume*rho;
-      discreteness += volume*4.0*rho*(1.0-rho);
+      tot_vol_loc += volume;
+      integral_loc += volume*rho;
+      discrete_loc += volume*4.0*rho*(1.0-rho);
     }
+  }
+  safeAdd(tot_vol_loc, total_volume);
+  safeAdd(integral_loc, integral);
+  safeAdd(discrete_loc, discreteness);
   }
 
   su2double tmp;
@@ -3250,7 +3263,11 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
 
   su2double compliance = 0.0;
 
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size) reduction(+:compliance))
+  SU2_OMP_PARALLEL
+  {
+  su2double comp_local = 0.0;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     unsigned short iVar;
@@ -3276,7 +3293,9 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Add work contribution from this node ---*/
     for (iVar = 0; iVar < nVar; iVar++)
-      compliance += nodalForce[iVar]*nodes->GetSolution(iPoint,iVar);
+      comp_local += nodalForce[iVar]*nodes->GetSolution(iPoint,iVar);
+  }
+  safeAdd(comp_local, compliance);
   }
 
   SU2_MPI::Allreduce(&compliance, &Total_OFCompliance, 1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
@@ -3302,7 +3321,11 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
   su2double totalVolume_reduce = 0.0;
 
   /*--- Loop over the elements in the domain. ---*/
-  SU2_OMP_PARALLEL_(for schedule(dynamic,omp_chunk_size) reduction(+:weightedValue,totalVolume))
+  SU2_OMP_PARALLEL
+  {
+  su2double weighted_loc = 0.0, totalVol_loc = 0.0;
+
+  SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iElem = 0; iElem < nElement; iElem++) {
 
     int thread = omp_get_thread_num();
@@ -3337,16 +3360,18 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
         elementVolume = element->ComputeVolume();
 
       // Compute the total volume
-      totalVolume += elementVolume;
+      totalVol_loc += elementVolume;
 
       // Retrieve the value of the design variable
       su2double dvValue = numerics[FEA_TERM]->Get_DV_Val(element_properties[iElem]->GetDV());
 
       // Add the weighted sum of the value of the design variable
-      weightedValue += dvValue * elementVolume;
+      weighted_loc += dvValue * elementVolume;
 
     }
-
+  }
+  safeAdd(totalVol_loc, totalVolume);
+  safeAdd(weighted_loc, weightedValue);
   }
 
   // Reduce value across processors for parallelization

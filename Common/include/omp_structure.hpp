@@ -46,7 +46,8 @@
 
 /*--- Detect compilation with OpenMP support, protect agaisnt
  *    using OpenMP with AD (not supported yet). ---*/
-#if defined(_OPENMP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+//#if defined(_OPENMP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+#if defined(_OPENMP)
 #define HAVE_OMP
 #include <omp.h>
 
@@ -148,4 +149,18 @@ void parallelSet(size_t size, T val, U* dst)
 {
   SU2_OMP_FOR_STAT(4196)
   for(size_t i=0; i<size; ++i) dst[i] = val;
+}
+
+template<class T>
+inline void safeAdd(T rhs, T& lhs)
+{
+  SU2_OMP_CRITICAL
+  lhs += rhs;
+}
+
+template<>
+inline void safeAdd<passivedouble>(passivedouble rhs, passivedouble& lhs)
+{
+  SU2_OMP_ATOMIC
+  lhs += rhs;
 }
