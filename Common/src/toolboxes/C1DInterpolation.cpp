@@ -163,6 +163,11 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
     Inlet_Values[nDim+3] = unit_r*sin(Theta) + unit_Theta*cos(Theta); //for iy
     Inlet_Values[nDim+4] = sqrt(1-pow(unit_r,2)- pow(unit_Theta,2));  //for iz
 
+
+    for (int i=0;i<size_columns;i++)
+        cout<<Inlet_Values[i]<<"\t";
+    cout<<endl;
+
     return Inlet_Values;
 
 }
