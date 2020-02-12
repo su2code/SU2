@@ -4369,7 +4369,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             else if(Interpolate == true){
 
               Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
-              
+
               /* --- Calculating the radius and angle of the vertex ---*/
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
               Theta = atan2(Coord[1],Coord[0]);
@@ -4395,7 +4395,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               }
 
               /* --- Correcting for Interpolation Type ---*/
-              Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, config);
+              Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nCol_InletFile+nDim, nDim, Coord, nVar_Turb, config);
               solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
               
               for (unsigned short iVar=0; iVar < (nCol_InletFile+nDim); iVar++)
