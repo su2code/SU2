@@ -199,45 +199,20 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
                                     unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
-  unsigned short KindSolver = config->GetKind_Solver();
 
-  /*--- Perform the time integration ---*/
-
-  /*--- Fluid time integration schemes ---*/
-
-  if (KindSolver != FEM_ELASTICITY) {
-
-    switch (config->GetKind_TimeIntScheme()) {
-      case (RUNGE_KUTTA_EXPLICIT):
-        solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
-        break;
-      case (CLASSICAL_RK4_EXPLICIT):
-        solver_container[MainSolver]->ClassicalRK4_Iteration(geometry, solver_container, config, iRKStep);
-        break;
-      case (EULER_EXPLICIT):
-        solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
-        break;
-      case (EULER_IMPLICIT):
-        solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
-        break;
-    }
-
-   /*--- Structural time integration schemes ---*/
-
-  }
-  else if (KindSolver == FEM_ELASTICITY) {
-
-    switch (config->GetKind_TimeIntScheme_FEA()) {
-    case (CD_EXPLICIT):
+  switch (config->GetKind_TimeIntScheme()) {
+    case (RUNGE_KUTTA_EXPLICIT):
       solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
       break;
-    case (NEWMARK_IMPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
+    case (CLASSICAL_RK4_EXPLICIT):
+      solver_container[MainSolver]->ClassicalRK4_Iteration(geometry, solver_container, config, iRKStep);
       break;
-    case (GENERALIZED_ALPHA):
+    case (EULER_EXPLICIT):
+      solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
+      break;
+    case (EULER_IMPLICIT):
       solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
       break;
-    }
   }
 
 }
