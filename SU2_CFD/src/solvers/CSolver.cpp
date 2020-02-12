@@ -4367,6 +4367,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             }
 
             else if(Interpolate == true){
+
+              Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
+              
               /* --- Calculating the radius and angle of the vertex ---*/
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
               Theta = atan2(Coord[1],Coord[0]);

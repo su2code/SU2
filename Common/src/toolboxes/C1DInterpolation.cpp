@@ -45,12 +45,11 @@ su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
 
 /*--- Function for evaluating the value for linear 'spline' ---*/
 su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
-    Point_Match = true;
     int size = x.size();
 
     for (int i=0;i<size-1;i++){
         if(Point_Interp>=x[i] && Point_Interp<=x[i+1]){
-            //Point_Match = true;
+            Point_Match = true;
             return (Point_Interp-x[i])*dydx[i]+y[i];}
     }
     return 0;
@@ -70,7 +69,7 @@ void CLinearInterpolation::SetSpline(vector<su2double> &X, vector<su2double> &Da
     for (int i=0; i<n-1;i ++){
         h=x[i+1]-x[i];
         dydx[i]=(y[i+1]-y[i])/h;
-        }
+    }
 }
 
 
