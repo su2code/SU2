@@ -355,4 +355,9 @@ public:
       Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
   }
 
+  /*!
+   * \brief SA and SST support OpenMP+MPI.
+   */
+  inline bool GetHasHybridParallel() const override { return true; }
+
 };

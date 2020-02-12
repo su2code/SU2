@@ -2879,4 +2879,9 @@ public:
    */
   void ComputeVerificationError(CGeometry *geometry, CConfig *config) final;
 
+  /*!
+   * \brief The Euler and NS solvers support MPI+OpenMP (except the BC bits).
+   */
+  inline bool GetHasHybridParallel() const final { return true; }
+
 };

@@ -39,28 +39,37 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                 unsigned short iZone,
                                                 unsigned short iInst) {
 
-  /*--- Start an OpenMP parallel region covering the entire MG iteration. ---*/
+  bool direct;
+  switch (config[iZone]->GetKind_Solver()) {
+    case EULER:
+    case NAVIER_STOKES:
+    case RANS:
+    case FEM_EULER:
+    case FEM_NAVIER_STOKES:
+    case FEM_RANS:
+    case FEM_LES:
+    case DISC_ADJ_EULER:
+    case DISC_ADJ_NAVIER_STOKES:
+    case DISC_ADJ_FEM_EULER:
+    case DISC_ADJ_FEM_NS:
+    case DISC_ADJ_RANS:
+      direct = true;
+      break;
+    default:
+      direct = false;
+      break;
+  }
 
-  SU2_OMP_PARALLEL
+  const unsigned short Solver_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+
+  /*--- Start an OpenMP parallel region covering the entire MG iteration, if the solver supports it. ---*/
+
+  SU2_OMP_PARALLEL_(if(solver_container[iZone][iInst][MESH_0][Solver_Position]->GetHasHybridParallel()))
   {
 
   su2double monitor = 1.0;
   bool FullMG = false;
 
-  const bool direct = ((config[iZone]->GetKind_Solver() == EULER)                         ||
-                       (config[iZone]->GetKind_Solver() == NAVIER_STOKES)                 ||
-                       (config[iZone]->GetKind_Solver() == RANS)                          ||
-                       (config[iZone]->GetKind_Solver() == FEM_EULER)                     ||
-                       (config[iZone]->GetKind_Solver() == FEM_NAVIER_STOKES)             ||
-                       (config[iZone]->GetKind_Solver() == FEM_RANS)                      ||
-                       (config[iZone]->GetKind_Solver() == FEM_LES)                       ||
-                       (config[iZone]->GetKind_Solver() == DISC_ADJ_EULER)                ||
-                       (config[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)        ||
-                       (config[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER)            ||
-                       (config[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)               ||
-                       (config[iZone]->GetKind_Solver() == DISC_ADJ_RANS));
-
-  const unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   unsigned short RecursiveParam = config[iZone]->GetMGCycle();
 
   if (config[iZone]->GetMGCycle() == FULLMG_CYCLE) {
@@ -75,8 +84,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   if (!config[iZone]->GetRestart() && FullMG && direct && ( Convergence_FullMG && (FinestMesh != MESH_0 ))) {
 
     SetProlongated_Solution(RunTime_EqSystem,
-                            solver_container[iZone][iInst][FinestMesh-1][SolContainer_Position],
-                            solver_container[iZone][iInst][FinestMesh][SolContainer_Position],
+                            solver_container[iZone][iInst][FinestMesh-1][Solver_Position],
+                            solver_container[iZone][iInst][FinestMesh][Solver_Position],
                             geometry[iZone][iInst][FinestMesh-1],
                             geometry[iZone][iInst][FinestMesh],
                             config[iZone]);
@@ -93,15 +102,15 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   /*--- Perform the Full Approximation Scheme multigrid ---*/
 
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
-                  FinestMesh, RecursiveParam, RunTime_EqSystem,
-                  iZone, iInst);
+                  FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
 
-  solver_container[iZone][iInst][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][MESH_0],
-                                                                               solver_container[iZone][iInst][MESH_0],
-                                                                               config[iZone], MESH_0, NO_RK_ITER,
-                                                                               RunTime_EqSystem, true);
+  solver_container[iZone][iInst][MESH_0][Solver_Position]->Preprocessing(geometry[iZone][iInst][MESH_0],
+                                                                         solver_container[iZone][iInst][MESH_0],
+                                                                         config[iZone], MESH_0, NO_RK_ITER,
+                                                                         RunTime_EqSystem, true);
+
   /*--- Compute non-dimensional parameters and the convergence monitor ---*/
 
   NonDimensional_Parameters(geometry[iZone][iInst], solver_container[iZone][iInst],
@@ -124,15 +133,15 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
   CConfig* config = config_container[iZone];
 
-  const unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
+  const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
 
   /*--- Shorter names to refer to fine grid entities. ---*/
 
   CGeometry* geometry_fine = geometry[iZone][iInst][iMesh];
   CSolver** solver_container_fine = solver_container[iZone][iInst][iMesh];
-  CSolver* solver_fine = solver_container_fine[SolContainer_Position];
-  CNumerics** numerics_fine = numerics_container[iZone][iInst][iMesh][SolContainer_Position];
+  CSolver* solver_fine = solver_container_fine[Solver_Position];
+  CNumerics** numerics_fine = numerics_container[iZone][iInst][iMesh][Solver_Position];
 
   /*--- Number of RK steps. ---*/
 
@@ -206,8 +215,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     CGeometry* geometry_coarse = geometry[iZone][iInst][iMesh+1];
     CSolver** solver_container_coarse = solver_container[iZone][iInst][iMesh+1];
-    CSolver* solver_coarse = solver_container_coarse[SolContainer_Position];
-    CNumerics** numerics_coarse = numerics_container[iZone][iInst][iMesh+1][SolContainer_Position];
+    CSolver* solver_coarse = solver_container_coarse[Solver_Position];
+    CNumerics** numerics_coarse = numerics_container[iZone][iInst][iMesh+1][Solver_Position];
 
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
 
@@ -543,7 +552,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   su2double Area_Parent, Area_Children, Vector[3] = {0.0};
   const su2double *Solution_Fine = nullptr, *Grid_Vel = nullptr;
 
-  const unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
+  const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
   const unsigned short nVar = sol_coarse->GetnVar();
   const unsigned short nDim = geo_fine->GetnDim();
   const bool grid_movement = config->GetGrid_Movement();
@@ -587,7 +596,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 
-        if (SolContainer_Position == FLOW_SOL) {
+        if (Solver_Position == FLOW_SOL) {
 
           /*--- At moving walls, set the solution based on the new density and wall velocity ---*/
 
@@ -605,7 +614,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
         }
 
-        if (SolContainer_Position == ADJFLOW_SOL) {
+        if (Solver_Position == ADJFLOW_SOL) {
           sol_coarse->GetNodes()->SetVelSolutionDVector(Point_Coarse);
         }
 

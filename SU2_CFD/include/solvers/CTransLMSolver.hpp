@@ -236,6 +236,11 @@ public:
                                CSolver **solver_container,
                                CConfig *config) override;
 
+  /*!
+   * \brief No support for OpenMP+MPI.
+   */
+  inline bool GetHasHybridParallel() const override { return false; }
+
   // Another set of matrix structures for the Lm equations
   CSysMatrix<su2double> JacobianItmc;  /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   su2double *LinSysSolItmc;            /*!< \brief vector to store iterative solution of implicit linear system. */
