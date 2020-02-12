@@ -3935,6 +3935,17 @@ public:
    */
   virtual void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
 
+  /*!
+   * \brief Copies the derivatives that are already taped by SU2 (outside of the DiffInputs framework) into the Total_Sens_Diff_Inputs vector.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Copy_Adjoints_DiffInputs(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Called by a direct solver in ExtractAdjoint_Variable to put the calculated sensitivities into Total_Sens_Diff_Inputs (doing any MPI communication if necessary).
+   * \param[in] iDiff_Inputs - The index of the Total_Sens_Diff_Inputs vector to be set.
+   */
   virtual void SetTotal_Sens_Diff_Inputs(unsigned short iDiff_Inputs);
 
   /*!
@@ -4383,18 +4394,50 @@ public:
    */
   virtual void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
 
+  /*!
+   * \brief Get all the sensitivities of the differentiable inputs with respect to the externally specified scalar objective.
+   * \return Vector with sensitivities for all differentiable inputs.
+   */
   vector< vector<passivedouble> > GetTotal_Sens_Diff_Inputs(void);
 
+  /*!
+   * \brief Gets the value one of the differentiable input variables
+   * \param[in] index - The index of the differentiable input as listed in the config file.
+   * \return Vector with the differentiable input values
+   */
   virtual vector<su2double> GetDiff_Inputs_Vars(unsigned short index);
 
+  /*!
+   * \brief Set the value of one of the differentiable inputs.
+   * \param[in] diff_input - A vector of values to be set as the differentiable input.
+   * \param[in] index - The index of the differentiable input as listed in the config file.
+   */
   virtual void SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index);
 
+  /*!
+   * \brief Get value of one of the differentiable outputs.
+   * \param[in] index - The index of the differentiable output as listed in the config file.
+   * \return Vector with the differentiable output values
+   */
   virtual vector<su2double> GetDiff_Outputs_Vars(unsigned short index);
 
+  /*!
+   * \brief Set the value of one of the differentiable outputs into the Diff_Outputs_Vars vector. Should be used before computing objective function or getting the differentiable outputs.
+   * \param[in] config - Definition of the particular problem.
+   */
   virtual void SetDiff_Outputs_Vars(CConfig *config);
 
+  /*!
+   * \brief Set the derivatives to be passed into the backward pass when using differentiable outputs, to allow for efficient computation of the adjoint with respect to an externally defined scalar loss.
+   * \param[in] derivs - A vector of derivativse of the scalar loss with respect to the differentiable output specified by index.
+   * \param[in] index - The index of the differentiable output relative to the derivatives.
+   */
   virtual void SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index);
 
+  /*!
+   * \brief Evaluate the value of the internal objective function as a linear combination of the differentiable outputs and the derivatives (of the external loss with respect to simulation outputs). This ensures the adjoint computation returns the sensitivities of the externally defined scalar loss with resepct to the differentiable inputs.
+   * \param[in] config - Definition of the particular problem.
+   */
   virtual su2double Evaluate_DiffOutputs_Obj(CConfig *config);
 
 protected:
@@ -12781,6 +12824,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Copies the derivatives that are already taped by SU2 (outside of the DiffInputs framework) into the Total_Sens_Diff_Inputs vector.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Copy_Adjoints_DiffInputs(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Update the dual-time derivatives.

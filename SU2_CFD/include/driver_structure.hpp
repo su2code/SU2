@@ -433,6 +433,10 @@ public:
    */
   passivedouble GetUnsteady_TimeStep();
 
+  /*!
+   * \brief Get a vector with the global indices of all vertices.
+   * \return Vector of all global indices.
+   */
   vector<passivedouble> GetAllGlobalIndices();
 
     /*!
@@ -442,8 +446,6 @@ public:
      * \return Vertex global index.
      */
   unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex);
-
-  unsigned long GetNodeIndex(unsigned short iMarker, unsigned short iVertex);
 
   /*!
    * \brief Get the pressure at a vertex on a specified marker.
@@ -811,6 +813,23 @@ public:
    * \brief A virtual member to run a Block-Jacobi iteration in multizone problems.
    */
   virtual void Run_Jacobi(){};
+
+  /*!
+   * \brief Get a vector with the coordinates of all vertices, ordered by global index.
+   * \return Vector of coordinates ordered by global index.
+   */
+  vector<passivedouble> GetAllCoords(unsigned short dim);
+
+  /*!
+   * \brief Get the name of the file with the solution of the flow problem.
+   * \return Name of the file with the solution of the flow problem.
+   */
+  string GetRestart_FlowFileName(void);
+
+  /*!
+   * \brief Set the name of the restart file for the flow variables.
+   */
+  void SetRestart_FlowFileName(string filename);
 
 };
 
@@ -1515,12 +1534,42 @@ public:
    */
   void DynamicMeshUpdate(unsigned long ExtIter);
 
+  /*!
+   * \brief Get the number of differentiable inputs that were set in the config file.
+   * \return Number of differentiable inputs.
+   */
+  unsigned short GetnDiff_Inputs();
+
+  /*!
+   * \brief Get value of one of the differentiable inputs.
+   * \param[in] index - The index of the differentiable input as listed in the config file.
+   * \return Vector with the differentiable input values
+   */
   vector<passivedouble> GetDiff_Inputs_Vars(unsigned short index);
 
+  /*!
+   * \brief Set the value of one of the differentiable inputs.
+   * \param[in] diff_input - A vector of values to be set as the differentiable input.
+   * \param[in] index - The index of the differentiable input as listed in the config file.
+   */
   void SetDiff_Inputs_Vars(vector<passivedouble> diff_input, unsigned short index);
 
+  /*!
+   * \brief Apply the values of the differentiable inputs to the simulation. Should be called after the values have been set with SetDiff_Inputs_Vars.
+   */
   void ApplyDiff_Inputs_Vars();
 
+  /*!
+   * \brief Get the number of differentiable outputs that were set in the config file.
+   * \return Number of differentiable outputs.
+   */
+  unsigned short GetnDiff_Outputs();
+
+  /*!
+   * \brief Get value of one of the differentiable outputs.
+   * \param[in] index - The index of the differentiable output as listed in the config file.
+   * \return Vector with the differentiable output values
+   */
   vector<passivedouble> GetDiff_Outputs_Vars(unsigned short index);
 
   };
@@ -1595,12 +1644,31 @@ public:
    */
   void  DirectRun(unsigned short kind_recording);
 
+  /*!
+   * \brief Get the sensitivities of one of the differentiable inputs with respect to the externally specified scalar objective.
+   * \param[in] index - The index of the differentiable input as listed in the config file for which the sensitivity will be returned.
+   * \return Vector with the sensitivities.
+   */
   vector<passivedouble> GetTotal_Sens_Diff_Inputs(unsigned short index);
 
+  /*!
+   * \brief Get the number of differentiable inputs that were set in the config file.
+   * \return Number of differentiable inputs.
+   */
   unsigned short GetnDiff_Inputs();
 
+  /*!
+   * brief Gets the value of one of the differentiable input variables
+   * \param[in] index - The index of the differentiable input as listed in the config file.
+   * \return Vector with the differentiable input values
+   */
   vector<passivedouble> GetDiff_Inputs_Vars(unsigned short index);
 
+  /*!
+   * \brief Set the value of one of the differentiable inputs.
+   * \param[in] diff_input - A vector of values to be set as the differentiable input.
+   * \param[in] index - The index of the differentiable input as listed in the config file.
+   */
   void SetDiff_Inputs_Vars(vector<passivedouble> diff_input, unsigned short index);
 
     /*!
@@ -1614,7 +1682,9 @@ public:
   void SetWeight_ObjFunc(unsigned short val_obj, su2double val);
 
   /*!
-   * \brief Set the derivatives to be passed into the backward pass when using DIFF_OUTPUTS.
+   * \brief Set the derivatives to be passed into the backward pass when using differentiable outputs, to allow for efficient computation of the adjoint with respect to an externally defined scalar loss.
+   * \param[in] derivs - A vector of derivativse of the scalar loss with respect to the differentiable output specified by index.
+   * \param[in] index - The index of the differentiable output relative to the derivatives.
    */
   void SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index);
 

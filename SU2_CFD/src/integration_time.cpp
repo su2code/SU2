@@ -79,7 +79,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   
   /*--- If restart, update multigrid levels at the first multigrid iteration ---*/
 	/*-- Since the restart takes care of this I dont think is required, but we should check after the new restart routines are added ---*/
-  
+
   if ((restart && (Iteration == config[iZone]->GetnStartUpIter())) || startup_multigrid)
   {
     for (iMGLevel = 0; iMGLevel < config[iZone]->GetnMGLevels(); iMGLevel++) {
@@ -106,11 +106,11 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   }
 
   /*--- Set the current finest grid (full multigrid strategy) ---*/
-  
+
   FinestMesh = config[iZone]->GetFinestMesh();
 
   /*--- Perform the Full Approximation Scheme multigrid ---*/
-  
+
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem,
                   Iteration, iZone, iInst);
@@ -122,7 +122,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                                          MESH_0, NO_RK_ITER, RunTime_EqSystem, true);
   
   /*--- Compute non-dimensional parameters and the convergence monitor ---*/
-  
+
   NonDimensional_Parameters(geometry[iZone][iInst], solver_container[iZone][iInst],
                             numerics_container[iZone][iInst], config[iZone],
                             FinestMesh, RunTime_EqSystem, Iteration, &monitor);
@@ -150,7 +150,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
-  
+
   for (iPreSmooth = 0; iPreSmooth < config[iZone]->GetMG_PreSmooth(iMesh); iPreSmooth++) {
     
     switch (config[iZone]->GetKind_TimeIntScheme()) {
@@ -163,44 +163,44 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     for (iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
       
       /*--- Send-Receive boundary conditions, and preprocessing ---*/
-      
+
       solver_container[iZone][iInst][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh, iRKStep, RunTime_EqSystem, false);
       
       if (iRKStep == 0) {
         
         /*--- Set the old solution ---*/
-        
+
         solver_container[iZone][iInst][iMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][iInst][iMesh]);
 
         if (config[iZone]->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT)
           solver_container[iZone][iInst][iMesh][SolContainer_Position]->Set_NewSolution(geometry[iZone][iInst][iMesh]);
 
         /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
-        
+
         solver_container[iZone][iInst][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh, Iteration);
         
         /*--- Restrict the solution and gradient for the adjoint problem ---*/
-        
+
         Adjoint_Setup(geometry, solver_container, config, RunTime_EqSystem, Iteration, iZone);
-        
+
       }
       
       /*--- Space integration ---*/
-      
+
       Space_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], numerics_container[iZone][iInst][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep, RunTime_EqSystem);
       
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
-      
+
       Time_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iRKStep, RunTime_EqSystem, Iteration);
       
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
-      
+
       solver_container[iZone][iInst][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh);
-      
+
     }
     
   }
-  
+
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
   
   if ( (iMesh < config[iZone]->GetnMGLevels() && ((Iteration >= config[iZone]->GetnStartUpIter()) || startup_multigrid)) ) {
@@ -263,7 +263,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       }
     }
   }
-  
+
 }
 
 void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,

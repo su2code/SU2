@@ -756,8 +756,9 @@ def read_config(filename):
 
 def write_config(filename,param_dict):
     """ updates an existing config file """
-    
-    temp_filename = "temp.cfg"
+
+    # Use PID to avoid collisions when running in parallel
+    temp_filename = str(os.getpid()) + "_temp.cfg"
     shutil.copy(filename,temp_filename)
     output_file = open(filename,"w")
 

@@ -137,12 +137,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   /*--- Initialize arrays for flexible differentiation. ---*/
 
-  // TODO Temporary, should pull probably only after direct soler has actually computed it.
-  //  But how to initialize it then?
   Total_Sens_Diff_Inputs = direct_solver->GetTotal_Sens_Diff_Inputs();
-
-  Diff_Outputs_Backprop_Derivs.reserve(config->GetnDiff_Outputs());
-  Diff_Outputs_Backprop_Derivs.resize(config->GetnDiff_Outputs());
 
 }
 
@@ -289,7 +284,6 @@ vector<su2double> CDiscAdjSolver::GetDiff_Inputs_Vars(unsigned short index) {
 
 void CDiscAdjSolver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index) {
   direct_solver->SetDiff_Inputs_Vars(val, index);
-  // TODO Add flag and check when registering variables if the diff input vars have been set
 }
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
@@ -621,59 +615,135 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
 
-  // XXX Debug
+  direct_solver->ExtractAdjoint_Variables(geometry, config);
+  Total_Sens_Diff_Inputs = direct_solver->GetTotal_Sens_Diff_Inputs();
+
+  /*--- DEBUG SENSITIVITIES
 #ifdef HAVE_MPI
   if (SU2_MPI::GetRank() == 0)
 #endif
   {
-    for (unsigned short i = 0; i < Total_Sens_Diff_Inputs.size(); i++) {
-      cout << "[ ";
-      for (unsigned short j = 0; j < Total_Sens_Diff_Inputs[i].size(); j++) {
-        cout << Total_Sens_Diff_Inputs[i][j] << ", ";
-      }
-      cout << "], ";
-    }
-    cout << endl;
+     Copy_Adjoints_DiffInputs(geometry, config);
+     cout << "Sensitivities: ";
+     for (unsigned short i = 0; i < Total_Sens_Diff_Inputs.size(); i++) {
+       cout << "[ ";
+       unsigned short j = 0;
+       while (j < Total_Sens_Diff_Inputs[i].size()) {
+         cout << Total_Sens_Diff_Inputs[i][j];
+         if (j < Total_Sens_Diff_Inputs[i].size() - 1)
+           cout << ",";
+         cout << " ";
+         if (j == 2 && Total_Sens_Diff_Inputs[i].size() > 10) {
+           j = Total_Sens_Diff_Inputs[i].size() - 4;
+           cout << "..., ";
+         }
+         j++;
+       }
+       cout << "], ";
+     }
+     cout << endl;
   }
+//  ---*/
+}
 
-  direct_solver->ExtractAdjoint_Variables(geometry, config);
-  Total_Sens_Diff_Inputs = direct_solver->GetTotal_Sens_Diff_Inputs();
+void CDiscAdjSolver::Copy_Adjoints_DiffInputs(CGeometry *geometry, CConfig *config) {
+  // Do NOT make any calls to GetDerivative, or it could mess up the AD tool ordering (which has to be preserved)
 
-  /*--- Copy variables that are dealt with here (adjoint solver) instead of direct solver to Diff Inputs ---*/
-  unsigned short iDiff_Inputs;
-  for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
+  unsigned short TempPressIdx;
+  for (unsigned short iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
 
+    // TODO Add other cases like these, for sensitivities that are already computed in the code
     if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
       switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
-        // TODO Add check for cases like above. E.g., when incompressible Total_Sens_Mach is undefined
         case DI_MACH:
+          Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(1);
           Total_Sens_Diff_Inputs[iDiff_Inputs].resize(1);
           Total_Sens_Diff_Inputs[iDiff_Inputs][0] = SU2_TYPE::GetValue(Total_Sens_Mach);
           break;
         case DI_AOA:
-          // XXX Adjust for radians-degrees here?
+          Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(1);
           Total_Sens_Diff_Inputs[iDiff_Inputs].resize(1);
           Total_Sens_Diff_Inputs[iDiff_Inputs][0] = SU2_TYPE::GetValue(Total_Sens_AoA * PI_NUMBER / 180.0);
           break;
+
         default:
           break;
       }
     }
 
-    if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()) {
+    switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
+//      case DI_TEMP:
+//        TempPressIdx = config->GetKind_Regime() == COMPRESSIBLE ? 0 : nDim + 1;
+//        // TODO Test
+//        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nPointDomain);
+//        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nPointDomain);
+//        for (unsigned long iVec = 0; iVec < nPointDomain; iVec++) {
+//          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = SU2_TYPE::GetValue(node[iVec]->GetSolution(TempPressIdx));
+//        }
+//        break;
+//      case DI_PRESS:
+//        TempPressIdx = config->GetKind_Regime() == COMPRESSIBLE ? nDim + 1 : 0;
+//        // TODO Test
+//        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nPointDomain);
+//        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nPointDomain);
+//        for (unsigned long iVec = 0; iVec < nPointDomain; iVec++) {
+//          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = SU2_TYPE::GetValue(node[iVec]->GetSolution(TempPressIdx));
+//        }
+//        break;
+//      case DI_VEL_X:
+//        // TODO Test
+//        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nPointDomain);
+//        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nPointDomain);
+//        for (unsigned long iVec = 0; iVec < nPointDomain; iVec++) {
+//          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = SU2_TYPE::GetValue(node[iVec]->GetSolution(1));
+//        }
+//        break;
+//      case DI_VEL_Y:
+//        // TODO Test
+//        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nPointDomain);
+//        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nPointDomain);
+//        for (unsigned long iVec = 0; iVec < nPointDomain; iVec++) {
+//          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = SU2_TYPE::GetValue(node[iVec]->GetSolution(2));
+//        }
+//        break;
+//      case DI_VEL_Z:
+//        // TODO Test
+//        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nPointDomain);
+//        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nPointDomain);
+//        for (unsigned long iVec = 0; iVec < nPointDomain; iVec++) {
+//          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = SU2_TYPE::GetValue(node[iVec]->GetSolution(3));
+//        }
+//        break;
 
-    }
+      case DI_COORDS_X:
+        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nPointDomain);
+        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nPointDomain);
+        for (unsigned long iVec = 0; iVec < nPointDomain; iVec++) {
+          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = SU2_TYPE::GetValue(node[iVec]->GetSensitivity(0));
+        }
+        break;
+      case DI_COORDS_Y:
+        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nPointDomain);
+        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nPointDomain);
+        for (unsigned long iVec = 0; iVec < nPointDomain; iVec++) {
+          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = SU2_TYPE::GetValue(node[iVec]->GetSensitivity(1));
+        }
+        break;
+      case DI_COORDS_Z:
+        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nPointDomain);
+        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nPointDomain);
+        for (unsigned long iVec = 0; iVec < nPointDomain; iVec++) {
+          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = SU2_TYPE::GetValue(node[iVec]->GetSensitivity(2));
+        }
+        break;
 
-    if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
-        (KindDirect_Solver == RUNTIME_FLOW_SYS &&
-         (!config->GetBoolTurbomachinery()))) {
-
+      default:
+        break;
     }
   }
-
 }
 
-void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {
+  void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {
 
 //  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 //      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));

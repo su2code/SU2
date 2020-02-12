@@ -153,7 +153,10 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, vector<vector<ScalarType> > & 
 #endif
   
   if (!Convergence) {
-    SU2_MPI::Error("SU2 has diverged.", CURRENT_FUNCTION);
+    // XXX Ignoring divergence error
+    // SU2_MPI::Error("SU2 has diverged.", CURRENT_FUNCTION);
+    Convergence = true;
+    return;
   }
   
   /*--- Begin main Gram-Schmidt loop ---*/

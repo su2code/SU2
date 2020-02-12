@@ -5366,7 +5366,7 @@ public:
    * \return File name of the output grid.
    */
   string GetMesh_Out_FileName(void);
-  
+
   /*!
    * \brief Get the name of the file with the solution of the flow problem.
    * \return Name of the file with the solution of the flow problem.
@@ -5506,6 +5506,11 @@ public:
    * \return Name of the restart file for the flow variables.
    */
   string GetMultiInstance_HistoryFileName(string val_filename, int val_iInst);
+
+  /*!
+   * \brief Set the name of the restart file for the flow variables.
+   */
+  void SetRestart_FlowFileName(string filename);
 
   /*!
    * \brief Get the name of the restart file for the flow variables.

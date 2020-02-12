@@ -107,6 +107,10 @@ nobase_dist_mypkg_DATA= \
     FSI/io/__init__.py \
     FSI/io/FSI_config.py \
     FSI/util/__init__.py \
-    FSI/util/switch.py
+    FSI/util/switch.py \
+    su2torch/__init__.py \
+    su2torch/su2_function.py \
+    su2torch/su2_numpy.py \
+    su2torch/su2_function_mpi.py
 
 EXTRA_DIST = $(bin_SCRIPTS)

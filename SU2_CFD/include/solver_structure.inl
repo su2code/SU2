@@ -1031,7 +1031,9 @@ inline void CSolver::SetVelocity_Inf(unsigned short val_dim, su2double val_veloc
 
 inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){}
 
-inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){}
+inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::Copy_Adjoints_DiffInputs(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config){}
 
@@ -1174,11 +1176,10 @@ inline vector<su2double> CSolver::GetDiff_Inputs_Vars(unsigned short index) { re
 
 inline vector<su2double> CSolver::GetDiff_Outputs_Vars(unsigned short index) { return Diff_Outputs_Vars[index]; }
 
-// TODO Is this dummy default necessary?
 inline void CSolver::SetDiff_Outputs_Vars(CConfig *config) { }
 
 inline void CSolver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index) {
-  unsigned short iVec, nVec;
+  unsigned long iVec, nVec;
 
   nVec = val.size();
   Diff_Inputs_Vars[index].reserve(nVec);
@@ -1197,18 +1198,27 @@ inline void CSolver::SetBackprop_Derivs(vector<passivedouble> derivs, unsigned s
   for (iVec = 0; iVec < nVec; iVec++) {
     Diff_Outputs_Backprop_Derivs[index][iVec] = derivs[iVec];
   }
-  // TODO Check if size of passed vector is correct here? (Or in Evaluate_DiffOutputs_Obj?)
 }
 
 inline su2double CSolver::Evaluate_DiffOutputs_Obj(CConfig *config) {
-  unsigned short iDiff_Outputs, iVec, nVec;
+  unsigned short iDiff_Outputs;
+  unsigned short divisor = 1;
+  unsigned long iVec, nVec;
   su2double Local_ComboObj, ComboObj;
 
   Local_ComboObj = 0.0;
   for (iDiff_Outputs = 0; iDiff_Outputs < config->GetnDiff_Outputs(); iDiff_Outputs++) {
     nVec = Diff_Outputs_Backprop_Derivs[iDiff_Outputs].size();
     for (iVec = 0; iVec < nVec; iVec++) {
-      Local_ComboObj += Diff_Outputs_Backprop_Derivs[iDiff_Outputs][iVec] * Diff_Outputs_Vars[iDiff_Outputs][iVec];
+      if (Diff_Outputs_Backprop_Derivs[iDiff_Outputs].size() != Diff_Outputs_Vars[iDiff_Outputs].size()) {
+        SU2_MPI::Error("Size of derivatives passed in does not match size of one of the diff outputs.",
+                       CURRENT_FUNCTION);
+      }
+#ifdef HAVE_MPI
+      // Adjust for scalar output variables that are already present in all nodes and thus when Allreducing get repeated
+      divisor = nVec == 1 ? SU2_MPI::GetSize() : 1;
+#endif
+      Local_ComboObj += Diff_Outputs_Backprop_Derivs[iDiff_Outputs][iVec] * Diff_Outputs_Vars[iDiff_Outputs][iVec] / divisor;
     }
   }
 
@@ -1221,23 +1231,22 @@ inline su2double CSolver::Evaluate_DiffOutputs_Obj(CConfig *config) {
 }
 
 inline void CSolver::SetTotal_Sens_Diff_Inputs(unsigned short iDiff_Inputs) {
-  unsigned short iVec, nVec;
-  passivedouble Local_Sens;
+  unsigned long iVec, nVec;
+  passivedouble *Local_Sens;
 
   nVec = Diff_Inputs_Vars[iDiff_Inputs].size();
   Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nVec);
   Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nVec);
 
-  // TODO Vectorize MPI communication?  (Do whole vector at once)
+  Local_Sens = new passivedouble[nVec];
   for (iVec = 0; iVec < nVec; iVec++) {
-    Local_Sens = SU2_TYPE::GetDerivative(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
-#ifdef HAVE_MPI
-    // TODO Should it always be MPI Allreduce/MPI_SUM here?
-    SU2_MPI::Allreduce(&Local_Sens,  &Total_Sens_Diff_Inputs[iDiff_Inputs][iVec], 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-#else
-    Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = Local_Sens;
-#endif
+    Local_Sens[iVec] = SU2_TYPE::GetDerivative(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
   }
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(Local_Sens, Total_Sens_Diff_Inputs[iDiff_Inputs].data(), nVec, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+#else
+  Total_Sens_Diff_Inputs[iDiff_Inputs].assign(Local_Sens, Local_Sens + nVec);
+#endif
 }
 
 

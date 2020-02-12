@@ -1512,6 +1512,8 @@ inline string CConfig::GetSurfHeat_FileName(void) { return SurfHeat_FileName; }
 
 inline string CConfig::GetHeat_FileName(void) { return Heat_FileName; }
 
+inline void CConfig::SetRestart_FlowFileName(string filename) { Restart_FlowFileName = filename; }
+
 inline string CConfig::GetRestart_FlowFileName(void) { return Restart_FlowFileName; }
 
 inline string CConfig::GetRestart_HeatFileName(void) { return Restart_HeatFileName; }

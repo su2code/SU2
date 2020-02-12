@@ -1721,17 +1721,17 @@ inline void CMeshVariable::SetWallDistance(su2double val_dist) { WallDistance = 
 inline bool CMeshVariable::Get_isVertex(void) { return false; }
 
 inline void CMeshVariable::Register_MeshCoord(bool input) {
-    if (input) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        AD::RegisterInput(Mesh_Coord[iVar]);
-    }
-    else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        AD::RegisterOutput(Mesh_Coord[iVar]);
-    }
+  if (input) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput(Mesh_Coord[iVar]);
+  }
+  else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterOutput(Mesh_Coord[iVar]);
+  }
 }
 
 inline void CMeshVariable::GetAdjoint_MeshCoord(su2double *adj_mesh) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         adj_mesh[iVar] = SU2_TYPE::GetDerivative(Mesh_Coord[iVar]);
     }
 }

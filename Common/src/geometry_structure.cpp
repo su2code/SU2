@@ -2678,7 +2678,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
-  
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
@@ -4191,6 +4191,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
    rank matches the number in the mesh file (in serial). ---*/
 
   if ((size == SINGLE_NODE) && (Point_Map.size() < geometry->GetnPoint())) {
+    cout << ">>>>>> " << geometry->GetnPoint() << " | " << Point_Map.size() << endl;
     SU2_MPI::Error( string("Mismatch between NPOIN and number of points")
                    +string(" listed in mesh file.\n")
                    +string("Please check the mesh file for correctness.\n"),

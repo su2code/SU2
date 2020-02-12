@@ -295,16 +295,6 @@ unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned sho
 
 }
 
-unsigned long CDriver::GetNodeIndex(unsigned short iMarker, unsigned short iVertex) {
-
-  unsigned long iPoint;
-
-  iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-
-  return iPoint;
-
-}
-
 bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned short iVertex) {
 
   unsigned long iPoint;
@@ -339,6 +329,24 @@ passivedouble CDriver::GetVertexCoordX(unsigned short iMarker, unsigned short iV
   Coord = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetCoord();
   return SU2_TYPE::GetValue(Coord[0]);
 
+}
+
+vector<passivedouble> CDriver::GetAllCoords(unsigned short dim) {
+  su2double* Coord;
+  vector<passivedouble> AllCoords;
+  unsigned long iPoint, nPointDomain, GlobalIndex;
+
+  nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
+  AllCoords.reserve(nPointDomain);
+  AllCoords.resize(nPointDomain);
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
+    Coord = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetCoord();
+    AllCoords[GlobalIndex] = SU2_TYPE::GetValue(Coord[dim]);
+  }
+
+  return AllCoords;
 }
 
 passivedouble CDriver::GetVertexCoordY(unsigned short iMarker, unsigned short iVertex) {
@@ -1244,9 +1252,11 @@ vector<passivedouble> CDriver::GetVertex_UndeformedCoord(unsigned short iMarker,
 }
 
 vector<passivedouble> CDiscAdjSinglezoneDriver::GetTotal_Sens_Diff_Inputs(unsigned short index) {
-  // TODO Add check if Sensitivity hasnt been calculated yet?
   // TODO Which solver to use here?
-
+  vector<passivedouble> vec = solver[ADJFLOW_SOL]->GetTotal_Sens_Diff_Inputs()[index];
+  if (vec.size() == 0) {
+    SU2_MPI::Error("Derivatives haven't been set yet.", CURRENT_FUNCTION);
+  }
   return solver[ADJFLOW_SOL]->GetTotal_Sens_Diff_Inputs()[index];
 }
 
@@ -1257,7 +1267,7 @@ unsigned short CDiscAdjSinglezoneDriver::GetnDiff_Inputs() {
 vector<passivedouble> CSinglezoneDriver::GetDiff_Inputs_Vars(unsigned short index) {
 //  TODO Does getting Diff_Inputs_Vars from any solver in solver container always work?
 //    (using all 0 indices for now)
-  unsigned short iVec;
+  unsigned long iVec;
 
   vector<su2double> temp = solver_container[0][0][0][FLOW_SOL]->GetDiff_Inputs_Vars(index);
   vector<passivedouble> vec(temp.size());
@@ -1271,7 +1281,6 @@ vector<passivedouble> CSinglezoneDriver::GetDiff_Inputs_Vars(unsigned short inde
 
 void CSinglezoneDriver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index) {
   unsigned short iZone, iInst, iMGlevel;
-
   // TODO Using iInst only equal to 0 for now (first idx in solver_container)
   iInst = 0;
 
@@ -1286,7 +1295,6 @@ void CSinglezoneDriver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned 
 
 void CSinglezoneDriver::ApplyDiff_Inputs_Vars() {
   unsigned short iZone, iInst, iMGlevel;
-
   // TODO Using iInst only equal to 0 for now (first idx in solver_container)
   iInst = 0;
 
@@ -1299,10 +1307,18 @@ void CSinglezoneDriver::ApplyDiff_Inputs_Vars() {
   }
 }
 
+unsigned short CSinglezoneDriver::GetnDiff_Inputs() {
+  return config_container[0]->GetnDiff_Inputs();
+}
+
+unsigned short CSinglezoneDriver::GetnDiff_Outputs() {
+  return config_container[0]->GetnDiff_Outputs();
+}
+
 vector<passivedouble> CSinglezoneDriver::GetDiff_Outputs_Vars(unsigned short index) {
   //TODO Does getting Diff_Outputs_Vars from any solver in solver container always work?
   //  (using all 0 indices for now)
-  unsigned short iVec;
+  unsigned long iVec;
 
   solver_container[0][0][0][FLOW_SOL]->SetDiff_Outputs_Vars(config_container[0]);
   vector<su2double> temp = solver_container[0][0][0][FLOW_SOL]->GetDiff_Outputs_Vars(index);
@@ -1316,7 +1332,7 @@ vector<passivedouble> CSinglezoneDriver::GetDiff_Outputs_Vars(unsigned short ind
 }
 
 vector<passivedouble> CDiscAdjSinglezoneDriver::GetDiff_Inputs_Vars(unsigned short index) {
-  unsigned short iVec;
+  unsigned long iVec;
 
   vector<su2double> temp = solver[ADJFLOW_SOL]->GetDiff_Inputs_Vars(index);
   vector<passivedouble> vec(temp.size());
@@ -1335,15 +1351,12 @@ void CDiscAdjSinglezoneDriver::SetDiff_Inputs_Vars(vector<passivedouble> val, un
   // TODO Using iInst only equal to 0 for now (first idx in solver_container)
   iInst = 0;
 
-  // TODO Using only FLOW_SOL for now, iterate over solvers?
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iMGlevel = 0; iMGlevel <= config_container[iZone]->GetnMGLevels(); iMGlevel++) {
       solver_container[iZone][iInst][iMGlevel][FLOW_SOL]->SetDiff_Inputs_Vars(val, index);
       solver_container[iZone][iInst][iMGlevel][ADJFLOW_SOL]->SetDiff_Inputs_Vars(val, index);
     }
     solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->SetDiff_Inputs_Vars(val, index);
-//    solver_container[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetDiff_Inputs_Vars(val, index);
-//    solver_container[iZone][iInst][MESH_0][ADJTURB_SOL]->SetDiff_Inputs_Vars(val, index);
   }
 }
 
@@ -1369,3 +1382,12 @@ void CDiscAdjSinglezoneDriver::SetBackprop_Derivs(vector<passivedouble> derivs, 
   solver[ADJFLOW_SOL]->SetBackprop_Derivs(local_derivs, index);
 }
 
+string CDriver::GetRestart_FlowFileName() {
+  return config_container[ZONE_0]->GetRestart_FlowFileName();
+}
+
+void CDriver::SetRestart_FlowFileName(string filename) {
+  for(iZone=0; iZone < nZone; iZone++) {
+    config_container[iZone]->SetRestart_FlowFileName(filename);
+  }
+}

@@ -505,9 +505,12 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   Jacobian.SetValZero();
 
   /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
-  if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
-    if (nDim == 2) cout << scientific << "Min. area in the undeformed mesh: "<< MinVolume_Ref <<", max. area: " << MaxVolume_Ref <<"." << endl;
-    else           cout << scientific << "Min. volume in the undeformed mesh: "<< MinVolume_Ref <<", max. volume: " << MaxVolume_Ref <<"." << endl;
+  if (rank == MASTER_NODE) {
+    if (discrete_adjoint) cout << scientific; // Ensure the mesh deformation output, if requested, remains scientific
+    else{
+      if (nDim == 2) cout << scientific << "Min. area in the undeformed mesh: "<< MinVolume_Ref <<", max. area: " << MaxVolume_Ref <<"." << endl;
+      else           cout << scientific << "Min. volume in the undeformed mesh: "<< MinVolume_Ref <<", max. volume: " << MaxVolume_Ref <<"." << endl;
+    }
   }
 
   /*--- Compute the stiffness matrix. ---*/

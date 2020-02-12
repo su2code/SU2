@@ -224,6 +224,8 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
   }
 
+  solver[ADJFLOW_SOL]->Copy_Adjoints_DiffInputs(geometry, config);
+
 }
 
 void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){

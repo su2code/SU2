@@ -78,3 +78,9 @@ TestData
 
 Mercurial
 .hg*
+
+
+*.idea
+CMakeLists.txt
+cmake-build-debug
+pytorch_config_make.sh

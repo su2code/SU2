@@ -1,4 +1,5 @@
 ﻿/*!
+/*!
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -2682,21 +2683,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error(string("Cannot use OBJECTIVE_FUNCTION option with DIFF_OUTPUTS, comment OBJECTIVE_FUNCTION out."),
                      CURRENT_FUNCTION);
     }
-    // TODO How to deal with markers and DIFF_OUTPUTS?
-//    else if (nMarker_Monitoring > 1) {
-//      SU2_MPI::Error(string("More than 1 marker for DIFF_OUTPUTS not supported for now."),
-//                     CURRENT_FUNCTION);
-//    }
     else {
       /* Otherwise, set Kind_ObjFunc to DIFF_OUTPUTS for internal use if using DIFF_OUTPUTS */
-      // TODO Account for case where more than 1 marker
       Kind_ObjFunc = new unsigned short[1];
       Kind_ObjFunc[0] = DIFF_OUTPUTS;
       nObj=1;
-      // TODO Placeholder weight to (maybe) avoid errors, not sure if necessary
-      Weight_ObjFunc = new su2double[1];
-      Weight_ObjFunc[0] = 1.0;
-      nObjW=1;
     }
   }
 

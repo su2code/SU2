@@ -1934,7 +1934,7 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
 }
 
 void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  
+
   unsigned long iPoint, ErrorCounter = 0;
   su2double SharpEdge_Distance;
   bool RightSol = true;
@@ -5478,7 +5478,7 @@ void CAdjNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  
+
   unsigned long iPoint, ErrorCounter = 0;
   su2double SharpEdge_Distance;
   bool RightSol = true;

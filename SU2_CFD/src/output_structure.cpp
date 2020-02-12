@@ -11610,7 +11610,6 @@ void COutput::SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsi
     }
 
     /*--- Compute the sensitivity in normal direction ---*/
-
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
       if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
@@ -14136,7 +14135,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
   /*--------------------------------------------------------------------------*/
   
   jPoint = 0;
-  
+
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
     /*--- Check for halos & write only if requested ---*/

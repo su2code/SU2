@@ -2533,7 +2533,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver_container, CGeome
   if (kind_recording == MESH_COORDS){
     
     /*--- Register node coordinates as input ---*/
-    
+
     geometry_container[iZone][iInst][MESH_0]->RegisterCoordinates(config_container[iZone]);
     
   }

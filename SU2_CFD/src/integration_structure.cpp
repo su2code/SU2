@@ -559,7 +559,9 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
     
     if (monitor != monitor) {
-      SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+      // XXX Ignoring divergence error
+      // SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+      return;
     }
     
     if (config->GetFinestMesh() != MESH_0 ) Convergence = false;
