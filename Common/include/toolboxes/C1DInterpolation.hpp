@@ -99,7 +99,6 @@ class CLinearInterpolation: public C1DInterpolation{
 
 vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
                                     su2double Theta ,
-                                    su2double nColumns,
                                     unsigned short nDim, 
                                     su2double *Coord, 
                                     unsigned short nVar_Turb, 

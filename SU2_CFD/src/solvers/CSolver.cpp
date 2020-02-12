@@ -4395,7 +4395,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               }
 
               /* --- Correcting for Interpolation Type ---*/
-              Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nCol_InletFile+nDim, nDim, Coord, nVar_Turb, config);
+              Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, config);
               solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
               
               for (unsigned short iVar=0; iVar < (nCol_InletFile+nDim); iVar++)
