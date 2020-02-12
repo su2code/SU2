@@ -315,14 +315,13 @@ def amg ( config , kind='' ):
             
             mesh = su2amg.read_mesh(current_mesh, current_solution)
 
-            #--- Write solution
-            if config_cfd.WRT_INRIA_MESH == 'YES':
-                if global_iter == 0 :
-                    su2amg.write_mesh("ini.meshb", "ini.solb", mesh)
-                else :
-                    current_gmf_mesh = "ite%d.meshb" % (global_iter-1)
-                    current_gmf_solution = "ite%d.solb" % (global_iter-1)
-                    su2amg.write_mesh(current_gmf_mesh, current_gmf_solution, mesh)
+            #--- Write initial solution
+            if global_iter == 0 :
+                su2amg.write_mesh("ini.meshb", "ini.solb", mesh)
+            else :
+                current_gmf_mesh = "ite%d.meshb" % (global_iter-1)
+                current_gmf_solution = "ite%d.solb" % (global_iter-1)
+                su2amg.write_mesh(current_gmf_mesh, current_gmf_solution, mesh)
                                     
             if not amg_python : 
                 
@@ -415,6 +414,11 @@ def amg ( config , kind='' ):
                     current_solution = "ite%d.csv" % (global_iter)
                                     
                     su2amg.write_mesh(current_mesh, current_solution, mesh_new)
+
+                    if config_cfd.WRT_INRIA_MESH == 'YES':
+                        current_gmf_mesh = "ite%d_itp.meshb" % global_iter
+                        current_gmf_solution = "ite%d_itp.solb" % global_iter
+                        su2amg.write_mesh(current_gmf_mesh, current_gmf_solution, mesh_new)
 
                 else:
                 
