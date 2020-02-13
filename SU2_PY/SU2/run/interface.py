@@ -232,26 +232,6 @@ def SOL(config):
     
     return
 
-def MET(config):
-    """ run SU2_MET
-        partitions set by config.NUMBER_PART
-    """
-    konfig = copy.deepcopy(config)
-
-    tempname = 'config_MET.cfg'
-    konfig.dump(tempname)
-
-    # must run with rank 1
-    processes = konfig['NUMBER_PART']
-    
-    the_Command = 'SU2_MET%s %s' % (quote, tempname)
-    the_Command = build_command( the_Command , processes )
-    run_command( the_Command )
-    
-    #os.remove(tempname)
-    
-    return
-
 def SOL_FSI(config):
     """ run SU2_SOL for FSI problems
       partitions set by config.NUMBER_PART

@@ -3097,7 +3097,6 @@ void CConfig::SetHeader(unsigned short val_software){
     case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
     case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
     case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
-    case SU2_MET: cout << "|   |___/\\___//___|   Suite (Metric Computation Code)                   |" << endl; break;
     }
 
     cout << "|                                                                       |" << endl;

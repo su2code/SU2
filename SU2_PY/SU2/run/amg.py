@@ -41,7 +41,6 @@ import numpy as np
 from .. import io   as su2io
 from .. import amginria as su2amg
 from interface import CFD as SU2_CFD
-from interface import MET as SU2_MET
 
 def amg ( config , kind='' ):
     
@@ -164,14 +163,6 @@ def amg ( config , kind='' ):
                 config_cfd.MESH_HMIN              = config.ADAP_HMIN
                 config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
                 SU2_CFD(config_cfd)
-
-                # config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
-                # config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, ANISOTROPIC_METRIC)"
-                # config_cfd.ERROR_ESTIMATE         = 'YES'
-                # config_cfd.MESH_HMAX              = config.ADAP_HMAX
-                # config_cfd.MESH_HMIN              = config.ADAP_HMIN
-                # config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
-                # SU2_MET(config_cfd)
 
         except:
             sys.stdout = sav_stdout
@@ -500,12 +491,6 @@ def amg ( config , kind='' ):
                     config_cfd.ERROR_ESTIMATE         = 'YES'
                     config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[iSiz])
                     SU2_CFD(config_cfd)
-
-                    # config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
-                    # config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, ANISOTROPIC_METRIC)"
-                    # config_cfd.ERROR_ESTIMATE         = 'YES'
-                    # config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[iSiz])
-                    # SU2_MET(config_cfd)
             
             except:
                 sys.stdout = sav_stdout

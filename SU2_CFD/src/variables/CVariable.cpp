@@ -78,7 +78,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
   if (config->GetMultizone_Problem())
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
 
-  if (config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET) {
+  if (config->GetError_Estimate()) {
     AnisoGrad.resize(nPoint,nDim*nVar*nDim) = su2double(0.0);
     AnisoHess.resize(nPoint,3*(nDim-1)*nVar*nDim) = su2double(0.0);
   }

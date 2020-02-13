@@ -170,8 +170,6 @@ subdir('SU2_DOT/src')
 subdir('SU2_DEF/src')
 # compile SU2_GEO executable
 subdir('SU2_GEO/src')
-# compile SU2_MET executable
-subdir('SU2_MET/src')
 # compile SU2_MSH executable
 subdir('SU2_MSH/src')
 # compile SU2_SOL executable

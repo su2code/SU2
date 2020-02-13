@@ -111,9 +111,6 @@ AC_ARG_ENABLE(DEF,
 AC_ARG_ENABLE(SOL,
    	AS_HELP_STRING([--disable-SOL], [build the SU2_SOL executable (default = yes)]),
 	[build_SOL=$enableval], [build_SOL="yes"])
-AC_ARG_ENABLE(MET,
-    AS_HELP_STRING([--disable-], [build the SU2_MET executable (default = no)]),
-    [build_MET=$enableval], [build_MET="no"])
 AC_ARG_ENABLE(GEO,
    	AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
 	[build_GEO=$enableval], [build_GEO="yes"])
@@ -348,7 +345,6 @@ AC_OUTPUT(Makefile \
 	SU2_MSH/obj/Makefile \
 	SU2_DEF/obj/Makefile \
 	SU2_SOL/obj/Makefile \
-  SU2_MET/obj/Makefile \
 	SU2_GEO/obj/Makefile \
 	SU2_PY/Makefile \
 	SU2_PY/pySU2/Makefile)
@@ -429,7 +425,6 @@ Build Configuration Summary:
     Build SU2_MSH:        $build_MSH
     Build SU2_DEF:        $build_DEF
     Build SU2_SOL:        $build_SOL
-    Build SU2_MET:        $build_MET
     Build SU2_GEO:        $build_GEO
     Build Py Wrapper:     $build_PY_WRAPPER
 

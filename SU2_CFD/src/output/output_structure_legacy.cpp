@@ -12794,7 +12794,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
 
     /*--- Plot the metric tensor. ---*/
 
-    if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
+    if(config->GetError_Estimate()){
 
       if(nDim == 2){
         Variable_Names.push_back("Aniso_Metric[0]");
@@ -13135,7 +13135,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
 
         /*--- Load data for the metric. ---*/
 
-        if (config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
+        if (config->GetError_Estimate()){
 
           unsigned short iMetr, nMetr;
           if(nDim == 2) nMetr = 3;
