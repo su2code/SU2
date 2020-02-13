@@ -4279,6 +4279,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
           /*--- Pointer to call Set and Evaluate functions. ---*/
           vector<C1DInterpolation*> interpolator (nColumns);
+          string interpolation_function, interpolation_type;
 
           /*--- Object to call Corrected Inlet Values and Print Interpolated Data functions ---*/
          // C1DInterpolation *corrector = nullptr;
@@ -4289,21 +4290,37 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             Interpolate = false;
             break;
 
-            case (ONED_AKIMASPLINE_SPANWISE):
+            case (AKIMA_1D):
               for (unsigned int iCol=0; iCol < nColumns; iCol++)
                 interpolator[iCol] = new CAkimaInterpolation(Inlet_Data, nColumns, nRows, iCol);
+                interpolation_function = "Akima";
               Interpolate = true;
             break;
 
-            case (ONED_LINEAR_SPANWISE):
+            case (LINEAR_1D):
               for (unsigned int iCol=0; iCol < nColumns; iCol++)
                 interpolator[iCol] = new CLinearInterpolation(Inlet_Data, nColumns, nRows, iCol);
+                interpolation_function = "Linear";
               Interpolate = true;
             break;
 
             default:
               SU2_MPI::Error("Error in the Kind_InletInterpolation Marker\n",CURRENT_FUNCTION);
             break;
+          }
+
+          if(Interpolate == false)
+            cout<<"No Inlet Interpolation being used"<<endl;
+          else{
+            switch(config->GetKindInletInterpolationType()){
+              case(VR_VTHETA):
+                interpolation_type="VR_VTHETA";
+              break;
+              case(ALPHA_PHI):
+                interpolation_type="ALPHA_PHI";
+              break;
+              }
+            cout<<endl<<"Inlet Interpolation being done using "<<interpolation_function<<" function and type "<<interpolation_type<<endl<<endl; 
           }
 
             /*--- Loop through the nodes on this marker. ---*/

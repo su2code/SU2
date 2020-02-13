@@ -338,14 +338,14 @@ static const MapType<string, ENUM_RADIALBASIS> RadialBasisFunction_Map = {
  * \brief type of radial spanwise interpolation function for the inlet face
  */
 enum ENUM_INLET_SPANWISEINTERPOLATION {
-  NO_SURFACEINTERPOLATION = 0,
-  ONED_LINEAR_SPANWISE = 1,
-  ONED_AKIMASPLINE_SPANWISE = 2,
+  NO_INTERPOLATION = 0,
+  LINEAR_1D = 1,
+  AKIMA_1D = 2,
 };
 static const map<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpolation_Map = {
-  MakePair("NONE", NO_SURFACEINTERPOLATION)
-  MakePair("ONED_LINEAR_SPANWISE",ONED_LINEAR_SPANWISE)
-  MakePair("ONED_AKIMASPLINE_SPANWISE",ONED_AKIMASPLINE_SPANWISE)
+  MakePair("NONE", NO_INTERPOLATION)
+  MakePair("LINEAR_1D",LINEAR_1D)
+  MakePair("AKIMA_1D",AKIMA_1D)
 };
 
 /*!
