@@ -871,7 +871,6 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
         if (iDV_Value != nDV_Value-1 ){
           cout << ", ";
         }
-        Gradient_file.precision(12);
         Gradient_file << Gradient[iDV][iDV_Value] << endl;
       }
       cout << endl;
