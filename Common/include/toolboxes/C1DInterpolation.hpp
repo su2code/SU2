@@ -68,7 +68,7 @@ public:
     SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, X, Data);
     }
 
-    ~CAkimaInterpolation(){cout<<"inside destructor"<<endl;}
+    ~CAkimaInterpolation(){}
 
     void SetSpline(vector<su2double> &x, vector<su2double> &y) override;
     su2double EvaluateSpline(su2double Point_Interp) override;

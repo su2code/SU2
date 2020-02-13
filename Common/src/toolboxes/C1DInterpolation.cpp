@@ -103,7 +103,7 @@ void CAkimaInterpolation::SetSpline (vector<su2double> &X,vector<su2double> &Dat
 
     for (int i =2; i<n-2; i ++){
         su2double w1=fabs(p[i+1]-p[i]) , w2=fabs(p[i-1]-p[i-2]);
-        if (w1+w2==0) {
+        if (w1+w2<0.0001) {
             b[i] = (p[i-1]+p[i])/2 ;
         }
         else{
