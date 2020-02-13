@@ -2297,6 +2297,19 @@ public:
                    bool val_update_geo) final;
 
   /*!
+   * \brief Sort an adapted solution from python.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] SolAdap - Adapted solution.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void SortAdaptedSolution(CGeometry **geometry, CSolver ***solver,
+                           CConfig *config, vector<vector<passivedouble> > const &SolAdap,
+                           int val_iter, bool val_update_geo) final;
+
+  /*!
    * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
    * \param[in] val_marker   - marker index
    * \param[in] val_vertex   - vertex index
