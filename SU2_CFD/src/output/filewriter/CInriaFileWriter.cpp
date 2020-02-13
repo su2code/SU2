@@ -42,9 +42,8 @@ enum BCVAR  { bcMach, bcTemp, bcPres, bcDens, bcGoal };
 
 const string CInriaFileWriter::fileExt = ".meshb";
 
-CInriaFileWriter::CInriaFileWriter(vector<string> fields, unsigned short nDim, 
-                               string fileName, CParallelDataSorter *dataSorter) : 
-  CFileWriter(std::move(fields), std::move(fileName), dataSorter, fileExt, nDim){}
+CInriaFileWriter::CInriaFileWriter(string fileName, CParallelDataSorter *dataSorter) : 
+  CFileWriter(std::move(valFileName), valDataSorter, fileExt){}
 
 
 CInriaFileWriter::~CInriaFileWriter(){
