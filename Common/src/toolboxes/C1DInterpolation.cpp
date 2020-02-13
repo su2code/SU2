@@ -135,28 +135,27 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
     su2double unit_r, unit_Theta, unit_m, Alpha, Phi;
 
     /*---For x,y,z,T,P columns---*/
-    for (int i=0;i<nDim+2;i++){
-        if (i<nDim)
-            Inlet_Values[i] = Coord[i];
-        else
-            Inlet_Values[i] = Inlet_Interpolated[nDim-2];
-    }
+    for (int i=0;i<nDim;i++)
+        Inlet_Values[i] = Coord[i];
+
+    for (int i=nDim;i<=nDim+1;i++)  
+        Inlet_Values[i] = Inlet_Interpolated[i-2];
 
     /*---For turbulence variables columns---*/
     if (nVar_Turb == 1)
-        Inlet_Values[nDim+5] = Inlet_Values[5];
+        Inlet_Values[nDim+5] = Inlet_Interpolated[5];
     if (nVar_Turb == 2)
-        Inlet_Values[nDim+6] = Inlet_Values[6];
+        Inlet_Values[nDim+6] = Inlet_Interpolated[6];
 
     /*--- Correct for Interpolation Type now ---*/
     switch(config->GetKindInletInterpolationType()){
     case(VR_VTHETA):
-        unit_r = Inlet_Interpolated[nDim+2];
-        unit_Theta = Inlet_Interpolated[nDim+3];
+        unit_r = Inlet_Interpolated[nDim];
+        unit_Theta = Inlet_Interpolated[nDim+1];
     break;
     case(ALPHA_PHI):
-        Alpha = Inlet_Interpolated[nDim+2];
-        Phi = Inlet_Interpolated[nDim+3];
+        Alpha = Inlet_Interpolated[nDim];
+        Phi = Inlet_Interpolated[nDim+1];
         unit_m = sqrt(1/(1+pow(tan(Alpha),2)));
         unit_Theta = tan(Alpha)*unit_m;
         unit_r=unit_m*sin(Phi);
