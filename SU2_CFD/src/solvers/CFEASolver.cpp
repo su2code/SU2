@@ -28,7 +28,6 @@
 #include "../../include/solvers/CFEASolver.hpp"
 #include "../../include/variables/CFEABoundVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
-#include "../../../Common/include/omp_structure.hpp"
 #include <algorithm>
 
 /*!
@@ -248,16 +247,17 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   if (!coloring.empty()) {
     auto nColor = coloring.getOuterSize();
-    ElemColoring.resize(nColor);
+    ElemColoring.reserve(nColor);
 
     for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      ElemColoring[iColor].size = coloring.getNumNonZeros(iColor);
-      ElemColoring[iColor].indices = coloring.innerIdx(iColor);
+      ElemColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
     }
   }
   ColorGroupSize = geometry->GetElementColorGroupSize();
 
   omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
+#else
+  ElemColoring[0] = DummyGridColor<>(nElement);
 #endif
 
   iElem_iDe = nullptr;
@@ -846,22 +846,14 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
     LinSysRes.SetValZero();
     Jacobian.SetValZero();
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, jNode, iDim, iVar;
 
         int thread = omp_get_thread_num();
@@ -942,22 +934,14 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
     LinSysRes.SetValZero();
     Jacobian.SetValZero();
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, jNode, iDim, iVar;
 
         int thread = omp_get_thread_num();
@@ -1081,22 +1065,14 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, C
     /*--- Clear matrix before calculation. ---*/
     MassMatrix.SetValZero();
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, jNode, iDim, iVar;
 
         int thread = omp_get_thread_num();
@@ -1166,22 +1142,14 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CCon
     TimeRes.SetValZero();
     SU2_OMP_BARRIER
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, jNode, iDim, iVar;
 
         int thread = omp_get_thread_num();
@@ -1254,22 +1222,14 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
     LinSysRes.SetValZero();
     SU2_OMP_BARRIER
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, iDim, iVar;
 
         int thread = omp_get_thread_num();
@@ -1359,22 +1319,14 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
       }
     }
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, iDim, iVar, iStress;
 
         int thread = omp_get_thread_num();
@@ -1629,22 +1581,14 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CCo
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
       nodes->Clear_BodyForces_Res(iPoint);
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, iDim, iVar;
 
         int thread = omp_get_thread_num();
@@ -3077,7 +3021,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
       obj_fun_local += pow(current_solution - reference_geometry, 2);
     }
   }
-  safeAdd(obj_fun_local, objective_function);
+  atomicAdd(obj_fun_local, objective_function);
   }
 
   SU2_MPI::Allreduce(&objective_function, &Total_OFRefGeom, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -3215,9 +3159,9 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_contain
       discrete_loc += volume*4.0*rho*(1.0-rho);
     }
   }
-  safeAdd(tot_vol_loc, total_volume);
-  safeAdd(integral_loc, integral);
-  safeAdd(discrete_loc, discreteness);
+  atomicAdd(tot_vol_loc, total_volume);
+  atomicAdd(integral_loc, integral);
+  atomicAdd(discrete_loc, discreteness);
   }
 
   su2double tmp;
@@ -3295,7 +3239,7 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
     for (iVar = 0; iVar < nVar; iVar++)
       comp_local += nodalForce[iVar]*nodes->GetSolution(iPoint,iVar);
   }
-  safeAdd(comp_local, compliance);
+  atomicAdd(comp_local, compliance);
   }
 
   SU2_MPI::Allreduce(&compliance, &Total_OFCompliance, 1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
@@ -3370,8 +3314,8 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
     }
   }
-  safeAdd(totalVol_loc, totalVolume);
-  safeAdd(weighted_loc, weightedValue);
+  atomicAdd(totalVol_loc, totalVolume);
+  atomicAdd(weighted_loc, weightedValue);
   }
 
   // Reduce value across processors for parallelization

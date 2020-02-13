@@ -429,11 +429,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   if (!coloring.empty()) {
     auto nColor = coloring.getOuterSize();
-    EdgeColoring.resize(nColor);
+    EdgeColoring.reserve(nColor);
 
     for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      EdgeColoring[iColor].size = coloring.getNumNonZeros(iColor);
-      EdgeColoring[iColor].indices = coloring.innerIdx(iColor);
+      EdgeColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
     }
   }
   ColorGroupSize = geometry->GetEdgeColorGroupSize();
@@ -443,6 +442,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   }
 
   omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
+#else
+  EdgeColoring[0] = DummyGridColor<>(geometry->GetnEdge());
 #endif
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
@@ -2912,22 +2913,15 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   /*--- Determine if using the reducer strategy is necessary, see CEulerSolver::SumEdgeFluxes(). ---*/
   const bool reducer_strategy = (MGLevel != MESH_0) && (omp_get_num_threads() > 1);
 
-#ifdef HAVE_OMP
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
-
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  SU2_OMP_FOR_DYN(chunkSize)
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
-#else
-  /*--- Natural coloring. ---*/
-  {
-  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-#endif
+
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
 
     auto iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -3029,24 +3023,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   /*--- Determine if using the reducer strategy is necessary, see CEulerSolver::SumEdgeFluxes(). ---*/
   const bool reducer_strategy = (MGLevel != MESH_0) && (omp_get_num_threads() > 1);
 
-  /*--- Loop over all the edges ---*/
-
-#ifdef HAVE_OMP
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
-
-  /*--- Loop over edge colors. ---*/
+    /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  SU2_OMP_FOR_DYN(chunkSize)
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
-#else
-  /*--- Natural coloring. ---*/
-  {
-  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-#endif
+
     unsigned short iDim, iVar;
 
     /*--- Points in edge and normal vectors ---*/
@@ -3651,24 +3636,15 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
 
   nodes->SetUnd_LaplZero();
 
-  /*--- Loop interior edges ---*/
-
-#ifdef HAVE_OMP
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
-
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  SU2_OMP_FOR_STAT(chunkSize)
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
-#else
-  /*--- Natural coloring. ---*/
-  {
-  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-#endif
+
     auto iPoint = geometry->edge[iEdge]->GetNode(0);
     auto jPoint = geometry->edge[iEdge]->GetNode(1);
 
@@ -3734,22 +3710,15 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *
     jPoint_UndLapl[iPoint] = 0.0;
   }
 
-#ifdef HAVE_OMP
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
-
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  SU2_OMP_FOR_STAT(chunkSize)
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
-#else
-  /*--- Natural coloring. ---*/
-  {
-  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-#endif
+
     auto iPoint = geometry->edge[iEdge]->GetNode(0);
     auto jPoint = geometry->edge[iEdge]->GetNode(1);
 
