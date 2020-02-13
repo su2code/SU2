@@ -687,9 +687,9 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
           const su2double hess = solver_flow->GetNodes()->GetAnisoHess(iPoint, ih);
           const su2double part = abs(grad)*hess;
           solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
-        }
-      }
-    }
+        }// im
+      }// iFlux
+    }// iVar
 
     //--- add viscous Hessian terms
     if(config->GetViscous()) {
@@ -705,9 +705,9 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
             const su2double hess = solver_flow->GetNodes()->GetAnisoViscHess(iPoint, ih);
             const su2double part = abs(grad)*hess;
             solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
-          }
-        }
-      }
+          }// im
+        }// iFlux
+      }// iVar
 
       //--- add turbulent terms
       const unsigned short nVarTurbMetr = solver_turb->GetnVar();
@@ -723,10 +723,20 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
                                  + solver_turb->GetNodes()->GetAnisoViscHess(iPoint, ih);
             const su2double part = abs(grad)*hess;
             solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
-          }
-        }
-      }
-    }
+          }// im
+        }// iFlux
+
+        //--- add turbulent source terms
+        const su2double adj = solver_adjturb->GetNodes()->GetSolution(iPoint, iVar);
+
+        for (unsigned short im = 0; im < nMetr; ++im) {
+          const unsigned short ih = iVar*nMetr + im;  
+          const su2double hess = solver_turb->GetNodes()->GetAnisoSourceHess(iPoint, ih);
+          const su2double part = abs(adj)*hess;
+          solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
+        }// im
+      }// iVar
+    }// if viscous
 
     //--- add chemical source Hessian terms
     if(config->GetAdap_Source()) {
@@ -741,24 +751,8 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
       //     solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
       //   }
       // }
-
-      //--- add turbulent terms
-      if(config->GetViscous()) {
-        const unsigned short nVarTurbMetr = solver_turb->GetnVar();
-        for (unsigned short iVar = 0; iVar < nVarTurbMetr; ++iVar) {
-
-          const su2double adj = solver_adjturb->GetNodes()->GetSolution(iPoint, iVar);
-
-          for (unsigned short im = 0; im < nMetr; ++im) {
-            const unsigned short ih = iVar*nMetr + im;  
-            const su2double hess = solver_turb->GetNodes()->GetAnisoSourceHess(iPoint, ih);
-            const su2double part = abs(adj)*hess;
-            solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
-          }
-        }
-      }
-    }
-  }
+    }// if chemistry
+  }// iPoint
 
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
@@ -772,8 +766,8 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
       A[1][0] = 1.0E-16; A[1][1] = 1.0E-16;
     }
     else {
-    A[0][0] = a; A[0][1] = b;
-    A[1][0] = b; A[1][1] = c;
+      A[0][0] = a; A[0][1] = b;
+      A[1][0] = b; A[1][1] = c;
     }
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
@@ -900,9 +894,9 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian3(CSolver   *solver_flow,
           const su2double hess = solver_flow->GetNodes()->GetAnisoHess(iPoint, ih);
           const su2double part = abs(grad)*hess;
           solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
-        }
-      }
-    }
+        }// im
+      }// iFlux
+    }// iVar
 
     //--- add viscous Hessian terms
     if(config->GetViscous()) {
@@ -918,9 +912,9 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian3(CSolver   *solver_flow,
             const su2double hess = solver_flow->GetNodes()->GetAnisoViscHess(iPoint, ih);
             const su2double part = abs(grad)*hess;
             solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
-          }
-        }
-      }
+          }// im
+        }// iFlux
+      }// iVar
 
       //--- add turbulent terms
       const unsigned short nVarTurbMetr = solver_turb->GetnVar();
@@ -936,11 +930,36 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian3(CSolver   *solver_flow,
                                  + solver_turb->GetNodes()->GetAnisoViscHess(iPoint, ih);
             const su2double part = abs(grad)*hess;
             solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
-          }
-        }
-      }
-    }
-  }
+          }// im
+        }// iFlux
+
+        //--- add turbulent source terms
+        const su2double adj = solver_adjturb->GetNodes()->GetSolution(iPoint, iVar);
+
+        for (unsigned short im = 0; im < nMetr; ++im) {
+          const unsigned short ih = iVar*nMetr + im;  
+          const su2double hess = solver_turb->GetNodes()->GetAnisoSourceHess(iPoint, ih);
+          const su2double part = abs(adj)*hess;
+          solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
+        }// im
+      }// iVar
+    }// if viscous
+
+    //--- add chemical source Hessian terms
+    if(config->GetAdap_Source()) {
+      // for (unsigned short iVar = 0; iVar < nVarMetr; ++iVar) {
+
+      //   const su2double adj = solver_adjflow->GetNodes()->GetSolution(iPoint, iVar);
+
+      //   for (unsigned short im = 0; im < nMetr; ++im) {
+      //     const unsigned short ih = iVar*nMetr + im;  
+      //     const su2double hess = solver_flow->GetNodes()->GetAnisoSourceHess(iPoint, ih);
+      //     const su2double part = abs(adj)*hess;
+      //     solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
+      //   }
+      // }
+    }// if chemistry
+  }// iPoint
 
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {

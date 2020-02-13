@@ -2366,8 +2366,8 @@ void CTurbSASolver::SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config
   unsigned short nVarMetr = 1, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
   su2double density, velocity[2];
   su2double vnx[3], vny[3];
-  su2double graTri[2], graTriVisc[2];
-  su2double Crd[3][2], Sens[3][nVarMetr][nFluxMetr], SensVisc[3][nVarMetr][nFluxMetr];
+  su2double graTri[2], graTriVisc[2], graTriSource[2];
+  su2double Crd[3][2], Sens[3][nVarMetr][nFluxMetr], SensVisc[3][nVarMetr][nFluxMetr], SensSource[3][nVarMetr];
   su2double laminar_viscosity;
   su2double nu_tilde, dnu_tilde[2];
   bool dummy_bool;
@@ -2397,6 +2397,8 @@ void CTurbSASolver::SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config
 
       SensVisc[iNode][0][0] = 1.5*(laminar_viscosity+density*nu_tilde)*dnu_tilde[0];
       SensVisc[iNode][0][1] = 1.5*(laminar_viscosity+density*nu_tilde)*dnu_tilde[1];
+
+      SensSource[iNode][0] = nodes->GetSource(kNode)[0];
     }
 
     //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
@@ -2454,6 +2456,18 @@ void CTurbSASolver::SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config
           nodes->AddAnisoViscGrad(kNode, i+1, graTriVisc[1] * rap);
         }
       }
+
+      graTriSource[0] = SensSource[0][iVar]*vnx[0] + SensSource[1][iVar]*vnx[1] + SensSource[2][iVar]*vnx[2];
+      graTriSource[1] = SensSource[0][iVar]*vny[0] + SensSource[1][iVar]*vny[1] + SensSource[2][iVar]*vny[2];
+      //--- assembling
+      const unsigned short i = iVar*nDim;
+      for (unsigned short iNode=0; iNode<3; ++iNode) {
+        const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+        const su2double Area = geometry->node[kNode]->GetVolume();
+        const su2double rap = 1./(Area*6.);
+        nodes->AddAnisoSourceGrad(kNode, i+0, graTriSource[0] * rap);
+        nodes->AddAnisoSourceGrad(kNode, i+1, graTriSource[1] * rap);
+      }
     }
   }
 
@@ -2464,6 +2478,9 @@ void CTurbSASolver::SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config
 
   InitiateComms(geometry, config, ANISO_GRADIENT_VISC);
   CompleteComms(geometry, config, ANISO_GRADIENT_VISC);
+
+  InitiateComms(geometry, config, ANISO_GRADIENT_SOURCE);
+  CompleteComms(geometry, config, ANISO_GRADIENT_SOURCE);
 }
 
 void CTurbSASolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
@@ -2473,8 +2490,8 @@ void CTurbSASolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
   unsigned short nVarMetr = 1, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
   unsigned short nMetr = 3;
   su2double vnx[3], vny[3];
-  su2double hesTri[3], hesTriVisc[3];
-  su2double Crd[3][2], Grad[3][2][nVarMetr][nFluxMetr], GradVisc[3][2][nVarMetr][nFluxMetr];
+  su2double hesTri[3], hesTriVisc[3], hesTriSource[3];
+  su2double Crd[3][2], Grad[3][2][nVarMetr][nFluxMetr], GradVisc[3][2][nVarMetr][nFluxMetr], GradSource[3][2][nVarMetr];
 
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
@@ -2504,6 +2521,10 @@ void CTurbSASolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
           GradVisc[iNode][0][iVar][iFlux] = nodes->GetAnisoViscGrad(kNode, i+0);
           GradVisc[iNode][1][iVar][iFlux] = nodes->GetAnisoViscGrad(kNode, i+1);
         }
+
+        const unsigned short i = iVar*nDim;
+        GradSource[iNode][0][iVar] = nodes->GetAnisoSourceGrad(kNode, i+0);
+        GradSource[iNode][1][iVar] = nodes->GetAnisoSourceGrad(kNode, i+1);
       }
     }
 
@@ -2584,6 +2605,30 @@ void CTurbSASolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
           nodes->AddAnisoViscHess(kNode, i+2, hesTriVisc[2] * rap);
         }
       }
+
+      hesTriSource[0] =         GradSource[0][0][iVar]*vnx[0] 
+                              + GradSource[1][0][iVar]*vnx[1] 
+                              + GradSource[2][0][iVar]*vnx[2];
+      hesTriSource[1] = 0.5 * ( GradSource[0][0][iVar]*vny[0] 
+                              + GradSource[1][0][iVar]*vny[1] 
+                              + GradSource[2][0][iVar]*vny[2]
+                              + GradSource[0][1][iVar]*vnx[0] 
+                              + GradSource[1][1][iVar]*vnx[1] 
+                              + GradSource[2][1][iVar]*vnx[2] );
+      hesTriSource[2] =         GradSource[0][1][iVar]*vny[0] 
+                              + GradSource[1][1][iVar]*vny[1] 
+                              + GradSource[2][1][iVar]*vny[2];
+    
+      //--- assembling
+      const unsigned short i = iVar*nMetr;
+      for (unsigned short iNode=0; iNode<3; ++iNode) {
+        const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+        const su2double Area = geometry->node[kNode]->GetVolume();
+        const su2double rap = 1./(Area*6.);
+        nodes->AddAnisoSourceHess(kNode, i+0, hesTriSource[0] * rap);
+        nodes->AddAnisoSourceHess(kNode, i+1, hesTriSource[1] * rap);
+        nodes->AddAnisoSourceHess(kNode, i+2, hesTriSource[2] * rap);
+      }
     }
   }
 
@@ -2593,6 +2638,8 @@ void CTurbSASolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
   CompleteComms(geometry, config, ANISO_HESSIAN);
   InitiateComms(geometry, config, ANISO_HESSIAN_VISC);
   CompleteComms(geometry, config, ANISO_HESSIAN_VISC);
+  InitiateComms(geometry, config, ANISO_HESSIAN_SOURCE);
+  CompleteComms(geometry, config, ANISO_HESSIAN_SOURCE);
 
   CorrectBoundAnisoHess(geometry, config);
 
@@ -2619,11 +2666,7 @@ void CTurbSASolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
         nodes->SetAnisoHess(iPoint, i+1, A[0][1]);
         nodes->SetAnisoHess(iPoint, i+2, A[1][1]);
       }
-    }
-  }
 
-  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    for(iVar = 0; iVar < nVarMetr; iVar++){
       for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
         const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
 
@@ -2644,6 +2687,25 @@ void CTurbSASolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
         nodes->SetAnisoViscHess(iPoint, i+1, A[0][1]);
         nodes->SetAnisoViscHess(iPoint, i+2, A[1][1]);
       }
+
+      const unsigned short i = iVar*nMetr;
+
+      const su2double a = nodes->GetAnisoSourceHess(iPoint, i+0);
+      const su2double b = nodes->GetAnisoSourceHess(iPoint, i+1);
+      const su2double c = nodes->GetAnisoSourceHess(iPoint, i+2);
+
+      A[0][0] = a; A[0][1] = b;
+      A[1][0] = b; A[1][1] = c;
+
+      CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+
+      for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
+
+      CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+      nodes->SetAnisoSourceHess(iPoint, i+0, A[0][0]);
+      nodes->SetAnisoSourceHess(iPoint, i+1, A[0][1]);
+      nodes->SetAnisoSourceHess(iPoint, i+2, A[1][1]);
     }
   }
 }
