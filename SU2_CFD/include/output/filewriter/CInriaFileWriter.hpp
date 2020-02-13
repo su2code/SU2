@@ -52,7 +52,7 @@ class CInriaFileWriter final: public CFileWriter{
    * \param[in] fileName - The name of the file
    * \param[in] data_sorter - The parallel sorted data to write
    */  
-  CInriaFileWriter(string fileName, CParallelDataSorter* data_sorter);
+  CInriaFileWriter(string valFileName, CParallelDataSorter *valDataSorter);
   
   /*!
    * \brief Destructor

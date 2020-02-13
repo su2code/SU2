@@ -42,7 +42,7 @@ enum BCVAR  { bcMach, bcTemp, bcPres, bcDens, bcGoal };
 
 const string CInriaFileWriter::fileExt = ".meshb";
 
-CInriaFileWriter::CInriaFileWriter(string fileName, CParallelDataSorter *dataSorter) : 
+CInriaFileWriter::CInriaFileWriter(string valFileName, CParallelDataSorter *valDataSorter) : 
   CFileWriter(std::move(valFileName), valDataSorter, fileExt){}
 
 
