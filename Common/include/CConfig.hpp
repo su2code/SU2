@@ -1129,6 +1129,7 @@ private:
   su2double Adap_Norm,               /*!< \brief Lp-norm for mesh adaptation */
             Mesh_Hmax,               /*!< \brief Maximum cell size */
             Mesh_Hmin;               /*!< \brief Minimum cell size */
+  bool Adap_Source;                  /*!< \brief Whether or not to use source terms for adaptation */
   unsigned long  Mesh_Complexity;    /*!< \brief Constraint mesh complexity */
 
   string caseName;                 /*!< \brief Name of the current case */
@@ -9291,4 +9292,8 @@ public:
    */
   unsigned long GetMesh_Complexity(void) const { return Mesh_Complexity; }
 
+  /*!
+   * \brief Get whether to use source terms in adaptation
+   */
+  bool GetAdap_Source(void) const { return Adap_Source; }
 };
