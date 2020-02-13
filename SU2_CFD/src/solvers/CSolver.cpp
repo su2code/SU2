@@ -4405,8 +4405,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             if(config->GetPrintInlet_InterpolatedData() == true)
                 PrintInletInterpolatedData(Inlet_Data_Interpolated,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim, nCol_InletFile+nDim);
             
-            for (int i=0; i<nColumns;i++)
-              delete interpolator[i];
+          //  for (int i=0; i<nColumns;i++)
+          //    delete interpolator[i];
 
         }
       }
