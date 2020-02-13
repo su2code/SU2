@@ -2100,7 +2100,7 @@ public:
     * \brief Determine if advanced features are used from the element-based FEA analysis (experimental feature).
     * \return <code>TRUE</code> is experimental, <code>FALSE</code> is the default behaviour.
     */
-  inline bool GetAdvanced_FEAElementBased(void){ return FEAAdvancedMode; }
+  inline bool GetAdvanced_FEAElementBased(void) const { return FEAAdvancedMode; }
 
   /*!
    * \brief Get the name of the file with the reference geometry of the structural problem.
