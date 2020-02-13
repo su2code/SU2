@@ -3,7 +3,7 @@
 ## \file change_version_number.py
 #  \brief Python script for updating the version number of the SU2 suite.
 #  \author A. Aranake
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -34,6 +34,8 @@ import os,sys
 parser = OptionParser()
 parser.add_option("-v", "--version", dest="version",
                   help="the new version number", metavar="VERSION")
+parser.add_option("-r", "--releasename", dest="releasename",
+                  help="Name of the new release", metavar="RELEASENAME")
 parser.add_option("-y", action="store_true", dest="yes", help="Answer yes to all questions", metavar="YES")
 (options, args)=parser.parse_args()
 
@@ -42,8 +44,10 @@ if not options.version:
 
 #oldvers = '2012-2018'
 #newvers = '2012-2019'
-oldvers = '7.0.1 "Blackbird"'
-newvers = options.version
+oldvers  = '7.0.1 "Blackbird"'
+oldvers_q= r'7.0.1 \"Blackbird\"'
+newvers  = options.version + ' "' + options.releasename + '"'
+newvers_q= options.version + ' \\"' + options.releasename + '\\"'
 
 if sys.version_info[0] > 2:
   # In PY3, raw_input is replaced with input.
@@ -63,6 +67,7 @@ if os.path.exists('version.txt'):
 
 #TODO: replace with portable instructions. This works only on unix systems
 os.system("grep -IFwr '%s' *|grep -vF '.svn' |grep -v ISC > version.txt"%oldvers)
+os.system("grep -IFwr '%s' --exclude='version.txt' *|grep -vF '.svn' |grep -v ISC >> version.txt"%oldvers_q)
 
 # Create a list of files to adjust
 filelist = []
@@ -77,7 +82,7 @@ print(filelist)
 # Prompt user before continuing 
 yorn = ''
 while(not yorn.lower()=='y' and not options.yes):
-  yorn = raw_input('Replace %s with %s in the listed files? [Y/N]: '%(oldvers,newvers))
+  yorn = raw_input('Replace %s with %s and %s with %s in the listed files? [Y/N]: '%(oldvers,newvers, oldvers_q, newvers_q))
   if yorn.lower()=='n':
     print('The file version.txt contains matches of oldvers')
     sys.exit()
@@ -86,7 +91,7 @@ while(not yorn.lower()=='y' and not options.yes):
 for fname in filelist:
   s = open(fname,'r').read()
   s_new = s.replace(oldvers,newvers)
-
+  s_new = s_new.replace(oldvers_q, newvers_q)
   f = open(fname,'w')
   f.write(s_new)
   f.close()
