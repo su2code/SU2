@@ -56,6 +56,9 @@ CGeometry::CGeometry(void) {
   nPoint     = 0;
   nPointNode = 0;
   nElem      = 0;
+  Global_nPointDomain = 0;
+  Global_nPoint = 0;
+  nPointDomain = 0;
 
   nElem_Bound         = NULL;
   Tag_to_Marker       = NULL;
