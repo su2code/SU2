@@ -2237,8 +2237,8 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
           case SOURCE_TERM:
             for (iVar = 0; iVar < nVar; iVar++)
-              base_nodes->SetSource(iPoint, iVar, bufDSend[buf_offset+iVar]);
-              break;
+              base_nodes->SetSource(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+            break;
           case MAX_EIGENVALUE:
             base_nodes->SetLambda(iPoint,bufDRecv[buf_offset]);
             break;
