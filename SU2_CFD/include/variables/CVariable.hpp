@@ -197,6 +197,16 @@ public:
   }
 
   /*!
+   * \brief Set the value of the source term, all variables.
+   * \param[in] iPoint - Point index.
+   * \param[in] iPoint - Index of the variable.
+   * \param[in] solution - Solution of the problem.
+   */
+  inline void SetSource(unsigned long iPoint, unsigned long iVar, const su2double source) {
+    Source(iPoint,iVar) = source;
+  }
+
+  /*!
    * \brief Add the value of the solution vector to the previous solution (incremental approach).
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
