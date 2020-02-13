@@ -57,14 +57,15 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
     EdgeColoring.resize(nColor);
 
     for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      EdgeColoring[iColor].size = coloring.getNumNonZeros(iColor);
-      EdgeColoring[iColor].indices = coloring.innerIdx(iColor);
+      EdgeColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
     }
   }
   ColorGroupSize = geometry->GetEdgeColorGroupSize();
 
   nPoint = geometry->GetnPoint();
   omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
+#else
+  EdgeColoring[0] = DummyGridColor<>(geometry->GetnEdge());
 #endif
 }
 
@@ -100,24 +101,15 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   su2double solution_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
   su2double solution_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNVARFLOW] = {0.0};
 
-  /*--- Loop over all the edges ---*/
-
-#ifdef HAVE_OMP
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
-
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  SU2_OMP_FOR_DYN(chunkSize)
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
-#else
-  /*--- Natural coloring. ---*/
-  {
-  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-#endif
+
     unsigned short iDim, iVar;
 
     /*--- Points in edge and normal vectors ---*/
@@ -240,24 +232,15 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS];
 
-  /*--- Loop over all the edges ---*/
-
-#ifdef HAVE_OMP
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
-
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  SU2_OMP_FOR_DYN(chunkSize)
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
-#else
-  /*--- Natural coloring. ---*/
-  {
-  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-#endif
+
     /*--- Points in edge ---*/
 
     auto iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -609,7 +592,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   /*--- Local variables ---*/
 
   unsigned short iVar, iMarker, iDim;
-  unsigned long iPoint, jPoint, iEdge, iVertex;
+  unsigned long iPoint, jPoint, iVertex;
 
   const su2double *U_time_nM1 = nullptr, *U_time_n = nullptr, *U_time_nP1 = nullptr;
   su2double Volume_nM1, Volume_nP1;
@@ -698,22 +681,15 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
      we will loop over the edges and boundaries to compute the GCL component
      of the dual time source term that depends on grid velocities. ---*/
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
-
     /*--- Loop over edge colors. ---*/
     for (auto color : EdgeColoring)
     {
-    SU2_OMP_FOR_DYN(chunkSize)
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
     for(auto k = 0ul; k < color.size; ++k) {
 
-      iEdge = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-    for (iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-#endif
+      auto iEdge = color.indices[k];
+
       /*--- Get indices for nodes i & j plus the face normal ---*/
 
       iPoint = geometry->edge[iEdge]->GetNode(0);

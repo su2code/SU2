@@ -262,12 +262,12 @@ protected:
 
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
-  struct EdgeColor {
-    unsigned long size;             /*!< \brief Number of edges with a given color. */
-    const unsigned long* indices;   /*!< \brief Array of edge indices for a given color. */
-  };
-  vector<EdgeColor> EdgeColoring;   /*!< \brief Edge colors. */
-  unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size in edge loops must be a multiple of this. */
+#ifdef HAVE_OMP
+  vector<GridColor<> > EdgeColoring;   /*!< \brief Edge colors. */
+#else
+  array<DummyGridColor<>,1> EdgeColoring;
+#endif
+  unsigned long ColorGroupSize; /*!< \brief Group size used for coloring, chunk size in edge loops must be a multiple of this. */
 
   /*--- Edge fluxes, for OpenMP parallelization on coarse grids. As it is difficult to
    * color them, we first store the fluxes and then compute the sum for each cell.

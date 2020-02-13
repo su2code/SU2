@@ -29,6 +29,7 @@
 
 #include "CSolver.hpp"
 #include "../variables/CTurbVariable.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 
 /*!
  * \class CTurbSolver
@@ -61,12 +62,12 @@ protected:
 
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
-  struct EdgeColor {
-    unsigned long size;             /*!< \brief Number of edges with a given color. */
-    const unsigned long* indices;   /*!< \brief Array of edge indices for a given color. */
-  };
-  vector<EdgeColor> EdgeColoring;   /*!< \brief Edge colors. */
-  unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size in edge loops must be a multiple of this. */
+#ifdef HAVE_OMP
+  vector<GridColor<> > EdgeColoring;   /*!< \brief Edge colors. */
+#else
+  array<DummyGridColor<>,1> EdgeColoring;
+#endif
+  unsigned long ColorGroupSize; /*!< \brief Group size used for coloring, chunk size in edge loops must be a multiple of this. */
 
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use.

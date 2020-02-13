@@ -542,3 +542,53 @@ T createNaturalColoring(Index_t numInnerIndexes)
 
   return T(std::move(outerPtr), std::move(innerIdx));
 }
+
+
+/*!
+ * \brief A way to represent one grid color that allows range-for syntax.
+ */
+template<typename T = unsigned long>
+struct GridColor
+{
+  static_assert(std::is_integral<T>::value,"");
+
+  const T size;
+  const T* const indices;
+
+  GridColor(const T* idx = nullptr, T sz = 0) : size(sz), indices(idx) { }
+
+  inline const T* begin() const {return indices;}
+  inline const T* end() const {return indices+size;}
+};
+
+
+/*!
+ * \brief A way to represent natural coloring {0,1,2,...,size-1} with zero
+ * overhead (behaves like looping with an integer index, after optimization...).
+ */
+template<typename T = unsigned long>
+struct DummyGridColor
+{
+  static_assert(std::is_integral<T>::value,"");
+
+  T size;
+  struct {
+    inline T operator[] (T i) const {return i;}
+  }
+  indices;
+
+  DummyGridColor(T sz = 0) : size(sz) { }
+
+  struct IteratorLikeInt {
+    T i;
+    inline IteratorLikeInt(T pos = 0) : i(pos) {}
+    inline IteratorLikeInt& operator++ () {++i; return *this;}
+    inline IteratorLikeInt operator++ (int) {auto j=i++; return IteratorLikeInt(j);}
+    inline T operator* () const {return i;}
+    inline T operator-> () const {return i;}
+    inline bool operator==(const IteratorLikeInt& other) const {return i==other.i;}
+    inline bool operator!=(const IteratorLikeInt& other) const {return i!=other.i;}
+  };
+  inline IteratorLikeInt begin() const {return IteratorLikeInt(0);}
+  inline IteratorLikeInt end() const {return IteratorLikeInt(size);}
+};
