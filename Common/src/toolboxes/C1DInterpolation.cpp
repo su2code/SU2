@@ -128,9 +128,9 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
     su2double size_columns=Inlet_Interpolated.size()+nDim;
     vector<su2double> Inlet_Values(size_columns);
 
-    for (int i=0;i<Inlet_Interpolated.size();i++)
-        cout<<Inlet_Interpolated[i]<<"\t";
-    cout<<endl;
+//    for (int i=0;i<Inlet_Interpolated.size();i++)
+ //       cout<<Inlet_Interpolated[i]<<"\t";
+ //   cout<<endl;
 
     su2double unit_r, unit_Theta, unit_m, Alpha, Phi;
 
@@ -167,9 +167,9 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
     Inlet_Values[nDim+4] = sqrt(1-pow(unit_r,2)- pow(unit_Theta,2));  //for iz
 
 
-    for (int i=0;i<size_columns;i++)
-        cout<<Inlet_Values[i]<<"\t";
-    cout<<endl;
+ //   for (int i=0;i<size_columns;i++)
+ //       cout<<Inlet_Values[i]<<"\t";
+ //   cout<<endl;
 
     return Inlet_Values;
 

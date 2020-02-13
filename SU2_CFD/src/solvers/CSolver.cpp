@@ -4310,9 +4310,11 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
             for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
             
-            if(Interpolate == false){ 
               iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
               Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
+
+            if(Interpolate == false){ 
+
               min_dist = 1e16;
 
                 /*--- Find the distance to the closest point in our inlet profile data. ---*/
@@ -4367,8 +4369,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             }
 
             else if(Interpolate == true){
-
-              Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
 
               /* --- Calculating the radius and angle of the vertex ---*/
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
