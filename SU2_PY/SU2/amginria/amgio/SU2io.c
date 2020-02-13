@@ -167,7 +167,7 @@ int GetSU2KeywordValue (FILE *FilHdl, char *Kwd)
 	}while( (res != EOF) && strncmp(str, kwd, lenKwd) );
 	
   if ((res == EOF)) {
-		fprintf(stderr,"  ## ERROR: INVALID SU2 FILE (CHECK KEYWORD: %s).\n", Kwd);
+		fprintf(stderr,"  ## WARNING: MISSING SU2 MESH FILE KEYWORD: %s.\n", Kwd);
 		return 0;
 	}
 	
