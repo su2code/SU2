@@ -236,6 +236,21 @@ def main():
     test_list.append(discadj_heat)
 
     ###################################
+    ### Coupled RHT-CFD Adjoint     ###
+    ###################################
+
+    # Coupled discrete adjoint for radiative heat transfer in heated cylinder
+    discadj_rht                = TestCase('discadj_rht')
+    discadj_rht.cfg_dir        = "radiation/p1adjoint"
+    discadj_rht.cfg_file       = "configp1adjoint.cfg"
+    discadj_rht.test_iter      = 10
+    discadj_rht.su2_exec       = "discrete_adjoint.py -f"
+    discadj_rht.timeout        = 1600
+    discadj_rht.reference_file = "of_grad_cd.csv.ref"
+    discadj_rht.test_file      = "of_grad_cd.csv"
+    test_list.append(discadj_rht)
+
+    ###################################
     ### Coupled FSI Adjoint         ###
     ###################################
    
