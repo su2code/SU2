@@ -69,7 +69,7 @@ void CLinearInterpolation::SetSpline(vector<su2double> &X, vector<su2double> &Da
     for (int i=0; i<n-1;i ++){
         h=x[i+1]-x[i];
         dydx[i]=(y[i+1]-y[i])/h;
-        }
+    }
 }
 
 
@@ -127,32 +127,35 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
 
     su2double size_columns=Inlet_Interpolated.size()+nDim;
     vector<su2double> Inlet_Values(size_columns);
-    
+
+//    for (int i=0;i<Inlet_Interpolated.size();i++)
+ //       cout<<Inlet_Interpolated[i]<<"\t";
+ //   cout<<endl;
+
     su2double unit_r, unit_Theta, unit_m, Alpha, Phi;
 
     /*---For x,y,z,T,P columns---*/
-    for (int i=0;i<nDim+2;i++){
-        if (i<nDim)
-            Inlet_Values[i] = Coord[i];
-        else
-            Inlet_Values[i] = Inlet_Interpolated[nDim-2];
-    }
+    for (int i=0;i<nDim;i++)
+        Inlet_Values[i] = Coord[i];
+
+    for (int i=nDim;i<nDim+2;i++)  
+        Inlet_Values[i] = Inlet_Interpolated[i-2];
 
     /*---For turbulence variables columns---*/
     if (nVar_Turb == 1)
-        Inlet_Values[nDim+5] = Inlet_Values[5];
+        Inlet_Values[nDim+5] = Inlet_Interpolated[5];
     if (nVar_Turb == 2)
-        Inlet_Values[nDim+6] = Inlet_Values[6];
+        Inlet_Values[nDim+6] = Inlet_Interpolated[6];
 
     /*--- Correct for Interpolation Type now ---*/
     switch(config->GetKindInletInterpolationType()){
     case(VR_VTHETA):
-        unit_r = Inlet_Interpolated[nDim+2];
-        unit_Theta = Inlet_Interpolated[nDim+3];
+        unit_r = Inlet_Interpolated[nDim];
+        unit_Theta = Inlet_Interpolated[nDim+1];
     break;
     case(ALPHA_PHI):
-        Alpha = Inlet_Interpolated[nDim+2];
-        Phi = Inlet_Interpolated[nDim+3];
+        Alpha = Inlet_Interpolated[nDim];
+        Phi = Inlet_Interpolated[nDim+1];
         unit_m = sqrt(1/(1+pow(tan(Alpha),2)));
         unit_Theta = tan(Alpha)*unit_m;
         unit_r=unit_m*sin(Phi);
@@ -163,20 +166,25 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
     Inlet_Values[nDim+3] = unit_r*sin(Theta) + unit_Theta*cos(Theta); //for iy
     Inlet_Values[nDim+4] = sqrt(1-pow(unit_r,2)- pow(unit_Theta,2));  //for iz
 
+
+ //   for (int i=0;i<size_columns;i++)
+ //       cout<<Inlet_Values[i]<<"\t";
+ //   cout<<endl;
+
     return Inlet_Values;
 
 }
 
 /*--- For printing interpolated data to a file ---*/
-void PrintInletInterpolatedData(vector<su2double>& Inlet_Values, string Marker, unsigned long nVertex, unsigned short nDim){
+void PrintInletInterpolatedData(vector<su2double>& Inlet_Data_Interpolated, string Marker, unsigned long nVertex, unsigned short nDim, unsigned short nColumns){
     ofstream myfile;
     myfile.precision(16);
     myfile.open("Interpolated_Data_"+Marker+".dat",ios_base::out);
 
     if (myfile.is_open()){  
     for (unsigned long iVertex = 0; iVertex < nVertex; iVertex++) {
-                for  (unsigned long iVar=0; iVar < Inlet_Values.size(); iVar++){
-                    myfile<<Inlet_Values[iVertex*Inlet_Values.size()+iVar]<<"\t";
+                for  (unsigned short iVar=0; iVar < nColumns; iVar++){
+                    myfile<<Inlet_Data_Interpolated[iVertex*nColumns+iVar]<<"\t";
                 }
                 myfile<<endl;
             }
@@ -187,11 +195,10 @@ void PrintInletInterpolatedData(vector<su2double>& Inlet_Values, string Marker, 
 }
 
 void C1DInterpolation::SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol, vector<su2double> &X, vector<su2double> &Data){
-    int n = Inlet_Data.size();
-    X.resize(n);
-    Data.resize(n);
-    
+    X.resize(nRows);
+    Data.resize(nRows);
     unsigned long index;
+
     for (unsigned long iRow = 0; iRow < nRows; iRow++){
     index = iRow*nColumns;
         X[iRow]=Inlet_Data[index];
