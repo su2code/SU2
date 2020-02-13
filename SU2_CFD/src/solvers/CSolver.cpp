@@ -4408,7 +4408,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             for (int i=0; i<nColumns;i++)
               delete interpolator[i];
 
-            //delete corrector;
         }
       }
       if (local_failure > 0) break;

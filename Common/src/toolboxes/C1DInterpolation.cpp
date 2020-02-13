@@ -138,7 +138,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
     for (int i=0;i<nDim;i++)
         Inlet_Values[i] = Coord[i];
 
-    for (int i=nDim;i<=nDim+1;i++)  
+    for (int i=nDim;i<nDim+2;i++)  
         Inlet_Values[i] = Inlet_Interpolated[i-2];
 
     /*---For turbulence variables columns---*/
