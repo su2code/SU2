@@ -1866,6 +1866,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
     case SOLUTION_OLD:
     case UNDIVIDED_LAPLACIAN:
     case SOLUTION_LIMITER:
+    case SOURCE_TERM:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
@@ -2025,6 +2026,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case SOLUTION_LIMITER:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetLimiter(iPoint, iVar);
+            break;
+          case SOURCE_TERM:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = base_nodes->GetSource(iPoint, iVar);
             break;
           case MAX_EIGENVALUE:
             bufDSend[buf_offset] = base_nodes->GetLambda(iPoint);
@@ -2230,6 +2235,10 @@ void CSolver::CompleteComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->SetLimiter(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
+          case SOURCE_TERM:
+            for (iVar = 0; iVar < nVar; iVar++)
+              base_nodes->SetSource(iPoint, iVar, bufDSend[buf_offset+iVar]);
+              break;
           case MAX_EIGENVALUE:
             base_nodes->SetLambda(iPoint,bufDRecv[buf_offset]);
             break;

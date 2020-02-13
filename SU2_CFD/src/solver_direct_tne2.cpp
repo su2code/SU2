@@ -1584,6 +1584,10 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     cout << "Chemical:    " << eChm_global << endl;
     cout << "Vib. Relax:  " << eVib_global << endl;
   }
+
+  /*--- MPI solution ---*/
+  InitiateComms(geometry, config, SOURCE_TERM);
+  CompleteComms(geometry, config, SOURCE_TERM);
 }
 
 void CTNE2EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
@@ -3288,8 +3292,7 @@ void CTNE2EulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
   if(source) {
     for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-      //--- viscous mass flux is 0, so start with momentum
-      for(iVar = 1; iVar < nVarMetr; iVar++){
+      for(iVar = 0; iVar < nVarMetr; iVar++){
         const unsigned short i = iVar*nMetr;
 
         const su2double a = nodes->GetAnisoSourceHess(iPoint, i+0);

@@ -2118,7 +2118,8 @@ enum MPI_QUANTITIES {
   ANISO_HESSIAN        = 34,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
   ANISO_HESSIAN_VISC   = 35,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
   ANISO_HESSIAN_SOURCE = 36,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
-  ANISO_METRIC         = 37   /*!< \brief Metric vectors for anisotropic mesh adaptation. */
+  ANISO_METRIC         = 37,  /*!< \brief Metric vectors for anisotropic mesh adaptation. */
+  SOURCE_TERM          = 38   /*!< \brief Chemical source terms stored for adaptation. */
 };
 
 /*!
