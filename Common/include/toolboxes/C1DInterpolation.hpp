@@ -48,7 +48,7 @@ virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
 virtual su2double EvaluateSpline(su2double Point_Interp){return 0;}
 bool GetPointMatch(){return Point_Match;}
 
-void SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol, vector<su2double> &X, vector<su2double> &Data);
+//void SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol, vector<su2double> &X, vector<su2double> &Data);
 };
 
 
@@ -64,9 +64,9 @@ public:
     }
 
     /*--- Constructor for inlet interpolation with correction ---*/
-    CAkimaInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
-    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, X, Data);
-    }
+  //  CAkimaInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
+ //   SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, X, Data);
+ //   }
 
     ~CAkimaInterpolation(){}
 
@@ -85,9 +85,9 @@ class CLinearInterpolation: public C1DInterpolation{
     }
 
     /*--- Constructor for inlet interpolation with correction ---*/
-    CLinearInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
-    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, X, Data);
-    }
+  //  CLinearInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
+  //  SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, X, Data);
+  //  }
     
     ~CLinearInterpolation(){}
 

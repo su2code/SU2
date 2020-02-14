@@ -193,7 +193,7 @@ void PrintInletInterpolatedData(vector<su2double>& Inlet_Data_Interpolated, stri
     else
         cout<<"file cannot be opened"<<endl;
 }
-
+/*
 void C1DInterpolation::SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol, vector<su2double> &X, vector<su2double> &Data){
     X.resize(nRows);
     Data.resize(nRows);
@@ -207,3 +207,4 @@ void C1DInterpolation::SetDataFromInletColumns(vector<su2double>& Inlet_Data, un
 
     SetSpline(X,Data);
 }
+*/
