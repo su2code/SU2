@@ -4397,7 +4397,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               for that interpolator[iVar], cycling through all columns to get all the 
               data for that vertex ---*/
                 Inlet_Interpolated[iVar]=interpolator[iVar]->EvaluateSpline(Interp_Radius);
-                if (interpolator[iVar]->GetPointMatch() == true){
+                if (interpolator[iVar]->GetPointMatch() == false){
                     cout << "WARNING: Did not find a match between the radius in the inlet file" << endl;
                     cout << std::scientific;
                     cout << " at location: [" << Coord[0] << ", " << Coord[1];
