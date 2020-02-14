@@ -39,6 +39,12 @@
 #include "../../include/numerics/elasticity/CFEM_IdealDE.hpp"
 #include "../../include/numerics/elasticity/CFEM_DielectricElastomer.hpp"
 
+#include "../../include/numerics/viscous/CAvgGradCorrected_P1.hpp"
+
+#include "../../include/numerics/source/CSourceP1.hpp"
+#include "../../include/numerics/source/CSourceRadiation.hpp"
+#include "../../include/numerics/source/CSourceVolumetricHeat.hpp"
+
 #include "../../../Common/include/omp_structure.hpp"
 
 #include "../../include/solvers/CEulerSolver.hpp"
