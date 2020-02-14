@@ -64,7 +64,7 @@ void CRadSolver::SetVolumetricHeatSource(CGeometry *geometry, CConfig *config) {
   su2double OP_rot[3]={0.0,0.0,0.0};
   const su2double *OP;
   const su2double *OC = config->GetHeatSource_Center();
-  const su2double *Radius = config->GetHeatSource_Radius();
+  const su2double *Axes = config->GetHeatSource_Axes();
   su2double check;
   // Reset the boolean for all points
   nodes->ResetVol_HeatSource();
@@ -78,7 +78,7 @@ void CRadSolver::SetVolumetricHeatSource(CGeometry *geometry, CConfig *config) {
     OP_rot[0] = OC[0] + CP[0]*cos(alpha) + CP[1]*sin(alpha);
     OP_rot[1] = OC[1] - CP[0]*sin(alpha) + CP[1]*cos(alpha);
     // Check if rotated point is inside the ellipse
-    for (iDim = 0; iDim < nDim; iDim++) check += pow(OP_rot[iDim]-OC[iDim],2.0)/pow(Radius[iDim], 2.0);
+    for (iDim = 0; iDim < nDim; iDim++) check += pow(OP_rot[iDim]-OC[iDim],2.0)/pow(Axes[iDim], 2.0);
     if (check <=1) nodes->SetVol_HeatSource(iPoint);
   }
 
