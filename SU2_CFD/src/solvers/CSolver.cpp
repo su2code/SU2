@@ -4281,7 +4281,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           /*--- Pointer to call Set and Evaluate functions. ---*/
           vector<C1DInterpolation*> interpolator (nColumns);
           string interpolation_function, interpolation_type;
-          int radius_index=0;
+          unsigned short radius_index=0;
 
           switch(config->GetKindInletInterpolationFunction()){
 
@@ -4290,15 +4290,15 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             break;
 
             case (AKIMA_1D):
-              for (unsigned int iCol=0; iCol < nColumns; iCol++)
-                interpolator[iCol] = new CAkimaInterpolation(profileReader.GetColumnForProfile[radius_index],profileReader.GetColumnForProfile[iCol]);
+              for (unsigned short iCol=0; iCol < nColumns; iCol++)
+                interpolator[iCol] = new CAkimaInterpolation(profileReader.GetColumnForProfile[jMarker, radius_index],profileReader.GetColumnForProfile[jMarker, iCol]);
                 interpolation_function = "AKIMA";
               Interpolate = true;
             break;
 
             case (LINEAR_1D):
-              for (unsigned int iCol=0; iCol < nColumns; iCol++)
-                interpolator[iCol] = new CLinearInterpolation(profileReader.GetColumnForProfile[radius_index],profileReader.GetColumnForProfile[iCol]);
+              for (unsigned short iCol=0; iCol < nColumns; iCol++)
+                interpolator[iCol] = new CLinearInterpolation(profileReader.GetColumnForProfile[jMarker, radius_index],profileReader.GetColumnForProfile[jMarker, iCol]);
                 interpolation_function = "LINEAR";
               Interpolate = true;
             break;
