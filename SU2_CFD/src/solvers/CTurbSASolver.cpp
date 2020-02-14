@@ -2642,6 +2642,7 @@ void CTurbSASolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
   CompleteComms(geometry, config, ANISO_HESSIAN_SOURCE);
 
   CorrectBoundAnisoHess(geometry, config);
+  CorrectBoundAnisoSourceHess(geometry, config);
 
   //--- Make positive definite matrix
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {

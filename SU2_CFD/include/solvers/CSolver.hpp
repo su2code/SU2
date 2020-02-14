@@ -366,6 +366,11 @@ public:
   void CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Apply a correction to the boundary source term Hessian using the volume Hessian.
+   */
+  void CorrectBoundAnisoSourceHess(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Apply a correction to the boundary metric using the volume metric.
    */
   void CorrectBoundAnisoMetr(CGeometry *geometry, CConfig *config);

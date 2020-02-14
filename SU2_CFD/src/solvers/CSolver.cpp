@@ -4959,7 +4959,7 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iVar, iFlux, iMetr, iMarker;
   unsigned short nMetr = 3*(nDim-1);
   unsigned long iVertex;
-  bool viscous = config->GetViscous(), source = config->GetAdap_Source();
+  bool viscous = config->GetViscous();
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
@@ -4975,12 +4975,12 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
           
           //--- Correct if any of the neighbors belong to the volume
           unsigned short iNeigh, counter = 0;
-          su2double hess[nMetr*nVar*nDim], hessvisc[nMetr*nVar*nDim], hesssource[nMetr*nVar];
+          su2double hess[nMetr*nVar*nDim], hessvisc[nMetr*nVar*nDim];
           for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             if(!geometry->node[jPoint]->GetBoundary()) {
               for(iVar = 0; iVar < nVar; iVar++){
-              for(iFlux = 0; iFlux < nDim; iFlux++) {
+                for(iFlux = 0; iFlux < nDim; iFlux++) {
                   const unsigned short i = iFlux*nVar*nMetr + iVar*nMetr;
 
                   //--- Reset hessian if first volume node detected
@@ -4988,60 +4988,86 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
                     for(iMetr = 0; iMetr < nMetr; iMetr++) {
                       hess[i+iMetr] = base_nodes->GetAnisoHess(iPoint, i+iMetr);
                       if(viscous) hessvisc[i+iMetr] = base_nodes->GetAnisoViscHess(iPoint, i+iMetr);
-                      // dist = 0.0;
-                    }
-                  }
-                  // for(iDim = 0; iDim < nDim; iDim++) {
-                  //   const su2double coord0 = geometry->node[iPoint]->GetCoord(iDim);
-                  //   const su2double coord1 = geometry->node[jPoint]->GetCoord(iDim);
-                  //   dist += (coord1-coord0)*(coord1-coord0);
-                  // }
+                    }// iMetr
+                  }// if counter
                   for(iMetr = 0; iMetr < nMetr; iMetr++) {
                     hess[i+iMetr] += base_nodes->GetAnisoHess(jPoint, i+iMetr);
                     if(viscous) hessvisc[i+iMetr] += base_nodes->GetAnisoViscHess(jPoint, i+iMetr);
-                    // hess[i+iMetr] += base_nodes->GetAnisoHess(jPoint, i+iMetr)/dist;
-                    // if(viscous) hessvisc[i+iMetr] += base_nodes->GetAnisoViscHess(jPoint, i+iMetr)/dist;
-                  }
-                }
-
-                if(source) {
-                  const unsigned short i = iVar*nMetr;
-
-                  //--- Reset hessian if first volume node detected
-                  if(counter == 0) {
-                    for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                      hesssource[i+iMetr] = base_nodes->GetAnisoSourceHess(iPoint, i+iMetr);
-                    }
-                  }
-                  for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                    hesssource[i+iMetr] += base_nodes->GetAnisoSourceHess(jPoint, i+iMetr);
-                  }
-                }
-              }
+                  }// iMetr
+                }// iFlux
+              }// iVar
               counter ++;
-            }
-          }
+            }// if boundary
+          }// iNeigh
           if(counter > 0) {
             for(iVar = 0; iVar < nVar; iVar++){
-            for(iFlux = 0; iFlux < nDim; iFlux++) {
+              for(iFlux = 0; iFlux < nDim; iFlux++) {
                 const unsigned short i = iFlux*nVar*nMetr + iVar*nMetr;
                 for(iMetr = 0; iMetr < nMetr; iMetr++) {
                   base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]/su2double(counter+1));
                   if(viscous) base_nodes->SetAnisoViscHess(iPoint, i+iMetr, hessvisc[i+iMetr]/su2double(counter+1));
-                }
-              }
-              if(source) {
+                }// iMetr
+              }// iFlux
+            }// iVar
+          }// if counter
+        }// if domain
+      }// iVertex
+    }// if KindBC
+  }// iMarker
+}
+
+void CSolver::CorrectBoundAnisoSourceHess(CGeometry *geometry, CConfig *config) {
+  unsigned short iDim, iVar, iFlux, iMetr, iMarker;
+  unsigned short nMetr = 3*(nDim-1);
+  unsigned long iVertex;
+  bool viscous = config->GetViscous();
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY ) {
+      
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        
+        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          //--- Correct if any of the neighbors belong to the volume
+          unsigned short iNeigh, counter = 0;
+          su2double hesssource[nMetr*nVar];
+          for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+            const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+            if(!geometry->node[jPoint]->GetBoundary()) {
+              for(iVar = 0; iVar < nVar; iVar++){
                 const unsigned short i = iVar*nMetr;
+
+                //--- Reset hessian if first volume node detected
+                if(counter == 0) {
+                  for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                    hesssource[i+iMetr] = base_nodes->GetAnisoSourceHess(iPoint, i+iMetr);
+                  }// iMetr
+                }// if counter
                 for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                  base_nodes->SetAnisoSourceHess(iPoint, i+iMetr, hesssource[i+iMetr]/su2double(counter+1));
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+                  hesssource[i+iMetr] += base_nodes->GetAnisoSourceHess(jPoint, i+iMetr);
+                }// iMetr
+              }// iVar
+              counter ++;
+            }// if boundary
+          }// iNeigh
+          if(counter > 0) {
+            for(iVar = 0; iVar < nVar; iVar++){
+              const unsigned short i = iVar*nMetr;
+              for(iMetr = 0; iMetr < nMetr; iMetr++) {
+                base_nodes->SetAnisoSourceHess(iPoint, i+iMetr, hesssource[i+iMetr]/su2double(counter+1));
+              }// iMetr
+            }// iVar
+          }// if counter
+        }// if domain
+      }// iVertex
+    }// if KindBC
+  }// iMarker
 }
 
 void CSolver::CorrectBoundAnisoMetr(CGeometry *geometry, CConfig *config) {
