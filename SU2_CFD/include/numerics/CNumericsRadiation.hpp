@@ -36,12 +36,12 @@ class CNumericsRadiation : public CNumerics {
  protected:
 
   bool implicit, incompressible;
-  su2double *RadVar_i,        /*!< \brief Vector of radiation variables at point i. */
-  *RadVar_j;                  /*!< \brief Vector of radiation variables at point j. */
-  su2double **RadVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
-  **RadVar_Grad_j;            /*!< \brief Gradient of turbulent variables at point j. */
-  su2double Absorption_Coeff; /*!< \brief Absorption coefficient. */
-  su2double Scattering_Coeff; /*!< \brief Scattering coefficient. */
+  const su2double *RadVar_i;              /*!< \brief Vector of radiation variables at point i. */
+  const su2double *RadVar_j;              /*!< \brief Vector of radiation variables at point j. */
+  const su2double* const* RadVar_Grad_i;  /*!< \brief Gradient of turbulent variables at point i. */
+  const su2double* const* RadVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
+  su2double Absorption_Coeff;             /*!< \brief Absorption coefficient. */
+  su2double Scattering_Coeff;             /*!< \brief Scattering coefficient. */
 
   su2double Temperature_Ref;  /*!< \brief Reference temperature for redimensionalization of P1 solver. */
 
@@ -66,7 +66,7 @@ class CNumericsRadiation : public CNumerics {
    * \param[in] val_radvar_i - Value of the turbulent variable at point i.
    * \param[in] val_radvar_j - Value of the turbulent variable at point j.
    */
-  inline void SetRadVar(su2double *val_radvar_i, su2double *val_radvar_j){
+  inline void SetRadVar(const su2double *val_radvar_i, const su2double *val_radvar_j) final {
     RadVar_i = val_radvar_i;
     RadVar_j = val_radvar_j;
   }
@@ -77,7 +77,7 @@ class CNumericsRadiation : public CNumerics {
    * \param[in] val_radvar_grad_i - Gradient of the turbulent variable at point i.
    * \param[in] val_radvar_grad_j - Gradient of the turbulent variable at point j.
    */
-  inline void SetRadVarGradient(su2double **val_radvar_grad_i, su2double **val_radvar_grad_j){
+  inline void SetRadVarGradient(const su2double* const* val_radvar_grad_i, const su2double* const* val_radvar_grad_j) final {
     RadVar_Grad_i = val_radvar_grad_i;
     RadVar_Grad_j = val_radvar_grad_j;
   }

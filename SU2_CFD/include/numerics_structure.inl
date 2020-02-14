@@ -491,10 +491,4 @@ inline su2double CAvgGrad_Base::GetHeatFluxVector(unsigned short iDim) const {
   return heat_flux_vector[iDim];
 }
 
-inline void CNumerics::SetRadVar(su2double *val_radvar_i, su2double *val_radvar_j) { }
-
-inline void CNumerics::SetRadVarGradient(su2double **val_radvar_grad_i, su2double **val_radvar_grad_j) { }
-
-inline void CNumerics::SetRadVarSource(su2double *val_radvar_source) { RadVar_Source = val_radvar_source; }
-
 inline void CNumerics::SetUsing_UQ(bool val_using_uq) { using_uq = val_using_uq; }
