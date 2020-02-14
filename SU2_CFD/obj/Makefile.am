@@ -79,7 +79,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/elasticity/CFEM_IdealDE.cpp \
   ../src/numerics/elasticity/CFEM_DielectricElastomer.cpp \
   ../src/numerics/CNumericsRadiation.cpp \
-  ../src/numerics/viscous/CAvgGrad_P1.cpp \
   ../src/numerics/viscous/CAvgGradCorrected_P1.cpp \
   ../src/numerics/source/CSourceP1.cpp \
   ../src/numerics/source/CSourceRadiation.cpp \
