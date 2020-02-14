@@ -4276,6 +4276,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           vector<su2double> Inlet_Values(nCol_InletFile+nDim);
           vector<su2double> Inlet_Interpolated(nCol_InletFile+nDim);
 
+          vector<su2double> Data;
+          vector<su2double> X;
+
           unsigned long nRows = profileReader.GetNumberOfRowsInProfile(jMarker);
 
           /*--- Pointer to call Set and Evaluate functions. ---*/
@@ -4289,18 +4292,25 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             Interpolate = false;
             break;
 
+            case (AKIMA_1D || LINEAR_1D):
+              X = profileReader.GetColumnForProfile[jMarker, radius_index];
+                
             case (AKIMA_1D):
-              for (unsigned short iCol=0; iCol < nColumns; iCol++)
-                interpolator[iCol] = new CAkimaInterpolation(profileReader.GetColumnForProfile[jMarker, radius_index],profileReader.GetColumnForProfile[jMarker, iCol]);
-                interpolation_function = "AKIMA";
+              for (unsigned short iCol=0; iCol < nColumns; iCol++){
+              Data = profileReader.GetColumnForProfile[jMarker, iCol];
+              interpolator[iCol] = new CAkimaInterpolation(X, Data);
+              }
+              interpolation_function = "AKIMA";
               Interpolate = true;
-            break;
 
             case (LINEAR_1D):
-              for (unsigned short iCol=0; iCol < nColumns; iCol++)
-                interpolator[iCol] = new CLinearInterpolation(profileReader.GetColumnForProfile[jMarker, radius_index],profileReader.GetColumnForProfile[jMarker, iCol]);
-                interpolation_function = "LINEAR";
+              for (unsigned short iCol=0; iCol < nColumns; iCol++){
+              Data = profileReader.GetColumnForProfile[jMarker, iCol];
+              interpolator[iCol] = new CLinearInterpolation(X, Data);
+              }
+              interpolation_function = "LINEAR";
               Interpolate = true;
+
             break;
 
             default:
