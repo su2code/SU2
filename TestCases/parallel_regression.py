@@ -1095,7 +1095,7 @@ def main():
     p1rad.new_output= True
     p1rad.test_iter = 100
     p1rad.test_vals = [-7.743540, -7.919958, -2.112177, 0.096091] #last 4 columns
-    p1rad.su2_exec  = "SU2_CFD"
+    p1rad.su2_exec  = "mpirun -n 2 SU2_CFD"
     p1rad.timeout   = 1600
     p1rad.tol       = 0.00001
     test_list.append(p1rad)
