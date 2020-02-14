@@ -4293,14 +4293,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             case (AKIMA_1D):
               for (unsigned int iCol=0; iCol < nColumns; iCol++)
                 interpolator[iCol] = new CAkimaInterpolation(Inlet_Data, nColumns, nRows, iCol);
-                interpolation_function = "Akima";
+                interpolation_function = "AKIMA";
               Interpolate = true;
             break;
 
             case (LINEAR_1D):
               for (unsigned int iCol=0; iCol < nColumns; iCol++)
                 interpolator[iCol] = new CLinearInterpolation(Inlet_Data, nColumns, nRows, iCol);
-                interpolation_function = "Linear";
+                interpolation_function = "LINEAR";
               Interpolate = true;
             break;
 
