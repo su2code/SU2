@@ -80,6 +80,7 @@ protected:
   vector<unsigned long> numberOfColumnsInProfile;  /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in a profile file. */
   
   vector<vector<passivedouble> > profileData;  /*!< \brief Auxiliary structure for holding the data values from a profile file. */
+  vector<passivedouble> ColumnData;  /*!< \brief Auxiliary structure for holding the column values from a profile file. */
   vector<vector<vector<su2double> > > profileCoords;  /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
   
 private:
@@ -164,4 +165,10 @@ public:
     return profileData[val_iProfile];
   }
   
+  inline const vector<passivedouble> &GetColumnForProfile(int val_iProfile, unsigned short iCol) {
+  for (unsigned long iRow = 0; iRow < GetNumberOfRowsInProfile(val_iProfile); iRow++)
+    ColumnData[iRow]=profileData[val_iProfile][iRow*GetNumberOfColumnsInProfile(val_iProfile)+iCol];
+  return ColumnData;
+  }
+
 };
