@@ -2511,9 +2511,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Position of heat source center (Heat_Source_Center_X, Heat_Source_Center_Y, Heat_Source_Center_Z) */
   default_hs_center[0] = 0.0; default_hs_center[1] = 0.0; default_hs_center[2] = 0.0;
   addDoubleArrayOption("HEAT_SOURCE_CENTER", 3, Heat_Source_Center, default_hs_center);
-  /* DESCRIPTION: Vector of heat source radii (Heat_Source_Radius_A, Heat_Source_Radius_B, Heat_Source_Radius_C) */
-  default_hs_radius[0] = 1.0; default_hs_radius[1] = 1.0; default_hs_radius[2] = 1.0;
-  addDoubleArrayOption("HEAT_SOURCE_RADIUS", 3, Heat_Source_Radius, default_hs_radius);
+  /* DESCRIPTION: Vector of heat source radii (Heat_Source_Axes_A, Heat_Source_Axes_B, Heat_Source_Axes_C) */
+  default_hs_axes[0] = 1.0; default_hs_axes[1] = 1.0; default_hs_axes[2] = 1.0;
+  addDoubleArrayOption("HEAT_SOURCE_AXES", 3, Heat_Source_Axes, default_hs_axes);
 
   /*!\brief MARKER_EMISSIVITY DESCRIPTION: Wall emissivity of the marker for radiation purposes \n
    * Format: ( marker, emissivity of the marker, ... ) \ingroup Config  */

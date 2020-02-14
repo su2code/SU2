@@ -1051,7 +1051,7 @@ private:
   su2double ValHeatSource;      /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
   su2double Heat_Source_Rot_Z;    /*!< \brief Rotation of the volumetric heat source on the Z axis. */
   su2double *Heat_Source_Center,  /*!< \brief Position of the center of the heat source. */
-            *Heat_Source_Radius;  /*!< \brief Radius (x, y, z) of the ellipsoid containing the heat source. */
+            *Heat_Source_Axes;  /*!< \brief Principal axes (x, y, z) of the ellipsoid containing the heat source. */
   unsigned short Kind_Radiation;       /*!< \brief Kind of radiation model used. */
   unsigned short Kind_P1_Init;         /*!< \brief Kind of initialization used in the P1 model. */
   su2double Absorption_Coeff,          /*!< \brief Absorption coefficient of the medium (radiation). */
@@ -1085,7 +1085,7 @@ private:
   default_sineload_coeff[3],     /*!< \brief Default values for a sine load. */
   default_body_force[3],         /*!< \brief Default body force vector for the COption class. */
   default_nacelle_location[5],   /*!< \brief Location of the nacelle. */
-  default_hs_radius[3],          /*!< \brief Default radius (x, y, z) of the ellipsoid containing the heat source. */
+  default_hs_axes[3],            /*!< \brief Default principal axes (x, y, z) of the ellipsoid containing the heat source. */
   default_hs_center[3];          /*!< \brief Default position of the center of the heat source. */
 
   unsigned short Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
@@ -5895,7 +5895,7 @@ public:
    * \brief Get the radius of the ellipsoid that introduces a volumetric heat source.
    * \return Pointer to the radii (x, y, z) of the ellipsoid that introduces a volumetric heat source.
    */
-  inline const su2double* GetHeatSource_Radius(void) const {return Heat_Source_Radius;}
+  inline const su2double* GetHeatSource_Axes(void) const {return Heat_Source_Axes;}
 
   /*!
    * \brief Get information about the rotational frame.
