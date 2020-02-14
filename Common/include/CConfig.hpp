@@ -1010,27 +1010,6 @@ private:
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   bool QCR;                    /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
-  su2double *default_vel_inf,  /*!< \brief Default freestream velocity array for the COption class. */
-  *default_eng_cyl,            /*!< \brief Default engine box array for the COption class. */
-  *default_eng_val,            /*!< \brief Default engine box array values for the COption class. */
-  *default_cfl_adapt,          /*!< \brief Default CFL adapt param array for the COption class. */
-  *default_jst_coeff,          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
-  *default_ffd_coeff,          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
-  *default_mixedout_coeff,     /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
-  *default_rampRotFrame_coeff, /*!< \brief Default ramp rotating frame coefficients for the COption class. */
-  *default_rampOutPres_coeff,  /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
-  *default_jst_adj_coeff,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
-  *default_ad_coeff_heat,      /*!< \brief Default artificial dissipation (heat) array for the COption class. */
-  *default_obj_coeff,          /*!< \brief Default objective array for the COption class. */
-  *default_geo_loc,            /*!< \brief Default SU2_GEO section locations array for the COption class. */
-  *default_distortion,         /*!< \brief Default SU2_GEO section locations array for the COption class. */
-  *default_ea_lim,             /*!< \brief Default equivalent area limit array for the COption class. */
-  *default_grid_fix,           /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
-  *default_htp_axis,           /*!< \brief Default HTP axis for the COption class. */
-  *default_ffd_axis,           /*!< \brief Default FFD axis for the COption class. */
-  *default_inc_crit,           /*!< \brief Default incremental criteria array for the COption class. */
-  *default_extrarelfac,        /*!< \brief Default extra relaxation factor for Giles BC in the COption class. */
-  *default_sineload_coeff;     /*!< \brief Default values for a sine load. */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones;  /*!< \brief number of maximum span-wise sections for all zones */
@@ -1046,8 +1025,6 @@ private:
   su2double FinalRotation_Rate_Z;       /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalOutletPressure;        /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure;      /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
-  su2double *default_body_force;        /*!< \brief Default body force vector for the COption class. */
-  su2double *default_nacelle_location;  /*!< \brief Location of the nacelle. */
   su2double *default_cp_polycoeffs;     /*!< \brief Array for specific heat polynomial coefficients. */
   su2double *default_mu_polycoeffs;     /*!< \brief Array for viscosity polynomial coefficients. */
   su2double *default_kt_polycoeffs;     /*!< \brief Array for thermal conductivity polynomial coefficients. */
@@ -1074,9 +1051,7 @@ private:
   su2double ValHeatSource;      /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
   su2double Heat_Source_Rot_Z;    /*!< \brief Rotation of the volumetric heat source on the Z axis. */
   su2double *Heat_Source_Center,  /*!< \brief Position of the center of the heat source. */
-            *default_hs_center,   /*!< \brief Default position of the center of the heat source. */
-            *Heat_Source_Radius,  /*!< \brief Radius (x, y, z) of the ellipsoid containing the heat source. */
-            *default_hs_radius;   /*!< \brief Default radius (x, y, z) of the ellipsoid containing the heat source. */
+            *Heat_Source_Radius;  /*!< \brief Radius (x, y, z) of the ellipsoid containing the heat source. */
   unsigned short Kind_Radiation;       /*!< \brief Kind of radiation model used. */
   unsigned short Kind_P1_Init;         /*!< \brief Kind of initialization used in the P1 model. */
   su2double Absorption_Coeff,          /*!< \brief Absorption coefficient of the medium (radiation). */
@@ -1086,6 +1061,32 @@ private:
   su2double *Wall_Emissivity;          /*!< \brief Emissivity of the wall. */
   bool Radiation;                      /*!< \brief Determines if a radiation model is incorporated. */
   su2double CFL_Rad;                   /*!< \brief CFL Number for the radiation solver. */
+
+  su2double default_vel_inf[3],  /*!< \brief Default freestream velocity array for the COption class. */
+  default_eng_cyl[7],            /*!< \brief Default engine box array for the COption class. */
+  default_eng_val[5],            /*!< \brief Default engine box array values for the COption class. */
+  default_cfl_adapt[4],          /*!< \brief Default CFL adapt param array for the COption class. */
+  default_jst_coeff[2],          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  default_ffd_coeff[3],          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  default_mixedout_coeff[3],     /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
+  default_rampRotFrame_coeff[3], /*!< \brief Default ramp rotating frame coefficients for the COption class. */
+  default_rampOutPres_coeff[3],  /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
+  default_jst_adj_coeff[2],      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+  default_ad_coeff_heat[2],      /*!< \brief Default artificial dissipation (heat) array for the COption class. */
+  default_obj_coeff[5],          /*!< \brief Default objective array for the COption class. */
+  default_geo_loc[2],            /*!< \brief Default SU2_GEO section locations array for the COption class. */
+  default_distortion[2],         /*!< \brief Default SU2_GEO section locations array for the COption class. */
+  default_ea_lim[3],             /*!< \brief Default equivalent area limit array for the COption class. */
+  default_grid_fix[6],           /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
+  default_htp_axis[2],           /*!< \brief Default HTP axis for the COption class. */
+  default_ffd_axis[3],           /*!< \brief Default FFD axis for the COption class. */
+  default_inc_crit[3],           /*!< \brief Default incremental criteria array for the COption class. */
+  default_extrarelfac[2],        /*!< \brief Default extra relaxation factor for Giles BC in the COption class. */
+  default_sineload_coeff[3],     /*!< \brief Default values for a sine load. */
+  default_body_force[3],         /*!< \brief Default body force vector for the COption class. */
+  default_nacelle_location[5],   /*!< \brief Location of the nacelle. */
+  default_hs_radius[3],          /*!< \brief Default radius (x, y, z) of the ellipsoid containing the heat source. */
+  default_hs_center[3];          /*!< \brief Default position of the center of the heat source. */
 
   unsigned short Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
   su2double Quadrature_Factor_Straight;      /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
@@ -1110,7 +1111,7 @@ private:
   Restart_Iter;                  /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;           /*!< \brief Determines the time step for the multizone problem */
   su2double Max_Time;            /*!< \brief Determines the maximum time for the time-domain problems */
-  su2double *default_wrt_freq;
+
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
   unsigned long VolumeWrtFreq;        /*!< \brief Writing frequency for solution files. */
@@ -4309,7 +4310,7 @@ public:
    *       during the computation.
    * \return Kind of integration scheme for the radiation equations.
    */
-  unsigned short GetKind_TimeIntScheme_Radiation(void) { return Kind_TimeIntScheme_Radiation; }
+  unsigned short GetKind_TimeIntScheme_Radiation(void) const { return Kind_TimeIntScheme_Radiation; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -5854,19 +5855,19 @@ public:
    * \brief Get information about the volumetric heat source.
    * \return <code>TRUE</code> if it uses a volumetric heat source; otherwise <code>FALSE</code>.
    */
-  inline bool GetHeatSource(void)  { return HeatSource; }
+  inline bool GetHeatSource(void) const { return HeatSource; }
 
   /*!
    * \brief Get information about the volumetric heat source.
    * \return Value of the volumetric heat source
    */
-  inline su2double GetHeatSource_Val(void) {return ValHeatSource;}
+  inline su2double GetHeatSource_Val(void) const {return ValHeatSource;}
 
   /*!
    * \brief Get the rotation angle of the volumetric heat source in axis Z.
    * \return Rotation (Z) of the volumetric heat source
    */
-  inline su2double GetHeatSource_Rot_Z(void) {return Heat_Source_Rot_Z;}
+  inline su2double GetHeatSource_Rot_Z(void) const {return Heat_Source_Rot_Z;}
 
   /*!
    * \brief Set the rotation angle of the volumetric heat source in axis Z.
@@ -9053,13 +9054,13 @@ public:
    * \brief Get the Kind of Radiation model applied.
    * \return Kind of radiation model used.
    */
-   unsigned short GetKind_RadiationModel(void) { return Kind_Radiation; }
+  unsigned short GetKind_RadiationModel(void) { return Kind_Radiation; }
 
-   /*!
-    * \brief Get the Kind of P1 initialization method applied.
-    * \return Kind of P1 initialization method used.
-    */
-    unsigned short GetKind_P1_Init(void) { return Kind_P1_Init; }
+  /*!
+   * \brief Get the Kind of P1 initialization method applied.
+   * \return Kind of P1 initialization method used.
+   */
+  unsigned short GetKind_P1_Init(void) { return Kind_P1_Init; }
 
   /*!
    * \brief Get the value of the absorption coefficient of the medium.

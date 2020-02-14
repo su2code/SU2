@@ -964,33 +964,6 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Initialize some default arrays to NULL. ---*/
 
-  default_vel_inf            = NULL;
-  default_ffd_axis           = NULL;
-  default_eng_cyl            = NULL;
-  default_eng_val            = NULL;
-  default_cfl_adapt          = NULL;
-  default_jst_coeff          = NULL;
-  default_ffd_coeff          = NULL;
-  default_mixedout_coeff     = NULL;
-  default_extrarelfac        = NULL;
-  default_rampRotFrame_coeff = NULL;
-  default_rampOutPres_coeff  = NULL;
-  default_jst_adj_coeff      = NULL;
-  default_ad_coeff_heat      = NULL;
-  default_obj_coeff          = NULL;
-  default_geo_loc            = NULL;
-  default_distortion         = NULL;
-  default_ea_lim             = NULL;
-  default_grid_fix           = NULL;
-  default_inc_crit           = NULL;
-  default_htp_axis           = NULL;
-  default_body_force         = NULL;
-  default_sineload_coeff     = NULL;
-  default_nacelle_location   = NULL;
-  default_wrt_freq           = NULL;
-  default_hs_center          = NULL;
-  default_hs_radius          = NULL;
-
   default_cp_polycoeffs = NULL;
   default_mu_polycoeffs = NULL;
   default_kt_polycoeffs = NULL;
@@ -1083,32 +1056,6 @@ void CConfig::SetConfig_Options() {
 
   /*--- Allocate some default arrays needed for lists of doubles. ---*/
 
-  default_vel_inf            = new su2double[3];
-  default_ffd_axis           = new su2double[3];
-  default_eng_cyl            = new su2double[7];
-  default_eng_val            = new su2double[5];
-  default_cfl_adapt          = new su2double[4];
-  default_jst_coeff          = new su2double[2];
-  default_ffd_coeff          = new su2double[3];
-  default_mixedout_coeff     = new su2double[3];
-  default_extrarelfac        = new su2double[2];
-  default_rampRotFrame_coeff = new su2double[3];
-  default_rampOutPres_coeff  = new su2double[3];
-  default_jst_adj_coeff      = new su2double[2];
-  default_ad_coeff_heat      = new su2double[2];
-  default_obj_coeff          = new su2double[5];
-  default_geo_loc            = new su2double[2];
-  default_distortion         = new su2double[2];
-  default_ea_lim             = new su2double[3];
-  default_grid_fix           = new su2double[6];
-  default_inc_crit           = new su2double[3];
-  default_htp_axis           = new su2double[2];
-  default_body_force         = new su2double[3];
-  default_sineload_coeff     = new su2double[3];
-  default_nacelle_location   = new su2double[5];
-  default_wrt_freq           = new su2double[3];
-  default_hs_center          = new su2double[3];
-  default_hs_radius          = new su2double[3];
 
   /*--- All temperature polynomial fits for the fluid models currently
    assume a quartic form (5 coefficients). For example,
@@ -7805,33 +7752,6 @@ CConfig::~CConfig(void) {
   if (Electric_Field_Dir   != NULL) delete [] Electric_Field_Dir;
 
   /*--- Delete some arrays needed just for initializing options. ---*/
-
-  if (default_vel_inf       != NULL) delete [] default_vel_inf;
-  if (default_ffd_axis      != NULL) delete [] default_ffd_axis;
-  if (default_eng_cyl       != NULL) delete [] default_eng_cyl;
-  if (default_eng_val       != NULL) delete [] default_eng_val;
-  if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
-  if (default_jst_coeff != NULL) delete [] default_jst_coeff;
-  if (default_ffd_coeff != NULL) delete [] default_ffd_coeff;
-  if (default_mixedout_coeff!= NULL) delete [] default_mixedout_coeff;
-  if (default_extrarelfac!= NULL) delete [] default_extrarelfac;
-  if (default_rampRotFrame_coeff!= NULL) delete [] default_rampRotFrame_coeff;
-  if (default_rampOutPres_coeff!= NULL) delete[] default_rampOutPres_coeff;
-  if (default_jst_adj_coeff  != NULL) delete [] default_jst_adj_coeff;
-  if (default_ad_coeff_heat  != NULL) delete [] default_ad_coeff_heat;
-  if (default_obj_coeff     != NULL) delete [] default_obj_coeff;
-  if (default_geo_loc       != NULL) delete [] default_geo_loc;
-  if (default_distortion    != NULL) delete [] default_distortion;
-  if (default_ea_lim        != NULL) delete [] default_ea_lim;
-  if (default_grid_fix      != NULL) delete [] default_grid_fix;
-  if (default_inc_crit      != NULL) delete [] default_inc_crit;
-  if (default_htp_axis      != NULL) delete [] default_htp_axis;
-  if (default_body_force    != NULL) delete [] default_body_force;
-  if (default_sineload_coeff!= NULL) delete [] default_sineload_coeff;
-  if (default_nacelle_location    != NULL) delete [] default_nacelle_location;
-  if (default_wrt_freq != NULL) delete [] default_wrt_freq;
-  if (default_hs_center     != NULL) delete [] default_hs_center;
-  if (default_hs_radius     != NULL) delete [] default_hs_radius;
 
   if (default_cp_polycoeffs != NULL) delete [] default_cp_polycoeffs;
   if (default_mu_polycoeffs != NULL) delete [] default_mu_polycoeffs;
