@@ -165,7 +165,7 @@ public:
     return profileData[val_iProfile];
   }
   
-  inline vector<su2double> &GetColumnForProfile(int val_iProfile, unsigned short iCol) {
+  inline const vector<su2double> &GetColumnForProfile(int val_iProfile, unsigned short iCol) {
   for (unsigned long iRow = 0; iRow < GetNumberOfRowsInProfile(val_iProfile); iRow++)
     ColumnData[iRow]=profileData[val_iProfile][iRow*GetNumberOfColumnsInProfile(val_iProfile)+iCol];
   return ColumnData;
