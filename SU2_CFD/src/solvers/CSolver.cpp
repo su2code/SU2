@@ -4292,14 +4292,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             case (AKIMA_1D):
               for (unsigned short iCol=0; iCol < nColumns; iCol++)
                 interpolator[iCol] = new CAkimaInterpolation(profileReader.GetColumnForProfile(jMarker, radius_index),profileReader.GetColumnForProfile(jMarker, iCol));
-                interpolation_function = "AKIMA";
+              interpolation_function = "AKIMA";
               Interpolate = true;
             break;
 
             case (LINEAR_1D):
               for (unsigned short iCol=0; iCol < nColumns; iCol++)
                 interpolator[iCol] = new CLinearInterpolation(profileReader.GetColumnForProfile(jMarker, radius_index),profileReader.GetColumnForProfile(jMarker, iCol));
-                interpolation_function = "LINEAR";
+              interpolation_function = "LINEAR";
               Interpolate = true;
             break;
 
@@ -4321,6 +4321,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               }
             cout<<endl<<"Inlet Interpolation being done using "<<interpolation_function<<" function and type "<<interpolation_type<<endl<<endl; 
           }
+
+
             /*--- Loop through the nodes on this marker. ---*/
 
             for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
@@ -4395,7 +4397,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               for that interpolator[iVar], cycling through all columns to get all the 
               data for that vertex ---*/
                 Inlet_Interpolated[iVar]=interpolator[iVar]->EvaluateSpline(Interp_Radius);
-                if (interpolator[iVar]->GetPointMatch() == false){
+                if (interpolator[iVar]->GetPointMatch() == true){
                     cout << "WARNING: Did not find a match between the radius in the inlet file" << endl;
                     cout << std::scientific;
                     cout << " at location: [" << Coord[0] << ", " << Coord[1];
