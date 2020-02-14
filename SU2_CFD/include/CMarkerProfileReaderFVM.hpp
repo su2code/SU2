@@ -169,7 +169,7 @@ public:
     this->ColumnData.resize(this->numberOfRowsInProfile[val_iProfile]);
   for (unsigned long iRow = 0; iRow < this->numberOfRowsInProfile[val_iProfile]; iRow++)
     this->ColumnData[iRow]=this->profileData[val_iProfile][iRow*this->numberOfColumnsInProfile[val_iProfile]+iCol];
-  return ColumnData;
+  return this->ColumnData;
   }
 
 };
