@@ -762,8 +762,8 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
     const su2double c = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 2);
     
     if (fabs(a*c - b*b) < 1.0E-16) {
-      A[0][0] = 1.0E-16; A[0][1] = 1.0E-16;
-      A[1][0] = 1.0E-16; A[1][1] = 1.0E-16;
+      A[0][0] = a+1.0E-16; A[0][1] = b;
+      A[1][0] = b;         A[1][1] = c+1.0E-16;
     }
     else {
       A[0][0] = a; A[0][1] = b;
@@ -791,24 +791,19 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
     const su2double c = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 2);
     
     if (fabs(a*c - b*b) < 1.0E-16) {
-      A[0][0] = 1.0E-16; A[0][1] = 1.0E-16;
-      A[1][0] = 1.0E-16; A[1][1] = 1.0E-16;
-
-      EigVal[0] = eigmin;
-      EigVal[1] = eigmin;
-      EigVec[0][0] = 1.0; EigVec[0][1] = 0.0;
-      EigVec[1][0] = 0.0; EigVec[0][0] = 1.0;
+      A[0][0] = a+1.0E-16; A[0][1] = b;
+      A[1][0] = b;         A[1][1] = c+1.0E-16;
     }
     else {
-    A[0][0] = a; A[0][1] = b;
-    A[1][0] = b; A[1][1] = c;
+      A[0][0] = a; A[0][1] = b;
+      A[1][0] = b; A[1][1] = c;
+    }
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
 
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
-    }
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
