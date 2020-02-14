@@ -348,6 +348,9 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
 //  BC Transition Model variables
   su2double vmag, rey, re_theta, re_theta_t, re_v;
   su2double tu , nu_cr, nu_t, nu_BC, chi_1, chi_2, term1, term2, term_exponential;
+  su2double Hl,H12,Ue,Fgrowth,Fcrit,re_y,re_y0,Dh12,lh12,mh12,re_12,re_120,n,dndre,Ncrit,ky;
+  su2double Uinfty,Pinfty,roinfty,lRetheta,Ret,Nfactor;
+  
   bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
 
   if (incompressible) {
@@ -412,6 +415,43 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
 
 //    Original SA model
 //    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
+
+    /*-------------------------------- e^N model --------------------------------*/
+    Uinfty = config->GetVelocity_Ref();
+    Pinfty = config->GetPressure_Ref();
+    roinfty = config->GetDensity_Ref();
+    Ue = sqrt(((Pinfty - V_i[0])/0.5*Density_i) + Uinfty*Uinfty);
+    Hl = S*dist_i/Ue;
+    
+    H12 = 13.9766*pow(Hl,4.0) - 22.9166*pow(Hl,3.0) + 13.7227*pow(Hl,2.0) - 1.0023*Hl + 1.6778;
+    
+    Dh12 = (0.0616*pow(H12,2.0) + 0.2339*H12 + 3.4296)/(0.0047*pow(H12,3.0) - 0.1056*pow(H12,2.0) + 0.9350*H12 - 1.2071 );
+    lh12 = (6.54*H12 - 14.07)/(H12*H12);
+    mh12 = (0.058*((pow((H12 - 4),4.0))/(H12 - 1.0)) - 0.068)/lh12;
+    Fgrowth = Dh12*((1.0 + mh12)*lh12)/2.0;
+    
+    re_y = Density_i*vmag*dist_i/Laminar_Viscosity_i;
+    ky = -0.00315*pow(H12,3.0) + 0.0986*pow(H12, 2.0) - 0.242*H12 + 3.739;
+    lRetheta = 0.7*tanh(14.0/(H12-1.0) - 9.24) + 2.492/(pow((H12 - 1.0),0.43)) + 0.62;
+    Ret = pow(10.0, lRetheta);
+    re_y0 = ky*Ret;
+    Fcrit = 0.0;
+    if (re_y > re_y0)
+      Fcrit = 1.0;
+    
+    dndre = 0.028*(H12 -1.0) - 0.0345*exp(-pow((3.87/(H12-1.0) - 2.52),2.0));
+    
+    n = Density_i*Omega*Fcrit*Fgrowth*dndre;
+    
+    Ncrit = 9.0;
+    Nfactor = 1.0 - exp((2.0*(n-Ncrit)));
+    //ct4 = 0.05;
+    gamma_BC = 0.0;
+    if (n > Ncrit) 
+		 gamma_BC = 1.0;
+    
+    /*-------------------------------- e^N model --------------------------------*/
+
     
     if (transition) {
 
@@ -437,6 +477,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     }
     else {
       Production = cb1*Shat*TurbVar_i[0]*Volume;
+      //Production = cb1*gamma_BC*Shat*TurbVar_i[0]*Volume;
     }
     
     /*--- Destruction term ---*/
