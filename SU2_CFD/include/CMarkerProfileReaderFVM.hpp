@@ -165,10 +165,10 @@ public:
     return profileData[val_iProfile];
   }
   
-  inline vector<su2double> &GetColumnForProfile(int val_iProfile, unsigned short iCol) {
-    ColumnData.resize(this->GetNumberOfRowsInProfile(val_iProfile));
-  for (unsigned long iRow = 0; iRow < this->GetNumberOfRowsInProfile(val_iProfile); iRow++)
-    ColumnData[iRow]=this->profileData[val_iProfile][iRow*this->GetNumberOfColumnsInProfile(val_iProfile)+iCol];
+  vector<su2double> &GetColumnForProfile(int val_iProfile, unsigned short iCol) {
+    this->ColumnData.resize(this->numberOfRowsInProfile[val_iProfile]);
+  for (unsigned long iRow = 0; iRow < this->numberOfRowsInProfile[val_iProfile]; iRow++)
+    this->ColumnData[iRow]=this->profileData[val_iProfile][iRow*this->numberOfColumnsInProfile[val_iProfile]+iCol];
   return ColumnData;
   }
 
