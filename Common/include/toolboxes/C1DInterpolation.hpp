@@ -1,5 +1,5 @@
 /*!
- * \file inlet_interpolation_functions.hpp
+ * \file C1DInterpolation.hpp
  * \brief Inlet_interpolation_functions
  * \author Aman Baig
  * \version 7.0.1 "Blackbird"

@@ -4391,6 +4391,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             else if(Interpolate == true){
 
               /* --- Calculating the radius and angle of the vertex ---*/
+              /* --- Flow should be in z direction ---*/
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
               Theta = atan2(Coord[1],Coord[0]);
 
@@ -4453,7 +4454,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         unsigned short nColumns = 0;
         for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
           if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
-            nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+            nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker, Interpolate);
           }
         }
         vector<su2double> Inlet_Values(nColumns);

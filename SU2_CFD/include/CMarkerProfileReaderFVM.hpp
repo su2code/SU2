@@ -156,6 +156,17 @@ public:
     return numberOfColumnsInProfile[val_iProfile];
   }
   
+    /*!
+   * \brief Get the number of columns of data in a profile if an interpolation method was used (multigrid).
+   * \param[in] val_iProfile - current profile index.
+   * \param[in] Interpolate - bool value for Interpolation
+   * \returns Number of columns of data in the (if) interpolated profile.
+   */
+  inline unsigned long GetNumberOfColumnsInProfile(int val_iProfile, bool Interpolate) {
+    if (Interpolate == true) {return numberOfColumnsInProfile[val_iProfile]+dimension;}
+    else {return numberOfColumnsInProfile[val_iProfile];}
+  }
+
   /*!
    * \brief Get the 1D vector of data for a profile from the input file.
    * \param[in] val_iProfile - current profile index.
@@ -165,7 +176,13 @@ public:
     return profileData[val_iProfile];
   }
   
-  vector<su2double> &GetColumnForProfile(int val_iProfile, unsigned short iCol) {
+      /*!
+   * \brief Get the data for the specific column if interpolation being done.
+   * \param[in] val_iProfile - current profile index.
+   * \param[in] iCol - the column whose data is required
+   * \returns the specific column data.
+   */
+  inline vector<su2double> &GetColumnForProfile(int val_iProfile, unsigned short iCol) {
     this->ColumnData.resize(this->numberOfRowsInProfile[val_iProfile]);
   for (unsigned long iRow = 0; iRow < this->numberOfRowsInProfile[val_iProfile]; iRow++)
     this->ColumnData[iRow]=this->profileData[val_iProfile][iRow*this->numberOfColumnsInProfile[val_iProfile]+iCol];
