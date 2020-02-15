@@ -4302,11 +4302,11 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                 InletColumns[iCol]=profileReader.GetColumnForProfile(jMarker, iCol);
 
                 if(config->GetKindInletInterpolationFunction() == AKIMA_1D){
-                  interpolator[iCol] = new CAkimaInterpolation(InletRadii,InletColumns[iCol]);
+                  interpolator[iCol] = new CAkimaInterpolation(InletRadii,profileReader.GetColumnForProfile(jMarker, iCol));
                   interpolation_function = "AKIMA";
                 }
                 else if(config->GetKindInletInterpolationFunction() == LINEAR_1D){
-                  interpolator[iCol] = new CLinearInterpolation(InletRadii,InletColumns[iCol]);
+                  interpolator[iCol] = new CLinearInterpolation(InletRadii,profileReader.GetColumnForProfile(jMarker, iCol));
                   interpolation_function = "LINEAR";
                 }
               }
