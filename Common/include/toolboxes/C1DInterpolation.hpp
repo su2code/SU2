@@ -1,5 +1,5 @@
 /*!
- * \file inlet_interpolation_functions.hpp
+ * \file C1DInterpolation.hpp
  * \brief Inlet_interpolation_functions
  * \author Aman Baig
  * \version 7.0.1 "Blackbird"
@@ -38,65 +38,117 @@ using namespace std;
 
 class C1DInterpolation{
 protected:
-    bool Point_Match = false;
-    vector<su2double> Data;
-    vector<su2double> X;
+    bool Point_Match = false; /*!< \brief to make sure all points from the inlet data match the vertex coordinates */
+    vector<su2double> X;    /*!< \brief x for inlet data */
+    vector<su2double> Data; /*!< \brief f(x) for inlet data */
+
 public:
-virtual ~C1DInterpolation() = default;
+    /*!
+    * \brief Virtual destructor of the C1DInterpolation class.
+    */
+    virtual ~C1DInterpolation() = default;
 
-virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
-virtual su2double EvaluateSpline(su2double Point_Interp){return 0;}
-bool GetPointMatch(){return Point_Match;}
+    /*!
+    * \brief virtual method for setting the cofficients for the respective spline spline.
+    * \param[in] X - the x values.
+    * \param[in] Data - the f(x) values.
+    */
+    virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
 
-void SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol, vector<su2double> &X, vector<su2double> &Data);
+    /*!
+    * \brief virtual method for evaluating the value of the respective Spline.
+    * \param[in] Point_Interp - the point where interpolation value is required.
+    * \returns the interpolated value.
+    */
+    virtual su2double EvaluateSpline(su2double Point_Interp){return 0;}
+
+    /*!
+    * \brief bool variable to make sure all vertex points fell in range of the inlet data.
+    * \returns the bool variable.
+    */
+    bool GetPointMatch(){return Point_Match;}
 };
 
 
 class CAkimaInterpolation: public C1DInterpolation{ 
 protected:
-    vector<su2double> x,y,b,c,d;
-    int n;
+    vector<su2double> x,y,b,c,d;  /*!< \brief local variables for Akima spline cooefficients */
+    int n; /*!< \brief local variable for holding the number of intervals */
 public:
     
-    /*--- Constructor for general class usage ---*/
+    /*!
+    * \brief Constructor of the CAkimaInterpolation class.
+    * \param[in] X - the x values.
+    * \param[in] Data - the f(x) values.
+    */
     CAkimaInterpolation(vector<su2double> &X, vector<su2double> &Data){
         SetSpline(X,Data);
     }
 
-    /*--- Constructor for inlet interpolation with correction ---*/
-    CAkimaInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
-    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, X, Data);
-    }
-
+    /*!
+    * \brief Destructor of the CAkimaInterpolation class.
+    */
     ~CAkimaInterpolation(){}
 
+    /*!
+    * \brief for setting the cofficients for the Akima spline.
+    * \param[in] X - the x values.
+    * \param[in] Data - the f(x) values.
+    */
     void SetSpline(vector<su2double> &x, vector<su2double> &y) override;
+
+    /*!
+    * \brief For evaluating the value of Akima Spline.
+    * \param[in] Point_Interp - the point where interpolation value is required.
+    * \returns the interpolated value.
+    */
     su2double EvaluateSpline(su2double Point_Interp) override;
 };
 
 class CLinearInterpolation: public C1DInterpolation{
     protected:
-    vector<su2double> x,y,dydx;
+    vector<su2double> x,y,dydx; /*!< \brief local variables for linear 'spline' cooefficients */
     public:
     
-    /*--- Constructor for general class usage ---*/
+    /*!
+    * \brief Constructor of the CLinearInterpolation class.
+    * \param[in] X - the x values.
+    * \param[in] Data - the f(x) values.
+    */
     CLinearInterpolation(vector<su2double> &X, vector<su2double> &Data){
         SetSpline(X,Data);
     }
 
-    /*--- Constructor for inlet interpolation with correction ---*/
-    CLinearInterpolation(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, signed short iCol){
-    SetDataFromInletColumns(Inlet_Data, nColumns, nRows, iCol, X, Data);
-    }
-    
+    /*!
+    * \brief Destructor of the CInletInterpolation class.
+    */
     ~CLinearInterpolation(){}
 
+    /*!
+    * \brief for setting the cofficients for Linear 'spline'.
+    * \param[in] X - the x values.
+    * \param[in] Data - the f(x) values.
+    */
     void SetSpline(vector<su2double> &x, vector<su2double> &y) override;
+
+    /*!
+    * \brief For evaluating the value for Linear 'spline'.
+    * \param[in] Point_Interp - the point where interpolation value is required.
+    * \returns the interpolated value.
+    */
     su2double EvaluateSpline(su2double Point_Interp) override;
 };
 
-
-
+/*!
+* \brief to correct for interpolation type.
+* \param[in] Inlet_Interpolated - the interpolated data after spline evaluation.
+* \param[in] Theta - the angle of the vertex (in xy plane).
+* \param[in] nDim - the dimensions of the case.
+* \param[in] Coord - the coordinates of the vertex.
+* \param[in] nVar_Turb - the number of turbulence variables as defined by turbulence model
+* \param[in] *config - Definition of the particular problem.
+* \returns the corrected Inlet Interpolated Data.
+*/
 vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
                                     su2double Theta ,
                                     unsigned short nDim, 
@@ -104,5 +156,12 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated,
                                     unsigned short nVar_Turb, 
                                     CConfig *config);
 
-                                    
+/*!
+* \brief to print the Inlet Interpolated Data
+* \param[in] Inlet_Interpolated_Interpolated - the final vector for the interpolated data
+* \param[in] Marker - name of the inlet marker
+* \param[in] nVertex - total number of vertexes.
+* \param[in] nDim - the dimensions of the problem.
+* \param[in] nColumns - the number of columns in the final interpolated data
+*/                      
 void PrintInletInterpolatedData(vector<su2double>& Inlet_Data_Interpolated, string Marker, unsigned long nVertex, unsigned short nDim, unsigned short nColumns);

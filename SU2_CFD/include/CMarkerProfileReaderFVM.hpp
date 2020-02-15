@@ -80,6 +80,7 @@ protected:
   vector<unsigned long> numberOfColumnsInProfile;  /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in a profile file. */
   
   vector<vector<passivedouble> > profileData;  /*!< \brief Auxiliary structure for holding the data values from a profile file. */
+  vector<su2double> ColumnData;  /*!< \brief Auxiliary structure for holding the column values from a profile file. */
   vector<vector<vector<su2double> > > profileCoords;  /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
   
 private:
@@ -155,6 +156,17 @@ public:
     return numberOfColumnsInProfile[val_iProfile];
   }
   
+    /*!
+   * \brief Get the number of columns of data in a profile if an interpolation method was used (multigrid).
+   * \param[in] val_iProfile - current profile index.
+   * \param[in] Interpolate - bool value for Interpolation
+   * \returns Number of columns of data in the (if) interpolated profile.
+   */
+  inline unsigned long GetNumberOfColumnsInProfile(int val_iProfile, bool Interpolate) {
+    if (Interpolate == true) {return numberOfColumnsInProfile[val_iProfile]+dimension;}
+    else {return numberOfColumnsInProfile[val_iProfile];}
+  }
+
   /*!
    * \brief Get the 1D vector of data for a profile from the input file.
    * \param[in] val_iProfile - current profile index.
@@ -164,4 +176,17 @@ public:
     return profileData[val_iProfile];
   }
   
+   /*!
+   * \brief Get the data for the specific column if interpolation being done.
+   * \param[in] val_iProfile - current profile index.
+   * \param[in] iCol - the column whose data is required
+   * \returns the specific column data.
+   */
+  inline vector<su2double> &GetColumnForProfile(int val_iProfile, unsigned short iCol) {
+    ColumnData.resize(numberOfRowsInProfile[val_iProfile]);
+  for (unsigned long iRow = 0; iRow < numberOfRowsInProfile[val_iProfile]; iRow++)
+    ColumnData[iRow]=profileData[val_iProfile][iRow*numberOfColumnsInProfile[val_iProfile]+iCol];
+  return ColumnData;
+  }
+
 };

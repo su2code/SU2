@@ -4221,7 +4221,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
    excluding the coordinates. Here, we have 2 entries for the total
    conditions or mass flow, another nDim for the direction vector, and
    finally entries for the number of turbulence variables. This is only
-   necessary in case we are writing a template profile file. ---*/
+   necessary in case we are writing a template profile file or for Inlet
+   Interpolation purposes. ---*/
 
   unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
 
@@ -4273,7 +4274,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
           /*--- Define Inlet Values vectors before and after interpolation (if needed) ---*/
           vector<su2double> Inlet_Values(nCol_InletFile+nDim);
-          vector<su2double> Inlet_Interpolated(nCol_InletFile+nDim);
+          vector<su2double> Inlet_Interpolated(nColumns);
 
           unsigned long nRows = profileReader.GetNumberOfRowsInProfile(jMarker);
 
@@ -4281,8 +4282,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           vector<C1DInterpolation*> interpolator (nColumns);
           string interpolation_function, interpolation_type;
 
-          /*--- Object to call Corrected Inlet Values and Print Interpolated Data functions ---*/
-         // C1DInterpolation *corrector = nullptr;
+          /*--- Define the reference for interpolation. ---*/
+          unsigned short radius_index=0;
+          vector<su2double> InletRadii = profileReader.GetColumnForProfile(jMarker, radius_index);
 
           switch(config->GetKindInletInterpolationFunction()){
 
@@ -4291,19 +4293,19 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             break;
 
             case (AKIMA_1D):
-              for (unsigned int iCol=0; iCol < nColumns; iCol++)
-                interpolator[iCol] = new CAkimaInterpolation(Inlet_Data, nColumns, nRows, iCol);
-                interpolation_function = "Akima";
-              Interpolate = true;
-            break;
-
+              for (unsigned short iCol=0; iCol < nColumns; iCol++){
+                  interpolator[iCol] = new CAkimaInterpolation(InletRadii,profileReader.GetColumnForProfile(jMarker, iCol));
+                  interpolation_function = "AKIMA";
+                  Interpolate = true;
+                }
             case (LINEAR_1D):
-              for (unsigned int iCol=0; iCol < nColumns; iCol++)
-                interpolator[iCol] = new CLinearInterpolation(Inlet_Data, nColumns, nRows, iCol);
-                interpolation_function = "Linear";
-              Interpolate = true;
+              for (unsigned short iCol=0; iCol < nColumns; iCol++){
+                  interpolator[iCol] = new CLinearInterpolation(InletRadii,profileReader.GetColumnForProfile(jMarker, iCol));
+                  interpolation_function = "LINEAR";
+                  Interpolate = true;
+                }
             break;
-
+            
             default:
               SU2_MPI::Error("Error in the Kind_InletInterpolation Marker\n",CURRENT_FUNCTION);
             break;
@@ -4322,6 +4324,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               }
             cout<<endl<<"Inlet Interpolation being done using "<<interpolation_function<<" function and type "<<interpolation_type<<endl<<endl; 
           }
+
 
             /*--- Loop through the nodes on this marker. ---*/
 
@@ -4388,22 +4391,23 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             else if(Interpolate == true){
 
               /* --- Calculating the radius and angle of the vertex ---*/
+              /* --- Flow should be in z direction ---*/
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
               Theta = atan2(Coord[1],Coord[0]);
 
               /* --- Evaluating and saving the final spline data ---*/
               for  (unsigned short iVar=0; iVar < nColumns; iVar++){
-              //Evaluate spline will get the respective value of the Data set (column) specified
-              //for that interpolator[iVar], cycling through all columns to get all the 
-              //data for that vertex
+              /*---Evaluate spline will get the respective value of the Data set (column) specified
+              for that interpolator[iVar], cycling through all columns to get all the 
+              data for that vertex ---*/
                 Inlet_Interpolated[iVar]=interpolator[iVar]->EvaluateSpline(Interp_Radius);
                 if (interpolator[iVar]->GetPointMatch() == false){
-                    cout << "WARNING: Did not find a match between the radius in the inlet file" << endl;
+                    cout << "WARNING: Did not find a match between the radius in the inlet file " ;
                     cout << std::scientific;
-                    cout << " at location: [" << Coord[0] << ", " << Coord[1];
-                    if (nDim ==3) error_msg << ", " << Coord[2];
-                    cout << "]" << endl;
-                    cout << "with Radius: "<< Interp_Radius << endl;
+                    cout << "at location: [" << Coord[0] << ", " << Coord[1];
+                    if (nDim == 3) {cout << ", " << Coord[2];}
+                    cout << "]";
+                    cout << " with Radius: "<< Interp_Radius << endl;
                     cout << "You can add a row for Radius: " << Interp_Radius <<" in the inlet file ";
                     cout << "to eliminate this issue or give proper data" << endl;
                     local_failure++;
@@ -4424,7 +4428,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             
             for (int i=0; i<nColumns;i++)
               delete interpolator[i];
-
         }
       }
       if (local_failure > 0) break;
@@ -4451,7 +4454,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         unsigned short nColumns = 0;
         for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
           if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
-            nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+            nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker, Interpolate);
           }
         }
         vector<su2double> Inlet_Values(nColumns);

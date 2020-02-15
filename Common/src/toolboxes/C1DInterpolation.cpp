@@ -1,5 +1,5 @@
 /*!
- * \file inlet_interpolation_functions.cpp
+ * \file C1DInterpolation.cpp
  * \brief Inlet_interpolation_functions
  * \author Aman Baig
  * \version 7.0.1 "Blackbird"
@@ -28,7 +28,6 @@
 
 #include "../../include/toolboxes/C1DInterpolation.hpp"
 
-/*--- Function for evaluating the value for akima spline ---*/
 su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
     Point_Match = true;
     int i =0, j=n-1;
@@ -43,7 +42,6 @@ su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
     return y[i]+h*(b[i]+h*(c[i]+h*d[i])) ;
 }
 
-/*--- Function for evaluating the value for linear 'spline' ---*/
 su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
     int size = x.size();
 
@@ -55,7 +53,6 @@ su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
     return 0;
 }
 
-/*--- Function for setting the cofficients for linear 'spline' ---*/
 void CLinearInterpolation::SetSpline(vector<su2double> &X, vector<su2double> &Data){
     int n = X.size();
     su2double h;
@@ -72,8 +69,6 @@ void CLinearInterpolation::SetSpline(vector<su2double> &X, vector<su2double> &Da
     }
 }
 
-
-/*--- Function for setting the cofficients for akima spline ---*/
 void CAkimaInterpolation::SetSpline (vector<su2double> &X,vector<su2double> &Data){
 
     n = X.size();
@@ -117,7 +112,6 @@ void CAkimaInterpolation::SetSpline (vector<su2double> &X,vector<su2double> &Dat
     }
 }
 
-/*--- Correcting for Interpolation Type ---*/
 vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated , 
                                                         su2double Theta ,
                                                         unsigned short nDim, 
@@ -127,11 +121,6 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
 
     su2double size_columns=Inlet_Interpolated.size()+nDim;
     vector<su2double> Inlet_Values(size_columns);
-
-//    for (int i=0;i<Inlet_Interpolated.size();i++)
- //       cout<<Inlet_Interpolated[i]<<"\t";
- //   cout<<endl;
-
     su2double unit_r, unit_Theta, unit_m, Alpha, Phi;
 
     /*---For x,y,z,T,P columns---*/
@@ -162,20 +151,15 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
     break;
     }
 
-    Inlet_Values[nDim+2] = unit_r*cos(Theta) - unit_Theta*sin(Theta); //for ix
-    Inlet_Values[nDim+3] = unit_r*sin(Theta) + unit_Theta*cos(Theta); //for iy
-    Inlet_Values[nDim+4] = sqrt(1-pow(unit_r,2)- pow(unit_Theta,2));  //for iz
-
-
- //   for (int i=0;i<size_columns;i++)
- //       cout<<Inlet_Values[i]<<"\t";
- //   cout<<endl;
+    /*--- Converting from cylindrical to cartesian unit vectors ---*/
+    Inlet_Values[nDim+2] = unit_r*cos(Theta) - unit_Theta*sin(Theta);
+    Inlet_Values[nDim+3] = unit_r*sin(Theta) + unit_Theta*cos(Theta); 
+    Inlet_Values[nDim+4] = sqrt(1-pow(unit_r,2)- pow(unit_Theta,2));  
 
     return Inlet_Values;
-
 }
 
-/*--- For printing interpolated data to a file ---*/
+
 void PrintInletInterpolatedData(vector<su2double>& Inlet_Data_Interpolated, string Marker, unsigned long nVertex, unsigned short nDim, unsigned short nColumns){
     ofstream myfile;
     myfile.precision(16);
@@ -192,18 +176,4 @@ void PrintInletInterpolatedData(vector<su2double>& Inlet_Data_Interpolated, stri
     }
     else
         cout<<"file cannot be opened"<<endl;
-}
-
-void C1DInterpolation::SetDataFromInletColumns(vector<su2double>& Inlet_Data, unsigned short nColumns, unsigned long nRows, unsigned short iCol, vector<su2double> &X, vector<su2double> &Data){
-    X.resize(nRows);
-    Data.resize(nRows);
-    unsigned long index;
-
-    for (unsigned long iRow = 0; iRow < nRows; iRow++){
-    index = iRow*nColumns;
-        X[iRow]=Inlet_Data[index];
-        Data[iRow]=Inlet_Data[index+iCol];
-    }
-
-    SetSpline(X,Data);
 }
