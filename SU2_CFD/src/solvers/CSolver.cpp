@@ -4274,7 +4274,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
           /*--- Define Inlet Values vectors before and after interpolation (if needed) ---*/
           vector<su2double> Inlet_Values(nCol_InletFile+nDim);
-          vector<su2double> Inlet_Interpolated(nCol_InletFile+nDim);
+          vector<su2double> Inlet_Interpolated(nColumns);
 
           unsigned long nRows = profileReader.GetNumberOfRowsInProfile(jMarker);
 
@@ -4282,15 +4282,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           vector<C1DInterpolation*> interpolator (nColumns);
           string interpolation_function, interpolation_type;
 
+          /*--- Define for Inlet_Interpolation. ---*/
           unsigned short radius_index=0;
           vector<vector<su2double>> InletColumns(nColumns);
           vector<su2double> InletRadii(nRows);
-          InletRadii = profileReader.GetColumnForProfile(jMarker, radius_index);
-          for (unsigned short iCol=0; iCol < nColumns; iCol++){
-            InletColumns[iCol].resize(nRows);
-            InletColumns[iCol]=profileReader.GetColumnForProfile(jMarker, iCol);
-          }
-
 
           switch(config->GetKindInletInterpolationFunction()){
 
@@ -4298,20 +4293,25 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             Interpolate = false;
             break;
 
-            case (AKIMA_1D):
-              for (unsigned short iCol=0; iCol < nColumns; iCol++)
-                interpolator[iCol] = new CAkimaInterpolation(InletRadii,InletColumns[iCol]);
-              interpolation_function = "AKIMA";
-              Interpolate = true;
-            break;
+            case (AKIMA_1D) || (LINEAR_1D):
+            Interpolate == true;
 
-            case (LINEAR_1D):
-              for (unsigned short iCol=0; iCol < nColumns; iCol++)
-                interpolator[iCol] = new CLinearInterpolation(InletRadii,InletColumns[iCol]);
-              interpolation_function = "LINEAR";
-              Interpolate = true;
+              InletRadii = profileReader.GetColumnForProfile(jMarker, radius_index);
+              for (unsigned short iCol=0; iCol < nColumns; iCol++){
+                InletColumns[iCol].resize(nRows);
+                InletColumns[iCol]=profileReader.GetColumnForProfile(jMarker, iCol);
+                
+                if(config->GetKindInletInterpolationFunction() == AKIMA_1D){
+                  interpolator[iCol] = new CAkimaInterpolation(InletRadii,InletColumns[iCol]);
+                  interpolation_function = "AKIMA";
+                }
+                else if(config->GetKindInletInterpolationFunction() == LINEAR_1D){
+                  interpolator[iCol] = new CLinearInterpolation(InletRadii,InletColumns[iCol]);
+                  interpolation_function = "LINEAR";
+                }
+              }
             break;
-
+            
             default:
               SU2_MPI::Error("Error in the Kind_InletInterpolation Marker\n",CURRENT_FUNCTION);
             break;
