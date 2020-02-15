@@ -4281,7 +4281,16 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           /*--- Pointer to call Set and Evaluate functions. ---*/
           vector<C1DInterpolation*> interpolator (nColumns);
           string interpolation_function, interpolation_type;
+
           unsigned short radius_index=0;
+          vector<vector<su2double>> InletColumns(nColumns);
+          vector<su2double> InletRadii(nRows);
+          InletRadii = profileReader.GetColumnForProfile(jMarker, radius_index);
+          for (unsigned short iCol=0; iCol < nColumns; iCol++){
+            InletColumns[iCol].resize(nRows);
+            InletColumns[iCol]=profileReader.GetColumnForProfile(jMarker, iCol);
+          }
+
 
           switch(config->GetKindInletInterpolationFunction()){
 
@@ -4291,14 +4300,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
             case (AKIMA_1D):
               for (unsigned short iCol=0; iCol < nColumns; iCol++)
-                interpolator[iCol] = new CAkimaInterpolation(profileReader.GetColumnForProfile(jMarker, radius_index),profileReader.GetColumnForProfile(jMarker, iCol));
+                interpolator[iCol] = new CAkimaInterpolation(InletRadii,InletColumns[iCol]);
               interpolation_function = "AKIMA";
               Interpolate = true;
             break;
 
             case (LINEAR_1D):
               for (unsigned short iCol=0; iCol < nColumns; iCol++)
-                interpolator[iCol] = new CLinearInterpolation(profileReader.GetColumnForProfile(jMarker, radius_index),profileReader.GetColumnForProfile(jMarker, iCol));
+                interpolator[iCol] = new CLinearInterpolation(InletRadii,InletColumns[iCol]);
               interpolation_function = "LINEAR";
               Interpolate = true;
             break;
@@ -4398,12 +4407,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               data for that vertex ---*/
                 Inlet_Interpolated[iVar]=interpolator[iVar]->EvaluateSpline(Interp_Radius);
                 if (interpolator[iVar]->GetPointMatch() == false){
-                    cout << "WARNING: Did not find a match between the radius in the inlet file" << endl;
+                    cout << "WARNING: Did not find a match between the radius in the inlet file " ;
                     cout << std::scientific;
-                    cout << " at location: [" << Coord[0] << ", " << Coord[1];
-                    if (nDim ==3) error_msg << ", " << Coord[2];
-                    cout << "]" << endl;
-                    cout << "with Radius: "<< Interp_Radius << endl;
+                    cout << "at location: [" << Coord[0] << ", " << Coord[1];
+                    if (nDim == 3) {cout << ", " << Coord[2];}
+                    cout << "]";
+                    cout << " with Radius: "<< Interp_Radius << endl;
                     cout << "You can add a row for Radius: " << Interp_Radius <<" in the inlet file ";
                     cout << "to eliminate this issue or give proper data" << endl;
                     local_failure++;
