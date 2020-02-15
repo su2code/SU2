@@ -183,10 +183,10 @@ public:
    * \returns the specific column data.
    */
   inline vector<su2double> &GetColumnForProfile(int val_iProfile, unsigned short iCol) {
-    this->ColumnData.resize(this->numberOfRowsInProfile[val_iProfile]);
-  for (unsigned long iRow = 0; iRow < this->numberOfRowsInProfile[val_iProfile]; iRow++)
-    this->ColumnData[iRow]=this->profileData[val_iProfile][iRow*this->numberOfColumnsInProfile[val_iProfile]+iCol];
-  return this->ColumnData;
+    ColumnData.resize(numberOfRowsInProfile[val_iProfile]);
+  for (unsigned long iRow = 0; iRow < numberOfRowsInProfile[val_iProfile]; iRow++)
+    ColumnData[iRow]=profileData[val_iProfile][iRow*numberOfColumnsInProfile[val_iProfile]+iCol];
+  return ColumnData;
   }
 
 };
