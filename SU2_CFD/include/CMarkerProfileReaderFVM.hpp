@@ -176,7 +176,7 @@ public:
     return profileData[val_iProfile];
   }
   
-      /*!
+   /*!
    * \brief Get the data for the specific column if interpolation being done.
    * \param[in] val_iProfile - current profile index.
    * \param[in] iCol - the column whose data is required
