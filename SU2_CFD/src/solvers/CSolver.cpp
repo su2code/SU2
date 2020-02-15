@@ -4294,13 +4294,13 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             break;
 
             case (AKIMA_1D) || (LINEAR_1D):
-            Interpolate == true;
+            Interpolate = true;
 
               InletRadii = profileReader.GetColumnForProfile(jMarker, radius_index);
               for (unsigned short iCol=0; iCol < nColumns; iCol++){
                 InletColumns[iCol].resize(nRows);
                 InletColumns[iCol]=profileReader.GetColumnForProfile(jMarker, iCol);
-                
+
                 if(config->GetKindInletInterpolationFunction() == AKIMA_1D){
                   interpolator[iCol] = new CAkimaInterpolation(InletRadii,InletColumns[iCol]);
                   interpolation_function = "AKIMA";
