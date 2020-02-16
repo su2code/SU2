@@ -177,14 +177,15 @@ void PrintInletInterpolatedData(vector<su2double>& Inlet_Data_Interpolated, stri
     myfile.open("Interpolated_Data_"+Marker+".dat",ios_base::out);
 
     if (myfile.is_open()){  
-    for (unsigned long iVertex = 0; iVertex < nVertex; iVertex++) {
-            for  (unsigned short iVar=0; iVar < nColumns; iVar++){
-                myfile<<Inlet_Data_Interpolated[iVertex*nColumns+iVar]<<"\t";
-            }
-        myfile<<endl;
-    }
+        for (unsigned long iVertex = 0; iVertex < nVertex; iVertex++) {
+                for  (unsigned short iVar=0; iVar < nColumns; iVar++){
+                    myfile<<Inlet_Data_Interpolated[iVertex*nColumns+iVar]<<"\t";
+                }
+            myfile<<endl;
+        }
     myfile.close();
     }
+    
     else
         cout<<"file cannot be opened"<<endl;
 }
