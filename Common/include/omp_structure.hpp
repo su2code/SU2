@@ -48,7 +48,8 @@
 
 /*--- Detect compilation with OpenMP support, protect agaisnt
  *    using OpenMP with AD (not supported yet). ---*/
-#if defined(_OPENMP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+//#if defined(_OPENMP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+#if defined(_OPENMP)
 #define HAVE_OMP
 #include <omp.h>
 
@@ -154,9 +155,9 @@ void parallelSet(size_t size, T val, U* dst)
 
 /*!
  * \brief Atomically update a (shared) lhs value with a (local) rhs value.
- * \brief For types without atomic support (non-arithmetic) this is done via critical.
+ * \note For types without atomic support (non-arithmetic) this is done via critical.
  * \param[in] rhs - Local variable being added to the shared one.
- * \param[in,out] lhs - Destination array.
+ * \param[in,out] lhs - Shared variable being updated.
  */
 template<class T,
          typename std::enable_if<!std::is_arithmetic<T>::value,bool>::type = 0>
