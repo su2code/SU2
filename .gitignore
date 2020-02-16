@@ -54,8 +54,6 @@ externals/autotools/include
 externals/autotools/share
 externals/autotools/lib
 externals/tecio/boost
-.vscode
-ninja
 
 #logs and errors
 *.log
@@ -82,4 +80,4 @@ Mercurial
 .hg*
 
 # Ignore build folder
-build/
+./build/
