@@ -72,7 +72,7 @@ public:
 class CAkimaInterpolation final: public C1DInterpolation{ 
 protected:
     vector<su2double> x,y,b,c,d;  /*!< \brief local variables for Akima spline cooefficients */
-    int n; /*!< \brief local variable for holding the number of intervals */
+    int n; /*!< \brief local variable for holding the size of the vector */
 public:
     
     /*!
@@ -107,6 +107,7 @@ public:
 class CLinearInterpolation final: public C1DInterpolation{
     protected:
     vector<su2double> x,y,dydx; /*!< \brief local variables for linear 'spline' cooefficients */
+    int n; /*!< \brief local variable for holding the size of the vector */
     public:
     
     /*!

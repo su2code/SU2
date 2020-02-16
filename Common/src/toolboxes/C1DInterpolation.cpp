@@ -52,10 +52,9 @@ su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
 }
 
 su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
-    int size = x.size();
     Point_Match = false;
 
-    for (int i=0;i<size-1;i++){
+    for (int i=0;i<n-1;i++){
         if(Point_Interp>=x[i] && Point_Interp<=x[i+1]){
             Point_Match = true;
             return (Point_Interp-x[i])*dydx[i]+y[i];
@@ -65,7 +64,7 @@ su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
 }
 
 void CLinearInterpolation::SetSpline(vector<su2double> &X, vector<su2double> &Data){
-    int n = X.size();
+    n = X.size();
     su2double h;
     x.resize(n);
     y.resize(n);
