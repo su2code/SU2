@@ -4320,7 +4320,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                 interpolation_type="ALPHA_PHI";
               break;
               }
-              cout<<"Inlet Interpolation being done using "<<interpolation_function<<" function and type "<<interpolation_type<<endl<<endl; 
+              cout<<"Inlet Interpolation being done using "<<interpolation_function<<" function and type "<<interpolation_type<<"for "<< Marker_Tag<<endl;
               if(nDim == 3)
                 cout<<"Ensure the flow direction is in z direction"<<endl;
               else if (nDim == 2)
@@ -4328,7 +4328,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           }
           else if(Interpolate == false)
             cout<<"No Inlet Interpolation being used"<<endl;
-
 
             /*--- Loop through the nodes on this marker. ---*/
 
