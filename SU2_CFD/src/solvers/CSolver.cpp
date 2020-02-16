@@ -4165,8 +4165,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                                unsigned short val_kind_solver,
                                unsigned short val_kind_marker) {
 
-  rank = SU2_MPI::GetRank();
-
   /*-- First, set the solver and marker kind for the particular problem at
    hand. Note that, in the future, these routines can be used for any solver
    and potentially any marker type (beyond inlets). ---*/
@@ -4324,6 +4322,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                 interpolation_type="ALPHA_PHI";
               break;
               }
+            rank = SU2_MPI::GetRank();
             if (rank == MASTER_NODE){
               cout<<"Inlet Interpolation being done using "<<interpolation_function<<" function and type "<<interpolation_type<<endl<<endl; 
               if(nDim == 3)
