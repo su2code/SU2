@@ -66,11 +66,10 @@ public:
     * \brief bool variable to make sure all vertex points fell in range of the inlet data.
     * \returns the bool variable.
     */
-    bool GetPointMatch(){return Point_Match;}
+    bool GetPointMatch() const {return Point_Match;}
 };
 
-
-class CAkimaInterpolation: public C1DInterpolation{ 
+class CAkimaInterpolation final: public C1DInterpolation{ 
 protected:
     vector<su2double> x,y,b,c,d;  /*!< \brief local variables for Akima spline cooefficients */
     int n; /*!< \brief local variable for holding the number of intervals */
@@ -105,7 +104,7 @@ public:
     su2double EvaluateSpline(su2double Point_Interp) override;
 };
 
-class CLinearInterpolation: public C1DInterpolation{
+class CLinearInterpolation final: public C1DInterpolation{
     protected:
     vector<su2double> x,y,dydx; /*!< \brief local variables for linear 'spline' cooefficients */
     public:

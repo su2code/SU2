@@ -354,12 +354,10 @@ static const map<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpo
 enum ENUM_INLET_INTERPOLATIONTYPE {
   VR_VTHETA = 0,
   ALPHA_PHI = 1,
-  BETA_PHI = 2,
 };
 static const map<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map = {
   MakePair("VR_VTHETA",VR_VTHETA)
   MakePair("ALPHA_PHI",ALPHA_PHI)
-  MakePair("BETA_PHI",BETA_PHI)
 };
 
 /*!
