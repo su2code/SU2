@@ -149,7 +149,7 @@ class CLinearInterpolation: public C1DInterpolation{
 * \param[in] *config - Definition of the particular problem.
 * \returns the corrected Inlet Interpolated Data.
 */
-vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
+vector<su2double> &CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
                                     su2double Theta ,
                                     unsigned short nDim, 
                                     su2double *Coord, 

@@ -112,14 +112,14 @@ void CAkimaInterpolation::SetSpline (vector<su2double> &X,vector<su2double> &Dat
     }
 }
 
-vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated , 
+vector<su2double> &CorrectedInletValues(vector<su2double> &Inlet_Interpolated , 
                                                         su2double Theta ,
                                                         unsigned short nDim, 
                                                         su2double *Coord, 
                                                         unsigned short nVar_Turb,
                                                         CConfig *config){
 
-    su2double size_columns=Inlet_Interpolated.size()+nDim;
+    unsigned short size_columns=Inlet_Interpolated.size()+nDim;
     vector<su2double> Inlet_Values(size_columns);
     su2double unit_r, unit_Theta, unit_m, Alpha, Phi;
 

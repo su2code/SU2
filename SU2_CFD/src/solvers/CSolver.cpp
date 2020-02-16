@@ -4391,12 +4391,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             else if(Interpolate == true){
 
               /* --- Calculating the radius and angle of the vertex ---*/
-              /* --- Flow should be in z direction ---*/
+              /* --- Flow should be in z direction for 3D cases ---*/
+              /* --- Or in x direction for 2D cases ---*/
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
               Theta = atan2(Coord[1],Coord[0]);
 
               /* --- Evaluating and saving the final spline data ---*/
               for  (unsigned short iVar=0; iVar < nColumns; iVar++){
+                
               /*---Evaluate spline will get the respective value of the Data set (column) specified
               for that interpolator[iVar], cycling through all columns to get all the 
               data for that vertex ---*/
