@@ -34,10 +34,11 @@ su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
     for (int i=0;i<n-1;i++)
         if(Point_Interp>=x[i] && Point_Interp<=x[i+1])
             Point_Match = true;
-        else{
-            cout<<"WARNING: Extrapolating data for radius: "<<Point_Interp<<endl;
-            Point_Match = true;
-        }
+
+    if (Point_Match == false){
+        cout<<"WARNING: Extrapolating data for radius: "<<Point_Interp<<endl;
+        Point_Match = true;
+    }
 
     int i =0, j=n-1;
 
