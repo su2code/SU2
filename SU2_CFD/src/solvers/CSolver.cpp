@@ -4298,6 +4298,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                   interpolation_function = "AKIMA";
                   Interpolate = true;
                 }
+            break;
+            
             case (LINEAR_1D):
               for (unsigned short iCol=0; iCol < nColumns; iCol++){
                   interpolator[iCol] = new CLinearInterpolation(InletRadii,profileReader.GetColumnForProfile(jMarker, iCol));
