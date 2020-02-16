@@ -4322,7 +4322,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                 interpolation_type="ALPHA_PHI";
               break;
               }
-            cout<<endl<<"Inlet Interpolation being done using "<<interpolation_function<<" function and type "<<interpolation_type<<endl<<endl; 
+            if (rank == MASTER_NODE)
+              cout<<endl<<"Inlet Interpolation being done using "<<interpolation_function<<" function and type "<<interpolation_type<<endl<<endl; 
           }
 
 
@@ -4398,7 +4399,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
               /* --- Evaluating and saving the final spline data ---*/
               for  (unsigned short iVar=0; iVar < nColumns; iVar++){
-                
+
               /*---Evaluate spline will get the respective value of the Data set (column) specified
               for that interpolator[iVar], cycling through all columns to get all the 
               data for that vertex ---*/
