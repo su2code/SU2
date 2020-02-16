@@ -119,7 +119,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
                                                         unsigned short nVar_Turb,
                                                         CConfig *config){
 
-    su2double size_columns=Inlet_Interpolated.size()+nDim;
+    unsigned short size_columns=Inlet_Interpolated.size()+nDim;
     vector<su2double> Inlet_Values(size_columns);
     su2double unit_r, unit_Theta, unit_m, Alpha, Phi;
 

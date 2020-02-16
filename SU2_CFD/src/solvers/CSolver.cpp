@@ -4311,9 +4311,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             break;
           }
 
-          if(Interpolate == false)
-            cout<<"No Inlet Interpolation being used"<<endl;
-          else{
+          if (Interpolate == true){
             switch(config->GetKindInletInterpolationType()){
               case(VR_VTHETA):
                 interpolation_type="VR_VTHETA";
@@ -4322,9 +4320,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                 interpolation_type="ALPHA_PHI";
               break;
               }
-            cout<<endl<<"Inlet Interpolation being done using "<<interpolation_function<<" function and type "<<interpolation_type<<endl<<endl; 
+              cout<<"Inlet Interpolation being done using "<<interpolation_function<<" function and type "<<interpolation_type<<" for "<< Marker_Tag<<endl;
+              if(nDim == 3)
+                cout<<"Ensure the flow direction is in z direction"<<endl;
+              else if (nDim == 2)
+                cout<<"Ensure the flow direction is in x direction"<<endl;
           }
-
+          else if(Interpolate == false)
+            cout<<"No Inlet Interpolation being used"<<endl;
 
             /*--- Loop through the nodes on this marker. ---*/
 
@@ -4391,12 +4394,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             else if(Interpolate == true){
 
               /* --- Calculating the radius and angle of the vertex ---*/
-              /* --- Flow should be in z direction ---*/
+              /* --- Flow should be in z direction for 3D cases ---*/
+              /* --- Or in x direction for 2D cases ---*/
               Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
               Theta = atan2(Coord[1],Coord[0]);
 
               /* --- Evaluating and saving the final spline data ---*/
               for  (unsigned short iVar=0; iVar < nColumns; iVar++){
+
               /*---Evaluate spline will get the respective value of the Data set (column) specified
               for that interpolator[iVar], cycling through all columns to get all the 
               data for that vertex ---*/
