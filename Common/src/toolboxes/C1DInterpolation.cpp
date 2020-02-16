@@ -29,7 +29,16 @@
 #include "../../include/toolboxes/C1DInterpolation.hpp"
 
 su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
-    Point_Match = true;
+    Point_Match = false;
+
+    for (int i=0;i<n-1;i++)
+        if(Point_Interp>=x[i] && Point_Interp<=x[i+1])
+            Point_Match = true;
+        else{
+            cout<<"WARNING: Extrapolating data for radius: "<<Point_Interp<<endl;
+            Point_Match = true;
+        }
+
     int i =0, j=n-1;
 
     while (j-i>1){ 
@@ -45,11 +54,12 @@ su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
 su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
     int size = x.size();
     Point_Match = false;
-    
+
     for (int i=0;i<size-1;i++){
         if(Point_Interp>=x[i] && Point_Interp<=x[i+1]){
             Point_Match = true;
-            return (Point_Interp-x[i])*dydx[i]+y[i];}
+            return (Point_Interp-x[i])*dydx[i]+y[i];
+        }
     }
     return 0;
 }
