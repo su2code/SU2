@@ -4311,9 +4311,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             break;
           }
 
-          if(Interpolate == false)
-            cout<<"No Inlet Interpolation being used"<<endl;
-          else{
+          if (Interpolate == true){
             switch(config->GetKindInletInterpolationType()){
               case(VR_VTHETA):
                 interpolation_type="VR_VTHETA";
@@ -4322,15 +4320,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                 interpolation_type="ALPHA_PHI";
               break;
               }
-            rank = SU2_MPI::GetRank();
-            if (rank == MASTER_NODE){
               cout<<"Inlet Interpolation being done using "<<interpolation_function<<" function and type "<<interpolation_type<<endl<<endl; 
               if(nDim == 3)
                 cout<<"Ensure the flow direction is in z direction"<<endl;
               else if (nDim == 2)
                 cout<<"Ensure the flow direction is in x direction"<<endl;
-              }
           }
+          else if(Interpolate == false)
+            cout<<"No Inlet Interpolation being used"<<endl;
 
 
             /*--- Loop through the nodes on this marker. ---*/
