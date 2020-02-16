@@ -128,7 +128,7 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   }
 
   SetHistoryOutputValue("VMS", fea_solver->GetTotal_CFEA());
-  SetHistoryOutputValue("LOAD_INCREMENT", fea_solver->GetLoad_Increment());
+  SetHistoryOutputValue("LOAD_INCREMENT", fea_solver->GetLoad_Increment()*100);
   SetHistoryOutputValue("LOAD_RAMP", fea_solver->GetForceCoeff());
 
   SetHistoryOutputValue("LINSOL_ITER", fea_solver->GetIterLinSolver());
@@ -156,7 +156,7 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutput("VMS",            "VonMises", ScreenOutputFormat::SCIENTIFIC, "", "VMS");
-  AddHistoryOutput("LOAD_INCREMENT", "Load_Increment",  ScreenOutputFormat::FIXED, "", "LOAD_INCREMENT");
+  AddHistoryOutput("LOAD_INCREMENT", "Load[%]",  ScreenOutputFormat::PERCENT, "", "LOAD_INCREMENT");
   AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       ScreenOutputFormat::FIXED, "", "LOAD_RAMP");
 
 }
