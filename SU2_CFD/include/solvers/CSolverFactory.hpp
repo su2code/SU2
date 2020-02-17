@@ -77,14 +77,25 @@ private:
   
   /*!
    * \brief Create a flow solver 
-   * \param[in] kindFlowSolver - Kind of DG solver
+   * \param[in] kindFlowSolver - Kind of flow solver
    * \param[in] solver        - The solver container 
    * \param[in] geometry      - The geometry definition
    * \param[in] config        - The configuration
    * \param[in] iMGLevel      - The multigrid level
-   * \return              - A pointer to the allocated compressible solver
+   * \return              - A pointer to the allocated flow solver
    */
   static CSolver* createFlowSolver(ENUM_SOLVER kindFlowSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
+  
+  /*!
+   * \brief Generic routine to create a solver 
+   * \param[in] kindSolver - Kind of solver
+   * \param[in] solver        - The solver container 
+   * \param[in] geometry      - The geometry definition
+   * \param[in] config        - The configuration
+   * \param[in] iMGLevel      - The multigrid level
+   * \return              - A pointer to the allocated solver
+   */
+  static CSolver* createSolver(ENUM_SOLVER kindSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
   
 public:
     
