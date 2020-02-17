@@ -38,24 +38,24 @@ CSolver** CSolverFactory::createSolverContainer(ENUM_SOLVER kindSolver, CConfig 
       solver[FLOW_SOL] = new CTemplateSolver(geometry, config);
       break;
     case INC_EULER:
-      solver[FLOW_SOL] = new CIncEulerSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL] = createFlowSolver(INC_EULER, solver, geometry, config, iMGLevel);
       break;
     case EULER:
-      solver[FLOW_SOL] = new CEulerSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL] = createFlowSolver(EULER, solver, geometry, config, iMGLevel);
       break;
     case INC_NAVIER_STOKES:
-      solver[FLOW_SOL] = new CIncNSSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL] = createFlowSolver(INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[HEAT_SOL] = createHeatSolver(solver, geometry,config, iMGLevel, allocDirect);
       break;
     case NAVIER_STOKES:
-      solver[FLOW_SOL] = new CNSSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL] = createFlowSolver(NAVIER_STOKES, solver, geometry, config, iMGLevel);
       break;
     case RANS:
-      solver[FLOW_SOL] = new CNSSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL] = createFlowSolver(RANS, solver, geometry, config, iMGLevel);
       solver[TURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
       break;
     case INC_RANS:
-      solver[FLOW_SOL] = new CIncNSSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL] = createFlowSolver(INC_RANS, solver, geometry, config, iMGLevel);
       solver[HEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect);
       solver[TURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
       break;
@@ -63,45 +63,45 @@ CSolver** CSolverFactory::createSolverContainer(ENUM_SOLVER kindSolver, CConfig 
       solver[HEAT_SOL] = new CHeatSolverFVM(geometry, config, iMGLevel);
       break;
     case ADJ_EULER:
-      solver[FLOW_SOL]    = new CEulerSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createFlowSolver(EULER, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = new CAdjEulerSolver(geometry, config, iMGLevel);
       break;
     case ADJ_NAVIER_STOKES:
-      solver[FLOW_SOL]    = new CNSSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createFlowSolver(NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = new CAdjNSSolver(geometry, config, iMGLevel);
       break;    
     case ADJ_RANS:
-      solver[FLOW_SOL]    = new CNSSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createFlowSolver(INC_RANS, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = new CAdjNSSolver(geometry, config, iMGLevel);
       solver[TURB_SOL]    = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
       solver[ADJTURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocAdjoint);
       break;
     case DISC_ADJ_EULER:
-      solver[FLOW_SOL]    = new CEulerSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createFlowSolver(EULER, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
       break;
     case DISC_ADJ_NAVIER_STOKES:
-      solver[FLOW_SOL]    = new CNSSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createFlowSolver(NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
       break;
     case DISC_ADJ_RANS:
-      solver[FLOW_SOL]    = new CNSSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL]    =createFlowSolver(RANS, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
       solver[TURB_SOL]    = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
       solver[ADJTURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocAdjoint);
       break;
     case DISC_ADJ_INC_EULER:
-      solver[FLOW_SOL]    = new CIncEulerSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createFlowSolver(INC_EULER, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
       break;
     case DISC_ADJ_INC_NAVIER_STOKES:
-      solver[FLOW_SOL]       = new CIncNSSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL]       = createFlowSolver(INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL]    = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
       solver[HEAT_SOL]       = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect);
       solver[ADJHEAT_SOL]    = createHeatSolver(solver, geometry, config, iMGLevel, allocAdjoint);
       break;
     case DISC_ADJ_INC_RANS:
-      solver[FLOW_SOL]    = new CIncNSSolver(geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createFlowSolver(INC_RANS, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
       solver[TURB_SOL]    = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
       solver[ADJTURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocAdjoint);
@@ -242,4 +242,34 @@ CSolver* CSolverFactory::createDGSolver(ENUM_SOLVER kindDGSolver, CGeometry *geo
   }
   
   return DGSolver;
+}
+
+CSolver* CSolverFactory::createFlowSolver(ENUM_SOLVER kindFlowSolver, CSolver **solver,  CGeometry *geometry, CConfig *config, int iMGLevel){
+  
+  CSolver *flowSolver = nullptr;
+  
+  switch (kindFlowSolver) {
+    case EULER:
+      flowSolver = new CEulerSolver(geometry, config, iMGLevel);
+      break;
+    case NAVIER_STOKES: case RANS:
+      flowSolver = new CNSSolver(geometry, config, iMGLevel);
+      break;
+    case INC_EULER:
+      flowSolver = new CIncEulerSolver(geometry, config, iMGLevel);
+      break;
+    case INC_NAVIER_STOKES: case INC_RANS:
+      flowSolver = new CIncNSSolver(geometry, config, iMGLevel);
+      break;
+    default:
+      SU2_MPI::Error("Flow solver not found", CURRENT_FUNCTION);
+      break;
+  }
+  
+  if (flowSolver != nullptr){
+    flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  }
+ 
+  return flowSolver;
+  
 }
