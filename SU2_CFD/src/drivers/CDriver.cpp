@@ -1355,132 +1355,15 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
 
 void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
                                     CConfig *config, unsigned short val_iInst) {
-  unsigned short iMGlevel;
-  bool euler, ns, turbulent,
-  adj_euler, adj_ns, adj_turb,
-  heat_fvm, fem,
-  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
-  template_solver, disc_adj, disc_adj_turb, disc_adj_fem, disc_adj_heat,
-  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
-
-  /*--- Initialize some useful booleans ---*/
-
-  euler            = false;  ns              = false;  turbulent = false;
-  adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
-  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
-  neg_spalart_allmaras = false;
-  disc_adj        = false;
-  fem              = false;  disc_adj_fem    = false;
-  heat_fvm        = false;   disc_adj_heat   = false;
-  transition       = false;
-  template_solver  = false;
-  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
-
-  /*--- Assign booleans ---*/
-
-  switch (config->GetKind_Solver()) {
-    case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : case INC_EULER: euler = true; break;
-    case NAVIER_STOKES: case INC_NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case RANS : case INC_RANS: ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case FEM_EULER : euler = true; break;
-    case FEM_NAVIER_STOKES:
-    case FEM_LES: ns = true; break;
-    case FEM_RANS: ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
-    case HEAT_EQUATION_FVM: heat_fvm = true; break;
-    case FEM_ELASTICITY: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER: case DISC_ADJ_INC_EULER: euler = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_FEM_EULER: euler = true; disc_adj = true; break;
-    case DISC_ADJ_FEM_NS: ns = true; disc_adj = true; break;
-    case DISC_ADJ_FEM_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
-    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
-    case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
-  }
-
-  /*--- Assign turbulence model booleans ---*/
-
-  if (turbulent)
-    switch (config->GetKind_Turb_Model()) {
-    case SA:        spalart_allmaras = true;        break;
-    case SA_NEG:    neg_spalart_allmaras = true;    break;
-    case SA_E:      e_spalart_allmaras = true;      break;
-    case SA_COMP:   comp_spalart_allmaras = true;   break;
-    case SA_E_COMP: e_comp_spalart_allmaras = true; break;
-    case SST:       menter_sst = true;              break;
-    case SST_SUST:  menter_sst = true;              break;
-    default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
+  
+  for (int iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++){
+      delete solver[val_iInst][iMGlevel][iSol];
     }
-
-  /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
-   and potential are incompatible, they use the same position in sol container ---*/
-
-  for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-
-    /*--- DeAllocate solution for a template problem ---*/
-
-    if (template_solver) {
-      delete solver[val_iInst][iMGlevel][TEMPLATE_SOL];
-    }
-
-    /*--- DeAllocate solution for adjoint problem ---*/
-
-    if (adj_euler || adj_ns || disc_adj) {
-      delete solver[val_iInst][iMGlevel][ADJFLOW_SOL];
-      if (disc_adj_turb || adj_turb) {
-        delete solver[val_iInst][iMGlevel][ADJTURB_SOL];
-      }
-      if (heat_fvm) {
-        delete solver[val_iInst][iMGlevel][ADJHEAT_SOL];
-      }
-    }
-
-    if (disc_adj_heat) {
-      delete solver[val_iInst][iMGlevel][ADJHEAT_SOL];
-    }
-
-    /*--- DeAllocate solution for direct problem ---*/
-
-    if (euler || ns) {
-      delete solver[val_iInst][iMGlevel][FLOW_SOL];
-    }
-
-    if (turbulent) {
-      if (spalart_allmaras || neg_spalart_allmaras || menter_sst || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras) {
-        delete solver[val_iInst][iMGlevel][TURB_SOL];
-      }
-      if (transition) {
-        delete solver[val_iInst][iMGlevel][TRANS_SOL];
-      }
-    }
-    if (heat_fvm) {
-      delete solver[val_iInst][iMGlevel][HEAT_SOL];
-    }
-    if (fem) {
-      delete solver[val_iInst][iMGlevel][FEA_SOL];
-    }
-    if (disc_adj_fem) {
-      delete solver[val_iInst][iMGlevel][ADJFEA_SOL];
-    }
-
-    if (iMGlevel == 0){
-      if (config->GetDeform_Mesh()){
-        delete solver[val_iInst][MESH_0][MESH_SOL];
-        if (config->GetDiscrete_Adjoint())
-          delete solver[val_iInst][MESH_0][ADJMESH_SOL];
-      }
-    }
-
     delete [] solver[val_iInst][iMGlevel];
-
   }
-
   delete [] solver[val_iInst];
-
+  
 }
 
 void CDriver::Integration_Preprocessing(CConfig *config, CIntegration **&integration) {
