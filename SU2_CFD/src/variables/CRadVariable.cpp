@@ -49,5 +49,3 @@ CRadVariable::CRadVariable(unsigned long npoint, unsigned long ndim, unsigned lo
   Vol_HeatSource.resize(nPoint) = false;
 
 }
-
-CRadVariable::~CRadVariable(void) { }

@@ -48,7 +48,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourceRadiation(void);
+  ~CSourceRadiation(void) = default;
 
   /*!
    * \brief Source term integration for a body force.

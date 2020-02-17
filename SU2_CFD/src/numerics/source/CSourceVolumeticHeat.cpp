@@ -33,10 +33,6 @@ CSourceVolumetricHeat::CSourceVolumetricHeat(unsigned short val_nDim, unsigned s
 
 }
 
-CSourceVolumetricHeat::~CSourceVolumetricHeat(void) {
-
-}
-
 void CSourceVolumetricHeat::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
 
   unsigned short iDim;
