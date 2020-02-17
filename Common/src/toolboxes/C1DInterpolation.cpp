@@ -128,7 +128,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
                                                         unsigned short nDim, 
                                                         su2double *Coord, 
                                                         unsigned short nVar_Turb,
-                                                        CConfig *config){
+                                                        enum ENUM_INLET_SPANWISEINTERPOLATION){
 
     unsigned short size_columns=Inlet_Interpolated.size()+nDim;
     vector<su2double> Inlet_Values(size_columns);
@@ -148,7 +148,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
         Inlet_Values[nDim+6] = Inlet_Interpolated[6];
 
     /*--- Correct for Interpolation Type now ---*/
-    switch(config->GetKindInletInterpolationType()){
+    switch(ENUM_INLET_SPANWISEINTERPOLATION()){
     case(VR_VTHETA):
         unit_r = Inlet_Interpolated[nDim];
         unit_Theta = Inlet_Interpolated[nDim+1];
@@ -171,6 +171,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
 }
 
 
+
 void PrintInletInterpolatedData(vector<su2double>& Inlet_Data_Interpolated, string Marker, unsigned long nVertex, unsigned short nDim, unsigned short nColumns){
     ofstream myfile;
     myfile.precision(16);
@@ -183,7 +184,7 @@ void PrintInletInterpolatedData(vector<su2double>& Inlet_Data_Interpolated, stri
                 }
             myfile<<endl;
         }
-    myfile.close();
+        myfile.close();
     }
     
     else

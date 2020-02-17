@@ -32,7 +32,7 @@
 #include <vector>
 #include<fstream>
 #include "../datatype_structure.hpp"
-#include "../CConfig.hpp"
+#include "../option_structure.hpp"
 
 using namespace std;
 
@@ -146,7 +146,7 @@ class CLinearInterpolation final: public C1DInterpolation{
 * \param[in] nDim - the dimensions of the case.
 * \param[in] Coord - the coordinates of the vertex.
 * \param[in] nVar_Turb - the number of turbulence variables as defined by turbulence model
-* \param[in] *config - Definition of the particular problem.
+* \param[in] ENUM_INLET_INTERPOLATIONTYPE - enum of the interpolation type to be done
 * \returns the corrected Inlet Interpolated Data.
 */
 vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
@@ -154,7 +154,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated,
                                     unsigned short nDim, 
                                     su2double *Coord, 
                                     unsigned short nVar_Turb, 
-                                    CConfig *config);
+                                    enum ENUM_INLET_INTERPOLATIONTYPE);
 
 /*!
 * \brief to print the Inlet Interpolated Data
