@@ -31,8 +31,7 @@ CRadP1Variable::CRadP1Variable(const su2double val_energy, unsigned long npoint,
 : CRadVariable(npoint, ndim, nvar, config) {
 
   /*--- Initialization of variables ---*/
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    Solution(iPoint,0) = val_energy;
+  Solution.resize(nPoint) = val_energy;
 
 }
 
