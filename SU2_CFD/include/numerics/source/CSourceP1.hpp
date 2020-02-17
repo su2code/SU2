@@ -47,7 +47,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourceP1(void);
+  ~CSourceP1(void) = default;
 
   /*!
    * \brief Source term integration of the P1 model.

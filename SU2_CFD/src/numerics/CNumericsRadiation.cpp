@@ -43,8 +43,3 @@ CNumericsRadiation::CNumericsRadiation(unsigned short val_nDim,
   Temperature_Ref = config->GetTemperature_Ref();
 
 }
-
-CNumericsRadiation::~CNumericsRadiation(void) {
-
-
-}

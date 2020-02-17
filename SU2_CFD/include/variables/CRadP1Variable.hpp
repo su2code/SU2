@@ -52,6 +52,6 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CRadP1Variable(void);
+  ~CRadP1Variable(void) = default;
 
 };

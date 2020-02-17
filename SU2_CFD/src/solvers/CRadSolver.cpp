@@ -41,10 +41,6 @@ CRadSolver::CRadSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
 }
 
-CRadSolver::~CRadSolver(void) {
-
-}
-
 void CRadSolver::SetVolumetricHeatSource(CGeometry *geometry, CConfig *config) {
 
   unsigned long iPoint;

@@ -32,10 +32,6 @@ CSourceP1::CSourceP1(unsigned short val_nDim, unsigned short val_nVar, CConfig *
 
 }
 
-CSourceP1::~CSourceP1(void) {
-
-}
-
 void CSourceP1::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
 
   unsigned short iDim;

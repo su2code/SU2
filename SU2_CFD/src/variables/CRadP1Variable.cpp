@@ -34,7 +34,3 @@ CRadP1Variable::CRadP1Variable(const su2double val_energy, unsigned long npoint,
   Solution.resize(nPoint) = val_energy;
 
 }
-
-CRadP1Variable::~CRadP1Variable(void) {
-
-}

@@ -52,7 +52,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CRadVariable(void);
+  ~CRadVariable(void) = default;
 
   /*!
    * \brief Get the Radiative source term at the node

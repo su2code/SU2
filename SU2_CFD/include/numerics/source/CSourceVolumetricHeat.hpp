@@ -48,7 +48,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourceVolumetricHeat(void);
+  ~CSourceVolumetricHeat(void) = default;
 
   /*!
    * \brief Source term integration for a body force.

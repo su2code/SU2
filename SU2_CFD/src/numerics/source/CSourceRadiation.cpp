@@ -33,10 +33,6 @@ CSourceRadiation::CSourceRadiation(unsigned short val_nDim, unsigned short val_n
 
 }
 
-CSourceRadiation::~CSourceRadiation(void) {
-
-}
-
 void CSourceRadiation::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
 
   unsigned short iDim;

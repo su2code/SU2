@@ -59,7 +59,7 @@ class CNumericsRadiation : public CNumerics {
   /*!
    * \brief Destructor of the class.
    */
-  ~CNumericsRadiation(void);
+  ~CNumericsRadiation(void) = default;
 
   /*!
    * \brief Set the value of the radiation variable.
