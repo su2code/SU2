@@ -58,25 +58,9 @@ void CSourceVolumetricHeat::ComputeResidual(su2double *val_residual, su2double *
 
   if (implicit) {
 
-    val_Jacobian_i[0][0] = 0.0;
-    val_Jacobian_i[0][1] = 0.0;
-    val_Jacobian_i[0][2] = 0.0;
-    val_Jacobian_i[0][3] = 0.0;
-
-    val_Jacobian_i[1][0] = 0.0;
-    val_Jacobian_i[1][1] = 0.0;
-    val_Jacobian_i[1][2] = 0.0;
-    val_Jacobian_i[1][3] = 0.0;
-
-    val_Jacobian_i[2][0] = 0.0;
-    val_Jacobian_i[2][1] = 0.0;
-    val_Jacobian_i[2][2] = 0.0;
-    val_Jacobian_i[2][3] = 0.0;
-
-    val_Jacobian_i[3][0] = 0.0;
-    val_Jacobian_i[3][1] = 0.0;
-    val_Jacobian_i[3][2] = 0.0;
-    val_Jacobian_i[3][3] = 0.0;
+    for (unsigned short i = 0; i < 4; i++)
+      for (unsigned short j = 0; j < 4; j++)
+        val_Jacobian_i[i][j] = 0.0;
 
   }
 

@@ -124,12 +124,9 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     default: break;
     }
   }
-  switch(rad_model){
-  case P1_MODEL:
+  if (config->AddRadiation()){
     /// DESCRIPTION: Root-mean square residual of the adjoint radiative energy tilde.
     AddHistoryOutput("RMS_ADJ_RAD_ENERGY", "rms[A_P1]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the P1 radiative energy.",HistoryFieldType::RESIDUAL);
-    break;
-  default: break;
   }
   /// END_GROUP
 
@@ -187,12 +184,9 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     default: break;
     }
   }
-  switch(rad_model){
-  case P1_MODEL:
+  if (config->AddRadiation()){
     /// DESCRIPTION: Root-mean square residual of the adjoint radiative energy tilde.
     AddHistoryOutput("BGS_ADJ_RAD_ENERGY", "bgs[A_P1]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual  of the P1 radiative energy.",HistoryFieldType::RESIDUAL);
-    break;
-  default: break;
   }
   /// END_GROUP
 
@@ -243,11 +237,8 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     default: break;
     }
   }
-  switch(rad_model){
-  case P1_MODEL:
+  if (config->AddRadiation()){
     SetHistoryOutputValue("RMS_ADJ_RAD_ENERGY", log10(adjrad_solver->GetRes_RMS(0)));
-    break;
-  default: break;
   }
   SetHistoryOutputValue("MAX_ADJ_PRESSURE", log10(adjflow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_ADJ_VELOCITY-X", log10(adjflow_solver->GetRes_Max(1)));
@@ -301,11 +292,8 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
       default: break;
       }
     }
-    switch(rad_model){
-    case P1_MODEL:
+    if (config->AddRadiation()){
       SetHistoryOutputValue("BGS_ADJ_RAD_ENERGY", log10(adjrad_solver->GetRes_BGS(0)));
-      break;
-    default: break;
     }
   }
 
@@ -356,11 +344,8 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     }
   }
 
-  switch(rad_model){
-  case P1_MODEL:
+  if (config->AddRadiation()){
     AddVolumeOutput("ADJ_P1_ENERGY",  "Adjoint_Energy(P1)", "SOLUTION", "Adjoint radiative energy");
-    break;
-  default: break;
   }
   /// END_GROUP
 
@@ -399,11 +384,8 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     default: break;
     }
   }
-  switch(rad_model){
-  case P1_MODEL:
+  if (config->AddRadiation()){
     AddVolumeOutput("RES_P1_ENERGY",  "Residual_Adjoint_Energy_P1", "RESIDUAL", "Residual of adjoint radiative energy");
-    break;
-  default: break;
   }
   /// END_GROUP
 
@@ -474,11 +456,8 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
     }
   }
   // Radiation
-  switch(rad_model){
-  case P1_MODEL:
+  if (config->AddRadiation()){
     SetVolumeOutputValue("ADJ_P1_ENERGY", iPoint, Node_AdjRad->GetSolution(iPoint, 0));
-    break;
-  default: break;
   }
 
   // Residuals
@@ -505,11 +484,8 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
       break;
     }
   }
-  switch(rad_model){
-  case P1_MODEL:
+  if (config->AddRadiation()){
     SetVolumeOutputValue("RES_P1_ENERGY", iPoint, Node_AdjRad->GetSolution(iPoint, 0) - Node_AdjRad->GetSolution_Old(iPoint, 0));
-    break;
-  default: break;
   }
 
   SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_AdjFlow->GetSensitivity(iPoint, 0));

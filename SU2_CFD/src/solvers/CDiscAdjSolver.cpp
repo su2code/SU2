@@ -603,11 +603,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     su2double Local_Sens_Temp_Rad;
     Local_Sens_Temp_Rad   = SU2_TYPE::GetDerivative(TemperatureRad);
 
-#ifdef HAVE_MPI
     SU2_MPI::Allreduce(&Local_Sens_Temp_Rad, &Total_Sens_Temp_Rad, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    Total_Sens_Temp_Rad   = Local_Sens_Temp_Rad;
-#endif
 
     /*--- Store it in the Total_Sens_Temp container so it's accessible without the need of a new method ---*/
     Total_Sens_Temp = Total_Sens_Temp_Rad;

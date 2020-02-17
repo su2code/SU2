@@ -31,8 +31,7 @@
 CAvgGradCorrected_P1::CAvgGradCorrected_P1(unsigned short val_nDim, unsigned short val_nVar,
                                                    CConfig *config) : CNumericsRadiation(val_nDim, val_nVar, config) {
 
-  // Initialization
-  iVar = 0; iDim = 0;
+  unsigned short iVar;
 
   GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
 
@@ -52,13 +51,15 @@ CAvgGradCorrected_P1::~CAvgGradCorrected_P1(void) {
   delete [] Proj_Mean_GradP1Var_Edge;
   delete [] Proj_Mean_GradP1Var_Kappa;
   delete [] Proj_Mean_GradP1Var_Corrected;
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
     delete [] Mean_GradP1Var[iVar];
   delete [] Mean_GradP1Var;
 
 }
 
 void CAvgGradCorrected_P1::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
+
+  unsigned short iVar, iDim;
 
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);

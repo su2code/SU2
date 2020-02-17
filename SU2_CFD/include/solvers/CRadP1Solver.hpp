@@ -66,7 +66,9 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                     unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem,
+                     bool Output) override;
 
   /*!
    * \brief A virtual member.
@@ -75,7 +77,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                      unsigned short iMesh);
+                      unsigned short iMesh) override;
 
 
   /*!
@@ -84,7 +86,8 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container,
+                               CConfig *config) override;
 
   /*!
    * \brief Compute the viscous residuals for the turbulent equation.
@@ -96,7 +99,7 @@ public:
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) override ;
 
   /*!
    * \brief Source term computation.
@@ -107,8 +110,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh);
+  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                       CNumerics *second_numerics, CConfig *config, unsigned short iMesh) override ;
 
   /*!
    * \brief Impose the Marshak BC on Heatflux wall boundaries.
@@ -120,7 +123,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
+                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override {
       BC_Marshak(geometry, solver_container, config, val_marker);
   }
 
@@ -134,7 +137,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                          CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+                          CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Far Field boundary condition.
@@ -146,7 +149,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Marshak BC on inlet boundaries.
@@ -158,7 +161,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
+                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override {
     BC_Marshak(geometry, solver_container, config, val_marker);
   }
 
@@ -173,7 +176,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
+                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override {
     BC_Marshak(geometry, solver_container, config, val_marker);
   }
 
@@ -186,7 +189,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                            CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
+                            CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override {
     BC_Marshak(geometry, solver_container, config, val_marker);
   }
 
@@ -199,7 +202,7 @@ public:
   * \param[in] config - Definition of the particular problem.
   */
   inline void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config){
+                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config) override {
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
         BC_Marshak(geometry, solver_container, config, iMarker);
@@ -238,19 +241,19 @@ public:
    * \param[in] Iteration - Index of the current iteration.
    */
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short iMesh, unsigned long Iteration);
+                    unsigned short iMesh, unsigned long Iteration) override ;
 
   /*!
    * \brief Set the freestream temperature.
    * \param[in] Value of freestream temperature.
    */
-  inline void SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
+  inline void SetTemperature_Inf(const su2double t_inf) override {Temperature_Inf = t_inf;}
 
 
   /*!
    * \brief Get the temperature value at infinity.
    * \return Value of the temperature at infinity.
    */
-  inline su2double GetTemperature_Inf(void) { return Temperature_Inf; }
+  inline su2double GetTemperature_Inf(void) const { return Temperature_Inf; }
 
 };
