@@ -434,7 +434,9 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
       auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
       if (solver != NULL) {
         if (solver->GetAdjoint()) {
-          solver->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+          for (unsigned short iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+            solver_container[iZone][INST_0][iMesh][iSol]->SetRecording(geometry_container[iZone][INST_0][iMesh], config_container[iZone]);
+          }
         }
       }
     }
