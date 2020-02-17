@@ -32,8 +32,7 @@
 
 class CRadSolver : public CSolver {
 protected:
-  su2double *FlowPrimVar_i,  /*!< \brief Store the flow solution at point i. */
-  *FlowPrimVar_j;         /*!< \brief Store the flow solution at point j. */
+
   su2double Absorption_Coeff;  /*!< \brief Absorption coefficient. */
   su2double Scattering_Coeff;  /*!< \brief Scattering coefficient. */
 
@@ -68,7 +67,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumetricHeatSource(CGeometry *geometry, CConfig *config);
+  void SetVolumetricHeatSource(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Load a solution from a restart file.
@@ -78,6 +77,7 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config,
+                   int val_iter, bool val_update_geo) override;
 
 };

@@ -35,8 +35,6 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 
   turb_model = config->GetKind_Turb_Model();
 
-  rad_model = config->GetKind_RadiationModel();
-
   heat = config->GetEnergy_Equation();
 
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
@@ -105,7 +103,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Maximum residual of the temperature.
   if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the radiative energy (P1 model).
-  if (rad_model != NONE) AddHistoryOutput("RMS_RAD_ENERGY", "rms[E_Rad]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the radiative energy.", HistoryFieldType::RESIDUAL);
+  if (config->AddRadiation()) AddHistoryOutput("RMS_RAD_ENERGY", "rms[E_Rad]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the radiative energy.", HistoryFieldType::RESIDUAL);
 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -165,7 +163,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (heat || weakly_coupled_heat)
     AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Multizone residual of the radiative energy (P1 model).
-  if (rad_model != NONE) AddHistoryOutput("BGS_RAD_ENERGY", "bgs[E_Rad]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the radiative energy.", HistoryFieldType::RESIDUAL);
+  if (config->AddRadiation()) AddHistoryOutput("BGS_RAD_ENERGY", "bgs[E_Rad]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the radiative energy.", HistoryFieldType::RESIDUAL);
 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -244,13 +242,9 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     break;
   }
 
-  switch(rad_model){
-  case P1_MODEL:
+  if (config->AddRadiation())
     SetHistoryOutputValue("RMS_RAD_ENERGY", log10(rad_solver->GetRes_RMS(0)));
-    break;
-  case NONE:
-    break;
-  }
+
 
   SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
@@ -283,13 +277,9 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
       break;
     }
 
-    switch(rad_model){
-    case P1_MODEL:
+    if (config->AddRadiation())
       SetHistoryOutputValue("BGS_RAD_ENERGY", log10(rad_solver->GetRes_BGS(0)));
-      break;
-    case NONE:
-      break;
-    }
+
   }
 
   if (weakly_coupled_heat){
@@ -375,13 +365,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Radiation variables
-  switch(rad_model){
-  case P1_MODEL:
+  if (config->AddRadiation())
     AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "SOLUTION", "Radiative Energy");
-    break;
-  case NONE:
-    break;
-  }
 
   // Grid velocity
   if (config->GetGrid_Movement()){
@@ -525,15 +510,9 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
 
   // Radiation solver
-  if (config->GetKind_RadiationModel() != NONE)
+  if (config->AddRadiation()){
     Node_Rad = solver[RAD_SOL]->GetNodes();
-
-  switch(config->GetKind_RadiationModel()){
-  case P1_MODEL:
     SetVolumeOutputValue("P1-RAD", iPoint, Node_Rad->GetSolution(iPoint,0));
-    break;
-  case NONE:
-    break;
   }
 
   if (config->GetGrid_Movement()){

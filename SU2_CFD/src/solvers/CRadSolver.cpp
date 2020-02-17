@@ -30,15 +30,9 @@
 
 CRadSolver::CRadSolver(void) : CSolver() {
 
-  FlowPrimVar_i = NULL;
-  FlowPrimVar_j = NULL;
-
 }
 
 CRadSolver::CRadSolver(CGeometry* geometry, CConfig *config) : CSolver() {
-
-  FlowPrimVar_i = NULL;
-  FlowPrimVar_j = NULL;
 
   Absorption_Coeff = config->GetAbsorption_Coeff();
   Scattering_Coeff = config->GetScattering_Coeff();
@@ -48,9 +42,6 @@ CRadSolver::CRadSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 }
 
 CRadSolver::~CRadSolver(void) {
-
-  if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
-  if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
 
 }
 
@@ -90,11 +81,6 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   unsigned short iVar;
   unsigned long index;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
 
   bool rans = ((config->GetKind_Solver()== INC_RANS) ||
                (config->GetKind_Solver()== DISC_ADJ_INC_RANS));

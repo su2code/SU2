@@ -30,14 +30,10 @@
 
 CRadP1Solver::CRadP1Solver(void) : CRadSolver() {
 
-  FlowPrimVar_i = NULL;
-  FlowPrimVar_j = NULL;
-
 }
 
 CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(geometry, config) {
 
-  unsigned long iPoint;
   unsigned short iVar, iDim;
   unsigned short direct_diff = config->GetDirectDiff();
   bool multizone = config->GetMultizone_Problem();
@@ -159,9 +155,6 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 }
 
 CRadP1Solver::~CRadP1Solver(void) {
-
-  if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
-  if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
 
   if (nodes != nullptr) delete nodes;
 
@@ -535,7 +528,7 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned short iVar;
   unsigned long iPoint, total_index, IterLinSol = 0;
   su2double Vol;
-  su2double Delta_time = 0.01, Delta;
+  su2double Delta;
 
   /*--- Set maximum residual to zero ---*/
 
@@ -617,14 +610,9 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim, iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   su2double *Normal, Area, Vol, Lambda;
-  su2double Global_Delta_Time = 1E6, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, K_v = 0.25;
+  su2double Global_Delta_Time = 1E6, Local_Delta_Time = 0.0, K_v = 0.25;
   su2double CFL = config->GetCFL_Rad();
   su2double GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
-
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Compute spectral radius based on thermal conductivity ---*/
 
@@ -701,55 +689,16 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Compute the max and the min dt (in parallel) ---*/
   if (config->GetComm_Level() == COMM_FULL) {
-#ifdef HAVE_MPI
+
     su2double rbuf_time, sbuf_time;
     sbuf_time = Min_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
     Min_Delta_Time = rbuf_time;
 
     sbuf_time = Max_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
     SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     Max_Delta_Time = rbuf_time;
-#endif
   }
 
-  /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
-  if (config->GetTime_Marching() == TIME_STEPPING) {
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Global_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Global_Delta_Time = rbuf_time;
-#endif
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      nodes->SetDelta_Time(iPoint, Global_Delta_Time);
-  }
-
-  /*--- Recompute the unsteady time step for the dual time strategy
-   if the unsteady CFL is diferent from 0 ---*/
-  if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
-    Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
-
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Global_Delta_UnstTimeND;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Global_Delta_UnstTimeND = rbuf_time;
-#endif
-    config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
-  }
-
-  /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
-  if (dual_time)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      if (!implicit) {
-        cout << "Using unsteady time: " << config->GetDelta_UnstTimeND() << endl;
-        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
-        nodes->SetDelta_Time(iPoint, Local_Delta_Time);
-      }
-  }
 }

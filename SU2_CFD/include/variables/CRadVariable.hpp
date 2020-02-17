@@ -80,7 +80,6 @@ public:
   /*!
    * \brief Reset as false a volumetric heat source for all points
    */
-  inline void ResetVol_HeatSource(void) { for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) Vol_HeatSource(iPoint) = false;}
-
+  inline void ResetVol_HeatSource(void) { Vol_HeatSource = false;}
 
 };

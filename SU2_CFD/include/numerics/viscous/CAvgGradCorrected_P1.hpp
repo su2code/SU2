@@ -35,7 +35,6 @@ class CAvgGradCorrected_P1 : public CNumericsRadiation {
 
  protected:
 
-  unsigned short iVar, iDim;
   su2double **Mean_GradP1Var;               /*!< \brief Average of gradients at cell face */
   su2double *Edge_Vector,                   /*!< \brief Vector from node i to node j. */
             *Proj_Mean_GradP1Var_Edge,    /*!< \brief Mean_gradTurbVar DOT normal */
@@ -58,7 +57,7 @@ class CAvgGradCorrected_P1 : public CNumericsRadiation {
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGradCorrected_P1(void);
+  virtual ~CAvgGradCorrected_P1(void);
 
   /*!
    * \brief Compute the viscous residual of the P1 equation.
@@ -68,6 +67,6 @@ class CAvgGradCorrected_P1 : public CNumericsRadiation {
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **Jacobian_i,
-                       su2double **Jacobian_j, CConfig *config);
+                       su2double **Jacobian_j, CConfig *config) final;
 
 };
