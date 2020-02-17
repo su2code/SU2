@@ -80,7 +80,8 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                       'variables/CIncEulerVariable.cpp',
                       'variables/CEulerVariable.cpp'])
 
-su2_cfd_src += files(['solvers/CAdjEulerSolver.cpp',
+su2_cfd_src += files(['solvers/CSolverFactory.cpp',
+                      'solvers/CAdjEulerSolver.cpp',
                       'solvers/CAdjNSSolver.cpp',
                       'solvers/CAdjTurbSolver.cpp',
                       'solvers/CBaselineSolver.cpp',
