@@ -124,7 +124,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) final;
+  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Created the force projection vector for adjoint boundary conditions.
@@ -228,7 +228,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) final;
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Value of the characteristic variables at the boundaries.
@@ -291,7 +291,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) final;
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
@@ -305,7 +305,7 @@ public:
                        CSolver **solver_container,
                        CConfig *config,
                        unsigned short iMesh,
-                       bool Output) final;
+                       bool Output);
 
   /*!
    * \brief Impose via the residual the adjoint Euler wall boundary condition.

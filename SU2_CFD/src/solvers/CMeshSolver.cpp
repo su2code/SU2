@@ -107,16 +107,17 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
   if (!coloring.empty()) {
     auto nColor = coloring.getOuterSize();
-    ElemColoring.resize(nColor);
+    ElemColoring.reserve(nColor);
 
     for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      ElemColoring[iColor].size = coloring.getNumNonZeros(iColor);
-      ElemColoring[iColor].indices = coloring.innerIdx(iColor);
+      ElemColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
     }
   }
   ColorGroupSize = geometry->GetElementColorGroupSize();
 
   omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
+#else
+  ElemColoring[0] = DummyGridColor<>(nElement);
 #endif
 
   /*--- Structural parameters ---*/

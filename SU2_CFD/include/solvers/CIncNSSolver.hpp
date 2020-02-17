@@ -315,7 +315,7 @@ public:
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
                                        CConfig *config,
-                                       bool Output) override;
+                                       bool Output);
 
   /*!
    * \brief Impose a no-slip condition.
@@ -512,17 +512,5 @@ public:
    * \return Value of the max Strain rate magnitude.
    */
   inline su2double GetStrainMag_Max(void) const override { return StrainMag_Max; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the StrainMag_Max
-   */
-  inline void SetStrainMag_Max(su2double val_strainmag_max) override { StrainMag_Max = val_strainmag_max; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the Omega_Max
-   */
-  inline void SetOmega_Max(su2double val_omega_max) override { Omega_Max = val_omega_max; }
 
 };

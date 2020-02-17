@@ -2310,7 +2310,9 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to the FEA solver ---*/
 
   /*!\brief FEA_FILENAME \n DESCRIPTION: Filename to input for element-based properties \n Default: element_properties.dat \ingroup Config */
-  addStringOption("FEA_FILENAME", FEA_FileName, string("element_properties.dat"));
+  addStringOption("FEA_FILENAME", FEA_FileName, string("default_element_properties.dat"));
+  /* DESCRIPTION: Determine if advanced features are used from the element-based FEA analysis (NO, YES = experimental) */
+  addBoolOption("FEA_ADVANCED_MODE", FEAAdvancedMode, false);
 
   /* DESCRIPTION: Modulus of elasticity */
   addDoubleListOption("ELASTICITY_MODULUS", nElasticityMod, ElasticityMod);
@@ -3439,6 +3441,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
+    if (Kind_Struct_Solver == SMALL_DEFORMATIONS){
+      MinLogResidual = log10(Linear_Solver_Error);
+    }
   }
 
   /*--- Initialize the ofstream ConvHistFile. ---*/
@@ -5543,15 +5548,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
      cout <<"based on the physical case: ";
   }
     switch (Kind_Solver) {
-      case EULER: case DISC_ADJ_EULER: case FEM_EULER: case DISC_ADJ_FEM_EULER:
+      case EULER:     case DISC_ADJ_EULER:
+      case INC_EULER: case DISC_ADJ_INC_EULER:
+      case FEM_EULER: case DISC_ADJ_FEM_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         break;
-      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
+      case NAVIER_STOKES:     case DISC_ADJ_NAVIER_STOKES:
+      case INC_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES:
+      case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         break;
-      case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:
+      case RANS:     case DISC_ADJ_RANS:
+      case INC_RANS: case DISC_ADJ_INC_RANS:
+      case FEM_RANS: case DISC_ADJ_FEM_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";

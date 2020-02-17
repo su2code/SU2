@@ -420,7 +420,7 @@ public:
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
                                        CConfig *config,
-                                       bool Output) override;
+                                       bool Output);
 
   /*!
    * \brief Compute a pressure sensor switch.
@@ -428,7 +428,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) final;
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
@@ -464,14 +464,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) final;
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the max eigenvalue.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) final;
+  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
 
   /*!
    * \author H. Kline
