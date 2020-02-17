@@ -78,14 +78,6 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
       AD_Time_n_OutputIndex.resize(nPoint,nVar) = -1;
       AD_Time_n1_InputIndex.resize(nPoint,nVar) = -1;
       AD_Time_n1_OutputIndex.resize(nPoint,nVar) = -1;
-      AD_Vel_InputIndex.resize(nPoint,nVar) = -1;
-      AD_Vel_OutputIndex.resize(nPoint,nVar) = -1;
-      AD_Vel_Time_n_InputIndex.resize(nPoint,nVar) = -1;
-      AD_Vel_Time_n_OutputIndex.resize(nPoint,nVar) = -1;
-      AD_Accel_InputIndex.resize(nPoint,nVar) = -1;
-      AD_Accel_OutputIndex.resize(nPoint,nVar) = -1;
-      AD_Accel_Time_n_InputIndex.resize(nPoint,nVar) = -1;
-      AD_Accel_Time_n_OutputIndex.resize(nPoint,nVar) = -1;
     }
   }
 

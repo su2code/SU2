@@ -63,6 +63,17 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
     }
     Solution_Vel_time_n = Solution_Vel;
     Solution_Accel_time_n = Solution_Accel;
+
+    if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
+      AD_Vel_InputIndex.resize(nPoint,nVar) = -1;
+      AD_Vel_OutputIndex.resize(nPoint,nVar) = -1;
+      AD_Vel_Time_n_InputIndex.resize(nPoint,nVar) = -1;
+      AD_Vel_Time_n_OutputIndex.resize(nPoint,nVar) = -1;
+      AD_Accel_InputIndex.resize(nPoint,nVar) = -1;
+      AD_Accel_OutputIndex.resize(nPoint,nVar) = -1;
+      AD_Accel_Time_n_InputIndex.resize(nPoint,nVar) = -1;
+      AD_Accel_Time_n_OutputIndex.resize(nPoint,nVar) = -1;
+    }
   }
 
   if (fsi_analysis) {
