@@ -7814,7 +7814,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         /*--- Turbulent kinetic energy ---*/
 
         if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0), solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 
@@ -8317,7 +8318,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           /*--- Turbulent kinetic energy ---*/
 
           if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-            visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0), solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+            visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+                                                solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
           /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 
@@ -9209,7 +9211,8 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
         /*--- Turbulent kinetic energy ---*/
 
         if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0), solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 
@@ -9531,7 +9534,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 //        /*--- Turbulent kinetic energy ---*/
 //
 //        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0), solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
 //        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 //
@@ -9705,7 +9709,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 //        /*--- Turbulent kinetic energy ---*/
 //
 //        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0), solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
 //        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 //        visc_numerics->SetTauWall(-1.0, -1.0);
@@ -9847,7 +9852,8 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 //        /*--- Turbulent kinetic energy ---*/
 //
 //        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0), solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
 //        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 //
@@ -9945,29 +9951,30 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
       if (implicit)
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
- //     /*--- Viscous contribution, commented out because serious convergence problems ---*/
- //
- //     if (viscous) {
- //
- //       /*--- Set laminar and eddy viscosity at the infinity ---*/
- //
- //       V_outlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
- //       V_outlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
- //
- //       /*--- Set the normal vector and the coordinates ---*/
- //
- //       visc_numerics->SetNormal(Normal);
- //       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
- //
- //       /*--- Primitive variables, and gradient ---*/
- //
- //       visc_numerics->SetPrimitive(V_domain, V_outlet);
- //       visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
- //
- //       /*--- Turbulent kinetic energy ---*/
- //
- //       if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
- //         visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0), solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      if (viscous) {
+//
+//        /*--- Set laminar and eddy viscosity at the infinity ---*/
+//
+//        V_outlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
+//        V_outlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
+//
+//        /*--- Set the normal vector and the coordinates ---*/
+//
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//
+//        /*--- Primitive variables, and gradient ---*/
+//
+//        visc_numerics->SetPrimitive(V_domain, V_outlet);
+//        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
+//
+//        /*--- Turbulent kinetic energy ---*/
+//
+//        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
 //        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 //
@@ -10189,7 +10196,8 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 //        /*--- Turbulent kinetic energy ---*/
 //
 //        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0), solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
 //        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 //
@@ -10443,7 +10451,8 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 //        /*--- Turbulent kinetic energy ---*/
 //
 //        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0), solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
 //        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 //
@@ -10600,7 +10609,8 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
               /*--- Turbulent kinetic energy ---*/
 
               if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-                visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0), solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+                visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+                                                    solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
               /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 
@@ -11156,7 +11166,8 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 //        /*--- Turbulent kinetic energy ---*/
 //
 //        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0), solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+//                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
 //        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 //
@@ -11591,7 +11602,6 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- Skip coordinates ---*/
 
@@ -11678,14 +11688,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (rbuf_NotMatching != 0) {
+  if (iPoint_Global_Local < nPointDomain) {
       SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
