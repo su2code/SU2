@@ -1267,7 +1267,8 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
         /*--- TurbViscosity is usually zero on the walls, except when the SA roughness model is used. 
          *    If the SA roughness model is not active, this term will be zero and will not affect the solution---*/
-        TurbViscosity = nodes->GetEddyViscosity(iPoint);
+        TurbViscosity = 0.0;
+        if ((config->GetKindWall(Marker_Tag) == ROUGH ) && (config->GetKind_Turb_Model() ==  SA)) TurbViscosity = nodes->GetEddyViscosity(iPoint);
         Viscosity = nodes->GetLaminarViscosity(iPoint);
         Viscosity += TurbViscosity;
         

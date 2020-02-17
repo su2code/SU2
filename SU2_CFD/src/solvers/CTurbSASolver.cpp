@@ -366,7 +366,10 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     dist = geometry->node[iPoint]->GetWall_Distance();
     dist += 0.03*roughness;
 
-    Ji   = nu_hat[0]/nu + cR1*roughness/(dist+EPS);
+    Ji   = nu_hat[0]/nu ;
+    if (roughness > 1.0e-10)
+	  Ji+= cR1*roughness/(dist+EPS);
+    
     Ji_3 = Ji*Ji*Ji;
     fv1  = Ji_3/(Ji_3+cv1_3);
 
@@ -541,7 +544,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
           /*--- Includes 1 in the diagonal ---*/
 
           Jacobian.DeleteValsRowi(iPoint);
-	   }
+       }
 	   else {
 		   /*--- For rough walls, the boundary condition is given by 
 		    * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}

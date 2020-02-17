@@ -1408,7 +1408,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
-  su2double Viscosity = 0.0, div_vel, *Normal, MomentDist[3] = {0.0, 0.0, 0.0}, WallDist[3] = {0.0, 0.0, 0.0},
+  su2double Viscosity = 0.0, TurbViscosity = 0.0, div_vel, *Normal, MomentDist[3] = {0.0, 0.0, 0.0}, WallDist[3] = {0.0, 0.0, 0.0},
   *Coord, *Coord_Normal, Area, WallShearStress, TauNormal, factor, RefTemp, RefVel2,
   RefDensity, GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
   Mach2Vel, Mach_Motion, UnitNormal[3] = {0.0, 0.0, 0.0}, TauElem[3] = {0.0, 0.0, 0.0}, TauTangent[3] = {0.0, 0.0, 0.0},
@@ -1529,7 +1529,12 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint,0, iDim);
         }
 
+        /*--- TurbViscosity is usually zero on the walls, except when the SA roughness model is used. 
+         *    If the SA roughness model is not active, this term will be zero and will not affect the solution---*/
+        TurbViscosity = 0.0;
+        if ((config->GetKindWall(Marker_Tag) == ROUGH ) && (config->GetKind_Turb_Model() ==  SA)) TurbViscosity = nodes->GetEddyViscosity(iPoint);
         Viscosity = nodes->GetLaminarViscosity(iPoint);
+        Viscosity += TurbViscosity;
         Density = nodes->GetDensity(iPoint);
 
         Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
