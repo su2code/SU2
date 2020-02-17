@@ -800,11 +800,8 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
 
-    if (iMesh == MESH_0) {
+    if (iMesh == MESH_0)
       config->SetNonphysical_Points(ErrorCounter);
-      solver_container[FLOW_SOL]->SetStrainMag_Max(StrainMag_Max);
-      solver_container[FLOW_SOL]->SetOmega_Max(Omega_Max);
-    }
 
   }
 

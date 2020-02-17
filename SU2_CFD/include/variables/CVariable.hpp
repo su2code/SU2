@@ -524,7 +524,9 @@ public:
   /*!
    * \brief Set summed residual vector to zero value.
    */
-  void SetResidualSumZero();
+  inline void SetResidualSumZero(unsigned long iPoint) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Residual_Sum(iPoint,iVar) = 0.0;
+  }
 
   /*!
    * \brief Set the velocity of the truncation error to zero.
@@ -2738,7 +2740,8 @@ public:
 
   inline virtual su2double GetTauWall(unsigned long iPoint) const { return 0.0; }
 
-  inline virtual void SetVortex_Tilting(unsigned long iPoint, su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity) {}
+  inline virtual void SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
+                                        const su2double* Vorticity, su2double LaminarViscosity) {}
 
   inline virtual su2double GetVortex_Tilting(unsigned long iPoint) const { return 0.0; }
 

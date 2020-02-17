@@ -57,14 +57,15 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
     EdgeColoring.resize(nColor);
 
     for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      EdgeColoring[iColor].size = coloring.getNumNonZeros(iColor);
-      EdgeColoring[iColor].indices = coloring.innerIdx(iColor);
+      EdgeColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
     }
   }
   ColorGroupSize = geometry->GetEdgeColorGroupSize();
 
   nPoint = geometry->GetnPoint();
   omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
+#else
+  EdgeColoring[0] = DummyGridColor<>(geometry->GetnEdge());
 #endif
 }
 
@@ -93,10 +94,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
@@ -104,24 +101,15 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   su2double solution_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
   su2double solution_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNVARFLOW] = {0.0};
 
-  /*--- Loop over all the edges ---*/
-
-#ifdef HAVE_OMP
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
-
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  SU2_OMP_FOR_DYN(chunkSize)
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
-#else
-  /*--- Natural coloring. ---*/
-  {
-  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-#endif
+
     unsigned short iDim, iVar;
 
     /*--- Points in edge and normal vectors ---*/
@@ -233,7 +221,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
   }
   } // end color loop
-  } // end SU2_OMP_PARALLEL
+
 }
 
 void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
@@ -241,31 +229,18 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS];
-
-  /*--- Loop over all the edges ---*/
-
-#ifdef HAVE_OMP
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  SU2_OMP_FOR_DYN(chunkSize)
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
-#else
-  /*--- Natural coloring. ---*/
-  {
-  for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-#endif
+
     /*--- Points in edge ---*/
 
     auto iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -307,7 +282,7 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
   }
   } // end color loop
-  } // end SU2_OMP_PARALLEL
+
 }
 
 void CTurbSolver::BC_Sym_Plane(CGeometry      *geometry,
@@ -410,10 +385,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
   /*--- Set shared residual variables to 0 and declare
    *    local ones for current thread to work on. ---*/
 
@@ -544,8 +515,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     SetResidual_RMS(geometry, config);
   }
+  SU2_OMP_BARRIER
 
-  } // end SU2_OMP_PARALLEL
 }
 
 void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
@@ -618,15 +589,10 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 
   const su2double TimeStep = config->GetDelta_UnstTimeND();
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
-
   /*--- Local variables ---*/
 
   unsigned short iVar, iMarker, iDim;
-  unsigned long iPoint, jPoint, iEdge, iVertex;
+  unsigned long iPoint, jPoint, iVertex;
 
   const su2double *U_time_nM1 = nullptr, *U_time_n = nullptr, *U_time_nP1 = nullptr;
   su2double Volume_nM1, Volume_nP1;
@@ -715,22 +681,15 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
      we will loop over the edges and boundaries to compute the GCL component
      of the dual time source term that depends on grid velocities. ---*/
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
-
     /*--- Loop over edge colors. ---*/
     for (auto color : EdgeColoring)
     {
-    SU2_OMP_FOR_DYN(chunkSize)
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
     for(auto k = 0ul; k < color.size; ++k) {
 
-      iEdge = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-    for (iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
-#endif
+      auto iEdge = color.indices[k];
+
       /*--- Get indices for nodes i & j plus the face normal ---*/
 
       iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -912,8 +871,6 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
     }
 
   } // end dynamic grid
-
-  } // end SU2_OMP_PARALLEL
 
 }
 

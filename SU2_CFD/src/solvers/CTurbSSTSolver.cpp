@@ -271,17 +271,12 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  /// TODO: Try to start a parallel section here encompassing all "heavy" methods.
-
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
 
-  SU2_OMP_PARALLEL
-  {
   /*--- Clear residual and system matrix. ---*/
   LinSysRes.SetValZero();
   Jacobian.SetValZero();
-  }
 
   /*--- Upwind second order reconstruction and gradients ---*/
 
@@ -293,8 +288,12 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
       SetSolution_Gradient_LS(geometry, config, true);
   }
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
+    SetSolution_Gradient_GG(geometry, config);
+
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
+    SetSolution_Gradient_LS(geometry, config);
 
   if (limiter_turb) SetSolution_Limiter(geometry, config);
 
@@ -314,7 +313,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     SetSolution_Gradient_LS(geometry, config);
   }
 
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Compute blending functions and cross diffusion ---*/
@@ -351,10 +350,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  /*--- Start OpenMP parallel section. ---*/
-
-  SU2_OMP_PARALLEL
-  {
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
 
@@ -413,7 +408,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   }
 
-  } // end SU2_OMP_PARALLEL
 }
 
 void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

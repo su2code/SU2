@@ -38,6 +38,8 @@
 
 #pragma once
 
+#include <type_traits>
+
 #if defined(_MSC_VER)
 #define PRAGMIZE(X) __pragma(X)
 #else
@@ -45,8 +47,8 @@
 #endif
 
 /*--- Detect compilation with OpenMP support, protect agaisnt
- *    using OpenMP with AD (not supported yet). ---*/
-#if defined(_OPENMP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+ *    using OpenMP with Reverse AD (not supported yet). ---*/
+#if defined(_OPENMP) && !defined(CODI_REVERSE_TYPE)
 #define HAVE_OMP
 #include <omp.h>
 
@@ -148,4 +150,25 @@ void parallelSet(size_t size, T val, U* dst)
 {
   SU2_OMP_FOR_STAT(4196)
   for(size_t i=0; i<size; ++i) dst[i] = val;
+}
+
+/*!
+ * \brief Atomically update a (shared) lhs value with a (local) rhs value.
+ * \note For types without atomic support (non-arithmetic) this is done via critical.
+ * \param[in] rhs - Local variable being added to the shared one.
+ * \param[in,out] lhs - Shared variable being updated.
+ */
+template<class T,
+         typename std::enable_if<!std::is_arithmetic<T>::value,bool>::type = 0>
+inline void atomicAdd(T rhs, T& lhs)
+{
+  SU2_OMP_CRITICAL
+  lhs += rhs;
+}
+template<class T,
+         typename std::enable_if<std::is_arithmetic<T>::value,bool>::type = 0>
+inline void atomicAdd(T rhs, T& lhs)
+{
+  SU2_OMP_ATOMIC
+  lhs += rhs;
 }

@@ -131,7 +131,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) override;
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.

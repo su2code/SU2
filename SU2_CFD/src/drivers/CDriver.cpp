@@ -85,6 +85,11 @@
 #include "../../include/numerics/elasticity/CFEANonlinearElasticity.hpp"
 #include "../../include/numerics/elasticity/nonlinear_models.hpp"
 
+#include "../../include/integration/CSingleGridIntegration.hpp"
+#include "../../include/integration/CMultiGridIntegration.hpp"
+#include "../../include/integration/CStructuralIntegration.hpp"
+#include "../../include/integration/CFEM_DG_Integration.hpp"
+
 #include "../../../Common/include/omp_structure.hpp"
 
 #include <cassert>

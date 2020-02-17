@@ -39,7 +39,6 @@
 #include "drivers/CDiscAdjSinglezoneDriver.hpp"
 #include "drivers/CDiscAdjMultizoneDriver.hpp"
 #include "drivers/CDummyDriver.hpp"
-#include "integration_structure.hpp"
 #include "output/COutput.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
 #include "../../Common/include/geometry/CGeometry.hpp"

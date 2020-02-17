@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CSolver.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 
 /*!
  * \class CFEASolver
@@ -74,11 +75,11 @@ protected:
   su2double RelaxCoeff;             /*!< \brief Relaxation coefficient . */
   su2double FSI_Residual;           /*!< \brief FSI residual. */
 
-  struct ElemColor {
-    unsigned long size;             /*!< \brief Number of elements with a given color. */
-    const unsigned long* indices;   /*!< \brief Array of element indices for a given color. */
-  };
-  vector<ElemColor> ElemColoring;   /*!< \brief Element colors. */
+#ifdef HAVE_OMP
+  vector<GridColor<> > ElemColoring;   /*!< \brief Element colors. */
+#else
+  array<DummyGridColor<>,1> ElemColoring;
+#endif
   unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size must be a multiple of this. */
 
   bool element_based;               /*!< \brief Bool to determine if an element-based file is used. */
