@@ -36,6 +36,15 @@ protected:
 
   su2double Temperature_Inf;      /*!< \brief Temperature at the infinity. */
 
+  /*!
+   * \brief Impose the Marshak boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Marshak(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_marker);
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -219,18 +228,10 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline void BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container,
-                                         CNumerics *numerics, CConfig *config, unsigned short val_marker){
+                                         CNumerics *numerics, CConfig *config,
+                                         unsigned short val_marker) override {
     BC_Marshak(geometry, solver_container, config, val_marker);
   }
-
-  /*!
-   * \brief Impose the Marshak boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Marshak(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Compute the time step for solving the Radiation P1 equation.
