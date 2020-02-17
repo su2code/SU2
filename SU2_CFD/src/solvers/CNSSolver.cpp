@@ -267,15 +267,15 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   SU2_OMP_PARALLEL
   {
-    solver_container[FLOW_SOL]->GetNodes()->SetVorticity_StrainMag();
+    nodes->SetVorticity_StrainMag();
 
     su2double strainMax = 0.0, omegaMax = 0.0;
 
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
-      su2double StrainMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
-      const su2double* Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+      su2double StrainMag = nodes->GetStrainMag(iPoint);
+      const su2double* Vorticity = nodes->GetVorticity(iPoint);
       su2double Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
 
       strainMax = max(strainMax, StrainMag);
