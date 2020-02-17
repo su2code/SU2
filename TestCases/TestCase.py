@@ -46,7 +46,7 @@ class TestCase:
 
         # Indicate if the test is unsteady
         self.unsteady = False
-        
+
         # Indicate if the test is a polar run
         self.polar = False
 
