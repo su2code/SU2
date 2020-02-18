@@ -572,9 +572,9 @@ int SplitQuads(char *nam, Mesh *Msh)
     AddTriangle(Msh,Msh->NbrTri,is,ref);
     /*--- Second triangle ---*/
     Msh->NbrTri++;
-    is[2] = Msh->Qua[iQua][2];
-    is[3] = Msh->Qua[iQua][3];
-    is[0] = Msh->Qua[iQua][0];
+    is[0] = Msh->Qua[iQua][2];
+    is[1] = Msh->Qua[iQua][3];
+    is[2] = Msh->Qua[iQua][0];
     AddTriangle(Msh,Msh->NbrTri,is,ref);
   }
 
