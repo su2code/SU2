@@ -128,7 +128,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
                                                         unsigned short nDim, 
                                                         su2double *Coord, 
                                                         unsigned short nVar_Turb,
-                                                        enum ENUM_INLET_SPANWISEINTERPOLATION Interpolation()){
+                                                        ENUM_INLET_SPANWISEINTERPOLATION Interpolation()){
 
     unsigned short size_columns=Inlet_Interpolated.size()+nDim;
     vector<su2double> Inlet_Values(size_columns);
