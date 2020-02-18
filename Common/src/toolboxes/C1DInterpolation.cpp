@@ -170,8 +170,6 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
     return Inlet_Values;
 }
 
-
-
 void PrintInletInterpolatedData(vector<su2double>& Inlet_Data_Interpolated, string Marker, unsigned long nVertex, unsigned short nDim, unsigned short nColumns){
     ofstream myfile;
     myfile.precision(16);

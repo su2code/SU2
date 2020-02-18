@@ -4423,7 +4423,15 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               }
 
               /* --- Correcting for Interpolation Type ---*/
-              Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, config->GetKindInletInterpolationType);
+              switch(config->GetKindInletInterpolationType()){
+              case(VR_VTHETA):
+                Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, VR_VTHETA);
+              break;
+              case(ALPHA_PHI):
+                Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, ALPHA_PHI);
+              break;
+              }
+
               solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
               
               for (unsigned short iVar=0; iVar < (nCol_InletFile+nDim); iVar++)
