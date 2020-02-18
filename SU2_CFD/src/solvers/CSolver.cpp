@@ -4285,6 +4285,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           /*--- Define the reference for interpolation. ---*/
           unsigned short radius_index=0;
           vector<su2double> InletRadii = profileReader.GetColumnForProfile(jMarker, radius_index);
+          vector<su2double> Interpolation_Column (nRows);
 
           switch(config->GetKindInletInterpolationFunction()){
 
@@ -4294,13 +4295,17 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
             case (AKIMA_1D):
               for (unsigned short iCol=0; iCol < nColumns; iCol++){
-                  interpolator[iCol] = new CAkimaInterpolation(InletRadii,profileReader.GetColumnForProfile(jMarker, iCol));
+                  Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
+                  interpolator[iCol] = new CAkimaInterpolation(InletRadii,Interpolation_Column);
                   interpolation_function = "AKIMA";
                   Interpolate = true;
                 }
+            break;
+            
             case (LINEAR_1D):
               for (unsigned short iCol=0; iCol < nColumns; iCol++){
-                  interpolator[iCol] = new CLinearInterpolation(InletRadii,profileReader.GetColumnForProfile(jMarker, iCol));
+                  Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
+                  interpolator[iCol] = new CLinearInterpolation(InletRadii,Interpolation_Column);
                   interpolation_function = "LINEAR";
                   Interpolate = true;
                 }
@@ -4421,7 +4426,15 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
               }
 
               /* --- Correcting for Interpolation Type ---*/
-              Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, config);
+              switch(config->GetKindInletInterpolationType()){
+              case(VR_VTHETA):
+                Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, VR_VTHETA);
+              break;
+              case(ALPHA_PHI):
+                Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, ALPHA_PHI);
+              break;
+              }
+
               solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
               
               for (unsigned short iVar=0; iVar < (nCol_InletFile+nDim); iVar++)
@@ -4459,7 +4472,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         unsigned short nColumns = 0;
         for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
           if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
-            nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker, Interpolate);
+            nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+            if(Interpolate == true)
+              nColumns+=nDim;
           }
         }
         vector<su2double> Inlet_Values(nColumns);

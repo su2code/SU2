@@ -32,7 +32,7 @@
 #include <vector>
 #include<fstream>
 #include "../datatype_structure.hpp"
-#include "../CConfig.hpp"
+#include "../option_structure.hpp"
 
 using namespace std;
 
@@ -53,7 +53,7 @@ public:
     * \param[in] X - the x values.
     * \param[in] Data - the f(x) values.
     */
-    virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
+    virtual void SetSpline(const vector<su2double> &X, const vector<su2double> &Data){}
 
     /*!
     * \brief virtual method for evaluating the value of the respective Spline.
@@ -66,14 +66,13 @@ public:
     * \brief bool variable to make sure all vertex points fell in range of the inlet data.
     * \returns the bool variable.
     */
-    bool GetPointMatch(){return Point_Match;}
+    bool GetPointMatch() const {return Point_Match;}
 };
 
-
-class CAkimaInterpolation: public C1DInterpolation{ 
+class CAkimaInterpolation final: public C1DInterpolation{ 
 protected:
     vector<su2double> x,y,b,c,d;  /*!< \brief local variables for Akima spline cooefficients */
-    int n; /*!< \brief local variable for holding the number of intervals */
+    int n; /*!< \brief local variable for holding the size of the vector */
 public:
     
     /*!
@@ -95,7 +94,7 @@ public:
     * \param[in] X - the x values.
     * \param[in] Data - the f(x) values.
     */
-    void SetSpline(vector<su2double> &x, vector<su2double> &y) override;
+    void SetSpline(const vector<su2double> &X, const vector<su2double> &Data) override;
 
     /*!
     * \brief For evaluating the value of Akima Spline.
@@ -105,9 +104,10 @@ public:
     su2double EvaluateSpline(su2double Point_Interp) override;
 };
 
-class CLinearInterpolation: public C1DInterpolation{
+class CLinearInterpolation final: public C1DInterpolation{
     protected:
     vector<su2double> x,y,dydx; /*!< \brief local variables for linear 'spline' cooefficients */
+    int n; /*!< \brief local variable for holding the size of the vector */
     public:
     
     /*!
@@ -129,7 +129,7 @@ class CLinearInterpolation: public C1DInterpolation{
     * \param[in] X - the x values.
     * \param[in] Data - the f(x) values.
     */
-    void SetSpline(vector<su2double> &x, vector<su2double> &y) override;
+    void SetSpline(const vector<su2double> &X, const vector<su2double> &Data) override;
 
     /*!
     * \brief For evaluating the value for Linear 'spline'.
@@ -146,7 +146,7 @@ class CLinearInterpolation: public C1DInterpolation{
 * \param[in] nDim - the dimensions of the case.
 * \param[in] Coord - the coordinates of the vertex.
 * \param[in] nVar_Turb - the number of turbulence variables as defined by turbulence model
-* \param[in] *config - Definition of the particular problem.
+* \param[in] ENUM_INLET_INTERPOLATIONTYPE - enum of the interpolation type to be done
 * \returns the corrected Inlet Interpolated Data.
 */
 vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
@@ -154,7 +154,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated,
                                     unsigned short nDim, 
                                     su2double *Coord, 
                                     unsigned short nVar_Turb, 
-                                    CConfig *config);
+                                    ENUM_INLET_INTERPOLATIONTYPE Interpolation_Type);
 
 /*!
 * \brief to print the Inlet Interpolated Data
