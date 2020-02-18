@@ -275,10 +275,14 @@ def amg ( config , kind='' ):
         raise RuntimeError , "\n\n##ERROR : Can't find back mesh: %s.\n\n" % config_amg['adap_back']
     
     if back_extension == ".su2":
+        sys.stdout.write("\nGenerating GMF background surface mesh.\n")
+        sys.stdout.flush()
         su2amg._amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
         config_amg['adap_back'] = "amg_back.meshb"
 
     if dim == 2:
+        sys.stdout.write("\nPreprocessing background mesh.\n")
+        sys.stdout.flush()
         su2amg.prepro_back_mesh(config_cfd, config_amg)
     
     if 'ADAP_SOURCE' in config:
