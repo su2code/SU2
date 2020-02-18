@@ -53,7 +53,7 @@ public:
     * \param[in] X - the x values.
     * \param[in] Data - the f(x) values.
     */
-    virtual void SetSpline(vector<su2double> &x, vector<su2double> &y){}
+    virtual void SetSpline(const vector<su2double> &X, const vector<su2double> &Data){}
 
     /*!
     * \brief virtual method for evaluating the value of the respective Spline.
@@ -94,7 +94,7 @@ public:
     * \param[in] X - the x values.
     * \param[in] Data - the f(x) values.
     */
-    void SetSpline(vector<su2double> &x, vector<su2double> &y) override;
+    void SetSpline(const vector<su2double> &X, const vector<su2double> &Data) override;
 
     /*!
     * \brief For evaluating the value of Akima Spline.
@@ -129,7 +129,7 @@ class CLinearInterpolation final: public C1DInterpolation{
     * \param[in] X - the x values.
     * \param[in] Data - the f(x) values.
     */
-    void SetSpline(vector<su2double> &x, vector<su2double> &y) override;
+    void SetSpline(const vector<su2double> &X, const vector<su2double> &Data) override;
 
     /*!
     * \brief For evaluating the value for Linear 'spline'.

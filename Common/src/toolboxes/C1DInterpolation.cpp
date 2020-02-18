@@ -64,7 +64,7 @@ su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
     return 0;
 }
 
-void CLinearInterpolation::SetSpline(vector<su2double> &X, vector<su2double> &Data){
+void CLinearInterpolation::SetSpline(const vector<su2double> &X, const vector<su2double> &Data){
     n = X.size();
     su2double h;
     x.resize(n);
@@ -80,7 +80,7 @@ void CLinearInterpolation::SetSpline(vector<su2double> &X, vector<su2double> &Da
     }
 }
 
-void CAkimaInterpolation::SetSpline (vector<su2double> &X,vector<su2double> &Data){
+void CAkimaInterpolation::SetSpline (const vector<su2double> &X,const vector<su2double> &Data){
 
     n = X.size();
     vector<su2double> h (n-1);
