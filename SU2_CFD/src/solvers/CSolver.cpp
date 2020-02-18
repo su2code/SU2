@@ -4469,7 +4469,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         unsigned short nColumns = 0;
         for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
           if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
-            nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker, Interpolate);
+            nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+            if(Interpolate == true)
+              nColumns+=nDim;
           }
         }
         vector<su2double> Inlet_Values(nColumns);

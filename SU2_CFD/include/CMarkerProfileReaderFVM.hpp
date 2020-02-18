@@ -154,17 +154,6 @@ public:
   inline unsigned long GetNumberOfColumnsInProfile(int val_iProfile) {
     return numberOfColumnsInProfile[val_iProfile];
   }
-  
-    /*!
-   * \brief Get the number of columns of data in a profile if an interpolation method was used (multigrid).
-   * \param[in] val_iProfile - current profile index.
-   * \param[in] Interpolate - bool value for Interpolation
-   * \returns Number of columns of data in the (if) interpolated profile.
-   */
-  inline unsigned long GetNumberOfColumnsInProfile(int val_iProfile, bool Interpolate) {
-    if (Interpolate == true) {return numberOfColumnsInProfile[val_iProfile]+dimension;}
-    else {return numberOfColumnsInProfile[val_iProfile];}
-  }
 
   /*!
    * \brief Get the 1D vector of data for a profile from the input file.
