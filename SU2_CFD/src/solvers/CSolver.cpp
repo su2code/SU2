@@ -4285,6 +4285,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           /*--- Define the reference for interpolation. ---*/
           unsigned short radius_index=0;
           vector<su2double> InletRadii = profileReader.GetColumnForProfile(jMarker, radius_index);
+          vector<su2double> Interpolation_Column (nRows);
 
           switch(config->GetKindInletInterpolationFunction()){
 
@@ -4294,7 +4295,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
             case (AKIMA_1D):
               for (unsigned short iCol=0; iCol < nColumns; iCol++){
-                  interpolator[iCol] = new CAkimaInterpolation(InletRadii,profileReader.GetColumnForProfile(jMarker, iCol));
+                  Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
+                  interpolator[iCol] = new CAkimaInterpolation(InletRadii,Interpolation_Column);
                   interpolation_function = "AKIMA";
                   Interpolate = true;
                 }
@@ -4302,7 +4304,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             
             case (LINEAR_1D):
               for (unsigned short iCol=0; iCol < nColumns; iCol++){
-                  interpolator[iCol] = new CLinearInterpolation(InletRadii,profileReader.GetColumnForProfile(jMarker, iCol));
+                  Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
+                  interpolator[iCol] = new CLinearInterpolation(InletRadii,Interpolation_Column);
                   interpolation_function = "LINEAR";
                   Interpolate = true;
                 }
