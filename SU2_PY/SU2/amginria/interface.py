@@ -36,8 +36,8 @@ def prepro_back_mesh(config_cfd, config_amg):
     Tri_Ini = [mesh_ini['Triangles'][0][i] for i in range(3)]
     Tri_Bak = [mesh_bak['Triangles'][0][i] for i in range(3)]
 
-    Ver_Ini = [mesh_ini['xy'][Tri_Ini][i] for i in range(2)]
-    Ver_Bak = [mesh_bak['xy'][Tri_Bak][i] for i in range(2)]
+    Ver_Ini = [mesh_ini['xyz'][Tri_Ini][i] for i in range(2)]
+    Ver_Bak = [mesh_bak['xyz'][Tri_Bak][i] for i in range(2)]
 
     V_Ini = [Ver_Ini[1][i] - Ver_Ini[0][i] for i in range(2)]
     W_Ini = [Ver_Ini[2][i] - Ver_Ini[0][i] for i in range(2)]
