@@ -154,7 +154,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated,
                                     unsigned short nDim, 
                                     su2double *Coord, 
                                     unsigned short nVar_Turb, 
-                                    enum ENUM_INLET_INTERPOLATIONTYPE);
+                                    ENUM_INLET_INTERPOLATIONTYPE Interpolation);
 
 /*!
 * \brief to print the Inlet Interpolated Data
