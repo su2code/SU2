@@ -37,6 +37,7 @@ int LoadGMFSolution(char *SolNam, Mesh *Msh);
 int WriteGMFMesh(char *nam, Mesh *Msh, int OptBin);
 int WriteGMFSolution(char *SolNam, double *Sol, int SolSiz, int NbrVer, int Dim, int NbrFld, int* FldTab);
 int WriteGMFSolutionItf(char *SolNam, Mesh *Msh);
+int SplitQuads(char *nam, Mesh *Msh, int OptBin);
 
 //--- option.c
 Options* AllocOptions(void);

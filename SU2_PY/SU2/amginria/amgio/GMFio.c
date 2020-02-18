@@ -551,3 +551,27 @@ int WriteGMFSolutionItf(char *SolNam, Mesh *Msh)
 	
 	return WriteGMFSolution(SolNam, Sol, SolSiz, NbrVer, Dim, NbrFld, FldTab);
 }
+
+int SplitQuads(char *nam, Mesh *Msh)
+{
+  int ref = 1;
+  int iQua, is[3];
+  int NbrQua = Msh->NbrQua;
+  for (iQua = 1; iQua <= NbrQua; iQua++) {
+  	/*--- First triangle ---*/
+    Msh->NbrTri++;
+    is[0] = Msh->Qua[iQua][0];
+    is[1] = Msh->Qua[iQua][1];
+    is[2] = Msh->Qua[iQua][2];
+    AddTriangle(Msh,Msh->NbrTri,is,ref);
+    /*--- Second triangle ---*/
+    Msh->NbrTri++;
+    is[2] = Msh->Qua[iQua][2];
+    is[3] = Msh->Qua[iQua][3];
+    is[0] = Msh->Qua[iQua][0];
+    AddTriangle(Msh,Msh->NbrTri,is,ref);
+  }
+
+  /*--- Set NbrQua = 0 ---*/
+  Msh->NbrQua = 0;
+}
