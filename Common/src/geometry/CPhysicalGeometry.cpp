@@ -9864,12 +9864,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     config->fields.push_back("Point_ID");
     for (iVar = 0; iVar < nFields; iVar++) {
       index = iVar*CGNS_STRING_SIZE;
-      field_buf.append("\"");
       for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
         str_buf[iChar] = mpi_str_buf[index + iChar];
       }
       field_buf.append(str_buf);
-      field_buf.append("\"");
       config->fields.push_back(field_buf.c_str());
       field_buf.clear();
     }
@@ -9964,9 +9962,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
 #endif
 
-    std::vector<string>::iterator itx = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_x\"");
-    std::vector<string>::iterator ity = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_y\"");
-    std::vector<string>::iterator itz = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_z\"");
+    std::vector<string>::iterator itx = std::find(config->fields.begin(), config->fields.end(), "Sensitivity_x");
+    std::vector<string>::iterator ity = std::find(config->fields.begin(), config->fields.end(), "Sensitivity_y");
+    std::vector<string>::iterator itz = std::find(config->fields.begin(), config->fields.end(), "Sensitivity_z");
 
     if (itx == config->fields.end()){
       SU2_MPI::Error("Sensitivity x not found in file.", CURRENT_FUNCTION);
