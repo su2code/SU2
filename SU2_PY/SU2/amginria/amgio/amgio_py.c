@@ -162,11 +162,12 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers)
 	Options *mshopt = AllocOptions();
 	
 	strcpy(mshopt->InpNam,MshNam);
+	strcpy(mshopt->SolNam,"\0");
 	
 	//--- Open mesh/solution file
 	
 	Mesh *Msh = NULL;
-	Msh = SetupMeshAndSolution (mshopt->InpNam, NULL);
+	Msh = SetupMeshAndSolution (mshopt->InpNam, mshopt->SolNam);
 	
 	for (i=1; i<=Msh->NbrVer; i++){
 		for (d=0; d<3; d++)
