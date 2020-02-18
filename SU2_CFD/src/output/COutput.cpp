@@ -1123,6 +1123,9 @@ void COutput::SetScreen_Output(CConfig *config) {
         case ScreenOutputFormat::SCIENTIFIC:
           PrintingToolbox::PrintScreenScientific(out, historyOutput_Map.at(RequestedField).value, fieldWidth);
           break;
+        case ScreenOutputFormat::PERCENT:
+          PrintingToolbox::PrintScreenPercent(out, historyOutput_Map[RequestedField].value, fieldWidth);
+          break;
       }
     }
     if (historyOutputPerSurface_Map.count(RequestedField) > 0){
@@ -1135,6 +1138,9 @@ void COutput::SetScreen_Output(CConfig *config) {
           break;
         case ScreenOutputFormat::SCIENTIFIC:
           PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
+          break;
+        case ScreenOutputFormat::PERCENT:
+          PrintingToolbox::PrintScreenPercent(out, historyOutputPerSurface_Map[RequestedField][0].value, fieldWidth);
           break;
       }
     }
