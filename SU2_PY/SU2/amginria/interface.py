@@ -24,7 +24,12 @@ def return_mesh_size(mesh):
     
 def prepro_back_mesh(config_cfd, config_amg):
     #--- Read initial and background meshes
+    sys.stdout.write("\nReading initial mesh.\n")
+    sys.stdout.flush()
     mesh_ini = read_mesh(config_cfd['MESH_FILENAME'])
+
+    sys.stdout.write("\nReading background mesh.\n")
+    sys.stdout.flush()
     mesh_bak = read_mesh(config_amg['adap_back'])
 
     #--- Check orientation
