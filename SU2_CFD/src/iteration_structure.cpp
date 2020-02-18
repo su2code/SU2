@@ -1195,7 +1195,7 @@ void CHeatIteration::Iterate(COutput *output,
 
   /*--- Update global parameters ---*/
 
-  config[val_iZone]->SetGlobalParam(HEAT_EQUATION_FVM, RUNTIME_HEAT_SYS);
+  config[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS);
 
   integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, RUNTIME_HEAT_SYS, val_iZone, val_iInst);
   

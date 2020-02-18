@@ -1,5 +1,5 @@
 /*!
- * \file CHeatSolverFVM.cpp
+ * \file CHeatSolver.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
  * \version 7.0.1 "Blackbird"
@@ -26,15 +26,15 @@
  */
 
 
-#include "../../include/solvers/CHeatSolverFVM.hpp"
+#include "../../include/solvers/CHeatSolver.hpp"
 
-CHeatSolverFVM::CHeatSolverFVM(void) : CSolver() {
+CHeatSolver::CHeatSolver(void) : CSolver() {
 
   ConjugateVar = NULL;
   HeatFlux     = NULL;
 }
 
-CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
+CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
   unsigned short iVar, iDim, nLineLets, iMarker;
   unsigned long iVertex;
@@ -43,7 +43,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
 
   int rank = MASTER_NODE;
 
-  bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
+  bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION) ||
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
@@ -240,7 +240,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Initialize the nodes vector. ---*/
 
-  nodes = new CHeatFVMVariable(config->GetTemperature_FreeStreamND(), nPoint, nDim, nVar, config);
+  nodes = new CHeatVariable(config->GetTemperature_FreeStreamND(), nPoint, nDim, nVar, config);
 
   SetBaseClassPointerToNodes();
 
@@ -254,7 +254,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   SolverName = "HEAT";
 }
 
-CHeatSolverFVM::~CHeatSolverFVM(void) {
+CHeatSolver::~CHeatSolver(void) {
 
   unsigned short iMarker;
 
@@ -268,7 +268,7 @@ CHeatSolverFVM::~CHeatSolverFVM(void) {
   if (nodes != nullptr) delete nodes;
 }
 
-void CHeatSolverFVM::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long iPoint;
   bool center = (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED);
@@ -300,9 +300,9 @@ void CHeatSolverFVM::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 }
 
-void CHeatSolverFVM::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) { }
+void CHeatSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) { }
 
-void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Restart the solution from file information ---*/
 
@@ -314,7 +314,7 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
                || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
-  bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
+  bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION) ||
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
 
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
@@ -452,7 +452,7 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 }
 
 
-void CHeatSolverFVM::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
+void CHeatSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
 
   unsigned long iPoint, jPoint, iEdge;
   su2double *Diff;
@@ -504,7 +504,7 @@ void CHeatSolverFVM::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config
 
 }
 
-void CHeatSolverFVM::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
   su2double *V_i, *V_j, Temp_i, Temp_j;
@@ -550,7 +550,7 @@ void CHeatSolverFVM::Centered_Residual(CGeometry *geometry, CSolver **solver_con
   }
 }
 
-void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 
   su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
             **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad;
@@ -644,7 +644,7 @@ void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CHeatSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
   su2double laminar_viscosity, Prandtl_Lam, Prandtl_Turb, eddy_viscosity_i, eddy_viscosity_j,
       thermal_diffusivity_i, thermal_diffusivity_j, Temp_i, Temp_j, **Temp_i_Grad, **Temp_j_Grad;
@@ -715,9 +715,9 @@ void CHeatSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
   }
 }
 
-void CHeatSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) { }
+void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) { }
 
-void CHeatSolverFVM::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
+void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 
   unsigned short iMarker, iMarker_HeatFlux, Monitoring, iDim;
   unsigned long iPoint, iVertex;
@@ -783,7 +783,7 @@ void CHeatSolverFVM::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
   delete[] Local_Surface_Areas;
 }
 
-void CHeatSolverFVM::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                        unsigned short val_marker) {
 
   unsigned long iPoint, iVertex, Point_Normal;
@@ -848,7 +848,7 @@ void CHeatSolverFVM::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
   }
 }
 
-void CHeatSolverFVM::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                                      unsigned short val_marker) {
 
   unsigned short iDim;
@@ -902,7 +902,7 @@ void CHeatSolverFVM::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   }
 }
 
-void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
+void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
@@ -1021,7 +1021,7 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
 }
 
-void CHeatSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
+void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
@@ -1090,7 +1090,7 @@ void CHeatSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
 }
 
-void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iVertex, iPoint, total_index;
   unsigned short iDim, iVar;
@@ -1180,7 +1180,7 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
   }
 }
 
-void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short Boundary, Monitoring, iMarker, iDim;
@@ -1319,7 +1319,7 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
   Total_HeatFlux = AllBound_HeatFlux;
 }
 
-void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                unsigned short iMesh, unsigned long Iteration) {
 
   unsigned short iDim, iMarker;
@@ -1538,7 +1538,7 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   }
 }
 
-void CHeatSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CHeatSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
   unsigned short iVar;
@@ -1583,7 +1583,7 @@ void CHeatSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 }
 
 
-void CHeatSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned short iVar;
   unsigned long iPoint, total_index;
@@ -1677,7 +1677,7 @@ void CHeatSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
 }
 
-void CHeatSolverFVM::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
+void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
   unsigned long iPoint, Point_Fine;
   unsigned short iMesh, iChildren, iVar;
@@ -1741,7 +1741,7 @@ void CHeatSolverFVM::SetInitialCondition(CGeometry **geometry, CSolver ***solver
   }
 }
 
-void CHeatSolverFVM::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                         unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
   /*--- Local variables ---*/
