@@ -4646,17 +4646,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (nWall_Types != nMarker_HeatFlux + nMarker_Isothermal) {
       /*--- If this option is not used at all, assume all walls are smooth and set roughness height to zero. ---*/
       if (nWall_Types == 0) {
+		  nWall_Types = nMarker_HeatFlux + nMarker_Isothermal;
 		  if (Roughness_Height != NULL) Roughness_Height = NULL;
 		  Roughness_Height = new su2double [nWall_Types];
 		  if (Kind_Wall != NULL) Kind_Wall = NULL;
 		  Kind_Wall = new unsigned short [nWall_Types];
 		  for (unsigned short iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
 			  Roughness_Height[iMarker] = 0.0;
-			  Kind_Wall[iMarker] = 1;
+			  Kind_Wall[iMarker] = SMOOTH;
 		  }
 		  for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++) {
 			  Roughness_Height[nMarker_HeatFlux + iMarker] = 0.0;
-			  Kind_Wall[nMarker_HeatFlux + iMarker] = 1;
+			  Kind_Wall[nMarker_HeatFlux + iMarker] = SMOOTH;
 		  }
 	  }
 	  else

@@ -140,6 +140,10 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   /*--- Init walldistance ---*/
 
   Wall_Distance = 0.0;
+  
+  /*--- Init walldistance ---*/
+
+  RoughnessHeight = 0.0;
 }
 
 CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_globalindex, CConfig *config) : CDualGrid(2) {

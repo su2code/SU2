@@ -349,6 +349,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   su2double rho = 0.0, mu = 0.0, nu, *nu_hat, muT, Ji, Ji_3, fv1;
   su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, roughness, dist;
   unsigned long iPoint;
+  unsigned short rank = SU2_MPI::GetRank();
 
   bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
 
@@ -367,8 +368,10 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     dist += 0.03*roughness;
 
     Ji   = nu_hat[0]/nu ;
-    if (roughness > 1.0e-10)
+    
+    if (roughness > 1.0e-10) {
 	  Ji+= cR1*roughness/(dist+EPS);
+    }
     
     Ji_3 = Ji*Ji*Ji;
     fv1  = Ji_3/(Ji_3+cv1_3);
