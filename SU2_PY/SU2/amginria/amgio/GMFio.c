@@ -557,6 +557,12 @@ int SplitQuads(char *nam, Mesh *Msh)
   int ref = 1;
   int iQua, is[3];
   int NbrQua = Msh->NbrQua;
+
+  /*--- TODO: store old tris if mixed element mesh ---*/
+
+  /*--- Allocate space for tris ---*/
+  Msh->MaxNbrTri = Msh->MaxNbrTri+Msh->NbrQua*2;
+  Msh->Tri = (int4*)malloc(sizeof(int4)*(Msh->MaxNbrTri+1));
   for (iQua = 1; iQua <= NbrQua; iQua++) {
   	/*--- First triangle ---*/
     Msh->NbrTri++;
