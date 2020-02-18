@@ -52,7 +52,7 @@ private:
    * \param[in] adjoint       - Boolean indicating whether a primal or adjoint solver should be allocated
    * \return              - A pointer to the allocated heat solver
    */
-  static CSolver* createHeatSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint);
+  static CSolver* createHeatSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint, bool standalone);
   
   /*!
    * \brief Create a mesh solver 

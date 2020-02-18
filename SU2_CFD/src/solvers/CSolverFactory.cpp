@@ -30,6 +30,7 @@ CSolver** CSolverFactory::createSolverContainer(ENUM_SOLVER kindSolver, CConfig 
   
   const bool allocDirect  = false;
   const bool allocAdjoint = true;
+  const bool standAlone   = true;
   
   ENUM_TURB_MODEL kindTurbModel = static_cast<ENUM_TURB_MODEL>(config->GetKind_Turb_Model());
 
@@ -45,7 +46,7 @@ CSolver** CSolverFactory::createSolverContainer(ENUM_SOLVER kindSolver, CConfig 
       break;
     case INC_NAVIER_STOKES:
       solver[FLOW_SOL] = createFlowSolver(INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[HEAT_SOL] = createHeatSolver(solver, geometry,config, iMGLevel, allocDirect);
+      solver[HEAT_SOL] = createHeatSolver(solver, geometry,config, iMGLevel, allocDirect, !standAlone);
       break;
     case NAVIER_STOKES:
       solver[FLOW_SOL] = createFlowSolver(NAVIER_STOKES, solver, geometry, config, iMGLevel);
@@ -56,11 +57,11 @@ CSolver** CSolverFactory::createSolverContainer(ENUM_SOLVER kindSolver, CConfig 
       break;
     case INC_RANS:
       solver[FLOW_SOL] = createFlowSolver(INC_RANS, solver, geometry, config, iMGLevel);
-      solver[HEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect);
+      solver[HEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, !standAlone);
       solver[TURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
       break;
     case HEAT_EQUATION_FVM:
-      solver[HEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect);
+      solver[HEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, standAlone);
       break;
     case ADJ_EULER:
       solver[FLOW_SOL]    = createFlowSolver(EULER, solver, geometry, config, iMGLevel);
@@ -97,20 +98,20 @@ CSolver** CSolverFactory::createSolverContainer(ENUM_SOLVER kindSolver, CConfig 
     case DISC_ADJ_INC_NAVIER_STOKES:
       solver[FLOW_SOL]       = createFlowSolver(INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL]    = createSolver(DISC_ADJ_INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[HEAT_SOL]       = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect);
-      solver[ADJHEAT_SOL]    = createHeatSolver(solver, geometry, config, iMGLevel, allocAdjoint);
+      solver[HEAT_SOL]       = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, !standAlone);
+      solver[ADJHEAT_SOL]    = createHeatSolver(solver, geometry, config, iMGLevel, allocAdjoint, !standAlone);
       break;
     case DISC_ADJ_INC_RANS:
       solver[FLOW_SOL]    = createFlowSolver(INC_RANS, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = createSolver(DISC_ADJ_INC_RANS, solver, geometry, config, iMGLevel);
       solver[TURB_SOL]    = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
       solver[ADJTURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocAdjoint);
-      solver[HEAT_SOL]    = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect);
-      solver[ADJHEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocAdjoint);
+      solver[HEAT_SOL]    = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, !standAlone);
+      solver[ADJHEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocAdjoint, !standAlone);
       break;
     case DISC_ADJ_HEAT:
-      solver[HEAT_SOL]    = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect);
-      solver[ADJHEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocAdjoint);
+      solver[HEAT_SOL]    = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, !standAlone);
+      solver[ADJHEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocAdjoint, !standAlone);
       break;
     case FEM_ELASTICITY:
       solver[FEA_SOL] = createSolver(FEM_ELASTICITY, solver, geometry, config, iMGLevel);
@@ -165,6 +166,7 @@ CSolver* CSolverFactory::createSolver(ENUM_SOLVER kindSolver, CSolver **solver, 
       genericSolver = new CAdjNSSolver(geometry, config, iMGLevel);
       break;
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
       genericSolver = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
       break;
     case FEM_ELASTICITY:
@@ -217,11 +219,14 @@ CSolver* CSolverFactory::createTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver
   return turbSolver;
 }
 
-CSolver* CSolverFactory::createHeatSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint){
+CSolver* CSolverFactory::createHeatSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint, bool standalone){
   
   CSolver *heatSolver = nullptr;
   
-  if (config->GetWeakly_Coupled_Heat()){
+  /*--- Only allocate a heat solver if it should run standalone 
+   * or if the weakly coupled heat solver is enabled and no energy equation is included ---*/
+  
+  if ((config->GetWeakly_Coupled_Heat() && !config->GetEnergy_Equation()) || standalone){
     if (adjoint){
       if (config->GetDiscrete_Adjoint()){
         heatSolver = new CDiscAdjSolver(geometry, config, solver[HEAT_SOL], RUNTIME_HEAT_SYS, iMGLevel);
