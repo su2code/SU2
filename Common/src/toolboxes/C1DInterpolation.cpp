@@ -128,7 +128,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
                                                         unsigned short nDim, 
                                                         su2double *Coord, 
                                                         unsigned short nVar_Turb,
-                                                        ENUM_INLET_INTERPOLATIONTYPE Interpolation){
+                                                        ENUM_INLET_INTERPOLATIONTYPE Interpolation_Type){
 
     unsigned short size_columns=Inlet_Interpolated.size()+nDim;
     vector<su2double> Inlet_Values(size_columns);
@@ -148,7 +148,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
         Inlet_Values[nDim+6] = Inlet_Interpolated[6];
 
     /*--- Correct for Interpolation Type now ---*/
-    switch(Interpolation){
+    switch(Interpolation_Type){
     case(VR_VTHETA):
         unit_r = Inlet_Interpolated[nDim];
         unit_Theta = Inlet_Interpolated[nDim+1];

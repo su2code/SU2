@@ -80,7 +80,6 @@ protected:
   vector<unsigned long> numberOfColumnsInProfile;  /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in a profile file. */
   
   vector<vector<passivedouble> > profileData;  /*!< \brief Auxiliary structure for holding the data values from a profile file. */
-  vector<su2double> ColumnData;  /*!< \brief Auxiliary structure for holding the column values from a profile file. */
   vector<vector<vector<su2double> > > profileCoords;  /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
   
 private:
@@ -182,11 +181,12 @@ public:
    * \param[in] iCol - the column whose data is required
    * \returns the specific column data.
    */
-  inline vector<su2double> &GetColumnForProfile(int val_iProfile, unsigned short iCol) {
-    ColumnData.resize(numberOfRowsInProfile[val_iProfile]);
-  for (unsigned long iRow = 0; iRow < numberOfRowsInProfile[val_iProfile]; iRow++)
-    ColumnData[iRow]=profileData[val_iProfile][iRow*numberOfColumnsInProfile[val_iProfile]+iCol];
-  return ColumnData;
+  inline vector<su2double> GetColumnForProfile(int val_iProfile, unsigned short iCol) const {
+    auto nRow = numberOfRowsInProfile[val_iProfile];
+    auto nCol = numberOfColumnsInProfile[val_iProfile];
+    vector<su2double> ColumnData(nRow);
+    for (unsigned long iRow = 0; iRow < nRow; iRow++)
+      ColumnData[iRow]=profileData[val_iProfile][iRow*nCol+iCol];
+    return ColumnData;
   }
-
 };
