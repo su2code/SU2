@@ -2444,8 +2444,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Determines if the convergence history of each individual zone is written to screen */
   addBoolOption("WRT_ZONE_CONV", Wrt_ZoneConv, false);
   /* DESCRIPTION: Determines if the convergence history of each individual zone is written to file */
-  addBoolOption("WRT_ZONE_HIST", Wrt_ZoneHist, true);
-
+  addBoolOption("WRT_ZONE_HIST", Wrt_ZoneHist, false);
 
   /* DESCRIPTION: Determines if the special output is written out */
   addBoolOption("WRT_FORCES_BREAKDOWN", Wrt_ForcesBreakdown, false);
