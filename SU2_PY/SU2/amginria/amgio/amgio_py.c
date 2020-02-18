@@ -67,7 +67,7 @@ int py_SplitSolution(char *SolNam, int dim, char *prefix, char *adap_sensor)
 
 
 
-void py_ReadMesh (char *MshNam, char *SolNam, PyObject *pyVer, PyObject *pyCor, PyObject *pyTri, PyObject *pyTet, PyObject *pyEdg, PyObject *pyHex, 
+void py_ReadMeshAndSol (char *MshNam, char *SolNam, PyObject *pyVer, PyObject *pyCor, PyObject *pyTri, PyObject *pyTet, PyObject *pyEdg, PyObject *pyHex, 
 PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, 
  PyObject *pySol, PyObject *pySolHeader,  PyObject *pyMarkers)
 {
@@ -154,8 +154,78 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri,
 	
 }
 
+void py_ReadMesh (char *MshNam, PyObject *pyVer, PyObject *pyCor, PyObject *pyTri, PyObject *pyTet, PyObject *pyEdg, PyObject *pyHex, 
+PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers)
+{
+	int i, j, d;
+	
+	Options *mshopt = AllocOptions();
+	
+	strcpy(mshopt->InpNam,MshNam);
+	strcpy(mshopt->SolNam,"\0");
+	
+	//--- Open mesh/solution file
+	
+	Mesh *Msh = NULL;
+	Msh = SetupMeshAndSolution (mshopt->InpNam, mshopt->SolNam);
+	
+	for (i=1; i<=Msh->NbrVer; i++){
+		for (d=0; d<3; d++)
+			PyList_Append(pyVer, PyFloat_FromDouble(Msh->Ver[i][d]));
+	}
 
-void py_WriteMesh(char *MshNam, char *SolNam, PyObject *pyVer, PyObject *pyCor, PyObject *pyTri, PyObject *pyTet, PyObject *pyEdg,  PyObject *pyHex, 
+	for (i=1; i<=Msh->NbrCor; i++){
+		PyList_Append(pyCor, PyInt_FromLong(Msh->Cor[i]));
+	}
+	
+	for (i=1; i<=Msh->NbrTri; i++){
+		for (j=0; j<4; j++)
+			PyList_Append(pyTri, PyInt_FromLong(Msh->Tri[i][j]));
+	}
+	
+	for (i=1; i<=Msh->NbrTet; i++){
+		for (j=0; j<5; j++)
+			PyList_Append(pyTet, PyInt_FromLong(Msh->Tet[i][j]));
+	}
+	
+	for (i=1; i<=Msh->NbrEfr; i++){
+		for (j=0; j<3; j++)
+			PyList_Append(pyEdg, PyInt_FromLong(Msh->Efr[i][j]));
+	}
+	
+	for (i=1; i<=Msh->NbrHex; i++){
+		for (j=0; j<9; j++)
+			PyList_Append(pyHex, PyInt_FromLong(Msh->Hex[i][j]));
+	}
+	
+	for (i=1; i<=Msh->NbrQua; i++){
+		for (j=0; j<5; j++)
+			PyList_Append(pyQua, PyInt_FromLong(Msh->Qua[i][j]));
+	}
+	
+	for (i=1; i<=Msh->NbrPyr; i++){
+		for (j=0; j<6; j++)
+			PyList_Append(pyPyr, PyInt_FromLong(Msh->Pyr[i][j]));
+	}
+	
+	for (i=1; i<=Msh->NbrPri; i++){
+		for (j=0; j<7; j++)
+			PyList_Append(pyPri, PyInt_FromLong(Msh->Pri[i][j]));
+	}
+	
+	//--- First row of Markers contains dimension
+	PyList_Append(pyMarkers, PyInt_FromLong(Msh->Dim));
+	for (i=1; i<=Msh->NbrMarkers; i++){
+		PyList_Append(pyMarkers, PyString_FromString(Msh->Markers[i]));
+	}
+	
+	if ( Msh )
+ 		FreeMesh(Msh);
+	
+}
+
+
+void py_WriteMeshAndSol(char *MshNam, char *SolNam, PyObject *pyVer, PyObject *pyCor, PyObject *pyTri, PyObject *pyTet, PyObject *pyEdg,  PyObject *pyHex, 
 PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *pySolHeader, PyObject *pyMarkers, int Dim)
 {
 	int i, j, NbrTag = 0;
@@ -519,6 +589,308 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 			sprintf(OutSol, "%s.csv", BasNamSol);
 			WriteSU2Solution (OutSol, Msh->Dim, Msh->NbrVer, Msh->Ver, Msh->Sol, Msh->SolSiz, Msh->SolTag);
 		}
+	}		
+}
+
+void py_WriteMesh(char *MshNam, PyObject *pyVer, PyObject *pyCor, PyObject *pyTri, PyObject *pyTet, PyObject *pyEdg,  PyObject *pyHex, 
+PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
+{
+	int i, j, NbrTag = 0;
+	Mesh *Msh= NULL;
+	int SizMsh[GmfMaxKwd+1];
+	
+	int is[5], siz, ref, idx;
+	double crd[3];
+	
+	int NbrMarkers = 0;
+	
+	for (i=0; i<GmfMaxKwd; i++)
+		SizMsh[i] = 0;
+	
+	//--- Get mesh size
+
+	if ( PyList_Check(pyVer) )
+		SizMsh[GmfVertices] = PyList_Size(pyVer);
+	
+	if ( PyList_Check(pyTri) )
+		SizMsh[GmfTriangles] = PyList_Size(pyTri);
+	
+	if ( PyList_Check(pyTet) )
+		SizMsh[GmfTetrahedra] = PyList_Size(pyTet);
+	
+	if ( PyList_Check(pyEdg) )
+		SizMsh[GmfEdges] = PyList_Size(pyEdg);
+
+	if ( PyList_Check(pyHex) )
+		SizMsh[GmfHexahedra] = PyList_Size(pyHex);
+	
+	if ( PyList_Check(pyQua) )
+		SizMsh[GmfQuadrilaterals] = PyList_Size(pyQua);
+	
+	if ( PyList_Check(pyPyr) )
+		SizMsh[GmfPyramids] = PyList_Size(pyPyr);
+	
+	if ( PyList_Check(pyPri) )
+		SizMsh[GmfPrisms] = PyList_Size(pyPri);
+
+	if ( PyList_Check(pyCor) )
+		SizMsh[GmfCorners] = PyList_Size(pyCor);
+
+	if ( PyList_Check(pyMarkers) )
+		NbrMarkers = PyList_Size(pyMarkers);
+	
+	//--- Allocate mesh
+	
+	Msh = AllocMesh(SizMsh);
+	
+	Msh->Dim = Dim;
+	
+	//--- Fill mesh
+
+	if ( PyList_Check(pyCor) )
+  	{
+		siz = PyList_Size(pyCor);
+			
+		for (i=0; i<siz; i++)
+      	{
+				
+	       	PyObject *oo = PyList_GetItem(pyCor,i);
+	       	if ( PyInt_Check(oo) )
+	       	{
+				is[0] = (int) PyInt_AS_LONG(oo);
+	       	}
+				
+				
+			Msh->NbrCor++;
+			AddCorner(Msh,Msh->NbrCor,is);
+      	}
+  	}
+	
+	if ( PyList_Check(pyTri) )
+  {
+			siz = PyList_Size(pyTri);
+			
+			for (i=0; i<siz/4; i++)
+      {
+				idx = 4*i;
+				
+				for (j=0; j<3; j++) {
+	       	PyObject *oo = PyList_GetItem(pyTri,idx+j);
+	       	if ( PyInt_Check(oo) )
+	       	{
+						is[j] = (int) PyInt_AS_LONG(oo);
+	       	}
+				}
+				
+				PyObject *oo = PyList_GetItem(pyTri,idx+3);
+				ref = (int) PyInt_AS_LONG(oo);
+				
+				Msh->NbrTri++;
+				AddTriangle(Msh,Msh->NbrTri,is,ref);
+				
+				//printf("-- Add tri %d : %d %d %d (ref %d)\n", Msh->NbrTri, is[0], is[1], is[2], ref);
+				//exit(1);
+      }
+  }
+	
+	if ( PyList_Check(pyTet) )
+  {
+			siz = PyList_Size(pyTet);
+			
+			for (i=0; i<siz/5; i++)
+      {
+				idx = 5*i;
+				
+				for (j=0; j<5; j++) {
+	       	PyObject *oo = PyList_GetItem(pyTet,idx+j);
+	       	if ( PyInt_Check(oo) )
+	       	{
+						is[j] = (int) PyInt_AS_LONG(oo);
+	       	}
+				}
+				
+				Msh->NbrTet++;
+				AddTetrahedron(Msh,Msh->NbrTet,is,is[4]);
+				
+      }
+  }
+		
+	if ( PyList_Check(pyEdg) )
+  {
+			siz = PyList_Size(pyEdg);
+			
+			for (i=0; i<siz/3; i++)
+      {
+				idx = 3*i;
+				
+				for (j=0; j<2; j++) {
+	       	PyObject *oo = PyList_GetItem(pyEdg,idx+j);
+	       	if ( PyInt_Check(oo) )
+	       	{
+						is[j] = (int) PyInt_AS_LONG(oo);
+	       	}
+				}
+				
+				PyObject *oo = PyList_GetItem(pyEdg,idx+2);
+				ref = (int) PyInt_AS_LONG(oo);
+				
+				Msh->NbrEfr++;
+				AddEdge(Msh,Msh->NbrEfr,is,ref);
+      }
+  }
+	
+	
+	if ( PyList_Check(pyHex) )
+  {
+			siz = PyList_Size(pyHex);
+			
+			for (i=0; i<siz/9; i++)
+      {
+				idx = 9*i;
+				
+				for (j=0; j<8; j++) {
+	       	PyObject *oo = PyList_GetItem(pyHex,idx+j);
+	       	if ( PyInt_Check(oo) )
+	       	{
+						is[j] = (int) PyInt_AS_LONG(oo);
+	       	}
+				}
+				
+				PyObject *oo = PyList_GetItem(pyHex,idx+8);
+				ref = (int) PyInt_AS_LONG(oo);
+				
+				Msh->NbrHex++;
+				AddHexahedron(Msh,Msh->NbrHex,is,ref);
+      }
+  }
+	
+	if ( PyList_Check(pyQua) )
+  {
+			siz = PyList_Size(pyQua);
+			
+			for (i=0; i<siz/5; i++)
+      {
+				idx = 5*i;
+				
+				for (j=0; j<4; j++) {
+	       	PyObject *oo = PyList_GetItem(pyQua,idx+j);
+	       	if ( PyInt_Check(oo) )
+	       	{
+						is[j] = (int) PyInt_AS_LONG(oo);
+	       	}
+				}
+				
+				PyObject *oo = PyList_GetItem(pyQua,idx+4);
+				ref = (int) PyInt_AS_LONG(oo);
+								
+				Msh->NbrQua++;
+				AddQuadrilateral(Msh,Msh->NbrQua,is,ref);
+      }
+  }
+		
+		
+	if ( PyList_Check(pyPyr) )
+  {
+			siz = PyList_Size(pyPyr);
+			
+			for (i=0; i<siz/6; i++)
+      {
+				idx = 6*i;
+				
+				for (j=0; j<5; j++) {
+	       	PyObject *oo = PyList_GetItem(pyPyr,idx+j);
+	       	if ( PyInt_Check(oo) )
+	       	{
+						is[j] = (int) PyInt_AS_LONG(oo);
+	       	}
+				}
+				
+				PyObject *oo = PyList_GetItem(pyPyr,idx+5);
+				ref = (int) PyInt_AS_LONG(oo);
+				
+				Msh->NbrPyr++;
+				AddPyramid(Msh,Msh->NbrPyr,is,ref);
+      }
+  }
+	
+	if ( PyList_Check(pyPri) )
+  {
+			siz = PyList_Size(pyPri);
+			
+			for (i=0; i<siz/7; i++)
+      {
+				idx = 7*i;
+				
+				for (j=0; j<6; j++) {
+	       	PyObject *oo = PyList_GetItem(pyPri,idx+j);
+	       	if ( PyInt_Check(oo) )
+	       	{
+						is[j] = (int) PyInt_AS_LONG(oo);
+	       	}
+				}
+				
+				PyObject *oo = PyList_GetItem(pyPri,idx+6);
+				ref = (int) PyInt_AS_LONG(oo);
+				
+				Msh->NbrPri++;
+				AddPrism(Msh,Msh->NbrPri,is,ref);
+      }
+  }	
+	
+	if ( PyList_Check(pyVer) )
+  {
+			siz = PyList_Size(pyVer);
+			
+			for (i=0; i<siz/3; i++)
+      {
+				idx = 3*i;
+				
+				for (j=0; j<3; j++) {
+	       	PyObject *oo = PyList_GetItem(pyVer,idx+j);
+	       	if ( PyFloat_Check(oo) )
+	       	{
+						crd[j] = (double) PyFloat_AS_DOUBLE(oo);
+	       	}
+				}
+				Msh->NbrVer++;
+				AddVertex(Msh,Msh->NbrVer,crd);
+				
+				//printf("ADD VERTEX %d : %lf %lf %lf\n", Msh->NbrVer, crd[0], crd[1], crd[2]);
+				//exit(1);
+      }
+  }
+	
+	if ( PyList_Check(pyMarkers) )
+  {
+		for (i=0; i<NbrMarkers; i++){
+			PyObject *oo = PyList_GetItem(pyMarkers,i);
+			strcpy(Msh->Markers[i], (char*) PyString_AS_STRING(oo));	
+		}
+		Msh->NbrMarkers = NbrMarkers;
+	}
+	
+	//--- Write Mesh
+	
+	int FilTyp = GetInputFileType(MshNam);
+  char *ptr = NULL;
+	char BasNam[1024], BasNamSol[1024], OutSol[1024];
+	
+	// --- Get BasNam
+	
+  strcpy(BasNam,MshNam);
+	
+  ptr = strstr(BasNam,".su2");	
+  if ( ptr != NULL )
+    BasNam[ptr-BasNam]='\0';
+  ptr = strstr(BasNam,".meshb");	
+  if ( ptr != NULL )
+    BasNam[ptr-BasNam]='\0';
+	
+	if ( FilTyp != FILE_SU2 ) {
+		WriteGMFMesh(BasNam, Msh, 1);
+	}
+	else {
+		WriteSU2Mesh(BasNam, Msh);
 	}		
 }
 

@@ -92,6 +92,11 @@ int ConvertSU2SolToGMF (Options *mshopt)
 		return 0;
 	}
 
+    /*--- pyAMG can't currently handle quads, so split them ---*/
+    if ( Msh->Dim == 2 && Msh->NbrQua > 0) {
+        SplitQuads(mshopt->InpNam, Msh);
+    }
+
 	//PrintMeshInfo (Msh);
 
 	WriteGMFMesh(mshopt->OutNam, Msh, 1);

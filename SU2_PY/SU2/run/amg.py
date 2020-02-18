@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-## \file adjoint.py
+## \file amg.py
 #  \brief python package for running mesh adaptation using the AMG Inria library
-#  \author Victorien Menier
-#  \version 6.2.0 "Falcon"
+#  \author Victorien Menier, Brian Mungu\'ia
+#  \version 7.0.1 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -266,8 +266,15 @@ def amg ( config , kind='' ):
         raise RuntimeError , "\n\n##ERROR : Can't find back mesh: %s.\n\n" % config_amg['adap_back']
     
     if back_extension == ".su2":
+        sys.stdout.write("\nGenerating GMF background surface mesh.\n")
+        sys.stdout.flush()
         su2amg._amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
         config_amg['adap_back'] = "amg_back.meshb"
+
+    if dim == 2:
+        sys.stdout.write("\nPreprocessing background mesh.\n")
+        sys.stdout.flush()
+        su2amg.prepro_back_mesh(config_cfd, config_amg)
     
     if 'ADAP_SOURCE' in config:
         config_amg['adap_source'] = os.path.join(cwd,config['ADAP_SOURCE'])
@@ -304,21 +311,21 @@ def amg ( config , kind='' ):
             
             #--- Load su2 mesh 
             
-            mesh = su2amg.read_mesh(current_mesh, current_solution)
+            mesh = su2amg.read_mesh_and_sol(current_mesh, current_solution)
 
-            #--- Write initial solution
+            #--- Write solution
             if global_iter == 0 :
-                su2amg.write_mesh("ini.meshb", "ini.solb", mesh)
+                su2amg.write_mesh_and_sol("ini.meshb", "ini.solb", mesh)
             else :
                 current_gmf_mesh = "ite%d.meshb" % (global_iter-1)
                 current_gmf_solution = "ite%d.solb" % (global_iter-1)
-                su2amg.write_mesh(current_gmf_mesh, current_gmf_solution, mesh)
+                su2amg.write_mesh_and_sol(current_gmf_mesh, current_gmf_solution, mesh)
                                     
             if not amg_python : 
                 
                 #--- If not using the amg python interface, convert the mesh and make system call
                 
-                su2amg.write_mesh("current.meshb", "current.solb", mesh)
+                su2amg.write_mesh_and_sol("current.meshb", "current.solb", mesh)
                 
                 if not os.path.exists("current.solb"):
                     raise RuntimeError , "\n##ERROR : Can't find solution.\n"
@@ -328,7 +335,7 @@ def amg ( config , kind='' ):
                 #--- Get sensor
                                 
                 sensor = su2amg.create_sensor(mesh, adap_sensor)
-                su2amg.write_solution("current_sensor.solb", sensor)
+                su2amg.write_sol("current_sensor.solb", sensor)
                 
                 if not os.path.exists("current_sensor.solb"):
                     raise RuntimeError , "\n##ERROR : Can't find adap sensor.\n"
@@ -359,13 +366,13 @@ def amg ( config , kind='' ):
                 del mesh
                 
                 # Read Inria mesh
-                mesh = su2amg.read_mesh(config_amg['mesh_out'], "current.itp.solb")
+                mesh = su2amg.read_mesh_and_sol(config_amg['mesh_out'], "current.itp.solb")
                 mesh['markers'] = save_markers
                 
                 current_mesh = "ite%d.su2" % (global_iter)
                 current_solution = "ite%d.csv" % (global_iter)    
                 
-                su2amg.write_mesh(current_mesh, current_solution, mesh)
+                su2amg.write_mesh_and_sol(current_mesh, current_solution, mesh)
                 
                 if not os.path.exists(current_mesh) or not os.path.exists(current_solution) :
                     raise RuntimeError , "\n##ERROR : Conversion to SU2 failed.\n"
@@ -404,12 +411,12 @@ def amg ( config , kind='' ):
                     current_mesh = "ite%d.su2" % (global_iter)
                     current_solution = "ite%d.csv" % (global_iter)
                                     
-                    su2amg.write_mesh(current_mesh, current_solution, mesh_new)
+                    su2amg.write_mesh_and_sol(current_mesh, current_solution, mesh_new)
 
                     if config_cfd.WRT_INRIA_MESH == 'YES':
                         current_gmf_mesh = "ite%d_itp.meshb" % global_iter
                         current_gmf_solution = "ite%d_itp.solb" % global_iter
-                        su2amg.write_mesh(current_gmf_mesh, current_gmf_solution, mesh_new)
+                        su2amg.write_mesh_and_sol(current_gmf_mesh, current_gmf_solution, mesh_new)
 
                 else:
                 
@@ -435,7 +442,7 @@ def amg ( config , kind='' ):
                     current_mesh = "ite%d.su2" % (global_iter)
                     current_solution = "ite%d.csv" % (global_iter)
                                     
-                    su2amg.write_mesh(current_mesh, current_solution, mesh_new)
+                    su2amg.write_mesh_and_sol(current_mesh, current_solution, mesh_new)
                 
             #--- Run su2
             
@@ -527,8 +534,8 @@ def amg ( config , kind='' ):
     #--- Write final files
 
     if config_cfd.WRT_INRIA_MESH == 'YES':
-        mesh = su2amg.read_mesh(current_mesh, current_solution)
-        su2amg.write_mesh("fin.meshb", "fin.solb", mesh)
+        mesh = su2amg.read_mesh_and_sol(current_mesh, current_solution)
+        su2amg.write_mesh_and_sol("fin.meshb", "fin.solb", mesh)
     
     os.rename(current_solution,os.path.join(cwd,config.RESTART_FILENAME))
     os.rename(current_mesh,os.path.join(cwd,config.MESH_OUT_FILENAME))
