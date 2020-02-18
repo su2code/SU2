@@ -154,8 +154,8 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
         unit_Theta = Inlet_Interpolated[nDim+1];
     break;
     case(ALPHA_PHI):
-        Alpha = Inlet_Interpolated[nDim];
-        Phi = Inlet_Interpolated[nDim+1];
+        Alpha = Inlet_Interpolated[nDim]*PI_NUMBER/180;
+        Phi = Inlet_Interpolated[nDim+1]*PI_NUMBER/180;
         unit_m = sqrt(1/(1+pow(tan(Alpha),2)));
         unit_Theta = tan(Alpha)*unit_m;
         unit_r=unit_m*sin(Phi);
