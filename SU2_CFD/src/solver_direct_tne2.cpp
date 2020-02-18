@@ -6643,12 +6643,12 @@ void CTNE2EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
    especially if this is a turbulent simulation (eddy viscosity). ---*/
   solver[MESH_0][TNE2_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][TNE2_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][TNE2_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TNE2_SYS, false);
-
+  
   /*--- Set old solution to solution ---*/
   for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
     nodes->SetSolution_Old(iPoint,Solution);
   }
+  solver[MESH_0][TNE2_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TNE2_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
