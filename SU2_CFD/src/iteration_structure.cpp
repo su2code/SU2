@@ -3056,10 +3056,8 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
   dir_solver->InitiateComms(structural_geometry, config[iZone], SOLUTION_FEA);
   dir_solver->CompleteComms(structural_geometry, config[iZone], SOLUTION_FEA);
 
-  if (kind_recording == MESH_COORDS) {
-    structural_geometry->InitiateComms(structural_geometry, config[iZone], COORDINATES);
-    structural_geometry->CompleteComms(structural_geometry, config[iZone], COORDINATES);
-  }
+  structural_geometry->InitiateComms(structural_geometry, config[iZone], COORDINATES);
+  structural_geometry->CompleteComms(structural_geometry, config[iZone], COORDINATES);
 
   /*--- Topology optimization dependencies. ---*/
 

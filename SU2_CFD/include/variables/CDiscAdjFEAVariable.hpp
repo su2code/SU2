@@ -39,6 +39,7 @@
 class CDiscAdjFEAVariable : public CVariable {
 protected:
   MatrixType Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
+  MatrixType Sensitivity_Old; /* Previous time sensitivity holder since inner iterations in FSI problems overwrite sensitivity*/
   MatrixType Solution_Direct;
 
   MatrixType Dynamic_Derivative;
@@ -92,12 +93,16 @@ public:
    */
   inline void SetSensitivity(unsigned long iPoint, unsigned long iDim, su2double val) final { Sensitivity(iPoint,iDim) = val; }
 
+  inline void SetSensitivity_Old(unsigned long iPoint, unsigned long iDim, su2double val) final { Sensitivity_Old(iPoint,iDim) = val; }
+
   /*!
    * \brief Get the Sensitivity at the node
    * \param[in] iDim - spacial component
    * \return value of the Sensitivity
    */
   inline su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const final { return Sensitivity(iPoint,iDim);}
+
+  inline su2double GetSensitivity_Old(unsigned long iPoint, unsigned long iDim) const final { return Sensitivity_Old(iPoint,iDim);}
 
   inline void SetDynamic_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) final {
     Dynamic_Derivative(iPoint,iVar) = der;

@@ -4796,6 +4796,18 @@ void CDiscAdjFSIDriver::DynamicMeshUpdate(unsigned long ExtIter){
 
 void CDiscAdjFSIDriver::Run( ) {
 
+  /*--- Store current time sensitivity ---*///What if restarted?
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (unsigned long iPoint = 0; iPoint < geometry_container[iZone][INST_0][MESH_0]->GetnPoint(); iPoint++) {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        if (iZone == 0) {
+          solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->SetSensitivity_Old(iPoint, iDim, 0.0);
+        } else if (iZone == 1) {
+          solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetNodes()->SetSensitivity_Old(iPoint, iDim, 0.0);
+        }
+      }
+    }
+  }
 
   while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter()) {
 
@@ -4871,6 +4883,40 @@ void CDiscAdjFSIDriver::Run( ) {
 
     }
 
+    /*--- Add current time sensitivity ---*/
+    su2double Sensitivity;
+    for (iZone = 0; iZone < nZone; iZone++) {
+      for (unsigned long iPoint = 0; iPoint < geometry_container[iZone][INST_0][MESH_0]->GetnPoint(); iPoint++) {
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+
+          /*--- Fluid Sensitivity ---*/
+          if (iZone == 0) {
+            /*--- Current time iteration sensitivity ---*/
+            Sensitivity = solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->GetSensitivity(iPoint, iDim);
+            
+            /*--- Update old sensitivity container ---*/
+            solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->SetSensitivity_Old(iPoint, iDim, Sensitivity + 
+              solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->GetSensitivity_Old(iPoint, iDim));
+
+            /*--- Current time iteration sensitivity ---*/
+            solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->SetSensitivity(
+              iPoint, iDim, solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->GetSensitivity_Old(iPoint, iDim));
+          /*--- Structure Sensitivity ---*/
+          } else if (iZone == 1) {
+            /*--- Current time iteration sensitivity ---*/
+            Sensitivity = solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetNodes()->GetSensitivity(iPoint, iDim);
+
+            /*--- Update old sensitivity container ---*/
+            solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetNodes()->SetSensitivity_Old(iPoint, iDim, Sensitivity + 
+              solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetNodes()->GetSensitivity_Old(iPoint, iDim));
+            
+            /*--- Cumulative sensitivity with time ---*/
+            solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetNodes()->SetSensitivity(
+            iPoint, iDim, solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetNodes()->GetSensitivity_Old(iPoint, iDim));
+          }
+        }
+      }
+    }
 
     for (iZone = 0; iZone < nZone; iZone++){
       output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
@@ -5408,10 +5454,19 @@ void CDiscAdjFSIDriver::Mesh_Deformation_Direct(unsigned short ZONE_FLOW, unsign
   /*---- as the flag Grid_Movement is set to false in this case -----*/
   /*-----------------------------------------------------------------*/
 
-  direct_iteration[ZONE_FLOW]->SetGrid_Movement(geometry_container[ZONE_FLOW][INST_0],
+  if (config_container[ZONE_FLOW]->GetDeform_Mesh()) {
+    direct_iteration[ZONE_FLOW]->SetMesh_Deformation(geometry_container[ZONE_FLOW][INST_0],
+                                                                solver_container[ZONE_FLOW][INST_0][MESH_0],
+                                                                numerics_container[ZONE_FLOW][INST_0][MESH_0],
+                                                                config_container[ZONE_FLOW],
+                                                                MESH_DEFORM);
+
+  } else {
+    direct_iteration[ZONE_FLOW]->SetGrid_Movement(geometry_container[ZONE_FLOW][INST_0],
                                                                surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW][INST_0],
                                                                solver_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW], 0, ExtIter );
-  
+  }
+
   geometry_container[ZONE_FLOW][INST_0][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW]);
 
   solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->InitiateComms(geometry_container[ZONE_STRUCT][INST_0][MESH_0], config_container[ZONE_STRUCT], SOLUTION_FEA);
@@ -5635,7 +5690,13 @@ void CDiscAdjFSIDriver::RegisterOutput(unsigned short ZONE_FLOW,
 void CDiscAdjFSIDriver::Iterate_Block(unsigned short ZONE_FLOW,
                                                 unsigned short ZONE_STRUCT,
                                                 unsigned short kind_recording){
-
+// if (rank == MASTER_NODE) {
+//   cout << "CVC: Debug: CDiscAdjFSIDriver::Iterate_Block: kind_recording = " << kind_recording << endl;
+//   cout << "CVC: Debug: FLOW_CONS_VARS = 1, MESH_COORDS = 2, COMBINED = 3, FEA_DISP_VARS = 4, FLOW_CROSS_TERM = 5" << endl;
+//   cout << "FEM_CROSS_TERM_GEOMETRY = 6, GEOMETRY_CROSS_TERM = 7, ALL_VARIABLES = 8, MESH_DEFORM = 9" << endl;
+//   //CVC: If config->GetDeform_Mesh, use MESH_DEFORM...
+//   //CVC: Currently, only if FEM_CROSS_TERM_GEOMETRY, CMeshSolver is used
+// }
   unsigned long IntIter=0, nIntIter = 1;
   bool dual_time_1st = (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST);
   bool dual_time_2nd = (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND);
@@ -5839,32 +5900,32 @@ bool CDiscAdjFSIDriver::CheckConvergence(unsigned long IntIter,
        struct_convergence  = false,
        adjoint_convergence = false;
 
-//  su2double residual_1, residual_2;
+  su2double residual_1, residual_2;
 
-//  if (kind_recording == FLOW_CONS_VARS) {
+  if (kind_recording == FLOW_CONS_VARS) {
 
-//      /*--- Set the convergence criteria (only residual possible as of now) ---*/
+    /*--- Set the convergence criteria (only residual possible as of now) ---*/
 
-//      residual_1 = log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0));
-//      residual_2 = log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1));
+    residual_1 = log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0));
+    residual_2 = log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1));
 
-//      flow_convergence = ((residual_1 < config_container[ZONE_FLOW]->GetMinLogResidual()) &&
-//                          (residual_2 < config_container[ZONE_FLOW]->GetMinLogResidual()));
+    flow_convergence = ((residual_1 < flow_criteria) &&//config_container[ZONE_FLOW]->GetMinLogResidual()) &&
+                        (residual_2 < flow_criteria));//config_container[ZONE_FLOW]->GetMinLogResidual()));
 
-//  }
+  }
 
-//  if (kind_recording == FEA_DISP_VARS) {
+  if (kind_recording == FEA_DISP_VARS) {
 
-//    /*--- Set the convergence criteria (only residual possible as of now) ---*/
+    /*--- Set the convergence criteria (only residual possible as of now) ---*/
 
-//    residual_1 = log10(solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(0));
-//    residual_2 = log10(solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(1));
+    residual_1 = log10(solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(0));
+    residual_2 = log10(solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(1));
 
-//    // Temporary, until function is added
-//    struct_convergence = ((residual_1 < config_container[ZONE_STRUCT]->GetResidual_FEM_UTOL()) &&
-//                          (residual_2 < config_container[ZONE_STRUCT]->GetResidual_FEM_UTOL()));
+    // Temporary, until function is added
+    struct_convergence = ((residual_1 < structure_criteria) &&//config_container[ZONE_STRUCT]->GetResidual_FEM_UTOL()) &&
+                          (residual_2 < structure_criteria));//config_container[ZONE_STRUCT]->GetResidual_FEM_UTOL()));
 
-//  }
+  }
 
   switch (kind_recording){
   case FLOW_CONS_VARS:      adjoint_convergence = flow_convergence; break;
@@ -6158,11 +6219,15 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
 
 void CDiscAdjFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {
 
-
-  interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+  if (config_container[ZONE_0]->GetDeform_Mesh()) {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][MESH_SOL],
+                                                                geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                config_container[donorZone],config_container[targetZone]);
+  } else {
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
                                                                      geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                      config_container[donorZone], config_container[targetZone]);
-
+  }
 }
 
 void CDiscAdjFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {

@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
     }
 
   }
-  else if (multizone && !turbo) {// && !fsi) {
+  else if (multizone && !turbo && !fsi) {
 
     /*--- Generic multizone problems. ---*/
     if (disc_adj) {

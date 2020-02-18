@@ -37,6 +37,7 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
   Solution_Direct.resize(nPoint,nVar);
 
   Sensitivity.resize(nPoint,nDim) = su2double(0.0);
+  Sensitivity_Old.resize(nPoint,nDim) = su2double(0.0);
 
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)

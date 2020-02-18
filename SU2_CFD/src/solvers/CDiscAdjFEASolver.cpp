@@ -525,6 +525,9 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
         }
       }
 
+      /*--- Register coordinates ---*/
+      geometry->RegisterCoordinates(config);
+
       /*--- Register the flow tractions ---*/
       if (config->GetnMarker_Fluid_Load() > 0)
         direct_solver->GetNodes()->RegisterFlowTraction();
@@ -650,7 +653,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     }
 
     /*--- Store the adjoint solution ---*/
-
+if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution[0] = " << Solution[0] << endl;
+if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution[1] = " << Solution[1] << endl;
     nodes->SetSolution(iPoint,Solution);
 
   }
@@ -676,7 +680,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     }
 
       /*--- Store the adjoint acceleration solution u'' ---*/
-
+if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_Accel[0] = " << Solution_Accel[0] << endl;
+if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_Accel[1] = " << Solution_Accel[1] << endl;
       nodes->SetSolution_Accel(iPoint,Solution_Accel);
 
     }
@@ -697,7 +702,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
       }
 
       /*--- Store the adjoint velocity solution u'' ---*/
-
+if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_Vel[0] = " << Solution_Vel[0] << endl;
+if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_Vel[1] = " << Solution_Vel[1] << endl;
       nodes->SetSolution_Vel(iPoint,Solution_Vel);
 
     }
@@ -714,7 +720,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
       }
 
       /*--- Store the adjoint solution at time n ---*/
-
+if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_n[0] = " << Solution[0] << endl;
+if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_n[1] = " << Solution[1] << endl;
       nodes->Set_Solution_time_n(iPoint,Solution);
     }
 
@@ -730,7 +737,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
       }
 
       /*--- Store the adjoint acceleration solution u'' at time n---*/
-
+if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_Accel_n[0] = " << Solution_Accel[0] << endl;
+if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_Accel_n[1] = " << Solution_Accel[1] << endl;
       nodes->SetSolution_Accel_time_n(iPoint,Solution_Accel);
 
     }
@@ -747,7 +755,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
       }
 
       /*--- Store the adjoint velocity solution u' at time n ---*/
-
+if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_Vel_n[0] = " << Solution_Vel[0] << endl;
+if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_Vel_n[1] = " << Solution_Vel[1] << endl;
       nodes->SetSolution_Vel_time_n(iPoint,Solution_Vel);
 
     }
@@ -834,6 +843,35 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
       }
       SU2_MPI::Allreduce(Local_Sens_DV, Global_Sens_DV, nDV, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     }
+
+    /*--- Extract the geometric sensitivities ---*/
+
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+
+      su2double *Coord = geometry->node[iPoint]->GetCoord();
+
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+
+        su2double Sensitivity;
+
+        if(config->GetMultizone_Problem()) {
+          Sensitivity = geometry->node[iPoint]->GetAdjointSolution(iDim);
+        }
+        else {
+          Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
+          /*--- Set the index manually to zero. ---*/
+          AD::ResetInput(Coord[iDim]);
+        }
+        if (!config->GetTime_Domain() || config->GetMultizone_Problem()) {
+          if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Sensitivity[" << iDim << "] = " << Sensitivity << " (Current only)" << endl;
+          nodes->SetSensitivity(iPoint, iDim, Sensitivity);
+        } else {
+          if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Sensitivity[" << iDim << "] = " << Sensitivity << " (Adding previous = " << nodes->GetSensitivity(iPoint, iDim) << ")" << endl;
+          nodes->SetSensitivity(iPoint, iDim, nodes->GetSensitivity(iPoint, iDim) + Sensitivity);
+        }
+      }
+    }
+    SetSurface_Sensitivity(geometry, config);
 
     /*--- Extract the flow traction sensitivities ---*/
 
