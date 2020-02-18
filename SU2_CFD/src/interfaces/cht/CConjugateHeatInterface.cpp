@@ -62,7 +62,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
                || (donor_config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
                || (donor_config->GetKind_Solver() == DISC_ADJ_INC_RANS))
                && (donor_config->GetEnergy_Equation());
-  bool heat_equation = (donor_config->GetKind_Solver() == HEAT_EQUATION_FVM
+  bool heat_equation = (donor_config->GetKind_Solver() == HEAT_EQUATION
                || donor_config->GetKind_Solver() == DISC_ADJ_HEAT);
 
   Coord         = donor_geometry->node[Point_Donor]->GetCoord();
