@@ -353,7 +353,7 @@ public:
 
   /*! \brief Set reference solution using input file.
    */
-  inline void Set_RefSolution(unsigned long iPoint, su2double *solution) {
+  inline void Set_RefSolution(unsigned long iPoint, const su2double *solution) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Ref(iPoint, iVar) = solution[iVar];
   }
 

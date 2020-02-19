@@ -848,8 +848,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*---- Initialize ROM specific variables. ----*/
   
-  if (config->GetReduced_Model() && (TrialBasis.size() == 0)) {
-    Mask_Selection(geometry, config);
+  if (config->GetReduced_Model() && (TrialBasis.size() == 0) && (MGLevel == MESH_0)) {
+    //Mask_Selection(geometry, config);
+    //FindMaskedEdges(geometry, config);
     SetROM_Variables(nPoint, nPointDomain, nVar, geometry, config);
   }
   
@@ -3520,19 +3521,25 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool jst_scheme = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
   bool rom = (config->GetReduced_Model());
+  //rom = false;
+  //if (rom) {
+  //  nEdge = Edge_masked.size();
+  //  //std::cout << "Number of masked edges: " << nEdge <<  std::endl;
+  //}
+  //else
+  //  nEdge = geometry->GetnEdge();
   
-  if (rom)
-    nEdge = nEdge_masked;
-  else
-    nEdge = geometry->GetnEdge();
+  //std::cout << "Number of unmasked edges: " << geometry->GetnEdge() << std::endl;
   
-  
-  for (i = 0; i < nEdge; i++) {
-    
-    if (rom)
-      iEdge = Edge_masked[i];
-    else
-      iEdge = i;
+  for (iEdge = 0; iEdge< geometry->GetnEdge(); iEdge++) {
+  //for (i = 0; i < nEdge; i++) {
+  //
+  //  if (rom) {
+  //    iEdge = Edge_masked[i];
+  //    //std::cout << "iEdge: " << iEdge << " and loop number: " << i << std::endl;
+  //  }
+  //  else
+  //    iEdge = i;
     
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
 
@@ -5428,11 +5435,11 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   //}
   int index = 0;
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    //local_Res_TruncError = nodes->GetResTruncError(iPoint);
+    local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
-    
+  
     for (iVar = 0; iVar < nVar; iVar++) {
-      r[index] = local_Residual[iVar];// + local_Res_TruncError[iVar];
+      r[index] = local_Residual[iVar] + local_Res_TruncError[iVar];
       index++;
     }
   }
@@ -5459,17 +5466,25 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     fs.close();
   }
   
+  //std::ofstream f;
+  //su2double* Coord;
+  //f.open("meshsave.csv");
+  //   for (iPoint = 0; iPoint< nPointDomain; iPoint++) {
+  //      Coord = geometry->node[iPoint]->GetCoord();
+  //      f << Coord[0] << ", " << Coord[1] << "\n";
+  //   }
+  //f.close();
+  
   // Compute least-squares solution using QR decomposition
   // https://johnwlambert.github.io/least-squares/
   // http://www.netlib.org/lapack/explore-html/d7/d3b/group__double_g_esolve_ga225c8efde208eaf246882df48e590eac.html
 #if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
-  int info2;
-  info2 = dgels_(&TRANS, &m, &n, &NRHS, TestBasis2.data(), &m, r.data(), &m, WORK.data(), &LWORK, &INFO);
+  dgels_(&TRANS, &m, &n, &NRHS, TestBasis2.data(), &m, r.data(), &m, WORK.data(), &LWORK, &INFO);
 #else
   SU2_MPI::Error("Lapack necessary for ROM.", CURRENT_FUNCTION);
 #endif
 
-  if (INFO < 0) std::cout << "Unsucsessful exit of least-squares for ROM" << std::endl;
+  if (INFO < 0) SU2_MPI::Error("Unsucsessful exit of least-squares for ROM", CURRENT_FUNCTION);
   
   ofstream fs;
   std::string fname3 = "check_LS_solution.csv";
@@ -5480,7 +5495,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.close();
   
   // backtracking line search to find step size:
-  double a =  0.1;
+  double a =  1.0;
   
   for (int i = 0; i < n; i++) {
     GenCoordsY[i] += a * r[i];

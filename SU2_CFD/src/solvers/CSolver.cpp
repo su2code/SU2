@@ -4708,8 +4708,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   
   // set mask to all nodes for now
   for (unsigned long i = 0; i < N; i++) {
-    Mask.push_back(i);
-    MaskNeighbors.push_back(i);
+    Mask.push_back(1);
+    MaskNeighbors.push_back(1);
   }
   
   auto t_end = std::chrono::high_resolution_clock::now();
@@ -4733,14 +4733,16 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   // output: Masked Edges
   
   unsigned long iEdge, iPoint, jPoint;
-  unsigned long nEdge_masked = 0;
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
     
     if (MaskedNode(iPoint)) {
       Edge_masked.push_back(iEdge);
-      nEdge_masked++;
+      if (!MaskedNode(jPoint))
+        MaskNeighbors[jPoint] = 1;
     }
+    
+    
   }
 }
