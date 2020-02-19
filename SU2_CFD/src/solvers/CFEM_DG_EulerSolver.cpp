@@ -31,17 +31,17 @@
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/SparseExtra>
 
-// namespace SuperLU
-// {
-// #ifdef __cplusplus
-//   extern "C" {
-// #endif
-//     #include "superlu_ddefs.h"
-//     #undef Reduce
-// #ifdef __cplusplus
-//   }
-// #endif
-// }
+namespace SuperLU
+{
+#ifdef __cplusplus
+  extern "C" {
+#endif
+    #include "superlu_ddefs.h"
+    #undef Reduce
+#ifdef __cplusplus
+  }
+#endif
+}
 
 #define SIZE_ARR_NORM 8
 
@@ -3515,7 +3515,7 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
 #ifdef CODI_FORWARD_TYPE
             Jac[var+j*nVar] = resDOF[j].getGradient();
 #else
-            Jac[var+j*nVar] = nVar2*(nNonZeroEntries[i] + ind) + var+j*nVar;   /* This is to avoid a compiler warning. */
+            Jac[var+j*nVar] = 0.0;   /* This is to avoid a compiler warning. */
 #endif
           }
         }
@@ -3598,8 +3598,8 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
 
   for (unsigned int i = 0; i < nonZeroEntriesJacobian.size(); ++i) {
     for (unsigned int j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
-      std::cout << "i = " << i << ", j = " << j << ", nonZeroEntriesJacobian[i][j] = " << nonZeroEntriesJacobian[i][j] 
-      << ", nNonZeroEntries[i] + j = " << nNonZeroEntries[i] + j << std::endl;
+      // std::cout << "i = " << i << ", j = " << j << ", nonZeroEntriesJacobian[i][j] = " << nonZeroEntriesJacobian[i][j] 
+      // << ", nNonZeroEntries[i] + j = " << nNonZeroEntries[i] + j << std::endl;
       Jacobian.SetBlock(i, nonZeroEntriesJacobian[i][j], SpatialJacobian.data()+nVar2*(nNonZeroEntries[i] + j));
     }
   }
@@ -7418,195 +7418,195 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     // std::vector<passivedouble> Jac_myrank_CRS(Jacobian_global.valuePtr(), Jacobian_global.valuePtr()+Jacobian_global.nonZeros());
     // std::cout << "size before: " << col_index_myrank_CRS.size() << std::endl;
 
-  //   /* SUPERLU STUFF */
-  //   SuperLU::superlu_dist_options_t options;
-  //   SuperLU::SuperLUStat_t stat;
-  //   SuperLU::SuperMatrix A;
-  //   SuperLU::ScalePermstruct_t ScalePermstruct;
-  //   SuperLU::LUstruct_t LUstruct;
-  //   SuperLU::SOLVEstruct_t SOLVEstruct;
-  //   SuperLU::gridinfo_t grid;
-  //   // double   b[nDOFsLocOwned_acc_allranks_counts[rank]];
-  //   double   berr[1];
-  //   int      info, iam;
-  //   int      nprow, npcol;
+    /* SUPERLU STUFF */
+    SuperLU::superlu_dist_options_t options;
+    SuperLU::SuperLUStat_t stat;
+    SuperLU::SuperMatrix A;
+    SuperLU::ScalePermstruct_t ScalePermstruct;
+    SuperLU::LUstruct_t LUstruct;
+    SuperLU::SOLVEstruct_t SOLVEstruct;
+    SuperLU::gridinfo_t grid;
+    // double   b[nDOFsLocOwned_acc_allranks_counts[rank]];
+    double   berr[1];
+    int      info, iam;
+    int      nprow, npcol;
 
-  //   nprow = size;  /* Default process rows.      */
-  //   npcol = 1;  /* Default process columns.   */
+    nprow = size;  /* Default process rows.      */
+    npcol = 1;  /* Default process columns.   */
 
-  //    // ------------------------------------------------------------
-  //    // INITIALIZE THE SUPERLU PROCESS GRID. 
-  //    // ------------------------------------------------------------
-  //   superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
+     // ------------------------------------------------------------
+     // INITIALIZE THE SUPERLU PROCESS GRID. 
+     // ------------------------------------------------------------
+    superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 
-  //   // std::cout << "before: " << options.SolveInitialized << std::endl;
-  //   set_default_options_dist(&options);
-  //   // std::cout << "after: " << options.SolveInitialized << std::endl;
+    // std::cout << "before: " << options.SolveInitialized << std::endl;
+    set_default_options_dist(&options);
+    // std::cout << "after: " << options.SolveInitialized << std::endl;
 
-  //    // Initialize ScalePermstruct and LUstruct. 
-  //   ScalePermstructInit(nDOFsGlobal*nVar, nDOFsGlobal*nVar, &ScalePermstruct);
-  //   LUstructInit(nDOFsGlobal*nVar, &LUstruct);
+     // Initialize ScalePermstruct and LUstruct. 
+    ScalePermstructInit(nDOFsGlobal*nVar, nDOFsGlobal*nVar, &ScalePermstruct);
+    LUstructInit(nDOFsGlobal*nVar, &LUstruct);
 
-  //   /* Initialize the statistics variables. */
-  //   PStatInit(&stat);
+    /* Initialize the statistics variables. */
+    PStatInit(&stat);
 
-  //   int nnz = Jacobian_global.nonZeros();
-  //   // std::cout << "nnz = " << nnz << std::endl;
-  //   // SuperLU::dCreate_CompRowLoc_Matrix_dist(&A, nDOFsGlobal*nVar, nDOFsGlobal*nVar, nnz, 
-  //   //   nDOFsLocOwned_acc_allranks_counts[rank], nDOFsLocOwned_acc_allranks_displs[rank], Jac_myrank_CRS, &col_index_myrank_CRS.data(), 
-  //   //   row_index_myrank_CRS, SuperLU::SLU_NR_loc, SuperLU::SLU_D, SuperLU::SLU_GE);
+    int nnz = Jacobian_global.nonZeros();
+    // std::cout << "nnz = " << nnz << std::endl;
+    // SuperLU::dCreate_CompRowLoc_Matrix_dist(&A, nDOFsGlobal*nVar, nDOFsGlobal*nVar, nnz, 
+    //   nDOFsLocOwned_acc_allranks_counts[rank], nDOFsLocOwned_acc_allranks_displs[rank], Jac_myrank_CRS, &col_index_myrank_CRS.data(), 
+    //   row_index_myrank_CRS, SuperLU::SLU_NR_loc, SuperLU::SLU_D, SuperLU::SLU_GE);
 
-  //   SuperLU::dCreate_CompRowLoc_Matrix_dist(&A, nDOFsGlobal*nVar, nDOFsGlobal*nVar, nnz, 
-  //     nDOFsLocOwned_acc_allranks_counts[rank], nDOFsLocOwned_acc_allranks_displs[rank], Jacobian_global.valuePtr(), Jacobian_global.innerIndexPtr(), 
-  //     Jacobian_global.outerIndexPtr(), SuperLU::SLU_NR_loc, SuperLU::SLU_D, SuperLU::SLU_GE);
-
-
-  //   // SuperLU::dPrint_CompRowLoc_Matrix_dist(&A);
-
-  //   Eigen::VectorXd mSol_delta(nDOFsLocOwned*nVar);
-  //   for (unsigned long i = 0; i < nDOFsLocOwned*nVar; ++i) {
-  //     mSol_delta(i) = -Res_global(i);
-  //   } 
-
-  //   // for (unsigned long i = 0; i < nDOFsLocOwned*nVar; ++i) {
-  //   //   b[i] = -(double)Res_global(i);
-  //   // }
+    SuperLU::dCreate_CompRowLoc_Matrix_dist(&A, nDOFsGlobal*nVar, nDOFsGlobal*nVar, nnz, 
+      nDOFsLocOwned_acc_allranks_counts[rank], nDOFsLocOwned_acc_allranks_displs[rank], Jacobian_global.valuePtr(), Jacobian_global.innerIndexPtr(), 
+      Jacobian_global.outerIndexPtr(), SuperLU::SLU_NR_loc, SuperLU::SLU_D, SuperLU::SLU_GE);
 
 
-  //   su2double Timer_start, Timer_end;
-  //   if (rank == MASTER_NODE)
-  //   {
-  //     Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
-  //   }
+    // SuperLU::dPrint_CompRowLoc_Matrix_dist(&A);
 
-  //   // std::cout << "Starting SUPERLU" << std::endl;
-  //   SuperLU::pdgssvx(&options, &A, &ScalePermstruct, mSol_delta.data(), nDOFsLocOwned_acc_allranks_counts[rank], 1, &grid,
-  //     &LUstruct, &SOLVEstruct, berr, &stat, &info);
-  //   // std::cout << "Finishing SUPERLU" << std::endl;
+    Eigen::VectorXd mSol_delta(nDOFsLocOwned*nVar);
+    for (unsigned long i = 0; i < nDOFsLocOwned*nVar; ++i) {
+      mSol_delta(i) = -Res_global(i);
+    } 
 
-  //   if (rank == MASTER_NODE)
-  //   {
-  //     Timer_end = su2double(clock())/su2double(CLOCKS_PER_SEC);
-  //     Time_LINSOL = Timer_end - Timer_start;
-  //   }
-
-  //   // PStatPrint(&options, &stat, &grid);
-
-  //   // std::cout << "berr: " << berr[0] << std::endl;
-  //   // Eigen::VectorXd mSol_delta(nDOFsLocOwned*nVar);
-  //   // for (unsigned long i = 0; i < nDOFsLocOwned*nVar; ++i) {
-  //   //   mSol_delta(i) = b[i];
-  //   // } 
-
-  //   // std::string JacobianwithMassMatrixafter_name;
-  //   // JacobianwithMassMatrixafter_name = "JacobianwithMassMatrixafter_global" + to_string(rank) + ".mtx";
-  //   // Eigen::saveMarket(Jacobian_global, JacobianwithMassMatrixafter_name);
+    // for (unsigned long i = 0; i < nDOFsLocOwned*nVar; ++i) {
+    //   b[i] = -(double)Res_global(i);
+    // }
 
 
-  //   // Eigen::VectorXd globalID(nVolElemOwned);
-  //   // std::string GlobalID_name;
-  //   // GlobalID_name = "globalID" + to_string(rank) + ".mtx";
-  //   // for (int k = 0; k < size; k++) {
-  //   //   if (k == rank) {
-  //   //     for (unsigned long i = 0; i < nVolElemOwned; ++i) {
-  //   //       globalID(i) = volElem[i].elemIDGlobal;
-  //   //       // globalID.push_back(volElem[i].elemIDGlobal);
-  //   //       // std::cout << "globalID[" << i << "] = " << globalID[i] << " in rank " << rank << std::endl;
-  //   //     }
-  //   //   }
-  //   //   SU2_MPI::Barrier(MPI_COMM_WORLD);
-  //   // }
+    su2double Timer_start, Timer_end;
+    if (rank == MASTER_NODE)
+    {
+      Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
+    }
 
-  //   // Eigen::saveMarketVector(globalID, GlobalID_name);
+    // std::cout << "Starting SUPERLU" << std::endl;
+    SuperLU::pdgssvx(&options, &A, &ScalePermstruct, mSol_delta.data(), nDOFsLocOwned_acc_allranks_counts[rank], 1, &grid,
+      &LUstruct, &SOLVEstruct, berr, &stat, &info);
+    // std::cout << "Finishing SUPERLU" << std::endl;
 
-  //   // std::cout << "before mass matrix, nonzero = " << Jacobian_global.nonZeros() << std::endl;
-  //   // std::cout << "after mass matrix, nonzero = " << Jacobian_global.nonZeros() << std::endl;
-  //   /*--- Newton iteration with damping parameter lambda ---*/
+    if (rank == MASTER_NODE)
+    {
+      Timer_end = su2double(clock())/su2double(CLOCKS_PER_SEC);
+      Time_LINSOL = Timer_end - Timer_start;
+    }
+
+    // PStatPrint(&options, &stat, &grid);
+
+    // std::cout << "berr: " << berr[0] << std::endl;
+    // Eigen::VectorXd mSol_delta(nDOFsLocOwned*nVar);
+    // for (unsigned long i = 0; i < nDOFsLocOwned*nVar; ++i) {
+    //   mSol_delta(i) = b[i];
+    // } 
+
+    // std::string JacobianwithMassMatrixafter_name;
+    // JacobianwithMassMatrixafter_name = "JacobianwithMassMatrixafter_global" + to_string(rank) + ".mtx";
+    // Eigen::saveMarket(Jacobian_global, JacobianwithMassMatrixafter_name);
+
+
+    // Eigen::VectorXd globalID(nVolElemOwned);
+    // std::string GlobalID_name;
+    // GlobalID_name = "globalID" + to_string(rank) + ".mtx";
+    // for (int k = 0; k < size; k++) {
+    //   if (k == rank) {
+    //     for (unsigned long i = 0; i < nVolElemOwned; ++i) {
+    //       globalID(i) = volElem[i].elemIDGlobal;
+    //       // globalID.push_back(volElem[i].elemIDGlobal);
+    //       // std::cout << "globalID[" << i << "] = " << globalID[i] << " in rank " << rank << std::endl;
+    //     }
+    //   }
+    //   SU2_MPI::Barrier(MPI_COMM_WORLD);
+    // }
+
+    // Eigen::saveMarketVector(globalID, GlobalID_name);
+
+    // std::cout << "before mass matrix, nonzero = " << Jacobian_global.nonZeros() << std::endl;
+    // std::cout << "after mass matrix, nonzero = " << Jacobian_global.nonZeros() << std::endl;
+    /*--- Newton iteration with damping parameter lambda ---*/
     
-  //   double lambda = 1.0;
-  //   // double norm_temp = (Jacobian_global*(mSol_delta*lambda)+Res_global).norm();
-  //   // while (norm_temp/norm0 > 1 && lambda > 1e-6)
-  //   // {
-  //   //   lambda = lambda/2;
-  //   //   norm_temp = (Jacobian_global*(mSol_delta*lambda)+Res_global).norm();
-  //   // }
-  //   if (rank == MASTER_NODE) {
-  //     cout << "lambda = " << lambda << endl;
-  //   }
+    double lambda = 1.0;
+    // double norm_temp = (Jacobian_global*(mSol_delta*lambda)+Res_global).norm();
+    // while (norm_temp/norm0 > 1 && lambda > 1e-6)
+    // {
+    //   lambda = lambda/2;
+    //   norm_temp = (Jacobian_global*(mSol_delta*lambda)+Res_global).norm();
+    // }
+    if (rank == MASTER_NODE) {
+      cout << "lambda = " << lambda << endl;
+    }
     
 
-  //   /*--- update final solution ---*/
+    /*--- update final solution ---*/
 
-  //   // for (int j = 0; j < size; j++)
-  //   // {
-  //   //   if (j==rank)
-  //   //   {
-  //   //     std::cout <<" Before update, in rank " << rank << std::endl;
-  //   //     for (unsigned int i = 0; i < nDOFsLocOwned*nVar; ++i)
-  //   //       {
-  //   //         std::cout << "Sol_global[" << i << "] = " << Sol_global(i) << ", Res_global[" << i << "] = " << Res_global(i) << ", mSol_delta[" << i << "] = " << mSol_delta(i) << " in rank " << rank<< std::endl;
-  //   //       }
-  //   //     // std::cout << Eigen::MatrixXd(MassMatrix_global).block(0,nDOFsLocOwned_acc_allranks[rank],nDOFsLocOwned*nVar,nDOFsLocOwned*nVar).format(CleanFmt) << std::endl << std::endl;
-  //   //   }
-  //   //   SU2_MPI::Barrier(MPI_COMM_WORLD);
-  //   // }
+    // for (int j = 0; j < size; j++)
+    // {
+    //   if (j==rank)
+    //   {
+    //     std::cout <<" Before update, in rank " << rank << std::endl;
+    //     for (unsigned int i = 0; i < nDOFsLocOwned*nVar; ++i)
+    //       {
+    //         std::cout << "Sol_global[" << i << "] = " << Sol_global(i) << ", Res_global[" << i << "] = " << Res_global(i) << ", mSol_delta[" << i << "] = " << mSol_delta(i) << " in rank " << rank<< std::endl;
+    //       }
+    //     // std::cout << Eigen::MatrixXd(MassMatrix_global).block(0,nDOFsLocOwned_acc_allranks[rank],nDOFsLocOwned*nVar,nDOFsLocOwned*nVar).format(CleanFmt) << std::endl << std::endl;
+    //   }
+    //   SU2_MPI::Barrier(MPI_COMM_WORLD);
+    // }
 
-  //   // std::cout << "nDOFsLocOwned_acc_allranks[rank] = " << nDOFsLocOwned_acc_allranks[rank] << " in rank " << rank << std::endl;
-  //   Sol_global += mSol_delta * lambda;
-  //   Res_global += MassMatrix_global.block(0,nDOFsLocOwned_acc_allranks_displs[rank],nDOFsLocOwned*nVar,nDOFsLocOwned*nVar)*mSol_delta * lambda;
+    // std::cout << "nDOFsLocOwned_acc_allranks[rank] = " << nDOFsLocOwned_acc_allranks[rank] << " in rank " << rank << std::endl;
+    Sol_global += mSol_delta * lambda;
+    Res_global += MassMatrix_global.block(0,nDOFsLocOwned_acc_allranks_displs[rank],nDOFsLocOwned*nVar,nDOFsLocOwned*nVar)*mSol_delta * lambda;
 
-  //   /*--- convert solution back into the SU2 solver format ---*/
-  //   // for (int j = 0; j < size; j++)
-  //   // {
-  //     // if (j==rank)
-  //     // {
-  //       // std::cout <<" After update, in rank " << rank << std::endl;
-  //       for (unsigned int i = 0; i < nDOFsLocOwned*nVar; ++i)
-  //       {
-  //         VecResDOFs[i] = Res_global(i);
-  //         VecSolDOFs[i] = Sol_global(i);
-  //         // std::cout << "Sol_global[" << i << "] = " << Sol_global(i) << ", Res_global[" << i << "] = " << Res_global(i) << " in rank " << rank << std::endl;
-  //       }
-  //   //   }
-  //   //   SU2_MPI::Barrier(MPI_COMM_WORLD);
-  //   // }
-  // // }
+    /*--- convert solution back into the SU2 solver format ---*/
+    // for (int j = 0; j < size; j++)
+    // {
+      // if (j==rank)
+      // {
+        // std::cout <<" After update, in rank " << rank << std::endl;
+        for (unsigned int i = 0; i < nDOFsLocOwned*nVar; ++i)
+        {
+          VecResDOFs[i] = Res_global(i);
+          VecSolDOFs[i] = Sol_global(i);
+          // std::cout << "Sol_global[" << i << "] = " << Sol_global(i) << ", Res_global[" << i << "] = " << Res_global(i) << " in rank " << rank << std::endl;
+        }
+    //   }
+    //   SU2_MPI::Barrier(MPI_COMM_WORLD);
+    // }
+  // }
 
-  // /*--- Compute the root mean square residual. Note that the SetResidual_RMS
-  // function of CSolver cannot be used, because that is for the FV solver. ---*/
+  /*--- Compute the root mean square residual. Note that the SetResidual_RMS
+  function of CSolver cannot be used, because that is for the FV solver. ---*/
   
-  // SetResidual_RMS_FEM(geometry, config);
+  SetResidual_RMS_FEM(geometry, config);
 
-  // if (config->GetInnerIter() == 0) {
-  //   ResRMSinitial.resize(nVar);
-  //   for (unsigned int iVar = 0; iVar<nVar; ++iVar) {
-  //     ResRMSinitial[iVar] = GetRes_RMS(iVar);
-  //   }
-  // }
+  if (config->GetInnerIter() == 0) {
+    ResRMSinitial.resize(nVar);
+    for (unsigned int iVar = 0; iVar<nVar; ++iVar) {
+      ResRMSinitial[iVar] = GetRes_RMS(iVar);
+    }
+  }
 
-  // // std::cout << "Jacobian_global.resize(0, 0);" << std::endl;
-  // // Jacobian_global.resize(0, 0);
-  // // std::cout << "SuperLU::PStatFree(&stat);" << std::endl;
-  // SuperLU::PStatFree(&stat);
-  // // std::cout << "SuperLU::Destroy_SuperMatrix_Store_dist(&A);" << std::endl;
-  // // SuperLU::Destroy_SuperMatrix_Store_dist(&A);
-  // // std::cout << "SuperLU::Destroy_CompRowLoc_Matrix_dist(&A);" << std::endl;
-  // // SuperLU::Destroy_CompRowLoc_Matrix_dist(&A);
-  // // std::cout << "SuperLU::ScalePermstructFree(&ScalePermstruct);" << std::endl;
-  // SuperLU::ScalePermstructFree(&ScalePermstruct);
-  // // std::cout << "SuperLU::Destroy_LU(nDOFsGlobal*nVar, &grid, &LUstruct);" << std::endl;
-  // SuperLU::Destroy_LU(nDOFsGlobal*nVar, &grid, &LUstruct);
-  // // std::cout << "SuperLU::LUstructFree(&LUstruct);" << std::endl;
-  // SuperLU::LUstructFree(&LUstruct);
-  // // std::cout << "SuperLU::SUPERLU_FREE(b);" << std::endl;
-  // // SuperLU::SUPERLU_FREE(b);
-  // // std::cout << "SuperLU::SUPERLU_FREE(berr);" << std::endl;
-  // // SuperLU::SUPERLU_FREE(berr);
-  // if ( options.SolveInitialized ) {
-  //       dSolveFinalize(&options, &SOLVEstruct);
-  // }
-  // // std::cout << "SuperLU::superlu_gridexit(&grid);" << std::endl;
-  // SuperLU::superlu_gridexit(&grid);
+  // std::cout << "Jacobian_global.resize(0, 0);" << std::endl;
+  // Jacobian_global.resize(0, 0);
+  // std::cout << "SuperLU::PStatFree(&stat);" << std::endl;
+  SuperLU::PStatFree(&stat);
+  // std::cout << "SuperLU::Destroy_SuperMatrix_Store_dist(&A);" << std::endl;
+  // SuperLU::Destroy_SuperMatrix_Store_dist(&A);
+  // std::cout << "SuperLU::Destroy_CompRowLoc_Matrix_dist(&A);" << std::endl;
+  // SuperLU::Destroy_CompRowLoc_Matrix_dist(&A);
+  // std::cout << "SuperLU::ScalePermstructFree(&ScalePermstruct);" << std::endl;
+  SuperLU::ScalePermstructFree(&ScalePermstruct);
+  // std::cout << "SuperLU::Destroy_LU(nDOFsGlobal*nVar, &grid, &LUstruct);" << std::endl;
+  SuperLU::Destroy_LU(nDOFsGlobal*nVar, &grid, &LUstruct);
+  // std::cout << "SuperLU::LUstructFree(&LUstruct);" << std::endl;
+  SuperLU::LUstructFree(&LUstruct);
+  // std::cout << "SuperLU::SUPERLU_FREE(b);" << std::endl;
+  // SuperLU::SUPERLU_FREE(b);
+  // std::cout << "SuperLU::SUPERLU_FREE(berr);" << std::endl;
+  // SuperLU::SUPERLU_FREE(berr);
+  if ( options.SolveInitialized ) {
+        dSolveFinalize(&options, &SOLVEstruct);
+  }
+  // std::cout << "SuperLU::superlu_gridexit(&grid);" << std::endl;
+  SuperLU::superlu_gridexit(&grid);
 
 #else
   std::cout << "Implicit DG solver requires AD support(forward)" << std::endl;
