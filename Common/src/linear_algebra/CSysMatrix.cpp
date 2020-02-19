@@ -211,6 +211,58 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 }
 
 template<class ScalarType>
+void CSysMatrix<ScalarType>::Initialize_DG(unsigned long npoint, unsigned long npointdomain,
+                  unsigned short nvar, unsigned short neqn,
+                  const vector<unsigned long>& nNonZeroEntries, 
+                  const vector<vector<unsigned long> >& nonZeroEntriesJacobian, 
+                  const unsigned long nDOFsLocOwned,
+                  CGeometry *geometry, CConfig *config) {
+
+  /*--- Basic dimensions. ---*/
+  nVar = nvar;
+  nEqn = neqn;
+  nPoint = npoint;
+  nPointDomain = npointdomain;
+
+  /*--- Flatten nonZeroEntriesJacobian. ---*/
+  std::vector<unsigned long> nonZeroEntriesJacobian_flat(nNonZeroEntries[nDOFsLocOwned]);
+  for (unsigned long i = 0; i < nonZeroEntriesJacobian.size(); ++i){
+    for (unsigned long j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
+      nonZeroEntriesJacobian_flat[nNonZeroEntries[i] + j] = nonZeroEntriesJacobian[i][j];
+    }
+  }
+
+  const auto& csr = CCompressedSparsePattern<unsigned long>(nNonZeroEntries, nonZeroEntriesJacobian_flat);
+
+  /*--- Assign sparsity pattern to the pointers ---*/
+  row_ptr = csr.outerPtr();
+  col_ind = csr.innerIdx();
+  dia_ptr = nullptr;
+  nnz = nVar*nEqn*nNonZeroEntries[nDOFsLocOwned];
+
+  /*--- Allocate data. ---*/
+#define ALLOC_AND_INIT(ptr,num) {\
+  ptr = MemoryAllocation::aligned_alloc<ScalarType>(64,num*sizeof(ScalarType));\
+  for(size_t k=0; k<num; ++k) ptr[k]=0.0; }
+
+  ALLOC_AND_INIT(matrix, nnz*nVar*nEqn)
+
+  // /*--- Preconditioners (commented out in case needed in the future.) ---*/
+
+  // if (ilu_needed) {
+  //   ALLOC_AND_INIT(ILU_matrix, nnz_ilu*nVar*nEqn)
+  // }
+
+  // if (ilu_needed || (sol_prec==JACOBI) || (sol_prec==LINELET) ||
+  //     (adjoint && (adj_prec==JACOBI)) || (def_prec==JACOBI))
+  // {
+  //   ALLOC_AND_INIT(invM, nPointDomain*nVar*nEqn);
+  // }
+#undef ALLOC_AND_INIT
+
+}
+
+template<class ScalarType>
 template<class OtherType>
 void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
                                            CGeometry *geometry,
