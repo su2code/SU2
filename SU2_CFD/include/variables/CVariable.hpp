@@ -127,18 +127,6 @@ protected:
   su2matrix<int> AD_Time_n1_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_Time_n1_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
-  su2matrix<int> AD_Vel_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
-  su2matrix<int> AD_Vel_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
-
-  su2matrix<int> AD_Vel_Time_n_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
-  su2matrix<int> AD_Vel_Time_n_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
-
-  su2matrix<int> AD_Accel_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
-  su2matrix<int> AD_Accel_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
-
-  su2matrix<int> AD_Accel_Time_n_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
-  su2matrix<int> AD_Accel_Time_n_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
-
   unsigned long nPoint = {0};  /*!< \brief Number of points in the domain. */
   unsigned long nDim = {0};      /*!< \brief Number of dimension of the problem. */
   unsigned long nVar = {0};        /*!< \brief Number of variables of the problem. */

@@ -168,6 +168,17 @@ void CDiscAdjMultizoneDriver::Run() {
   unsigned long nOuterIter = driver_config->GetnOuter_Iter();
   bool time_domain = driver_config->GetTime_Domain();
 
+  // Reset external and solution
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (solver != nullptr) {
+        solver->GetNodes()->SetExternalZero();
+      }
+    }
+    Set_Solution_To_BGSSolution_k(iZone);
+  }
+
   for (iZone = 0; iZone < nZone; iZone++) {
 
     if (!time_domain)
@@ -377,17 +388,6 @@ void CDiscAdjMultizoneDriver::Run() {
             iPoint, iDim, solvers[IDX_SOL]->GetNodes()->GetSensitivity_Old(iPoint, iDim));
       }
     }
-  }
-
-  // Reset external and solution to end current time run
-  for (iZone = 0; iZone < nZone; iZone++) {
-    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (solver != nullptr) {
-        solver->GetNodes()->SetExternalZero();
-      }
-    }
-    Set_Solution_To_BGSSolution_k(iZone);
   }
 }
 

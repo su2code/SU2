@@ -742,7 +742,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-  if (nZone > 1)
+  if (config->GetMultizone_Problem())
     filename = config->GetMultizone_FileName(filename, iZone, "");
 
   /*--- Determine how many files need to be read. ---*/

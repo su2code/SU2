@@ -58,6 +58,18 @@ protected:
 
   MatrixType Prestretch;            /*!< \brief Prestretch geometry */
 
+  su2matrix<int> AD_Vel_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Vel_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
+  su2matrix<int> AD_Vel_Time_n_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Vel_Time_n_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
+  su2matrix<int> AD_Accel_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Accel_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
+  su2matrix<int> AD_Accel_Time_n_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Accel_Time_n_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
   /*!
    * \brief Constructor of the class.
    * \note This class is not supposed to be instantiated, it is only a building block for CFEABoundVariable
