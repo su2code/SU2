@@ -3594,7 +3594,14 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
     }
   }
 
-  Jacobian.Initialize_DG(nPoint, nPointDomain, nVar, nVar, nNonZeroEntries, nonZeroEntriesJacobian, nDOFsLocOwned, geometry, config);
+  std::vector<unsigned long> nonZeroEntriesJacobian_flat(nNonZeroEntries[nDOFsLocOwned]);
+  for (unsigned long i = 0; i < nonZeroEntriesJacobian.size(); ++i){
+    for (unsigned long j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
+      nonZeroEntriesJacobian_flat[nNonZeroEntries[i] + j] = nonZeroEntriesJacobian[i][j];
+    }
+  }
+
+  Jacobian.Initialize_DG(nPoint, nPointDomain, nVar, nVar, nNonZeroEntries, nonZeroEntriesJacobian_flat, nDOFsLocOwned, geometry, config);
 
   for (unsigned int i = 0; i < nonZeroEntriesJacobian.size(); ++i) {
     for (unsigned int j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {

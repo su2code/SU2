@@ -214,7 +214,7 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::Initialize_DG(unsigned long npoint, unsigned long npointdomain,
                   unsigned short nvar, unsigned short neqn,
                   const vector<unsigned long>& nNonZeroEntries, 
-                  const vector<vector<unsigned long> >& nonZeroEntriesJacobian, 
+                  const vector<vector<unsigned long> >& nonZeroEntriesJacobian_flat, 
                   const unsigned long nDOFsLocOwned,
                   CGeometry *geometry, CConfig *config) {
 
@@ -225,12 +225,12 @@ void CSysMatrix<ScalarType>::Initialize_DG(unsigned long npoint, unsigned long n
   nPointDomain = npointdomain;
 
   /*--- Flatten nonZeroEntriesJacobian. ---*/
-  std::vector<unsigned long> nonZeroEntriesJacobian_flat(nNonZeroEntries[nDOFsLocOwned]);
-  for (unsigned long i = 0; i < nonZeroEntriesJacobian.size(); ++i){
-    for (unsigned long j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
-      nonZeroEntriesJacobian_flat[nNonZeroEntries[i] + j] = nonZeroEntriesJacobian[i][j];
-    }
-  }
+  // std::vector<unsigned long> nonZeroEntriesJacobian_flat(nNonZeroEntries[nDOFsLocOwned]);
+  // for (unsigned long i = 0; i < nonZeroEntriesJacobian.size(); ++i){
+  //   for (unsigned long j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
+  //     nonZeroEntriesJacobian_flat[nNonZeroEntries[i] + j] = nonZeroEntriesJacobian[i][j];
+  //   }
+  // }
 
   const auto& csr = CCompressedSparsePattern<unsigned long>(nNonZeroEntries, nonZeroEntriesJacobian_flat);
 
