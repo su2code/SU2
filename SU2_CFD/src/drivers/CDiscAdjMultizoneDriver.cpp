@@ -338,6 +338,57 @@ void CDiscAdjMultizoneDriver::Run() {
     if (checkSensitivity)
       EvaluateSensitivities(iOuterIter, StopCalc);
   }
+
+  /*--- Add current time sensitivity ---*/
+  /*--- Cumulative sensitivity stored here in order to exclude summation within outer iteration ---*/  
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    auto solvers = solver_container[iZone][INST_0][MESH_0];
+    auto geometry = geometry_container[iZone][INST_0][MESH_0];
+    int IDX_SOL;//unsigned short or int?
+
+    switch (config_container[iZone]->GetKind_Solver()) {
+      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+        if(config_container[iZone]->GetDeform_Mesh()) IDX_SOL = ADJMESH_SOL;
+        else IDX_SOL = ADJFLOW_SOL;
+        break;
+      case DISC_ADJ_HEAT:
+        IDX_SOL = ADJHEAT_SOL;
+        break;
+      case DISC_ADJ_FEM:
+        IDX_SOL = ADJFEA_SOL;
+        break;
+    }
+
+    su2double Sensitivity;
+    for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+
+          /*--- Current time iteration sensitivity ---*/
+          Sensitivity = solvers[IDX_SOL]->GetNodes()->GetSensitivity(iPoint, iDim);
+
+          /*--- Update old sensitivity container ---*/
+          solvers[IDX_SOL]->GetNodes()->SetSensitivity_Old(iPoint, iDim, Sensitivity + 
+            solvers[IDX_SOL]->GetNodes()->GetSensitivity_Old(iPoint, iDim));
+
+          /*--- Update sensitivity ---*/
+          solvers[IDX_SOL]->GetNodes()->SetSensitivity(
+            iPoint, iDim, solvers[IDX_SOL]->GetNodes()->GetSensitivity_Old(iPoint, iDim));
+      }
+    }
+  }
+
+  // Reset external and solution to end current time run
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (solver != nullptr) {
+        solver->GetNodes()->SetExternalZero();
+      }
+    }
+    Set_Solution_To_BGSSolution_k(iZone);
+  }
 }
 
 void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bool StopCalc) {
