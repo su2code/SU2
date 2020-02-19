@@ -214,7 +214,7 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::Initialize_DG(unsigned long npoint, unsigned long npointdomain,
                   unsigned short nvar, unsigned short neqn,
                   const vector<unsigned long>& nNonZeroEntries, 
-                  const vector<vector<unsigned long> >& nonZeroEntriesJacobian_flat, 
+                  const vector<unsigned long>& nonZeroEntriesJacobian_flat, 
                   const unsigned long nDOFsLocOwned,
                   CGeometry *geometry, CConfig *config) {
 

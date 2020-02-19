@@ -367,7 +367,7 @@ public:
   void Initialize_DG(unsigned long npoint, unsigned long npointdomain,
                   unsigned short nvar, unsigned short neqn,
                   const vector<unsigned long>& nNonZeroEntries, 
-                  const vector<vector<unsigned long> >& nonZeroEntriesJacobian, 
+                  const vector<unsigned long>& nonZeroEntriesJacobian_flat, 
                   const unsigned long nDOFsLocOwned,
                   CGeometry *geometry, CConfig *config);
 
