@@ -1468,7 +1468,7 @@ static const MapType<string, ENUM_CONSTRAINT_TYPE> Constraint_Type_Map = {
   MakePair("EQ", EQ_CONSTR)
   MakePair("GEQ", GEQ_CONSTR)
   MakePair("LEQ", LEQ_CONSTR)
-}
+};
 
 /*!
  * \brief Types of residual criteria equations
