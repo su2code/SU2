@@ -70,7 +70,7 @@ public:
 };
 
 class CAkimaInterpolation final: public C1DInterpolation{ 
-protected:
+private:
     vector<su2double> x,y,b,c,d;  /*!< \brief local variables for Akima spline cooefficients */
     int n; /*!< \brief local variable for holding the size of the vector */
 public:
@@ -105,7 +105,7 @@ public:
 };
 
 class CLinearInterpolation final: public C1DInterpolation{
-    protected:
+    private:
     vector<su2double> x,y,dydx; /*!< \brief local variables for linear 'spline' cooefficients */
     int n; /*!< \brief local variable for holding the size of the vector */
     public:
@@ -149,7 +149,7 @@ class CLinearInterpolation final: public C1DInterpolation{
 * \param[in] ENUM_INLET_INTERPOLATIONTYPE - enum of the interpolation type to be done
 * \returns the corrected Inlet Interpolated Data.
 */
-vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated, 
+vector<su2double> CorrectedInletValues(const vector<su2double> &Inlet_Interpolated, 
                                     su2double Theta ,
                                     unsigned short nDim, 
                                     su2double *Coord, 
@@ -164,4 +164,4 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated,
 * \param[in] nDim - the dimensions of the problem.
 * \param[in] nColumns - the number of columns in the final interpolated data
 */                      
-void PrintInletInterpolatedData(vector<su2double>& Inlet_Data_Interpolated, string Marker, unsigned long nVertex, unsigned short nDim, unsigned short nColumns);
+void PrintInletInterpolatedData(const vector<su2double>& Inlet_Data_Interpolated, string Marker, unsigned long nVertex, unsigned short nDim, unsigned short nColumns);
