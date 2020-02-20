@@ -312,8 +312,6 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > const &PoiAd
 #endif
 #endif
 
-  Sensitivity = NULL;
-
   /*--- Arrays for defining the turbomachinery structure ---*/
 
   nSpanWiseSections       = NULL;
@@ -467,8 +465,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   xadj      = NULL;
 #endif
 #endif
-
-  Sensitivity = NULL;
   
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -840,8 +836,6 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
         delete [] nTotVertexSpan[iMarker];
     delete [] nTotVertexSpan;
   }
-
-  if (Sensitivity != NULL) delete [] Sensitivity;
 
 }
 
@@ -10098,7 +10092,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
 }
 
 void CPhysicalGeometry::InitializeSensitivity() {
-  Sensitivity.resize(nPoint,nDim);
+  Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 }
 
 void CPhysicalGeometry::SetSensitivity(CConfig *config) {

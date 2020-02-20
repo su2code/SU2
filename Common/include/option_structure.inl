@@ -641,14 +641,17 @@ class COptionMathProblem : public COptionBase {
   bool cont_adjoint_def;
   bool & disc_adjoint;
   bool disc_adjoint_def;
+  bool & one_shot;
+  bool one_shot_def;
   bool & restart;
   bool restart_def;
 
 public:
-  COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field) {
+  COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & one_shot_field, bool one_shot_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field) {
     this->name = option_field_name;
     this->cont_adjoint_def = cont_adjoint_default;
     this->disc_adjoint_def = disc_adjoint_default;
+    this->one_shot_def = one_shot_default;
     this->restart_def = restart_default;
   }
 
@@ -668,18 +671,28 @@ public:
     if (option_value[0] == "DIRECT") {
       this->cont_adjoint = false;
       this->disc_adjoint = false;
+      this->one_shot = false;
       this->restart = false;
       return "";
     }
     if (option_value[0] == "CONTINUOUS_ADJOINT") {
       this->cont_adjoint= true;
       this->disc_adjoint = false;
+      this->one_shot = false;
       this->restart= true;
       return "";
     }
     if (option_value[0] == "DISCRETE_ADJOINT") {
       this->disc_adjoint = true;
       this->cont_adjoint= false;
+      this->one_shot = false;
+      this->restart = true;
+      return "";
+    }
+    if (option_value[0] == "ONE_SHOT") {
+      this->disc_adjoint = true;
+      this->cont_adjoint= false;
+      this->one_shot = true;
       this->restart = true;
       return "";
     }
@@ -689,6 +702,7 @@ public:
   void SetDefault() {
     this->cont_adjoint = this->cont_adjoint_def;
     this->disc_adjoint = this->disc_adjoint_def;
+    this->one_shot = this->one_shot_def;
     this->restart = this->restart_def;
   }
 
