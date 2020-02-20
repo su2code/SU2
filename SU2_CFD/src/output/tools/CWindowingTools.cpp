@@ -58,7 +58,7 @@ su2double CWindowingTools::BumpWindow(unsigned long curTimeIter, unsigned long e
   su2double currTimeDouble = static_cast<su2double>(curTimeIter);
   su2double endTimeDouble = static_cast<su2double>(endTimeIter);
   su2double tau = currTimeDouble/endTimeDouble;
-  return 1.0/0.00702986*(exp(-1/(tau-tau*tau)));
+  return 1.0/0.00702986*(exp(-1.0/(tau-tau*tau)));
   /* 0.00702986 equals the integral of exp(-1/(tau-tau*tau)) from 0 to 1,
    * and it acts as a normalization constant */
 }
