@@ -45,11 +45,7 @@
 template<class ScalarType>
 CSysVector<ScalarType>::CSysVector(void) {
 
-<<<<<<< HEAD
-  vec_val = NULL;
-=======
   vec_val = nullptr;
->>>>>>> develop
   nElm = 0;
   nElmDomain = 0;
   nVar = 0;
@@ -109,14 +105,6 @@ void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
 
 template<class ScalarType>
 CSysVector<ScalarType>::~CSysVector() {
-<<<<<<< HEAD
-  delete [] vec_val;
-  
-  nElm = 0; nElmDomain = 0;
-  nBlk = 0; nBlkDomain = 0;
-  nVar = 0;
-=======
->>>>>>> develop
 
   if (vec_val != nullptr)
     MemoryAllocation::aligned_free(vec_val);

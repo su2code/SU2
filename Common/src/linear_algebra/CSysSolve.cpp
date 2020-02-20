@@ -234,11 +234,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
     norm_r = r.norm();
     norm0  = b.norm();
     if ((norm_r < tol*norm0) || (norm_r < eps)) {
-<<<<<<< HEAD
-      if (rank == MASTER_NODE && !config->GetBoolOneShot()) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
-=======
-      if (master) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
->>>>>>> develop
+      if (master && !config->GetBoolOneShot()) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
       return 0;
     }
 
@@ -386,13 +382,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     /*--- System is already solved ---*/
 
-<<<<<<< HEAD
-    if (rank == MASTER_NODE && !config->GetBoolOneShot()) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
-    (*residual) = beta;
-=======
-    if (master) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+    if (master && !config->GetBoolOneShot()) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
     residual = beta;
->>>>>>> develop
     return 0;
   }
 
@@ -534,11 +525,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
     norm_r = r.norm();
     norm0  = b.norm();
     if ((norm_r < tol*norm0) || (norm_r < eps)) {
-<<<<<<< HEAD
-      if (rank == MASTER_NODE && !config->GetBoolOneShot()) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
-=======
-      if (master) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
->>>>>>> develop
+      if (master && !config->GetBoolOneShot()) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
       return 0;
     }
 
@@ -698,11 +685,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
     norm_r = r.norm();
     norm0  = b.norm();
     if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-<<<<<<< HEAD
-      if (rank == MASTER_NODE && !config->GetBoolOneShot()) cout << "CSysSolve::Smoother_LinSolver(): system solved by initial guess." << endl;
-=======
-      if (master) cout << "CSysSolve::Smoother_LinSolver(): system solved by initial guess." << endl;
->>>>>>> develop
+      if (master && !config->GetBoolOneShot()) cout << "CSysSolve::Smoother_LinSolver(): system solved by initial guess." << endl;
       return 0;
     }
 

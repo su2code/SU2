@@ -125,16 +125,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CBaselineSolver_FEM.cpp \
   ../src/solvers/CDiscAdjFEASolver.cpp \
   ../src/solvers/CDiscAdjMeshSolver.cpp \
-<<<<<<< HEAD
-  ../src/solver_direct_heat.cpp \
-  ../src/solver_direct_mean.cpp \
-  ../src/solver_direct_mean_fem.cpp \
-  ../src/solver_direct_mean_inc.cpp \
-  ../src/solver_direct_transition.cpp \
-  ../src/solver_direct_turbulent.cpp \
-  ../src/solver_direct_elasticity.cpp \
-  ../src/solver_one_shot.cpp \
-=======
   ../src/solvers/CDiscAdjSolver.cpp \
   ../src/solvers/CEulerSolver.cpp \
   ../src/solvers/CFEASolver.cpp \
@@ -143,9 +133,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CHeatSolverFVM.cpp \
   ../src/solvers/CIncEulerSolver.cpp \
   ../src/solvers/CIncNSSolver.cpp \
->>>>>>> develop
   ../src/solvers/CMeshSolver.cpp \
   ../src/solvers/CNSSolver.cpp \
+  ../src/solvers/COneShotSolver.cpp \
   ../src/solvers/CSolver.cpp \
   ../src/solvers/CTemplateSolver.cpp \
   ../src/solvers/CTransLMSolver.cpp \

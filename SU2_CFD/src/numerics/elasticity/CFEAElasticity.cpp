@@ -29,11 +29,6 @@
 #include "../../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../../../Common/include/omp_structure.hpp"
 
-<<<<<<< HEAD:SU2_CFD/src/numerics_direct_elasticity.cpp
-CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-=======
-
 CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                CConfig *config) : CNumerics() {
 
@@ -57,7 +52,6 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   Nu_i = new su2double[nProp];
   for (iVar = 0; iVar < nProp; iVar++)
     Nu_i[iVar] = config->GetPoissonRatio(iVar);
->>>>>>> develop:SU2_CFD/src/numerics/elasticity/CFEAElasticity.cpp
 
   nProp = config->GetnMaterialDensity();
 

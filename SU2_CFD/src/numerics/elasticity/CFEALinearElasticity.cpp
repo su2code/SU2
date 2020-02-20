@@ -27,10 +27,6 @@
 
 #include "../../../include/numerics/elasticity/CFEALinearElasticity.hpp"
 
-<<<<<<< HEAD:SU2_CFD/src/numerics_direct_elasticity_linear.cpp
-=======
-
->>>>>>> develop:SU2_CFD/src/numerics/elasticity/CFEALinearElasticity.cpp
 CFEALinearElasticity::CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                            CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
   if (nDim == 2)
