@@ -132,25 +132,39 @@ void CDiscAdjMultizoneDriver::StartSolver() {
                      CURRENT_FUNCTION);
   }
 
-  for (iZone = 0; iZone < nZone; iZone++){
+  /*--- Set the initial time iteration to the restart iteration. ---*/
+  if (driver_config->GetRestart() && driver_config->GetTime_Domain())
+    TimeIter = driver_config->GetRestart_Iter();
 
-    /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
-    /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
-    config_container[iZone]->SetTimeIter(0);
+  // TK:: Here needs to be the time loop
+  /*--- Run the problem until the number of time iterations required is reached. ---*/
+  while ( TimeIter < driver_config->GetnTime_Iter() ) {
 
-  }
+    /*--- Perform some preprocessing before starting the time-step simulation. ---*/
+    Preprocess(TimeIter);
 
-  /*--- Size and initialize the matrix of cross-terms. ---*/
+    for (iZone = 0; iZone < nZone; iZone++){ // TK:: this for loop can probalby be deleted based on the above
 
-  InitializeCrossTerms();
+      /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
+      /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
+      config_container[iZone]->SetTimeIter(0);
 
-  /*--- We directly start the (steady-state) discrete adjoint computation. ---*/
+    }
 
-  Run();
+    /*--- Size and initialize the matrix of cross-terms. ---*/
+    //TK:: is this still necessary in the time loop or should this move outside? as only resize operations are done here.
+    InitializeCrossTerms();
 
-  /*--- Output the solution in files. ---*/
+    /*--- We directly start the (steady-state TK:: or now transient as well) discrete adjoint computation. ---*/
 
-  Output(TimeIter);
+    Run();
+
+    /*--- Output the solution in files. ---*/
+
+    Output(TimeIter);
+
+    TimeIter++;
+  }// TK:: end of time loop
 
 }
 
@@ -168,7 +182,7 @@ void CDiscAdjMultizoneDriver::Run() {
                                                    grid_movement, FFDBox, iZone, INST_0);
 
     /*--- Set BGS_Solution_k to Solution, this is needed to restart
-     *    correctly as the OF gradient will overwrite the solution. ---*/
+     *    correctly as the OF (TK:: ? What is OF) gradient will overwrite the solution. ---*/
 
     Set_BGSSolution_k_To_Solution(iZone);
   }
@@ -203,7 +217,7 @@ void CDiscAdjMultizoneDriver::Run() {
       config_container[iZone]->SetOuterIter(iOuterIter);
 
     /*--- For the adjoint iteration we need the derivatives of the iteration function with
-     *    respect to the state (and possibly the mesh coordinate) variables.
+     *    respect to the state (and ~~possibly~~ later the mesh coordinate) variables.
      *    Since these derivatives do not change in the steady state case we only have to record
      *    if the current recording is different from them.
      *
@@ -220,7 +234,7 @@ void CDiscAdjMultizoneDriver::Run() {
     /*--- If we want to set up zone-specific tapes (retape), we do not need to record
      *    here. Otherwise, the whole tape of a coupled run will be created. ---*/
 
-    if (!retape && (RecordingState != FLOW_CONS_VARS)) {
+    if (!retape && (RecordingState != FLOW_CONS_VARS)) { // RecordingState = NONE; is set above, if not changed in the other class methods the part of the conditional is always true
       SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
       SetRecording(FLOW_CONS_VARS, Kind_Tape::FULL_TAPE, ZONE_0);
     }

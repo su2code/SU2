@@ -1,0 +1,72 @@
+CDiscAdjMultizoneDriver::StartSolver
+
+no time loop yet
+  CDiscAdjMultizoneDriver::InitializeCrossTerms
+  -> Setup the matrix of cross-terms
+  CDiscAdjMultizoneDriver::Run
+  -> Do one outer iteration of adjoint problem. At the end the sens wrt to meshCoords are in solution
+
+  loop izone
+    CDiscAdjHeatIteration::Preprocess / CDiscAdjFluidIteration::Preprocess
+    -> Load the correct solution files from disk. Check if correct for heat+unsteady
+      CDiscAdjSolver::Preprocessing
+      -> Set adjoints (present in solution of AdjFlow solver) from previous timesteps in containers (later added at CDiscAdjFluidIteration::InitializeAdjoint stage)
+        CDiscAdjVariable::SetDual_Time_Derivative   = solution_n + nodes->GetDual_Time_Derivative_n
+        CDiscAdjVariable::SetDual_Time_Derivative_n = solution_n1
+    CDiscAdjMultizoneDriver::Set_BGSSolution_k_To_Solution
+    -> Puts Solution into BGSSolution_k TK::??
+  end loop izone
+
+  -> Evaluate the objective function gradient w.r.t. the solutions of all zones. TK:: Compute just the objFunc from the solution and tape that.
+  CDiscAdjMultizoneDriver::SetRecording
+  -> Record one iteration of the primal problem within each zone. TK:: For ZONE_0 or for all zones??
+  CDiscAdjMultizoneDriver::SetAdj_ObjFunction
+  -> Seed windowing value at the ObjFunc
+  AD::ComputeAdjoint(OBJECTIVE_FUNCTION, START);
+
+  -> Initialize External with the objective function gradient. TK:: which is currently in solution
+  loop izone
+    CDiscAdjFluidIteration::Iterate / CDiscAdjHeatIteration::Iterate
+      CDiscAdjSolver::ExtractAdjoint_Solution
+    CDiscAdjMultizoneDriver::Add_Solution_To_External
+  end loop izone
+
+  loop outerIter
+
+    loop izone
+      CDiscAdjMultizoneDriver::SetRecording
+      CDiscAdjMultizoneDriver::Set_Solution_To_BGSSolution_k
+      -> Puts BGSSolution_k back into Solution. TK:: Why again
+
+      loop innerIter
+        CDiscAdjMultizoneDriver::Add_External_To_Solution
+        -> Add what was set into external earlier now back into solution
+        CDiscAdjMultizoneDriver::ComputeAdjoints
+          CDiscAdjHeatIteration::InitializeAdjoint / CDiscAdjFluidIteration::InitializeAdjoint
+            CDiscAdjSolver::SetAdjoint_Output
+            -> Set the seeding value for the iterated solution TK:: here we need to adapt the call
+          AD::ComputeAdjoint(enter_izone, leave_izone);
+          ->
+          AD::ComputeAdjoint(TRANSFER, OBJECTIVE_FUNCTION);
+          ->
+          AD::ComputeAdjoint(DEPENDENCIES, START);
+          -> Adjoints of dependencies (for AoA, Mach, etc.)
+        CDiscAdjFluidIteration::Iterate[izone] / CDiscAdjHeatIteration::Iterate[izone]
+          CDiscAdjSolver::ExtractAdjoint_Solution
+        CDiscAdjFluidIteration::Monitor / CDiscAdjHeatIteration::Monitor
+      end loop innerIter
+
+      -> Off-diagonal (coupling term) BGS update
+      loop jzone
+        CDiscAdjFluidIteration::Iterate[jzone] / CDiscAdjHeatIteration::Iterate[jzone]
+        CDiscAdjMultizoneDriver::Update_Cross_Term
+
+      end loop jzone
+
+    end loop izone
+
+    CDiscAdjMultizoneDriver::EvaluateSensitivities
+    -> Compute the geometrical sensitivities and write them to file (Note flow sens are never written)
+  end loop outerIter
+
+end of yet not existing time loop

@@ -38,20 +38,20 @@
 class CDiscAdjVariable final : public CVariable {
 private:
   MatrixType Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
-  MatrixType Solution_Direct;
-  MatrixType DualTime_Derivative;
-  MatrixType DualTime_Derivative_n;
+  MatrixType Solution_Direct; /* TODO Explanation missing for all below */
+  MatrixType DualTime_Derivative; /* Stores the Flow Variable Sensitivities from previous and pre-previous timestep and are added to the seeding */
+  MatrixType DualTime_Derivative_n; /* Stores the Flow Variable Sensitivities from pre-previous timesteps and are added to the seeding in the next timestep */
 
-  MatrixType Cross_Term_Derivative;
-  MatrixType Geometry_CrossTerm_Derivative;
-  MatrixType Geometry_CrossTerm_Derivative_Flow;
+  MatrixType Cross_Term_Derivative; /* TODO */
+  MatrixType Geometry_CrossTerm_Derivative; /* TODO */
+  MatrixType Geometry_CrossTerm_Derivative_Flow; /* TODO */
 
-  MatrixType Solution_Geometry;
-  MatrixType Solution_Geometry_Old;
-  MatrixType Geometry_Direct;
+  MatrixType Solution_Geometry; /* TODO */
+  MatrixType Solution_Geometry_Old; /* TODO */
+  MatrixType Geometry_Direct; /* TODO */
 
-  MatrixType Solution_BGS;
-  MatrixType Solution_Geometry_BGS_k;
+  MatrixType Solution_BGS; /* TODO */
+  MatrixType Solution_Geometry_BGS_k; /* TODO */
 
 public:
   /*!
@@ -83,14 +83,37 @@ public:
    */
   inline su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const override { return Sensitivity(iPoint,iDim); }
 
-  inline void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) override { DualTime_Derivative(iPoint,iVar) = der; }
+  /*!
+   * \brief TODO.
+   */
+  inline void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) override {
+    DualTime_Derivative(iPoint,iVar) = der;
+  }
 
-  inline void SetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) override { DualTime_Derivative_n(iPoint,iVar) = der; }
+  /*!
+   * \brief TODO.
+   */
+  inline void SetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) override {
+    DualTime_Derivative_n(iPoint,iVar) = der;
+  }
 
-  inline su2double GetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar) const override { return DualTime_Derivative(iPoint,iVar); }
+  /*!
+   * \brief TODO.
+   */
+  inline su2double GetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar) const override {
+    return DualTime_Derivative(iPoint,iVar);
+  }
 
-  inline su2double GetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar) const override { return DualTime_Derivative_n(iPoint,iVar); }
+  /*!
+   * \brief TODO.
+   */
+  inline su2double GetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar) const override {
+    return DualTime_Derivative_n(iPoint,iVar);
+  }
 
+  /*!
+   * \brief TODO.
+   */
   inline void SetSolution_Direct(unsigned long iPoint, const su2double *val_solution_direct) override {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution_Direct(iPoint,iVar) = val_solution_direct[iVar];

@@ -2677,6 +2677,24 @@ public:
   }
 
   /*!
+   * \brief Get the adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  inline void GetAdjointSolution_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_InputIndex(iPoint,iVar)); //TK:: this needs to be adapted 
+  }
+
+  /*!
+   * \brief Get the adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  inline void GetAdjointSolution_time_n1_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_InputIndex(iPoint,iVar)); //TK:: this needs to be adapted 
+  }
+
+  /*!
    * \brief Set the adjoint values of the solution at time n.
    * \param[in] adj_sol - The adjoint values of the solution.
    */

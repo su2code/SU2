@@ -49,8 +49,8 @@ public:
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CSinglezoneDriver(char* confFile,
-             unsigned short val_nZone,
-             SU2_Comm MPICommunicator);
+                    unsigned short val_nZone,
+                    SU2_Comm MPICommunicator);
 
   /*!
    * \brief Destructor of the class.

@@ -31,7 +31,7 @@ CDiscAdjSolver::CDiscAdjSolver(void) : CSolver () {
 
 }
 
-CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config)  : CSolver() {
+CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
 }
 
@@ -471,10 +471,9 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     /*--- Extract the adjoint solution ---*/
 
-    if(config->GetMultizone_Problem()) {
+    if(multizone) {
       direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
-    }
-    else {
+    } else {
       direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
     }
 
@@ -487,8 +486,12 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
       /*--- Extract the adjoint solution at time n ---*/
-
-      direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
+      //TK:: Here I need a new method GetAdjointSolution_time_n_LocalIndex
+      if(multizone) {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n_LocalIndex(iPoint,Solution);
+      } else {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
+      }
 
       /*--- Store the adjoint solution at time n ---*/
 
@@ -499,8 +502,12 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
       /*--- Extract the adjoint solution at time n-1 ---*/
-
-      direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
+      //TK:: Here I need a new method GetAdjointSolution_time_n1_LocalIndex
+      if(multizone) {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n1_LocalIndex(iPoint,Solution);
+      } else {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
+      }
 
       /*--- Store the adjoint solution at time n-1 ---*/
 
@@ -718,26 +725,31 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
     for (iVar = 0; iVar < nVar; iVar++) {
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
     }
+
     if (fsi) {
       for (iVar = 0; iVar < nVar; iVar++) {
         Solution[iVar] += nodes->GetCross_Term_Derivative(iPoint,iVar);
       }
     }
+
+    // TK:: Make sure here that the correct Dual time derivative is loaded for this zone
     if (dual_time) {
       for (iVar = 0; iVar < nVar; iVar++) {
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
       }
     }
+
     if(config->GetMultizone_Problem()) {
       direct_solver->GetNodes()->SetAdjointSolution_LocalIndex(iPoint,Solution);
-    }
-    else {
+    } else {
       direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
     }
-  }
+
+  }//for iPoint
 }
 
 void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config){
@@ -832,10 +844,10 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
     /*--- Loop over boundary markers to select those for Euler walls and NS walls ---*/
 
-    if(config->GetMarker_All_KindBC(iMarker) == EULER_WALL
-       || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
-       || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL
-       || config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+    if(config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
+       config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX  ||
+       config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ||
+       config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
 
       Sens = 0.0;
 
@@ -902,12 +914,18 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+
   bool dual_time_1st = (config_container->GetTime_Marching() == DT_STEPPING_1ST);
   bool dual_time_2nd = (config_container->GetTime_Marching() == DT_STEPPING_2ND);
   bool dual_time = (dual_time_1st || dual_time_2nd);
   su2double *solution_n, *solution_n1;
   unsigned long iPoint;
   unsigned short iVar;
+
+
+  /* The value set in Dual_Time_Derivative is added to the seeding in InitializeAdjoint later on.
+     The value in SetDual_Time_Derivative_n is used in the next timestep */
+  //TK:: Does this needs to be zone specifc implementation with _LocalIndex... i think not
   if (dual_time) {
     for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++) {
       solution_n = nodes->GetSolution_time_n(iPoint);
@@ -918,6 +936,7 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       }
     }
   }
+
 }
 
 void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {

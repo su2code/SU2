@@ -1,0 +1,53 @@
+CSingleZoneDriver::StartSolver
+
+Loop the time
+
+  CDiscAdjSinglezoneDriver::Preprocess
+  -> Sets DualTimeDerivative + MainRecording
+    CDiscAdjFluidIteration::Preprocess
+    -> Load primal solutions from disk to and order them right for direct run. And ...
+      CDiscAdjSolver::Preprocessing
+      -> Set adjoints (present in solution of AdjFlow solver) from previous timesteps in containers (later added at CDiscAdjFluidIteration::InitializeAdjoint stage)
+        CDiscAdjVariable::SetDual_Time_Derivative   = solution_n + nodes->GetDual_Time_Derivative_n
+        CDiscAdjVariable::SetDual_Time_Derivative_n = solution_n1
+    CDiscAdjSinglezoneDriver::MainRecording
+    -> Records fixed point operator with flow solution registerd
+
+  CDiscAdjSinglezoneDriver::Run
+  -> Iterates one physical timestep in pseudo time
+    Loop pseudo time
+      CDiscAdjFluidIteration::InitializeAdjoint
+        CDiscAdjSolver::SetAdjoint_Output
+        -> Sets adjoints of solution variables of direct_solver to Solution+GetDual_Time_Derivative
+        CVariable::SetAdjointSolution
+      CDiscAdjSinglezoneDriver::SetAdj_ObjFunction
+      -> Set adjoint of objFunc to 1.0 (or windowing value)
+      AD::ComputeAdjoint
+      -> Interpret tape
+      CDiscAdjFluidIteration::Iterate
+        CDiscAdjSolver::ExtractAdjoint_Solution
+        -> Store adjoints from solution in direct_solver into solution of AdjFlow solver
+        CDiscAdjSolver::ExtractAdjoint_Variables
+        -> For sensitivity to AoA, Mach, etc.
+      CDiscAdjFluidIteration::Monitor
+      -> Set if converged
+      AD::ClearAdjoints
+      -> Clear adjoints stored in the direct_run variables
+    End pseudo time loop
+
+  CDiscAdjSinglezoneDriver::Postprocess
+    CDiscAdjSinglezoneDriver::SecondaryRecording
+    -> Reset tape. Compute and set Sensitivity wrt volume mesh coords
+
+  CDiscAdjSinglezoneDriver::Update
+    CSinglezoneDriver::Update
+      CDiscAdjFluidIteration::Update
+      -> Set convergence to false
+
+  CDiscAdjSinglezoneDriver::Monitor
+    CSinglezoneDriver::Monitor
+    -> Check for convergence
+
+  CDiscAdjSinglezoneDriver::Output
+
+End time loop

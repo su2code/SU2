@@ -1982,16 +1982,16 @@ CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig *config) : CIteration(con
 CDiscAdjFluidIteration::~CDiscAdjFluidIteration(void) { }
 
 void CDiscAdjFluidIteration::Preprocess(COutput *output,
-                                           CIntegration ****integration,
-                                           CGeometry ****geometry,
-                                           CSolver *****solver,
-                                           CNumerics ******numerics,
-                                           CConfig **config,
-                                           CSurfaceMovement **surface_movement,
-                                           CVolumetricMovement ***grid_movement,
-                                           CFreeFormDefBox*** FFDBox,
-                                           unsigned short val_iZone,
-                                           unsigned short val_iInst) {
+                                        CIntegration ****integration,
+                                        CGeometry ****geometry,
+                                        CSolver *****solver,
+                                        CNumerics ******numerics,
+                                        CConfig **config,
+                                        CSurfaceMovement **surface_movement,
+                                        CVolumetricMovement ***grid_movement,
+                                        CFreeFormDefBox*** FFDBox,
+                                        unsigned short val_iZone,
+                                        unsigned short val_iInst) {
 
 #ifndef HAVE_MPI
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
@@ -2268,16 +2268,16 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry ****geometry,
 
 
 void CDiscAdjFluidIteration::Iterate(COutput *output,
-                                        CIntegration ****integration,
-                                        CGeometry ****geometry,
-                                        CSolver *****solver,
-                                        CNumerics ******numerics,
-                                        CConfig **config,
-                                        CSurfaceMovement **surface_movement,
-                                        CVolumetricMovement ***volume_grid_movement,
-                                        CFreeFormDefBox*** FFDBox,
-                                        unsigned short val_iZone,
-                                        unsigned short val_iInst) {
+                                     CIntegration ****integration,
+                                     CGeometry ****geometry,
+                                     CSolver *****solver,
+                                     CNumerics ******numerics,
+                                     CConfig **config,
+                                     CSurfaceMovement **surface_movement,
+                                     CVolumetricMovement ***volume_grid_movement,
+                                     CFreeFormDefBox*** FFDBox,
+                                     unsigned short val_iZone,
+                                     unsigned short val_iInst) {
   
   unsigned short Kind_Solver = config[val_iZone]->GetKind_Solver();
   bool frozen_visc = config[val_iZone]->GetFrozen_Visc_Disc();
@@ -2320,7 +2320,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver, CGeometry **
       (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) || (Kind_Solver == DISC_ADJ_INC_EULER)) {
 
     solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0],
-                                                                  config[iZone]);
+                                                                 config[iZone]);
   }
 
   if (turbulent && !frozen_visc) {
@@ -2545,18 +2545,21 @@ void CDiscAdjFluidIteration::Update(COutput *output,
       integration[val_iZone][val_iInst][ADJFLOW_SOL]->SetConvergence(false);
     }
   }
+
 }
+
+
 bool CDiscAdjFluidIteration::Monitor(COutput *output,
-    CIntegration ****integration,
-    CGeometry ****geometry,
-    CSolver *****solver,
-    CNumerics ******numerics,
-    CConfig **config,
-    CSurfaceMovement **surface_movement,
-    CVolumetricMovement ***grid_movement,
-    CFreeFormDefBox*** FFDBox,
-    unsigned short val_iZone,
-    unsigned short val_iInst)     {
+                                     CIntegration ****integration,
+                                     CGeometry ****geometry,
+                                     CSolver *****solver,
+                                     CNumerics ******numerics,
+                                     CConfig **config,
+                                     CSurfaceMovement **surface_movement,
+                                     CVolumetricMovement ***grid_movement,
+                                     CFreeFormDefBox*** FFDBox,
+                                     unsigned short val_iZone,
+                                     unsigned short val_iInst)     {
 
 #ifndef HAVE_MPI
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
