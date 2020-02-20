@@ -5038,42 +5038,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         default:
           break;
       }
-    switch(Kind_Solver) {
-      case EULER:
-        Kind_Solver = DISC_ADJ_EULER;
-        break;
-      case RANS:
-        Kind_Solver = DISC_ADJ_RANS;
-        break;
-      case NAVIER_STOKES:
-        Kind_Solver = DISC_ADJ_NAVIER_STOKES;
-        break;
-      case INC_EULER:
-        Kind_Solver = DISC_ADJ_INC_EULER;
-        break;
-      case INC_RANS:
-        Kind_Solver = DISC_ADJ_INC_RANS;
-        break;
-      case INC_NAVIER_STOKES:
-        Kind_Solver = DISC_ADJ_INC_NAVIER_STOKES;
-        break;
-      case FEM_EULER :
-        Kind_Solver = DISC_ADJ_FEM_EULER;
-        break;
-      case FEM_RANS :
-        Kind_Solver = DISC_ADJ_FEM_RANS;
-        break;
-      case FEM_NAVIER_STOKES :
-        Kind_Solver = DISC_ADJ_FEM_NS;
-        break;
-      case FEM_ELASTICITY:
-        Kind_Solver = DISC_ADJ_FEM;
-        break;
-      case HEAT_EQUATION_FVM:
-        Kind_Solver = DISC_ADJ_HEAT;
-        break;
-      default:
-        break;
     }
 
     RampOutletPressure = false;

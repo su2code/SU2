@@ -1457,6 +1457,20 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
 };
 
 /*!
+ * \brief types of constraint functions
+ */
+enum ENUM_CONSTRAINT_TYPE {
+  EQ_CONSTR = 1,  /*!< \brief Equality constraint. */
+  GEQ_CONSTR = 2, /*!< \brief Inequality constraint (greater than or equal to). */
+  LEQ_CONSTR = 3  /*!< \brief Inequality constraint (less than or equal to). */
+};
+static const MapType<string, ENUM_CONSTRAINT_TYPE> Constraint_Type_Map = {
+  MakePair("EQ", EQ_CONSTR)
+  MakePair("GEQ", GEQ_CONSTR)
+  MakePair("LEQ", LEQ_CONSTR)
+}
+
+/*!
  * \brief Types of residual criteria equations
  */
 enum ENUM_RESIDUAL {

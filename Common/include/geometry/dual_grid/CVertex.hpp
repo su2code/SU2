@@ -39,6 +39,7 @@ class CVertex : public CDualGrid {
 protected:
   unsigned long *Nodes; /*!< \brief Vector to store the global nodes of an element. */
   su2double *Normal;      /*!< \brief Normal coordinates of the element and its center of gravity. */
+  su2double *Normal_Old;  /*!< \brief Normal coordinates of the element and its center of gravity at the old design. */
   su2double Aux_Var;      /*!< \brief Auxiliar variable defined only on the surface. */
   su2double CartCoord[3];   /*!< \brief Vertex cartesians coordinates. */
   su2double VarCoord[3];    /*!< \brief Used for storing the coordinate variation due to a surface modification. */
