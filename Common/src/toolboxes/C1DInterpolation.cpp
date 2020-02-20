@@ -31,7 +31,7 @@
 su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
     Point_Match = false;
 
-    for (int i=0;i<n-1;i++)
+    for (int i=0; i<n-1; i++)
         if(Point_Interp>=x[i] && Point_Interp<=x[i+1])
             Point_Match = true;
 
@@ -40,7 +40,7 @@ su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
         Point_Match = true;
     }
 
-    int i =0, j=n-1;
+    int i=0, j=n-1;
 
     while (j-i>1){ 
         int m=(i+j) / 2 ; 
@@ -55,7 +55,7 @@ su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
 su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
     Point_Match = false;
 
-    for (int i=0;i<n-1;i++){
+    for (int i=0; i<n-1; i++){
         if(Point_Interp>=x[i] && Point_Interp<=x[i+1]){
             Point_Match = true;
             return (Point_Interp-x[i])*dydx[i]+y[i];
@@ -123,7 +123,7 @@ void CAkimaInterpolation::SetSpline (const vector<su2double> &X,const vector<su2
     }
 }
 
-vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated , 
+vector<su2double> CorrectedInletValues(const vector<su2double> &Inlet_Interpolated , 
                                                         su2double Theta ,
                                                         unsigned short nDim, 
                                                         su2double *Coord, 
@@ -170,7 +170,7 @@ vector<su2double> CorrectedInletValues(vector<su2double> &Inlet_Interpolated ,
     return Inlet_Values;
 }
 
-void PrintInletInterpolatedData(vector<su2double>& Inlet_Data_Interpolated, string Marker, unsigned long nVertex, unsigned short nDim, unsigned short nColumns){
+void PrintInletInterpolatedData(const vector<su2double>& Inlet_Data_Interpolated, string Marker, unsigned long nVertex, unsigned short nDim, unsigned short nColumns){
     ofstream myfile;
     myfile.precision(16);
     myfile.open("Interpolated_Data_"+Marker+".dat",ios_base::out);
