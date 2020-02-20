@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file numerics_structure.hpp
  * \brief Headers of the main subroutines for the dumerical definition of the problem.
  *        The subroutines and functions are in the <i>numerics_structure.cpp</i>,
@@ -1523,7 +1523,7 @@ public:
  */
 class CUpwRoeBase_Flow : public CNumerics {
 protected:
-  bool implicit, dynamic_grid, roe_low_dissipation;
+  bool implicit, dynamic_grid, roe_low_dissipation, rom;
   su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j, *Conservatives_i, *Conservatives_j;
   su2double *Diff_U, *Lambda, **P_Tensor, **invP_Tensor;
   su2double *RoeVelocity, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;

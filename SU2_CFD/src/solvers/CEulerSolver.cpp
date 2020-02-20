@@ -3607,6 +3607,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool low_mach_corr    = config->Low_Mach_Correction();
   unsigned short kind_dissipation = config->GetKind_RoeLowDiss();
+  bool rom              = config->GetReduced_Model();
 
   /*--- Loop over all the edges ---*/
 
@@ -3821,7 +3822,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Set implicit Jacobians ---*/
 
-    if (implicit) {
+    if (implicit or rom) {
       Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
     }
 
@@ -5495,7 +5496,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.close();
   
   // backtracking line search to find step size:
-  double a =  1.0;
+  double a =  0.1;
   
   for (int i = 0; i < n; i++) {
     GenCoordsY[i] += a * r[i];
