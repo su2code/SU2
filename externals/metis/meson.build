@@ -1,4 +1,4 @@
-metis_cpp_args = ['-D_FILE_OFFSET_BITS=64', '-DNDEBUG', '-DNDEBUG2', '-DHAVE_EXECINFO_H', '-DHAVE_GETLINE']
+metis_c_args = ['-D_FILE_OFFSET_BITS=64', '-DNDEBUG', '-DNDEBUG2', '-DHAVE_GETLINE', '-DUSE_GKREGEX']
 metis_src = ['GKlib/pqueue.c',
            'GKlib/blas.c',
            'GKlib/fkvkselect.c',
@@ -65,7 +65,7 @@ metis_include = include_directories(['include','GKlib','libmetis'])
 metis_lib     = static_library('metis', 
                                metis_src,
 			       include_directories : metis_include,
-			       cpp_args: metis_cpp_args)
+			       c_args: metis_c_args)
 
 metis_dep = declare_dependency(link_with : metis_lib, 
                                include_directories : metis_include)

@@ -41,7 +41,6 @@ import numpy as np
 from .. import io   as su2io
 from .. import amginria as su2amg
 from interface import CFD as SU2_CFD
-from interface import MET as SU2_MET
 
 def amg ( config , kind='' ):
     
@@ -156,14 +155,6 @@ def amg ( config , kind='' ):
                 config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
                 SU2_CFD(config_cfd)
 
-                config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
-                config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, ANISOTROPIC_METRIC)"
-                config_cfd.ERROR_ESTIMATE         = 'YES'
-                config_cfd.MESH_HMAX              = config.ADAP_HMAX
-                config_cfd.MESH_HMIN              = config.ADAP_HMIN
-                config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
-                SU2_MET(config_cfd)
-
         except:
             sys.stdout = sav_stdout
             sys.stderr = sav_stderr
@@ -192,17 +183,6 @@ def amg ( config , kind='' ):
 
         current_mesh     = config['MESH_FILENAME']
         current_solution = "ini_restart_flow.csv"
-
-        config_cfd.RESTART_FILENAME       = current_solution
-        config_cfd.SOLUTION_FILENAME      = '../' + config['SOLUTION_FILENAME']
-        config_cfd.SOLUTION_ADJ_FILENAME  = '../' + config['SOLUTION_ADJ_FILENAME']
-        config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, ANISOTROPIC_METRIC)"
-        config_cfd.ERROR_ESTIMATE         = 'YES'
-        config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
-        config_cfd.MESH_HMAX              = config.ADAP_HMAX
-        config_cfd.MESH_HMIN              = config.ADAP_HMIN
-        config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
-        SU2_MET(config_cfd)
 
         sys.stdout = sav_stdout
         sys.stderr = sav_stderr
@@ -461,12 +441,6 @@ def amg ( config , kind='' ):
                     config_cfd.RESTART_SOL            = 'NO'
                     config_cfd.ITER                   = int(adap_adj_iter[iSiz])
                     SU2_CFD(config_cfd)
-
-                    config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
-                    config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, ANISOTROPIC_METRIC)"
-                    config_cfd.ERROR_ESTIMATE         = 'YES'
-                    config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[iSiz])
-                    SU2_MET(config_cfd)
             
             except:
                 sys.stdout = sav_stdout

@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Global makefile for the SU2 project
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 6.2.0 "Falcon"
+# \version 7.0.1 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -67,10 +67,6 @@ endif
 
 if BUILD_SOL
 SUBDIRS +=SU2_SOL/obj
-endif
-
-if BUILD_MET
-SUBDIRS +=SU2_MET/obj
 endif
 
 if BUILD_GEO

@@ -455,7 +455,7 @@ void COneShotFluidOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Anisotropic metric
-  if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET) {
+  if(config->GetError_Estimate()) {
     if (nDim == 2){
       AddVolumeOutput("ANISO_METR0", "Aniso_Metric[0]", "ANISOTROPIC_METRIC", "x-x-component of the metric");
       AddVolumeOutput("ANISO_METR1", "Aniso_Metric[1]", "ANISOTROPIC_METRIC", "x-y-component of the metric");
@@ -650,7 +650,7 @@ void COneShotFluidOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, C
     SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);      
   }
 
-  if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET) {
+  if(config->GetError_Estimate()) {
     if (nDim == 2){
       SetVolumeOutputValue("ANISO_METR0", iPoint, Node_Flow->GetAnisoMetr(iPoint, 0));
       SetVolumeOutputValue("ANISO_METR1", iPoint, Node_Flow->GetAnisoMetr(iPoint, 1));
