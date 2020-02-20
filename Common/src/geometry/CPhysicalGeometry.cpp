@@ -13843,16 +13843,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
 }
 
 void CPhysicalGeometry::InitializeSensitivity() {
-  unsigned short iDim;
-  unsigned long iPoint;
-  if(Sensitivity == NULL) {
-    Sensitivity = new su2double[nPoint*nDim];
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Sensitivity[iPoint*nDim+iDim] = 0.0;
-      }
-    }
-  }
+  Sensitivity.resize(nPoint,nDim);
 }
 
 void CPhysicalGeometry::SetSensitivity(CConfig *config) {
