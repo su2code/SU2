@@ -33,7 +33,7 @@ def prepro_back_mesh(config_cfd, config_amg):
     Ver_Ini = [mesh_ini['xyz'][i][:2] for i in Tri_Ini]
 
     V_Ini = [Ver_Ini[1][i] - Ver_Ini[0][i] for i in range(2)]
-    V_Bak = [Ver_Bak[1][i] - Ver_Bak[0][i] for i in range(2)]
+    W_Ini = [Ver_Ini[2][i] - Ver_Ini[0][i] for i in range(2)]
 
     N_Ini = V_Ini[0]*W_Ini[1]-V_Ini[1]*W_Ini[0]
 
