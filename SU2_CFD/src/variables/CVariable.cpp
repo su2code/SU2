@@ -73,6 +73,14 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
   if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
     AD_InputIndex.resize(nPoint,nVar) = -1;
     AD_OutputIndex.resize(nPoint,nVar) = -1;
+
+    if( config->GetTime_Marching() ) {
+      AD_Time_n_InputIndex.resize(nPoint,nVar)   = -1;
+      AD_Time_n_OutputIndex.resize(nPoint,nVar)  = -1;
+      AD_Time_n1_InputIndex.resize(nPoint,nVar)  = -1;
+      AD_Time_n1_OutputIndex.resize(nPoint,nVar) = -1;
+    }
+
   }
 
   if (config->GetMultizone_Problem())
@@ -118,14 +126,56 @@ void CVariable::RegisterSolution(bool input, bool push_index) {
   }
 }
 
-void CVariable::RegisterSolution_time_n() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n(iPoint,iVar));
+void CVariable::RegisterSolution_time_n(bool input, bool push_index) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
+      if(input) {
+
+        if(push_index) {
+          AD::RegisterInput(Solution_time_n(iPoint,iVar));
+        } else {
+          AD::RegisterInput(Solution_time_n(iPoint,iVar), false);
+          AD::SetIndex(AD_Time_n_InputIndex(iPoint,iVar), Solution_time_n(iPoint,iVar));
+        }//if push_index
+
+      } else { // why did CVR throw away this part, because we never need to register n/n1 output
+        AD::RegisterOutput(Solution_time_n(iPoint,iVar)); //this can be deleted
+        if(!push_index)
+          AD::SetIndex(AD_Time_n_OutputIndex(iPoint,iVar), Solution_time_n(iPoint,iVar));
+      }//if input
+    }//for iVar
+  }//for iPoint
 }
 
-void CVariable::RegisterSolution_time_n1() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n1(iPoint,iVar));
+void CVariable::RegisterSolution_time_n1(bool input, bool push_index) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for(unsigned long iVar = 0; iVar < nVar; ++iVar) {
+      if(input) {
+
+        if(push_index) {
+          AD::RegisterInput(Solution_time_n1(iPoint,iVar));
+        } else {
+          AD::RegisterInput(Solution_time_n1(iPoint,iVar), false);
+          AD::SetIndex(AD_Time_n1_InputIndex(iPoint,iVar), Solution_time_n1(iPoint,iVar));
+        }//if push_index
+
+      } else { // why did CVR throw away this part
+        AD::RegisterOutput(Solution_time_n1(iPoint,iVar));
+        if(!push_index)
+          AD::SetIndex(AD_Time_n1_OutputIndex(iPoint,iVar), Solution_time_n1(iPoint,iVar));
+      }//if input
+    }//for iVar
+  }//for iPoint
 }
+
+//void CVariable::RegisterSolution_time_n() {
+//  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+//    for(unsigned long iVar=0; iVar<nVar; ++iVar)
+//      AD::RegisterInput(Solution_time_n(iPoint,iVar));
+//}
+//
+//void CVariable::RegisterSolution_time_n1() {
+//  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+//    for(unsigned long iVar=0; iVar<nVar; ++iVar)
+//      AD::RegisterInput(Solution_time_n1(iPoint,iVar));
+//}

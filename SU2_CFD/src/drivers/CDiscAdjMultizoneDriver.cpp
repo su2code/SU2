@@ -127,9 +127,9 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
     cout << "\nSimulation Run using the Discrete Adjoint Multizone Driver" << endl;
 
-    if (driver_config->GetTime_Domain())
+    /*if (driver_config->GetTime_Domain())
       SU2_MPI::Error("The discrete adjoint multizone driver is not ready for unsteady computations yet.",
-                     CURRENT_FUNCTION);
+                     CURRENT_FUNCTION);*/
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
@@ -143,7 +143,7 @@ void CDiscAdjMultizoneDriver::StartSolver() {
     /*--- Perform some preprocessing before starting the time-step simulation. ---*/
     Preprocess(TimeIter);
 
-    for (iZone = 0; iZone < nZone; iZone++){ // TK:: this for loop can probalby be deleted based on the above
+    for (iZone = 0; iZone < nZone; iZone++){ // TK:: this for loop can probalby be deleted based on the above, has to stay because it is alos set to zero
 
       /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
       /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
@@ -182,9 +182,9 @@ void CDiscAdjMultizoneDriver::Run() {
                                                    grid_movement, FFDBox, iZone, INST_0);
 
     /*--- Set BGS_Solution_k to Solution, this is needed to restart
-     *    correctly as the OF (TK:: ? What is OF) gradient will overwrite the solution. ---*/
+     *    correctly as the obj.Func. gradient will overwrite the solution. ---*/
 
-    Set_BGSSolution_k_To_Solution(iZone);
+    Set_BGSSolution_k_To_Solution(iZone);//TK:: Do I have to include time_n and time_n1 here as well
   }
 
   /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
@@ -200,7 +200,7 @@ void CDiscAdjMultizoneDriver::Run() {
   /*--- Initialize External with the objective function gradient. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-
+    //TK:: At this stage adjoints of time_n and time_n1 do not need to be extracted as dJ/dU_n or n1 = 0
     iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                                 solver_container, numerics_container, config_container,
                                                 surface_movement, grid_movement, FFDBox, iZone, INST_0);
@@ -232,9 +232,9 @@ void CDiscAdjMultizoneDriver::Run() {
 
 
     /*--- If we want to set up zone-specific tapes (retape), we do not need to record
-     *    here. Otherwise, the whole tape of a coupled run will be created. ---*/
+     *    here. Otherwise, the whole tape of a coupled run will be created. ---*/ // TK:: What is done usually? most likely retape=false as FULL_TAPE defaults to yes in config
 
-    if (!retape && (RecordingState != FLOW_CONS_VARS)) { // RecordingState = NONE; is set above, if not changed in the other class methods the part of the conditional is always true
+    if (!retape && (RecordingState != FLOW_CONS_VARS)) { //TK:: RecordingState = NONE; is set above, if not changed in the other class methods the part of the conditional is always true
       SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
       SetRecording(FLOW_CONS_VARS, Kind_Tape::FULL_TAPE, ZONE_0);
     }
@@ -243,13 +243,13 @@ void CDiscAdjMultizoneDriver::Run() {
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
-      if (retape) {
+      if (retape) { //TK:: this will usually not be done
         SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
         SetRecording(FLOW_CONS_VARS, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
       }
 
       /*--- Start inner iterations from where we stopped in previous outer iteration. ---*/
-
+      //TK:: Set solution back to values prior to objFunc eval
       Set_Solution_To_BGSSolution_k(iZone);
 
       /*--- Inner loop to allow for multiple adjoint updates with respect to solvers in iZone. ---*/
@@ -480,7 +480,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
   AD::Push_TapePosition(); /// REGISTERED
 
   for (iZone = 0; iZone < nZone; iZone++) {
-
+    //TK:: What is this doing? Gradient eval, general preprocessing
     iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
                                                         config_container, iZone, INST_0, kind_recording);
   }
@@ -517,7 +517,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
       else {
         DirectIteration(iZone, kind_recording);
       }
-
+      //TK:: this is done to later seed the output, right?
       iteration_container[iZone][INST_0]->RegisterOutput(solver_container, geometry_container,
                                                          config_container, output_container[iZone], iZone, INST_0);
 
@@ -850,7 +850,7 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
         /*--- If jZone contributes to iZone in the primal problem, then
          *    iZone contributes to jZone in the adjoint problem. ---*/
 
-        Cross_Terms[iZone][jZone].resize(MAX_SOLS);
+        Cross_Terms[iZone][jZone].resize(MAX_SOLS); // CrossTerm = dG(1) / du(2)
 
         for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
           CSolver* solver = solver_container[jZone][INST_0][MESH_0][iSol];

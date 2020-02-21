@@ -1,6 +1,7 @@
 CDiscAdjMultizoneDriver::StartSolver
 
-no time loop yet
+time loop
+
   CDiscAdjMultizoneDriver::InitializeCrossTerms
   -> Setup the matrix of cross-terms
   CDiscAdjMultizoneDriver::Run
@@ -19,6 +20,10 @@ no time loop yet
 
   -> Evaluate the objective function gradient w.r.t. the solutions of all zones. TK:: Compute just the objFunc from the solution and tape that.
   CDiscAdjMultizoneDriver::SetRecording
+    CDiscAdjFluidIteration::RegisterInput
+    CDiscAdjFluidIteration::SetDependencies
+    CDiscAdjMultizoneDriver::HandleDataTransfer
+    CDiscAdjMultizoneDriver::SetObjFunction
   -> Record one iteration of the primal problem within each zone. TK:: For ZONE_0 or for all zones??
   CDiscAdjMultizoneDriver::SetAdj_ObjFunction
   -> Seed windowing value at the ObjFunc
@@ -35,6 +40,9 @@ no time loop yet
 
     loop izone
       CDiscAdjMultizoneDriver::SetRecording
+        CDiscAdjFluidIteration::RegisterInput / CDiscAdjHeatIteration::RegisterInput
+          CDiscAdjSolver::RegisterSolution
+            direct_solver->GetNodes()->RegisterSolution
       CDiscAdjMultizoneDriver::Set_Solution_To_BGSSolution_k
       -> Puts BGSSolution_k back into Solution. TK:: Why again
 
@@ -69,4 +77,4 @@ no time loop yet
     -> Compute the geometrical sensitivities and write them to file (Note flow sens are never written)
   end loop outerIter
 
-end of yet not existing time loop
+end time loop

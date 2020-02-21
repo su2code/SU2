@@ -47,7 +47,7 @@ protected:
   /*!
    * \brief Position markers within a tape.
    */
-  enum Tape_Positions {
+  enum Tape_Positions {//TK:: here are AD::Push_TapePosition
     START = 0,                    /*!< \brief Beginning of the tape. */
     REGISTERED = 1,               /*!< \brief Solver variables are registered on the tape. */
     DEPENDENCIES = 2,             /*!< \brief Derived values (e.g. gradients) are set. */

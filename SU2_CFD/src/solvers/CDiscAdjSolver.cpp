@@ -195,7 +195,7 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement *grid_movement, CConfig *config) {
 
-
+//TK:: Can this function be cleaned up?
 //  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 //      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
 //  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
@@ -255,7 +255,7 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
   direct_solver->GetNodes()->RegisterSolution(input, push_index);
-
+  //TK:: Here I need to register time_n and time_n1 correctly, either with new or adapted functions
   if (time_n_needed)
     direct_solver->GetNodes()->RegisterSolution_time_n();
 

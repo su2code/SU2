@@ -121,6 +121,14 @@ protected:
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
+  su2matrix<int> AD_Time_n_InputIndex;    /*!< \brief TK:: Tape(?) Indices of Solution variables in the adjoint vector. */
+
+  //TK:: Do I need this container and the output container below?? because I never need to seed solution_time_n or solution_time_n1
+  su2matrix<int> AD_Time_n_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */  // these output containers can be deleted
+
+  su2matrix<int> AD_Time_n1_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Time_n1_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
   unsigned long nPoint = {0};  /*!< \brief Number of points in the domain. */
   unsigned long nDim = {0};      /*!< \brief Number of dimension of the problem. */
   unsigned long nVar = {0};        /*!< \brief Number of variables of the problem. */
@@ -2660,6 +2668,7 @@ public:
 
   /*!
    * \brief Get the adjoint values of the solution.
+   * \param[in] iPoint - Point ID 
    * \param[out] adj_sol - The adjoint values of the solution.
    */
   inline void GetAdjointSolution(unsigned long iPoint, su2double *adj_sol) const {
@@ -2682,7 +2691,7 @@ public:
    */
   inline void GetAdjointSolution_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      adj_sol[iVar] = AD::GetDerivative(AD_InputIndex(iPoint,iVar)); //TK:: this needs to be adapted 
+      adj_sol[iVar] = AD::GetDerivative(AD_Time_n_InputIndex(iPoint,iVar)); //TK:: this was adapted 
   }
 
   /*!
@@ -2691,7 +2700,7 @@ public:
    */
   inline void GetAdjointSolution_time_n1_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      adj_sol[iVar] = AD::GetDerivative(AD_InputIndex(iPoint,iVar)); //TK:: this needs to be adapted 
+      adj_sol[iVar] = AD::GetDerivative(AD_Time_n1_InputIndex(iPoint,iVar)); //TK:: this was adapted 
   }
 
   /*!
