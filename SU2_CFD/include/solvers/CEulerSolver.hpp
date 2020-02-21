@@ -2874,6 +2874,19 @@ public:
   }
 
   /*!
+   * \brief Sort a solution obtained from pyAMG.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] SolAdap - Adapted solution.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void SortAdaptedSolution(CGeometry **geometry, CSolver ***solver,
+                           CConfig *config, vector<vector<passivedouble> > const &SolAdap,
+                           int val_iter, bool val_update_geo) override;
+
+  /*!
    * \brief Compute the global error measures (L2, Linf) for verification cases.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
