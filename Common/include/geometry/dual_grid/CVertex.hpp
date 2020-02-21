@@ -157,6 +157,16 @@ public:
   }
 
   /*!
+   * \brief Set the normal vector for the old mesh.
+   * \param[in] val_face_normal - Vector to initialize the normal vector.
+   * \return Value of the normal vector.
+   */
+  inline void SetNormal_Old(su2double *val_face_normal) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Normal_Old[iDim]=val_face_normal[iDim];
+}
+
+  /*!
    * \brief Add a vector to the normal vector.
    * \param[in] val_face_normal - Vector to add to the normal vector.
    */

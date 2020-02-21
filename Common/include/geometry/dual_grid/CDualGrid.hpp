@@ -110,6 +110,12 @@ public:
 
   /*!
    * \brief A pure virtual member.
+   * \param[in] val_face_normal - Coordinates of the normal.
+   */
+  virtual void SetNormal_Old(const su2double *val_face_normal) = 0;
+
+  /*!
+   * \brief A pure virtual member.
    */
   virtual unsigned short GetnNodes(void) const = 0;
 
