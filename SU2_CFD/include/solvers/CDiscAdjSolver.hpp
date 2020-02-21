@@ -36,7 +36,7 @@
  * \ingroup Discrete_Adjoint
  * \author T. Albring
  */
-class CDiscAdjSolver final : public CSolver {
+class CDiscAdjSolver : public CSolver {
 private:
   unsigned short KindDirect_Solver;
   CSolver *direct_solver;

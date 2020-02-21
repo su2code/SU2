@@ -33,10 +33,10 @@
  * \class COneShotSolver
  * \brief Main class for defining the one-shot optimization.
  * \ingroup One_Shot
- * \author L. Kusch
- * \version 5.0.0 "Raven"
+ * \author L. Kusch, B. Munguía
+ * \version 7.0.1 "Blackbird"
  */
-class COneShotSolver : public CDiscAdjSolver {
+class COneShotSolver final : public CDiscAdjSolver {
 private:
   su2double theta, theta_old, rho, rho_old, grad_norm, *lambda;
   unsigned short nConstr, ArmijoIter, nActiveDV;
