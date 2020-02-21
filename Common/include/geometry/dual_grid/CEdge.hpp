@@ -137,6 +137,12 @@ public:
   inline su2double *GetNormal(void) override {  return Normal; }
 
   /*!
+   * \brief This function does nothing (it comes from a pure virtual function, that implies the
+   *      definition of the function in all the derived classes).
+   */
+  inline su2double *GetNormal_Old(void) override { return nullptr; }
+
+  /*!
    * \brief Initialize normal vector.
    */
   inline void SetZeroValues(void) override {
@@ -153,6 +159,12 @@ public:
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Normal[iDim]=val_face_normal[iDim];
   }
+
+  /*!
+   * \brief This function does nothing (it comes from a pure virtual function, that implies the
+   *        definition of the function in all the derived classes).
+   */
+  inline void SetNormal_Old(const su2double *val_face_normal) override { }
 
   /*!
    * \brief Add a vector to the normal vector.
