@@ -4824,6 +4824,203 @@ public:
    */
   virtual su2double GetMaximum_Volume() const { return 0.0; }
 
+  /*!
+   * \brief Reset indices of inputs.
+   * \param[in] geometry - geometry class object
+   * \param[in] config - config class object
+   */
+  inline virtual void ResetInputs(CGeometry *geometry, CConfig *config) { }
+
+  /*!
+   * \brief Store the current solution in Solution_Store.
+   * (This is done to store the solution of the current iterate before line search)
+   */
+  inline virtual void SetStoreSolution() { }
+
+  /*!
+   * \brief Load the current solution from Solution_Store.
+   */
+  inline virtual void LoadSolution() { }
+
+  /*!
+   * \brief Store current mesh coordinates and normals.
+   * (This is e.g. done before line search)
+   * \param[in] config - config class object
+   * \param[in] geometry - geometry class object
+   */
+  inline virtual void SetMeshPointsOld(CConfig *config, CGeometry *geometry) { }
+
+  /*!
+   * \brief Load mesh coordinates and normals.
+   * \param[in] config - config class object
+   * \param[in] geometry - geometry class object
+   */
+  inline virtual void LoadMeshPointsOld(CConfig *config, CGeometry *geometry) { }
+
+  /*!
+   * \brief Load old mesh coordinates and add perturbation.
+   * \param[in] config - config class object
+   * \param[in] geometry - geometry class object
+   */
+  inline virtual void LoadMeshPointsStep(CConfig *config, CGeometry *geometry, su2double stepsize) { }
+
+  /*!
+   * \brief Store the geometry sensitivities (Sensitivity) in Sensitivity_ShiftedLagrangian
+   * \param[in] geometry - geometry class object
+   */
+  inline virtual void SetSensitivityShiftedLagrangian(CGeometry* geometry) { }
+
+  /*!
+   * \brief Calculate either the solver part of the augmented or the shifted Lagrangian
+   * (without objective and constraint functions)
+   * \param[in] config - config class object
+   * \result value of the Lagrangian part
+   */
+  inline virtual su2double CalculateLagrangian(CConfig* config) { }
+
+  /*!
+   * \brief Store the current solution in Solution_Save.
+   * (This is done to store the solution before calculating the alpha and beta terms)
+   */
+  inline virtual void SetSaveSolution() { }
+
+  /*!
+   * \brief Store the previous solution in Solution_Save.
+   * (This is done to store the solution before calculating the alpha and beta terms)
+   */
+  inline virtual void SetOldStoreSolution() { }
+
+  /*!
+   * \brief Load the current solution from Solution_Save.
+   */
+  inline virtual void LoadSaveSolution() { }
+
+  /*!
+   * \brief Increment the solution by stepsize*d(bar)y.
+   */
+  inline virtual void LoadStepSolution(su2double stepsize) { }
+
+  /*!
+   * \brief Set the geometry sensitivity to the sensitivity of the shifted Lagrangian
+   * (This happens for the sensitivity projection)
+   * \param[in] geometry - geometry class object
+   */
+  inline virtual void SetGeometrySensitivityGradient(CGeometry *geometry) { }
+
+  /*!
+   * \brief Set the geometry sensitivity to the sensitivity of the augmented Lagrangian
+   * (This happens for the sensitivity projection)
+   * \param[in] geometry - geometry class object
+   */
+  inline virtual void SetGeometrySensitivityLagrangian(CGeometry *geometry, unsigned short kind) { }
+
+  /*!
+   * \brief Set Solution_Delta for this time step.
+   */
+  inline virtual void SetSolutionDelta(CGeometry *geometry) { }
+
+  /*!
+   * \brief Set Solution_Delta for this time step.
+   */
+  inline virtual void SetSaveSolutionDelta(CGeometry *geometry) { }
+
+  /*!
+   * \brief Set Solution_Delta for this time step.
+   */
+  inline virtual void SetStoreSolutionDelta() { }
+
+  /*!
+   * \brief Calculate estimates for alpha, beta, and gamma of the doubly augmented Lagrangian
+   */
+  inline virtual void CalculateRhoTheta(CConfig *config) { }
+
+  /*!
+   * \brief Store estimates for alpha and beta of the doubly augmented Lagrangian
+   */
+  inline virtual void CalculateAlphaBeta(CConfig *config) { }
+
+  /*!
+   * \brief Store estimates for gamma of the doubly augmented Lagrangian
+   */
+  inline virtual void CalculateGamma(CConfig *config, su2double val_bcheck_norm, su2double* val_constr_func, su2double* val_gamma) { }
+
+  /*!
+   * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
+   *        after tape has been evaluated without computing the adjoint residual.
+   * \param[in] geometry - The geometrical definition of the problem.
+   * \param[in] config - The particular config.
+   */
+  inline virtual void ExtractAdjoint_Solution_Clean(CGeometry *geometry, CConfig *config) { }
+
+  /*!
+   * \brief Set the adjoint output to the difference in the solution.
+   * (Is done to evaluate the adjoint solution for the alpha term)
+   * \param[in] geometry - geometry class element
+   * \param[in] config - config class element
+   */
+  inline virtual void SetAdjoint_OutputUpdate(CGeometry *geometry, CConfig *config) { }
+
+  /*!
+   * \brief Set the adjoint output to zero.
+   * (Is done to evaluate the adjoint solution for the constraint function only)
+   * \param[in] geometry - geometry class element
+   * \param[in] config - config class element
+   */
+  inline virtual void SetAdjoint_OutputZero(CGeometry *geometry, CConfig *config) { }
+
+  /*!
+   * \brief Update the sensitivity of the doubly augmented Lagrangian with a factor.
+   * \param[in] geometry - geometry class element
+   * \param[in] factor - multiplier for the update
+   */
+  inline virtual void SetSensitivityLagrangian(CGeometry *geometry, unsigned short kind) { }
+
+  /*!
+   * \brief Adds the difference in the adjoint solution to the solution (with a finite difference step size).
+   * (This is done to calculate the finite difference update for the beta term)
+   * \param[in] config - config class element
+   */
+  inline virtual void UpdateStateVariable(CConfig *config, su2double fd_step) { }
+
+  /*!
+   * \brief Set the sensitivity to the finite difference to approximate N_yx for the beta term.
+   * \param[in] geometry - geometry class element
+   * \param[in] config - config class element
+   */
+  inline virtual void SetFiniteDifferenceSens(CGeometry *geometry, CConfig *config) { }
+
+  inline virtual void SetConstrDerivative(unsigned short iConstr) { }
+
+  inline virtual su2double GetConstrDerivative(unsigned short iConstr, unsigned long iPoint, unsigned long iVar) const { return 0; }
+
+  inline virtual su2double MultiplyConstrDerivative(unsigned short iConstr, unsigned short jConstr) { }
+
+  inline virtual void SetConFunc_Value(su2double val_ConFunc) { }
+
+  inline virtual void AddConFunc_Value(su2double val_ConFunc) { }
+
+  inline virtual su2double GetConFunc_Value(void) const { return 0; }
+
+  inline virtual void SetArmijoIter(unsigned short val_iter) { }
+
+  inline virtual unsigned short GetArmijoIter(void) const { return 0; }
+
+  inline virtual void SetnActiveDV(unsigned short val_active) { }
+
+  inline virtual unsigned short GetnActiveDV(void) const { return 0; }
+
+  inline virtual su2double GetOneShotRho(void) { return 0; }
+
+  inline virtual su2double GetOneShotTheta(void) { return 0; }
+
+  inline virtual void SetShiftedLagGradNorm(su2double val_norm) { }
+
+  inline virtual su2double GetShiftedLagGradNorm(void) const { return 0; }
+
+  inline virtual void SetLambdaValue(unsigned short iConstr, su2double val_constr) { }
+
+  inline virtual su2double GetLambdaValue(unsigned short iConstr) const { return 0; }
+
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.
