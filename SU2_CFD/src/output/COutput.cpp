@@ -722,7 +722,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Inria GMF restart" << fileName + CInriaFileWriter::fileExt;     
       }
       
-      fileWriter = new CInriaFileWriter(volumeFieldNames, nDim, fileName, volumeDataSorter);
+      fileWriter = new CInriaFileWriter(fileName, volumeDataSorter);
       
       break;
 

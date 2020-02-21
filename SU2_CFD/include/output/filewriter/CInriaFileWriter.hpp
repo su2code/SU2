@@ -37,9 +37,6 @@
 
 #pragma once
 #include "CFileWriter.hpp"
-#include "../../../include/solver_structure.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
-#include "../../../Common/include/config_structure.hpp"
 
 class CInriaFileWriter final: public CFileWriter{
 
@@ -52,13 +49,10 @@ class CInriaFileWriter final: public CFileWriter{
   
   /*!
    * \brief Construct a file writer using field names, file extension and dimension.
-   * \param[in] fields - A list of field names
-   * \param[in] nDim - Physical dimension
    * \param[in] fileName - The name of the file
    * \param[in] data_sorter - The parallel sorted data to write
    */  
-  CInriaFileWriter(vector<string> fields, unsigned short nDim, 
-                 string fileName, CParallelDataSorter* data_sorter);
+  CInriaFileWriter(string valFileName, CParallelDataSorter *valDataSorter);
   
   /*!
    * \brief Destructor
@@ -66,68 +60,8 @@ class CInriaFileWriter final: public CFileWriter{
   ~CInriaFileWriter() override;
 
   /*!
-   * \brief Write a native GMF solb file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Flow, adjoint or linearized solution.
-   * \param[in] val_iZone - iZone index.
+   * \brief Write sorted data to file in GMF file format
    */
-  void WriteInriaRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
-   * \brief Write a native GMF meshb file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void WriteInriaMesh(CConfig *config, CGeometry *geometry);
-
-  // /*!
-  //  * \brief Organizes the all the solutions for AMG.
-  //  * \param[in] solver_container - Container vector with all the solutions.
-  //  * \param[in] geometry - Geometrical definition of the problem.
-  //  * \param[in] config - Definition of the particular problem.
-  //  * \param[in] val_nZone - Total number of domains in the grid file.
-  //  */
-  // void SetResult_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-  //                         unsigned short val_nZone);
-
-  // /*!
-  //  * \brief Returns a sorted solution value for AMG for the current processor.
-  //  */
-  // vector<vector<passivedouble> > GetResult_Parallel(void);
-
-  // /*!
-  //  * \brief Cleans up the sorted solutions.
-  //  */
-  // void CleanResult_Parallel(void);
-
-  // /*!
-  //  * \brief Organizes the connectivity for AMG.
-  //  * \param[in] geometry - Geometrical definition of the problem.
-  //  * \param[in] config - Definition of the particular problem.
-  //  * \param[in] val_nZone - Total number of domains in the grid file.
-  //  */
-   
-  // void SetConnectivity_Parallel(CGeometry ****geometry, CConfig **config, unsigned short val_nZone);
-
-  // /*!
-  //  * \brief Get the connectivity of edges.
-  //  */
-  // vector<vector<unsigned long> > GetConnEdg(CConfig *config, CGeometry *geometry);
-
-  // /*!
-  //  * \brief Get the connectivity of tris.
-  //  */
-  // vector<vector<unsigned long> > GetConnTri(CConfig *config, CGeometry *geometry);
-
-  // /*!
-  //  * \brief Get the connectivity of tets.
-  //  */
-  // vector<vector<unsigned long> > GetConnTet(CConfig *config, CGeometry *geometry);
-
-  // /*!
-  //  * \brief Cleans up the connectivity.
-  //  */
-  // void CleanConnectivity_Parallel(void);
+  void Write_Data() override;
 
 };
