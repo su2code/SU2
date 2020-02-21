@@ -37,8 +37,8 @@
 
 #include "../../include/output/COneShotFluidOutput.hpp"
 
-#include "../../../Common/include/geometry_structure.hpp"
-#include "../../include/solver_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../include/solvers/CSolver.hpp"
 
 COneShotFluidOutput::COneShotFluidOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
   
