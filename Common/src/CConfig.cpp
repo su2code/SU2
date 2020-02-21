@@ -2925,6 +2925,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Constraint mesh complexity */
   addUnsignedLongOption("MESH_COMPLEXITY", Mesh_Complexity, 10000);
 
+  /* DESCRIPTION: Whether to include source term Hessian to determine anisotropy */
+  addBoolOption("ADAP_SOURCE_TERM", Adap_Source, false);
+
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_SIZES");
   
@@ -2936,6 +2939,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_ADJ_ITER");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_CFL");
   
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_RESIDUAL_REDUCTION");
@@ -2951,6 +2957,12 @@ void CConfig::SetConfig_Options() {
   
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_HGRAD");
+
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_INV_VOL");
+
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_ORTHO");
 
   /* END_CONFIG_OPTIONS */
 

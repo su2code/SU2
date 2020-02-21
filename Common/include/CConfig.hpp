@@ -1130,6 +1130,7 @@ private:
   su2double Adap_Norm,               /*!< \brief Lp-norm for mesh adaptation */
             Mesh_Hmax,               /*!< \brief Maximum cell size */
             Mesh_Hmin;               /*!< \brief Minimum cell size */
+  bool Adap_Source;                  /*!< \brief Whether or not to use source terms for adaptation */
   unsigned long  Mesh_Complexity;    /*!< \brief Constraint mesh complexity */
 
   bool OneShot; /*!< \brief option for one-shot optimization method */
@@ -9313,13 +9314,13 @@ public:
    * \brief Check if Inria format sensor files should be written
    * \return <code>TRUE<\code> if sensor files requested
    */
-  bool GetWrt_Aniso_Sensor(void) const { return Wrt_Aniso_Sensor; }
+  bool GetWrt_Aniso_Sensor(void) const { return Kind_Aniso_Sensor; }
 
   /*!
    * \brief Get type of sensor used for anisotropy
    * \return Flag for field variable to be used as sensor
    */
-  unsigned short GetKind_Aniso_Sensor(void) const { return Kind_Aniso_Sensor; }
+  unsigned short GetKind_Aniso_Sensor(void) const { return Wrt_Aniso_Sensor; }
 
   /*!
    * \brief Get adaptation norm value (Lp)
@@ -9343,6 +9344,11 @@ public:
    * \return Mesh complexity
    */
   unsigned long GetMesh_Complexity(void) const { return Mesh_Complexity; }
+
+  /*!
+   * \brief Get whether to use source terms in adaptation
+   */
+  bool GetAdap_Source(void) const { return Adap_Source; }
 
   /*!
    * \brief Check if the one-shot option is specified in the config file.
