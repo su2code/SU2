@@ -1990,7 +1990,25 @@ void CSolver::InitiateComms(CGeometry *geometry,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case ANISO_GRADIENT:
+    case ANISO_GRADIENT_VISC:
+      COUNT_PER_POINT  = nDim*nVar*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case ANISO_GRADIENT_SOURCE:
       COUNT_PER_POINT  = nDim*nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case ANISO_HESSIAN:
+    case ANISO_HESSIAN_VISC:
+      COUNT_PER_POINT  = 3*(nDim-1)*nVar*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case ANISO_HESSIAN_SOURCE:
+      COUNT_PER_POINT  = 3*(nDim-1)*nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case ANISO_METRIC:
+      COUNT_PER_POINT  = 3*(nDim-1);
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     default:
@@ -2144,7 +2162,40 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case ANISO_GRADIENT:
             for (iDim = 0; iDim < nDim; iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
-                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetAnisoGrad(iPoint, iVar*nDim+iDim);
+                for (jDim = 0; jDim < nDim; jDim++)
+                  bufDSend[buf_offset+jDim*nVar*nDim+iVar*nDim+iDim] = base_nodes->GetAnisoGrad(iPoint, jDim*nVar*nDim+iVar*nDim+iDim);
+            break;
+          case ANISO_GRADIENT_VISC:
+            for (iDim = 0; iDim < nDim; iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                for (jDim = 0; jDim < nDim; jDim++)
+                  bufDSend[buf_offset+jDim*nVar*nDim+iVar*nDim+iDim] = base_nodes->GetAnisoViscGrad(iPoint, jDim*nVar*nDim+iVar*nDim+iDim);
+            break;
+          case ANISO_GRADIENT_SOURCE:
+            for (iDim = 0; iDim < nDim; iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetAnisoSourceGrad(iPoint, iVar*nDim+iDim);
+            break;
+          case ANISO_HESSIAN:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                for (jDim = 0; jDim < nDim; jDim++)
+                  bufDSend[buf_offset+jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim] = base_nodes->GetAnisoHess(iPoint, jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim);
+            break;
+          case ANISO_HESSIAN_VISC:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                for (jDim = 0; jDim < nDim; jDim++)
+                  bufDSend[buf_offset+jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim] = base_nodes->GetAnisoViscHess(iPoint, jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim);
+            break;
+          case ANISO_HESSIAN_SOURCE:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                bufDSend[buf_offset+iVar*3*(nDim-1)+iDim] = base_nodes->GetAnisoSourceHess(iPoint, iVar*3*(nDim-1)+iDim);
+            break;
+          case ANISO_METRIC:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              bufDSend[buf_offset+iDim] = base_nodes->GetAnisoMetr(iPoint, iDim);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -2321,7 +2372,40 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case ANISO_GRADIENT:
             for (iDim = 0; iDim < nDim; iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
-                base_nodes->SetAnisoGrad(iPoint, iVar*nDim+iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+                for (jDim = 0; jDim < nDim; jDim++)
+                  base_nodes->SetAnisoGrad(iPoint, jDim*nVar*nDim+iVar*nDim+iDim, bufDRecv[buf_offset+jDim*nVar*nDim+iVar*nDim+iDim]);
+            break;
+          case ANISO_GRADIENT_VISC:
+            for (iDim = 0; iDim < nDim; iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                for (jDim = 0; jDim < nDim; jDim++)
+                  base_nodes->SetAnisoViscGrad(iPoint, jDim*nVar*nDim+iVar*nDim+iDim, bufDRecv[buf_offset+jDim*nVar*nDim+iVar*nDim+iDim]);
+            break;
+          case ANISO_GRADIENT_SOURCE:
+            for (iDim = 0; iDim < nDim; iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                base_nodes->SetAnisoSourceGrad(iPoint, iVar*nDim+iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+            break;
+          case ANISO_HESSIAN:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                for (jDim = 0; jDim < nDim; jDim++)
+                  base_nodes->SetAnisoHess(iPoint, jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim, bufDRecv[buf_offset+jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim]);
+            break;
+          case ANISO_HESSIAN_VISC:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                for (jDim = 0; jDim < nDim; jDim++)
+                  base_nodes->SetAnisoViscHess(iPoint, jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim, bufDRecv[buf_offset+jDim*nVar*3*(nDim-1)+iVar*3*(nDim-1)+iDim]);
+            break;
+          case ANISO_HESSIAN_SOURCE:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < nVar; iVar++)
+                base_nodes->SetAnisoSourceHess(iPoint, iVar*3*(nDim-1)+iDim, bufDRecv[buf_offset+iVar*3*(nDim-1)+iDim]);
+            break;
+          case ANISO_METRIC:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              base_nodes->SetAnisoMetr(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
