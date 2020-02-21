@@ -722,9 +722,21 @@ public:
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
+   *      definition of the function in all the derived classes).
+   */
+  inline su2double *GetNormal_Old(void) override { return nullptr; }
+
+  /*!
+   * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
   inline void SetNormal(const su2double *val_face_normal) override { }
+
+  /*!
+   * \brief This function does nothing (it comes from a pure virtual function, that implies the
+   *        definition of the function in all the derived classes).
+   */
+  inline void SetNormal_Old(const su2double *val_face_normal) override { }
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
