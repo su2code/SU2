@@ -664,6 +664,8 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
   su2double localMinDensity = 1.E16, localMaxDensity = 0., localTotComplex = 0.;
   su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalTotComplex = 0.;
 
+  su2double consv_factor = 1.0;
+
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
             *EigVal  = new su2double[nDim];
@@ -710,6 +712,12 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
       }// iVar
 
       //--- add turbulent terms
+      if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
+        //--- the error estimate is derived from the divergence of the conservative vars,
+        //--- but for some reason we store k/rho and omega/rho, and have adjoints of those.
+        //--- so normalize by rho if using SST...
+        consv_factor = 1.0/solver_flow->GetNodes()->GetDensity(iPoint);
+      }
       const unsigned short nVarTurbMetr = solver_turb->GetnVar();
       for (unsigned short iVar = 0; iVar < nVarTurbMetr; ++iVar) {
 
@@ -721,7 +729,7 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
             const unsigned short ih = iFlux*nVarTurbMetr*nMetr + iVar*nMetr + im;  
             const su2double hess = solver_turb->GetNodes()->GetAnisoHess(iPoint, ih) 
                                  + solver_turb->GetNodes()->GetAnisoViscHess(iPoint, ih);
-            const su2double part = abs(grad)*hess;
+            const su2double part = consv_factor*abs(grad)*hess;
             solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
           }// im
         }// iFlux
@@ -732,7 +740,7 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian2(CSolver   *solver_flow,
         for (unsigned short im = 0; im < nMetr; ++im) {
           const unsigned short ih = iVar*nMetr + im;  
           const su2double hess = solver_turb->GetNodes()->GetAnisoSourceHess(iPoint, ih);
-          const su2double part = abs(adj)*hess;
+          const su2double part = consv_factor*abs(adj)*hess;
           solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
         }// im
       }// iVar
@@ -866,6 +874,8 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian3(CSolver   *solver_flow,
   su2double localMinDensity = 1.E16, localMaxDensity = 0., localTotComplex = 0.;
   su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalTotComplex = 0.;
 
+  su2double consv_factor = 1.0;
+
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
             *EigVal  = new su2double[nDim];
@@ -912,6 +922,12 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian3(CSolver   *solver_flow,
       }// iVar
 
       //--- add turbulent terms
+      if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
+        //--- the error estimate is derived from the divergence of the conservative vars,
+        //--- but for some reason we store k/rho and omega/rho, and have adjoints of those.
+        //--- so normalize by rho if using SST...
+        consv_factor = 1.0/solver_flow->GetNodes()->GetDensity(iPoint);
+      }
       const unsigned short nVarTurbMetr = solver_turb->GetnVar();
       for (unsigned short iVar = 0; iVar < nVarTurbMetr; ++iVar) {
 
@@ -923,7 +939,7 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian3(CSolver   *solver_flow,
             const unsigned short ih = iFlux*nVarTurbMetr*nMetr + iVar*nMetr + im;  
             const su2double hess = solver_turb->GetNodes()->GetAnisoHess(iPoint, ih) 
                                  + solver_turb->GetNodes()->GetAnisoViscHess(iPoint, ih);
-            const su2double part = abs(grad)*hess;
+            const su2double part = consv_factor*abs(grad)*hess;
             solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
           }// im
         }// iFlux
@@ -934,7 +950,7 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian3(CSolver   *solver_flow,
         for (unsigned short im = 0; im < nMetr; ++im) {
           const unsigned short ih = iVar*nMetr + im;  
           const su2double hess = solver_turb->GetNodes()->GetAnisoSourceHess(iPoint, ih);
-          const su2double part = abs(adj)*hess;
+          const su2double part = consv_factor*abs(adj)*hess;
           solver_flow->GetNodes()->AddAnisoMetr(iPoint, im,part);
         }// im
       }// iVar
