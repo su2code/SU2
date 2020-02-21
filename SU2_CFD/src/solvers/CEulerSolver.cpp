@@ -849,8 +849,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*---- Initialize ROM specific variables. ----*/
   
   if (config->GetReduced_Model() && (TrialBasis.size() == 0) && (MGLevel == MESH_0)) {
-    //Mask_Selection(geometry, config);
-    //FindMaskedEdges(geometry, config);
+    Mask_Selection(geometry, config);
+    FindMaskedEdges(geometry, config);
     SetROM_Variables(nPoint, nPointDomain, nVar, geometry, config);
   }
   
@@ -3126,198 +3126,6 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
   return nonPhysicalPoints;
 }
 
-// TODO: Put this function and next in more general location
-//void CEulerSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
-//  auto t_start = std::chrono::high_resolution_clock::now();
-//  // This function selects the masks E and E' using the Phi matrix and mesh data
-//
-//  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
-//
-//  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
-//  //int desired_nodes = 500; //TODO: create config file option
-//  ifstream in_phi(phi_filename);
-//  std::vector<std::vector<double>> Phi;
-//  int firstrun = 0;
-//
-//  if (in_phi) {
-//    std::string line;
-//
-//    while (getline(in_phi, line)) {
-//      stringstream sep(line);
-//      string field;
-//      int s = 0;
-//      while (getline(sep, field, ',')) {
-//        if (firstrun == 0) Phi.push_back({});
-//        Phi[s].push_back(stod(field)); // Phi[0] is 1st snapshot
-//        s++;
-//      }
-//      firstrun++;
-//    }
-//  }
-//  //unsigned long nsnaps = Phi.size();
-//  unsigned long N = Phi[0].size();
-//  //unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil
-//  //unsigned long i, j, k;
-//  //
-//  //const auto nodewithMax = std::max_element(Phi[0].begin(), Phi[0].end());
-//
-//  //for (i = 0; i < nsnaps; i++) {
-//  //
-//  //  std::vector<std::vector<double>> U;
-//  //  for (j = 0; j < i; j++) {
-//  //    U.push_back(Phi[j]);
-//  //  }
-//  //
-//  //  for (k = 0; k < nodestoAdd; k++) {
-//  //    masked_Phi =
-//  //  }
-//  //
-//  //}
-//
-//  // set mask to all nodes for now
-//  for (unsigned long i = 0; i < N; i++) {
-//    Mask.push_back(i);
-//    MaskNeighbors.push_back(i);
-//  }
-//
-//  auto t_end = std::chrono::high_resolution_clock::now();
-//  double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
-//  std::cout << "Mask selection for ROM completed in " << elapsed_time_ms/1000.0 << " seconds." << std::endl;
-//}
-
-//bool CEulerSolver::MaskedNode(unsigned long iPoint) {
-//  if (Mask.size() < iPoint) {
-//    std::cout << "Node " << iPoint << " is out of bounds. Returning false." << std::endl;
-//    return false;
-//  }
-//
-//  if (Mask[iPoint] == 1) return true;
-//  return false;
-//}
-
-//void CEulerSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
-//  // output: Masked Edges
-//
-//  unsigned long iEdge, iPoint, jPoint;
-//  unsigned long nEdge_masked = 0;
-//  vector<unsigned long> Edge_masked;
-//
-//  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-//    iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
-//
-//    if (MaskedNode(iPoint)) {
-//      Edge_masked.push_back(iEdge);
-//      nEdge_masked++;
-//    }
-//
-//  }
-//}
-
-void CEulerSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
-                                    unsigned short nVar, CGeometry *geometry, CConfig *config) {
-  // Explanation of certain ROM-specific variables:
-  // TrialBasis   ...POD-built reduced basis, Phi
-  // GenCoordsY   ...generalized coordinate vector, y
-  // Solution_Ref ...reference solution, w, typically a snapshot
-  
-  std::cout << "Setting up ROM variables" << std::endl;
-  
-  /*--- Read data from the following three files: ---*/
-  
-  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
-  string ref_filename  = config->GetRef_Snapshot_FileName();
-  string init_filename = config->GetInit_Snapshot_FileName();
-  
-  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
-  
-  ifstream in_phi(phi_filename);
-  int s = 0;
-  
-  if (in_phi) {
-    std::string line;
-    
-    while (getline(in_phi, line)) {
-      stringstream sep(line);
-      string field;
-      TrialBasis.push_back({});
-      while (getline(sep, field, ',')) {
-        TrialBasis[s].push_back(stod(field));
-      }
-      s++;
-    }
-  }
-  
-  unsigned long nsnaps = TrialBasis[0].size();
-  unsigned long iPoint, i;
-  double *ref_sol = new double[nPointDomain * nVar]();
-  double *init_sol = new double[nPointDomain * nVar]();
-  
-  /*--- Reference Solution (read from file) ---*/
-  
-  ifstream in_ref(ref_filename);
-  s = 0;
-  
-  if (in_ref) {
-    std::string line;
-    
-    while (getline(in_ref, line)) {
-      stringstream sep(line);
-      string field;
-      while (getline(sep, field, ',')) {
-        ref_sol[s] = stod(field);
-        s++;
-      }
-    }
-  }
-  
-  /*--- Initial Solution (read from file) ---*/
-  
-  ifstream in_init(init_filename);
-  s = 0;
-  
-  if (in_init) {
-    std::string line;
-    
-    while (getline(in_init, line)) {
-      stringstream sep(line);
-      string field;
-      while (getline(sep, field, ',')) {
-        init_sol[s] = stod(field);
-        s++;
-      }
-    }
-  }
-  
-  /*--- Use reference solution from file to overwrite the solution and solution_old ---*/
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    su2double node_sol[nVar];
-    
-    for (unsigned long iVar = 0; iVar < nVar; iVar++){
-      node_sol[iVar] = ref_sol[iVar + iPoint*nVar];
-      nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
-      nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
-    }
-    
-    nodes->Set_RefSolution(iPoint, &node_sol[0]);
-  }
-  
-  
-  /*--- Compute initial generalized coordinates solution, y0 = Phi^T * (w0 - w_ref) ---*/
-  
-  for (i = 0; i < nsnaps; i++) {
-    double sum = 0.0;
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        sum += TrialBasis[iPoint*nVar + iVar][i] * (init_sol[iVar + iPoint*nVar] - nodes->Get_RefSolution(iPoint, iVar));
-      }
-    }
-    GenCoordsY.push_back(sum);
-  }
-  
-  delete[] ref_sol;
-  delete[] init_sol;
-}
 
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
@@ -5354,10 +5162,11 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   unsigned short iVar, jVar;
-  unsigned long iPoint, kNeigh, kPoint, jPoint;
+  unsigned long iPoint, kNeigh, kPoint, jPoint, iPoint_mask;
   su2double *local_Residual, *local_Res_TruncError, Res;
   
   int m = (int)nPointDomain * nVar;
+  //int m = (int)Mask.size();
   int n = (int)TrialBasis[0].size();
   
   su2double* prod = new su2double[nVar];
@@ -5370,8 +5179,12 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   /*--- Compute Test Basis: W = J * Phi ---*/
   
   vector<double> TestBasis2(m*n, 0.0);
-  
+  //for (iPoint_mask = 0; iPoint_mask < accumulate(Mask.begin(), Mask.end(), 0); iPoint_mask++)
+    // how to find iPoint?
+  //for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+    //iPoint = Mask[iPoint_mask];
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    if (Mask[iPoint] == 0); continue;
     for (kNeigh = 0; kNeigh < geometry->node[iPoint]->GetnPoint(); kNeigh++) {
       kPoint = geometry->node[iPoint]->GetPoint(kNeigh);
       for (jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
@@ -5431,9 +5244,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   int INFO = 1;
   
   vector<double> r(m,0.0);
-  //for (int i=0; i < m; i++){
-  //  r[i] = LinSysRes[i];
-  //}
   int index = 0;
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
@@ -5495,7 +5305,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   }
   fs.close();
   
-  // backtracking line search to find step size:
+  // TODO: backtracking line search to find step size:
   double a =  0.1;
   
   for (int i = 0; i < n; i++) {

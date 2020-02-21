@@ -4659,6 +4659,113 @@ void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 }
 
 
+void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
+                                    unsigned short nVar, CGeometry *geometry, CConfig *config) {
+  // Explanation of certain ROM-specific variables:
+  // TrialBasis   ...POD-built reduced basis, Phi
+  // GenCoordsY   ...generalized coordinate vector, y
+  // Solution_Ref ...reference solution, w, typically a snapshot
+  
+  std::cout << "Setting up ROM variables" << std::endl;
+  
+  /*--- Read data from the following three files: ---*/
+  
+  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
+  string ref_filename  = config->GetRef_Snapshot_FileName();
+  string init_filename = config->GetInit_Snapshot_FileName();
+  
+  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+  
+  ifstream in_phi(phi_filename);
+  int s = 0;
+  
+  if (in_phi) {
+    std::string line;
+    
+    while (getline(in_phi, line)) {
+      stringstream sep(line);
+      string field;
+      TrialBasis.push_back({});
+      while (getline(sep, field, ',')) {
+        TrialBasis[s].push_back(stod(field));
+      }
+      s++;
+    }
+  }
+  
+  unsigned long nsnaps = TrialBasis[0].size();
+  unsigned long iPoint, i;
+  double *ref_sol = new double[nPointDomain * nVar]();
+  double *init_sol = new double[nPointDomain * nVar]();
+  
+  /*--- Reference Solution (read from file) ---*/
+  
+  ifstream in_ref(ref_filename);
+  s = 0;
+  
+  if (in_ref) {
+    std::string line;
+    
+    while (getline(in_ref, line)) {
+      stringstream sep(line);
+      string field;
+      while (getline(sep, field, ',')) {
+        ref_sol[s] = stod(field);
+        s++;
+      }
+    }
+  }
+  
+  /*--- Initial Solution (read from file) ---*/
+  
+  ifstream in_init(init_filename);
+  s = 0;
+  
+  if (in_init) {
+    std::string line;
+    
+    while (getline(in_init, line)) {
+      stringstream sep(line);
+      string field;
+      while (getline(sep, field, ',')) {
+        init_sol[s] = stod(field);
+        s++;
+      }
+    }
+  }
+  
+  /*--- Use reference solution from file to overwrite the solution and solution_old ---*/
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    su2double node_sol[nVar];
+    
+    for (unsigned long iVar = 0; iVar < nVar; iVar++){
+      node_sol[iVar] = ref_sol[iVar + iPoint*nVar];
+      nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+      nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+    }
+    
+    nodes->Set_RefSolution(iPoint, &node_sol[0]);
+  }
+  
+  
+  /*--- Compute initial generalized coordinates solution, y0 = Phi^T * (w0 - w_ref) ---*/
+  
+  for (i = 0; i < nsnaps; i++) {
+    double sum = 0.0;
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        sum += TrialBasis[iPoint*nVar + iVar][i] * (init_sol[iVar + iPoint*nVar] - nodes->Get_RefSolution(iPoint, iVar));
+      }
+    }
+    GenCoordsY.push_back(sum);
+  }
+  
+  delete[] ref_sol;
+  delete[] init_sol;
+}
+
+
 void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   auto t_start = std::chrono::high_resolution_clock::now();
   // This function selects the masks E and E' using the Phi matrix and mesh data
@@ -4706,10 +4813,12 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   //
   //}
   
-  // set mask to all nodes for now
+  // set mask to all even nodes for now
   for (unsigned long i = 0; i < N; i++) {
-    Mask.push_back(1);
-    MaskNeighbors.push_back(1);
+    if (i % 2 == 0) {
+      Mask.push_back(i);
+      MaskNeighbors.push_back(i);
+    }
   }
   
   auto t_end = std::chrono::high_resolution_clock::now();
@@ -4719,13 +4828,18 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
 
 
 bool CSolver::MaskedNode(unsigned long iPoint) {
-  if (Mask.size() < iPoint) {
-    std::cout << "Node " << iPoint << " is out of bounds. Returning false." << std::endl;
+  //if (Mask.size() < iPoint) {
+  //  std::cout << "Node " << iPoint << " is out of bounds. Returning false." << std::endl;
+  //  return false;
+  //}
+  //
+  //if (Mask[iPoint] == 1) return true;
+  //return false;
+
+  if (std::find(Mask.begin(), Mask.end(), iPoint) != Mask.end())
+    return true;
+  else
     return false;
-  }
-  
-  if (Mask[iPoint] == 1) return true;
-  return false;
 }
 
 
@@ -4740,7 +4854,7 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
     if (MaskedNode(iPoint)) {
       Edge_masked.push_back(iEdge);
       if (!MaskedNode(jPoint))
-        MaskNeighbors[jPoint] = 1;
+        MaskNeighbors.push_back(jPoint);
     }
     
     
