@@ -2395,8 +2395,8 @@ void CTurbSASolver::SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config
       Sens[iNode][0][0] = density*velocity[0]*nu_tilde;
       Sens[iNode][0][1] = density*velocity[1]*nu_tilde;
 
-      SensVisc[iNode][0][0] = 1.5*(laminar_viscosity+density*nu_tilde)*dnu_tilde[0];
-      SensVisc[iNode][0][1] = 1.5*(laminar_viscosity+density*nu_tilde)*dnu_tilde[1];
+      SensVisc[iNode][0][0] = 1.5*density*(laminar_viscosity+nu_tilde)*dnu_tilde[0];
+      SensVisc[iNode][0][1] = 1.5*density*(laminar_viscosity+nu_tilde)*dnu_tilde[1];
 
       SensSource[iNode][0] = nodes->GetSource(kNode)[0];
     }
@@ -2750,9 +2750,9 @@ void CTurbSASolver::SetTurbGradient_L2Proj3(CGeometry *geometry, CConfig *config
       Sens[iNode][0][1] = density*velocity[1]*nu_tilde;
       Sens[iNode][0][2] = density*velocity[2]*nu_tilde;
 
-      SensVisc[iNode][0][0] = 1.5*(laminar_viscosity+density*nu_tilde)*dnu_tilde[0];
-      SensVisc[iNode][0][1] = 1.5*(laminar_viscosity+density*nu_tilde)*dnu_tilde[1];
-      SensVisc[iNode][0][2] = 1.5*(laminar_viscosity+density*nu_tilde)*dnu_tilde[2];
+      SensVisc[iNode][0][0] = 1.5*density*(laminar_viscosity+nu_tilde)*dnu_tilde[0];
+      SensVisc[iNode][0][1] = 1.5*density*(laminar_viscosity+nu_tilde)*dnu_tilde[1];
+      SensVisc[iNode][0][2] = 1.5*density*(laminar_viscosity+nu_tilde)*dnu_tilde[2];
     }
 
     //--- inward face's normals : fac[0]=P1P2P3, fac[1]=P2P3P0, fac[2]=P3P0P1, fac[3]=P0P1P2

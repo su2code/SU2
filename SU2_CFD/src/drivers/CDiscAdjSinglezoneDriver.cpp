@@ -966,9 +966,16 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian3(CSolver   *solver_flow,
     const su2double e = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 4);
     const su2double f = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 5);
 
-    A[0][0] = a; A[0][1] = b; A[0][2] = c;
-    A[1][0] = b; A[1][1] = d; A[1][2] = e;
-    A[2][0] = c; A[2][1] = e; A[2][2] = f;
+    if (fabs(a*(d*f-e*e) - b*(b*f-e*c) + c*(b*e-d*c)) < 1.0E-16) {
+      A[0][0] = a+1.0E-16; A[0][1] = b;         A[0][2] = c;
+      A[1][0] = b;         A[1][1] = d+1.0E-16; A[1][2] = e;
+      A[2][0] = c;         A[2][1] = e;         A[2][2] = f+1.0E-16;
+    }
+    else {
+      A[0][0] = a; A[0][1] = b; A[0][2] = c;
+      A[1][0] = b; A[1][1] = d; A[1][2] = e;
+      A[2][0] = c; A[2][1] = e; A[2][2] = f;
+    }
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
@@ -993,9 +1000,16 @@ void CDiscAdjSinglezoneDriver::SumWeightedHessian3(CSolver   *solver_flow,
     const su2double e = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 4);
     const su2double f = solver_flow->GetNodes()->GetAnisoMetr(iPoint, 5);
 
-    A[0][0] = a; A[0][1] = b; A[0][2] = c;
-    A[1][0] = b; A[1][1] = d; A[1][2] = e;
-    A[2][0] = c; A[2][1] = e; A[2][2] = f;
+    if (fabs(a*(d*f-e*e) - b*(b*f-e*c) + c*(b*e-d*c)) < 1.0E-16) {
+      A[0][0] = a+1.0E-16; A[0][1] = b;         A[0][2] = c;
+      A[1][0] = b;         A[1][1] = d+1.0E-16; A[1][2] = e;
+      A[2][0] = c;         A[2][1] = e;         A[2][2] = f+1.0E-16;
+    }
+    else {
+      A[0][0] = a; A[0][1] = b; A[0][2] = c;
+      A[1][0] = b; A[1][1] = d; A[1][2] = e;
+      A[2][0] = c; A[2][1] = e; A[2][2] = f;
+    }
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
