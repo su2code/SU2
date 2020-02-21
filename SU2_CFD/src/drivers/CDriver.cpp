@@ -56,6 +56,7 @@
 #include "../../include/solvers/CTemplateSolver.hpp"
 #include "../../include/solvers/CDiscAdjSolver.hpp"
 #include "../../include/solvers/CDiscAdjFEASolver.hpp"
+#include "../../include/solvers/COneShotSolver.hpp"
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 #include "../../include/solvers/CFEM_DG_NSSolver.hpp"
 
