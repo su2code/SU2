@@ -882,6 +882,13 @@ public:
   inline virtual void Evaluate_ObjFunc(CConfig *config) {};
 
   /*!
+   * \author B. Munguía
+   * \brief Compute constraint function
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual su2double Evaluate_ConstrFunc(CConfig *config, unsigned short iConstr) {};
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

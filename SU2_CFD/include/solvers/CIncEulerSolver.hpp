@@ -482,6 +482,13 @@ public:
   void Evaluate_ObjFunc(CConfig *config) final;
 
   /*!
+   * \author B. Munguía
+   * \brief Compute constraint function
+   * \param[in] config - Definition of the particular problem.
+   */
+  su2double Evaluate_ConstrFunc(CConfig *config, unsigned short iConstr) final;
+
+  /*!
    * \author: T. Kattmann
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
