@@ -784,7 +784,7 @@ void COneShotFluidOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, 
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
   
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
-  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetLinSol_Residual()));
+  SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
   
   /*--- Set the analyse surface history values --- */
   
