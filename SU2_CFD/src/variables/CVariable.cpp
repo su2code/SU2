@@ -86,8 +86,8 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
   }
 
   if (config->GetError_Estimate()) {
-    AnisoGrad.resize(nPoint,nDim*nVar) = su2double(0.0);
-    AnisoHess.resize(nPoint,3*(nDim-1)*nVar) = su2double(0.0);
+    AnisoGrad.resize(nPoint,nDim*nVar*nDim) = su2double(0.0);
+    AnisoHess.resize(nPoint,3*(nDim-1)*nVar*nDim) = su2double(0.0);
   }
 }
 
