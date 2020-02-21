@@ -951,7 +951,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
 
 }
 
-void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config){
+void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config){
 
   unsigned short iVar;
 
