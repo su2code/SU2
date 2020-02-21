@@ -316,6 +316,66 @@ public:
   void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetGradient_L2Proj2(CGeometry *geometry, CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver_flow - Pointer to the flow solver.
+   */
+  virtual void SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config, CSolver *solver_flow) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetHessian_L2Proj2(CGeometry *geometry, CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetGradient_L2Proj3(CGeometry *geometry, CConfig *config) { }
+
+  /*!
+   * \brief Compute the gradient using a L2 Projection method,
+   *        and stores the result in the <i>AnisoGrad</i> variable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver_flow - Pointer to the flow solver.
+   */
+  virtual void SetTurbGradient_L2Proj3(CGeometry *geometry, CConfig *config, CSolver *solver_flow) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetHessian_L2Proj3(CGeometry *geometry, CConfig *config) { }
+
+  /*!
+   * \brief Apply a correction to the boundary Hessian using the volume Hessian.
+   */
+  void CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Apply a correction to the boundary source term Hessian using the volume Hessian.
+   */
+  void CorrectBoundAnisoSourceHess(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Apply a correction to the boundary metric using the volume metric.
+   */
+  void CorrectBoundAnisoMetr(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Set the solver nondimensionalization.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.

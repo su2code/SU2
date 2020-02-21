@@ -133,6 +133,22 @@ public:
    * \param[in] TimeIter - Iteration number)
    */
   bool DirectIteration(unsigned long TimeIter);
+
+  /*!
+   * \brief Perform all steps to compute the metric.
+   */
+  void ComputeMetric(void);
+
+  /*!
+   * \brief Perform inner product of adjoint gradients and flux Hessian to compute the adaptation parameter in 2D.
+   */
+  void SumWeightedHessian2(CSolver *solver_flow, CSolver *solver_turb, CSolver *solver_adjflow, CSolver *solver_adjturb, CGeometry *geometry);
+
+  /*!
+   * \brief Perform inner product of adjoint gradients and flux Hessian to compute the adaptation parameter in 3D.
+   */
+  void SumWeightedHessian3(CSolver *solver_flow, CSolver *solver_turb, CSolver *solver_adjflow, CSolver *solver_adjturb, CGeometry *geometry);
+  
   /*!
    * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
    * \return true, if convergence criteria has been met, else false

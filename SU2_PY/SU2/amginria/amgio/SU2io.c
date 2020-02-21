@@ -7,7 +7,7 @@ Victorien Menier Feb 2016
 int AddSU2MeshSize(char *FilNam, int *SizMsh) 
 {
 	int i, NbrElt, iElt, typ, CptElt;
-  int NbrTri, NbrTet, NbrHex, NbrPyr, NbrRec, NbrLin, NbrWed, NbrP2Tri, NbrP2Lin;
+  int NbrTri, NbrTet, NbrHex, NbrPyr, NbrRec, NbrLin, NbrCor, NbrWed, NbrP2Tri, NbrP2Lin;
   int NbrMark, iMark;
   FILE *FilHdl = NULL;
   char    str[1024];
@@ -37,7 +37,7 @@ int AddSU2MeshSize(char *FilNam, int *SizMsh)
 		
   //--- Elements?
   
-  NbrTri = NbrTet = NbrHex = NbrPyr = NbrLin = NbrRec = NbrWed = NbrP2Tri = NbrP2Lin =  0;
+  NbrTri = NbrTet = NbrHex = NbrPyr = NbrLin = NbrCor = NbrRec = NbrWed = NbrP2Tri = NbrP2Lin =  0;
 	
 	NbrElt = GetSU2KeywordValue (FilHdl, "NELEM=");
 	
@@ -80,6 +80,9 @@ int AddSU2MeshSize(char *FilNam, int *SizMsh)
 	
  	rewind(FilHdl);
 	SizMsh[GmfVertices] = GetSU2KeywordValue (FilHdl, "NPOIN=");
+
+	rewind(FilHdl);
+	NbrCor = GetSU2KeywordValue (FilHdl, "NCORNERS=");
   
   //--- Boundary Elements?
 	NbrMark = 0;	
@@ -125,6 +128,7 @@ int AddSU2MeshSize(char *FilNam, int *SizMsh)
 	
   SizMsh[GmfTriangles]      = NbrTri+NbrP2Tri;
   SizMsh[GmfTetrahedra]     = NbrTet;
+  SizMsh[GmfCorners]        = NbrCor;
   SizMsh[GmfEdges]          = NbrLin+NbrP2Lin;
   SizMsh[GmfPrisms]         = NbrWed;
   SizMsh[GmfQuadrilaterals] = NbrRec;
@@ -163,7 +167,7 @@ int GetSU2KeywordValue (FILE *FilHdl, char *Kwd)
 	}while( (res != EOF) && strncmp(str, kwd, lenKwd) );
 	
   if ((res == EOF)) {
-		fprintf(stderr,"  ## ERROR: INVALID SU2 FILE (CHECK KEYWORD: %s).\n", Kwd);
+		fprintf(stderr,"  ## WARNING: MISSING SU2 MESH FILE KEYWORD: %s.\n", Kwd);
 		return 0;
 	}
 	
@@ -226,21 +230,20 @@ int GetSU2KeywordValueStr (FILE *FilHdl, char *Kwd, char *StrVal)
 
 int LoadSU2Elements(FILE *FilHdl, Mesh *Msh)
 {
-	int  ref=1;
-	char   str[1024];
+  int  ref=1;
+  char str[1024];
 
-	int iMark, NbrMark=0, CptElt;
-	int iElt, NbrElt=0, typ, is[8], swi[8], buf, s, idx, res;
+  int iMark, NbrMark=0, CptElt;
+  int iElt, NbrElt=0, typ, is[8], swi[8], buf, s, idx, res;
 
   Msh->NbrTri = Msh->NbrTet = Msh->NbrHex =  Msh->NbrEfr = Msh->NbrQua = Msh->NbrPyr = Msh->NbrPri = 0;
   
   rewind(FilHdl);
-  do
-	{
-		res = fscanf(FilHdl, "%s", str);
-	}while( (res != EOF) && strcmp(str, "NELEM=") );
+  do {
+    res = fscanf(FilHdl, "%s", str);
+  }while( (res != EOF) && strcmp(str, "NELEM=") );
 	
-	fscanf(FilHdl, "%d", &NbrElt);
+  fscanf(FilHdl, "%d", &NbrElt);
   fgets (str, sizeof str, FilHdl);
 	
   idx=0;
@@ -253,24 +256,23 @@ int LoadSU2Elements(FILE *FilHdl, Mesh *Msh)
       for (s=0; s<3; s++) {
         fscanf(FilHdl, "%d", &buf);
         swi[s] = buf+1;
-				if ( swi[s] > Msh->NbrVer ) {
-					printf("  ## ERROR LoadSU2Elements: vertex out of bound (vid=%d)\n", swi[s]);
-					return 0;
-				}
+        if ( swi[s] > Msh->NbrVer ) {
+          printf("  ## ERROR LoadSU2Elements: vertex out of bound (vid=%d)\n", swi[s]);
+          return 0;
+        }
       }
 
-			fscanf(FilHdl, "%d", &buf);
+      fscanf(FilHdl, "%d", &buf);
       
       Msh->NbrTri++;
 
-			if ( Msh->NbrTri > Msh->MaxNbrTri ) {
-				printf("  ## ERROR LoadSU2Elements: triangle out of bound (tid=%d, max=%d)\n", Msh->NbrTri, Msh->MaxNbrTri);
-				return 0;
-			}
+      if ( Msh->NbrTri > Msh->MaxNbrTri ) {
+        printf("  ## ERROR LoadSU2Elements: triangle out of bound (tid=%d, max=%d)\n", Msh->NbrTri, Msh->MaxNbrTri);
+        return 0;
+      }
 			
-			switchTriIdx(swi,is);
+      switchTriIdx(swi,is);
       AddTriangle(Msh,Msh->NbrTri,is,ref);
-
     }
     else if ( typ == SU2_TETRAHEDRAL ) {
       for (s=0; s<4; s++) {
@@ -279,15 +281,15 @@ int LoadSU2Elements(FILE *FilHdl, Mesh *Msh)
       }
 			
       idx++;
-			Msh->NbrTet++;
+      Msh->NbrTet++;
 			
-			if ( Msh->NbrTet > Msh->MaxNbrTet ) {
-				printf("  ## ERROR LoadSU2Elements: tetra out of bound (tid=%d)\n", Msh->NbrTet);
-				return 0;
-			}
+      if ( Msh->NbrTet > Msh->MaxNbrTet ) {
+        printf("  ## ERROR LoadSU2Elements: tetra out of bound (tid=%d)\n", Msh->NbrTet);
+        return 0;
+      }
 			
-			switchTetIdx(swi,is);
-			AddTetrahedron(Msh,Msh->NbrTet,is,ref);
+      switchTetIdx(swi,is);
+      AddTetrahedron(Msh,Msh->NbrTet,is,ref);
     }
     else if ( typ == SU2_HEXAHEDRAL ) {
       for (s=0; s<8; s++) {
@@ -297,13 +299,13 @@ int LoadSU2Elements(FILE *FilHdl, Mesh *Msh)
       fscanf(FilHdl, "%d", &idx);
       Msh->NbrHex++;
 			
-			if ( Msh->NbrHex > Msh->MaxNbrHex ) {
-				printf("  ## ERROR LoadSU2Elements: hexahedron out of bound (hid=%d)\n", Msh->NbrHex);
-				return 0;
-			}
+      if ( Msh->NbrHex > Msh->MaxNbrHex ) {
+        printf("  ## ERROR LoadSU2Elements: hexahedron out of bound (hid=%d)\n", Msh->NbrHex);
+        return 0;
+      }
 			
-			switchHexIdx(swi,is);
-			AddHexahedron(Msh,Msh->NbrHex,is,ref);
+      switchHexIdx(swi,is);
+      AddHexahedron(Msh,Msh->NbrHex,is,ref);
     }
     else if ( typ == SU2_PYRAMID ) {
       for (s=0; s<5; s++) {
@@ -312,20 +314,19 @@ int LoadSU2Elements(FILE *FilHdl, Mesh *Msh)
 				is[s] = buf+1;
       }
       fscanf(FilHdl, "%d", &idx);
-			Msh->NbrPyr++;
+      Msh->NbrPyr++;
     
-			if ( Msh->NbrPyr > Msh->MaxNbrPyr ) {
-				printf("  ## ERROR LoadSU2Elements: pyramid out of bound (id=%d)\n", Msh->NbrPyr);
-				return 0;
-			}
+      if ( Msh->NbrPyr > Msh->MaxNbrPyr ) {
+        printf("  ## ERROR LoadSU2Elements: pyramid out of bound (id=%d)\n", Msh->NbrPyr);
+        return 0;
+      }
     
-			//switchPyrIdx(swi,is);
+      //switchPyrIdx(swi,is);
       AddPyramid(Msh,Msh->NbrPyr,is,ref);
 			
-			int i=Msh->NbrPyr;
-			if ( i== 1 )
-				printf("PYR %d : %d %d %d %d %d\n", i, Msh->Pyr[i][0], Msh->Pyr[i][1], Msh->Pyr[i][2], Msh->Pyr[i][3], Msh->Pyr[i][4]);
-    
+      int i=Msh->NbrPyr;
+      if ( i== 1 )
+        printf("PYR %d : %d %d %d %d %d\n", i, Msh->Pyr[i][0], Msh->Pyr[i][1], Msh->Pyr[i][2], Msh->Pyr[i][3], Msh->Pyr[i][4]);
     }
     else if ( typ == SU2_RECTANGLE ) {
       for (s=0; s<4; s++) {
@@ -335,106 +336,35 @@ int LoadSU2Elements(FILE *FilHdl, Mesh *Msh)
 			
       Msh->NbrQua++;
     
-			if ( Msh->NbrQua > Msh->MaxNbrQua ) {
-				printf("  ## ERROR LoadSU2Elements: quad out of bound (id=%d)\n", Msh->NbrQua);
-				return 0;
-			}
+      if ( Msh->NbrQua > Msh->MaxNbrQua ) {
+        printf("  ## ERROR LoadSU2Elements: quad out of bound (id=%d)\n", Msh->NbrQua);
+        return 0;
+      }
     
-			switchQuaIdx(swi,is);
-      //DefaultQuadrilateral(Msh,Msh->NbrQua,&Msh->Qua[NbrQua],is,ref);
-			AddQuadrilateral(Msh,Msh->NbrQua,is,ref);
+      switchQuaIdx(swi,is);
+      AddQuadrilateral(Msh,Msh->NbrQua,is,ref);
     }
-    else if ( typ == SU2_WEDGE ) {
-			
+    else if ( typ == SU2_WEDGE ) {		
       for (s=0; s<6; s++) {
         fscanf(FilHdl, "%d", &buf);
         swi[s] = buf+1;
-				is[s] = buf+1;
+        is[s]  = buf+1;
       }
       fscanf(FilHdl, "%d", &idx);
-     	Msh->NbrPri++;
+      Msh->NbrPri++;
     
-			if ( Msh->NbrPri > Msh->MaxNbrPri ) {
-				printf("  ## ERROR LoadSU2Elements: prism out of bound (id=%d)\n", Msh->NbrPri);
-				return 0;
-			}
+      if ( Msh->NbrPri > Msh->MaxNbrPri ) {
+        printf("  ## ERROR LoadSU2Elements: prism out of bound (id=%d)\n", Msh->NbrPri);
+        return 0;
+      }
     
-			//switchPriIdx(swi,is);
-      //DefaultPrism(Msh,Msh->NbrPri,&Msh->Pri[NbrPri],is,ref);
-			AddPrism(Msh,Msh->NbrPri,is,ref);
+      //switchPriIdx(swi,is);
+      AddPrism(Msh,Msh->NbrPri,is,ref);
     }
-    //else if ( typ == SU2_LINE ) {
-    //  for (s=0; s<2; s++) {
-    //    fscanf(FilHdl, "%d", &buf);
-    //    swi[s] = buf+1;
-    //  }
-		//	NbrEfr++;
-		//				
-		//	if ( NbrEfr > Msh->MaxNbrEfr ) {
-		//		printf("  ## ERROR LoadSU2Elements: boundary edge out of bound (id=%d, max=%d)\n", NbrEfr,Msh->MaxNbrEfr );
-		//		return 0;
-		//	}
-    //
-    //   DefaultBdyEdge(Msh,Msh->NbrEfr,&Msh->Efr[NbrEfr],swi,ref);  
-    //}
-    //else if ( typ == SU2_LINEP2 ) {
-    //  
-    //  fscanf(FilHdl, "%d %d %d", &swi[0], &swi[1], &swi[2]);
-		//	for (s=0; s<3; s++) 
-    //  	swi[s]++;
-    //
-		//	NbrP2Efr++;
-		//	
-		//	if ( NbrP2Efr > Msh->MaxNbrP2Efr ) {
-		//		printf("  ## ERROR LoadSU2Elements: P2 boundary edge out of bound (id=%d, max=%d)\n", NbrP2Efr,Msh->MaxNbrP2Efr );
-		//		return 0;
-		//	}
-		//	
-		//	switchP2EfrIdx(swi,is);
-		//	NbrEfr++;
-		//	if ( NbrEfr > Msh->MaxNbrEfr ) {
-		//		printf("  ## ERROR LoadSU2Elements: P1 boundary edge out of bound (id=%d, max=%d)\n", NbrEfr,Msh->MaxNbrEfr );
-		//		return 0;
-		//	}
-    //  DefaultBdyEdge(Msh,NbrEfr,&Msh->Efr[NbrEfr],is,ref);
-    //  DefaultP2BdyEdge(Msh,NbrP2Efr,&Msh->Efr[NbrP2Efr],is[2],NbrEfr,&Msh->Efr[NbrEfr]);  
-    //}
-		//else if ( typ == SU2_TRIANGLEP2 ) {
-    //
-    //  //fscanf(FilHdl, "%d %d %d %d %d %d", &swi[0],&swi[3],&swi[1],&swi[4],&swi[2],&swi[5]);
-		//	//fscanf(FilHdl, "%d %d %d %d %d %d", &swi[3],&swi[0],&swi[4],&swi[1],&swi[5],&swi[2]);
-		//	//fscanf(FilHdl, "%d %d %d %d %d %d", &swi[0],&swi[1],&swi[2],&swi[3],&swi[4],&swi[5]);
-		//	fscanf(FilHdl, "%d %d %d %d %d %d", &swi[0],&swi[3],&swi[1],&swi[5],&swi[4],&swi[2]);
-		//	for (s=0; s<6; s++)	
-    //  	swi[s]++;
-    //  
-		//	
-		//	NbrP2Tri++;
-    //
-		//	if ( NbrP2Tri > Msh->MaxNbrP2Tri ) {
-		//		printf("  ## ERROR LoadSU2Elements: P2 triangle out of bound (id=%d, max=%d)\n", NbrP2Tri,Msh->MaxNbrP2Tri );
-		//		return 0;
-		//	}
-		//	
-		//	switchP2TriIdx(swi,is);
-		//	
-		//	
-		//	NbrTri++;
-		//	
-		//	if ( NbrTri > Msh->MaxNbrTri ) {
-		//		printf("  ## ERROR LoadSU2Elements: P1 triangle out of bound (id=%d, max=%d)\n", NbrTri,Msh->MaxNbrTri );
-		//		return 0;
-		//	}
-		//	
-    //  DefaultTriangle(Msh,NbrTri,&Msh->Tri[NbrTri],is,ref);
-    //  DefaultP2Triangle(Msh,NbrP2Tri,&Msh->P2Tri[NbrP2Tri],&is[3],NbrTri,&Msh->Tri[NbrTri]);
-    //
-    //}
-	  //
-		else {
-			printf("  ## ERROR : Unknown element type %d\n", typ);
-			return 0;
-		}
+    else {
+      printf("  ## ERROR : Unknown element type %d\n", typ);
+      return 0;
+    }
     
     fgets (str, sizeof str, FilHdl); 
 
@@ -442,32 +372,23 @@ int LoadSU2Elements(FILE *FilHdl, Mesh *Msh)
 
 	//--- Read boundary elements
 	
-	//rewind(FilHdl);
-  //do
-	//{
-	//	res = fscanf(FilHdl, "%s", str);
-	//}while( (res != EOF) && strcmp(str, "NMARK=") );
-	//fscanf(FilHdl, "%d", &NbrMark);
-	//fgets (str, sizeof str, FilHdl); 
+  rewind(FilHdl);
+  NbrMark = GetSU2KeywordValue (FilHdl, "NMARK=");
 	
-	rewind(FilHdl);
- 	NbrMark = GetSU2KeywordValue (FilHdl, "NMARK=");
-	
-	Msh->NbrMarkers = NbrMark;
+  Msh->NbrMarkers = NbrMark;
 	
   for (iMark=1; iMark<=NbrMark; iMark++) {
 		
-		GetSU2KeywordValueStr (FilHdl, "MARKER_TAG=", str);
+    GetSU2KeywordValueStr (FilHdl, "MARKER_TAG=", str);
 		
-		if ( iMark < 10000-1 )
-			strcpy(Msh->Markers[iMark], str);
+    if ( iMark < 10000-1 ) strcpy(Msh->Markers[iMark], str);
 		
-		if ( !strcmp(str,"SEND_RECEIVE") ) {
-			printf("      Tag %s was ignored.\n", str);
-			continue;
-		}
+    if ( !strcmp(str,"SEND_RECEIVE") ) {
+      printf("      Tag %s was ignored.\n", str);
+      continue;
+    }
 		
-		CptElt = GetSU2KeywordValue (FilHdl, "MARKER_ELEMS=");
+    CptElt = GetSU2KeywordValue (FilHdl, "MARKER_ELEMS=");
 		
     for (iElt=0; iElt<CptElt; iElt++) {
 		
@@ -479,80 +400,104 @@ int LoadSU2Elements(FILE *FilHdl, Mesh *Msh)
           swi[s] = buf+1;
         }
 
-	      Msh->NbrTri++;
+	    Msh->NbrTri++;
 
-				if ( Msh->NbrTri > Msh->MaxNbrTri ) {
-					printf("  ## ERROR LoadSU2Elements: triangle out of bound (tid=%d, max=%d)\n", Msh->NbrTri, Msh->MaxNbrTri);
-					return 0;
-				}
+        if ( Msh->NbrTri > Msh->MaxNbrTri ) {
+          printf("  ## ERROR LoadSU2Elements: triangle out of bound (tid=%d, max=%d)\n", Msh->NbrTri, Msh->MaxNbrTri);
+          return 0;
+        }
 
-				switchTriIdx(swi,is);
-	      AddTriangle(Msh,Msh->NbrTri,is,iMark);
+        switchTriIdx(swi,is);
+        AddTriangle(Msh,Msh->NbrTri,is,iMark);
       }
-      else if ( typ == SU2_RECTANGLE ) {
-								
-	      for (s=0; s<4; s++) {
-	        fscanf(FilHdl, "%d", &buf);
-	        swi[s] = buf+1;
-	      }
+      else if ( typ == SU2_RECTANGLE ) {					
+        for (s=0; s<4; s++) {
+          fscanf(FilHdl, "%d", &buf);
+          swi[s] = buf+1;
+        }
 				
-	      Msh->NbrQua++;
+        Msh->NbrQua++;
 
-				if ( Msh->NbrQua > Msh->MaxNbrQua ) {
-					printf("  ## ERROR LoadSU2Elements: quad out of bound (id=%d)\n", Msh->NbrQua);
-					return 0;
-				}
+  	    if ( Msh->NbrQua > Msh->MaxNbrQua ) {
+          printf("  ## ERROR LoadSU2Elements: quad out of bound (id=%d)\n", Msh->NbrQua);
+          return 0;
+        }
 
-				switchQuaIdx(swi,is);
-				AddQuadrilateral(Msh,Msh->NbrQua,is,iMark);
+        switchQuaIdx(swi,is);
+        AddQuadrilateral(Msh,Msh->NbrQua,is,iMark);
       }
       else if ( typ == SU2_LINE ) {
-	      for (s=0; s<2; s++) {
-	        fscanf(FilHdl, "%d", &buf);
-	        swi[s] = buf+1;
-	      }
-				Msh->NbrEfr++;
+        for (s=0; s<2; s++) {
+          fscanf(FilHdl, "%d", &buf);
+          swi[s] = buf+1;
+        }
+
+        Msh->NbrEfr++;
 				
-				if ( Msh->NbrEfr > Msh->MaxNbrEfr ) {
-					printf("  ## ERROR LoadSU2Elements: boundary edge out of bound (id=%d, max=%d)\n", Msh->NbrEfr, Msh->MaxNbrEfr);
-					return 0;
-				}
+        if ( Msh->NbrEfr > Msh->MaxNbrEfr ) {
+          printf("  ## ERROR LoadSU2Elements: boundary edge out of bound (id=%d, max=%d)\n", Msh->NbrEfr, Msh->MaxNbrEfr);
+          return 0;
+        }
 				
-				AddEdge(Msh,Msh->NbrEfr,swi,iMark);
+        AddEdge(Msh,Msh->NbrEfr,swi,iMark);
       }
-	    //else if ( typ == SU2_LINEP2 ) {
-      //
-	    //  fscanf(FilHdl, "%d %d %d", &swi[0], &swi[2], &swi[1]);
-			//	for (s=0; s<3; s++) 
-	    //  	swi[s]++;
-      //
-			//	NbrP2Efr++;
-			//	if ( NbrP2Efr > Msh->MaxNbrP2Efr ) {
-			//		printf("  ## ERROR LoadSU2Elements: P2 boundary edge out of bound (id=%d, max=%d)\n", NbrP2Efr,Msh->MaxNbrP2Efr );
-			//		return 0;
-			//	}
-			//	
-			//	switchP2EfrIdx(swi,is);
-			//	
-			//	NbrEfr++;
-			//	if ( NbrEfr > Msh->MaxNbrEfr ) {
-			//		printf("  ## ERROR LoadSU2Elements: P1 boundary edge out of bound (id=%d, max=%d)\n", NbrEfr,Msh->MaxNbrEfr );
-			//		return 0;
-			//	}
-			//	
-	    //  DefaultBdyEdge(Msh,NbrEfr,&Msh->Efr[NbrEfr],is,iMark);
-	    //  DefaultP2BdyEdge(Msh,NbrP2Efr,&Msh->Efr[NbrP2Efr],is[2],NbrEfr,&Msh->Efr[NbrEfr]);  
-	    //}
-			else {
-				printf("  ## ERROR : Unknown element type %d\n", typ);
-				return 0;
-			}
-			fgets (str, sizeof str, FilHdl);
+      else {
+        printf("  ## ERROR : Unknown element type %d\n", typ);
+        return 0;
+      }
+      fgets (str, sizeof str, FilHdl);
 			
-    }
-	}
+    }//for iElt
+  }//for iMark
+
+  return 1;
+}
+
+int LoadSU2Corners(FILE *FilHdl, Mesh *Msh)
+{
+	char   str[1024];
+
+	int iCor, NbrCor=0, typ, is[8], swi[8], buf, s, idx, res;
+	Msh->NbrCor = 0;
   
+  rewind(FilHdl);
+  do
+	{
+		res = fscanf(FilHdl, "%s", str);
+	}while( (res != EOF) && strcmp(str, "NCORNERS=") );
 	
+	fscanf(FilHdl, "%d", &NbrCor);
+  fgets (str, sizeof str, FilHdl);
+		
+  for (iCor=0; iCor<NbrCor; iCor++) {
+    fscanf(FilHdl, "%d", &typ);
+
+    if ( typ == SU2_CORNER ) {
+    	fscanf(FilHdl, "%d", &buf);
+    	swi[0] = buf+1;
+    	if ( swi[0] > Msh->NbrVer ) {
+			printf("  ## ERROR Corners: vertex out of bound (vid=%d)\n", swi[0]);
+			return 0;
+		}
+
+      	Msh->NbrCor++;
+
+      	if ( Msh->NbrCor > Msh->MaxNbrCor ) {
+			printf("  ## ERROR LoadSU2Corners: corner (id=%d, max=%d)\n", Msh->NbrCor, Msh->MaxNbrCor);
+			return 0;
+		}
+			
+      AddCorner(Msh,Msh->NbrCor,swi);
+
+    }
+		else {
+			printf("  ## ERROR : Unknown element type %d\n", typ);
+			return 0;
+		}
+    
+    fgets (str, sizeof str, FilHdl); 
+
+  }//for iCor
 	
 	return 1;
 }
@@ -594,6 +539,9 @@ int LoadSU2Mesh(char *FilNam, Mesh *Msh)
 	
 	//--- Read vertices
 	LoadSU2Vertices (FilHdl, Msh);
+
+	//--- Read corners
+	LoadSU2Corners (FilHdl, Msh);
 	
 	//--- Read Elements
 	LoadSU2Elements(FilHdl, Msh);
@@ -800,13 +748,14 @@ int LoadSU2Vertices(FILE *FilHdl, Mesh *Msh)
 void WriteSU2Mesh(char *nam, Mesh *Msh)
 {
   int       i, j, s, idx;
-  int       iVer,iTri,iEfr, iTet, iHex, iPri, iPyr, iQua, NbrElt=0;
+  int       iVer,iCor,iTri,iEfr, iTet, iHex, iPri, iPyr, iQua, NbrElt=0;
   char      OutNam[512];
   
   int Dim = Msh->Dim;
 	
 	int3 *BdrTag=NULL;
 	int NbrBdr, NbrTag, start, iTag, cpt;
+	int NbrCor;
 		
 	FILE *OutFil=NULL;
 	
@@ -1003,6 +952,16 @@ void WriteSU2Mesh(char *nam, Mesh *Msh)
 	}
   else
 		fprintf(OutFil, "NMARK= 0\n");
+
+  //--- Write corners
+  NbrCor = Msh->NbrCor;
+  if( NbrCor > 0 ) {
+  	fprintf(OutFil, "NCORNERS= %d\n", NbrCor);
+  	for (iCor=1; iCor<=Msh->NbrCor; iCor++) {
+  	  fprintf(OutFil, "%d ", SU2_CORNER); 
+  	  fprintf(OutFil, "%d\n", Msh->Cor[iCor]-1); 
+  	}
+  }
 	
   //--- close mesh file
 	if ( OutFil )

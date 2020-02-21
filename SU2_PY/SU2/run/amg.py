@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-## \file adjoint.py
+## \file amg.py
 #  \brief python package for running mesh adaptation using the AMG Inria library
-#  \author Victorien Menier
-#  \version 6.2.0 "Falcon"
+#  \author Victorien Menier, Brian Mungu\'ia
+#  \version 7.0.1 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -49,9 +49,12 @@ def amg ( config , kind='' ):
     #--- Check config options related to mesh adaptation
     
     adap_options = ['ADAP_SIZES', 'ADAP_SUBITE', 'ADAP_SENSOR', \
-    'ADAP_BACK', 'ADAP_HMAX', 'ADAP_HMIN', 'ADAP_HGRAD', 'ADAP_RESIDUAL_REDUCTION', 'ADAP_FLOW_ITER', 'ADAP_ADJ_ITER', 'ADAP_SOURCE','ADAP_PYTHON']
+    'ADAP_BACK', 'ADAP_HMAX', 'ADAP_HMIN', 'ADAP_HGRAD', \
+    'ADAP_RESIDUAL_REDUCTION', 'ADAP_FLOW_ITER', 'ADAP_ADJ_ITER', 'ADAP_CFL', \
+    'ADAP_INV_VOL', 'ADAP_SOURCE','ADAP_PYTHON']
     required_options = ['ADAP_SIZES', 'ADAP_SUBITE', \
-    'ADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME']
+    'ADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME', \
+    'ADAP_INV_VOL', 'ADAP_ORTHO']
     
     if not all (opt in config for opt in required_options):
         err = '\n\n## ERROR : Missing options: \n'
@@ -71,6 +74,7 @@ def amg ( config , kind='' ):
     # solver iterations/ residual reduction param for each size level
     adap_flow_iter = su2amg.get_flow_iter(config)
     adap_adj_iter  = su2amg.get_adj_iter(config)
+    adap_cfl       = su2amg.get_cfl(config)
     # adap_res       = su2amg.get_residual_reduction(config)
 
     adap_sensor = config.ADAP_SENSOR
@@ -115,7 +119,7 @@ def amg ( config , kind='' ):
     config_cfd.WRT_BINARY_RESTART  = "NO"
     config_cfd.READ_BINARY_RESTART = "NO"
 
-    config_cfd.VOLUME_OUTPUT = "(COORDINATES, SOLUTION)"
+    config_cfd.VOLUME_OUTPUT = "(COORDINATES, SOLUTION, PRIMITIVE)"
         
     current_mesh     = "Initial_mesh"
     current_solution = "Initial_solution"
@@ -153,6 +157,11 @@ def amg ( config , kind='' ):
                 config_cfd.RESTART_ADJ_FILENAME   = current_solution_adj
                 config_cfd.SOLUTION_FILENAME      = current_solution
                 config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
+                config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, ANISOTROPIC_METRIC)"
+                config_cfd.ERROR_ESTIMATE         = 'YES'
+                config_cfd.MESH_HMAX              = config.ADAP_HMAX
+                config_cfd.MESH_HMIN              = config.ADAP_HMIN
+                config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
                 SU2_CFD(config_cfd)
 
         except:
@@ -172,6 +181,9 @@ def amg ( config , kind='' ):
                     err += opt + '\n'
             raise RuntimeError , err
 
+        sys.stdout.write('Initial CFD solution is provided.\n')
+        sys.stdout.flush()
+
         stdout_hdl = open('ini.out','w') # new targets
         stderr_hdl = open('ini.err','w')
 
@@ -181,14 +193,39 @@ def amg ( config , kind='' ):
         sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
         sav_stderr, sys.stderr = sys.stderr, stderr_hdl
 
-        current_mesh     = config['MESH_FILENAME']
-        current_solution = "ini_restart_flow.csv"
+        current_mesh         = config['MESH_FILENAME']
+        current_solution     = "ini_restart_flow.csv"
+        current_adj_solution = "ini_restart_adj.csv"
+
+        config_cfd.RESTART_FILENAME       = current_solution
+        config_cfd.RESTART_ADJ_FILENAME   = current_adj_solution
+        config_cfd.SOLUTION_FILENAME      = '../' + config['SOLUTION_FILENAME']
+        config_cfd.SOLUTION_ADJ_FILENAME  = '../' + config['SOLUTION_ADJ_FILENAME']
+        config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, ANISOTROPIC_METRIC)"
+        config_cfd.ERROR_ESTIMATE         = 'YES'
+        config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
+        config_cfd.MESH_HMAX              = config.ADAP_HMAX
+        config_cfd.MESH_HMIN              = config.ADAP_HMIN
+        config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
+
+        #--- Run an adjoint if the adjoint solution file doesn't exist
+        solution_adj_ini = config_cfd.SOLUTION_ADJ_FILENAME           
+        func_name         = config.OBJECTIVE_FUNCTION
+        suffix            = su2io.get_adjointSuffix(func_name)
+        solution_adj_ini  = su2io.add_suffix(solution_adj_ini,suffix)
+        if not (os.path.exists(solution_adj_ini)):
+            config_cfd.RESTART_SOL= 'NO'
+            SU2_CFD(config_cfd)
+
+        #--- Otherwise just compute the metric
+        else:
+            config_cfd.ITER = 1
+            SU2_CFD(config_cfd)
+            sav_stdout.write('Initial adjoint CFD solution is provided.\n')
+            sav_stdout.flush()
 
         sys.stdout = sav_stdout
         sys.stderr = sav_stderr
-        
-        sys.stdout.write('Initial CFD solution is provided.\n')
-        sys.stdout.flush()
         
     #--- Check existence of initial mesh, solution
     
@@ -214,6 +251,7 @@ def amg ( config , kind='' ):
     config_amg['hgrad']       = float(config['ADAP_HGRAD'])
     config_amg['hmax']        = float(config['ADAP_HMAX'])
     config_amg['hmin']        = float(config['ADAP_HMIN'])
+    config_amg['Lp']          = float(config['ADAP_NORM'])
     config_amg['mesh_in']     = 'current.meshb'
     config_amg['adap_source'] = ''
     
@@ -228,13 +266,24 @@ def amg ( config , kind='' ):
         raise RuntimeError , "\n\n##ERROR : Can't find back mesh: %s.\n\n" % config_amg['adap_back']
     
     if back_extension == ".su2":
+        sys.stdout.write("\nGenerating GMF background surface mesh.\n")
+        sys.stdout.flush()
         su2amg._amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
         config_amg['adap_back'] = "amg_back.meshb"
+
+    if dim == 2:
+        sys.stdout.write("\nPreprocessing background mesh.\n")
+        sys.stdout.flush()
+        su2amg.prepro_back_mesh(config_cfd, config_amg)
     
     if 'ADAP_SOURCE' in config:
         config_amg['adap_source'] = os.path.join(cwd,config['ADAP_SOURCE'])
 
-    config_amg['options'] = "-back " + config_amg['adap_back'] + ' -inv-back'
+    config_amg['options'] = "-back " + config_amg['adap_back']
+    if(config['ADAP_INV_VOL'] == 'YES'):
+        config_amg['options'] = config_amg['options'] + ' -inv-back'
+    if(config['ADAP_ORTHO'] == 'YES'):
+        config_amg['options'] = config_amg['options'] + ' -cart3d-only'
     
     #--- Start adaptive loop
 
@@ -262,22 +311,21 @@ def amg ( config , kind='' ):
             
             #--- Load su2 mesh 
             
-            mesh = su2amg.read_mesh(current_mesh, current_solution)
+            mesh = su2amg.read_mesh_and_sol(current_mesh, current_solution)
 
             #--- Write solution
-            if config_cfd.WRT_INRIA_MESH == 'YES':
-                if global_iter == 0 :
-                    su2amg.write_mesh("ini.meshb", "ini.solb", mesh)
-                else :
-                    current_gmf_mesh = "ite%d.meshb" % (global_iter-1)
-                    current_gmf_solution = "ite%d.solb" % (global_iter-1)
-                    su2amg.write_mesh(current_gmf_mesh, current_gmf_solution, mesh)
+            if global_iter == 0 :
+                su2amg.write_mesh_and_sol("ini.meshb", "ini.solb", mesh)
+            else :
+                current_gmf_mesh = "ite%d.meshb" % (global_iter-1)
+                current_gmf_solution = "ite%d.solb" % (global_iter-1)
+                su2amg.write_mesh_and_sol(current_gmf_mesh, current_gmf_solution, mesh)
                                     
             if not amg_python : 
                 
                 #--- If not using the amg python interface, convert the mesh and make system call
                 
-                su2amg.write_mesh("current.meshb", "current.solb", mesh)
+                su2amg.write_mesh_and_sol("current.meshb", "current.solb", mesh)
                 
                 if not os.path.exists("current.solb"):
                     raise RuntimeError , "\n##ERROR : Can't find solution.\n"
@@ -287,7 +335,7 @@ def amg ( config , kind='' ):
                 #--- Get sensor
                                 
                 sensor = su2amg.create_sensor(mesh, adap_sensor)
-                su2amg.write_solution("current_sensor.solb", sensor)
+                su2amg.write_sol("current_sensor.solb", sensor)
                 
                 if not os.path.exists("current_sensor.solb"):
                     raise RuntimeError , "\n##ERROR : Can't find adap sensor.\n"
@@ -318,13 +366,13 @@ def amg ( config , kind='' ):
                 del mesh
                 
                 # Read Inria mesh
-                mesh = su2amg.read_mesh(config_amg['mesh_out'], "current.itp.solb")
+                mesh = su2amg.read_mesh_and_sol(config_amg['mesh_out'], "current.itp.solb")
                 mesh['markers'] = save_markers
                 
                 current_mesh = "ite%d.su2" % (global_iter)
                 current_solution = "ite%d.csv" % (global_iter)    
                 
-                su2amg.write_mesh(current_mesh, current_solution, mesh)
+                su2amg.write_mesh_and_sol(current_mesh, current_solution, mesh)
                 
                 if not os.path.exists(current_mesh) or not os.path.exists(current_solution) :
                     raise RuntimeError , "\n##ERROR : Conversion to SU2 failed.\n"
@@ -363,7 +411,12 @@ def amg ( config , kind='' ):
                     current_mesh = "ite%d.su2" % (global_iter)
                     current_solution = "ite%d.csv" % (global_iter)
                                     
-                    su2amg.write_mesh(current_mesh, current_solution, mesh_new)
+                    su2amg.write_mesh_and_sol(current_mesh, current_solution, mesh_new)
+
+                    if config_cfd.WRT_INRIA_MESH == 'YES':
+                        current_gmf_mesh = "ite%d_itp.meshb" % global_iter
+                        current_gmf_solution = "ite%d_itp.solb" % global_iter
+                        su2amg.write_mesh_and_sol(current_gmf_mesh, current_gmf_solution, mesh_new)
 
                 else:
                 
@@ -389,7 +442,7 @@ def amg ( config , kind='' ):
                     current_mesh = "ite%d.su2" % (global_iter)
                     current_solution = "ite%d.csv" % (global_iter)
                                     
-                    su2amg.write_mesh(current_mesh, current_solution, mesh_new)
+                    su2amg.write_mesh_and_sol(current_mesh, current_solution, mesh_new)
                 
             #--- Run su2
             
@@ -415,13 +468,14 @@ def amg ( config , kind='' ):
                 config_cfd.CONV_FILENAME     = "ite%d_history" % (global_iter)
                 config_cfd.SOLUTION_FILENAME = current_solution_ini
                 config_cfd.RESTART_FILENAME  = current_solution
-                config_cfd.VOLUME_OUTPUT     = "(COORDINATES, SOLUTION)"
+                config_cfd.VOLUME_OUTPUT     = "(COORDINATES, SOLUTION, PRIMITIVE)"
                 config_cfd.ERROR_ESTIMATE    = 'NO'
                 config_cfd.MATH_PROBLEM      = 'DIRECT'
                 config_cfd.RESTART_SOL       = 'YES'
                 
                 # config_cfd.RESIDUAL_REDUCTION = float(adap_res[iSiz])
                 config_cfd.ITER               = int(adap_flow_iter[iSiz])
+                config_cfd.CFL_NUMBER         = float(adap_cfl[iSiz])
                 
                 config_cfd.WRT_BINARY_RESTART  = "NO"
                 config_cfd.READ_BINARY_RESTART = "NO"
@@ -440,6 +494,9 @@ def amg ( config , kind='' ):
                     config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
                     config_cfd.RESTART_SOL            = 'NO'
                     config_cfd.ITER                   = int(adap_adj_iter[iSiz])
+                    config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, ANISOTROPIC_METRIC)"
+                    config_cfd.ERROR_ESTIMATE         = 'YES'
+                    config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[iSiz])
                     SU2_CFD(config_cfd)
             
             except:
@@ -473,6 +530,12 @@ def amg ( config , kind='' ):
             #     if os.path.exists(fil) : os.remove(fil)
             
             global_iter += 1
+
+    #--- Write final files
+
+    if config_cfd.WRT_INRIA_MESH == 'YES':
+        mesh = su2amg.read_mesh_and_sol(current_mesh, current_solution)
+        su2amg.write_mesh_and_sol("fin.meshb", "fin.solb", mesh)
     
     os.rename(current_solution,os.path.join(cwd,config.RESTART_FILENAME))
     os.rename(current_mesh,os.path.join(cwd,config.MESH_OUT_FILENAME))
