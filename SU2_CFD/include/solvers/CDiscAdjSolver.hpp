@@ -37,7 +37,7 @@
  * \author T. Albring
  */
 class CDiscAdjSolver : public CSolver {
-private:
+protected:
   unsigned short KindDirect_Solver;
   CSolver *direct_solver;
   su2double **CSensitivity;      /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
