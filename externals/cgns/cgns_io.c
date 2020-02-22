@@ -52,7 +52,7 @@ char hdf5_access[64] = "NATIVE";
 #endif
 #if CG_BUILD_PARALLEL
 #include <mpi.h>
-MPI_Comm pcg_mpi_comm=MPI_COMM_WORLD;
+MPI_Comm pcg_mpi_comm=MPI_COMM_NULL;
 int pcg_mpi_comm_size;
 int pcg_mpi_comm_rank;
 int pcg_mpi_initialized;
@@ -101,7 +101,7 @@ static char *cgio_ErrorMessage[] = {
     "file has the wrong specified type",
     "not a HDF5 file - required for parallel"
 };
-#define CGIO_MAX_ERRORS (sizeof(cgio_ErrorMessage)/sizeof(char *))
+#define CGIO_MAX_ERRORS ((int)(sizeof(cgio_ErrorMessage)/sizeof(char *)))
 
 #define get_error()  last_err
 
@@ -603,7 +603,9 @@ int cgio_check_file (const char *filename, int *file_type)
 	}
 	return err;
       }
-    fread (buf, 1, sizeof(buf), fp);
+    if (sizeof(buf) != fread (buf, 1, sizeof(buf), fp)) {
+      buf[4] = 0;
+    }
     buf[sizeof(buf)-1] = 0;
     fclose (fp);
 
