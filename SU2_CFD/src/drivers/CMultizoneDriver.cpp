@@ -292,7 +292,8 @@ void CMultizoneDriver::Run_GaussSeidel() {
     for (iZone = 0; iZone < nZone; iZone++){
 
       /*--- In principle, the mesh does not need to be updated ---*/
-      UpdateMesh = 0;
+      /*--- Default updated if config for zone specifies mesh deformation ---*/
+      UpdateMesh = config_container[iZone]->GetDeform_Mesh();
 
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
