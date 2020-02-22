@@ -383,7 +383,7 @@ void CIteration::SetMesh_Deformation(CGeometry **geometry,
   /*--- Perform the elasticity mesh movement ---*/
   if (config->GetDeform_Mesh()) {
 
-    if ((kind_recording != MESH_DEFORM) && !config->GetMultizone_Problem()) {
+    if ((kind_recording != MESH_DEFORM) && (!config->GetMultizone_Problem() || config->GetSurface_Movement(DEFORMING))) {
       /*--- In a primal run, AD::TapeActive returns a false ---*/
       /*--- In any other recordings, the tape is passive during the deformation ---*/
       ActiveTape = AD::TapeActive();

@@ -541,7 +541,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
    *    It is necessary to include data transfer and mesh updates in this section as some functions
    *    computed in one zone depend explicitly on the variables of others through that path. --- */
 
-  HandleDataTransfer();
+  HandleDataTransfer(kind_recording);
 
   SetObjFunction(kind_recording);
 
@@ -551,7 +551,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
     /*--- We do the communication here to not differentiate wrt updated boundary data. ---*/
 
-    HandleDataTransfer();
+    HandleDataTransfer(kind_recording);
 
     AD::Push_TapePosition(); /// TRANSFER
 
@@ -917,14 +917,14 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
   }
 }
 
-void CDiscAdjMultizoneDriver::HandleDataTransfer() {
+void CDiscAdjMultizoneDriver::HandleDataTransfer(unsigned short kind_recording) {
 
   unsigned long ExtIter = 0;
 
   for(iZone = 0; iZone < nZone; iZone++) {
 
     /*--- In principle, the mesh does not need to be updated ---*/
-    bool DeformMesh = false;
+    bool DeformMesh = config_container[iZone]->GetDeform_Mesh();
 
     /*--- Transfer from all the remaining zones ---*/
     for (unsigned short jZone = 0; jZone < nZone; jZone++){
@@ -934,7 +934,29 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer() {
       }
     }
     /*--- If a mesh update is required due to the transfer of data ---*/
-    if (DeformMesh) DynamicMeshUpdate(iZone, ExtIter);
+    if (DeformMesh) {
+
+      /*--- Legacy dynamic mesh update - Only if GRID_MOVEMENT = YES ---*/
+      if (!config_container[iZone]->GetDeform_Mesh() && (config_container[iZone]->GetGrid_Movement() || config_container[iZone]->GetSurface_Movement(FLUID_STRUCTURE_STATIC))) {
+        iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone],
+                                                              grid_movement[iZone][INST_0], solver_container[iZone][INST_0],
+                                                              config_container[iZone], 0, TimeIter);
+      }
+
+      /*--- New solver - all the other routines in SetGrid_Movement should be adapted to this one ---*/
+      /*--- Works if DEFORM_MESH = YES ---*/
+      if (config_container[iZone]->GetDeform_Mesh()) {
+        
+        unsigned short type_recording = kind_recording;
+        if (kind_recording == MESH_COORDS) type_recording = MESH_DEFORM;
+
+        iteration_container[iZone][INST_0]->SetMesh_Deformation(geometry_container[iZone][INST_0],
+                                                                    solver_container[iZone][INST_0][MESH_0],
+                                                                    numerics_container[iZone][INST_0][MESH_0],
+                                                                    config_container[ZONE_0],
+                                                                    type_recording);
+      }
+    }
 
     Has_Deformation(iZone) = DeformMesh;
   }
