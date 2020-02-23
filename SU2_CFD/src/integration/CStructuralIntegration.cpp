@@ -120,19 +120,13 @@ void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver 
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     switch (config->GetMarker_All_KindBC(iMarker)) {
 
-      /*--- Some external loads are considered constant over the time step ---*/
-
       case LOAD_DIR_BOUNDARY:
-        if (first_iter)
-          solver->BC_Dir_Load(geometry, numerics[FEA_TERM], config, iMarker);
+        solver->BC_Dir_Load(geometry, numerics[FEA_TERM], config, iMarker);
         break;
 
       case LOAD_SINE_BOUNDARY:
-        if (first_iter)
-          solver->BC_Sine_Load(geometry, numerics[FEA_TERM], config, iMarker);
+        solver->BC_Sine_Load(geometry, numerics[FEA_TERM], config, iMarker);
         break;
-
-      /*--- Others are not, because they depend on the geometry ---*/
 
       case LOAD_BOUNDARY:
         solver->BC_Normal_Load(geometry, numerics[FEA_TERM], config, iMarker);
