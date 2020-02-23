@@ -780,37 +780,14 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   if (body_forces && initial_calc)
     Compute_DeadLoad(geometry, numerics, config);
 
-
+  /*--- Clear the linear system solution. ---*/
   SU2_OMP_PARALLEL
   {
-    /*--- Clear the linear system solution. ---*/
     LinSysSol.SetValZero();
-
-    /*--- Some external forces may be considered constant over the time step. ---*/
-    if (first_iter) {
-      SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
-        nodes->Clear_SurfaceLoad_Res(iPoint);
-    }
   }
 
-  /*
-   * If we apply nonlinear forces, we need to clear the residual
-   * on every iteration to avoid adding over previous values.
-   */
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-    switch (config->GetMarker_All_KindBC(iMarker)) {
-      case LOAD_BOUNDARY:
-      case DAMPER_BOUNDARY:
-        /*--- For all the vertices in the marker iMarker. ---*/
-        for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          /*--- Retrieve the point ID and clear the residual. ---*/
-          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          nodes->Clear_SurfaceLoad_Res(iPoint);
-        }
-        break;
-    }
-  }
+  /*--- Clear external forces. ---*/
+  nodes->Clear_SurfaceLoad_Res();
 
   /*
    * FSI loads (computed upstream) need to be integrated if a nonconservative interpolation scheme is in use
@@ -2043,10 +2020,12 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *co
 
       auto iPoint = geometry->bound[val_marker][iElem]->GetNode(iNode);
 
-      for (iVar = 0; iVar < nVar; iVar++){
-        su2double dampValue = dampC * nodes->GetSolution_Vel(iPoint, iVar);
-        nodes->Set_SurfaceLoad_Res(iPoint, iVar, dampValue);
-      }
+      su2double force[3] = {0.0};
+      
+      for (iVar = 0; iVar < nVar; iVar++)
+        force[iVar] = dampC * nodes->GetSolution_Vel(iPoint, iVar);
+      
+      nodes->Add_SurfaceLoad_Res(iPoint, force);
     }
   }
 

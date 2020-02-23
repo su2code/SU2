@@ -1462,7 +1462,7 @@ void CFEAIteration::Iterate(COutput *output,
 
       /*--- Write the convergence history (first, compute Von Mises stress) ---*/
       
-      Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+      Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
    
       /*--- Run the second iteration ---*/
 
@@ -1501,7 +1501,8 @@ void CFEAIteration::Iterate(COutput *output,
               config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
 
           /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-          StopCalc = Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+          StopCalc = Monitor(output, integration, geometry,  solver, numerics, config,
+                             surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
           if (StopCalc) break;
 
@@ -1516,7 +1517,8 @@ void CFEAIteration::Iterate(COutput *output,
         /*--- Here we have to restart the solution to the original one of the iteration ---*/
         /*--- Retrieve the Solution_Old as the current solution before subiterating ---*/
 
-        solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->ResetInitialCondition(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
+        solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->ResetInitialCondition(geometry[val_iZone][val_iInst],
+                                                       solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
 
         /*--- For the number of increments ---*/
         for (iIncrement = 0; iIncrement < nIncrements; iIncrement++) {
@@ -1632,6 +1634,7 @@ void CFEAIteration::Update(COutput *output,
   /*----------------- Update structural solver ----------------------*/
 
   if (dynamic) {
+
     integration[val_iZone][val_iInst][FEA_SOL]->SetStructural_Solver(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
     integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);
 
@@ -1641,14 +1644,14 @@ void CFEAIteration::Update(COutput *output,
     Physical_t  = (TimeIter+1)*Physical_dt;
     if (Physical_t >=  config[val_iZone]->GetTotal_DynTime())
       integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(true);
-    } else if ( static_fem && fsi) {
+  
+  } else if ( static_fem && fsi) {
 
     /*--- For FSI problems, output the relaxed result, which is the one transferred into the fluid domain (for restart purposes) ---*/
     switch (config[val_iZone]->GetKind_TimeIntScheme_FEA()) {
-    case (NEWMARK_IMPLICIT):
+      case (NEWMARK_IMPLICIT):
         solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->ImplicitNewmark_Relaxation(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
-    break;
-
+        break;
     }
   }
 
