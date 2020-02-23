@@ -1733,38 +1733,42 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, CConfig *c
   auto TagBound = config->GetMarker_All_TagBound(val_marker);
   su2double DispDirVal = config->GetDisp_Dir_Value(TagBound);
   su2double DispDirMult = config->GetDisp_Dir_Multiplier(TagBound);
-  const su2double *Disp_Dir_Local = config->GetDisp_Dir(TagBound);
+  const su2double *DispDirLocal = config->GetDisp_Dir(TagBound);
 
-  su2double Disp_Dir[3] = {0.0, 0.0, 0.0};
+  su2double DispDir[3] = {0.0};
 
-  su2double Disp_Dir_Mod = 0.0;
+  su2double DispDirMod = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    Disp_Dir_Mod += Disp_Dir_Local[iDim]*Disp_Dir_Local[iDim];
-  Disp_Dir_Mod = sqrt(Disp_Dir_Mod);
+    DispDirMod += DispDirLocal[iDim]*DispDirLocal[iDim];
+  DispDirMod = sqrt(DispDirMod);
 
   su2double CurrentTime = config->GetCurrent_DynTime();
-  su2double Ramp_Time = config->GetRamp_Time();
-  su2double ModAmpl = Compute_LoadCoefficient(CurrentTime, Ramp_Time, config);
+  su2double RampTime = config->GetRamp_Time();
+  su2double ModAmpl = Compute_LoadCoefficient(CurrentTime, RampTime, config);
 
-  su2double TotalDisp = ModAmpl * DispDirVal * DispDirMult / Disp_Dir_Mod;
+  su2double TotalDisp = ModAmpl * DispDirVal * DispDirMult / DispDirMod;
 
   for (iDim = 0; iDim < nDim; iDim++)
-    Disp_Dir[iDim] = TotalDisp * Disp_Dir_Local[iDim];
+    DispDir[iDim] = TotalDisp * DispDirLocal[iDim];
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    /*--- Get node index ---*/
+    /*--- Get node index. ---*/
     auto iNode = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Set and enforce solution ---*/
-    LinSysSol.SetBlock(iNode, Disp_Dir);
-    Jacobian.EnforceSolutionAtNode(iNode, Disp_Dir, LinSysRes);
+    /*--- The solution is incremental so we need to
+     *    subtract the current displacement. ---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      LinSysSol(iNode,iDim) = DispDir[iDim] - nodes->GetSolution(iNode,iDim);
+
+    /*--- Enforce the solution. ---*/
+    Jacobian.EnforceSolutionAtNode(iNode, LinSysSol.GetBlock(iNode), LinSysRes);
   }
 
 }
 
-void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,  CNumerics **numerics,
-                                           unsigned short iMesh) {
+void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
+                                CConfig *config, CNumerics **numerics, unsigned short iMesh) {
 
   unsigned short iVar;
   unsigned long iPoint, total_index;
@@ -2021,10 +2025,10 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *co
       auto iPoint = geometry->bound[val_marker][iElem]->GetNode(iNode);
 
       su2double force[3] = {0.0};
-      
+
       for (iVar = 0; iVar < nVar; iVar++)
         force[iVar] = dampC * nodes->GetSolution_Vel(iPoint, iVar);
-      
+
       nodes->Add_SurfaceLoad_Res(iPoint, force);
     }
   }
