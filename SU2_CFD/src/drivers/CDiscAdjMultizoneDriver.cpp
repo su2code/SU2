@@ -924,7 +924,7 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer(unsigned short kind_recording) 
   for(iZone = 0; iZone < nZone; iZone++) {
 
     /*--- In principle, the mesh does not need to be updated ---*/
-    bool DeformMesh = config_container[iZone]->GetDeform_Mesh();
+    bool DeformMesh = (false || (config_container[iZone]->GetDeform_Mesh() && config_container[iZone]->GetSurface_Movement(DEFORMING)));
 
     /*--- Transfer from all the remaining zones ---*/
     for (unsigned short jZone = 0; jZone < nZone; jZone++){
