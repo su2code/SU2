@@ -42,8 +42,10 @@
 class CSobolevSmoothingVariable : public CVariable {
 public:
 
-    bool* boundary_vertex;  /*!< \brief Stores if a point belongs to the boundary of a boundary. */
-    unsigned long nBoundPoints;
+  MatrixType Sensitivity;  /*!< Vector holding the derivative of target functional with respect to the coordinates at this node */
+
+  bool* boundary_vertex;  /*!< \brief Stores if a point belongs to the boundary of a boundary. */
+  unsigned long nBoundPoints;
 
   /*!
    * \brief Constructor of the class.
@@ -57,6 +59,20 @@ public:
    * \brief Destructor of the class.
    */
   ~CSobolevSmoothingVariable();
+
+  /*!
+   * \brief Set the sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the Sensitivity
+   */
+  inline void SetSensitivity(unsigned long iPoint, unsigned long iDim, su2double val) override { Sensitivity(iPoint,iDim) = val;}
+
+  /*!
+   * \brief Get the Sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \return value of the Sensitivity
+   */
+  inline su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const override { return Sensitivity(iPoint,iDim); }
 
   /*!
    * \brief Mark a point as boundary of a boundary

@@ -39,7 +39,12 @@
 
 CSobolevSmoothingVariable::CSobolevSmoothingVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
   CVariable(npoint, ndim, config) {
+
   nDim = ndim;
+  nPoint = npoint;
+
+  Sensitivity.resize(nPoint,nDim) = su2double(0.0);
+
   boundary_vertex = new bool[nPoint];
   for (auto iPoint=0; iPoint<nPoint; iPoint++) {
     boundary_vertex[iPoint] = false;

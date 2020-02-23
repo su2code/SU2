@@ -3221,9 +3221,7 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
    deforming meshes, and preprocessing of harmonic balance. ---*/
 
   if (!fem_solver && (config->GetGrid_Movement() ||
-                      (config->GetDirectDiff() == D_DESIGN ) ||
-                      config->GetProject2Surface() ||
-                      config->GetSmoothOnSurface()) && !config->GetSurface_Movement(FLUID_STRUCTURE_STATIC)) {
+                      (config->GetDirectDiff() == D_DESIGN)) && !config->GetSurface_Movement(FLUID_STRUCTURE_STATIC)) {
     if (rank == MASTER_NODE)
       cout << "Setting dynamic mesh structure for zone "<< iZone + 1<<"." << endl;
     grid_movement = new CVolumetricMovement(geometry[MESH_0], config);
@@ -3270,6 +3268,18 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
       cout << "Setting moving mesh structure for FSI problems." << endl;
     /*--- Instantiate the container for the grid movement structure ---*/
     grid_movement = new CElasticityMovement(geometry[MESH_0], config);
+  }
+
+  /*--- For gradient smoothing we need to calculate the projections between volume, surface and design parameters ---*/
+  // TODO: check if this is the correct initialization
+  if ( config->GetProject2Surface() || config->GetSmoothOnSurface() ) {
+    grid_movement = new CVolumetricMovement(geometry[MESH_0], config);
+  }
+
+  if ( config->GetSurface2DV() ) {
+    surface_movement = new CSurfaceMovement();
+    surface_movement->CopyBoundary(geometry[MESH_0], config);
+    // TODO: Check if surface_movement->SetSurface_Derivative(geometry[MESH_0],config); here is useful for forward projection
   }
 
 }

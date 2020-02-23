@@ -57,7 +57,7 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
     nIterMesh = 0;
 
     /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
-    if (config->GetVolumetric_Movement()){
+    if (config->GetVolumetric_Movement() || config->GetSmoothGradient()){
       LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
       LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
       StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
@@ -138,6 +138,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   /*--- Disable the screen output if we're running SU2_CFD ---*/
   
   if (config->GetKind_SU2() == SU2_CFD && !Derivative) Screen_Output = false;
+  if (config->GetSmoothGradient()) Screen_Output=true;
 
   /*--- Set the number of nonlinear iterations to 1 if Derivative computation is enabled ---*/
 
@@ -194,7 +195,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      * we solve the system using the normal matrix vector product and preconditioner.
      * For the mesh sensitivities using the discrete adjoint method we solve the system using the transposed matrix,
      * hence we need the corresponding matrix vector product and the preconditioner.  ---*/
-    if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)) {
+    if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative && !config->GetSmoothGradient())) {
 
       if (config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS) {
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# LU_SGS preconditioner." << endl;
@@ -214,7 +215,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config);
     	}
 
-    } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
+    } else if (Derivative && ((config->GetKind_SU2() == SU2_DOT) || config->GetSmoothGradient())) {
 
       /*--- Build the ILU or Jacobi preconditioner for the transposed system ---*/
 
@@ -1696,7 +1697,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
         ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
+        ((config->GetMarker_All_DV(iMarker) == YES) && ((Kind_SU2 == SU2_DOT) || config->GetSmoothGradient()) )) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -1806,7 +1807,7 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
       }
     }
     if (LinSysRes.norm() == 0.0) cout << "Warning: Derivatives are zero!" << endl;
-  } else if (Kind_SU2 == SU2_DOT) {
+  } else if (Kind_SU2 == SU2_DOT || config->GetSmoothGradient()) {
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -1837,7 +1838,7 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       }
       geometry->node[iPoint]->SetCoord(new_coord);
     }
-  } else if (Kind_SU2 == SU2_DOT) {
+  } else if ((Kind_SU2 == SU2_DOT) || config->GetSmoothGradient()) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||

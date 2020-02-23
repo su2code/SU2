@@ -3979,6 +3979,18 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
     boundary_file.close();
 
   }
+
+
+  /*--- Allocate space for the sensitivity and initialize. ---*/
+  Sensitivity = NULL;
+  if (config->GetSmoothGradient()) {
+    Sensitivity = new su2double[nPoint*nDim];
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        Sensitivity[iPoint*nDim+iDim] = 0.0;
+      }
+    }
+  }
   
 }
 
@@ -4229,6 +4241,18 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   if (Elem_ID_BoundTria_Linear != NULL) delete [] Elem_ID_BoundTria_Linear;
   if (Elem_ID_BoundQuad_Linear != NULL) delete [] Elem_ID_BoundQuad_Linear;
 
+
+  /*--- Allocate space for the sensitivity and initialize. ---*/
+  Sensitivity = NULL;
+  if (config->GetSmoothGradient()) {
+    Sensitivity = new su2double[nPoint*nDim];
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        Sensitivity[iPoint*nDim+iDim] = 0.0;
+      }
+    }
+  }
+
 }
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
@@ -4380,6 +4404,9 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
       if (Marker_All_SendRecv[iMarker] == 0 && nTotVertexSpan[iMarker] != NULL)
         delete [] nTotVertexSpan[iMarker];
     delete [] nTotVertexSpan;
+  }
+  if (Sensitivity !=NULL) {
+    delete [] Sensitivity;
   }
 
 }

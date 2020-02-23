@@ -127,4 +127,13 @@ public:
    */
   void SecondaryRecording(void);
 
+  /*!
+   * \brief Postprocess the calculated derivatives with gradient smoothing
+   */
+  void DerivativeTreatment(void);
+
+  /*!
+   * \brief TODO: only for development, remove later
+   */
+  void OldDerivativeTreatment(void);
 };

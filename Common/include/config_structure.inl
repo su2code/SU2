@@ -338,6 +338,8 @@ inline bool CConfig::GetSobDebugMode(void) { return DebugMode; }
 
 inline bool CConfig::GetSecOrdQuad(void) { return SecOrdQuad; }
 
+inline bool CConfig::GetSurface2DV(void) { return Surface2DV; }
+
 inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
 
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }

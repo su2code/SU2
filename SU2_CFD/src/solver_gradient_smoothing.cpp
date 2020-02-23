@@ -130,11 +130,12 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
     auxVecOut.Initialize(nPoint, nPointDomain, nDim, 0.0);
   }
 
-  /*--- Initialize the boundary of the boundary ---*/
+  /*--- Initialize the CVariable structure holding solution data ---*/
+  nodes = new CSobolevSmoothingVariable(nPoint, nDim,  config);
+  SetBaseClassPointerToNodes();
 
+  /*--- Initialize the boundary of the boundary ---*/
   if (config->GetSmoothOnSurface()) {
-    nodes = new CSobolevSmoothingVariable(nPoint, nDim,  config);
-    SetBaseClassPointerToNodes();
 
     /*--- check which points are in more than one physical boundary ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -226,7 +227,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
       }
 
       Solve_Linear_System(geometry, config);
-      Set_Sensitivities(geometry, solver, config);
+      WriteSensitivities(geometry, solver, config);
 
       ofstream result ("result.txt");
       LinSysSol.printVec(result);
@@ -274,7 +275,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
 
     Solve_Linear_System(geometry, config);
 
-    Set_Sensitivities(geometry, solver, config);
+    WriteSensitivities(geometry, solver, config);
 
     for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
       for (auto iDim = 0; iDim < nDim ; iDim++) {
@@ -818,7 +819,7 @@ void CGradientSmoothingSolver::Solve_Linear_System(CGeometry *geometry, CConfig 
 }
 
 
-void CGradientSmoothingSolver::Set_Sensitivities(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker){
+void CGradientSmoothingSolver::WriteSensitivities(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker){
 
   unsigned long iPoint, total_index;
   unsigned short iDim;
@@ -826,7 +827,7 @@ void CGradientSmoothingSolver::Set_Sensitivities(CGeometry *geometry, CSolver *s
   if ( config->GetSepDim() ) {
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      solver->GetNodes()->SetSensitivity(iPoint, dir, LinSysSol[iPoint]);
+      this->GetNodes()->SetSensitivity(iPoint, dir, LinSysSol[iPoint]);
     }
 
   } else if ( config->GetSmoothOnSurface() ) {
@@ -836,7 +837,7 @@ void CGradientSmoothingSolver::Set_Sensitivities(CGeometry *geometry, CSolver *s
       iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        solver->GetNodes()->SetSensitivity(iPoint, iDim, LinSysSol[iVertex]);
+        this->GetNodes()->SetSensitivity(iPoint, iDim, LinSysSol[iVertex]);
       }
     }
 
@@ -845,7 +846,7 @@ void CGradientSmoothingSolver::Set_Sensitivities(CGeometry *geometry, CSolver *s
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         total_index = iPoint*nDim + iDim;
-        solver->GetNodes()->SetSensitivity(iPoint, iDim, LinSysSol[total_index]);
+        this->GetNodes()->SetSensitivity(iPoint, iDim, LinSysSol[total_index]);
       }
     }
 
@@ -879,7 +880,7 @@ void CGradientSmoothingSolver::MultiplyByVolumeDeformationStiffness(CGeometry *g
   matrix.close();
 
   // set the calculated sensitivities
-  Set_Sensitivities(geometry, solver, config);
+  WriteSensitivities(geometry, solver, config);
 
   delete mat_vec;
 }
@@ -1030,10 +1031,70 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingOnSurface(CGeometry *geomet
 
   Solve_Linear_System(geometry, config);
 
-  Set_Sensitivities(geometry, solver, config, val_marker);
+  WriteSensitivities(geometry, solver, config, val_marker);
 
   ofstream output ("output.txt");
   LinSysSol.printVec(output);
   output.close();
+
+}
+
+
+void CGradientSmoothingSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
+
+  unsigned long iPoint;
+  unsigned short iDim;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+
+      nodes->SetSensitivity(iPoint,iDim, solver[ADJFLOW_SOL]->GetNodes()->GetSensitivity(iPoint,iDim));
+
+    }
+  }
+
+}
+
+
+void CGradientSmoothingSolver::OutputSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
+
+  unsigned long iPoint;
+  unsigned short iDim;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+
+      solver[ADJFLOW_SOL]->GetNodes()->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
+
+    }
+  }
+
+}
+
+
+void CGradientSmoothingSolver::WriteSens2Geometry(CGeometry *geometry, CConfig *config) {
+
+  unsigned long iPoint;
+  unsigned short iDim;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      geometry->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
+    }
+  }
+
+}
+
+
+void CGradientSmoothingSolver::ReadSens2Geometry(CGeometry *geometry, CConfig *config) {
+
+  unsigned long iPoint;
+  unsigned short iDim;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      nodes->SetSensitivity(iPoint, iDim, geometry->GetSensitivity(iPoint,iDim));
+    }
+  }
 
 }

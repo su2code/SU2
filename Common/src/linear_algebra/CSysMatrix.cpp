@@ -1507,7 +1507,7 @@ void CSysMatrix<ScalarType>::printMat(ofstream &file) {
     ScalarType* block = GetBlock(row, col_ind[entr]);
     for (iVar=0; iVar < nVar; iVar++ ) {
       for (jVar=0; jVar < nVar; jVar++ ) {
-        file << row*nVar+iVar << " " << col_ind[entr]*nVar+jVar << " " << block[iVar*nVar+jVar] << std::endl;
+        file << row*nVar+iVar+1 << " " << col_ind[entr]*nVar+jVar+1 << " " << block[iVar*nVar+jVar] << std::endl;
       }
     }
   }

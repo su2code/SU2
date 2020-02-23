@@ -4529,6 +4529,20 @@ public:
   virtual void Compute_Surface_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config, unsigned long val_marker);
 
   /*!
+   * \brief A virtual member
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void WriteSens2Geometry(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ReadSens2Geometry(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
    * \param[in] val_implicit_periodic - Flag controlling implicit treatment for periodic BCs.
    */
@@ -12391,9 +12405,9 @@ public:
   void Solve_Linear_System(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Extract the solution of the linear solver and store it in the sensitivities of the discrete adjoint solver.
+   * \brief Extract the solution of the linear solver and store it in the sensitivities of the nodes
    */
-  void Set_Sensitivities(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker=0);
+  void WriteSensitivities(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker=0);
 
   /*!
    * \brief Get the value of the reference coordinate to set on the element structure.
@@ -12437,6 +12451,37 @@ public:
    * \brief Extract the Coordinates of the element from geometry
    */
   su2activematrix GetElementCoordinates(CGeometry *geometry, std::vector<unsigned long>& indexNode, int EL_KIND = 0);
+
+  /*!
+   * \brief Extract and set the sensitivity from the discrete adjoint solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The solver container holding all terms of the solution.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
+
+  /*!
+   * \brief Store smoothed sensitivties back into the adjoint solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The solver container holding all terms of the solution.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void OutputSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
+
+  /*!
+   * \brief Write the content of Sensitivity to the sensitivity in the geometry
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void WriteSens2Geometry(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Read the sensitivity in the geometry
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ReadSens2Geometry(CGeometry *geometry, CConfig *config);
+
 
 };
 
