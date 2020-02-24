@@ -383,7 +383,7 @@ void CIteration::SetMesh_Deformation(CGeometry **geometry,
   /*--- Perform the elasticity mesh movement ---*/
   if (config->GetDeform_Mesh()) {
 
-    if ((kind_recording != MESH_DEFORM) && (!config->GetMultizone_Problem() || config->GetSurface_Movement(DEFORMING))) {
+    if ((kind_recording != MESH_DEFORM) && (!config->GetMultizone_Problem())) {
       /*--- In a primal run, AD::TapeActive returns a false ---*/
       /*--- In any other recordings, the tape is passive during the deformation ---*/
       ActiveTape = AD::TapeActive();
@@ -2349,6 +2349,12 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
 
     solver[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
+    /*--- If mesh deformation defined in config, extract here as well ---*/
+    if (config[val_iZone]->GetDeform_Mesh()) {
+      solver[val_iZone][val_iInst][MESH_0][ADJMESH_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+
+      solver[val_iZone][val_iInst][MESH_0][ADJMESH_SOL]->ExtractAdjoint_Variables(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+    }
   }
   if (turbulent && !frozen_visc) {
 
@@ -2411,6 +2417,16 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver, CGeometry ****ge
       solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
       solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+
+      /*--- If mesh deformation defined in config, register here as well ---*/
+      if (config[iZone]->GetDeform_Mesh()) {
+
+        /*--- Undeformed mesh coordinates ---*/
+        solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+
+        /*--- Boundary displacements ---*/
+        solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+      }
     }
     
     if (turbulent && !frozen_visc) {

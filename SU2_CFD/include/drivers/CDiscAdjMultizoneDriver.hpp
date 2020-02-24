@@ -129,7 +129,7 @@ protected:
   /*!
    * \brief Transfer data between zones and update grids when required.
    */
-  void HandleDataTransfer(unsigned short kind_recording);
+  void HandleDataTransfer();
 
   /*!
    * \brief Run one direct iteration in a zone.
