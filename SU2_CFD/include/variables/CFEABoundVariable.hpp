@@ -83,14 +83,6 @@ public:
   }
 
   /*!
-   * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
-   */
-  inline void Set_SurfaceLoad_Res(unsigned long iPoint, unsigned long iVar, su2double val_surfForce) override {
-    if (!VertexMap.GetVertexIndex(iPoint)) return;
-    Residual_Ext_Surf(iPoint,iVar) = val_surfForce;
-  }
-
-  /*!
    * \brief Get the residual term due to surface load
    */
   inline su2double Get_SurfaceLoad_Res(unsigned long iPoint, unsigned long iVar) const override {
@@ -101,10 +93,7 @@ public:
   /*!
    * \brief Clear the surface load residual
    */
-  inline void Clear_SurfaceLoad_Res(unsigned long iPoint) override {
-    if (!VertexMap.GetVertexIndex(iPoint)) return;
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf(iPoint,iVar) = 0.0;
-  }
+  inline void Clear_SurfaceLoad_Res() override;
 
   /*!
    * \brief Store the surface load as the load for the previous time step.

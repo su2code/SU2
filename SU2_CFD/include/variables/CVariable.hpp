@@ -1780,11 +1780,6 @@ public:
   inline virtual void Add_SurfaceLoad_Res(unsigned long iPoint, const su2double *val_surfForce) {}
 
   /*!
-   * \brief  A virtual member.
-   */
-  inline virtual void Set_SurfaceLoad_Res(unsigned long iPoint, unsigned long iVar, su2double val_surfForce) {}
-
-  /*!
    * \brief A virtual member.
    */
   inline virtual su2double Get_SurfaceLoad_Res(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
@@ -1792,7 +1787,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Clear_SurfaceLoad_Res(unsigned long iPoint) {}
+  inline virtual void Clear_SurfaceLoad_Res() {}
 
   /*!
    * \brief A virtual member.

@@ -480,9 +480,10 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
         EField[iVar] = config->Get_Electric_Field_Mod(iVar);
     }
 
-//    if (fea_dv) {
-//      for (iVar = 0; iVar < nDV; iVar++) DV_Val[iVar] = config->GetDV_Value(iVar,0);
-//    }
+    /*--- Reset index, otherwise messes up other derivatives ---*/
+    if (fea_dv) {
+      for (iVar = 0; iVar < nDV; iVar++) AD::ResetInput(DV_Val[iVar]);
+    }
 
     if (!reset) {
       bool local_index = config->GetMultizone_Problem();
