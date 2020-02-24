@@ -91,11 +91,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   /*--- Define some auxiliary vectors related to the solution ---*/
 
   Solution = new su2double[nVar];
-
   for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 1e-16;
-
-  if (dynamic) SolRest = new su2double[3 * nVar];
-  else SolRest = new su2double[nVar];
 
   if (dynamic) {
     Solution_Vel    = new su2double[nVar];
@@ -280,7 +276,6 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
 
   delete [] Solution_Vel;
   delete [] Solution_Accel;
-  delete [] SolRest;
 
   delete nodes;
 }
@@ -1072,7 +1067,6 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
   /*--- Read all lines in the restart file ---*/
 
   long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- Skip coordinates ---*/
 
@@ -1106,21 +1100,14 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-  if (rbuf_NotMatching != 0) {
+  if (iPoint_Global_Local < nPointDomain) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
+  delete [] Restart_Vars; Restart_Vars = nullptr;
+  delete [] Restart_Data; Restart_Data = nullptr;
 
 }
-
-
