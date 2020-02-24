@@ -43,6 +43,7 @@
 #include "../../../Common/include/toolboxes/MMS/CTGVSolution.hpp"
 #include "../../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../../Common/include/toolboxes/C1DInterpolation.hpp"
 #include "../../include/CMarkerProfileReaderFVM.hpp"
 
 
@@ -4175,7 +4176,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   unsigned short iDim, iVar, iMesh, iMarker, jMarker;
   unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow;
-  su2double Area_Children, Area_Parent, *Coord, dist, min_dist;
+  su2double Area_Children, Area_Parent, *Coord, dist, min_dist, Interp_Radius, Theta;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
@@ -4189,6 +4190,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   string Marker_Tag;
   string profile_filename = config->GetInlet_FileName();
   ifstream inlet_file;
+  string Interpolation_Function, Interpolation_Type;
+  bool Interpolate;
 
   su2double *Normal       = new su2double[nDim];
 
@@ -4218,7 +4221,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
    excluding the coordinates. Here, we have 2 entries for the total
    conditions or mass flow, another nDim for the direction vector, and
    finally entries for the number of turbulence variables. This is only
-   necessary in case we are writing a template profile file. ---*/
+   necessary in case we are writing a template profile file or for Inlet
+   Interpolation purposes. ---*/
 
   unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
 
@@ -4265,74 +4269,187 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           /*--- Get data for this profile. ---*/
 
           vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
-
           unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+          vector<su2double> Inlet_Data_Interpolated ((nCol_InletFile+nDim)*geometry[MESH_0]->nVertex[iMarker]);
 
-          vector<su2double> Inlet_Values(nColumns);
+          /*--- Define Inlet Values vectors before and after interpolation (if needed) ---*/
+          vector<su2double> Inlet_Values(nCol_InletFile+nDim);
+          vector<su2double> Inlet_Interpolated(nColumns);
 
-          /*--- Loop through the nodes on this marker. ---*/
+          unsigned long nRows = profileReader.GetNumberOfRowsInProfile(jMarker);
 
-          for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+          /*--- Pointer to call Set and Evaluate functions. ---*/
+          vector<C1DInterpolation*> interpolator (nColumns);
+          string interpolation_function, interpolation_type;
 
-            iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-            Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
-            min_dist = 1e16;
+          /*--- Define the reference for interpolation. ---*/
+          unsigned short radius_index=0;
+          vector<su2double> InletRadii = profileReader.GetColumnForProfile(jMarker, radius_index);
+          vector<su2double> Interpolation_Column (nRows);
 
-            /*--- Find the distance to the closest point in our inlet profile data. ---*/
+          switch(config->GetKindInletInterpolationFunction()){
 
-            for (iRow = 0; iRow < profileReader.GetNumberOfRowsInProfile(jMarker); iRow++) {
+            case (NONE):
+            Interpolate = false;
+            break;
 
-              /*--- Get the coords for this data point. ---*/
+            case (AKIMA_1D):
+              for (unsigned short iCol=0; iCol < nColumns; iCol++){
+                  Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
+                  interpolator[iCol] = new CAkimaInterpolation(InletRadii,Interpolation_Column);
+                  interpolation_function = "AKIMA";
+                  Interpolate = true;
+                }
+            break;
+            
+            case (LINEAR_1D):
+              for (unsigned short iCol=0; iCol < nColumns; iCol++){
+                  Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
+                  interpolator[iCol] = new CLinearInterpolation(InletRadii,Interpolation_Column);
+                  interpolation_function = "LINEAR";
+                  Interpolate = true;
+                }
+            break;
+            
+            default:
+              SU2_MPI::Error("Error in the Kind_InletInterpolation Marker\n",CURRENT_FUNCTION);
+            break;
+          }
 
-              index = iRow*nColumns;
+          if (Interpolate == true){
+            switch(config->GetKindInletInterpolationType()){
+              case(VR_VTHETA):
+                interpolation_type="VR_VTHETA";
+              break;
+              case(ALPHA_PHI):
+                interpolation_type="ALPHA_PHI";
+              break;
+              }
+              cout<<"Inlet Interpolation being done using "<<interpolation_function<<" function and type "<<interpolation_type<<" for "<< Marker_Tag<<endl;
+              if(nDim == 3)
+                cout<<"Ensure the flow direction is in z direction"<<endl;
+              else if (nDim == 2)
+                cout<<"Ensure the flow direction is in x direction"<<endl;
+          }
+          else if(Interpolate == false)
+            cout<<"No Inlet Interpolation being used"<<endl;
 
-              dist = 0.0;
-              for (unsigned short iDim = 0; iDim < nDim; iDim++)
-                dist += pow(Inlet_Data[index+iDim] - Coord[iDim], 2);
-              dist = sqrt(dist);
+            /*--- Loop through the nodes on this marker. ---*/
 
-              /*--- Check is this is the closest point and store data if so. ---*/
+            for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+            
+              iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+              Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
 
-              if (dist < min_dist) {
-                min_dist = dist;
-                for (iVar = 0; iVar < nColumns; iVar++)
-                  Inlet_Values[iVar] = Inlet_Data[index+iVar];
+            if(Interpolate == false){ 
+
+              min_dist = 1e16;
+
+                /*--- Find the distance to the closest point in our inlet profile data. ---*/
+                
+                for (iRow = 0; iRow < nRows; iRow++) {
+
+                    /*--- Get the coords for this data point. ---*/
+
+                    index = iRow*nColumns;
+
+                    dist = 0.0;
+                    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+                    dist += pow(Inlet_Data[index+iDim] - Coord[iDim], 2);
+                    dist = sqrt(dist);
+
+                    /*--- Check is this is the closest point and store data if so. ---*/
+
+                    if (dist < min_dist) {
+                    min_dist = dist;
+                    for (iVar = 0; iVar < nColumns; iVar++)
+                        Inlet_Values[iVar] = Inlet_Data[index+iVar];
+                    }
+
+                }
+
+                /*--- If the diff is less than the tolerance, match the two.
+                We could modify this to simply use the nearest neighbor, or
+                eventually add something more elaborate here for interpolation. ---*/
+
+                if (min_dist < tolerance) {
+
+                    solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
+
+                } else {
+
+                    unsigned long GlobalIndex = geometry[MESH_0]->node[iPoint]->GetGlobalIndex();
+                    cout << "WARNING: Did not find a match between the points in the inlet file" << endl;
+                    cout << "and point " << GlobalIndex;
+                    cout << std::scientific;
+                    cout << " at location: [" << Coord[0] << ", " << Coord[1];
+                    if (nDim ==3) error_msg << ", " << Coord[2];
+                    cout << "]" << endl;
+                    cout << "Distance to closest point: " << min_dist << endl;
+                    cout << "Current tolerance:         " << tolerance << endl;
+                    cout << endl;
+                    cout << "You can widen the tolerance for point matching by changing the value" << endl;
+                    cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
+                    local_failure++;
+                    break;
+                }
+
+            }
+
+            else if(Interpolate == true){
+
+              /* --- Calculating the radius and angle of the vertex ---*/
+              /* --- Flow should be in z direction for 3D cases ---*/
+              /* --- Or in x direction for 2D cases ---*/
+              Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
+              Theta = atan2(Coord[1],Coord[0]);
+
+              /* --- Evaluating and saving the final spline data ---*/
+              for  (unsigned short iVar=0; iVar < nColumns; iVar++){
+
+              /*---Evaluate spline will get the respective value of the Data set (column) specified
+              for that interpolator[iVar], cycling through all columns to get all the 
+              data for that vertex ---*/
+                Inlet_Interpolated[iVar]=interpolator[iVar]->EvaluateSpline(Interp_Radius);
+                if (interpolator[iVar]->GetPointMatch() == false){
+                    cout << "WARNING: Did not find a match between the radius in the inlet file " ;
+                    cout << std::scientific;
+                    cout << "at location: [" << Coord[0] << ", " << Coord[1];
+                    if (nDim == 3) {cout << ", " << Coord[2];}
+                    cout << "]";
+                    cout << " with Radius: "<< Interp_Radius << endl;
+                    cout << "You can add a row for Radius: " << Interp_Radius <<" in the inlet file ";
+                    cout << "to eliminate this issue or give proper data" << endl;
+                    local_failure++;
+                    break;
+                }
               }
 
-            }
-
-            /*--- If the diff is less than the tolerance, match the two.
-             We could modify this to simply use the nearest neighbor, or
-             eventually add something more elaborate here for interpolation. ---*/
-
-            if (min_dist < tolerance) {
+              /* --- Correcting for Interpolation Type ---*/
+              switch(config->GetKindInletInterpolationType()){
+              case(VR_VTHETA):
+                Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, VR_VTHETA);
+              break;
+              case(ALPHA_PHI):
+                Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, ALPHA_PHI);
+              break;
+              }
 
               solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
-
-            } else {
-
-              unsigned long GlobalIndex = geometry[MESH_0]->node[iPoint]->GetGlobalIndex();
-              cout << "WARNING: Did not find a match between the points in the inlet file" << endl;
-              cout << "and point " << GlobalIndex;
-              cout << std::scientific;
-              cout << " at location: [" << Coord[0] << ", " << Coord[1];
-              if (nDim ==3) error_msg << ", " << Coord[2];
-              cout << "]" << endl;
-              cout << "Distance to closest point: " << min_dist << endl;
-              cout << "Current tolerance:         " << tolerance << endl;
-              cout << endl;
-              cout << "You can widen the tolerance for point matching by changing the value" << endl;
-              cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
-              local_failure++;
-              break;
-
+              
+              for (unsigned short iVar=0; iVar < (nCol_InletFile+nDim); iVar++)
+                Inlet_Data_Interpolated[iVertex*(nCol_InletFile+nDim)+iVar] = Inlet_Values[iVar];
             }
           }
+            if(config->GetPrintInlet_InterpolatedData() == true)
+                PrintInletInterpolatedData(Inlet_Data_Interpolated,profileReader.GetTagForProfile(jMarker),geometry[MESH_0]->nVertex[iMarker],nDim, nCol_InletFile+nDim);
+            
+            for (int i=0; i<nColumns;i++)
+              delete interpolator[i];
         }
       }
+      if (local_failure > 0) break;
     }
-
-    if (local_failure > 0) break;
   }
 
   SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
@@ -4356,6 +4473,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
           if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
             nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+            if(Interpolate == true)
+              nColumns+=nDim;
           }
         }
         vector<su2double> Inlet_Values(nColumns);
@@ -4404,8 +4523,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   }
 
   delete [] Normal;
-
 }
+
 
 void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 

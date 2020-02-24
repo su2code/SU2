@@ -2310,7 +2310,9 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to the FEA solver ---*/
 
   /*!\brief FEA_FILENAME \n DESCRIPTION: Filename to input for element-based properties \n Default: element_properties.dat \ingroup Config */
-  addStringOption("FEA_FILENAME", FEA_FileName, string("element_properties.dat"));
+  addStringOption("FEA_FILENAME", FEA_FileName, string("default_element_properties.dat"));
+  /* DESCRIPTION: Determine if advanced features are used from the element-based FEA analysis (NO, YES = experimental) */
+  addBoolOption("FEA_ADVANCED_MODE", FEAAdvancedMode, false);
 
   /* DESCRIPTION: Modulus of elasticity */
   addDoubleListOption("ELASTICITY_MODULUS", nElasticityMod, ElasticityMod);
@@ -2519,6 +2521,20 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Radius for radial basis function */
   addDoubleOption("RADIAL_BASIS_FUNCTION_PARAMETER", RadialBasisFunction_Parameter, 1);
+
+   /*!\par INLETINTERPOLATION \n
+   * DESCRIPTION: Type of spanwise interpolation to use for the inlet face. \n OPTIONS: see \link Inlet_SpanwiseInterpolation_Map \endlink
+   * Sets Kind_InletInterpolation \ingroup Config
+   */ 
+  addEnumOption("INLET_INTERPOLATION_FUNCTION",Kind_InletInterpolationFunction, Inlet_SpanwiseInterpolation_Map, NO_INTERPOLATION);
+
+   /*!\par INLETINTERPOLATION \n
+   * DESCRIPTION: Type of spanwise interpolation to use for the inlet face. \n OPTIONS: see \link Inlet_SpanwiseInterpolation_Map \endlink
+   * Sets Kind_InletInterpolation \ingroup Config
+   */
+  addEnumOption("INLET_INTERPOLATION_DATA_TYPE", Kind_Inlet_InterpolationType, Inlet_SpanwiseInterpolationType_Map, VR_VTHETA);
+
+  addBoolOption("PRINT_INLET_INTERPOLATED_DATA", PrintInlet_InterpolatedData, false);
 
   /* DESCRIPTION: Maximum number of FSI iterations */
   addUnsignedShortOption("FSI_ITER", nIterFSI, 1);
@@ -3436,6 +3452,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
+    if (Kind_Struct_Solver == SMALL_DEFORMATIONS){
+      MinLogResidual = log10(Linear_Solver_Error);
+    }
   }
 
   /*--- Initialize the ofstream ConvHistFile. ---*/
