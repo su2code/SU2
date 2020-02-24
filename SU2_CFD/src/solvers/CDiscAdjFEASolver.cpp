@@ -29,55 +29,18 @@
 #include "../../include/solvers/CDiscAdjFEASolver.hpp"
 #include "../../include/variables/CDiscAdjFEAVariable.hpp"
 
-CDiscAdjFEASolver::CDiscAdjFEASolver(void) : CSolver (){
+CDiscAdjFEASolver::CDiscAdjFEASolver(void) : CSolver() { }
 
-  nMarker = 0;
-  nMarker_nL = 0;
-  KindDirect_Solver = 0;
+CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config)  : CSolver() { }
 
-  direct_solver = NULL;
-  normalLoads   = NULL;
-  Sens_E        = NULL;
-  Sens_Nu       = NULL;
-  Sens_nL       = NULL;
-  CSensitivity  = NULL;
-
-  Solution_Vel  = NULL;
-  Solution_Accel= NULL;
-
-  nodes = nullptr;
-
-}
-
-CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config)  : CSolver(){
-
-  nMarker = 0;
-  nMarker_nL = 0;
-  KindDirect_Solver = 0;
-
-  direct_solver = NULL;
-  normalLoads   = NULL;
-  Sens_E        = NULL;
-  Sens_Nu       = NULL;
-  Sens_nL       = NULL;
-  CSensitivity  = NULL;
-
-  Solution_Vel  = NULL;
-  Solution_Accel= NULL;
-
-  SolRest = NULL;
-
-  nodes = nullptr;
-
-}
-
-CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver(){
+CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver,
+                                     unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
 
   adjoint = true;
 
-  unsigned short iVar, iMarker, iDim;
+  unsigned short iVar, iMarker;
 
-  unsigned long iVertex, iPoint;
+  unsigned long iPoint;
   string text_line, mesh_filename;
   string filename, AdjExt;
 
@@ -94,12 +57,6 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
-  /*-- Store number of markers with a normal load boundary condition ---*/
-
-  normalLoads = NULL;
-
-  nMarker_nL = 0;
-
   /*--- Define some auxiliary vectors related to the residual ---*/
 
   Residual      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 1.0;
@@ -108,27 +65,25 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   /*--- Define some structures for locating max residuals ---*/
 
-  Point_Max     = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
+  Point_Max = new unsigned long[nVar]();
   Point_Max_Coord = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+    Point_Max_Coord[iVar] = new su2double[nDim]();
   }
 
   /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
 
-  if (config->GetMultizone_Residual()){
+  if (config->GetMultizone_Residual()) {
 
     Residual_BGS      = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]      = 1.0;
     Residual_Max_BGS  = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
 
     /*--- Define some structures for locating max residuals ---*/
 
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+    Point_Max_BGS = new unsigned long[nVar]();
     Point_Max_Coord_BGS = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
     }
 
   }
@@ -142,17 +97,12 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   if (dynamic) SolRest = new su2double[3 * nVar];
   else SolRest = new su2double[nVar];
 
-  Solution_Vel    = NULL;
-  Solution_Accel  = NULL;
-
   if (dynamic) {
-
     Solution_Vel    = new su2double[nVar];
     Solution_Accel  = new su2double[nVar];
 
     for (iVar = 0; iVar < nVar; iVar++) Solution_Vel[iVar]      = 1e-16;
     for (iVar = 0; iVar < nVar; iVar++) Solution_Accel[iVar]    = 1e-16;
-
   }
 
   /*--- Sensitivity definition and coefficient in all the markers ---*/
@@ -160,21 +110,12 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   CSensitivity = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CSensitivity[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    CSensitivity[iMarker] = new su2double [geometry->nVertex[iMarker]]();
   }
 
-  Sens_E  = new su2double[nMarker];
-  Sens_Nu = new su2double[nMarker];
-  Sens_nL = new su2double[nMarker];
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Sens_E[iMarker]  = 0.0;
-    Sens_Nu[iMarker] = 0.0;
-    Sens_nL[iMarker]  = 0.0;
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++){
-      CSensitivity[iMarker][iVertex] = 0.0;
-    }
-  }
+  Sens_E  = new su2double[nMarker]();
+  Sens_Nu = new su2double[nMarker]();
+  Sens_nL = new su2double[nMarker]();
 
   nodes = new CDiscAdjFEABoundVariable(Solution, Solution_Accel, Solution_Vel, nPoint, nDim, nVar, dynamic, config);
   SetBaseClassPointerToNodes();
@@ -221,67 +162,46 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
     SU2_MPI::Error("WARNING: For a material to be fully defined, E, Nu and Rho need to have the same dimensions.", CURRENT_FUNCTION);
   }
 
-  E_i           = new su2double[nMPROP];
-  Local_Sens_E  = new su2double[nMPROP];
-  Global_Sens_E = new su2double[nMPROP];
-  Total_Sens_E  = new su2double[nMPROP];
-  AD_Idx_E_i    = new int[nMPROP];
+  E_i           = new su2double[nMPROP]();
+  Local_Sens_E  = new su2double[nMPROP]();
+  Global_Sens_E = new su2double[nMPROP]();
+  Total_Sens_E  = new su2double[nMPROP]();
+  AD_Idx_E_i    = new int[nMPROP]();
 
-  Nu_i           = new su2double[nMPROP];
-  Local_Sens_Nu  = new su2double[nMPROP];
-  Global_Sens_Nu = new su2double[nMPROP];
-  Total_Sens_Nu  = new su2double[nMPROP];
-  AD_Idx_Nu_i    = new int[nMPROP];
+  Nu_i           = new su2double[nMPROP]();
+  Local_Sens_Nu  = new su2double[nMPROP]();
+  Global_Sens_Nu = new su2double[nMPROP]();
+  Total_Sens_Nu  = new su2double[nMPROP]();
+  AD_Idx_Nu_i    = new int[nMPROP]();
 
-  Rho_i           = new su2double[nMPROP]; // For inertial effects
-  Local_Sens_Rho  = new su2double[nMPROP];
-  Global_Sens_Rho = new su2double[nMPROP];
-  Total_Sens_Rho  = new su2double[nMPROP];
-  AD_Idx_Rho_i    = new int[nMPROP];
+  Rho_i           = new su2double[nMPROP](); // For inertial effects
+  Local_Sens_Rho  = new su2double[nMPROP]();
+  Global_Sens_Rho = new su2double[nMPROP]();
+  Total_Sens_Rho  = new su2double[nMPROP]();
+  AD_Idx_Rho_i    = new int[nMPROP]();
 
-  Rho_DL_i           = new su2double[nMPROP]; // For dead loads
-  Local_Sens_Rho_DL  = new su2double[nMPROP];
-  Global_Sens_Rho_DL = new su2double[nMPROP];
-  Total_Sens_Rho_DL  = new su2double[nMPROP];
-  AD_Idx_Rho_DL_i    = new int[nMPROP];
-
-  /*--- Initialize the values of the total sensitivities ---*/
-
-  for (iVar = 0; iVar < nMPROP; iVar++) {
-    Total_Sens_E[iVar]      = 0.0;
-    Total_Sens_Nu[iVar]     = 0.0;
-    Total_Sens_Rho[iVar]    = 0.0;
-    Total_Sens_Rho_DL[iVar] = 0.0;
-  }
+  Rho_DL_i           = new su2double[nMPROP](); // For dead loads
+  Local_Sens_Rho_DL  = new su2double[nMPROP]();
+  Global_Sens_Rho_DL = new su2double[nMPROP]();
+  Total_Sens_Rho_DL  = new su2double[nMPROP]();
+  AD_Idx_Rho_DL_i    = new int[nMPROP]();
 
   /*--- Initialize vector structures for multiple electric regions ---*/
 
   de_effects = config->GetDE_Effects();
 
-  EField             = NULL;
-  Local_Sens_EField  = NULL;
-  Global_Sens_EField = NULL;
-  Total_Sens_EField  = NULL;
-  AD_Idx_EField      = NULL;
-
   if (de_effects) {
     nEField = config->GetnElectric_Field();
 
-    EField             = new su2double[nEField];
-    Local_Sens_EField  = new su2double[nEField];
-    Global_Sens_EField = new su2double[nEField];
-    Total_Sens_EField  = new su2double[nEField];
-    AD_Idx_EField      = new int[nEField];
-
-    for (iVar = 0; iVar < nEField; iVar++) {
-      Total_Sens_EField[iVar] = 0.0;
-    }
+    EField             = new su2double[nEField]();
+    Local_Sens_EField  = new su2double[nEField]();
+    Global_Sens_EField = new su2double[nEField]();
+    Total_Sens_EField  = new su2double[nEField]();
+    AD_Idx_EField      = new int[nEField]();
   }
 
   /*--- Initialize vector structures for structural-based design variables ---*/
 
-  nDV = 0;
-  DV_Val = NULL;
   switch (config->GetDV_FEA()) {
     case YOUNG_MODULUS:
     case POISSON_RATIO:
@@ -295,23 +215,12 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
       break;
   }
 
-  Local_Sens_DV  = NULL;
-  Global_Sens_DV = NULL;
-  Total_Sens_DV  = NULL;
-  AD_Idx_DV_Val  = NULL;
-
   if (fea_dv) {
     ReadDV(config);
-    Local_Sens_DV  = new su2double[nDV];
-    Global_Sens_DV = new su2double[nDV];
-    Total_Sens_DV  = new su2double[nDV];
-    AD_Idx_DV_Val  = new int[nDV];
-
-    for (iVar = 0; iVar < nDV; iVar++) {
-      Local_Sens_DV[iVar]  = 0.0;
-      Global_Sens_DV[iVar] = 0.0;
-      Total_Sens_DV[iVar]  = 0.0;
-    }
+    Local_Sens_DV  = new su2double[nDV]();
+    Global_Sens_DV = new su2double[nDV]();
+    Total_Sens_DV  = new su2double[nDV]();
+    AD_Idx_DV_Val  = new int[nDV]();
   }
 
 }
@@ -320,60 +229,60 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
 
   unsigned short iMarker;
 
-  if (CSensitivity != NULL) {
+  if (CSensitivity != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete [] CSensitivity[iMarker];
     }
     delete [] CSensitivity;
   }
 
-  if (E_i         != NULL) delete [] E_i;
-  if (Nu_i        != NULL) delete [] Nu_i;
-  if (Rho_i       != NULL) delete [] Rho_i;
-  if (Rho_DL_i    != NULL) delete [] Rho_DL_i;
+  delete [] E_i;
+  delete [] Nu_i;
+  delete [] Rho_i;
+  delete [] Rho_DL_i;
 
-  if (AD_Idx_E_i       != NULL) delete [] AD_Idx_E_i;
-  if (AD_Idx_Nu_i      != NULL) delete [] AD_Idx_Nu_i;
-  if (AD_Idx_Rho_i     != NULL) delete [] AD_Idx_Rho_i;
-  if (AD_Idx_Rho_DL_i  != NULL) delete [] AD_Idx_Rho_DL_i;
+  delete [] AD_Idx_E_i;
+  delete [] AD_Idx_Nu_i;
+  delete [] AD_Idx_Rho_i;
+  delete [] AD_Idx_Rho_DL_i;
 
-  if (Local_Sens_E        != NULL) delete [] Local_Sens_E;
-  if (Local_Sens_Nu       != NULL) delete [] Local_Sens_Nu;
-  if (Local_Sens_Rho      != NULL) delete [] Local_Sens_Rho;
-  if (Local_Sens_Rho_DL   != NULL) delete [] Local_Sens_Rho_DL;
+  delete [] Local_Sens_E;
+  delete [] Local_Sens_Nu;
+  delete [] Local_Sens_Rho;
+  delete [] Local_Sens_Rho_DL;
 
-  if (Global_Sens_E       != NULL) delete [] Global_Sens_E;
-  if (Global_Sens_Nu      != NULL) delete [] Global_Sens_Nu;
-  if (Global_Sens_Rho     != NULL) delete [] Global_Sens_Rho;
-  if (Global_Sens_Rho_DL  != NULL) delete [] Global_Sens_Rho_DL;
+  delete [] Global_Sens_E;
+  delete [] Global_Sens_Nu;
+  delete [] Global_Sens_Rho;
+  delete [] Global_Sens_Rho_DL;
 
-  if (Total_Sens_E        != NULL) delete [] Total_Sens_E;
-  if (Total_Sens_Nu       != NULL) delete [] Total_Sens_Nu;
-  if (Total_Sens_Rho      != NULL) delete [] Total_Sens_Rho;
-  if (Total_Sens_Rho_DL   != NULL) delete [] Total_Sens_Rho_DL;
+  delete [] Total_Sens_E;
+  delete [] Total_Sens_Nu;
+  delete [] Total_Sens_Rho;
+  delete [] Total_Sens_Rho_DL;
 
-  if (normalLoads         != NULL) delete [] normalLoads;
-  if (Sens_E              != NULL) delete [] Sens_E;
-  if (Sens_Nu             != NULL) delete [] Sens_Nu;
-  if (Sens_nL             != NULL) delete [] Sens_nL;
+  delete [] normalLoads;
+  delete [] Sens_E;
+  delete [] Sens_Nu;
+  delete [] Sens_nL;
 
-  if (EField              != NULL) delete [] EField;
-  if (Local_Sens_EField   != NULL) delete [] Local_Sens_EField;
-  if (Global_Sens_EField  != NULL) delete [] Global_Sens_EField;
-  if (Total_Sens_EField   != NULL) delete [] Total_Sens_EField;
-  if (AD_Idx_EField       != NULL) delete [] AD_Idx_EField;
+  delete [] EField;
+  delete [] Local_Sens_EField;
+  delete [] Global_Sens_EField;
+  delete [] Total_Sens_EField;
+  delete [] AD_Idx_EField;
 
-  if (DV_Val              != NULL) delete [] DV_Val;
-  if (Local_Sens_DV       != NULL) delete [] Local_Sens_DV;
-  if (Global_Sens_DV      != NULL) delete [] Global_Sens_DV;
-  if (Total_Sens_DV       != NULL) delete [] Total_Sens_DV;
-  if (AD_Idx_DV_Val       != NULL) delete [] AD_Idx_DV_Val;
+  delete [] DV_Val;
+  delete [] Local_Sens_DV;
+  delete [] Global_Sens_DV;
+  delete [] Total_Sens_DV;
+  delete [] AD_Idx_DV_Val;
 
-  if (Solution_Vel   != NULL) delete [] Solution_Vel;
-  if (Solution_Accel != NULL) delete [] Solution_Accel;
-  if (SolRest        != NULL) delete [] SolRest;
+  delete [] Solution_Vel;
+  delete [] Solution_Accel;
+  delete [] SolRest;
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }
 
 void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
