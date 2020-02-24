@@ -2007,30 +2007,57 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *
 
 void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
-  su2double dampConstant = config->GetDamper_Constant(config->GetMarker_All_TagBound(val_marker));
-  unsigned long nVertex = geometry->GetnVertex(val_marker);
-
-  /*--- The damping is distributed evenly over all the nodes in the marker ---*/
-  const su2double dampC = -1.0 * dampConstant / (nVertex + EPS);
+  const su2double dampConst = config->GetDamper_Constant(config->GetMarker_All_TagBound(val_marker));
 
   for (auto iElem = 0ul; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
-    unsigned short iNode, iVar;
+    unsigned short iNode, iDim;
+    unsigned long indexNode[4] = {0};
+
+    su2double nodeCoord[4][3] = {0.0};
 
     bool quad = (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL);
-    unsigned short nNode = quad? 4 : nDim;
+    unsigned short nNodes = quad? 4 : nDim;
 
-    for(iNode = 0; iNode < nNode; ++iNode) {
+    /*--- Retrieve the boundary current coordinates. ---*/
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
 
       auto iPoint = geometry->bound[val_marker][iElem]->GetNode(iNode);
+      indexNode[iNode] = iPoint;
 
-      su2double force[3] = {0.0};
+      for (iDim = 0; iDim < nVar; iDim++)
+        nodeCoord[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim) + nodes->GetSolution(iPoint,iDim);
+    }
 
-      for (iVar = 0; iVar < nVar; iVar++)
-        force[iVar] = dampC * nodes->GetSolution_Vel(iPoint, iVar);
+    /*--- Compute the area of the surface element. ---*/
+
+    su2double normal[3] = {0.0};
+
+    switch (nNodes) {
+      case 2: LineNormal(nodeCoord, normal); break;
+      case 3: TriangleNormal(nodeCoord, normal); break;
+      case 4: QuadrilateralNormal(nodeCoord, normal); break;
+    }
+
+    su2double area = sqrt(pow(normal[0],2) + pow(normal[1],2) + pow(normal[2],2));
+
+    /*--- Compute damping forces. ---*/
+
+    su2double dampCoeff = -1.0 * area * dampConst / su2double(nNodes);
+
+    for(iNode = 0; iNode < nNodes; ++iNode) {
+
+      auto iPoint = indexNode[iNode];
+
+      /*--- Writing over the normal. --*/
+      su2double* force = normal;
+      for (iDim = 0; iDim < nVar; iDim++)
+        force[iDim] = dampCoeff * nodes->GetSolution_Vel(iPoint, iDim);
 
       nodes->Add_SurfaceLoad_Res(iPoint, force);
     }
+
   }
 
 }
