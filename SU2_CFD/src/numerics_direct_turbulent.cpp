@@ -1246,7 +1246,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
      /*--- Implicit part ---*/
      if (pk < 10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
       if (pk > 0.0) {
-        val_Jacobian_i[0][0] = -2.0/3.0*diverg*Volume;
+        // val_Jacobian_i[0][0] = -2.0/3.0*diverg*Volume;
       }
      }
      else {
@@ -1273,7 +1273,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
      /*--- Implicit part ---*/
      if (pw < 10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
        if (pw > 0.0 && TurbVar_i[0] > StrainMag_i*F2_i/a1) {
-         val_Jacobian_i[1][0] = -alfa_blended*2.0/3.0*diverg*Volume;
+         // val_Jacobian_i[1][0] = -alfa_blended*2.0/3.0*diverg*Volume;
        }
      }
      else {
