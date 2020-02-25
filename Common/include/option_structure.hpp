@@ -335,7 +335,33 @@ static const MapType<string, ENUM_RADIALBASIS> RadialBasisFunction_Map = {
 };
 
 /*!
- * \brief Types of (coupling) transfers between distinct physical zones
+ * \brief type of radial spanwise interpolation function for the inlet face
+ */
+enum ENUM_INLET_SPANWISEINTERPOLATION {
+  NO_INTERPOLATION = 0,
+  LINEAR_1D = 1,
+  AKIMA_1D = 2,
+};
+static const map<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpolation_Map = {
+  MakePair("NONE", NO_INTERPOLATION)
+  MakePair("LINEAR_1D",LINEAR_1D)
+  MakePair("AKIMA_1D",AKIMA_1D)
+};
+
+/*!
+ * \brief type of radial spanwise interpolation data type for the inlet face
+ */
+enum ENUM_INLET_INTERPOLATIONTYPE {
+  VR_VTHETA = 0,
+  ALPHA_PHI = 1,
+};
+static const map<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map = {
+  MakePair("VR_VTHETA",VR_VTHETA)
+  MakePair("ALPHA_PHI",ALPHA_PHI)
+};
+
+/*!
+ * \brief types of (coupling) transfers between distinct physical zones
  */
 enum ENUM_TRANSFER {
   ZONES_ARE_EQUAL                   = 0,    /*!< \brief Zones are equal - no transfer. */
