@@ -1258,7 +1258,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
    // pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
    pk = min(pk,10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
-   pk = max(pk,0.0);
+   // pk = max(pk,0.0);
 
    zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
 
