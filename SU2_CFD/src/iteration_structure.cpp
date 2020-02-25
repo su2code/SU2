@@ -1229,6 +1229,7 @@ void CHeatIteration::Solve(COutput *output,
 #endif
 
   /*--- Preprocess the solver ---*/
+
   Preprocess(output, integration, geometry, solver, numerics, config,
             surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
@@ -1281,7 +1282,6 @@ void CHeatIteration::Update(COutput *output,
                             unsigned short val_iInst)      {
   
   unsigned short iMesh;
-  unsigned long TimeIter = config[ZONE_0]->GetTimeIter();
   
   /*--- Dual time stepping strategy ---*/
 
