@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -1028,7 +1028,7 @@ def main():
     dynbeam2d.cfg_file  = "configBeam_2d.cfg"
     dynbeam2d.test_iter = 6
     dynbeam2d.test_vals = [-3.240015, 2.895057, -0.353146, 6.6127e+04] #last 4 columns
-    dynbeam2d.su2_exec  = "parallel_computation_fsi.py -f"
+    dynbeam2d.su2_exec  = "parallel_computation.py -f"
     dynbeam2d.timeout   = 1600
     dynbeam2d.unsteady  = True
     dynbeam2d.tol       = 0.00001
@@ -1084,9 +1084,9 @@ def main():
     stat_fsi_restart.tol       = 0.00001
     test_list.append(stat_fsi_restart)
 
-    ##########################
-    ### Zonal multiphysics ###
-    ##########################
+    # ###############################
+    # ### Conjugate heat transfer ###
+    # ###############################
 
     # CHT incompressible
     cht_incompressible           = TestCase('cht_incompressible')
@@ -1099,6 +1099,18 @@ def main():
     cht_incompressible.multizone = True
     cht_incompressible.tol       = 0.00001
     test_list.append(cht_incompressible)
+
+    # CHT compressible
+    cht_compressible           = TestCase('cht_compressible')
+    cht_compressible.cfg_dir   = "coupled_cht/comp_2d"
+    cht_compressible.cfg_file  = "cht_2d_3cylinders.cfg"
+    cht_compressible.test_iter = 10
+    cht_compressible.test_vals = [-4.257607, -0.526125, -0.526125, -0.526125] #last 4 columns
+    cht_compressible.su2_exec  = "SU2_CFD"
+    cht_compressible.timeout   = 1600
+    cht_compressible.multizone = True
+    cht_compressible.tol       = 0.00001
+    test_list.append(cht_compressible)
 
     ##########################
     ###   Python wrapper   ###

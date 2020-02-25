@@ -2,11 +2,11 @@
  * \file CParaviewBinaryFileWriter.hpp
  * \brief Headers fo paraview binary file writer class.
  * \author T. Albring
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -30,7 +30,13 @@
 #include "CFileWriter.hpp"
 
 class CParaviewBinaryFileWriter final: public CFileWriter{
-
+  private:
+  
+  /*!
+   * \brief Boolean storing whether we are on a big or little endian machine
+   */
+  bool bigEndian;
+  
 public:
 
   /*!
@@ -39,14 +45,11 @@ public:
   const static string fileExt;
 
   /*!
-   * \brief Construct a file writer using field names, dimension.
-   * \param[in] fields - A list of field names
-   * \param[in] nDim - Physical dimension
-   * \param[in] fileName - The name of the file
-   * \param[in] data_sorter - The parallel sorted data to write
+   * \brief Construct a file writer using field names and the data sorter.
+   * \param[in] valFileName - The name of the file
+   * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CParaviewBinaryFileWriter(vector<string> fields, unsigned short nDim,
-                            string fileName, CParallelDataSorter* data_sorter);
+  CParaviewBinaryFileWriter(string valFileName, CParallelDataSorter* valDataSorter);
 
   /*!
    * \brief Destructor

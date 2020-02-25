@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -635,12 +635,7 @@ int main(int argc, char *argv[]) {
             cout << "Storing the volume solution for time instance " << iInst << "." << endl;
           }
 
-          for (iZone = 0; iZone < nZone; iZone++){
-            
-            WriteFiles(config_container[iZone], geometry_container[iZone][iInst], &solver_container[iZone][iInst], output[iZone], iInst);
-            
-          } 
-          
+          WriteFiles(config_container[iZone], geometry_container[iZone][iInst], &solver_container[iZone][iInst], output[iZone], iInst);
           
         }
 

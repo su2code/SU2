@@ -2,11 +2,11 @@
  * \file CSurfaceFVMDataSorter.hpp
  * \brief Headers for the surface FVM data sorter class.
  * \author T. Albring
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -31,19 +31,17 @@
 
 class CSurfaceFVMDataSorter final: public CParallelDataSorter{
 
-  CFVMDataSorter* volume_sorter; //!< Pointer to the volume sorter instance
+  CFVMDataSorter* volumeSorter;                    //!< Pointer to the volume sorter instance
   map<unsigned long,unsigned long> Renumber2Global; //! Structure to map the local sorted point ID to the global point ID
-
 public:
 
   /*!
-   * \brief Constructor
+   * \brief Construct a file writer using field names and the data sorter.
    * \param[in] config - Pointer to the current config structure
    * \param[in] geometry - Pointer to the current geometry
-   * \param[in] nFields - Number of output fields
-   * \param[in] volume_sorter - Pointer to the corresponding volume sorter instance
+   * \param[in] valVolumeSorter - The datasorter containing the volume data
    */
-  CSurfaceFVMDataSorter(CConfig *config, CGeometry* geometry, unsigned short nFields, CFVMDataSorter* volume_sorter);
+  CSurfaceFVMDataSorter(CConfig *config, CGeometry* geometry, CFVMDataSorter* valVolumeSorter);
 
   /*!
    * \brief Destructor
@@ -58,12 +56,22 @@ public:
   void SortOutputData() override;
 
   /*!
-   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
+   * \brief Sort the connectivities on the surface into data structures used for output file writing.
+   *  All markers in MARKER_PLOTTING will be sorted.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] surf - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
+   * \param[in] val_sort - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
    */
   void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) override;
+
+  /*!
+   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
+   * Only markers in the markerList argument will be sorted.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] markerList - List of markers to sort.
+   */
+  void SortConnectivity(CConfig *config, CGeometry *geometry, const vector<string> &markerList) override;
 
   /*!
    * \brief Get the global index of a point.
@@ -71,9 +79,9 @@ public:
    * \return Global index of a specific point.
    */
   unsigned long GetGlobalIndex(unsigned long iPoint) const override{
-    if (iPoint > nParallel_Poin)
+    if (iPoint > nPoints)
       SU2_MPI::Error(string("Local renumbered iPoint ID ") + to_string(iPoint) +
-                     string(" is larger than max number of nodes ") + to_string(nParallel_Poin), CURRENT_FUNCTION);
+                     string(" is larger than max number of nodes ") + to_string(nPoints), CURRENT_FUNCTION);
 
     return Renumber2Global.at(iPoint);
   }
@@ -102,6 +110,15 @@ public:
     return size-1;
   }
 
+  /*!
+   * \brief Get the cumulated number of points
+   * \input rank - the processor rank.
+   * \return The cumulated number of points up to certain processor rank.
+   */
+  unsigned long GetnPointCumulative(unsigned short rank) const override {
+    return GetNodeBegin(rank);
+  }
+  
 private:
 
   /*!
@@ -109,7 +126,9 @@ private:
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
+   * \param[in] markerList - List of markers to sort
    */
-  void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type,
+                               const vector<string> &markerList);
 
 };

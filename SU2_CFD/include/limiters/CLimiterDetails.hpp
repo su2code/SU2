@@ -3,7 +3,7 @@
  * \brief A template class that allows defining limiters via
  *        specialization of particular details.
  * \author P. Gomes
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

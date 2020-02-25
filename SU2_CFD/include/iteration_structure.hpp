@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,13 +32,13 @@
 
 #include <ctime>
 
-#include "solver_structure.hpp"
 #include "integration_structure.hpp"
+
 #include "output/COutput.hpp"
 #include "numerics_structure.hpp"
-#include "../../Common/include/geometry/CGeometry.hpp"
+
 #include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/CConfig.hpp"
 
 using namespace std;
 
@@ -579,7 +579,7 @@ public:
  * \class CFEMFluidIteration
  * \brief Class for driving an iteration of the finite element flow system.
  * \author T. Economon, E. van der Weide
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  */
 class CFEMFluidIteration : public CFluidIteration {
 public:
@@ -817,7 +817,7 @@ public:
  * \class CFEAIteration
  * \brief Class for driving an iteration of structural analysis.
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  */
 class CFEAIteration : public CIteration {
 public:

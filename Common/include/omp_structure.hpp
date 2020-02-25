@@ -13,7 +13,7 @@
  *       defined here with suitable fallback versions to limit the spread of
  *       compiler tricks in other areas of the code.
  * \author P. Gomes
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -69,6 +69,11 @@ inline constexpr int omp_get_max_threads(void) {return 1;}
 inline constexpr int omp_get_num_threads(void) {return 1;}
 
 /*!
+ * \brief Set the maximum number of threads.
+ */
+inline void omp_set_num_threads(int) { }
+
+/*!
  * \brief Index of current thread, akin to MPI rank.
  */
 inline constexpr int omp_get_thread_num(void) {return 0;}
@@ -111,6 +116,7 @@ inline size_t computeStaticChunkSize(size_t totalWork,
                                      size_t numThreads,
                                      size_t maxChunkSize)
 {
+  if(!totalWork) return maxChunkSize;
   size_t workPerThread = roundUpDiv(totalWork, numThreads);
   size_t chunksPerThread = roundUpDiv(workPerThread, maxChunkSize);
   return roundUpDiv(workPerThread, chunksPerThread);
