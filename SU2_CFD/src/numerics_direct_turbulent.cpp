@@ -1271,18 +1271,19 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
      pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
 
      /*--- Implicit part ---*/
-     if (pw < 10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
-       if (pw > 0.0 && TurbVar_i[0] > StrainMag_i*F2_i/a1) {
+     if (pk < 10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
+       if (pk > 0.0 && TurbVar_i[0] > StrainMag_i*F2_i/a1) {
          // val_Jacobian_i[1][0] = -alfa_blended*2.0/3.0*diverg*Volume;
        }
      }
      else {
-       val_Jacobian_i[1][0] = 10.0*alfa_blended*Density_i*beta_star*TurbVar_i[1]*Volume;
-       val_Jacobian_i[1][1] = 10.0*alfa_blended*Density_i*beta_star*TurbVar_i[0]*Volume;
+       val_Jacobian_i[1][0] = 10.0*alfa_blended*Density_i*beta_star*TurbVar_i[1]/Eddy_Viscosity_i*Volume;
+       val_Jacobian_i[1][1] = 10.0*alfa_blended*Density_i*beta_star*TurbVar_i[0]/Eddy_Viscosity_i*Volume;
      }
    }
-   pw = min(pw,10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
-   pw = alfa_blended*Density_i*max(pw,0.0);
+   // pw = min(pw,10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
+   // pw = alfa_blended*Density_i*max(pw,0.0);
+   pw = alfa_blended*Density_i*pk/Eddy_Viscosity_i;
 
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
