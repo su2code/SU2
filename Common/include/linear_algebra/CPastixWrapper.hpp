@@ -3,11 +3,11 @@
  * \brief An interface to the INRIA solver PaStiX
  *        (http://pastix.gforge.inria.fr/files/README-txt.html)
  * \author P. Gomes
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -30,14 +30,17 @@
 
 #ifdef HAVE_PASTIX
 
-#include "../config_structure.hpp"
-#include "../geometry/CGeometry.hpp"
-
 namespace PaStiX {
 extern "C" {
 #include <pastix.h>
 }
 }
+#include <vector>
+
+using namespace std;
+
+class CConfig;
+class CGeometry;
 
 /*!
  * \class CPastixWrapper

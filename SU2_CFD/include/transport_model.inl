@@ -1,8 +1,8 @@
 /*!
  * \file transport_model.inl
- * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
+ * \brief In-Line subroutines of the <i>transport_model.hpp</i> file.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

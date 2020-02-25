@@ -2,7 +2,7 @@
  * \file CIncEulerVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -128,10 +128,6 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   Non_Physical.resize(nPoint) = false;
   Non_Physical_Counter.resize(nPoint) = 0;
   
-}
-
-void CIncEulerVariable::SetGradient_PrimitiveZero() {
-  Gradient_Primitive.storage.setConstant(0.0);
 }
 
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {

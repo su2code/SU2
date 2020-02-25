@@ -3,7 +3,7 @@
  * \brief Headers of the mpi interface for generalized datatypes.
  *        The subroutines and functions are in the <i>mpi_structure.cpp</i> file.
  * \author T. Albring
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -118,7 +118,9 @@ public:
   static void Error(std::string ErrorMsg, std::string FunctionName);
 
   static void Init(int *argc, char***argv);
-  
+
+  static void Init_thread(int *argc, char***argv, int required, int* provided);
+
   static void Buffer_attach(void *buffer, int size);
 
   static void Buffer_detach(void *buffer, int *size);
@@ -225,6 +227,8 @@ public:
   static void SetComm(Comm NewComm);
   
   static void Init(int *argc, char***argv);
+
+  static void Init_thread(int *argc, char***argv, int required, int* provided);
 
   static void Init_AMPI(void);
 
@@ -356,6 +360,8 @@ public:
   static void Error(std::string ErrorMsg, std::string FunctionName);
     
   static void Init(int *argc, char***argv);
+
+  static void Init_thread(int *argc, char***argv, int required, int* provided);
   
   static void Buffer_attach(void *buffer, int size);
   

@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.0.0',
+        version: '7.0.1',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
@@ -39,6 +39,13 @@ else
   if mpi_dep[0].found() or mpi_dep[1].found()
     mpi = true
   endif
+endif
+
+# OpenMP
+omp = get_option('with-omp')
+
+if omp
+  omp_dep = dependency('openmp', language:'cpp')
 endif
 
 if get_option('enable-autodiff') or get_option('enable-directdiff')
@@ -84,6 +91,11 @@ if mpi
   if get_option('enable-autodiff') or get_option('enable-directdiff')
     codi_dep += declare_dependency(include_directories: ['externals/medi/include', 'externals/medi/src'])
   endif
+endif
+
+if omp
+  # add OpenMP dependency
+  su2_deps += omp_dep
 endif
 
 if get_option('enable-tecio')
@@ -161,7 +173,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.0.0 'Blackbird'                         |
+         |   / __| | | |_  )   Release 7.0.1 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |

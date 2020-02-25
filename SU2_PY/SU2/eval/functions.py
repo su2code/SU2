@@ -3,7 +3,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -246,19 +246,33 @@ def aerodynamics( config, state=None ):
          'TARGET_HEATFLUX' in files ) :
         pull.append( files['TARGET_HEATFLUX'] )
 
+
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
         with redirect_output(log_direct):     
             
             # # RUN DIRECT SOLUTION # #
             info = su2run.direct(config)
-            su2io.restart2solution(config,info)
+
+
+
+            konfig = copy.deepcopy(config)
+            ''' 
+            If the time convergence criterion was activated, we have less time iterations. 
+            Store the changed values of TIME_ITER, ITER_AVERAGE_OBJ and UNST_ADJOINT_ITER in
+            info.WND_CAUCHY_DATA'''
+            if konfig.get('WINDOW_CAUCHY_CRIT', 'NO') == 'YES' and konfig.TIME_MARCHING != 'NO':  # Tranfer Convergence Data, if necessary
+                konfig['TIME_ITER']         = info.WND_CAUCHY_DATA['TIME_ITER']
+                konfig['ITER_AVERAGE_OBJ']  = info.WND_CAUCHY_DATA['ITER_AVERAGE_OBJ']
+                konfig['UNST_ADJOINT_ITER'] = info.WND_CAUCHY_DATA['UNST_ADJOINT_ITER']
+
+            su2io.restart2solution(konfig,info)
             state.update(info)
             
             # direct files to push
             name = info.FILES['DIRECT']
-            name = su2io.expand_zones(name,config)
-            name = su2io.expand_time(name,config)
+            name = su2io.expand_zones(name,konfig)
+            name = su2io.expand_time(name,konfig)
             push.extend(name)
             
             # equivarea files to push
@@ -277,7 +291,7 @@ def aerodynamics( config, state=None ):
                 push.append(info.FILES['FLOW_META'])
                 
     #: with output redirection
-    su2io.update_persurface(config,state)
+    su2io.update_persurface(konfig,state)
     # return output 
     funcs = su2util.ordered_bunch()
     for key in su2io.historyOutFields:

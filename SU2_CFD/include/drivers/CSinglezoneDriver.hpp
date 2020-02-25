@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
  * \class CSinglezoneDriver
  * \brief Class for driving single-zone solvers.
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  */
 class CSinglezoneDriver : public CDriver {
 protected:
@@ -97,6 +97,15 @@ public:
    * \param ExtIter
    */
   virtual bool Monitor(unsigned long TimeIter);
+
+  /*!
+     * \brief  Returns wheter all specified windowed-time-averaged ouputs have been converged
+     * \return Boolean indicating whether the problem is converged.
+     */
+  inline virtual bool GetTimeConvergence() const{
+    return output_container[ZONE_0]->GetTimeConvergence();
+  }
+
 
   /*!
    * \brief Runtime_Parsing

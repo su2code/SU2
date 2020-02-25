@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,7 +45,12 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization, and buffer setting ---*/
 
 #ifdef HAVE_MPI
-  SU2_MPI::Init(&argc,&argv);
+#ifdef HAVE_OMP
+  int provided;
+  SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+#else
+  SU2_MPI::Init(&argc, &argv);
+#endif
   SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
 #else
   SU2_Comm MPICommunicator(0);

@@ -2,7 +2,7 @@
  * \file CMMSNSUnitQuadSolutionWallBC.cpp
  * \brief Implementations of the member functions of CMMSNSUnitQuadSolutionWallBC.
  * \author T. Economon, E. van der Weide
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

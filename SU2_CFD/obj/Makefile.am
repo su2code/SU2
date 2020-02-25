@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.0 "Blackbird"
+# \version 7.0.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -81,11 +81,14 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \
+  ../src/output/filewriter/CSTLFileWriter.cpp \
   ../src/output/filewriter/CFEMDataSorter.cpp \
   ../src/output/filewriter/CFVMDataSorter.cpp \
   ../src/output/filewriter/CParallelDataSorter.cpp \
   ../src/output/filewriter/CParallelFileWriter.cpp \
   ../src/output/filewriter/CParaviewBinaryFileWriter.cpp \
+  ../src/output/filewriter/CParaviewXMLFileWriter.cpp \
+  ../src/output/filewriter/CParaviewVTMFileWriter.cpp \
   ../src/output/filewriter/CParaviewFileWriter.cpp \
   ../src/output/filewriter/CSurfaceFEMDataSorter.cpp \
   ../src/output/filewriter/CSurfaceFVMDataSorter.cpp \
@@ -94,6 +97,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/filewriter/CSU2MeshFileWriter.cpp \
   ../src/output/filewriter/CTecplotFileWriter.cpp \
   ../src/output/filewriter/CTecplotBinaryFileWriter.cpp \
+  ../src/output/tools/CWindowingTools.cpp \
   ../src/output/COutput.cpp \
   ../src/output/output_physics.cpp \
   ../src/output/CMeshOutput.cpp \
@@ -111,21 +115,29 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/CMultizoneOutput.cpp \
   ../src/output/output_structure_legacy.cpp \
   ../src/python_wrapper_structure.cpp \
-  ../src/solver_adjoint_mean.cpp \
-  ../src/solver_adjoint_turbulent.cpp \
-  ../src/solver_adjoint_discrete.cpp \
-  ../src/solver_adjoint_elasticity.cpp \
+  ../src/solvers/CAdjEulerSolver.cpp \
+  ../src/solvers/CAdjNSSolver.cpp \
+  ../src/solvers/CAdjTurbSolver.cpp \
+  ../src/solvers/CBaselineSolver.cpp \
+  ../src/solvers/CBaselineSolver_FEM.cpp \
+  ../src/solvers/CDiscAdjFEASolver.cpp \
   ../src/solvers/CDiscAdjMeshSolver.cpp \
-  ../src/solver_direct_heat.cpp \
-  ../src/solver_direct_mean.cpp \
-  ../src/solver_direct_mean_fem.cpp \
-  ../src/solver_direct_mean_inc.cpp \
-  ../src/solver_direct_transition.cpp \
-  ../src/solver_direct_turbulent.cpp \
-  ../src/solver_direct_elasticity.cpp \
+  ../src/solvers/CDiscAdjSolver.cpp \
+  ../src/solvers/CEulerSolver.cpp \
+  ../src/solvers/CFEASolver.cpp \
+  ../src/solvers/CFEM_DG_EulerSolver.cpp \
+  ../src/solvers/CFEM_DG_NSSolver.cpp \
+  ../src/solvers/CHeatSolverFVM.cpp \
+  ../src/solvers/CIncEulerSolver.cpp \
+  ../src/solvers/CIncNSSolver.cpp \
   ../src/solvers/CMeshSolver.cpp \
-  ../src/solver_structure.cpp \
-  ../src/solver_template.cpp \
+  ../src/solvers/CNSSolver.cpp \
+  ../src/solvers/CSolver.cpp \
+  ../src/solvers/CTemplateSolver.cpp \
+  ../src/solvers/CTransLMSolver.cpp \
+  ../src/solvers/CTurbSolver.cpp \
+  ../src/solvers/CTurbSASolver.cpp \
+  ../src/solvers/CTurbSSTSolver.cpp \
   ../src/CMarkerProfileReaderFVM.cpp \
   ../src/interfaces/CInterface.cpp \
   ../src/interfaces/cfd/CConservativeVarsInterface.cpp \

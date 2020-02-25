@@ -2,7 +2,7 @@
  * \file mpi_structure.hpp
  * \brief In-Line subroutines of the <i>mpi_structure.hpp</i> file.
  * \author T. Albring
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -122,6 +122,17 @@ inline CBaseMPIWrapper::Comm CBaseMPIWrapper::GetComm(){
 
 inline void CBaseMPIWrapper::Init(int *argc, char ***argv) {
   MPI_Init(argc,argv);
+  MPI_Comm_rank(currentComm, &Rank);    
+  MPI_Comm_size(currentComm, &Size);  
+
+  MinRankError = Size;
+  MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL,
+                 currentComm, &winMinRankError);
+  winMinRankErrorInUse = true;
+}
+
+inline void CBaseMPIWrapper::Init_thread(int *argc, char ***argv, int required, int* provided) {
+  MPI_Init_thread(argc,argv,required,provided);
   MPI_Comm_rank(currentComm, &Rank);    
   MPI_Comm_size(currentComm, &Size);  
 
@@ -266,12 +277,24 @@ inline void CBaseMPIWrapper::Waitany(int nrequests, Request *request,
                                  int *index, Status *status) {
   MPI_Waitany(nrequests, request, index, status);
 }
-  
+
 
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 
 inline void CMediMPIWrapper::Init(int *argc, char ***argv) {
   AMPI_Init(argc,argv);
+  MediTool::init();
+  AMPI_Comm_rank(convertComm(currentComm), &Rank);    
+  AMPI_Comm_size(convertComm(currentComm), &Size);  
+
+  MinRankError = Size;
+  MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL,
+                 currentComm, &winMinRankError);
+  winMinRankErrorInUse = true;
+}
+
+inline void CMediMPIWrapper::Init_thread(int *argc, char ***argv, int required, int* provided) {
+  AMPI_Init_thread(argc,argv,required,provided);
   MediTool::init();
   AMPI_Comm_rank(convertComm(currentComm), &Rank);    
   AMPI_Comm_size(convertComm(currentComm), &Size);  
@@ -516,6 +539,8 @@ inline CBaseMPIWrapper::Comm CBaseMPIWrapper::GetComm(){
 }
 
 inline void CBaseMPIWrapper::Init(int *argc, char ***argv) {}
+
+inline void CBaseMPIWrapper::Init_thread(int *argc, char***argv, int required, int* provided) {*provided = required;}
 
 inline void CBaseMPIWrapper::Buffer_attach(void *buffer, int size) {}
 

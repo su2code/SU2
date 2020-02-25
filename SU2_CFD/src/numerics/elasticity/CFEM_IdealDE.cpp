@@ -2,7 +2,7 @@
  * \file CFEM_IdealDE.cpp
  * \brief Definition of ideal dielectric elastomer.
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -90,7 +90,6 @@ void CFEM_IdealDE::Compute_Stress_Tensor(CElement *element, CConfig *config) {
   /*--- Compute the isochoric deformation gradient Fbar and left Cauchy-Green tensor bbar ---*/
   Compute_Isochoric_F_b();
 
-  cout.precision(15);
   // Stress terms
 
   trbbar = (b_Mat_Iso[0][0] + b_Mat_Iso[1][1] + b_Mat_Iso[2][2]) / 3.0;

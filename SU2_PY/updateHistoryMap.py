@@ -77,6 +77,23 @@ def parse_output(files):
             curOutputField['DESCRIPTION'] = 'Derivative value'
             addedOutputFields[name] = curOutputField
 
+            name = 'TAVG_' + field
+            curOutputField = dict()
+            curOutputField['HEADER'] = 'tavg[' + outputFields[field]['HEADER'] + ']'
+            curOutputField['GROUP'] = 'TAVG_' + outputFields[field]['GROUP']
+            curOutputField['TYPE'] = 'TAVG_COEFFICIENT'
+            curOutputField['DESCRIPTION'] = 'weighted time average value'
+            addedOutputFields[name] = curOutputField
+
+            name = 'TAVG_D_' + field
+            curOutputField = dict()
+            curOutputField['HEADER'] = 'dtavg[' + outputFields[field]['HEADER'] + ']'
+            curOutputField['GROUP'] = 'TAVG_D_' + outputFields[field]['GROUP']
+            curOutputField['TYPE'] = 'TAVG_D_COEFFICIENT'
+            curOutputField['DESCRIPTION'] = 'weighted time average derivative value'
+            addedOutputFields[name] = curOutputField
+
+
     outputFields.update(addedOutputFields)
     f = open(os.path.join(su2_home) + 'SU2_PY/SU2/io/historyMap.py', 'w')
     f.write('history_header_map = ')

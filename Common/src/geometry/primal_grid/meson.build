@@ -1,0 +1,11 @@
+common_src += files(['CPrimalGrid.cpp',
+                     'CPrimalGridFEM.cpp',
+                     'CPrimalGridBoundFEM.cpp',
+                     'CLine.cpp',
+                     'CTriangle.cpp',
+                     'CPrism.cpp',
+                     'CPyramid.cpp',
+                     'CHexahedron.cpp',
+                     'CTetrahedron.cpp',
+                     'CQuadrilateral.cpp',
+                     'CVertexMPI.cpp'])

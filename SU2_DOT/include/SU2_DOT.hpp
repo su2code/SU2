@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_DOT.
  *        The subroutines and functions are in the <i>SU2_DOT.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,6 +30,11 @@
 #pragma once
 
 #include "../../Common/include/mpi_structure.hpp"
+#include "../../Common/include/omp_structure.hpp"
+
+#define ENABLE_MAPS
+#include "../../Common/include/CConfig.hpp"
+#undef ENABLE_MAPS
 
 #include <cstdlib>
 #include <iostream>
@@ -38,10 +43,9 @@
 
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../SU2_CFD/include/output/CBaselineOutput.hpp"
-#include "../../SU2_CFD/include/solver_structure.hpp"
+#include "../../SU2_CFD/include/solvers/CBaselineSolver.hpp"
 
 using namespace std;
 
