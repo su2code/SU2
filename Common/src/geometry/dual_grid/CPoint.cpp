@@ -140,7 +140,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   /*--- Init walldistance ---*/
 
   Wall_Distance = 0.0;
-  
+
   /*--- Init walldistance ---*/
 
   RoughnessHeight = 0.0;

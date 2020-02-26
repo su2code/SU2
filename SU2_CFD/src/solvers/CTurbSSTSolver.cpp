@@ -445,25 +445,25 @@ void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  
+
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
   su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
   bool rough_wall = false;
   su2double RoughWallBC, Roughness_Height, S_R, FrictionVel, kPlus, WallShearStress;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-   
+
   if (config->GetKindWall(Marker_Tag) == ROUGH ) rough_wall = true;
-  
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
+
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->node[iPoint]->GetDomain()) {
 
        if (rough_wall) {
 
-		/*--- Set wall values ---*/
+    /*--- Set wall values ---*/
 
        density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
        laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
@@ -481,13 +481,13 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         kPlus = FrictionVel*Roughness_Height*density/laminar_viscosity;
 
         /*--- Reference 1 original Wilcox (1998) ---*/
-        /*if (kPlus <= 25) 
+        /*if (kPlus <= 25)
             S_R = (50/(kPlus+EPS))*(50/(kPlus+EPS));
           else
             S_R = 100/(kPlus+EPS);*/
 
         /*--- Reference 2 from D.C. Wilcox Turbulence Modeling for CFD (2006) ---*/
-        if (kPlus <= 5) 
+        if (kPlus <= 5)
           S_R = (200/(kPlus+EPS))*(200/(kPlus+EPS));
         else
           S_R = 100/(kPlus+EPS) + ((200/(kPlus+EPS))*(200/(kPlus+EPS)) - 100/(kPlus+EPS))*exp(5-kPlus);
@@ -505,14 +505,14 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
          distance = sqrt(distance);
 
          /*--- Set wall values ---*/
-       
+
          density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
          laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
 
          beta_1 = constants[4];
 
          Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
-	  }
+    }
 
       /*--- Only the \omega solution is modified at the wall. ---*/
       Solution[0] = 0.0;
@@ -528,7 +528,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         Jacobian.DeleteValsRowi(total_index);
       }
     }
-  }  
+  }
 }
 
 void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,

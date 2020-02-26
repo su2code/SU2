@@ -928,9 +928,9 @@ private:
   nMarkerTranslation,             /*!< \brief Number of values provided for translational velocity of marker. */
   nMarkerRotation_Rate,           /*!< \brief Number of values provided for angular velocity of marker. */
   nMarkerPitching_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */
-  nMarkerPitching_Ampl,           /*!< \brief Number of values provided for pitching amplitude of marker. */ 
-  nMarkerPitching_Phase,          /*!< \brief Number of values provided for pitching phase offset of marker. */ 
-  nMarkerPlunging_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */ 
+  nMarkerPitching_Ampl,           /*!< \brief Number of values provided for pitching amplitude of marker. */
+  nMarkerPitching_Phase,          /*!< \brief Number of values provided for pitching phase offset of marker. */
+  nMarkerPlunging_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */
   nMarkerPlunging_Ampl,           /*!< \brief Number of values provided for plunging amplitude of marker. */
   nRoughWall;                     /*!< \brief Number of rough walls. */
   su2double  *Omega_HB;           /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
@@ -4940,12 +4940,12 @@ public:
    * \return Kind of wall - smooth or rough.
    */
   unsigned short GetKindWall(string val_marker);
-  
+
   /*!
    * \brief Set the kind of wall - rough or smooth.
    */
   void SetKindWall(string val_marker, unsigned short val_kindwall);
-  
+
   /*!
    * \brief Get the number of sections.
    * \return Number of sections
@@ -6654,21 +6654,21 @@ public:
    * \return Pointer to the double info for the given marker.
    */
   su2double* GetWallFunction_DoubleInfo(string val_marker);
-  
+
   /*!
    * \brief Get the wall roughness height on a wall boundary (Heatflux or Isothermal).
    * \param[in] val_index - Index corresponding to the boundary.
    * \return The wall roughness height.
    */
   su2double GetWall_RoughnessHeight(string val_marker);
-  
+
   /*!
    * \brief Set the wall roughness height on a wall boundary (Heatflux or Isothermal).
    * \param[in] val_index - Index corresponding to the boundary.
    * \return The wall roughness height.
    */
   void SetWall_RoughnessHeight(string val_marker, su2double val_roughness);
-  
+
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.

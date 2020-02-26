@@ -168,7 +168,7 @@ public:
    * \return Value of the roughness at the nearest wall.
    */
   inline su2double GetRoughnessHeight() const { return RoughnessHeight; }
-  
+
   /*!
    * \brief Set the number of elements that compose the control volume.
    * \param[in] val_nElem - Number of elements that make the control volume around a node.

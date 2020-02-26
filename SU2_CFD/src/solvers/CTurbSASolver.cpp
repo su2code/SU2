@@ -362,17 +362,17 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
     nu  = mu/rho;
     nu_hat = nodes->GetSolution(iPoint);
-    
+
     roughness = geometry->node[iPoint]->GetRoughnessHeight();
     dist = geometry->node[iPoint]->GetWall_Distance();
     dist += 0.03*roughness;
 
     Ji   = nu_hat[0]/nu ;
-    
+
     if (roughness > 1.0e-10) {
-	  Ji+= cR1*roughness/(dist+EPS);
+    Ji+= cR1*roughness/(dist+EPS);
     }
-    
+
     Ji_3 = Ji*Ji*Ji;
     fv1  = Ji_3/(Ji_3+cv1_3);
 
@@ -430,20 +430,20 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Get Hybrid RANS/LES Type and set the appropriate wall distance ---*/
 
     if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES) {
-		
-	/*--- For the SA model, wall roughness is accounted by modifying the computed wall distance 
+
+  /*--- For the SA model, wall roughness is accounted by modifying the computed wall distance
        *                  d_new = d + 0.03 k_s
        *    where k_s is the equivalent sand grain roughness height that is specified in cfg file.
        *    For smooth walls, wall roughness is zero and computed wall distance remains the same. */
-       
+
       modifiedWallDistance = geometry->node[iPoint]->GetWall_Distance();
-      
+
       modifiedWallDistance += 0.03*geometry->node[iPoint]->GetRoughnessHeight();
-          
+
       /*--- Set distance to the surface ---*/
-          
+
       numerics->SetDistance(modifiedWallDistance, 0.0);
-      
+
       /*--- Set the roughness of the closest wall. ---*/
 
       numerics->SetRoughness(geometry->node[iPoint]->GetRoughnessHeight(), 0.0 );
@@ -543,44 +543,44 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
           nodes->SetSolution_Old(iPoint,Solution);
           LinSysRes.SetBlock_Zero(iPoint);
-          
+
           /*--- Includes 1 in the diagonal ---*/
 
           Jacobian.DeleteValsRowi(iPoint);
        }
-	   else {
-		   /*--- For rough walls, the boundary condition is given by 
-		    * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
-		    * where \nu is the solution variable, $n$ is the wall normal direction 
-		    * and k_s is the equivalent sand grain roughness specified. ---*/
-		   
-		   /*--- Compute dual-grid area and boundary normal ---*/
-		   
-		   Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-		   
-           Area = 0.0;
-		   for (iDim = 0; iDim < nDim; iDim++)
-		      Area += Normal[iDim]*Normal[iDim];
-		   Area = sqrt(Area);
+     else {
+       /*--- For rough walls, the boundary condition is given by
+        * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
+        * where \nu is the solution variable, $n$ is the wall normal direction
+        * and k_s is the equivalent sand grain roughness specified. ---*/
 
-		   /*--- Get laminar_viscosity and density ---*/
-		   
-		   laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+       /*--- Compute dual-grid area and boundary normal ---*/
+
+       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+           Area = 0.0;
+       for (iDim = 0; iDim < nDim; iDim++)
+          Area += Normal[iDim]*Normal[iDim];
+       Area = sqrt(Area);
+
+       /*--- Get laminar_viscosity and density ---*/
+
+       laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
            density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-           
+
            nu_total = (laminar_viscosity/density + nodes->GetSolution(iPoint,0));
-           
+
            coeff = (nu_total/sigma);
 
-		   RoughWallBC = nodes->GetSolution(iPoint,0)/(0.03*Roughness_Height);
+       RoughWallBC = nodes->GetSolution(iPoint,0)/(0.03*Roughness_Height);
 
-		   Res_Wall[0] = coeff*RoughWallBC*Area;
-		   LinSysRes.SubtractBlock(iPoint, Res_Wall);
-		   
-		   Jacobian_i[0][0] = (laminar_viscosity*Area)/(0.03*Roughness_Height*sigma);
-		   Jacobian_i[0][0] += 2.0*RoughWallBC*Area/sigma;
-		   Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
-	   }
+       Res_Wall[0] = coeff*RoughWallBC*Area;
+       LinSysRes.SubtractBlock(iPoint, Res_Wall);
+
+       Jacobian_i[0][0] = (laminar_viscosity*Area)/(0.03*Roughness_Height*sigma);
+       Jacobian_i[0][0] += 2.0*RoughWallBC*Area/sigma;
+       Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
+     }
       }
     }
   }
@@ -2422,5 +2422,5 @@ void CTurbSASolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
   for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
     Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
   }
-  
+
 }
