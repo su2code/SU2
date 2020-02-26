@@ -1384,7 +1384,8 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
 
     /*--- Wall shear stress values (wall functions) ---*/
 
-    numerics->SetTauWall(nodes->GetTauWall(iPoint), nodes->GetTauWall(iPoint));
+    numerics->SetTauWall(nodes->GetTauWall(iPoint), nodes->GetTauWall(jPoint));
+    numerics->SetTauWall_Flag(nodes->GetTauWall_Flag(iPoint), nodes->GetTauWall_Flag(jPoint));
 
     /*--- Compute and update residual ---*/
 
