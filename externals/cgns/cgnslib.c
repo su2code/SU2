@@ -263,7 +263,7 @@ int VersionList[] = {3210, 3200,
                      2550, 2540, 2530, 2520, 2510, 2500,
                      2460, 2420, 2400,
                      2300, 2200, 2100, 2000, 1270, 1200, 1100, 1050};
-#define nVersions (sizeof(VersionList)/sizeof(int))
+#define nVersions ((int)(sizeof(VersionList)/sizeof(int)))
 
 #ifdef DEBUG_HDF5_OBJECTS_CLOSE
 void objlist_status(char *tag)
@@ -294,15 +294,15 @@ void objlist_status(char *tag)
     {
       if (H5Iis_valid(idlist[n]))
       {
-      	printf("{%s} track %d INVALID\n",tag,idlist[n]);
+        printf("{%s} track %d INVALID\n",tag,idlist[n]);
       }
       else
       {
-      	H5Oget_info(idlist[n],&objinfo);
-      	memset(oname,'\0',256);
-      	sname=H5Iget_name(idlist[n],oname,0);
-      	sname=H5Iget_name(idlist[n],oname,sname+1);
-      	printf("{%s} track %d ALIVE (%s:%d)\n",tag,idlist[n],oname,objinfo.rc);
+        H5Oget_info(idlist[n],&objinfo);
+        memset(oname,'\0',256);
+        sname=H5Iget_name(idlist[n],oname,0);
+        sname=H5Iget_name(idlist[n],oname,sname+1);
+        printf("{%s} track %d ALIVE (%s:%d)\n",tag,idlist[n],oname,objinfo.rc);
       }
     }
   }
@@ -344,7 +344,7 @@ int cg_open(const char *filename, int mode, int *file_number)
 
 #ifdef __CG_MALLOC_H__
     fprintf(stderr, "CGNS MEM_DEBUG: before open:files %d/%d: memory %d/%d: calls %d/%d\n", n_open,
-	    cgns_file_size, cgmemnow(), cgmemmax(), cgalloccalls(), cgfreecalls());
+           cgns_file_size, cgmemnow(), cgmemmax(), cgalloccalls(), cgfreecalls());
 #endif
 
     /* check file mode */
@@ -505,7 +505,7 @@ int cg_open(const char *filename, int mode, int *file_number)
 
 #ifdef __CG_MALLOC_H__
     fprintf(stderr, "CGNS MEM_DEBUG: after  open:files %d/%d: memory %d/%d: calls %d/%d\n", n_open,
-	    cgns_file_size, cgmemnow(), cgmemmax(), cgalloccalls(), cgfreecalls());
+           cgns_file_size, cgmemnow(), cgmemmax(), cgalloccalls(), cgfreecalls());
 #endif
 
     return CG_OK;
@@ -537,7 +537,7 @@ int cg_version(int file_number, float *FileVersion)
         return CG_ERROR;
     } else {
         int vers, ndim, temp_version;
-	cgsize_t dim_vals[12];
+        cgsize_t dim_vals[12];
         char_33 node_name;
         char_33 data_type;
         void *data;
@@ -623,7 +623,7 @@ int cg_close(int file_number)
 
 #ifdef __CG_MALLOC_H__
     fprintf(stderr, "CGNS MEM_DEBUG: before close:files %d/%d: memory %d/%d: calls %d/%d\n", n_open,
-	    cgns_file_size, cgmemnow(), cgmemmax(), cgalloccalls(), cgfreecalls());
+           cgns_file_size, cgmemnow(), cgmemmax(), cgalloccalls(), cgfreecalls());
 #endif
 
     if (cgns_compress && cg->mode == CG_MODE_MODIFY &&
@@ -658,7 +658,7 @@ int cg_close(int file_number)
 
 #ifdef __CG_MALLOC_H__
     fprintf(stderr, "CGNS MEM_DEBUG: after  close:files %d/%d: memory %d/%d: calls %d/%d\n", n_open,
-	    cgns_file_size, cgmemnow(), cgmemmax(), cgalloccalls(), cgfreecalls());
+           cgns_file_size, cgmemnow(), cgmemmax(), cgalloccalls(), cgfreecalls());
 #endif
 
 #ifdef DEBUG_HDF5_OBJECTS_CLOSE
@@ -700,7 +700,7 @@ int cg_set_file_type(int file_type)
 {
     if (file_type == CG_FILE_NONE) {
         char *type = getenv("CGNS_FILETYPE");
-	if (type == NULL || !*type) {
+        if (type == NULL || !*type) {
 #if CG_BUILD_HDF5
             cgns_filetype = CG_FILE_HDF5;
 #else
@@ -708,11 +708,11 @@ int cg_set_file_type(int file_type)
 #endif
         }
 #if CG_BUILD_HDF5
-	else if (*type == '2' || *type == 'h' || *type == 'H') {
+        else if (*type == '2' || *type == 'h' || *type == 'H') {
             cgns_filetype = CG_FILE_HDF5;
         }
 #endif
-	else if (*type == '3' || ((*type == 'a' || *type == 'A') &&
+    else if (*type == '3' || ((*type == 'a' || *type == 'A') &&
                  strchr(type, '2') != NULL)) {
 #if CG_SIZEOF_SIZE == 64
             cgi_error("ADF2 not supported in 64-bit mode");
@@ -720,7 +720,7 @@ int cg_set_file_type(int file_type)
 #else
             cgns_filetype = CG_FILE_ADF2;
 #endif
-	}
+        }
         else
             cgns_filetype = CG_FILE_ADF;
     }
@@ -1029,7 +1029,7 @@ int cg_cell_dim(int file_number, int B, int *cell_dim)
 }
 
 int cg_base_write(int file_number, const char * basename, int cell_dim,
-		  int phys_dim, int *B)
+                 int phys_dim, int *B)
 {
     cgns_base *base = NULL;
     int index;
@@ -1183,7 +1183,7 @@ int cg_index_dim(int file_number, int B, int Z, int *index_dim)
 }
 
 int cg_zone_write(int file_number, int B, const char *zonename, const cgsize_t * nijk,
-		  CGNS_ENUMT( ZoneType_t )  type, int *Z)
+          CGNS_ENUMT( ZoneType_t )  type, int *Z)
 {
     cgns_base *base;
     cgns_zone *zone = NULL;
@@ -1305,9 +1305,8 @@ int cg_nfamilies(int file_number, int B, int *nfamilies)
 }
 
 int cg_family_read(int file_number, int B, int F, char *family_name,
-	           int *nboco, int *ngeos)
+               int *nboco, int *ngeos)
 {
-
     cgns_family *family;
 
     cg = cgi_get_file(file_number);
@@ -1503,7 +1502,7 @@ int cg_fambc_read(int file_number, int B, int F, int BC,
 }
 
 int cg_fambc_write(int file_number, int B, int F, const char * fambc_name,
-		   CGNS_ENUMT( BCType_t )  bocotype, int *BC)
+           CGNS_ENUMT( BCType_t )  bocotype, int *BC)
 {
     int index;
     cgsize_t length;
@@ -1903,7 +1902,7 @@ int cg_discrete_size(int file_number, int B, int Z, int D,
 /*----------------------------------------------------------------------*/
 
 int cg_discrete_ptset_info(int fn, int B, int Z, int D,
-	CGNS_ENUMT(PointSetType_t) *ptset_type, cgsize_t *npnts)
+    CGNS_ENUMT(PointSetType_t) *ptset_type, cgsize_t *npnts)
 {
     cgns_discrete *discrete;
 
@@ -1949,9 +1948,9 @@ int cg_discrete_ptset_read(int fn, int B, int Z, int D, cgsize_t *pnts)
 }
 
 int cg_discrete_ptset_write(int fn, int B, int Z,
-	const char *discrete_name, CGNS_ENUMT(GridLocation_t) location,
-	CGNS_ENUMT(PointSetType_t) ptset_type, cgsize_t npnts,
-	const cgsize_t *pnts, int *D)
+    const char *discrete_name, CGNS_ENUMT(GridLocation_t) location,
+    CGNS_ENUMT(PointSetType_t) ptset_type, cgsize_t npnts,
+    const cgsize_t *pnts, int *D)
 {
     int i, index_dim = 0;
     cgsize_t cnt, dim_vals = 1;
@@ -2136,7 +2135,7 @@ int cg_ncoords(int file_number, int B, int Z, int *ncoords)
 }
 
 int cg_coord_info(int file_number, int B, int Z, int C, CGNS_ENUMT(DataType_t)  *type,
-	          char *coordname)
+              char *coordname)
 {
     cgns_zcoor *zcoor;
 
@@ -2306,7 +2305,7 @@ int cg_coord_write(int file_number, int B, int Z, CGNS_ENUMT(DataType_t) type,
             s_rmin[n] = 1;
         }
         else {
-             /* new behavior consitent with SIDS */
+             /* new behavior consistent with SIDS */
             s_rmin[n] = 1 - zcoor->rind_planes[2*n];
         }
         s_rmax[n] = s_rmin[n] + m_dimvals[n] - 1;
@@ -2321,7 +2320,6 @@ int cg_coord_write(int file_number, int B, int Z, CGNS_ENUMT(DataType_t) type,
 
     HDF5storage_type = CG_COMPACT;
     return status;
-
 }
 
 int cg_coord_partial_write(int file_number, int B, int Z,
@@ -2482,7 +2480,7 @@ static void free_element_data(cgns_section *section)
 static int read_element_data(cgns_section *section)
 {
     if (section->connect->data == NULL) {
-	cgsize_t cnt = section->connect->dim_vals[0];
+    cgsize_t cnt = section->connect->dim_vals[0];
 
         section->connect->data = malloc(cnt * sizeof(cgsize_t));
         if (section->connect->data == NULL) {
@@ -2509,7 +2507,7 @@ static void free_offset_data(cgns_section *section)
 static int read_offset_data(cgns_section *section)
 {
     if (section->connect_offset->data == NULL) {
-	cgsize_t cnt = section->connect_offset->dim_vals[0];
+    cgsize_t cnt = section->connect_offset->dim_vals[0];
 
         section->connect_offset->data = malloc(cnt * sizeof(cgsize_t));
         if (section->connect_offset->data == NULL) {
@@ -2860,8 +2858,8 @@ int cg_poly_section_write(int file_number, int B, int Z, const char * SectionNam
 }
 
 int cg_section_partial_write(int file_number, int B, int Z, const char * SectionName,
-			     CGNS_ENUMT(ElementType_t) type, cgsize_t start,
-			     cgsize_t end, int nbndry, int *S)
+                 CGNS_ENUMT(ElementType_t) type, cgsize_t start,
+                 cgsize_t end, int nbndry, int *S)
 {
     cgns_zone *zone;
     cgns_section *section = NULL;
@@ -3033,7 +3031,7 @@ int cg_ElementDataSize(int file_number, int B, int Z, int S,
 }
 
 int cg_ElementPartialSize(int file_number, int B, int Z, int S,
-	cgsize_t start, cgsize_t end, cgsize_t *ElementDataSize)
+    cgsize_t start, cgsize_t end, cgsize_t *ElementDataSize)
 {
     cgns_section *section;
     cgsize_t size, cnt, *offset_data;
@@ -3372,7 +3370,7 @@ int cg_elements_partial_read(int file_number, int B, int Z, int S,
                 nn = section->parelem->dim_vals[0] * 4;
                 data = (cgsize_t *)malloc((size_t)(nn * sizeof(cgsize_t)));
                 if (data == NULL) {
-                    cgi_error("malloc failed for tempory ParentData array");
+                    cgi_error("malloc failed for temporary ParentData array");
                     return CG_ERROR;
                 }
                 if (cgi_read_int_data(section->parelem->id,
@@ -3660,7 +3658,7 @@ int cg_poly_elements_partial_read(int file_number, int B, int Z, int S,
                 nn = section->parelem->dim_vals[0] * 4;
                 data = (cgsize_t *)malloc((size_t)(nn * sizeof(cgsize_t)));
                 if (data == NULL) {
-                    cgi_error("malloc failed for tempory ParentData array");
+                    cgi_error("malloc failed for temporary ParentData array");
                     return CG_ERROR;
                 }
                 if (cgi_read_int_data(section->parelem->id,
@@ -3964,7 +3962,7 @@ int cg_elements_partial_write(int file_number, int B, int Z, int S,
 
         newelems = (cgsize_t *)malloc((size_t)(cnt * newsize * sizeof(cgsize_t)));
         if (NULL == newelems) {
-            cgi_error("Error alocating new ParentElements data");
+            cgi_error("Error allocating new ParentElements data");
             return CG_ERROR;
         }
         offset = start - section->range[0];
@@ -4035,8 +4033,8 @@ int cg_elements_partial_write(int file_number, int B, int Z, int S,
 }
 
 int cg_poly_elements_partial_write(int file_number, int B, int Z, int S,
-			      cgsize_t start, cgsize_t end,
-			      const cgsize_t *elements, const cgsize_t *connect_offset)
+                  cgsize_t start, cgsize_t end,
+                  const cgsize_t *elements, const cgsize_t *connect_offset)
 {
     cgns_section *section;
     CGNS_ENUMT(ElementType_t) type;
@@ -4206,13 +4204,14 @@ int cg_poly_elements_partial_write(int file_number, int B, int Z, int S,
         /* create new element connectivity array and offsets*/
 
         newelems = (cgsize_t *) malloc ((size_t)(newsize * sizeof(cgsize_t)));
-        newoffsets = (cgsize_t *) malloc((size_t)((elemcount+1) * sizeof(cgsize_t)));
         if (NULL == newelems) {
             cgi_error("Error allocating new connectivity data");
             return CG_ERROR;
         }
+        newoffsets = (cgsize_t *) malloc((size_t)((elemcount+1) * sizeof(cgsize_t)));
         if (NULL == newoffsets) {
             cgi_error("Error allocating new connectivity offset data");
+            free(newelems);
             return CG_ERROR;
         }
 
@@ -4244,7 +4243,11 @@ int cg_poly_elements_partial_write(int file_number, int B, int Z, int S,
             } else if (end < section->range[1]) {
                 num = end - section->range[0] + 1;
                 offset = section_offset[end - section->range[0] + 1];
-                if (offset < 0) return CG_ERROR;
+                if (offset < 0) {
+                    free(newelems);
+                    free(newoffsets);
+                    return CG_ERROR;
+                }
                 size = section_offset[section->range[1]-section->range[0]+1] - section_offset[num];
                 memcpy(&newelems[n], &oldelems[offset], (size_t)(size*sizeof(cgsize_t)));
                 n += size;
@@ -4378,7 +4381,7 @@ int cg_poly_elements_partial_write(int file_number, int B, int Z, int S,
 
         newelems = (cgsize_t *)malloc((size_t)(cnt * newsize * sizeof(cgsize_t)));
         if (NULL == newelems) {
-            cgi_error("Error alocating new ParentElements data");
+            cgi_error("Error allocating new ParentElements data");
             return CG_ERROR;
         }
         offset = start - section->range[0];
@@ -4451,7 +4454,7 @@ int cg_poly_elements_partial_write(int file_number, int B, int Z, int S,
 /*----------------------------------------------------------------------*/
 
 int cg_parent_data_write(int file_number, int B, int Z, int S,
-			 const cgsize_t * parent_data)
+             const cgsize_t * parent_data)
 {
     cgns_section *section;
     cgsize_t num;
@@ -4588,7 +4591,7 @@ int cg_parent_data_partial_write(int file_number, int B, int Z, int S,
         return CG_ERROR;
     }
     if (size != section->parelem->dim_vals[0]) {
-        cgi_error("internal errror - invalid ParentElements data size !!!");
+        cgi_error("internal error - invalid ParentElements data size !!!");
         return CG_ERROR;
     }
 
@@ -4610,7 +4613,7 @@ int cg_parent_data_partial_write(int file_number, int B, int Z, int S,
             return CG_ERROR;
         }
         if (size != section->parface->dim_vals[0]) {
-            cgi_error("internal errror - invalid ParentElementsPosition data size !!!");
+            cgi_error("internal error - invalid ParentElementsPosition data size !!!");
             return CG_ERROR;
         }
     }
@@ -4659,7 +4662,7 @@ int cg_parent_data_partial_write(int file_number, int B, int Z, int S,
 
         if (read_parent_data(section)) return CG_ERROR;
 
-	data = (cgsize_t *)section->parelem->data;
+    data = (cgsize_t *)section->parelem->data;
         for (i = 0, num = 0; num < cnt; num++) {
             j = num * size + offset;
             for (n = start; n <= end; n++)
@@ -4707,7 +4710,7 @@ int cg_nsols(int file_number, int B, int Z, int *nsols)
 }
 
 int cg_sol_info(int file_number, int B, int Z, int S, char *solname,
-	        CGNS_ENUMT(GridLocation_t) *location)
+            CGNS_ENUMT(GridLocation_t) *location)
 {
     cgns_sol *sol;
 
@@ -4741,7 +4744,7 @@ int cg_sol_id(int file_number, int B, int Z, int S, double *sol_id)
 }
 
 int cg_sol_write(int file_number, int B, int Z, const char * solname,
-		 CGNS_ENUMT(GridLocation_t) location, int *S)
+         CGNS_ENUMT(GridLocation_t) location, int *S)
 {
     cgns_zone *zone;
     cgns_sol *sol = NULL;
@@ -4867,7 +4870,7 @@ int cg_sol_size(int file_number, int B, int Z, int S,
 /*----------------------------------------------------------------------*/
 
 int cg_sol_ptset_info(int fn, int B, int Z, int S,
-	CGNS_ENUMT(PointSetType_t) *ptset_type, cgsize_t *npnts)
+    CGNS_ENUMT(PointSetType_t) *ptset_type, cgsize_t *npnts)
 {
     cgns_sol *sol;
 
@@ -4913,9 +4916,9 @@ int cg_sol_ptset_read(int fn, int B, int Z, int S, cgsize_t *pnts)
 }
 
 int cg_sol_ptset_write(int fn, int B, int Z, const char *solname,
-	CGNS_ENUMT(GridLocation_t) location,
-	CGNS_ENUMT(PointSetType_t) ptset_type, cgsize_t npnts,
-	const cgsize_t *pnts, int *S)
+    CGNS_ENUMT(GridLocation_t) location,
+    CGNS_ENUMT(PointSetType_t) ptset_type, cgsize_t npnts,
+    const cgsize_t *pnts, int *S)
 {
     int i, index_dim = 0;
     cgsize_t cnt, dim_vals = 1;
@@ -5031,8 +5034,8 @@ int cg_field_read(int file_number, int B, int Z, int S, const char *fieldname,
 
      /* verify that range requested does not exceed range stored */
     if (s_rmin == NULL || s_rmax == NULL) {
-	cgi_error("NULL range value.");
-	return CG_ERROR;
+        cgi_error("NULL range value.");
+        return CG_ERROR;
     }
 
     cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
@@ -5167,7 +5170,7 @@ int cg_field_write(int file_number, int B, int Z, int S,
             s_rmin[n] = 1;
         }
         else {
-             /* new behavior consitent with SIDS */
+             /* new behavior consistent with SIDS */
             s_rmin[n] = 1 - sol->rind_planes[2*n];
         }
         s_rmax[n] = s_rmin[n] + m_dimvals[n] - 1;
@@ -5211,8 +5214,8 @@ int cg_field_partial_write(int file_number, int B, int Z, int S,
     }
 
     if (s_rmin == NULL || s_rmax == NULL) {
-	cgi_error("NULL range value.");
-	return CG_ERROR;
+        cgi_error("NULL range value.");
+        return CG_ERROR;
     }
 
     cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
@@ -5605,7 +5608,7 @@ int cg_subreg_gcname_write(int fn, int B, int Z, const char *name, int dimension
 }
 
 /*************************************************************************\
- *      Read and write ZoneGridConnectivity_t Nodes  			 *
+ *      Read and write ZoneGridConnectivity_t Nodes               *
 \*************************************************************************/
 
 int cg_nzconns(int fn, int B, int Z, int *nzconns)
@@ -5764,7 +5767,7 @@ int cg_nholes(int file_number, int B, int Z, int *nholes)
 }
 
 int cg_hole_info(int file_number, int B, int Z, int I, char *holename,
-		 CGNS_ENUMT(GridLocation_t) *location,
+         CGNS_ENUMT(GridLocation_t) *location,
                  CGNS_ENUMT(PointSetType_t) *ptset_type, int *nptsets,
                  cgsize_t *npnts)
 {
@@ -5851,9 +5854,9 @@ int cg_hole_id(int file_number, int B, int Z, int I, double *hole_id)
 }
 
 int cg_hole_write(int file_number, int B, int Z, const char * holename,
-		  CGNS_ENUMT(GridLocation_t) location,
-		  CGNS_ENUMT(PointSetType_t) ptset_type,
-		  int nptsets, cgsize_t npnts, const cgsize_t * pnts, int *I)
+          CGNS_ENUMT(GridLocation_t) location,
+          CGNS_ENUMT(PointSetType_t) ptset_type,
+          int nptsets, cgsize_t npnts, const cgsize_t * pnts, int *I)
 {
     cgns_zone *zone;
     cgns_zconn *zconn;
@@ -5965,7 +5968,7 @@ int cg_hole_write(int file_number, int B, int Z, const char * holename,
     if (cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2) {
       if (zconn->id==0) {
         if (cgi_new_node(zone->id, zconn->name, "ZoneGridConnectivity_t",
-			 &zconn->id, "MT", 0, 0, 0)) return CG_ERROR;
+             &zconn->id, "MT", 0, 0, 0)) return CG_ERROR;
       }
     }
 #if CG_BUILD_HDF5
@@ -5974,7 +5977,7 @@ int cg_hole_write(int file_number, int B, int Z, const char * holename,
       to_HDF_ID(zconn->id, hid);
       if (hid==0) {
         if (cgi_new_node(zone->id, zconn->name, "ZoneGridConnectivity_t",
-			 &zconn->id, "MT", 0, 0, 0)) return CG_ERROR;
+             &zconn->id, "MT", 0, 0, 0)) return CG_ERROR;
       }
     }
 #endif
@@ -5997,7 +6000,7 @@ int cg_hole_write(int file_number, int B, int Z, const char * holename,
 
         if (ptset->npts > 0) {
              /* Create Point Set node on disk */
-	  if (ptset->type == CGNS_ENUMV(PointRange))
+      if (ptset->type == CGNS_ENUMV(PointRange))
                 sprintf(PointSetName, "PointRange%d",set+1);
             else
                 sprintf(PointSetName, "%s", PointSetTypeName[ptset->type]);
@@ -6029,12 +6032,12 @@ int cg_nconns(int file_number, int B, int Z, int *nconns)
 }
 
 /* in cg_conn_info, donor_datatype is useless starting with version 1.27, because
-   it's always I4.  Howver this arg. is left for backward compatibility of API
+   it's always I4.  However this arg. is left for backward compatibility of API
    and to be able to read old files */
 int cg_conn_info(int file_number, int B, int Z, int I, char *connectname,
-		 CGNS_ENUMT(GridLocation_t) *location,
+         CGNS_ENUMT(GridLocation_t) *location,
                  CGNS_ENUMT(GridConnectivityType_t) *type,
-		 CGNS_ENUMT(PointSetType_t) *ptset_type, cgsize_t *npnts,
+         CGNS_ENUMT(PointSetType_t) *ptset_type, cgsize_t *npnts,
                  char *donorname, CGNS_ENUMT(ZoneType_t) *donor_zonetype,
                  CGNS_ENUMT(PointSetType_t) *donor_ptset_type,
                  CGNS_ENUMT(DataType_t) *donor_datatype, cgsize_t *ndata_donor)

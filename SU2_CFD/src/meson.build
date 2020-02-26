@@ -1,23 +1,12 @@
-su2_cfd_src = files(['integration_structure.cpp',
-                     'numerics_adjoint_mean.cpp',
-                     'transport_model.cpp',
-                     'numerics_adjoint_turbulent.cpp',
+su2_cfd_src = files(['transport_model.cpp',
                      'fluid_model_pvdw.cpp',
-                     'integration_time.cpp',
                      'fluid_model_pig.cpp',
                      'iteration_structure.cpp',
                      'fluid_model_inc.cpp',
-                     'numerics_direct_turbulent.cpp',
-                     'numerics_direct_transition.cpp',
                      'definition_structure.cpp',
-                     'numerics_direct_mean_inc.cpp',
                      'fluid_model.cpp',
-                     'numerics_direct_mean.cpp',
-                     'numerics_direct_heat.cpp',
                      'fluid_model_ppr.cpp',
                      'python_wrapper_structure.cpp',
-                     'numerics_structure.cpp',
-                     'numerics_template.cpp',
                      'CMarkerProfileReaderFVM.cpp',
                      'SU2_CFD.cpp'])
 
@@ -105,14 +94,29 @@ su2_cfd_src += files(['solvers/CSolverFactory.cpp',
                       'solvers/CTurbSASolver.cpp',
                       'solvers/CTurbSSTSolver.cpp'])
 
-su2_cfd_src += files(['numerics/elasticity/CFEAElasticity.cpp',
+su2_cfd_src += files(['numerics/CNumerics.cpp',
+                      'numerics/template.cpp',
+                      'numerics/transition.cpp',
+                      'numerics/heat.cpp',
+                      'numerics/flow/convection/roe.cpp',
+                      'numerics/flow/convection/fds.cpp',
+                      'numerics/flow/convection/fvs.cpp',
+                      'numerics/flow/convection/cusp.cpp',
+                      'numerics/flow/convection/hllc.cpp',
+                      'numerics/flow/convection/ausm_slau.cpp',
+                      'numerics/flow/convection/centered.cpp',
+                      'numerics/flow/flow_diffusion.cpp',
+                      'numerics/flow/flow_sources.cpp',
+                      'numerics/continuous_adjoint/adj_convection.cpp',
+                      'numerics/continuous_adjoint/adj_diffusion.cpp',
+                      'numerics/continuous_adjoint/adj_sources.cpp',
+                      'numerics/turbulent/turb_convection.cpp',
+                      'numerics/turbulent/turb_diffusion.cpp',
+                      'numerics/turbulent/turb_sources.cpp',
+                      'numerics/elasticity/CFEAElasticity.cpp',
                       'numerics/elasticity/CFEALinearElasticity.cpp',
-                      'numerics/elasticity/CFEAMeshElasticity.cpp',
                       'numerics/elasticity/CFEANonlinearElasticity.cpp',
-                      'numerics/elasticity/CFEM_NeoHookean_Comp.cpp',
-                      'numerics/elasticity/CFEM_Knowles_NearInc.cpp',
-                      'numerics/elasticity/CFEM_IdealDE.cpp',
-                      'numerics/elasticity/CFEM_DielectricElastomer.cpp'])
+                      'numerics/elasticity/nonlinear_models.cpp'])
 
 su2_cfd_src += files(['interfaces/CInterface.cpp',
                       'interfaces/cfd/CConservativeVarsInterface.cpp',
@@ -131,6 +135,14 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CDiscAdjMultizoneDriver.cpp',
                       'drivers/CDiscAdjSinglezoneDriver.cpp',
                       'drivers/CDummyDriver.cpp'])
+
+su2_cfd_src += files(['integration/CIntegration.cpp',
+                      'integration/CSingleGridIntegration.cpp',
+                      'integration/CMultiGridIntegration.cpp',
+                      'integration/CStructuralIntegration.cpp',
+                      'integration/CFEM_DG_Integration.cpp'])
+
+su2_cfd_src += files(['limiters/CLimiterDetails.cpp'])
 
 if get_option('enable-normal')
   su2_cfd = executable('SU2_CFD',
