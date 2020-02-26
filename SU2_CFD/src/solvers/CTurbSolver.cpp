@@ -27,30 +27,17 @@
 
 
 #include "../../include/solvers/CTurbSolver.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 
 
-CTurbSolver::CTurbSolver(void) : CSolver() {
-
-  FlowPrimVar_i = NULL;
-  FlowPrimVar_j = NULL;
-  lowerlimit    = NULL;
-  upperlimit    = NULL;
-  nVertex       = NULL;
-  nMarker       = 0;
-  Inlet_TurbVars = NULL;
-  snode = nullptr;
-}
+CTurbSolver::CTurbSolver(void) : CSolver() { }
 
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
 
-  FlowPrimVar_i = NULL;
-  FlowPrimVar_j = NULL;
-  lowerlimit    = NULL;
-  upperlimit    = NULL;
-  nMarker       = config->GetnMarker_All();
+  nMarker = config->GetnMarker_All();
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
   nVertex = new unsigned long[nMarker];
@@ -60,13 +47,33 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
 
+#ifdef HAVE_OMP
+  /*--- Get the edge coloring. ---*/
+
+  const auto& coloring = geometry->GetEdgeColoring();
+
+  if (!coloring.empty()) {
+    auto nColor = coloring.getOuterSize();
+    EdgeColoring.resize(nColor);
+
+    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
+      EdgeColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
+    }
+  }
+  ColorGroupSize = geometry->GetEdgeColorGroupSize();
+
+  nPoint = geometry->GetnPoint();
+  omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
+#else
+  EdgeColoring[0] = DummyGridColor<>(geometry->GetnEdge());
+#endif
 }
 
 CTurbSolver::~CTurbSolver(void) {
 
-  if (Inlet_TurbVars != NULL) {
+  if (Inlet_TurbVars != nullptr) {
     for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Inlet_TurbVars[iMarker] != NULL) {
+      if (Inlet_TurbVars[iMarker] != nullptr) {
         for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
           delete [] Inlet_TurbVars[iMarker][iVertex];
         }
@@ -76,84 +83,102 @@ CTurbSolver::~CTurbSolver(void) {
     delete [] Inlet_TurbVars;
   }
 
-  if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
-  if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
-  if (lowerlimit != NULL) delete [] lowerlimit;
-  if (upperlimit != NULL) delete [] upperlimit;
-
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }
 
-void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
+                                  CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  su2double *Turb_i, *Turb_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
-  unsigned long iEdge, iPoint, jPoint;
-  unsigned short iDim, iVar;
+  const bool muscl = config->GetMUSCL_Turb();
+  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
 
-  bool muscl         = config->GetMUSCL_Turb();
-  bool limiter       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  /*--- Pick one numerics object per thread. ---*/
+  CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
+
+  /*--- Static arrays of MUSCL-reconstructed flow primitives and turbulence variables (thread safety). ---*/
+  su2double solution_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
+  su2double solution_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNVARFLOW] = {0.0};
+
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring)
+  {
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+  for(auto k = 0ul; k < color.size; ++k) {
+
+    auto iEdge = color.indices[k];
+
+    unsigned short iDim, iVar;
 
     /*--- Points in edge and normal vectors ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    auto iPoint = geometry->edge[iEdge]->GetNode(0);
+    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
     /*--- Primitive variables w/o reconstruction ---*/
 
-    V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-    V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
+    auto V_i = flowNodes->GetPrimitive(iPoint);
+    auto V_j = flowNodes->GetPrimitive(jPoint);
     numerics->SetPrimitive(V_i, V_j);
 
     /*--- Turbulent variables w/o reconstruction ---*/
 
-    Turb_i = nodes->GetSolution(iPoint);
-    Turb_j = nodes->GetSolution(jPoint);
+    auto Turb_i = nodes->GetSolution(iPoint);
+    auto Turb_j = nodes->GetSolution(jPoint);
     numerics->SetTurbVar(Turb_i, Turb_j);
 
     /*--- Grid Movement ---*/
 
     if (dynamic_grid)
-      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                           geometry->node[jPoint]->GetGridVel());
 
     if (muscl) {
+      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
+      auto Coord_i = geometry->node[iPoint]->GetCoord();
+      auto Coord_j = geometry->node[jPoint]->GetCoord();
+
+      /*--- Reconstruct flow variables. ---*/
+
+      su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
-        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
       }
 
       /*--- Mean flow primitive variables using gradient reconstruction and limiters ---*/
 
-      Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(iPoint);
-      Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(jPoint);
+      auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
+      auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
 
       if (limiter) {
-        Limiter_i = solver_container[FLOW_SOL]->GetNodes()->GetLimiter_Primitive(iPoint);
-        Limiter_j = solver_container[FLOW_SOL]->GetNodes()->GetLimiter_Primitive(jPoint);
+        Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
+        Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
       }
 
       for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+        su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
         if (limiter) {
-          FlowPrimVar_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          FlowPrimVar_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+          flowPrimVar_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+          flowPrimVar_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
         }
         else {
-          FlowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
-          FlowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
+          flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
+          flowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
         }
       }
 
-      numerics->SetPrimitive(FlowPrimVar_i, FlowPrimVar_j);
+      numerics->SetPrimitive(flowPrimVar_i, flowPrimVar_j);
 
-      /*--- Turbulent variables using gradient reconstruction and limiters ---*/
+      /*--- Reconstruct turbulence variables. ---*/
 
       Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
@@ -164,50 +189,62 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       }
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+        su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
         if (limiter) {
-          Solution_i[iVar] = Turb_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          Solution_j[iVar] = Turb_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+          solution_i[iVar] = Turb_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+          solution_j[iVar] = Turb_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
         }
         else {
-          Solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
-          Solution_j[iVar] = Turb_j[iVar] + Project_Grad_j;
+          solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
+          solution_j[iVar] = Turb_j[iVar] + Project_Grad_j;
         }
       }
 
-      numerics->SetTurbVar(Solution_i, Solution_j);
+      numerics->SetTurbVar(solution_i, solution_j);
 
     }
 
     /*--- Add and subtract residual ---*/
 
-    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+    auto residual = numerics->ComputeResidual(config);
 
-    LinSysRes.AddBlock(iPoint, Residual);
-    LinSysRes.SubtractBlock(jPoint, Residual);
+    LinSysRes.AddBlock(iPoint, residual);
+    LinSysRes.SubtractBlock(jPoint, residual);
 
     /*--- Implicit part ---*/
 
-    Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
+    Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
   }
+  } // end color loop
 
 }
 
-void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
-  unsigned long iEdge, iPoint, jPoint;
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  /*--- Pick one numerics object per thread. ---*/
+  CNumerics* numerics = numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS];
+
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring)
+  {
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+  for(auto k = 0ul; k < color.size; ++k) {
+
+    auto iEdge = color.indices[k];
 
     /*--- Points in edge ---*/
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    auto iPoint = geometry->edge[iEdge]->GetNode(0);
+    auto jPoint = geometry->edge[iEdge]->GetNode(1);
 
     /*--- Points coordinates, and normal vector ---*/
 
@@ -217,30 +254,34 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint),
-                           solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint));
+    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint),
+                           flowNodes->GetPrimitive(jPoint));
 
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-    numerics->SetTurbVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
-    numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
+    numerics->SetTurbVar(nodes->GetSolution(iPoint),
+                         nodes->GetSolution(jPoint));
+    numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
+                                 nodes->GetGradient(jPoint));
 
     /*--- Menter's first blending function (only SST)---*/
     if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-      numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
+      numerics->SetF1blending(nodes->GetF1blending(iPoint),
+                              nodes->GetF1blending(jPoint));
 
     /*--- Compute residual, and Jacobians ---*/
 
-    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+    auto residual = numerics->ComputeResidual(config);
 
     /*--- Add and subtract residual, and update Jacobians ---*/
 
-    LinSysRes.SubtractBlock(iPoint, Residual);
-    LinSysRes.AddBlock(jPoint, Residual);
+    LinSysRes.SubtractBlock(iPoint, residual);
+    LinSysRes.AddBlock(jPoint, residual);
 
-    Jacobian.UpdateBlocks<su2double,-1>(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
+    Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
   }
+  } // end color loop
 
 }
 
@@ -339,64 +380,84 @@ void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 
 void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned short iVar;
-  unsigned long iPoint, total_index;
-  su2double Delta, Vol, density_old = 0.0, density = 0.0;
+  const bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
+  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 
-  bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  /*--- Set maximum residual to zero ---*/
+  /*--- Set shared residual variables to 0 and declare
+   *    local ones for current thread to work on. ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) {
+  SU2_OMP_MASTER
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
+  SU2_OMP_BARRIER
+
+  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+  const su2double* coordMax[MAXNVAR] = {nullptr};
+  unsigned long idxMax[MAXNVAR] = {0};
 
   /*--- Build implicit system ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Read the volume ---*/
 
-    Vol = (geometry->node[iPoint]->GetVolume() +
-           geometry->node[iPoint]->GetPeriodicVolume());
+    su2double Vol = (geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume());
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    Delta = Vol / ((nodes->GetLocalCFL(iPoint)/solver_container[FLOW_SOL]->GetNodes()->GetLocalCFL(iPoint))*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
+    su2double Delta = Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
     Jacobian.AddVal2Diag(iPoint, Delta);
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = - LinSysRes[total_index];
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      unsigned long total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = -LinSysRes[total_index];
       LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+
+      su2double Res = fabs(LinSysRes[total_index]);
+      resRMS[iVar] += Res*Res;
+      if (Res > resMax[iVar]) {
+        resMax[iVar] = Res;
+        idxMax[iVar] = iPoint;
+        coordMax[iVar] = geometry->node[iPoint]->GetCoord();
+      }
     }
+  }
+  SU2_OMP_CRITICAL
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    AddRes_RMS(iVar, resRMS[iVar]);
+    AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
   }
 
   /*--- Initialize residual and solution at the ghost points ---*/
 
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
-    }
+  SU2_OMP(sections)
+  {
+    SU2_OMP(section)
+    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+      LinSysRes.SetBlock_Zero(iPoint);
+
+    SU2_OMP(section)
+    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+      LinSysSol.SetBlock_Zero(iPoint);
   }
 
   /*--- Solve or smooth the linear system ---*/
 
-  unsigned long IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-  SetIterLinSolver(IterLinSol);
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  SU2_OMP_MASTER
+  {
+    SetIterLinSolver(iter);
+    SetResLinSolver(System.GetResidual());
+  }
+  SU2_OMP_BARRIER
 
-  /*--- Store the value of the residual. ---*/
-
-  SetResLinSolver(System.GetResidual());
 
   ComputeUnderRelaxationFactor(solver_container, config);
 
@@ -410,49 +471,51 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
       case SA: case SA_E: case SA_COMP: case SA_E_COMP: case SA_NEG:
 
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
           nodes->AddSolution(iPoint, 0, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint]);
         }
-
         break;
 
       case SST: case SST_SUST:
 
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-          if (compressible) {
-            density_old = solver_container[FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint,0);
-            density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          }
-          if (incompressible) {
-            density_old = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-            density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          }
+          su2double density = flowNodes->GetDensity(iPoint);
+          su2double density_old = density;
 
-          for (iVar = 0; iVar < nVar; iVar++) {
-            nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
-          }
+          if (compressible)
+            density_old = flowNodes->GetSolution_Old(iPoint,0);
 
+          for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+            nodes->AddConservativeSolution(iPoint, iVar,
+                      nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
+                      density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+          }
         }
-
         break;
 
     }
   }
 
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  SU2_OMP_MASTER
+  {
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    }
+
+    /*--- MPI solution ---*/
+
+    InitiateComms(geometry, config, SOLUTION_EDDY);
+    CompleteComms(geometry, config, SOLUTION_EDDY);
+
+    /*--- Compute the root mean square residual ---*/
+
+    SetResidual_RMS(geometry, config);
   }
-
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION_EDDY);
-  CompleteComms(geometry, config, SOLUTION_EDDY);
-
-  /*--- Compute the root mean square residual ---*/
-
-  SetResidual_RMS(geometry, config);
+  SU2_OMP_BARRIER
 
 }
 
@@ -474,6 +537,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
   const su2double allowableDecrease = -0.99;
   const su2double allowableIncrease =  0.99;
 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     localUnderRelaxation = 1.0;
@@ -515,24 +579,26 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
 void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
-  /*--- Local variables ---*/
-
-  unsigned short iVar, jVar, iMarker, iDim;
-  unsigned long iPoint, jPoint, iEdge, iVertex;
-
-  su2double *U_time_nM1, *U_time_n, *U_time_nP1;
-  su2double Volume_nM1, Volume_nP1, TimeStep;
-  su2double Density_nM1, Density_n, Density_nP1;
-  su2double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
-
-  bool implicit      = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  unsigned short turbModel = config->GetKind_Turb_Model();
+  const bool sst_model = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  const bool implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+  const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
+  const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
   /*--- Store the physical time step ---*/
 
-  TimeStep = config->GetDelta_UnstTimeND();
+  const su2double TimeStep = config->GetDelta_UnstTimeND();
+
+  /*--- Local variables ---*/
+
+  unsigned short iVar, iMarker, iDim;
+  unsigned long iPoint, jPoint, iVertex;
+
+  const su2double *U_time_nM1 = nullptr, *U_time_n = nullptr, *U_time_nP1 = nullptr;
+  su2double Volume_nM1, Volume_nP1;
+  su2double Density_nM1, Density_n, Density_nP1;
+  const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
+  su2double Residual_GCL;
 
   /*--- Compute the dual time-stepping source term for static meshes ---*/
 
@@ -540,6 +606,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 
     /*--- Loop over all nodes (excluding halos) ---*/
 
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
@@ -558,7 +625,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order).---*/
 
-      if ((turbModel == SST) || (turbModel == SST_SUST)) {
+      if (sst_model) {
 
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/
@@ -578,38 +645,30 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         }
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Residual[iVar] = ( Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*Volume_nP1 / TimeStep;
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Residual[iVar] = ( 3.0*Density_nP1*U_time_nP1[iVar] - 4.0*Density_n*U_time_n[iVar]
-                              +1.0*Density_nM1*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
+          if (first_order)
+            LinSysRes(iPoint,iVar) += ( Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*Volume_nP1 / TimeStep;
+          if (second_order)
+            LinSysRes(iPoint,iVar) += ( 3.0*Density_nP1*U_time_nP1[iVar] - 4.0*Density_n*U_time_n[iVar]
+                                       +1.0*Density_nM1*U_time_nM1[iVar] ) * Volume_nP1/(2.0*TimeStep);
         }
 
       } else {
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
-                              +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
+          if (first_order)
+            LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
+          if (second_order)
+            LinSysRes(iPoint,iVar) += ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
+                                       +1.0*U_time_nM1[iVar] ) * Volume_nP1/(2.0*TimeStep);
         }
       }
 
-      /*--- Store the residual and compute the Jacobian contribution due
-       to the dual time source term. ---*/
-
-      LinSysRes.AddBlock(iPoint, Residual);
+      /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
       if (implicit) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
-        }
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1/TimeStep);
+        if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
       }
+
     }
 
   } else {
@@ -622,7 +681,14 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
      we will loop over the edges and boundaries to compute the GCL component
      of the dual time source term that depends on grid velocities. ---*/
 
-    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    /*--- Loop over edge colors. ---*/
+    for (auto color : EdgeColoring)
+    {
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+    for(auto k = 0ul; k < color.size; ++k) {
+
+      auto iEdge = color.indices[k];
 
       /*--- Get indices for nodes i & j plus the face normal ---*/
 
@@ -648,16 +714,19 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 
       /*--- Multiply by density at node i for the SST model ---*/
 
-      if ((turbModel == SST) || (turbModel == SST_SUST)) {
-        if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
-        else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
+      if (sst_model) {
+        if (incompressible)
+          Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
+        else
+          Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
+
         for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-      } else {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+          LinSysRes(iPoint,iVar) += Density_n*U_time_n[iVar]*Residual_GCL;
       }
-      LinSysRes.AddBlock(iPoint, Residual);
+      else {
+        for (iVar = 0; iVar < nVar; iVar++)
+          LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
+      }
 
       /*--- Compute the GCL component of the source term for node j ---*/
 
@@ -665,66 +734,76 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 
       /*--- Multiply by density at node j for the SST model ---*/
 
-      if ((turbModel == SST) || (turbModel == SST_SUST)) {
-        if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint); // Temporary fix
-        else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(jPoint)[0];
+      if (sst_model) {
+        if (incompressible)
+          Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint); // Temporary fix
+        else
+          Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(jPoint)[0];
+
         for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-      } else {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+          LinSysRes(jPoint,iVar) -= Density_n*U_time_n[iVar]*Residual_GCL;
       }
-      LinSysRes.SubtractBlock(jPoint, Residual);
+      else {
+        for (iVar = 0; iVar < nVar; iVar++)
+          LinSysRes(jPoint,iVar) -= U_time_n[iVar]*Residual_GCL;
+      }
 
     }
+    } // end color loop
 
     /*---  Loop over the boundary edges ---*/
 
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
-        /*--- Get the index for node i plus the boundary face normal ---*/
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          /*--- Get the index for node i plus the boundary face normal ---*/
 
-        /*--- Grid velocities stored at boundary node i ---*/
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-        GridVel_i = geometry->node[iPoint]->GetGridVel();
+          /*--- Grid velocities stored at boundary node i ---*/
 
-        /*--- Compute the GCL term by dotting the grid velocity with the face
-         normal. The normal is negated to match the boundary convention. ---*/
+          GridVel_i = geometry->node[iPoint]->GetGridVel();
 
-        Residual_GCL = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Residual_GCL -= 0.5*(GridVel_i[iDim]+GridVel_i[iDim])*Normal[iDim];
+          /*--- Compute the GCL term by dotting the grid velocity with the face
+           normal. The normal is negated to match the boundary convention. ---*/
 
-        /*--- Compute the GCL component of the source term for node i ---*/
+          Residual_GCL = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Residual_GCL -= 0.5*(GridVel_i[iDim]+GridVel_i[iDim])*Normal[iDim];
 
-        U_time_n = nodes->GetSolution_time_n(iPoint);
+          /*--- Compute the GCL component of the source term for node i ---*/
 
-        /*--- Multiply by density at node i for the SST model ---*/
+          U_time_n = nodes->GetSolution_time_n(iPoint);
 
-        if ((turbModel == SST) || (turbModel == SST_SUST)) {
-          if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
-          else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
-          for (iVar = 0; iVar < nVar; iVar++)
-            Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-        } else {
-          for (iVar = 0; iVar < nVar; iVar++)
-            Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+          /*--- Multiply by density at node i for the SST model ---*/
+
+          if (sst_model) {
+            if (incompressible)
+              Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
+            else
+              Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
+
+            for (iVar = 0; iVar < nVar; iVar++)
+              LinSysRes(iPoint,iVar) += Density_n*U_time_n[iVar]*Residual_GCL;
+          }
+          else {
+            for (iVar = 0; iVar < nVar; iVar++)
+              LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
+          }
+
         }
-        LinSysRes.AddBlock(iPoint, Residual);
-
-      }
       }
     }
 
     /*--- Loop over all nodes (excluding halos) to compute the remainder
      of the dual time-stepping source term. ---*/
 
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
@@ -746,11 +825,11 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
        introduction of the GCL term above, the remainder of the source residual
        due to the time discretization has a new form.---*/
 
-      if ((turbModel == SST) || (turbModel == SST_SUST)) {
+      if (sst_model) {
 
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/
-        if (incompressible){
+        if (incompressible) {
           /*--- This is temporary and only valid for constant-density problems:
           density could also be temperature dependent, but as it is not a part
           of the solution vector it's neither stored for previous time steps
@@ -759,47 +838,39 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
           Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
         }
-        else{
+        else {
           Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint)[0];
           Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
           Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint,0);
         }
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
-            + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+          if (first_order)
+            LinSysRes(iPoint,iVar) += (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
+          if (second_order)
+            LinSysRes(iPoint,iVar) += (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+                                      + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
         }
 
       } else {
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
-            + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+          if (first_order)
+            LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
+          if (second_order)
+            LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+                                       + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
         }
       }
 
-      /*--- Store the residual and compute the Jacobian contribution due
-       to the dual time source term. ---*/
-
-      LinSysRes.AddBlock(iPoint, Residual);
+      /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
       if (implicit) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
-        }
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1/TimeStep);
+        if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
       }
     }
-  }
+
+  } // end dynamic grid
 
 }
 
@@ -824,7 +895,6 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- Skip flow variables ---*/
 
@@ -874,14 +944,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (rbuf_NotMatching != 0) {
+  if (iPoint_Global_Local < nPointDomain) {
     SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
@@ -918,8 +981,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
+  delete [] Restart_Vars; Restart_Vars = nullptr;
+  delete [] Restart_Data; Restart_Data = nullptr;
 
 }
