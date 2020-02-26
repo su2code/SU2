@@ -97,6 +97,7 @@ lib_sources = \
   ../src/adt_structure.cpp \
   ../src/wall_model.cpp \
   ../src/toolboxes/printing_toolbox.cpp \
+  ../src/toolboxes/C1DInterpolation.cpp \
   ../src/toolboxes/CLinearPartitioner.cpp \
   ../src/toolboxes/MMS/CVerificationSolution.cpp \
   ../src/toolboxes/MMS/CIncTGVSolution.cpp \
