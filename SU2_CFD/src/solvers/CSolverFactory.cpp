@@ -97,7 +97,7 @@ CSolver** CSolverFactory::createSolverContainer(ENUM_SOLVER kindSolver, CConfig 
       solver[ADJFLOW_SOL] = createSolver(ADJ_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       break;
     case ADJ_RANS:
-      solver[FLOW_SOL]    = createFlowSolver(INC_RANS, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createFlowSolver(RANS, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = createSolver(ADJ_RANS, solver, geometry, config, iMGLevel);
       solver[TURB_SOL]    = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
       solver[ADJTURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocAdjoint);
