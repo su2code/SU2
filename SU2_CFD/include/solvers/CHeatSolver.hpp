@@ -1,7 +1,7 @@
 /*!
- * \file CHeatSolverFVM.hpp
- * \brief Headers of the CHeatSolverFVM class
- * \author O. Burghardt
+ * \file CHeatSolver.hpp
+ * \brief Headers of the CHeatSolver class
+ * \author F. Palacios, T. Economon
  * \version 7.0.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -28,14 +28,15 @@
 #pragma once
 
 #include "CSolver.hpp"
-#include "../variables/CHeatFVMVariable.hpp"
+#include "../variables/CHeatVariable.hpp"
 
-/*! \class CHeatSolverFVM
- *  \brief Main class for defining the finite-volume heat solver.
- *  \author O. Burghardt
- *  \date January 19, 2018.
+/*!
+ * \class CHeatSolver
+ * \brief Main class for defining the finite-volume heat solver.
+ * \author O. Burghardt
+ * \version 7.0.1 "Blackbird"
  */
-class CHeatSolverFVM final : public CSolver {
+class CHeatSolver final : public CSolver {
 protected:
   unsigned short nVarFlow, nMarker, CurrentMesh;
   su2double **HeatFlux, *HeatFlux_per_Marker, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
@@ -44,7 +45,7 @@ protected:
             *Surface_Areas, Total_HeatFlux_Areas, Total_HeatFlux_Areas_Monitor;
   su2double ***ConjugateVar, ***InterfaceVar;
 
-  CHeatFVMVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  CHeatVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
@@ -56,17 +57,17 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CHeatSolverFVM(void);
+  CHeatSolver(void);
 
   /*!
    * \brief Constructor of the class.
    */
-  CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CHeatSolverFVM(void);
+  virtual ~CHeatSolver(void);
 
   /*!
    * \brief Restart residual and compute gradients.

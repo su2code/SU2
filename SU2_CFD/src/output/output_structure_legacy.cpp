@@ -4544,7 +4544,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
       ConvHist_file[0] << end;
       break;
       
-    case HEAT_EQUATION_FVM:
+    case HEAT_EQUATION:
       ConvHist_file[0] << begin << heat_coeff;
       ConvHist_file[0] << heat_resid << end;
       break;
@@ -4732,7 +4732,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                       config[val_iZone]->GetKind_Solver()  == DISC_ADJ_INC_RANS);
     bool adjoint =  cont_adj || disc_adj;
     bool frozen_visc = (cont_adj && config[val_iZone]->GetFrozen_Visc_Cont()) ||( disc_adj && config[val_iZone]->GetFrozen_Visc_Disc());
-    bool heat =  ((config[val_iZone]->GetKind_Solver() == HEAT_EQUATION_FVM) || (config[val_iZone]->GetWeakly_Coupled_Heat()));
+    bool heat =  ((config[val_iZone]->GetKind_Solver() == HEAT_EQUATION) || (config[val_iZone]->GetWeakly_Coupled_Heat()));
     bool weakly_coupled_heat = config[val_iZone]->GetWeakly_Coupled_Heat();
     bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
                 (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == FEM_EULER) || 
@@ -4768,7 +4768,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
       if (ExtraHeatOutputZone > nZone) {
         SU2_MPI::Error("Error in output routine: Extra output zone number exceeds total number of zones.", CURRENT_FUNCTION);
       }
-      else if ((config[ExtraHeatOutputZone]->GetKind_Solver() != HEAT_EQUATION_FVM)) {
+      else if ((config[ExtraHeatOutputZone]->GetKind_Solver() != HEAT_EQUATION)) {
         SU2_MPI::Error("Error in output routine: No heat solver in extra output zone.", CURRENT_FUNCTION);
       }
       else {
@@ -5137,7 +5137,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         break;
         
 
-      case HEAT_EQUATION_FVM:
+      case HEAT_EQUATION:
 
         /*--- Heat coefficients  ---*/
 
@@ -5475,7 +5475,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
             
             break;
 
-          case HEAT_EQUATION_FVM:
+          case HEAT_EQUATION:
 
             SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e", Total_Heat, Total_MaxHeat, Total_Temperature);
             SPRINTF (heat_resid, ", %14.8e", log10 (residual_heat[0]));
@@ -5767,7 +5767,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
             break;
 
-            case HEAT_EQUATION_FVM :
+            case HEAT_EQUATION :
               if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
               else cout << endl << " IntIter" << "  ExtIter";
 
@@ -6146,7 +6146,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           break;
           
 
-        case HEAT_EQUATION_FVM:
+        case HEAT_EQUATION:
 
           if (!DualTime_Iteration) {
             config[val_iZone]->GetHistFile()[0] << begin << direct_coeff << heat_resid << end;
@@ -12282,7 +12282,7 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
       case FEM_ELASTICITY: case DISC_ADJ_FEM:
         LoadLocalData_Elasticity(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
-      case HEAT_EQUATION_FVM:
+      case HEAT_EQUATION:
         LoadLocalData_Base(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
       case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
@@ -14482,7 +14482,7 @@ void COutputLegacy::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSo
    in this zone for output. ---*/
   
   switch (config->GetKind_Solver()) {
-    case HEAT_EQUATION_FVM: FirstIndex = HEAT_SOL;     break;
+    case HEAT_EQUATION: FirstIndex = HEAT_SOL;     break;
   }
   
   nVar_First = solver[FirstIndex]->GetnVar();
