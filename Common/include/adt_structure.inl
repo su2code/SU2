@@ -2,24 +2,14 @@
  * \file adt_structure.inl
  * \brief In-Line subroutines of the <i>adt_structure.hpp</i> file.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 7.0.1 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,25 +27,36 @@
  
 #pragma once
 
-inline su2_adtComparePointClass::~su2_adtComparePointClass() {}
+inline CADTComparePointClass::~CADTComparePointClass() {}
 
-inline bool su2_adtComparePointClass::operator()(const unsigned long p0,
-                                                 const unsigned long p1) const {
+inline bool CADTComparePointClass::operator()(const unsigned long p0,
+                                              const unsigned long p1) const {
   return pointCoor[nDim*p0+splitDirection] < pointCoor[nDim*p1+splitDirection];
 }
 
-inline su2_adtNodeClass::su2_adtNodeClass() {}
+inline CBBoxTargetClass::CBBoxTargetClass() {}
 
-inline su2_adtNodeClass::~su2_adtNodeClass() {}
+inline CBBoxTargetClass::~CBBoxTargetClass() {}
 
-inline su2_adtNodeClass::su2_adtNodeClass(const su2_adtNodeClass &other) {Copy(other);}
+inline CBBoxTargetClass::CBBoxTargetClass(const CBBoxTargetClass &other) {Copy(other);}
 
-inline su2_adtNodeClass& su2_adtNodeClass::operator=(const su2_adtNodeClass &other) {Copy(other); return (*this);}
+inline CBBoxTargetClass& CBBoxTargetClass::operator=(const CBBoxTargetClass &other) {Copy(other); return (*this);}
 
-inline su2_adtBaseClass::su2_adtBaseClass() {}
+inline CADTNodeClass::CADTNodeClass() {}
 
-inline su2_adtBaseClass::~su2_adtBaseClass() {}
+inline CADTNodeClass::~CADTNodeClass() {}
 
-inline bool su2_adtBaseClass::IsEmpty(void) const { return isEmpty;}
+inline CADTNodeClass::CADTNodeClass(const CADTNodeClass &other) {Copy(other);}
 
-inline su2_adtPointsOnlyClass::~su2_adtPointsOnlyClass() {}
+inline CADTNodeClass& CADTNodeClass::operator=(const CADTNodeClass &other) {Copy(other); return (*this);}
+
+inline CADTBaseClass::CADTBaseClass() {}
+
+inline CADTBaseClass::~CADTBaseClass() {}
+
+inline bool CADTBaseClass::IsEmpty(void) const { return isEmpty;}
+
+inline CADTPointsOnlyClass::~CADTPointsOnlyClass() {}
+
+inline CADTElemClass::~CADTElemClass() {}
+

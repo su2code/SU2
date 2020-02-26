@@ -30,7 +30,7 @@
  GCC does provides these definitions in stdint.h, but it may require some
  modifications on other architectures.
 --------------------------------------------------------------------------*/
-#define IDXTYPEWIDTH 32
+#define IDXTYPEWIDTH 64
 
 
 /*--------------------------------------------------------------------------
@@ -63,7 +63,7 @@
 /* Include c99 int definitions and need constants. When building the library,
  * these are already defined by GKlib; hence the test for _GKLIB_H_ */
 #ifndef _GKLIB_H_
-#ifdef COMPILER_MSC
+#if defined COMPILER_MSC && _MSC_VER < 1800
 #include <limits.h>
 
 typedef __int32 int32_t;

@@ -2,24 +2,14 @@
  * fluid_model_pig.cpp
  * \brief Source of the ideal gas model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 6.1.0 "Falcon"
+ * \version 7.0.1 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "../include/fluid_model.hpp"
 
 CIdealGas::CIdealGas() : CFluidModel() {
@@ -43,6 +34,7 @@ CIdealGas::CIdealGas() : CFluidModel() {
   Gamma_Minus_One = 0.0;
   Gas_Constant = 0.0;
   Cp = 0.0;
+  Cv = 0.0;
 }
 
 
@@ -51,8 +43,20 @@ CIdealGas::CIdealGas(su2double gamma, su2double R ) : CFluidModel() {
   Gamma_Minus_One = Gamma - 1.0;
   Gas_Constant = R;
   Cp = Gamma/Gamma_Minus_One*Gas_Constant;
+  Cv = Cp - R;
+
+  ComputeEntropy = true;
 }
 
+CIdealGas::CIdealGas(su2double gamma, su2double R, bool CompEntropy) : CFluidModel() {
+  Gamma = gamma;
+  Gamma_Minus_One = Gamma - 1.0;
+  Gas_Constant = R;
+  Cp = Gamma/Gamma_Minus_One*Gas_Constant;
+  Cv = Cp - R;
+
+  ComputeEntropy = CompEntropy;
+}
 
 CIdealGas::~CIdealGas(void) {
 
@@ -65,12 +69,13 @@ void CIdealGas::SetTDState_rhoe (su2double rho, su2double e ) {
   Pressure = Gamma_Minus_One*Density*StaticEnergy;
   Temperature = Gamma_Minus_One*StaticEnergy/Gas_Constant;
   SoundSpeed2 = Gamma*Pressure/Density;
-  Entropy = (1.0/Gamma_Minus_One*log(Temperature) + log(1.0/Density))*Gas_Constant;
   dPdrho_e = Gamma_Minus_One*StaticEnergy;
   dPde_rho = Gamma_Minus_One*Density;
   dTdrho_e = 0.0;
   dTde_rho = Gamma_Minus_One/Gas_Constant;
 
+  if( ComputeEntropy )
+    Entropy = (1.0/Gamma_Minus_One*log(Temperature) + log(1.0/Density))*Gas_Constant;
 }
 
 void CIdealGas::SetTDState_PT (su2double P, su2double T ) {

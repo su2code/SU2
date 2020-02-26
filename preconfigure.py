@@ -3,20 +3,20 @@
 ## \file configure.py
 #  \brief An extended configuration script.
 #  \author T. Albring
-#  \version 6.1.0 "Falcon"
+#  \version 7.0.1 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -67,6 +67,8 @@ def main():
                       help="Enable mpi support", dest="mpi_enabled", default=False)
     parser.add_option("--enable-PY_WRAPPER", action="store_true",
                       help="Enable Python wrapper compilation", dest="py_wrapper_enabled", default=False)
+    parser.add_option("--disable-tecio", action="store_true",
+                      help="Disable Tecplot binary support", dest="tecio_disabled", default=False)
     parser.add_option("--disable-normal", action="store_true",
                       help="Disable normal mode support", dest="normal_mode", default=False)
     parser.add_option("-c" , "--check", action="store_true",
@@ -118,6 +120,7 @@ def main():
                   conf_environ,
                   options.mpi_enabled,
                   options.py_wrapper_enabled,
+                  options.tecio_disabled,
                   modes,
                   made_adolc,
                   made_codi)
@@ -402,10 +405,13 @@ def configure(argument_dict,
               conf_environ,
               mpi_support,
               py_wrapper,
+              tecio,
               modes,
               made_adolc,
               made_codi):
 
+    # Boostrap to generate Makefile.in
+    bootstrap_command = './bootstrap'
     # Set the base command for running configure
     configure_base = '../configure'
 
@@ -418,8 +424,15 @@ def configure(argument_dict,
         configure_base = configure_base + ' --enable-mpi'
     if py_wrapper:
         configure_base = configure_base + ' --enable-PY_WRAPPER'
+    if tecio:
+        configure_base = configure_base + ' --disable-tecio'
 
     build_dirs = ''
+   
+    print(  '\nPreparing build environment\n' \
+            '=====================================================================')
+
+    run_command(bootstrap_command, 'bootstrap.log', 'bootstrap.err', conf_environ)
 
     # Create the commands for the different configurations and run configure
     for key in modes:
@@ -544,7 +557,7 @@ def header():
 
     print('-------------------------------------------------------------------------\n'\
           '|    ___ _   _ ___                                                      | \n'\
-          '|   / __| | | |_  )   Release 6.1.0 \'Falcon\'                            | \n'\
+          '|   / __| | | |_  )   Release 6.2.0 \'Falcon\'                            | \n'\
           '|   \__ \ |_| |/ /                                                      | \n'\
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\
@@ -563,7 +576,7 @@ def header():
           '| - Prof. Edwin van der Weide\'s group at the University of Twente.      | \n'\
           '| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  | \n'\
           '------------------------------------------------------------------------- \n'\
-          '| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       | \n'\
+          '| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       | \n'\
           '|                      Tim Albring, and the SU2 contributors.           | \n'\
           '|                                                                       | \n'\
           '| SU2 is free software; you can redistribute it and/or                  | \n'\

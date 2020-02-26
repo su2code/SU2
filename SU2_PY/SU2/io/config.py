@@ -3,30 +3,20 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.1.0 "Falcon"
+#  \version 7.0.1 "Blackbird"
 #
-# The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
-# with selected contributions from the open-source community.
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
 #
-# The main research teams contributing to the current release are:
-#  - Prof. Juan J. Alonso's group at Stanford University.
-#  - Prof. Piero Colonna's group at Delft University of Technology.
-#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Vincent Terrapon's group at the University of Liege.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
-#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
-#
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
-#                      Tim Albring, and the SU2 contributors.
+# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-#
+# 
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -40,6 +30,7 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
+from .historyMap import history_header_map as historyOutFields
 import numpy as np
 from ..util import ordered_bunch, switch
 from .tools import *
@@ -105,8 +96,46 @@ class Config(ordered_bunch):
             except:
                 print('Unexpected error: ', sys.exc_info()[0])
                 raise
-        
         self._filename = filename
+
+        if self.get("TIME_DOMAIN") == "YES":
+            objFuncsFields = self.get("OPT_OBJECTIVE")
+            histFields = self.get("HISTORY_OUTPUT")
+            diff_objective = self.get("OBJECTIVE_FUNCTION")
+            constrFuncFields = self.get("OPT_CONSTRAINT")
+
+            #OPT_OBJECTIVES
+            if bool (objFuncsFields):
+                for key in objFuncsFields:
+                    tavg_keyGroup = "TAVG_" + historyOutFields[key]["GROUP"]
+                    if  not tavg_keyGroup in histFields:
+                        histFields.append(tavg_keyGroup)
+
+                    dtavg_keyGroup = "D_TAVG_" + historyOutFields[key]["GROUP"]
+                    if not dtavg_keyGroup in histFields:
+                        histFields.append(dtavg_keyGroup)
+
+            #OPT_CONSTRAINTS
+            if bool (constrFuncFields):
+                for key in constrFuncFields:
+                    eqIneqConstrFunc = constrFuncFields.get(key)
+                    for key_inner in eqIneqConstrFunc:
+                        tavg_keyGroup = "TAVG_" + historyOutFields[key_inner]["GROUP"]
+                        if  not tavg_keyGroup in histFields:
+                            histFields.append(tavg_keyGroup)
+
+            #DIRECT_DIFF Field
+            if diff_objective in historyOutFields:
+                tavg_keyGroup = "TAVG_" + historyOutFields[diff_objective]["GROUP"]
+                if  not tavg_keyGroup in histFields:
+                    histFields.append(tavg_keyGroup)
+
+                dtavg_keyGroup = "D_TAVG_" + historyOutFields[diff_objective]["GROUP"]
+                if not dtavg_keyGroup in histFields:
+                    histFields.append(dtavg_keyGroup)
+
+            self["HISTORY_OUTPUT"]= histFields
+
     
     def read(self,filename):
         """ reads from a config file """
@@ -183,11 +212,10 @@ class Config(ordered_bunch):
         param_dv['PARAM'] = def_dv['PARAM']
         param_dv['FFDTAG'] = def_dv['FFDTAG']
         param_dv['SIZE']   = def_dv['SIZE']
-
-        self.update({ 'DV_MARKER'        : def_dv['MARKER'][0] ,
-                      'DV_VALUE_OLD'     : dv_old              ,
-                      'DV_VALUE_NEW'     : dv_new              })
         
+        self.update({ 'DV_VALUE_OLD'     : dv_old              ,
+                      'DV_VALUE_NEW'     : dv_new              })
+
     def __eq__(self,konfig):
         return super(Config,self).__eq__(konfig)
     def __ne__(self,konfig):
@@ -392,7 +420,7 @@ def read_config(filename):
                 # remove white space
                 this_value = ''.join(this_value.split())                
                 # split by comma, map to float, store in dictionary
-                data_dict[this_param] = map(float,this_value.split(","))
+                data_dict[this_param] = list(map(float,this_value.split(",")))
                 break              
 
             # float parameters
@@ -408,14 +436,25 @@ def read_config(filename):
             # int parameters
             if case("NUMBER_PART")            or\
                case("AVAILABLE_PROC")         or\
-               case("EXT_ITER")               or\
+               case("ITER")               or\
                case("TIME_INSTANCES")         or\
                case("UNST_ADJOINT_ITER")      or\
                case("ITER_AVERAGE_OBJ")       or\
+               case("INNER_ITER")             or\
+               case("OUTER_ITER")             or\
+               case("TIME_ITER")             or\
                case("ADAPT_CYCLES")           :
                 data_dict[this_param] = int(this_value)
                 break                
             
+            if case("OUTPUT_FILES"):
+                data_dict[this_param] = this_value.strip("()").split(",")
+                data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
+                break
+            if case("HISTORY_OUTPUT"):
+                data_dict[this_param] = this_value.strip("()").split(",")
+                data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
+                break
             
             # unitary design variable definition
             if case("DEFINITION_DV"):
@@ -488,7 +527,7 @@ def read_config(filename):
                 # remove white space
                 this_value = ''.join(this_value.split())
                 #split by ; 
-                this_def={}
+                this_def=OrderedDict()
                 this_value = this_value.split(";")
                 
                 for  this_obj in this_value:       
@@ -584,6 +623,14 @@ def read_config(filename):
         
     #: for line
 
+    if 'OPT_CONSTRAINT' in data_dict: 
+        if 'BUFFET' in data_dict['OPT_CONSTRAINT']['EQUALITY'] or 'BUFFET' in data_dict['OPT_CONSTRAINT']['INEQUALITY']:
+            data_dict['BUFFET_MONITORING'] = "YES"
+
+    if 'OPT_OBJECTIVE' in data_dict:
+        if 'BUFFET' in data_dict['OPT_OBJECTIVE']:
+            data_dict['BUFFET_MONITORING'] = "YES"
+
     #hack - twl
     if 'DV_VALUE_NEW' not in data_dict:
         data_dict['DV_VALUE_NEW'] = [0]
@@ -626,6 +673,8 @@ def read_config(filename):
         data_dict['FREESTREAM_PRESSURE'] = 101325.0
     if 'FREESTREAM_TEMPERATURE' not in data_dict:
         data_dict['FREESTREAM_TEMPERATURE'] = 288.15
+    if 'MARKER_OUTLET' not in data_dict:
+        data_dict['MARKER_OUTLET'] = '(NONE)'
 
     #
     # Multipoints requires some particular default values
@@ -699,6 +748,30 @@ def read_config(filename):
         Temperature_List +=  str(Temperature_Value)
       Temperature_List += ")"
       data_dict['MULTIPOINT_FREESTREAM_TEMPERATURE'] = Temperature_List
+
+    if 'MULTIPOINT_OUTLET_VALUE' not in data_dict:
+      if 'NONE' in data_dict['MARKER_OUTLET']:
+        Outlet_Value = 0.0
+      else:
+        Outlet_Value = data_dict['MARKER_OUTLET'].replace("(", "").replace(")", "").split(',')[1]
+      Outlet_Value_List = "("
+      for i in range(multipoints):
+        if i != 0: Outlet_Value_List +=  ", "
+        Outlet_Value_List +=  str(Outlet_Value)
+      Outlet_Value_List += ")"
+      data_dict['MULTIPOINT_OUTLET_VALUE'] = Outlet_Value_List
+
+    if 'MULTIPOINT_MESH_FILENAME' not in data_dict:
+      Mesh_Filename = data_dict['MESH_FILENAME']
+      Mesh_List = "("
+      for i in range(multipoints):
+        if i != 0: Mesh_List +=  ", "
+        Mesh_List +=  str(Mesh_Filename)
+      Mesh_List += ")"
+      data_dict['MULTIPOINT_MESH_FILENAME'] = Mesh_List  
+
+    if 'HISTORY_OUTPUT' not in data_dict:
+        data_dict['HISTORY_OUTPUT'] = ['ITER', 'RMS_RES']
 
     #
     # Default values for optimization parameters (needed for some eval functions
@@ -809,7 +882,24 @@ def write_config(filename,param_dict):
                         output_file.write(", ")
                 output_file.write(" )") 
                 break                
+            if case("OUTPUT_FILES"):
+                n_lists = len(new_value)
+                output_file.write("(")
+                for i_value in range(n_lists):
+                    output_file.write(new_value[i_value])
+                    if i_value+1 < n_lists:
+                        output_file.write(", ")
+                output_file.write(")")
+                break
             
+            if case("HISTORY_OUTPUT"):
+                n_lists = len(new_value)
+                for i_value in range(n_lists):
+                    output_file.write(new_value[i_value])
+                    if i_value+1 < n_lists:
+                        output_file.write(", ")
+                break
+
             # semicolon delimited lists of comma delimited lists
             if case("DV_PARAM") :
 
@@ -846,7 +936,10 @@ def write_config(filename,param_dict):
             if case("TIME_INSTANCES")         : pass
             if case("AVAILABLE_PROC")         : pass
             if case("UNST_ADJOINT_ITER")      : pass
-            if case("EXT_ITER")               :
+            if case("ITER")              or\
+               case("TIME_ITER")         or\
+               case("INNER_ITER")        or\
+               case("OUTER_ITER"): 
                 output_file.write("%i" % new_value)
                 break
                         

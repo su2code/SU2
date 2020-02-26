@@ -1,30 +1,22 @@
-***********************************************
-**                   README                  **
-***********************************************
+This directory contains four entries in addition to this readme:
 
-To build the TecIO library and/or the pltview utility, 
-simply run the Runmake script in this directory.
+  teciosrc                   Contains the source code to build the
+                             Tecio static library
 
-If customization is needed, it will most likely be done
-in GLOBAL.h (to identify machine as 64 bit) and/or in
-dataio4.c.  Just look for CRAY in dataio4.c and you
-will find most of the critical areas.  Note that the
-existing code defined by CRAY is quite old and has
-not been in use for some time.
+  teciompisrc                Contains the source code to build the
+                             Tecio-MPI (MPI parallel) library
 
-Each example has its own Makefile. You may have to adjust
-the variables at the top of the Makefile for your platform.
+  examples                   Contains subfolders with Tecio example programs
 
+  360_data_format_guide.pdf  Tecplot's Data Format Guide, which includes
+                             Tecio library documentation
 
-ReadTec()
+Please see the readme in the teciosrc or teciompisrc directory for
+information on how to build the library. All examples may be used with
+Tecio, but only the partitioned examples ("partitioned" is part of
+the directory name) support Tecio-MPI. See also examples/readme.txt 
+for more information.
 
-The ReadTec() function is included in the tecio library
-but is not supported by Tecplot, Inc.  ReadTec is used 
-to read Tecplot binary data files (all versions at or 
-older than the Tecplot version providing the tecio 
-library). See tecsrc/DATAUTIL.h for more information.
-
-The pltview example app gives an example of using ReadTec
-to read just the header from a file as well as loading all
-field data from a file.
+The source code contained in this package is redistributable. Please see
+tecio_license_agreement.txt in either source directory for more information.
 

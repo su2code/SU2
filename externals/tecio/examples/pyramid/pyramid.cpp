@@ -6,22 +6,24 @@
 
 int main()
 {
-    /* Call TECINI112 */
-    INTEGER4 FileType  = 0;   /* 0 for full file           */
-    INTEGER4 Debug     = 0;
-    INTEGER4 VIsDouble = 1;
-    INTEGER4 I         = 0;  /* use to check return codes */
+    /* Call TECINI142 */
+    INTEGER4 FileType   = 0;   /* 0 for full file           */
+    INTEGER4 FileFormat = 0; // 0 == PLT, 1 == SZPLT; Only PLT is currently 
+                             // supported for polyhedral zones
+    INTEGER4 Debug      = 0;
+    INTEGER4 VIsDouble  = 1;
+    INTEGER4 I          = 0;  /* use to check return codes */
 
-    I = TECINI112((char*)"Pyramid",       /* Data Set Title       */
+    I = TECINI142((char*)"Pyramid",       /* Data Set Title       */
                   (char*)"X Y Z",         /* Variable List        */
                   (char*)"pyramid.plt",   /* File Name            */
                   (char*)".",             /* Scratch Directory    */
+                  &FileFormat,
                   &(FileType),
                   &(Debug),
                   &(VIsDouble));
 
-
-    /* Call TECZNE112 */
+    /* Call TECZNE142 */
     INTEGER4  ZoneType   = 7;         /* 7 for FEPolyhedron */
     INTEGER4  NumNodes   = 5;         /* number of unique nodes */
     INTEGER4  NumElems   = 1;         /* number of elements */
@@ -59,7 +61,7 @@ int main()
     INTEGER4  NumBConns       = 0;   /* No Boundary Connections */
     INTEGER4  NumBItems       = 0;   /* No Boundary Items */
 
-    I = TECZNE112((char*)"Polyhedral Zone (Octahedron)",
+    I = TECZNE142((char*)"Polyhedral Zone (Octahedron)",
                   &ZoneType,
                   &NumNodes,
                   &NumElems,
@@ -106,18 +108,18 @@ int main()
     Y[4] = 2;
     Z[4] = 0;
 
-    /* Write the data (using TECDAT112) */
+    /* Write the data (using TECDAT142) */
     INTEGER4 DIsDouble = 1;  /* One for double precision */
-    I = TECDAT112(&NumNodes, X, &DIsDouble);
-    I = TECDAT112(&NumNodes, Y, &DIsDouble);
-    I = TECDAT112(&NumNodes, Z, &DIsDouble);
+    I = TECDAT142(&NumNodes, X, &DIsDouble);
+    I = TECDAT142(&NumNodes, Y, &DIsDouble);
+    I = TECDAT142(&NumNodes, Z, &DIsDouble);
 
     delete X;
     delete Y;
     delete Z;
 
     /* Define the Face Nodes.
-
+     *
      * The FaceNodes array is used to indicate which nodes define
      * which face. As mentioned earlier, the number of the nodes is
      * implicitly defined by the order in which the nodal data is
@@ -201,22 +203,19 @@ int main()
     FaceRightElems[3]  = 1;
     FaceRightElems[4]  = 1;
 
-    /* Write the face map (created above) using TECPOLY112. */
-    I = TECPOLY112(FaceNodeCounts, /* The face node counts array */
-                   FaceNodes,      /* The face nodes array */
-                   FaceLeftElems,  /* The left elements array  */
-                   FaceRightElems, /* The right elements array  */
-                   NULL,       /* No boundary connection counts */
-                   NULL,       /* No boundary connection elements */
-                   NULL);      /* No boundary connection zones */
+    /* Write the face map (created above) using TECPOLYFACE142. */
+    I = TECPOLYFACE142(&NumFaces,
+                       FaceNodeCounts,  /* The face node counts array */
+                       FaceNodes,       /* The face nodes array */
+                       FaceLeftElems,   /* The left elements array  */
+                       FaceRightElems); /* The right elements array  */
 
     delete FaceNodeCounts;
     delete FaceNodes;
     delete FaceLeftElems;
     delete FaceRightElems;
 
-    I = TECEND112();
+    I = TECEND142();
     return 0;
 }
-
 /* DOCEND */

@@ -2,24 +2,14 @@
  * \file grid_adaptation_structure.cpp
  * \brief Main subroutines for grid adaptation
  * \author F. Palacios
- * \version 6.1.0 "Falcon"
+ * \version 7.0.1 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,6 +26,15 @@
  */
 
 #include "../include/grid_adaptation_structure.hpp"
+#include "../include/geometry/primal_grid/CPrimalGrid.hpp"
+#include "../include/geometry/primal_grid/CLine.hpp"
+#include "../include/geometry/primal_grid/CTriangle.hpp"
+#include "../include/geometry/primal_grid/CQuadrilateral.hpp"
+#include "../include/geometry/primal_grid/CTetrahedron.hpp"
+#include "../include/geometry/primal_grid/CHexahedron.hpp"
+#include "../include/geometry/primal_grid/CPyramid.hpp"
+#include "../include/geometry/primal_grid/CPrism.hpp"
+#include "../include/geometry/primal_grid/CVertexMPI.hpp"
 #include <math.h>
 
 CGridAdaptation::CGridAdaptation(CGeometry *geometry, CConfig *config) {
@@ -48,10 +47,6 @@ CGridAdaptation::CGridAdaptation(CGeometry *geometry, CConfig *config) {
 	nDim = geometry->GetnDim();
 	
 	switch (config->GetKind_Solver()) {			
-		
-		case POISSON_EQUATION:
-			nVar = 1;
-			break;
 			
 		default:
 			nVar = geometry->GetnDim()+2;
@@ -127,7 +122,7 @@ void CGridAdaptation::GetFlowSolution(CGeometry *geometry, CConfig *config) {
 
 	string text_line;
 		
-	string mesh_filename = config->GetSolution_FlowFileName();
+	string mesh_filename = config->GetSolution_FileName();
 	ifstream restart_file;
 
 	char *cstr = new char [mesh_filename.size()+1];
@@ -164,7 +159,7 @@ void CGridAdaptation::GetFlowResidual(CGeometry *geometry, CConfig *config) {
 	su2double dummy;
 	string text_line;
 	
-	string mesh_filename = config->GetSolution_FlowFileName();
+	string mesh_filename = config->GetSolution_FileName();
 	ifstream restart_file;
 	
 	char *cstr = new char [mesh_filename.size()+1];
@@ -3214,7 +3209,8 @@ void CGridAdaptation::SetIndicator_Flow(CGeometry *geometry, CConfig *config, un
   }
 		
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         Point = geometry->vertex[iMarker][iVertex]->GetNode();
         Solution_Vertex = ConsVar_Sol[Point][0];
@@ -3224,7 +3220,8 @@ void CGridAdaptation::SetIndicator_Flow(CGeometry *geometry, CConfig *config, un
           Gradient[Point][iDim] = Gradient[Point][iDim] - Partial_Res;
         }
       }
-		
+    }
+  
   for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
     for (iDim = 0; iDim < nDim; iDim++) {
       DualArea = geometry->node[iPoint]->GetVolume();
@@ -3281,7 +3278,8 @@ void CGridAdaptation::SetIndicator_Adj(CGeometry *geometry, CConfig *config, uns
   }
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         Point = geometry->vertex[iMarker][iVertex]->GetNode();
         Solution_Vertex = AdjVar_Sol[Point][0];
@@ -3291,6 +3289,7 @@ void CGridAdaptation::SetIndicator_Adj(CGeometry *geometry, CConfig *config, uns
           Gradient[Point][iDim] = Gradient[Point][iDim] - Partial_Res;
         }
       }
+    }
   
   for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -3351,7 +3350,8 @@ void CGridAdaptation::SetIndicator_FlowAdj(CGeometry *geometry, CConfig *config)
   }
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         Point = geometry->vertex[iMarker][iVertex]->GetNode();
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -3360,6 +3360,7 @@ void CGridAdaptation::SetIndicator_FlowAdj(CGeometry *geometry, CConfig *config)
           Gradient_Adj[Point][iDim] = Gradient_Adj[Point][iDim] - AdjVar_Sol[Point][0] * Normal[iDim];
         }
       }
+    }
   
   for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
     for (iDim = 0; iDim < nDim; iDim++) {

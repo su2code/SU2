@@ -1,20 +1,34 @@
 /* This example creates a simple set of IJ-ordered zones */
 /* DOCSTART:ij_ordered.txt*/
+
+
+// Internal testing flags
+// RUNFLAGS:none
+// RUNFLAGS:--szl
+
+
 #include "TECIO.h"
 #include "MASTER.h" /* for defintion of NULL */
+#include <string.h>
 
-int main()
+int main(int argc, const char *argv[])
 {
-    INTEGER4 Debug     = 1;
-    INTEGER4 VIsDouble = 0;
-    INTEGER4 FileType  = 0;
-    INTEGER4 I         = 0; /* Used to track return codes */
+    INTEGER4 Debug      = 1;
+    INTEGER4 VIsDouble  = 0;
+    INTEGER4 FileType   = 0;
+    INTEGER4 fileFormat; // 0 == PLT, 1 == SZPLT
+    if (argc == 2 && strncmp(argv[1],"--szl",5) == 0)
+        fileFormat = 1; 
+    else
+        fileFormat = 0; 
+
+    INTEGER4 I          = 0; /* Used to track return codes */
 
     /*
      * Open the file and write the tecplot datafile
      * header information
      */
-    I = TECINI112((char*)"IJ Ordered Zones", /* Name of the entire
+    I = TECINI142((char*)"IJ Ordered Zones", /* Name of the entire
                                               * dataset.
                                               */
                   (char*)"X Y P",  /* Defines the variables for the data
@@ -26,6 +40,7 @@ int main()
                                     */
                   (char*)"ij_ordered.plt",
                   (char*)".",      /* Scratch Directory */
+                  &fileFormat,
                   &FileType,
                   &Debug,
                   &VIsDouble);
@@ -91,7 +106,7 @@ int main()
 
     /*  Ordered Zone */
     INTEGER4 ZoneType = 0;
-    I = TECZNE112((char*)"Ordered Zone",
+    I = TECZNE142((char*)"Ordered Zone",
                   &ZoneType,
                   &IMax,
                   &JMax,
@@ -113,11 +128,11 @@ int main()
                   NULL,
                   &ShrConn);
     INTEGER4 III = IMax * JMax * KMax;
-    I   = TECDAT112(&III, X1, &DIsDouble);
-    I   = TECDAT112(&III, Y1, &DIsDouble);
-    I   = TECDAT112(&III, P1, &DIsDouble);
+    I   = TECDAT142(&III, X1, &DIsDouble);
+    I   = TECDAT142(&III, Y1, &DIsDouble);
+    I   = TECDAT142(&III, P1, &DIsDouble);
 
-    I = TECZNE112((char*)"Ordered Zone2",
+    I = TECZNE142((char*)"Ordered Zone2",
                   &ZoneType,
                   &IMax,
                   &JMax,
@@ -139,11 +154,11 @@ int main()
                   NULL,
                   &ShrConn);
 
-    I   = TECDAT112(&III, X2, &DIsDouble);
-    I   = TECDAT112(&III, Y2, &DIsDouble);
-    I   = TECDAT112(&III, P2, &DIsDouble);
+    I   = TECDAT142(&III, X2, &DIsDouble);
+    I   = TECDAT142(&III, Y2, &DIsDouble);
+    I   = TECDAT142(&III, P2, &DIsDouble);
 
-    I = TECEND112();
+    I = TECEND142();
     return 0;
 }
 /* DOCEND */

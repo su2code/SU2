@@ -46,14 +46,14 @@ File:	ADF.h
 #include "cgnstypes.h"
 
 #if defined(_WIN32) && defined(BUILD_DLL)
-# define EXTERN extern _declspec(dllexport)
+# define EXTERN extern __declspec(dllexport)
 #else
 # define EXTERN extern
 #endif
 
 /***********************************************************************
 	Defines:  These defines are used within the ADF core routines
-	to specify the size in bytes of varoius items.
+	to specify the size in bytes of various items.
    Caution:  Simply changing a define here may not correctly adjust the
 	ADF core code.  These sizes are provided for reference only!
 ***********************************************************************/

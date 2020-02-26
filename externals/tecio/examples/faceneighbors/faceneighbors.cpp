@@ -17,12 +17,13 @@ int main()
 
     /* DOCSTART:faceneighbors_tecini.txt*/
 
-    INTEGER4 Debug     = 1;
-    INTEGER4 VIsDouble = 0;
-    INTEGER4 FileType  = 0;
-    INTEGER4 I         = 0;  /* Used to track return codes */
+    INTEGER4 Debug      = 1;
+    INTEGER4 VIsDouble  = 0;
+    INTEGER4 FileType   = 0;
+    INTEGER4 FileFormat = 0; // 0 == PLT, 1 == SZPLT
+    INTEGER4 I          = 0;  /* Used to track return codes */
 
-    I = TECINI112((char*)"Face Neighbors Example", /* Specifies the name
+    I = TECINI142((char*)"Face Neighbors Example", /* Specifies the name
                                                     * of the entire
                                                     * dataset
                                                     */
@@ -43,6 +44,7 @@ int main()
                                                     * file name.
                                                     */
                   (char*)".",
+                  &FileFormat,
                   &FileType,                       /* The FileType is set to
                                                     * zero, indicating it is
                                                     * a full file (containing
@@ -124,7 +126,7 @@ int main()
                                          * purposes.
                                          */
 
-    I = TECZNE112((char*)"Zone 1",
+    I = TECZNE142((char*)"Zone 1",
                   &ZoneType,
                   &NumPts,
                   &NumElems,
@@ -198,9 +200,9 @@ int main()
                              */
 
     /* Call TECDAT once for each variable */
-    I   = TECDAT112(&NumPts, &X[0], &DIsDouble);
-    I   = TECDAT112(&NumPts, &Y[0], &DIsDouble);
-    I   = TECDAT112(&NumPts, &P[0], &DIsDouble);
+    I   = TECDAT142(&NumPts, &X[0], &DIsDouble);
+    I   = TECDAT142(&NumPts, &Y[0], &DIsDouble);
+    I   = TECDAT142(&NumPts, &P[0], &DIsDouble);
     /* DOCEND */
 
     /*  Define the face neighbors connections.
@@ -220,7 +222,7 @@ int main()
     INTEGER4 ConnList[8] = {1, 3, 4, 2,
                             3, 5, 6, 4
                            };
-    I   = TECNOD112(ConnList);
+    I   = TECNOD142(ConnList);
     /* DOCEND */
 
     /*  TIP! It is important to provide the node list in either a
@@ -262,7 +264,7 @@ int main()
 
     /* DOCSTART:faceneighbors_tecface1.txt*/
     INTEGER4 FaceConn[4] = {2, 2, 2, 1};
-    I   = TECFACE112(FaceConn);
+    I   = TECFACE142(FaceConn);
     /* DOCEND */
 
     /* The creation of Zone 1 is complete.  We are ready to create
@@ -272,7 +274,7 @@ int main()
      */
     /* DOCSTART:faceneighbors_teczne2.txt*/
     /* Call TECZNE to create Zone 2 */
-    I = TECZNE112((char*)"Zone 2",
+    I = TECZNE142((char*)"Zone 2",
                   &ZoneType,
                   &NumPts,
                   &NumElems,
@@ -311,9 +313,9 @@ int main()
         P2[ii] = 2 * (float)ii;
     }
 
-    I   = TECDAT112(&NumPts, &X2[0], &DIsDouble);
-    I   = TECDAT112(&NumPts, &Y[0], &DIsDouble);
-    I   = TECDAT112(&NumPts, &P2[0], &DIsDouble);
+    I   = TECDAT142(&NumPts, &X2[0], &DIsDouble);
+    I   = TECDAT142(&NumPts, &Y[0], &DIsDouble);
+    I   = TECDAT142(&NumPts, &P2[0], &DIsDouble);
 
     delete X;
     delete Y;
@@ -329,7 +331,7 @@ int main()
      */
 
     /* DOCSTART:faceneighbors_tecnod2.txt*/
-    I   = TECNOD112(ConnList);
+    I   = TECNOD142(ConnList);
     /* DOCEND */
 
     /* We will now specify the face neighbor connection with
@@ -342,12 +344,12 @@ int main()
                                        * neighbor to cell 2 in
                                        * zone 1.
                                        */
-    I   = TECFACE112(FaceConn2);
+    I   = TECFACE142(FaceConn2);
     /* DOCEND */
 
     /* Call TECEND to close the file */
     /* DOCSTART:faceneighbors_tecend.txt*/
-    I = TECEND112();
+    I = TECEND142();
     /* DOCEND */
 
     return 0;

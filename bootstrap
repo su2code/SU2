@@ -17,10 +17,10 @@ function check_autotool_prerequisites ()
 {
     # prerequisite versions
     automake_major=1
-    automake_minor=12
+    automake_minor=15
 
     autoconf_major=2
-    autoconf_minor=61
+    autoconf_minor=69
 
     build_autotools=0
 
@@ -118,7 +118,7 @@ if (test "x$build_autotools" = "x1"); then
     # set the path to use the new tools as they are installed.
     # for example, the new autoconf is needed to build automake.
 	PATH=$autotools_distdir/bin:$PATH
-	for tool in autoconf-2.69 automake-1.12.5 libtool-2.4.2 ; do
+	for tool in autoconf-2.69 automake-1.15.1 libtool-2.4.2 ; do
 	    cd $autotools_distdir
 	    echo "  building $tool in $autotools_distdir"
 	    tar zxf $tool.tar.gz
