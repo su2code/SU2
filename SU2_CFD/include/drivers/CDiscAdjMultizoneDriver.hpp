@@ -198,4 +198,11 @@ protected:
    * \param[in] iZone - Zone where solver residuals are computed.
    */
   void SetResidual_BGS(unsigned short iZone);
+
+  /*!
+   * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
+   * \return false
+   */
+  inline bool GetTimeConvergence() const override {return false;};
+
 };

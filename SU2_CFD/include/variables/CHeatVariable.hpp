@@ -1,5 +1,5 @@
 /*!
- * \file CHeatFVMVariable.hpp
+ * \file CHeatVariable.hpp
  * \brief Class for defining the variables of the finite-volume heat equation solver.
  * \author F. Palacios, T. Economon
  * \version 7.0.1 "Blackbird"
@@ -30,12 +30,12 @@
 #include "CVariable.hpp"
 
 /*!
- * \class CHeatFVMVariable
+ * \class CHeatVariable
  * \brief Class for defining the variables of the finite-volume heat equation solver.
  * \author O. Burghardt
  * \version 7.0.1 "Blackbird"
  */
-class CHeatFVMVariable final : public CVariable {
+class CHeatVariable final : public CVariable {
 protected:
   MatrixType Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
 
@@ -51,12 +51,12 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CHeatFVMVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
+  CHeatVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CHeatFVMVariable() = default;
+  ~CHeatVariable() = default;
 
   /*!
    * \brief Get the value of the reconstruction variables gradient at a node.
