@@ -211,8 +211,11 @@ void CRadP1Solver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
 
 }
 
-void CRadP1Solver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CRadP1Solver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[VISC_TERM];
+
   unsigned long iEdge, iPoint, jPoint;
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -237,25 +240,22 @@ void CRadP1Solver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
     numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
-    /*--- Add and subtract residual, and update Jacobians ---*/
+    /*--- Add and subtract residual, and update Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, Residual);
     LinSysRes.AddBlock(jPoint, Residual);
-
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+    Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
 
   }
 
 }
 
-void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                    CConfig *config, unsigned short iMesh) {
-  unsigned long iPoint;
+void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                                  CConfig *config, unsigned short iMesh) {
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
+
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Conservative variables w/o reconstruction ---*/
 
@@ -276,7 +276,7 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, Residual);
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
   }
 
@@ -289,13 +289,11 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned long iVertex, iPoint;
 
   su2double Theta, Ib_w, Radiative_Energy;
-  su2double *Normal, *Unit_Normal, Area, Wall_Emissivity;
+  su2double *Normal, Area, Wall_Emissivity;
   su2double Radiative_Heat_Flux;
   su2double Twall;
 
-  Unit_Normal = new su2double[nDim];
-
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Identify the boundary by string name ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -355,7 +353,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       /*--- Compute the Jacobian contribution. ---*/
       if (implicit) {
         Jacobian_i[0][0] = - Theta;
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
       }
     }
   }
@@ -368,13 +366,11 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   unsigned long iVertex, iPoint;
 
   su2double Theta, Ib_w, Radiative_Energy;
-  su2double *Normal, *Unit_Normal, Area, Wall_Emissivity;
+  su2double *Normal, Area, Wall_Emissivity;
   su2double Radiative_Heat_Flux;
   su2double Twall;
 
-  Unit_Normal = new su2double[nDim];
-
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Identify the boundary by string name ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -434,7 +430,7 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       /*--- Compute the Jacobian contribution. ---*/
       if (implicit) {
         Jacobian_i[0][0] = - Theta;
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
       }
     }
   }
@@ -450,11 +446,8 @@ void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, C
   su2double Theta, Ib_w, Temperature, Radiative_Energy;
   su2double *Normal, Area, Wall_Emissivity;
   su2double Radiative_Heat_Flux;
-  su2double *Unit_Normal;
 
-  Unit_Normal = new su2double[nDim];
-
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Identify the boundary by string name ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -514,7 +507,7 @@ void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, C
       /*--- Compute the Jacobian contribution. ---*/
       if (implicit) {
         Jacobian_i[0][0] = - Theta;
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
       }
 
     }
@@ -690,15 +683,12 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   /*--- Compute the max and the min dt (in parallel) ---*/
   if (config->GetComm_Level() == COMM_FULL) {
 
-    su2double rbuf_time, sbuf_time;
+    su2double sbuf_time;
     sbuf_time = Min_Delta_Time;
-    SU2_MPI::Allreduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    Min_Delta_Time = rbuf_time;
+    SU2_MPI::Allreduce(&sbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
 
     sbuf_time = Max_Delta_Time;
-    SU2_MPI::Allreduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Max_Delta_Time = rbuf_time;
+    SU2_MPI::Allreduce(&sbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   }
 
 }

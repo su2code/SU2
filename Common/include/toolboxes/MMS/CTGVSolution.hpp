@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -37,25 +37,25 @@
  * \brief Class to define the required data for the Taylor Green Vortex.
  * \author E. van der Weide, T. Economon
  */
-class CTGVSolution: public CVerificationSolution {
-  
+class CTGVSolution final: public CVerificationSolution {
+
 protected:
-  
+
   /*--- TGV specific conditions. ---*/
-  
+
   su2double tgvLength;    /*!< \brief Taylor-Green length scale. */
   su2double tgvVelocity;  /*!< \brief Taylor-Green velocity. */
   su2double tgvDensity;   /*!< \brief Taylor-Green density. */
   su2double tgvPressure;  /*!< \brief Taylor-Green pressure. */
   su2double ovGm1;        /*!< \brief 1 over Gamma minus 1 */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CTGVSolution(void);
-  
+
   /*!
    * \overload
    * \param[in] val_nDim  - Number of dimensions of the problem.
@@ -67,12 +67,12 @@ public:
                unsigned short val_nvar,
                unsigned short val_iMesh,
                CConfig*       config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CTGVSolution(void);
-  
+
   /*!
    * \brief Get the exact solution at the current position and time.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
@@ -81,11 +81,11 @@ public:
    */
   void GetSolution(const su2double *val_coords,
                    const su2double val_t,
-                   su2double       *val_solution);
-  
+                   su2double       *val_solution) const override;
+
   /*!
    * \brief Whether or not the exact solution is known for this verification solution.
    * \return  - False, because the exact solution is not known for the TGV case.
    */
-  bool ExactSolutionKnown(void);
+  bool ExactSolutionKnown(void) const override;
 };

@@ -1037,6 +1037,8 @@ void CConfig::SetPointersNull(void) {
 
   Mesh_Box_Size = NULL;
 
+  Time_Ref = 1.0;
+
 }
 
 void CConfig::SetRunTime_Options(void) {
@@ -2474,6 +2476,20 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Radius for radial basis function */
   addDoubleOption("RADIAL_BASIS_FUNCTION_PARAMETER", RadialBasisFunction_Parameter, 1);
 
+   /*!\par INLETINTERPOLATION \n
+   * DESCRIPTION: Type of spanwise interpolation to use for the inlet face. \n OPTIONS: see \link Inlet_SpanwiseInterpolation_Map \endlink
+   * Sets Kind_InletInterpolation \ingroup Config
+   */
+  addEnumOption("INLET_INTERPOLATION_FUNCTION",Kind_InletInterpolationFunction, Inlet_SpanwiseInterpolation_Map, NO_INTERPOLATION);
+
+   /*!\par INLETINTERPOLATION \n
+   * DESCRIPTION: Type of spanwise interpolation to use for the inlet face. \n OPTIONS: see \link Inlet_SpanwiseInterpolation_Map \endlink
+   * Sets Kind_InletInterpolation \ingroup Config
+   */
+  addEnumOption("INLET_INTERPOLATION_DATA_TYPE", Kind_Inlet_InterpolationType, Inlet_SpanwiseInterpolationType_Map, VR_VTHETA);
+
+  addBoolOption("PRINT_INLET_INTERPOLATED_DATA", PrintInlet_InterpolatedData, false);
+
   /* DESCRIPTION: Maximum number of FSI iterations */
   addUnsignedShortOption("FSI_ITER", nIterFSI, 1);
   /* DESCRIPTION: Number of FSI iterations during which a ramp is applied */
@@ -2785,6 +2801,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Level of fill for PaStiX incomplete LU factorization. */
   addUnsignedShortOption("PASTIX_FILL_LEVEL", pastix_fill_lvl, 1);
+
+  /* DESCRIPTION: Size of the edge groups colored for OpenMP parallelization of edge loops. */
+  addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
 
   /* END_CONFIG_OPTIONS */
 
@@ -4811,7 +4830,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       case FEM_ELASTICITY:
         Kind_Solver = DISC_ADJ_FEM;
         break;
-      case HEAT_EQUATION_FVM:
+      case HEAT_EQUATION:
         Kind_Solver = DISC_ADJ_HEAT;
         break;
       default:
@@ -4911,7 +4930,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
   iMarker_Fluid_Load, iMarker_Deform_Mesh,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
-  iMarker_Emissivity,
   iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
 
   int size = SINGLE_NODE;
@@ -5540,15 +5558,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
      cout <<"based on the physical case: ";
   }
     switch (Kind_Solver) {
-      case EULER: case DISC_ADJ_EULER: case FEM_EULER: case DISC_ADJ_FEM_EULER:
+      case EULER:     case DISC_ADJ_EULER:
+      case INC_EULER: case DISC_ADJ_INC_EULER:
+      case FEM_EULER: case DISC_ADJ_FEM_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         break;
-      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
+      case NAVIER_STOKES:     case DISC_ADJ_NAVIER_STOKES:
+      case INC_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES:
+      case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         break;
-      case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:
+      case RANS:     case DISC_ADJ_RANS:
+      case INC_RANS: case DISC_ADJ_INC_RANS:
+      case FEM_RANS: case DISC_ADJ_FEM_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
@@ -6986,7 +7010,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
-  if (nMarker_Emissivity != 0) {  
+  if (nMarker_Emissivity != 0) {
     BoundaryTable << "Radiative boundary";
     for (iMarker_Emissivity = 0; iMarker_Emissivity < nMarker_Emissivity; iMarker_Emissivity++) {
       BoundaryTable << Marker_Emissivity[iMarker_Emissivity]; // << "(" << Wall_Emissivity[iMarker_Emissivity] << ")";
@@ -8156,7 +8180,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
       }
       break;
-    case HEAT_EQUATION_FVM:
+    case HEAT_EQUATION:
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
@@ -9185,7 +9209,7 @@ su2double* CConfig::GetLoad_Sine_Dir(string val_marker) {
   return Load_Sine_Dir[iMarker_Load_Sine];
 }
 
-su2double CConfig::GetWall_Emissivity(string val_marker) {
+su2double CConfig::GetWall_Emissivity(string val_marker) const {
 
   unsigned short iMarker_Emissivity = 0;
 

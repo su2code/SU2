@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -34,7 +34,7 @@ CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(unsigned short val_nD
                                                            unsigned short val_iMesh,
                                                            CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-  
+
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the Navier-Stokes equations between two half spheres. ---*/
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
@@ -117,7 +117,7 @@ CMMSNSTwoHalfSpheresSolution::~CMMSNSTwoHalfSpheresSolution(void) { }
 
 void CMMSNSTwoHalfSpheresSolution::GetBCState(const su2double *val_coords,
                                               const su2double val_t,
-                                              su2double       *val_solution) {
+                                              su2double       *val_solution) const {
 
   /*--- The exact solution is prescribed on the boundaries. ---*/
   GetSolution(val_coords, val_t, val_solution);
@@ -125,7 +125,7 @@ void CMMSNSTwoHalfSpheresSolution::GetBCState(const su2double *val_coords,
 
 void CMMSNSTwoHalfSpheresSolution::GetSolution(const su2double *val_coords,
                                                const su2double val_t,
-                                               su2double       *val_solution) {
+                                               su2double       *val_solution) const {
 
   /* Easier storage of the x-, y- and z-coordinates. */
   const su2double x = val_coords[0];
@@ -166,7 +166,7 @@ void CMMSNSTwoHalfSpheresSolution::GetSolution(const su2double *val_coords,
 
 void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
                                                     const su2double val_t,
-                                                    su2double       *val_source) {
+                                                    su2double       *val_source) const {
 
   /*--- Abbreviate Pi and the coordinates. ---*/
   const su2double Pi = PI_NUMBER;
@@ -370,7 +370,7 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
   const su2double t616 = 0.4e1 * t18 * t528 - 0.4e1 * t20 * t528 + 0.4e1 * t24 * t533 - 0.4e1 * t26 * t533
                        + 0.12e2 * t541 * t12 * t7 * t410 + 0.320e3 / 0.3e1 * t545 * t155 * t112
                        + 0.320e3 / 0.3e1 * t545 * Viscosity * t111 * t231 + 0.64e2 * t545 * t29 * t112
-                       + 0.64e2 / 0.3e1 * t545 * t29 * t84 + 0.4e1 * t541 * t2 * t558 + 0.4e1 * t541 * t3 * t558 
+                       + 0.64e2 / 0.3e1 * t545 * t29 * t84 + 0.4e1 * t541 * t2 * t558 + 0.4e1 * t541 * t3 * t558
                        + 0.4e1 * t541 * t72 * t486 + 0.4e1 * t305 * u_0 * (t508 * t70 * t41
                        + 0.16e2 * (-t10 * t511 - t10 * t513 - t10 * t515 + t34 * t570 + t34 * t573 + t34 * t576) * rho_0 + t71)
                        + 0.4e1 * t305 * v_0 * (t508 * t176 * t41 + 0.16e2 * (t158 * t570 + t158 * t573 + t158 * t576
@@ -391,6 +391,6 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
   val_source[4] /= Velocity_Ref*Pressure_Ref;
 }
 
-bool CMMSNSTwoHalfSpheresSolution::IsManufacturedSolution(void) {
+bool CMMSNSTwoHalfSpheresSolution::IsManufacturedSolution(void) const {
   return true;
 }

@@ -24,7 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 
 #include "CVariable.hpp"
@@ -58,19 +58,21 @@ public:
    * \brief Get the Radiative source term at the node
    * \return Radiative source term for the energy equation
    */
-  inline su2double *GetRadiative_SourceTerm(unsigned long iPoint) { return Radiative_SourceTerm[iPoint];}
+  inline const su2double *GetRadiative_SourceTerm(unsigned long iPoint) const final { return Radiative_SourceTerm[iPoint];}
 
   /*!
    * \brief Set the Radiative source term at the node
    * \param[in] val_RadSourceTerm - value of the radiative source term
    */
-  inline void SetRadiative_SourceTerm(unsigned long iPoint, unsigned long iVar, su2double val_RadSourceTerm) { Radiative_SourceTerm(iPoint, iVar) = val_RadSourceTerm;}
+  inline void SetRadiative_SourceTerm(unsigned long iPoint, unsigned long iVar, su2double val_RadSourceTerm) final {
+    Radiative_SourceTerm(iPoint, iVar) = val_RadSourceTerm;
+  }
 
   /*!
    * \brief Get whether a volumetric heat source is to be introduced in point iPoint
    * \return Bool, determines if this point introduces volumetric heat
    */
-  inline bool GetVol_HeatSource(unsigned long iPoint) final { return Vol_HeatSource(iPoint);}
+  inline bool GetVol_HeatSource(unsigned long iPoint) const final { return Vol_HeatSource(iPoint);}
 
   /*!
    * \brief Set as true a volumetric heat source for point iPoint

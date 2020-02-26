@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -34,10 +34,10 @@ CUserDefinedSolution::CUserDefinedSolution(unsigned short val_nDim,
                                            unsigned short val_iMesh,
                                            CConfig*       config)
   : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-  
+
   /*--- Write a message that the solution is initialized for a
    user-defined verification case. ---*/
-  
+
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
@@ -52,26 +52,26 @@ CUserDefinedSolution::~CUserDefinedSolution(void) { }
 
 void CUserDefinedSolution::GetBCState(const su2double *val_coords,
                                       const su2double val_t,
-                                      su2double       *val_solution) {
+                                      su2double       *val_solution) const {
 
   SU2_MPI::Error("User must implement this function", CURRENT_FUNCTION);
 }
 
 void CUserDefinedSolution::GetSolution(const su2double *val_coords,
                                        const su2double val_t,
-                                       su2double       *val_solution) {
+                                       su2double       *val_solution) const {
 
   SU2_MPI::Error("User must implement this function", CURRENT_FUNCTION);
 }
 
 void CUserDefinedSolution::GetMMSSourceTerm(const su2double *val_coords,
                                             const su2double val_t,
-                                            su2double       *val_source) {
+                                            su2double       *val_source) const {
 
   SU2_MPI::Error("User must implement this function", CURRENT_FUNCTION);
 }
 
-bool CUserDefinedSolution::IsManufacturedSolution(void) {
+bool CUserDefinedSolution::IsManufacturedSolution(void) const {
   SU2_MPI::Error("User must implement this function", CURRENT_FUNCTION);
   return false;  /* True if manufactured. */
 }

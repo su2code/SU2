@@ -1143,6 +1143,12 @@ private:
 
   string caseName;                 /*!< \brief Name of the current case */
 
+  unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
+
+  unsigned short Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
+  unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
+  bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -4265,7 +4271,7 @@ public:
    * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).
    * \return yes/no.
    */
-  bool GetUse_Accurate_Jacobians(void) { return Use_Accurate_Jacobians; }
+  bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4477,7 +4483,7 @@ public:
    * \brief Factor by which to multiply the dissipation contribution to Jacobians of central schemes.
    * \return The factor.
    */
-  su2double GetCent_Jac_Fix_Factor(void) { return Cent_Jac_Fix_Factor; }
+  su2double GetCent_Jac_Fix_Factor(void) const { return Cent_Jac_Fix_Factor; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -5856,7 +5862,7 @@ public:
    * \brief Get a pointer to the body force vector.
    * \return A pointer to the body force vector.
    */
-  su2double* GetBody_Force_Vector(void) { return Body_Force_Vector; }
+  const su2double* GetBody_Force_Vector(void) const { return Body_Force_Vector; }
 
   /*!
    * \brief Get information about the volumetric heat source.
@@ -8560,7 +8566,7 @@ public:
    * \param[in] val_coeff - Index of the coefficient.
    * \return Alpha coefficient for the Runge-Kutta integration scheme.
    */
-  su2double* Get_Electric_Field_Dir(void) { return Electric_Field_Dir; }
+  const su2double* Get_Electric_Field_Dir(void) const { return Electric_Field_Dir; }
 
   /*!
    * \brief Check if the user wants to apply the load as a ramp.
@@ -8780,6 +8786,21 @@ public:
    * \brief Get the basis function radius to use for radial basis function interpolation for FSI.
    */
   su2double GetRadialBasisFunctionParameter(void) const { return RadialBasisFunction_Parameter; }
+
+  /*!
+   * \brief Get the kind of inlet face interpolation function to use.
+   */
+  inline unsigned short GetKindInletInterpolationFunction(void) const {return Kind_InletInterpolationFunction;}
+
+  /*!
+   * \brief Get the kind of inlet face interpolation data type.
+   */
+  inline unsigned short GetKindInletInterpolationType (void) const  {return Kind_Inlet_InterpolationType;}
+
+  /*!
+   * \brief Get whether to print inlet interpolated data or not.
+   */
+  bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData;}
 
   /*!
    * \brief Get information about using UQ methodology
@@ -9061,44 +9082,44 @@ public:
    * \brief Get the Kind of Radiation model applied.
    * \return Kind of radiation model used.
    */
-  unsigned short GetKind_RadiationModel(void) { return Kind_Radiation; }
+  unsigned short GetKind_RadiationModel(void) const { return Kind_Radiation; }
 
   /*!
    * \brief Get the Kind of P1 initialization method applied.
    * \return Kind of P1 initialization method used.
    */
-  unsigned short GetKind_P1_Init(void) { return Kind_P1_Init; }
+  unsigned short GetKind_P1_Init(void) const { return Kind_P1_Init; }
 
   /*!
    * \brief Get the value of the absorption coefficient of the medium.
    * \return Value of the absorption coefficient of the medium.
    */
-  su2double GetAbsorption_Coeff(void) { return Absorption_Coeff; }
+  su2double GetAbsorption_Coeff(void) const { return Absorption_Coeff; }
 
   /*!
    * \brief Get the value of the scattering coefficient of the medium.
    * \return Value of the scattering coefficient of the medium.
    */
-  su2double GetScattering_Coeff(void) { return Scattering_Coeff; }
+  su2double GetScattering_Coeff(void) const { return Scattering_Coeff; }
 
   /*!
    * \brief Get the wall emissivity at a boundary.
    * \param[in] val_index - Index corresponding to the boundary.
    * \return The wall emissivity.
    */
-  su2double GetWall_Emissivity(string val_index);
+  su2double GetWall_Emissivity(string val_index) const;
 
   /*!
    * \brief Get the value of the CFL condition for radiation solvers.
    * \return Value of the CFL condition for radiation solvers.
    */
-  su2double GetCFL_Rad(void){ return CFL_Rad; }
+  su2double GetCFL_Rad(void) const { return CFL_Rad; }
 
   /*!
    * \brief Determines if radiation needs to be incorporated to the analysis.
    * \return Radiation boolean
    */
-  bool AddRadiation(void) { return Radiation; }
+  bool AddRadiation(void) const { return Radiation; }
 
   /*!
    * \brief Check if the convergence history of each individual zone is written to screen
@@ -9316,5 +9337,10 @@ public:
    * \return Number of threads per rank.
    */
   unsigned long GetLinear_Solver_Prec_Threads(void) const { return Linear_Solver_Prec_Threads; }
+
+  /*!
+   * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
+   */
+  unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
 
 };

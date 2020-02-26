@@ -416,8 +416,11 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
 }
 
-void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[VISC_TERM];
+
   unsigned long iPoint, jPoint, iEdge;
 
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -453,18 +456,21 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
     LinSysRes.AddBlock(jPoint, Residual_j);
 
     if (implicit) {
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      Jacobian.SubtractBlock2Diag(iPoint, Jacobian_ii);
       Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
       Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-      Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
+      Jacobian.AddBlock2Diag(jPoint, Jacobian_jj);
     }
 
   }
 
 }
 
-void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                   CConfig *config, unsigned short iMesh) {
+void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
+  CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
 
   unsigned long iPoint, jPoint, iEdge;
 
@@ -596,7 +602,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       LinSysRes.AddBlock(iPoint, Residual);
 
       /*--- Add the implicit Jacobian contribution ---*/
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
     }
   }
@@ -1528,7 +1534,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
        modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
 
       if (implicit) {
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_ii);
         for (iVar = 1; iVar <= nDim; iVar++) {
           total_index = iPoint*nVar+iVar;
           Jacobian.DeleteValsRowi(total_index);
@@ -1890,7 +1896,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       LinSysRes.AddBlock(iPoint, Res_Conv_i);
       LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
       if (implicit) {
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_ii);
       }
 
     }
