@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CSolver.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 
 /*!
  * \class CFEASolver
@@ -38,7 +39,7 @@ class CFEASolver : public CSolver {
 protected:
   enum : size_t {MAXNNODE = 8};
   enum : size_t {MAXNVAR = 3};
-  enum : size_t {OMP_MIN_SIZE = 64};
+  enum : size_t {OMP_MIN_SIZE = 32};
   enum : size_t {OMP_MAX_SIZE = 512};
 
   unsigned long omp_chunk_size;     /*!< \brief Chunk size used in light point loops. */
@@ -74,20 +75,23 @@ protected:
   su2double RelaxCoeff;             /*!< \brief Relaxation coefficient . */
   su2double FSI_Residual;           /*!< \brief FSI residual. */
 
-  struct ElemColor {
-    unsigned long size;             /*!< \brief Number of elements with a given color. */
-    const unsigned long* indices;   /*!< \brief Array of element indices for a given color. */
-  };
-  vector<ElemColor> ElemColoring;   /*!< \brief Element colors. */
+#ifdef HAVE_OMP
+  vector<GridColor<> > ElemColoring;   /*!< \brief Element colors. */
+#else
+  array<DummyGridColor<>,1> ElemColoring;
+#endif
   unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size must be a multiple of this. */
 
   bool element_based;               /*!< \brief Bool to determine if an element-based file is used. */
   bool topol_filter_applied;        /*!< \brief True if density filtering has been performed. */
 
   unsigned long nElement;           /*!< \brief Number of elements. */
-  unsigned long IterLinSol;         /*!< \brief Number of iterations of the linear solver. */
 
-  CVariable* nodes = nullptr;       /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  /*!
+   * \brief The highest level in the variable hierarchy this solver can safely use,
+   * CVariable is the common denominator between the FEA and Mesh deformation variables.
+   */
+  CVariable* nodes = nullptr;
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.

@@ -26,6 +26,7 @@
  */
 
 #include "../../include/drivers/CDiscAdjMultizoneDriver.hpp"
+#include "../../include/solvers/CFEASolver.hpp"
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  unsigned short val_nZone,

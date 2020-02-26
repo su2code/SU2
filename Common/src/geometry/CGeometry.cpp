@@ -73,13 +73,6 @@ CGeometry::CGeometry(void) {
   nNewElem_Bound      = NULL;
   Marker_All_SendRecv = NULL;
 
-  XCoordList.clear();
-  Xcoord_plane.clear();
-  Ycoord_plane.clear();
-  Zcoord_plane.clear();
-  FaceArea_plane.clear();
-  Plane_points.clear();
-
   /*--- Arrays for defining the linear partitioning ---*/
 
   beg_node = NULL;
@@ -3360,7 +3353,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
   the recursion limit is reached and the full neighborhood is not considered. ---*/
   unsigned long limited_searches = 0;
 
-  SU2_OMP(parallel reduction(+:limited_searches))
+  SU2_OMP_PARALLEL_(reduction(+:limited_searches))
   {
 
   /*--- Initialize ---*/
@@ -4045,7 +4038,14 @@ const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(void)
 
 const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
 {
-  if (edgeColoring.empty()) {
+  if (edgeColoring.empty() && nEdge) {
+
+    /*--- When not using threading, and for coarse grids, use the natural coloring. ---*/
+    if ((omp_get_max_threads() == 1) || (MGLevel != MESH_0)) {
+      edgeColoring = createNaturalColoring(nEdge);
+      return edgeColoring;
+    }
+
     /*--- Create a temporary sparse pattern from the edges. ---*/
     /// TODO: Try to avoid temporary once grid information is made contiguous.
     su2vector<unsigned long> outerPtr(nEdge+1);
@@ -4060,8 +4060,9 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
 
     CCompressedSparsePatternUL pattern(move(outerPtr), move(innerIdx));
 
-    /*--- Color the edges. ---*/
-    edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize);
+    /*--- Color the edges, only balance sizes on coarse levels. ---*/
+    bool balanceColors = (MGLevel != MESH_0);
+    edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
 
     if(edgeColoring.empty())
       SU2_MPI::Error("Edge coloring failed.", CURRENT_FUNCTION);
@@ -4071,7 +4072,14 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
 
 const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
 {
-  if (elemColoring.empty()) {
+  if (elemColoring.empty() && nElem) {
+
+    /*--- When not using threading use the natural coloring. ---*/
+    if (omp_get_max_threads() == 1) {
+      elemColoring = createNaturalColoring(nElem);
+      return elemColoring;
+    }
+
     /*--- Create a temporary sparse pattern from the elements. ---*/
     /// TODO: Try to avoid temporary once grid information is made contiguous.
     vector<unsigned long> outerPtr(nElem+1);
