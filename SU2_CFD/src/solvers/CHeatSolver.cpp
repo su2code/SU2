@@ -504,8 +504,10 @@ void CHeatSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container,  CNumerics **numerics_container,
+                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[CONV_TERM];
 
   su2double *V_i, *V_j, Temp_i, Temp_j;
   unsigned long iEdge, iPoint, jPoint;
@@ -550,7 +552,10 @@ void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_contai
   }
 }
 
-void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
+                                  CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  CNumerics* numerics = numerics_container[CONV_TERM];
 
   su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
             **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad;
@@ -644,7 +649,10 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
 }
 
-void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[VISC_TERM];
 
   su2double laminar_viscosity, Prandtl_Lam, Prandtl_Turb, eddy_viscosity_i, eddy_viscosity_j,
       thermal_diffusivity_i, thermal_diffusivity_j, Temp_i, Temp_j, **Temp_i_Grad, **Temp_j_Grad;
@@ -708,14 +716,9 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     LinSysRes.SubtractBlock(iPoint, Residual);
     LinSysRes.AddBlock(jPoint, Residual);
 
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+    Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, Jacobian_i, Jacobian_j);
   }
 }
-
-void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) { }
 
 void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 
@@ -765,15 +768,9 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
       }
     }
   }
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(Local_Surface_Areas, Surface_Areas, config->GetnMarker_HeatFlux(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_HeatFlux_Areas_Monitor, &Total_HeatFlux_Areas_Monitor, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    for( iMarker_HeatFlux = 0; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
-      Surface_Areas[iMarker_HeatFlux] = Local_Surface_Areas[iMarker_HeatFlux];
-    }
-    Total_HeatFlux_Areas_Monitor = Local_HeatFlux_Areas_Monitor;
-#endif
+
+  SU2_MPI::Allreduce(Local_Surface_Areas, Surface_Areas, config->GetnMarker_HeatFlux(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_HeatFlux_Areas_Monitor, &Total_HeatFlux_Areas_Monitor, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
   Total_HeatFlux_Areas = 0.0;
   for( iMarker_HeatFlux = 0; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
@@ -843,7 +840,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
         }
 
         LinSysRes.SubtractBlock(iPoint, Res_Visc);
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
     }
   }
 }
@@ -977,7 +974,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Jacobian contribution for implicit integration ---*/
 
         if (implicit)
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
 
       /*--- Viscous contribution ---*/
@@ -1011,7 +1008,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Viscous contribution to the residual at the wall ---*/
 
         LinSysRes.SubtractBlock(iPoint, Res_Visc);
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
       }
     }
   }
@@ -1080,7 +1077,7 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Jacobian contribution for implicit integration ---*/
 
           if (implicit)
-            Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+            Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
     }
   }
@@ -1098,7 +1095,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
   su2double thermal_diffusivity, rho_cp_solid, Temperature_Ref, T_Conjugate, Tinterface,
       Tnormal_Conjugate, HeatFluxDensity, HeatFlux, Area;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == INC_RANS)
                || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
@@ -1173,7 +1170,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
         if (implicit) {
 
           Jacobian_i[0][0] = thermal_diffusivity*Area;
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
         }
       }
     }
@@ -1803,7 +1800,7 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
             Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
         }
 
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
     }
   }

@@ -114,39 +114,24 @@ public:
                    bool val_update_geo) override;
 
   /*!
-   * \brief Source term computation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] second_numerics - Description of the second numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Source_Residual(CGeometry *geometry,
-                       CSolver **solver_container,
-                       CNumerics *numerics,
-                       CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh) override;
-
-  /*!
    * \brief Compute the undivided laplacian for the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) override;
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void Centered_Residual(CGeometry *geometry,
                         CSolver **solver_container,
-                        CNumerics *numerics,
+                        CNumerics **numerics_container,
                         CConfig *config,
                         unsigned short iMesh,
                         unsigned short iRKStep) override;
@@ -154,13 +139,13 @@ public:
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Upwind_Residual(CGeometry *geometry,
                       CSolver **solver_container,
-                      CNumerics *numerics,
+                      CNumerics **numerics_container,
                       CConfig *config,
                       unsigned short iMesh) override;
 
@@ -168,14 +153,14 @@ public:
    * \brief Compute the viscous residuals for the turbulent equation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void Viscous_Residual(CGeometry *geometry,
                         CSolver **solver_container,
-                        CNumerics *numerics,
+                        CNumerics **numerics_container,
                         CConfig *config,
                         unsigned short iMesh,
                         unsigned short iRKStep) override;
