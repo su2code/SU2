@@ -1062,6 +1062,8 @@ void CConfig::SetPointersNull(void) {
 
   Mesh_Box_Size = NULL;
 
+  Time_Ref = 1.0;
+
 }
 
 void CConfig::SetRunTime_Options(void) {
@@ -4832,7 +4834,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       case FEM_ELASTICITY:
         Kind_Solver = DISC_ADJ_FEM;
         break;
-      case HEAT_EQUATION_FVM:
+      case HEAT_EQUATION:
         Kind_Solver = DISC_ADJ_HEAT;
         break;
       default:
@@ -8188,7 +8190,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
       }
       break;
-    case HEAT_EQUATION_FVM:
+    case HEAT_EQUATION:
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
