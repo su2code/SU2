@@ -997,6 +997,7 @@ private:
   bool Prestretch;                           /*!< \brief Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;             /*!< \brief File name for reference geometry. */
   string FEA_FileName;              /*!< \brief File name for element-based properties. */
+  bool FEAAdvancedMode;             /*!< \brief Determine if advanced features are used from the element-based FEA analysis (experimental). */
   su2double RefGeom_Penalty,        /*!< \brief Penalty weight value for the reference geometry objective function. */
   RefNode_Penalty,                  /*!< \brief Penalty weight value for the reference node objective function. */
   DV_Penalty;                       /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
@@ -1128,6 +1129,10 @@ private:
   unsigned short pastix_fill_lvl;  /*!< \brief Fill level for PaStiX ILU */
 
   string caseName;                 /*!< \brief Name of the current case */
+
+  unsigned short Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
+  unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
+  bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -2099,6 +2104,12 @@ public:
    * \return Name of the file with the element properties of the structural problem.
    */
   string GetFEA_FileName(void) const { return FEA_FileName; }
+
+  /*!
+    * \brief Determine if advanced features are used from the element-based FEA analysis (experimental feature).
+    * \return <code>TRUE</code> is experimental, <code>FALSE</code> is the default behaviour.
+    */
+  inline bool GetAdvanced_FEAElementBased(void) const { return FEAAdvancedMode; }
 
   /*!
    * \brief Get the name of the file with the reference geometry of the structural problem.
@@ -8736,6 +8747,22 @@ public:
    * \return <code>TRUE</code> means that UQ methodology of eigenspace perturbation will be used
    */
   bool GetUsing_UQ(void) const { return using_uq; }
+
+  /*!
+   * \brief Get the kind of inlet face interpolation function to use.
+   */
+  inline unsigned short GetKindInletInterpolationFunction(void) const {return Kind_InletInterpolationFunction;}
+
+
+   /*!
+   * \brief Get the kind of inlet face interpolation data type.
+   */
+  inline unsigned short GetKindInletInterpolationType (void) const  {return Kind_Inlet_InterpolationType;}
+
+   /*!
+   * \brief Get whether to print inlet interpolated data or not.
+   */
+  bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData;}
 
   /*!
    * \brief Get the amount of eigenvalue perturbation to be done
