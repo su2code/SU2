@@ -28,7 +28,6 @@
 #include "../../include/solvers/CFEASolver.hpp"
 #include "../../include/variables/CFEABoundVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
-#include "../../../Common/include/omp_structure.hpp"
 #include <algorithm>
 
 /*!
@@ -246,17 +245,19 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   const auto& coloring = geometry->GetElementColoring();
 
-  auto nColor = coloring.getOuterSize();
-  ElemColoring.resize(nColor);
+  if (!coloring.empty()) {
+    auto nColor = coloring.getOuterSize();
+    ElemColoring.reserve(nColor);
 
-  for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-    ElemColoring[iColor].size = coloring.getNumNonZeros(iColor);
-    ElemColoring[iColor].indices = coloring.innerIdx(iColor);
+    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
+      ElemColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
+    }
   }
-
   ColorGroupSize = geometry->GetElementColorGroupSize();
 
   omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
+#else
+  ElemColoring[0] = DummyGridColor<>(nElement);
 #endif
 
   iElem_iDe = nullptr;
@@ -408,7 +409,6 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
     long iElem_Local;
     unsigned long iElem_Global_Local = 0, iElem_Global = 0; string text_line;
-    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
     /*--- The first line is the header ---*/
 
@@ -454,11 +454,7 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
     /*--- Detect a wrong solution file ---*/
 
-    if (iElem_Global_Local < nElement) { sbuf_NotMatching = 1; }
-
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-    if (rbuf_NotMatching != 0) {
+    if (iElem_Global_Local != nElement) {
       SU2_MPI::Error(string("The properties file ") + filename + string(" doesn't match with the mesh file!\n")  +
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
     }
@@ -505,6 +501,7 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
   if (prestretch_file.fail()) {
     SU2_MPI::Error(string("There is no FEM prestretch reference file ") + filename, CURRENT_FUNCTION);
   }
+
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
 
@@ -520,7 +517,6 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
   long iPoint_Local;
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- The first line is the header ---*/
 
@@ -551,13 +547,9 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-  if (rbuf_NotMatching != 0) {
-      SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
-                     string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+  if (iPoint_Global_Local != nPointDomain) {
+    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
   /*--- Close the restart file ---*/
@@ -676,7 +668,6 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   long iPoint_Local;
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- The first line is the header ---*/
 
@@ -716,16 +707,10 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-  if (rbuf_NotMatching != 0) {
+  if (iPoint_Global_Local != nPointDomain) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n")  +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
-
-  /*--- I don't think we need to communicate ---*/
 
   /*--- Close the restart file ---*/
 
@@ -795,37 +780,14 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   if (body_forces && initial_calc)
     Compute_DeadLoad(geometry, numerics, config);
 
-
+  /*--- Clear the linear system solution. ---*/
   SU2_OMP_PARALLEL
   {
-    /*--- Clear the linear system solution. ---*/
     LinSysSol.SetValZero();
-
-    /*--- Some external forces may be considered constant over the time step. ---*/
-    if (first_iter) {
-      SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
-        nodes->Clear_SurfaceLoad_Res(iPoint);
-    }
   }
 
-  /*
-   * If we apply nonlinear forces, we need to clear the residual
-   * on every iteration to avoid adding over previous values.
-   */
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-    switch (config->GetMarker_All_KindBC(iMarker)) {
-      case LOAD_BOUNDARY:
-      case DAMPER_BOUNDARY:
-        /*--- For all the vertices in the marker iMarker. ---*/
-        for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          /*--- Retrieve the point ID and clear the residual. ---*/
-          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          nodes->Clear_SurfaceLoad_Res(iPoint);
-        }
-        break;
-    }
-  }
+  /*--- Clear external forces. ---*/
+  nodes->Clear_SurfaceLoad_Res();
 
   /*
    * FSI loads (computed upstream) need to be integrated if a nonconservative interpolation scheme is in use
@@ -864,22 +826,14 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
     LinSysRes.SetValZero();
     Jacobian.SetValZero();
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, jNode, iDim, iVar;
 
         int thread = omp_get_thread_num();
@@ -927,7 +881,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
 
           auto Ta = element->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
-            LinSysRes[indexNode[iNode]*nVar+iVar] -= simp_penalty*Ta[iVar];
+            LinSysRes(indexNode[iNode], iVar) -= simp_penalty*Ta[iVar];
 
           for (jNode = 0; jNode < nNodes; jNode++) {
             auto Kab = element->Get_Kab(iNode, jNode);
@@ -960,22 +914,14 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
     LinSysRes.SetValZero();
     Jacobian.SetValZero();
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, jNode, iDim, iVar;
 
         int thread = omp_get_thread_num();
@@ -1042,13 +988,13 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
 
           auto Ta = fea_elem->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
-            LinSysRes[indexNode[iNode]*nVar+iVar] -= simp_penalty*Ta[iVar];
+            LinSysRes(indexNode[iNode], iVar) -= simp_penalty*Ta[iVar];
 
           /*--- Retrieve the electric contribution to the residual. ---*/
           if (de_effects) {
             auto Ta_DE = de_elem->Get_Kt_a(iNode);
             for (iVar = 0; iVar < nVar; iVar++)
-              LinSysRes[indexNode[iNode]*nVar+iVar] -= simp_penalty*Ta_DE[iVar];
+              LinSysRes(indexNode[iNode], iVar) -= simp_penalty*Ta_DE[iVar];
           }
 
           for (jNode = 0; jNode < nNodes; jNode++) {
@@ -1099,22 +1045,14 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, C
     /*--- Clear matrix before calculation. ---*/
     MassMatrix.SetValZero();
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, jNode, iDim, iVar;
 
         int thread = omp_get_thread_num();
@@ -1184,22 +1122,14 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CCon
     TimeRes.SetValZero();
     SU2_OMP_BARRIER
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, jNode, iDim, iVar;
 
         int thread = omp_get_thread_num();
@@ -1242,8 +1172,8 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CCon
             su2double Mab = simp_penalty * element->Get_Mab(iNode, jNode);
 
             for (iVar = 0; iVar < nVar; iVar++) {
-              TimeRes[indexNode[iNode]*nVar+iVar] += Mab * TimeRes_Aux.GetBlock(indexNode[iNode],iVar);
-              TimeRes[indexNode[jNode]*nVar+iVar] += Mab * TimeRes_Aux.GetBlock(indexNode[jNode],iVar);
+              TimeRes[indexNode[iNode]*nVar+iVar] += Mab * TimeRes_Aux(indexNode[iNode],iVar);
+              TimeRes[indexNode[jNode]*nVar+iVar] += Mab * TimeRes_Aux(indexNode[jNode],iVar);
             }
           }
         }
@@ -1272,22 +1202,14 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
     LinSysRes.SetValZero();
     SU2_OMP_BARRIER
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, iDim, iVar;
 
         int thread = omp_get_thread_num();
@@ -1340,7 +1262,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
         for (iNode = 0; iNode < nNodes; iNode++) {
           auto Ta = element->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
-            LinSysRes[indexNode[iNode]*nVar+iVar] -= simp_penalty*Ta[iVar];
+            LinSysRes(indexNode[iNode], iVar) -= simp_penalty*Ta[iVar];
         }
 
       } // end iElem loop
@@ -1360,11 +1282,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
   const unsigned short nStress = (nDim == 2) ? 3 : 6;
 
-  /*--- Reduction variable to compute the maximum von Misses stress,
-   *    each thread uses the first element of each row, the rest of
-   *    the row is padding to prevent false sharing. ---*/
-  su2activematrix auxMaxVonMisses(omp_get_max_threads(), 64/sizeof(su2double));
-  auxMaxVonMisses.setConstant(0.0);
+  su2double MaxVonMises_Stress = 0.0;
 
   /*--- Start OpenMP parallel region. ---*/
 
@@ -1381,22 +1299,14 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
       }
     }
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, iDim, iVar, iStress;
 
         int thread = omp_get_thread_num();
@@ -1451,7 +1361,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
           auto Ta = element->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
-            LinSysReact[iPoint*nVar+iVar] += simp_penalty*Ta[iVar];
+            LinSysReact(iPoint,iVar) += simp_penalty*Ta[iVar];
 
           /*--- Divide the nodal stress by the number of elements that will contribute to this point. ---*/
           su2double weight = simp_penalty / geometry->node[iPoint]->GetnElem();
@@ -1466,10 +1376,10 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
 
     /*--- Compute the von Misses stress at each point, and the maximum for the domain. ---*/
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+    su2double maxVonMises = 0.0;
 
-      int thread = omp_get_thread_num();
+    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Get the stresses, added up from all the elements that connect to the node. ---*/
 
@@ -1502,18 +1412,15 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
       /*--- Update the maximum value of the Von Mises Stress ---*/
 
-      auxMaxVonMisses(thread,0) = max(auxMaxVonMisses(thread,0), VonMises_Stress);
+      maxVonMises = max(maxVonMises, VonMises_Stress);
     }
+    SU2_OMP_CRITICAL
+    MaxVonMises_Stress = max(MaxVonMises_Stress, maxVonMises);
 
   } // end SU2_OMP_PARALLEL
 
-  /*--- Compute MaxVonMises_Stress across all threads and ranks. ---*/
-
-  for(auto thread = 1ul; thread < auxMaxVonMisses.rows(); ++thread)
-    auxMaxVonMisses(0,0) = max(auxMaxVonMisses(0,0), auxMaxVonMisses(thread,0));
-
-  su2double MaxVonMises_Stress;
-  SU2_MPI::Allreduce(auxMaxVonMisses.data(), &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  su2double tmp = MaxVonMises_Stress;
+  SU2_MPI::Allreduce(&tmp, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
   /*--- Set the value of the MaxVonMises_Stress as the CFEA coeffient ---*/
 
@@ -1560,7 +1467,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
               for (iVar = 0; iVar < nVar; iVar++) {
                 /*--- Retrieve reaction ---*/
-                val_Reaction = LinSysReact.GetBlock(iPoint, iVar);
+                val_Reaction = LinSysReact(iPoint, iVar);
                 myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
               }
 
@@ -1581,7 +1488,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
           /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
           for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
             for (iVar = 0; iVar < nVar; iVar++) {
-              TimeRes_Aux[iPoint*nVar+iVar] =
+              TimeRes_Aux(iPoint,iVar) =
                 a_dt[0]*nodes->GetSolution_time_n(iPoint,iVar) -      // a0*U(t)
                 a_dt[0]*nodes->GetSolution(iPoint,iVar) +             // a0*U(t+dt)(k-1)
                 a_dt[2]*nodes->GetSolution_Vel_time_n(iPoint,iVar) +  // a2*U'(t)
@@ -1618,7 +1525,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
                   for (iVar = 0; iVar < nVar; iVar++) {
                     /*--- Retrieve the time contribution and reaction. ---*/
-                    val_Reaction = LinSysReact.GetBlock(iPoint, iVar) + TimeRes.GetBlock(iPoint, iVar);
+                    val_Reaction = LinSysReact(iPoint, iVar) + TimeRes(iPoint, iVar);
                     myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
                   }
 
@@ -1654,22 +1561,14 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CCo
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
       nodes->Clear_BodyForces_Res(iPoint);
 
-#ifdef HAVE_OMP
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    auto chunkSize = roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize;
+    for(auto color : ElemColoring) {
 
-    /*--- Loop over element colors. ---*/
-    for (auto color : ElemColoring)
-    {
-      SU2_OMP_FOR_DYN(chunkSize)
+      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
-#else
-    /*--- Natural coloring. ---*/
-    {
-      for (auto iElem = 0ul; iElem < nElement; iElem++) {
-#endif
+
         unsigned short iNode, iDim, iVar;
 
         int thread = omp_get_thread_num();
@@ -1834,38 +1733,42 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, CConfig *c
   auto TagBound = config->GetMarker_All_TagBound(val_marker);
   su2double DispDirVal = config->GetDisp_Dir_Value(TagBound);
   su2double DispDirMult = config->GetDisp_Dir_Multiplier(TagBound);
-  const su2double *Disp_Dir_Local = config->GetDisp_Dir(TagBound);
+  const su2double *DispDirLocal = config->GetDisp_Dir(TagBound);
 
-  su2double Disp_Dir[3] = {0.0, 0.0, 0.0};
+  su2double DispDir[3] = {0.0};
 
-  su2double Disp_Dir_Mod = 0.0;
+  su2double DispDirMod = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    Disp_Dir_Mod += Disp_Dir_Local[iDim]*Disp_Dir_Local[iDim];
-  Disp_Dir_Mod = sqrt(Disp_Dir_Mod);
+    DispDirMod += DispDirLocal[iDim]*DispDirLocal[iDim];
+  DispDirMod = sqrt(DispDirMod);
 
   su2double CurrentTime = config->GetCurrent_DynTime();
-  su2double Ramp_Time = config->GetRamp_Time();
-  su2double ModAmpl = Compute_LoadCoefficient(CurrentTime, Ramp_Time, config);
+  su2double RampTime = config->GetRamp_Time();
+  su2double ModAmpl = Compute_LoadCoefficient(CurrentTime, RampTime, config);
 
-  su2double TotalDisp = ModAmpl * DispDirVal * DispDirMult / Disp_Dir_Mod;
+  su2double TotalDisp = ModAmpl * DispDirVal * DispDirMult / DispDirMod;
 
   for (iDim = 0; iDim < nDim; iDim++)
-    Disp_Dir[iDim] = TotalDisp * Disp_Dir_Local[iDim];
+    DispDir[iDim] = TotalDisp * DispDirLocal[iDim];
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    /*--- Get node index ---*/
+    /*--- Get node index. ---*/
     auto iNode = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Set and enforce solution ---*/
-    LinSysSol.SetBlock(iNode, Disp_Dir);
-    Jacobian.EnforceSolutionAtNode(iNode, Disp_Dir, LinSysRes);
+    /*--- The solution is incremental so we need to
+     *    subtract the current displacement. ---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      LinSysSol(iNode,iDim) = DispDir[iDim] - nodes->GetSolution(iNode,iDim);
+
+    /*--- Enforce the solution. ---*/
+    Jacobian.EnforceSolutionAtNode(iNode, LinSysSol.GetBlock(iNode), LinSysRes);
   }
 
 }
 
-void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,  CNumerics **numerics,
-                                           unsigned short iMesh) {
+void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
+                                CConfig *config, CNumerics **numerics, unsigned short iMesh) {
 
   unsigned short iVar;
   unsigned long iPoint, total_index;
@@ -2104,28 +2007,57 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *
 
 void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
-  su2double dampConstant = config->GetDamper_Constant(config->GetMarker_All_TagBound(val_marker));
-  unsigned long nVertex = geometry->GetnVertex(val_marker);
-
-  /*--- The damping is distributed evenly over all the nodes in the marker ---*/
-  const su2double dampC = -1.0 * dampConstant / (nVertex + EPS);
+  const su2double dampConst = config->GetDamper_Constant(config->GetMarker_All_TagBound(val_marker));
 
   for (auto iElem = 0ul; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
-    unsigned short iNode, iVar;
+    unsigned short iNode, iDim;
+    unsigned long indexNode[4] = {0};
+
+    su2double nodeCoord[4][3] = {0.0};
 
     bool quad = (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL);
-    unsigned short nNode = quad? 4 : nDim;
+    unsigned short nNodes = quad? 4 : nDim;
 
-    for(iNode = 0; iNode < nNode; ++iNode) {
+    /*--- Retrieve the boundary current coordinates. ---*/
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
 
       auto iPoint = geometry->bound[val_marker][iElem]->GetNode(iNode);
+      indexNode[iNode] = iPoint;
 
-      for (iVar = 0; iVar < nVar; iVar++){
-        su2double dampValue = dampC * nodes->GetSolution_Vel(iPoint, iVar);
-        nodes->Set_SurfaceLoad_Res(iPoint, iVar, dampValue);
-      }
+      for (iDim = 0; iDim < nVar; iDim++)
+        nodeCoord[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim) + nodes->GetSolution(iPoint,iDim);
     }
+
+    /*--- Compute the area of the surface element. ---*/
+
+    su2double normal[3] = {0.0};
+
+    switch (nNodes) {
+      case 2: LineNormal(nodeCoord, normal); break;
+      case 3: TriangleNormal(nodeCoord, normal); break;
+      case 4: QuadrilateralNormal(nodeCoord, normal); break;
+    }
+
+    su2double area = sqrt(pow(normal[0],2) + pow(normal[1],2) + pow(normal[2],2));
+
+    /*--- Compute damping forces. ---*/
+
+    su2double dampCoeff = -1.0 * area * dampConst / su2double(nNodes);
+
+    for(iNode = 0; iNode < nNodes; ++iNode) {
+
+      auto iPoint = indexNode[iNode];
+
+      /*--- Writing over the normal. --*/
+      su2double* force = normal;
+      for (iDim = 0; iDim < nVar; iDim++)
+        force[iDim] = dampCoeff * nodes->GetSolution_Vel(iPoint, iDim);
+
+      nodes->Add_SurfaceLoad_Res(iPoint, force);
+    }
+
   }
 
 }
@@ -2416,21 +2348,21 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
       /*--- External surface load contribution. ---*/
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_SurfaceLoad_Res(iPoint,iVar);
+        LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_SurfaceLoad_Res(iPoint,iVar);
       }
 
       /*--- Body forces contribution (dead load). ---*/
 
       if (body_forces) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
+          LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
         }
       }
 
       /*--- FSI contribution (flow loads). ---*/
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_FlowTraction(iPoint,iVar);
+        LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_FlowTraction(iPoint,iVar);
       }
 
     }
@@ -2458,7 +2390,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          TimeRes_Aux[iPoint*nVar+iVar] =
+          TimeRes_Aux(iPoint,iVar) =
             a_dt[0]*nodes->GetSolution_time_n(iPoint,iVar) -      // a0*U(t)
             a_dt[0]*nodes->GetSolution(iPoint,iVar) +             // a0*U(t+dt)(k-1)
             a_dt[2]*nodes->GetSolution_Vel_time_n(iPoint,iVar) +  // a2*U'(t)
@@ -2491,7 +2423,7 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       /*--- Displacement component of the solution. ---*/
       for (iVar = 0; iVar < nVar; iVar++)
-        nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
+        nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol(iPoint,iVar));
     }
 
     if (dynamic) {
@@ -2622,21 +2554,21 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
         /*--- External surface load contribution. ---*/
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_SurfaceLoad_Res(iPoint,iVar);
+          LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_SurfaceLoad_Res(iPoint,iVar);
         }
 
         /*--- Body forces contribution (dead load). ---*/
 
         if (body_forces) {
           for (iVar = 0; iVar < nVar; iVar++) {
-            LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
+            LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
           }
         }
 
         /*--- FSI contribution (flow loads). ---*/
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_FlowTraction(iPoint,iVar);
+          LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_FlowTraction(iPoint,iVar);
         }
 
       }
@@ -2657,7 +2589,7 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          TimeRes_Aux[iPoint*nVar+iVar] =
+          TimeRes_Aux(iPoint,iVar) =
             a_dt[0]*nodes->GetSolution_time_n(iPoint,iVar) -      // a0*U(t)
             a_dt[0]*nodes->GetSolution(iPoint,iVar) +             // a0*U(t+dt)(k-1)
             a_dt[2]*nodes->GetSolution_Vel_time_n(iPoint,iVar) +  // a2*U'(t)
@@ -2677,8 +2609,8 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
         /*--- External surface load contribution ---*/
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          LinSysRes[iPoint*nVar+iVar] += loadIncr * ( (1-alpha_f) * nodes->Get_SurfaceLoad_Res(iPoint,iVar) +
-                                                       alpha_f  * nodes->Get_SurfaceLoad_Res_n(iPoint,iVar) );
+          LinSysRes(iPoint,iVar) += loadIncr * ( (1-alpha_f) * nodes->Get_SurfaceLoad_Res(iPoint,iVar) +
+                                                    alpha_f  * nodes->Get_SurfaceLoad_Res_n(iPoint,iVar) );
         }
 
         /*--- Add the contribution to the residual due to body forces.
@@ -2686,15 +2618,15 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
 
         if (body_forces) {
           for (iVar = 0; iVar < nVar; iVar++) {
-            LinSysRes[iPoint*nVar+iVar] += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
+            LinSysRes(iPoint,iVar) += loadIncr * nodes->Get_BodyForces_Res(iPoint,iVar);
           }
         }
 
         /*--- Add FSI contribution. ---*/
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          LinSysRes[iPoint*nVar+iVar] += loadIncr * ( (1-alpha_f) * nodes->Get_FlowTraction(iPoint,iVar) +
-                                                       alpha_f  * nodes->Get_FlowTraction_n(iPoint,iVar) );
+          LinSysRes(iPoint,iVar) += loadIncr * ( (1-alpha_f) * nodes->Get_FlowTraction(iPoint,iVar) +
+                                                    alpha_f  * nodes->Get_FlowTraction_n(iPoint,iVar) );
         }
       }
     }
@@ -2707,10 +2639,10 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solv
 
   /*--- Update displacement components of the solution. ---*/
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
+      nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol(iPoint,iVar));
 
   /*--- Perform the MPI communication of the solution, displacements only. ---*/
 
@@ -2726,7 +2658,7 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **
 
   /*--- Compute solution at t_n+1, and update velocities and accelerations ---*/
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     unsigned short iVar;
@@ -2788,23 +2720,32 @@ void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **sol
 
 void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
+  SU2_OMP_PARALLEL
+  {
   /*--- Initialize residual and solution at the ghost points ---*/
 
-  for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    LinSysRes.SetBlock_Zero(iPoint);
-    LinSysSol.SetBlock_Zero(iPoint);
+  SU2_OMP(sections)
+  {
+    SU2_OMP(section)
+    for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+      LinSysRes.SetBlock_Zero(iPoint);
+
+    SU2_OMP(section)
+    for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+      LinSysSol.SetBlock_Zero(iPoint);
   }
 
-  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  /*--- Solve or smooth the linear system. ---*/
 
-  /*--- The the number of iterations of the linear solver ---*/
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  SU2_OMP_MASTER
+  {
+    SetIterLinSolver(iter);
+    SetResLinSolver(System.GetResidual());
+  }
+  SU2_OMP_BARRIER
 
-  SetIterLinSolver(IterLinSol);
-
-  /*--- Store the value of the residual. ---*/
-
-  SetResLinSolver(System.GetResidual());
-
+  } // end SU2_OMP_PARALLEL
 }
 
 
@@ -2821,7 +2762,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry,
     cout << "Higher order predictor not implemented. Solving with order 0." << endl;
 
   /*--- To nPointDomain: we need to communicate the predicted solution after setting it. ---*/
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
 
     unsigned short iDim;
@@ -2956,7 +2897,7 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry,
   const su2double WAitken = GetWAitken_Dyn();
 
   // To nPointDomain; we need to communicate the solutions (predicted, old and old predicted) after this routine
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Retrieve pointers to the predicted and calculated solutions ---*/
@@ -2981,7 +2922,7 @@ void CFEASolver::Update_StructSolution(CGeometry **fea_geometry,
                                        CConfig *fea_config,
                                        CSolver ***fea_solution) {
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
 
     auto valSolutionPred = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred(iPoint);
@@ -3074,7 +3015,11 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
 
   su2double objective_function = 0.0;
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size) reduction(+:objective_function))
+  SU2_OMP_PARALLEL
+  {
+  su2double obj_fun_local = 0.0;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -3086,9 +3031,10 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
       su2double current_solution = nodes->GetSolution(iPoint,iVar);
 
       /*--- The objective function is the sum of the difference between solution and difference, squared ---*/
-      objective_function += pow(current_solution - reference_geometry, 2);
+      obj_fun_local += pow(current_solution - reference_geometry, 2);
     }
-
+  }
+  atomicAdd(obj_fun_local, objective_function);
   }
 
   SU2_MPI::Allreduce(&objective_function, &Total_OFRefGeom, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -3211,16 +3157,24 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_contain
 
   su2double total_volume = 0.0, integral = 0.0, discreteness = 0.0;
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size) reduction(+:total_volume,integral,discreteness))
+  SU2_OMP_PARALLEL
+  {
+  su2double tot_vol_loc = 0.0, integral_loc = 0.0, discrete_loc = 0.0;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iElem = 0; iElem < nElement; ++iElem) {
     /*--- count only elements that belong to the partition ---*/
-    if ( geometry->node[geometry->elem[iElem]->GetNode(0)]->GetDomain() ){
+    if (geometry->node[geometry->elem[iElem]->GetNode(0)]->GetDomain()) {
       su2double volume = geometry->elem[iElem]->GetVolume();
       su2double rho = element_properties[iElem]->GetPhysicalDensity();
-      total_volume += volume;
-      integral += volume*rho;
-      discreteness += volume*4.0*rho*(1.0-rho);
+      tot_vol_loc += volume;
+      integral_loc += volume*rho;
+      discrete_loc += volume*4.0*rho*(1.0-rho);
     }
+  }
+  atomicAdd(tot_vol_loc, total_volume);
+  atomicAdd(integral_loc, integral);
+  atomicAdd(discrete_loc, discreteness);
   }
 
   su2double tmp;
@@ -3266,7 +3220,11 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
 
   su2double compliance = 0.0;
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size) reduction(+:compliance))
+  SU2_OMP_PARALLEL
+  {
+  su2double comp_local = 0.0;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     unsigned short iVar;
@@ -3292,7 +3250,9 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Add work contribution from this node ---*/
     for (iVar = 0; iVar < nVar; iVar++)
-      compliance += nodalForce[iVar]*nodes->GetSolution(iPoint,iVar);
+      comp_local += nodalForce[iVar]*nodes->GetSolution(iPoint,iVar);
+  }
+  atomicAdd(comp_local, compliance);
   }
 
   SU2_MPI::Allreduce(&compliance, &Total_OFCompliance, 1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
@@ -3318,7 +3278,11 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
   su2double totalVolume_reduce = 0.0;
 
   /*--- Loop over the elements in the domain. ---*/
-  SU2_OMP(parallel for schedule(dynamic,omp_chunk_size) reduction(+:weightedValue,totalVolume))
+  SU2_OMP_PARALLEL
+  {
+  su2double weighted_loc = 0.0, totalVol_loc = 0.0;
+
+  SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iElem = 0; iElem < nElement; iElem++) {
 
     int thread = omp_get_thread_num();
@@ -3353,16 +3317,18 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
         elementVolume = element->ComputeVolume();
 
       // Compute the total volume
-      totalVolume += elementVolume;
+      totalVol_loc += elementVolume;
 
       // Retrieve the value of the design variable
       su2double dvValue = numerics[FEA_TERM]->Get_DV_Val(element_properties[iElem]->GetDV());
 
       // Add the weighted sum of the value of the design variable
-      weightedValue += dvValue * elementVolume;
+      weighted_loc += dvValue * elementVolume;
 
     }
-
+  }
+  atomicAdd(totalVol_loc, totalVolume);
+  atomicAdd(weighted_loc, weightedValue);
   }
 
   // Reduce value across processors for parallelization
@@ -3550,7 +3516,7 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
 
   /*--- "Rectify" the input, initialize the physical density with
   the design density (the filter function works in-place). ---*/
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (auto iElem=0ul; iElem<nElement; ++iElem) {
     su2double rho = element_properties[iElem]->GetDesignDensity();
     if      (rho > 1.0) physical_rho[iElem] = 1.0;
