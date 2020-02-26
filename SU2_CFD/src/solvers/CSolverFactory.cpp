@@ -51,9 +51,7 @@ CSolver** CSolverFactory::createSolverContainer(ENUM_SOLVER kindSolver, CConfig 
 
   CSolver** solver;
 
-  solver = new CSolver*[MAX_SOLS];
-  for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++)
-    solver[iSol] = nullptr;
+  solver = new CSolver*[MAX_SOLS]();
 
   const bool allocDirect  = false;
   const bool allocAdjoint = true;
@@ -137,8 +135,8 @@ CSolver** CSolverFactory::createSolverContainer(ENUM_SOLVER kindSolver, CConfig 
       solver[ADJHEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocAdjoint, !standAlone);
       break;
     case DISC_ADJ_HEAT:
-      solver[HEAT_SOL]    = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, !standAlone);
-      solver[ADJHEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocAdjoint, !standAlone);
+      solver[HEAT_SOL]    = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, standAlone);
+      solver[ADJHEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocAdjoint, standAlone);
       break;
     case FEM_ELASTICITY:
       solver[FEA_SOL] = createSolver(FEM_ELASTICITY, solver, geometry, config, iMGLevel);
@@ -237,7 +235,7 @@ CSolver* CSolverFactory::createTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver
 
     if (config->GetDiscrete_Adjoint()){
       if (!config->GetFrozen_Visc_Disc())
-        turbSolver = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_TURB_SYS, iMGLevel);
+        turbSolver = new CDiscAdjSolver(geometry, config, solver[TURB_SOL], RUNTIME_TURB_SYS, iMGLevel);
     } else {
       if (!config->GetFrozen_Visc_Cont())
         turbSolver = new CAdjTurbSolver(geometry, config, iMGLevel);
@@ -318,12 +316,14 @@ CSolver* CSolverFactory::createFlowSolver(ENUM_SOLVER kindFlowSolver, CSolver **
   switch (kindFlowSolver) {
     case EULER:
       flowSolver = new CEulerSolver(geometry, config, iMGLevel);
+      flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       break;
     case NAVIER_STOKES: case RANS:
       flowSolver = new CNSSolver(geometry, config, iMGLevel);
       break;
     case INC_EULER:
       flowSolver = new CIncEulerSolver(geometry, config, iMGLevel);
+      flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       break;
     case INC_NAVIER_STOKES: case INC_RANS:
       flowSolver = new CIncNSSolver(geometry, config, iMGLevel);
@@ -332,10 +332,6 @@ CSolver* CSolverFactory::createFlowSolver(ENUM_SOLVER kindFlowSolver, CSolver **
       SU2_MPI::Error("Flow solver not found", CURRENT_FUNCTION);
       break;
   }
-
-  assert(flowSolver != nullptr);
-
-  flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   return flowSolver;
 
