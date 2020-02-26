@@ -4627,6 +4627,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   if (TauWallFlag_i && TauWallFlag_j){
     UseWallFunction = false;
+    Mean_TauWall = 0.0;
   }
   else if (TauWallFlag_i && !TauWallFlag_j){
     UseWallFunction = true;
