@@ -1,6 +1,6 @@
 /*!
- * \file CHeatFVMVariable.cpp
- * \brief Definition of the solution fields.
+ * \file CHeatVariable.cpp
+ * \brief Definition of the variables for heat equation problems.
  * \author F. Palacios, T. Economon
  * \version 7.0.1 "Blackbird"
  *
@@ -26,10 +26,10 @@
  */
 
 
-#include "../../include/variables/CHeatFVMVariable.hpp"
+#include "../../include/variables/CHeatVariable.hpp"
 
 
-CHeatFVMVariable::CHeatFVMVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
+CHeatVariable::CHeatVariable(su2double heat, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
 
   bool low_fidelity = false;
@@ -78,6 +78,10 @@ CHeatFVMVariable::CHeatFVMVariable(su2double heat, unsigned long npoint, unsigne
   Max_Lambda_Inv.resize(nPoint);
   Max_Lambda_Visc.resize(nPoint);
   Delta_Time.resize(nPoint);
+
+  /* Under-relaxation parameter. */
+  UnderRelaxation.resize(nPoint) = su2double(1.0);
+  LocalCFL.resize(nPoint) = su2double(0.0);
 
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();

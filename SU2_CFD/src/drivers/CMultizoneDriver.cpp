@@ -84,7 +84,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
     case FEM_ELASTICITY:
       structural_zone = true;
       break;
-    case HEAT_EQUATION_FVM:
+    case HEAT_EQUATION:
       heat_zone = true;
       break;
     }
@@ -138,6 +138,26 @@ CMultizoneDriver::~CMultizoneDriver(void) {
 }
 
 void CMultizoneDriver::StartSolver() {
+
+  /*--- Find out the minimum of all references times and then set each zone to this (same) value.
+   * (To ensure that all zones run synchronously in time, be it a dimensional or non-dimensionalized one.) ---*/
+
+  su2double Time_Ref = config_container[ZONE_0]->GetTime_Ref();
+
+  for (iZone = 1; iZone < nZone; iZone++) {
+    if (config_container[iZone]->GetTime_Ref() < Time_Ref)
+      Time_Ref = config_container[iZone]->GetTime_Ref();
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    config_container[iZone]->SetTime_Ref(Time_Ref);
+
+    /*--- Recompute some values as the reference time might has changed in iZone ---*/
+
+    config_container[iZone]->SetDelta_UnstTimeND(config_container[iZone]->GetDelta_UnstTime() / Time_Ref);
+    config_container[iZone]->SetTotal_UnstTimeND(config_container[iZone]->GetTotal_UnstTime() / Time_Ref);
+  }
 
 #ifndef HAVE_MPI
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
@@ -656,7 +676,7 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 
   unsigned long nOuterIter, OuterIter, nTimeIter;
   su2double MaxTime, CurTime;
-  bool TimeDomain, InnerConvergence, FinalTimeReached, MaxIterationsReached;
+  bool TimeDomain, InnerConvergence, FinalTimeReached, MaxIterationsReached, TimeConvergence;
 
   OuterIter  = driver_config->GetOuterIter();
   nOuterIter = driver_config->GetnOuter_Iter();
@@ -689,12 +709,13 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
   if (TimeDomain == YES) {
 
     /*--- Check whether the outer time integration has reached the final time ---*/
-
+    TimeConvergence = GetTimeConvergence();
     FinalTimeReached     = CurTime >= MaxTime;
     MaxIterationsReached = TimeIter+1 >= nTimeIter;
 
-    if ((FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
+    if ((TimeConvergence || FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
       cout << endl << "----------------------------- Solver Exit -------------------------------";
+      if (TimeConvergence)  cout << endl << "All windowed time-averaged convergence criteria are fullfilled." << endl;
       if (FinalTimeReached) cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
       else cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
       cout << "-------------------------------------------------------------------------" << endl;

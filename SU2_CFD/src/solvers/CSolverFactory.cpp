@@ -37,7 +37,7 @@
 #include "../../include/solvers/CAdjEulerSolver.hpp"
 #include "../../include/solvers/CAdjNSSolver.hpp"
 #include "../../include/solvers/CAdjTurbSolver.hpp"
-#include "../../include/solvers/CHeatSolverFVM.hpp"
+#include "../../include/solvers/CHeatSolver.hpp"
 #include "../../include/solvers/CFEASolver.hpp"
 #include "../../include/solvers/CTemplateSolver.hpp"
 #include "../../include/solvers/CDiscAdjSolver.hpp"
@@ -85,7 +85,7 @@ CSolver** CSolverFactory::createSolverContainer(ENUM_SOLVER kindSolver, CConfig 
       solver[HEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, !standAlone);
       solver[TURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
       break;
-    case HEAT_EQUATION_FVM:
+    case HEAT_EQUATION:
       solver[HEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, standAlone);
       break;
     case ADJ_EULER:
@@ -260,7 +260,7 @@ CSolver* CSolverFactory::createHeatSolver(CSolver **solver, CGeometry *geometry,
         SU2_MPI::Error("No continuous adjoint heat solver available.", CURRENT_FUNCTION);
       }
     } else {
-      heatSolver = new CHeatSolverFVM(geometry, config, iMGLevel);
+      heatSolver = new CHeatSolver(geometry, config, iMGLevel);
     }
   }
   return heatSolver;
