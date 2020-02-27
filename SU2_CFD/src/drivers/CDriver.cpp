@@ -1088,7 +1088,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
 
 void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver ***&solver) {
       
-  ENUM_SOLVER kindSolver = static_cast<ENUM_SOLVER>(config->GetKind_Solver());
+  ENUM_MAIN_SOLVER kindSolver = static_cast<ENUM_MAIN_SOLVER>(config->GetKind_Solver());
 
   if (rank == MASTER_NODE)
     cout << endl <<"-------------------- Solver Preprocessing ( Zone " << config->GetiZone() <<" ) --------------------" << endl;

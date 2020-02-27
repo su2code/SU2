@@ -155,7 +155,7 @@ static const MapType<string, AVERAGE_TYPE> Average_Map = {
 /*!
  * \brief different solver types for the CFD component
  */
-enum ENUM_SOLVER {
+enum ENUM_MAIN_SOLVER {
   NO_SOLVER = 0,                    /*!< \brief Definition of no solver. */
   EULER = 1,                        /*!< \brief Definition of the Euler's solver. */
   NAVIER_STOKES = 2,                /*!< \brief Definition of the Navier-Stokes' solver. */
@@ -187,7 +187,7 @@ enum ENUM_SOLVER {
   FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIPHYSICS = 30
 };
-static const MapType<string, ENUM_SOLVER> Solver_Map = {
+static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", NO_SOLVER)
   MakePair("EULER", EULER)
   MakePair("NAVIER_STOKES", NAVIER_STOKES)
