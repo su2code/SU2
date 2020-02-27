@@ -57,6 +57,10 @@ using namespace std;
  * creating CSysSolve objects we can more easily assign different
  * matrix-vector products and preconditioners to different problems
  * that may arise in a hierarchical solver (i.e. multigrid).
+ *
+ * The methods of this class are designed to be called by multiple OpenMP threads.
+ * Beware of writes to class member variables, for example "Residual" should only
+ * be modified by one thread.
  */
 template<class ScalarType>
 class CSysSolve {

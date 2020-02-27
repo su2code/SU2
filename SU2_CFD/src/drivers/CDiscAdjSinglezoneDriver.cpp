@@ -542,7 +542,3 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   AD::ClearAdjoints();
 
 }
-
-bool CDiscAdjSinglezoneDriver::GetTimeConvergence() const{
-  return false;
-}
