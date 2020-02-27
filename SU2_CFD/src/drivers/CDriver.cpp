@@ -68,10 +68,7 @@
 #include "../../include/numerics/elasticity/CFEANonlinearElasticity.hpp"
 #include "../../include/numerics/elasticity/nonlinear_models.hpp"
 
-#include "../../include/integration/CSingleGridIntegration.hpp"
-#include "../../include/integration/CMultiGridIntegration.hpp"
-#include "../../include/integration/CStructuralIntegration.hpp"
-#include "../../include/integration/CFEM_DG_Integration.hpp"
+#include "../../include/integration/CIntegrationFactory.hpp"
 
 #include "../../../Common/include/omp_structure.hpp"
 
@@ -1399,155 +1396,23 @@ void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
 
 void CDriver::Integration_Preprocessing(CConfig *config, CIntegration **&integration) {
 
-  unsigned short iSol;
-
   if (rank == MASTER_NODE)
     cout << endl <<"----------------- Integration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
 
-  integration = new CIntegration* [MAX_SOLS];
-  for (iSol = 0; iSol < MAX_SOLS; iSol++)
-    integration[iSol] = NULL;
+  ENUM_MAIN_SOLVER kindMainSolver = static_cast<ENUM_MAIN_SOLVER>(config->GetKind_Solver());
 
-  bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, fem,
-      fem_euler, fem_ns, fem_turbulent,
-      heat, template_solver, transition, disc_adj, disc_adj_fem, disc_adj_heat;
-
-  /*--- Initialize some useful booleans ---*/
-  euler            = false; adj_euler        = false;
-  ns               = false; adj_ns           = false;
-  turbulent        = false; adj_turb         = false;
-  disc_adj         = false;
-  fem_euler        = false;
-  fem_ns           = false;
-  fem_turbulent    = false;
-  heat             = false; disc_adj_heat    = false;
-  fem              = false; disc_adj_fem     = false;
-  transition       = false;
-  template_solver  = false;
-
-  /*--- Assign booleans ---*/
-  switch (config->GetKind_Solver()) {
-    case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : case INC_EULER: euler = true; break;
-    case NAVIER_STOKES: case INC_NAVIER_STOKES: ns = true;  heat = config->GetWeakly_Coupled_Heat(); break;
-    case RANS : case INC_RANS: ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat = config->GetWeakly_Coupled_Heat(); break;
-    case FEM_EULER : fem_euler = true; break;
-    case FEM_NAVIER_STOKES: fem_ns = true; break;
-    case FEM_RANS : fem_ns = true; fem_turbulent = true; break;
-    case FEM_LES :  fem_ns = true; break;
-    case HEAT_EQUATION: heat = true; break;
-    case FEM_ELASTICITY: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER : case DISC_ADJ_INC_EULER: euler = true; disc_adj = true; break;
-    case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
-    case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
-    case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES: ns = true; disc_adj = true; heat = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_RANS : case DISC_ADJ_INC_RANS: ns = true; turbulent = true; disc_adj = true; heat = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
-    case DISC_ADJ_HEAT: heat = true; disc_adj_heat = true; break;
-  }
-
-  /*--- Allocate solution for a template problem ---*/
-  if (template_solver) integration[TEMPLATE_SOL] = new CSingleGridIntegration(config);
-
-  /*--- Allocate solution for direct problem ---*/
-  if (euler) integration[FLOW_SOL] = new CMultiGridIntegration(config);
-  if (ns) integration[FLOW_SOL] = new CMultiGridIntegration(config);
-  if (turbulent) integration[TURB_SOL] = new CSingleGridIntegration(config);
-  if (transition) integration[TRANS_SOL] = new CSingleGridIntegration(config);
-  if (heat) integration[HEAT_SOL] = new CSingleGridIntegration(config);
-  if (fem) integration[FEA_SOL] = new CStructuralIntegration(config);
-
-  /*--- Allocate integration container for finite element flow solver. ---*/
-
-  if (fem_euler) integration[FLOW_SOL] = new CFEM_DG_Integration(config);
-  if (fem_ns)    integration[FLOW_SOL] = new CFEM_DG_Integration(config);
-  //if (fem_turbulent) integration[FEM_TURB_SOL] = new CSingleGridIntegration(config);
-
-  if (fem_turbulent)
-    SU2_MPI::Error("No turbulent FEM solver yet", CURRENT_FUNCTION);
-
-  /*--- Allocate solution for adjoint problem ---*/
-  if (adj_euler) integration[ADJFLOW_SOL] = new CMultiGridIntegration(config);
-  if (adj_ns) integration[ADJFLOW_SOL] = new CMultiGridIntegration(config);
-  if (adj_turb) integration[ADJTURB_SOL] = new CSingleGridIntegration(config);
-
-  if (disc_adj) integration[ADJFLOW_SOL] = new CIntegration(config);
-  if (disc_adj_fem) integration[ADJFEA_SOL] = new CIntegration(config);
-  if (disc_adj_heat) integration[ADJHEAT_SOL] = new CIntegration(config);
+  integration = CIntegrationFactory::createIntegrationContainer(kindMainSolver, config);
 
 }
 
 void CDriver::Integration_Postprocessing(CIntegration ***integration, CGeometry **geometry, CConfig *config, unsigned short val_iInst) {
-  bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, fem,
-      fem_euler, fem_ns, fem_turbulent,
-      heat, template_solver, transition, disc_adj, disc_adj_fem, disc_adj_heat;
 
-  /*--- Initialize some useful booleans ---*/
-  euler            = false; adj_euler        = false;
-  ns               = false; adj_ns           = false;
-  turbulent        = false; adj_turb         = false;
-  disc_adj         = false;
-  fem_euler        = false;
-  fem_ns           = false;
-  fem_turbulent    = false;
-  heat             = false; disc_adj_heat    = false;
-  fem              = false; disc_adj_fem     = false;
-  transition       = false;
-  template_solver  = false;
-
-  /*--- Assign booleans ---*/
-  switch (config->GetKind_Solver()) {
-    case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : case INC_EULER: euler = true; break;
-    case NAVIER_STOKES: case INC_NAVIER_STOKES: ns = true; heat = config->GetWeakly_Coupled_Heat(); break;
-    case RANS : case INC_RANS: ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat = config->GetWeakly_Coupled_Heat(); break;
-    case FEM_EULER : fem_euler = true; break;
-    case FEM_NAVIER_STOKES: fem_ns = true; break;
-    case FEM_RANS : fem_ns = true; fem_turbulent = true; break;
-    case FEM_LES :  fem_ns = true; break;
-    case HEAT_EQUATION: heat = true; break;
-    case FEM_ELASTICITY: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER : case DISC_ADJ_INC_EULER: euler = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES: ns = true; disc_adj = true; heat = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_RANS : case DISC_ADJ_INC_RANS: ns = true; turbulent = true; disc_adj = true; heat = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
-    case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
-    case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; break;
-    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
-    case DISC_ADJ_HEAT: heat = true; disc_adj_heat = true; break;
+  for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++){
+    delete integration[val_iInst][iSol];
   }
 
-  /*--- DeAllocate solution for a template problem ---*/
-  if (template_solver) integration[val_iInst][TEMPLATE_SOL] = new CSingleGridIntegration(config);
-
-  /*--- DeAllocate solution for direct problem ---*/
-  if (euler || ns) delete integration[val_iInst][FLOW_SOL];
-  if (turbulent) delete integration[val_iInst][TURB_SOL];
-  if (transition) delete integration[val_iInst][TRANS_SOL];
-  if (heat) delete integration[val_iInst][HEAT_SOL];
-  if (fem) delete integration[val_iInst][FEA_SOL];
-  if (disc_adj_fem) delete integration[val_iInst][ADJFEA_SOL];
-  if (disc_adj_heat) delete integration[val_iInst][ADJHEAT_SOL];
-
-  /*--- DeAllocate solution for adjoint problem ---*/
-  if (adj_euler || adj_ns || disc_adj) delete integration[val_iInst][ADJFLOW_SOL];
-  if (adj_turb) delete integration[val_iInst][ADJTURB_SOL];
-
-  /*--- DeAllocate integration container for finite element flow solver. ---*/
-  if (fem_euler || fem_ns) delete integration[val_iInst][FLOW_SOL];
-  //if (fem_turbulent)     delete integration_container[val_iInst][FEM_TURB_SOL];
-
-  if (fem_turbulent)
-    SU2_MPI::Error("No turbulent FEM solver yet", CURRENT_FUNCTION);
-
   delete [] integration[val_iInst];
+
 }
 
 void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) {
