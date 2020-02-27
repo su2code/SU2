@@ -598,31 +598,3 @@ CNumerics::ResidualType<> CSourceRadiation::ComputeResidual(const CConfig *confi
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
-
-CSourceVolumetricHeat::CSourceVolumetricHeat(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) :
-                       CSourceBase_Flow(val_nDim, val_nVar, config) {
-
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-}
-
-CNumerics::ResidualType<> CSourceVolumetricHeat::ComputeResidual(const CConfig *config) {
-
-  unsigned short iDim;
-
-  /*--- Zero the continuity contribution. ---*/
-
-  residual[0] = 0.0;
-
-  /*--- Zero the momentum contribution. ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++)
-    residual[iDim+1] = 0.0;
-
-  /*--- Set the energy contribution. ---*/
-
-  residual[nDim+1] = -1.0*config->GetHeatSource_Val()*Volume;
-
-  /*--- Jacobian is set to zero on initialization (constant heat source). ---*/
-
-  return ResidualType<>(residual, jacobian, nullptr);
-}
