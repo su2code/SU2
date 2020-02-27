@@ -4939,7 +4939,7 @@ public:
    * \brief Get the kind of wall.
    * \return Kind of wall - smooth or rough.
    */
-  unsigned short GetKindWall(string val_marker);
+  unsigned short GetKindWall(string val_marker) const;
 
   /*!
    * \brief Set the kind of wall - rough or smooth.
@@ -6660,7 +6660,7 @@ public:
    * \param[in] val_index - Index corresponding to the boundary.
    * \return The wall roughness height.
    */
-  su2double GetWall_RoughnessHeight(string val_marker);
+  su2double GetWall_RoughnessHeight(string val_marker) const;
 
   /*!
    * \brief Set the wall roughness height on a wall boundary (Heatflux or Isothermal).
