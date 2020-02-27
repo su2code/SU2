@@ -993,6 +993,7 @@ private:
   bool Prestretch;                           /*!< \brief Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;             /*!< \brief File name for reference geometry. */
   string FEA_FileName;              /*!< \brief File name for element-based properties. */
+  bool FEAAdvancedMode;             /*!< \brief Determine if advanced features are used from the element-based FEA analysis (experimental). */
   su2double RefGeom_Penalty,        /*!< \brief Penalty weight value for the reference geometry objective function. */
   RefNode_Penalty,                  /*!< \brief Penalty weight value for the reference node objective function. */
   DV_Penalty;                       /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
@@ -1123,6 +1124,12 @@ private:
   unsigned short pastix_fill_lvl;  /*!< \brief Fill level for PaStiX ILU */
 
   string caseName;                 /*!< \brief Name of the current case */
+
+  unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
+
+  unsigned short Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
+  unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
+  bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -2094,6 +2101,12 @@ public:
    * \return Name of the file with the element properties of the structural problem.
    */
   string GetFEA_FileName(void) const { return FEA_FileName; }
+
+  /*!
+    * \brief Determine if advanced features are used from the element-based FEA analysis (experimental feature).
+    * \return <code>TRUE</code> is experimental, <code>FALSE</code> is the default behaviour.
+    */
+  inline bool GetAdvanced_FEAElementBased(void) const { return FEAAdvancedMode; }
 
   /*!
    * \brief Get the name of the file with the reference geometry of the structural problem.
@@ -4240,7 +4253,7 @@ public:
    * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).
    * \return yes/no.
    */
-  bool GetUse_Accurate_Jacobians(void) { return Use_Accurate_Jacobians; }
+  bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4443,7 +4456,7 @@ public:
    * \brief Factor by which to multiply the dissipation contribution to Jacobians of central schemes.
    * \return The factor.
    */
-  su2double GetCent_Jac_Fix_Factor(void) { return Cent_Jac_Fix_Factor; }
+  su2double GetCent_Jac_Fix_Factor(void) const { return Cent_Jac_Fix_Factor; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -5822,7 +5835,7 @@ public:
    * \brief Get a pointer to the body force vector.
    * \return A pointer to the body force vector.
    */
-  su2double* GetBody_Force_Vector(void) { return Body_Force_Vector; }
+  const su2double* GetBody_Force_Vector(void) const { return Body_Force_Vector; }
 
   /*!
    * \brief Get information about the rotational frame.
@@ -8480,7 +8493,7 @@ public:
    * \param[in] val_coeff - Index of the coefficient.
    * \return Alpha coefficient for the Runge-Kutta integration scheme.
    */
-  su2double* Get_Electric_Field_Dir(void) { return Electric_Field_Dir; }
+  const su2double* Get_Electric_Field_Dir(void) const { return Electric_Field_Dir; }
 
   /*!
    * \brief Check if the user wants to apply the load as a ramp.
@@ -8700,6 +8713,21 @@ public:
    * \brief Get the basis function radius to use for radial basis function interpolation for FSI.
    */
   su2double GetRadialBasisFunctionParameter(void) const { return RadialBasisFunction_Parameter; }
+
+  /*!
+   * \brief Get the kind of inlet face interpolation function to use.
+   */
+  inline unsigned short GetKindInletInterpolationFunction(void) const {return Kind_InletInterpolationFunction;}
+
+  /*!
+   * \brief Get the kind of inlet face interpolation data type.
+   */
+  inline unsigned short GetKindInletInterpolationType (void) const  {return Kind_Inlet_InterpolationType;}
+
+  /*!
+   * \brief Get whether to print inlet interpolated data or not.
+   */
+  bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData;}
 
   /*!
    * \brief Get information about using UQ methodology
@@ -9193,5 +9221,10 @@ public:
    * \return Number of threads per rank.
    */
   unsigned long GetLinear_Solver_Prec_Threads(void) const { return Linear_Solver_Prec_Threads; }
+
+  /*!
+   * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
+   */
+  unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
 
 };

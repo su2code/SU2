@@ -154,7 +154,7 @@ public:
   inline unsigned long GetNumberOfColumnsInProfile(int val_iProfile) {
     return numberOfColumnsInProfile[val_iProfile];
   }
-  
+
   /*!
    * \brief Get the 1D vector of data for a profile from the input file.
    * \param[in] val_iProfile - current profile index.
@@ -164,4 +164,18 @@ public:
     return profileData[val_iProfile];
   }
   
+   /*!
+   * \brief Get the data for the specific column if interpolation being done.
+   * \param[in] val_iProfile - current profile index.
+   * \param[in] iCol - the column whose data is required
+   * \returns the specific column data.
+   */
+  inline vector<su2double> GetColumnForProfile(int val_iProfile, unsigned short iCol) const {
+    auto nRow = numberOfRowsInProfile[val_iProfile];
+    auto nCol = numberOfColumnsInProfile[val_iProfile];
+    vector<su2double> ColumnData(nRow);
+    for (unsigned long iRow = 0; iRow < nRow; iRow++)
+      ColumnData[iRow]=profileData[val_iProfile][iRow*nCol+iCol];
+    return ColumnData;
+  }
 };

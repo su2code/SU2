@@ -163,7 +163,7 @@ enum ENUM_SOLVER {
   INC_EULER = 4,                    /*!< \brief Definition of the incompressible Euler's solver. */
   INC_NAVIER_STOKES =5,             /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
   INC_RANS = 6,                     /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  HEAT_EQUATION_FVM = 7,            /*!< \brief Definition of the finite volume heat solver. */
+  HEAT_EQUATION = 7,                /*!< \brief Definition of the finite volume heat solver. */
   FLUID_STRUCTURE_INTERACTION = 8,  /*!< \brief Definition of a FSI solver. */
   FEM_ELASTICITY = 9,               /*!< \brief Definition of a FEM solver. */
   ADJ_EULER = 10,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
@@ -202,7 +202,7 @@ static const MapType<string, ENUM_SOLVER> Solver_Map = {
   MakePair("ADJ_EULER", ADJ_EULER)
   MakePair("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
   MakePair("ADJ_RANS", ADJ_RANS )
-  MakePair("HEAT_EQUATION_FVM", HEAT_EQUATION_FVM)
+  MakePair("HEAT_EQUATION", HEAT_EQUATION)
   MakePair("ELASTICITY", FEM_ELASTICITY)
   MakePair("DISC_ADJ_EULER", DISC_ADJ_EULER)
   MakePair("DISC_ADJ_RANS", DISC_ADJ_RANS)
@@ -210,7 +210,7 @@ static const MapType<string, ENUM_SOLVER> Solver_Map = {
   MakePair("DISC_ADJ_INC_EULER", DISC_ADJ_INC_EULER)
   MakePair("DISC_ADJ_INC_RANS", DISC_ADJ_INC_RANS)
   MakePair("DISC_ADJ_INC_NAVIERSTOKES", DISC_ADJ_INC_NAVIER_STOKES)
-  MakePair("DISC_ADJ_HEAT_EQUATION_FVM", DISC_ADJ_HEAT)
+  MakePair("DISC_ADJ_HEAT_EQUATION", DISC_ADJ_HEAT)
   MakePair("DISC_ADJ_FEM_EULER", DISC_ADJ_FEM_EULER)
   MakePair("DISC_ADJ_FEM_RANS", DISC_ADJ_FEM_RANS)
   MakePair("DISC_ADJ_FEM_NS", DISC_ADJ_FEM_NS)
@@ -335,7 +335,33 @@ static const MapType<string, ENUM_RADIALBASIS> RadialBasisFunction_Map = {
 };
 
 /*!
- * \brief Types of (coupling) transfers between distinct physical zones
+ * \brief type of radial spanwise interpolation function for the inlet face
+ */
+enum ENUM_INLET_SPANWISEINTERPOLATION {
+  NO_INTERPOLATION = 0,
+  LINEAR_1D = 1,
+  AKIMA_1D = 2,
+};
+static const map<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpolation_Map = {
+  MakePair("NONE", NO_INTERPOLATION)
+  MakePair("LINEAR_1D",LINEAR_1D)
+  MakePair("AKIMA_1D",AKIMA_1D)
+};
+
+/*!
+ * \brief type of radial spanwise interpolation data type for the inlet face
+ */
+enum ENUM_INLET_INTERPOLATIONTYPE {
+  VR_VTHETA = 0,
+  ALPHA_PHI = 1,
+};
+static const map<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map = {
+  MakePair("VR_VTHETA",VR_VTHETA)
+  MakePair("ALPHA_PHI",ALPHA_PHI)
+};
+
+/*!
+ * \brief types of (coupling) transfers between distinct physical zones
  */
 enum ENUM_TRANSFER {
   ZONES_ARE_EQUAL                   = 0,    /*!< \brief Zones are equal - no transfer. */
