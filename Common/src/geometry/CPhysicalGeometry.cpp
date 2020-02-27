@@ -124,6 +124,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 #endif
 #endif
 
+  edgeColorGroupSize = config->GetEdgeColoringGroupSize();
+
   /*--- Arrays for defining the turbomachinery structure ---*/
 
   nSpanWiseSections       = NULL;
@@ -310,6 +312,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   xadj      = NULL;
 #endif
 #endif
+
+  edgeColorGroupSize = config->GetEdgeColoringGroupSize();
 
   /*--- Arrays for defining the turbomachinery structure ---*/
 

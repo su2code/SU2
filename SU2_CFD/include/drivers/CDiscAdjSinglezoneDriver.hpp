@@ -129,8 +129,8 @@ public:
 
   /*!
    * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
-   * \return true, if convergence criteria has been met, else false
+   * \return false
    */
-  bool GetTimeConvergence() const override;
+  inline bool GetTimeConvergence() const override {return false;};
 
 };

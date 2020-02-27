@@ -315,7 +315,7 @@ public:
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
                                        CConfig *config,
-                                       bool Output) override;
+                                       bool Output);
 
   /*!
    * \brief Impose a no-slip condition.
@@ -437,14 +437,14 @@ public:
    * \brief Compute the viscous residuals.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void Viscous_Residual(CGeometry *geometry,
                         CSolver **solver_container,
-                        CNumerics *numerics,
+                        CNumerics **numerics_container,
                         CConfig *config,
                         unsigned short iMesh,
                         unsigned short iRKStep) override;
@@ -512,17 +512,5 @@ public:
    * \return Value of the max Strain rate magnitude.
    */
   inline su2double GetStrainMag_Max(void) const override { return StrainMag_Max; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the StrainMag_Max
-   */
-  inline void SetStrainMag_Max(su2double val_strainmag_max) override { StrainMag_Max = val_strainmag_max; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the Omega_Max
-   */
-  inline void SetOmega_Max(su2double val_omega_max) override { Omega_Max = val_omega_max; }
 
 };

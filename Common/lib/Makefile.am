@@ -98,6 +98,7 @@ lib_sources = \
   ../src/wall_model.cpp \
   ../src/toolboxes/printing_toolbox.cpp \
   ../src/toolboxes/CLinearPartitioner.cpp \
+  ../src/toolboxes/C1DInterpolation.cpp \
   ../src/toolboxes/MMS/CVerificationSolution.cpp \
   ../src/toolboxes/MMS/CIncTGVSolution.cpp \
   ../src/toolboxes/MMS/CInviscidVortexSolution.cpp \

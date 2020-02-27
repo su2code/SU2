@@ -163,7 +163,7 @@ enum ENUM_SOLVER {
   INC_EULER = 4,                    /*!< \brief Definition of the incompressible Euler's solver. */
   INC_NAVIER_STOKES =5,             /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
   INC_RANS = 6,                     /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  HEAT_EQUATION_FVM = 7,            /*!< \brief Definition of the finite volume heat solver. */
+  HEAT_EQUATION = 7,                /*!< \brief Definition of the finite volume heat solver. */
   FLUID_STRUCTURE_INTERACTION = 8,  /*!< \brief Definition of a FSI solver. */
   FEM_ELASTICITY = 9,               /*!< \brief Definition of a FEM solver. */
   ADJ_EULER = 10,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
@@ -202,7 +202,7 @@ static const MapType<string, ENUM_SOLVER> Solver_Map = {
   MakePair("ADJ_EULER", ADJ_EULER)
   MakePair("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
   MakePair("ADJ_RANS", ADJ_RANS )
-  MakePair("HEAT_EQUATION_FVM", HEAT_EQUATION_FVM)
+  MakePair("HEAT_EQUATION", HEAT_EQUATION)
   MakePair("ELASTICITY", FEM_ELASTICITY)
   MakePair("DISC_ADJ_EULER", DISC_ADJ_EULER)
   MakePair("DISC_ADJ_RANS", DISC_ADJ_RANS)
@@ -210,7 +210,7 @@ static const MapType<string, ENUM_SOLVER> Solver_Map = {
   MakePair("DISC_ADJ_INC_EULER", DISC_ADJ_INC_EULER)
   MakePair("DISC_ADJ_INC_RANS", DISC_ADJ_INC_RANS)
   MakePair("DISC_ADJ_INC_NAVIERSTOKES", DISC_ADJ_INC_NAVIER_STOKES)
-  MakePair("DISC_ADJ_HEAT_EQUATION_FVM", DISC_ADJ_HEAT)
+  MakePair("DISC_ADJ_HEAT_EQUATION", DISC_ADJ_HEAT)
   MakePair("DISC_ADJ_FEM_EULER", DISC_ADJ_FEM_EULER)
   MakePair("DISC_ADJ_FEM_RANS", DISC_ADJ_FEM_RANS)
   MakePair("DISC_ADJ_FEM_NS", DISC_ADJ_FEM_NS)
