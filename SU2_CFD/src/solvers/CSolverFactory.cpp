@@ -46,164 +46,205 @@
 #include "../../include/solvers/CFEM_DG_NSSolver.hpp"
 #include "../../include/solvers/CMeshSolver.hpp"
 #include "../../include/solvers/CDiscAdjMeshSolver.hpp"
+#include "../../include/solvers/CBaselineSolver.hpp"
+#include "../../include/solvers/CBaselineSolver_FEM.hpp"
 
-CSolver** CSolverFactory::createSolverContainer(ENUM_SOLVER kindSolver, CConfig *config, CGeometry *geometry, int iMGLevel){
+CSolver** CSolverFactory::createSolverContainer(ENUM_MAIN_SOLVER kindMainSolver, CConfig *config, CGeometry *geometry, int iMGLevel){
 
   CSolver** solver;
 
   solver = new CSolver*[MAX_SOLS]();
 
-  const bool allocDirect  = false;
-  const bool allocAdjoint = true;
-  const bool standAlone   = true;
-
-  ENUM_TURB_MODEL kindTurbModel = static_cast<ENUM_TURB_MODEL>(config->GetKind_Turb_Model());
-
-  switch (kindSolver) {
+  switch (kindMainSolver) {
     case TEMPLATE_SOLVER:
-      solver[FLOW_SOL] = createSolver(TEMPLATE_SOLVER, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL] = createSubSolver(SUB_SOLVER::TEMPLATE, solver, geometry, config, iMGLevel);
       break;
     case INC_EULER:
-      solver[FLOW_SOL] = createFlowSolver(INC_EULER, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL] = createSubSolver(SUB_SOLVER::INC_EULER, solver, geometry, config, iMGLevel);
       break;
     case EULER:
-      solver[FLOW_SOL] = createFlowSolver(EULER, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL] = createSubSolver(SUB_SOLVER::EULER, solver, geometry, config, iMGLevel);
       break;
     case INC_NAVIER_STOKES:
-      solver[FLOW_SOL] = createFlowSolver(INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[HEAT_SOL] = createHeatSolver(solver, geometry,config, iMGLevel, allocDirect, !standAlone);
+      solver[FLOW_SOL] = createSubSolver(SUB_SOLVER::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[HEAT_SOL] = createSubSolver(SUB_SOLVER::HEAT, solver, geometry, config, iMGLevel);
       break;
     case NAVIER_STOKES:
-      solver[FLOW_SOL] = createFlowSolver(NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL] = createSubSolver(SUB_SOLVER::NAVIER_STOKES, solver, geometry, config, iMGLevel);
       break;
     case RANS:
-      solver[FLOW_SOL] = createFlowSolver(RANS, solver, geometry, config, iMGLevel);
-      solver[TURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
+      solver[FLOW_SOL] = createSubSolver(SUB_SOLVER::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[TURB_SOL] = createSubSolver(SUB_SOLVER::TURB, solver, geometry, config, iMGLevel);
       break;
     case INC_RANS:
-      solver[FLOW_SOL] = createFlowSolver(INC_RANS, solver, geometry, config, iMGLevel);
-      solver[HEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, !standAlone);
-      solver[TURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
+      solver[FLOW_SOL] = createSubSolver(SUB_SOLVER::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[HEAT_SOL] = createSubSolver(SUB_SOLVER::HEAT, solver, geometry, config, iMGLevel);
+      solver[TURB_SOL] = createSubSolver(SUB_SOLVER::TURB, solver, geometry, config, iMGLevel);
       break;
     case HEAT_EQUATION:
-      solver[HEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, standAlone);
+      solver[HEAT_SOL] = createSubSolver(SUB_SOLVER::HEAT, solver, geometry, config, iMGLevel);
       break;
     case ADJ_EULER:
-      solver[FLOW_SOL]    = createFlowSolver(EULER, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = createSolver(ADJ_EULER, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createSubSolver(SUB_SOLVER::EULER, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = createSubSolver(SUB_SOLVER::CONT_ADJ_EULER, solver, geometry, config, iMGLevel);
       break;
     case ADJ_NAVIER_STOKES:
-      solver[FLOW_SOL]    = createFlowSolver(NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = createSolver(ADJ_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createSubSolver(SUB_SOLVER::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = createSubSolver(SUB_SOLVER::CONT_ADJ_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       break;
     case ADJ_RANS:
-      solver[FLOW_SOL]    = createFlowSolver(RANS, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = createSolver(ADJ_RANS, solver, geometry, config, iMGLevel);
-      solver[TURB_SOL]    = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
-      solver[ADJTURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocAdjoint);
+      solver[FLOW_SOL]    = createSubSolver(SUB_SOLVER::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = createSubSolver(SUB_SOLVER::CONT_ADJ_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[TURB_SOL]    = createSubSolver(SUB_SOLVER::TURB, solver, geometry, config, iMGLevel);
+      solver[ADJTURB_SOL] = createSubSolver(SUB_SOLVER::CONT_ADJ_TURB, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_EULER:
-      solver[FLOW_SOL]    = createFlowSolver(EULER, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = createSolver(DISC_ADJ_EULER, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createSubSolver(SUB_SOLVER::EULER, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_NAVIER_STOKES:
-      solver[FLOW_SOL]    = createFlowSolver(NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = createSolver(DISC_ADJ_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createSubSolver(SUB_SOLVER::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_RANS:
-      solver[FLOW_SOL]    = createFlowSolver(RANS, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = createSolver(DISC_ADJ_RANS, solver, geometry, config, iMGLevel);
-      solver[TURB_SOL]    = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
-      solver[ADJTURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocAdjoint);
+      solver[FLOW_SOL]    = createSubSolver(SUB_SOLVER::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[TURB_SOL]    = createSubSolver(SUB_SOLVER::TURB, solver, geometry, config, iMGLevel);
+      solver[ADJTURB_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_TURB, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_INC_EULER:
-      solver[FLOW_SOL]    = createFlowSolver(INC_EULER, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = createSolver(DISC_ADJ_INC_EULER, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createSubSolver(SUB_SOLVER::INC_EULER, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_INC_NAVIER_STOKES:
-      solver[FLOW_SOL]       = createFlowSolver(INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL]    = createSolver(DISC_ADJ_INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[HEAT_SOL]       = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, !standAlone);
-      solver[ADJHEAT_SOL]    = createHeatSolver(solver, geometry, config, iMGLevel, allocAdjoint, !standAlone);
+      solver[FLOW_SOL]    = createSubSolver(SUB_SOLVER::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[HEAT_SOL]    = createSubSolver(SUB_SOLVER::HEAT, solver, geometry, config, iMGLevel);
+      solver[ADJHEAT_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_INC_RANS:
-      solver[FLOW_SOL]    = createFlowSolver(INC_RANS, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = createSolver(DISC_ADJ_INC_RANS, solver, geometry, config, iMGLevel);
-      solver[TURB_SOL]    = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocDirect);
-      solver[ADJTURB_SOL] = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, allocAdjoint);
-      solver[HEAT_SOL]    = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, !standAlone);
-      solver[ADJHEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocAdjoint, !standAlone);
+      solver[FLOW_SOL]    = createSubSolver(SUB_SOLVER::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[HEAT_SOL]    = createSubSolver(SUB_SOLVER::HEAT, solver, geometry, config, iMGLevel);
+      solver[ADJHEAT_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
+      solver[TURB_SOL]    = createSubSolver(SUB_SOLVER::TURB, solver, geometry, config, iMGLevel);
+      solver[ADJTURB_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_TURB, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_HEAT:
-      solver[HEAT_SOL]    = createHeatSolver(solver, geometry, config, iMGLevel, allocDirect, standAlone);
-      solver[ADJHEAT_SOL] = createHeatSolver(solver, geometry, config, iMGLevel, allocAdjoint, standAlone);
+      solver[HEAT_SOL]    = createSubSolver(SUB_SOLVER::HEAT, solver, geometry, config, iMGLevel);
+      solver[ADJHEAT_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
       break;
     case FEM_ELASTICITY:
-      solver[FEA_SOL] = createSolver(FEM_ELASTICITY, solver, geometry, config, iMGLevel);
+      solver[FEA_SOL] = createSubSolver(SUB_SOLVER::FEA, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_FEM:
-      solver[FEA_SOL]    = createSolver(FEM_ELASTICITY, solver, geometry, config, iMGLevel);
-      solver[ADJFEA_SOL] = createSolver(DISC_ADJ_FEM, solver, geometry, config, iMGLevel);
+      solver[FEA_SOL]    = createSubSolver(SUB_SOLVER::FEA, solver, geometry, config, iMGLevel);
+      solver[ADJFEA_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_FEA, solver, geometry, config, iMGLevel);
       break;
     case FEM_EULER:
-      solver[FLOW_SOL] = createDGSolver(FEM_EULER, geometry, config, iMGLevel);
+      solver[FLOW_SOL] = createSubSolver(SUB_SOLVER::DG_EULER, solver, geometry, config, iMGLevel);
       break;
     case FEM_NAVIER_STOKES: case FEM_LES:
-      solver[FLOW_SOL] = createDGSolver(FEM_NAVIER_STOKES, geometry, config, iMGLevel);
+      solver[FLOW_SOL] = createSubSolver(SUB_SOLVER::DG_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       break;
     case FEM_RANS:
-      solver[FLOW_SOL] = createDGSolver(FEM_RANS, geometry, config, iMGLevel);
+      SU2_MPI::Error("FEM RANS not available", CURRENT_FUNCTION);
       break;
     case DISC_ADJ_FEM_EULER:
-      solver[FLOW_SOL]    = createDGSolver(FEM_EULER, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = createSolver(DISC_ADJ_EULER, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createSubSolver(SUB_SOLVER::DG_EULER, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_FEM_NS:
-      solver[FLOW_SOL]    = createDGSolver(FEM_NAVIER_STOKES, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = createSolver(DISC_ADJ_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL]    = createSubSolver(SUB_SOLVER::DG_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_FEM_RANS:
-      solver[FLOW_SOL]    = createDGSolver(FEM_RANS, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = createSolver(DISC_ADJ_RANS, solver, geometry, config, iMGLevel);
+      SU2_MPI::Error("Adjoint FEM RANS not available", CURRENT_FUNCTION);
       break;
      default:
       solver = nullptr;
   }
 
-  solver[MESH_SOL]    = createMeshSolver(solver, geometry, config, iMGLevel, allocDirect);
-  solver[ADJMESH_SOL] = createMeshSolver(solver, geometry, config, iMGLevel, allocAdjoint);
+  solver[MESH_SOL]    = createSubSolver(SUB_SOLVER::MESH, solver, geometry, config, iMGLevel);
+  solver[ADJMESH_SOL] = createSubSolver(SUB_SOLVER::DISC_ADJ_MESH, solver, geometry, config, iMGLevel);
 
   return solver;
 
 }
 
-CSolver* CSolverFactory::createSolver(ENUM_SOLVER kindSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel){
+CSolver* CSolverFactory::createSubSolver(SUB_SOLVER kindSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel){
 
   CSolver *genericSolver = nullptr;
 
+  ENUM_TURB_MODEL kindTurbModel = static_cast<ENUM_TURB_MODEL>(config->GetKind_Turb_Model());
+
   switch (kindSolver) {
-    case TEMPLATE_SOLVER:
-      genericSolver = new CTemplateSolver(geometry, config);
-      break;
-    case ADJ_EULER:
+    case SUB_SOLVER::CONT_ADJ_EULER:
       genericSolver = new CAdjEulerSolver(geometry, config, iMGLevel);
       break;
-    case ADJ_NAVIER_STOKES: case ADJ_RANS:
+    case SUB_SOLVER::CONT_ADJ_NAVIER_STOKES:
       genericSolver = new CAdjNSSolver(geometry, config, iMGLevel);
       break;
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-      genericSolver = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
+    case SUB_SOLVER::CONT_ADJ_TURB: case SUB_SOLVER::DISC_ADJ_TURB:
+      genericSolver = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, true);
       break;
-    case FEM_ELASTICITY:
-      genericSolver = new CFEASolver(geometry, config);
+    case SUB_SOLVER::BASELINE:
+      genericSolver = new CBaselineSolver(geometry, config);
       break;
-    case DISC_ADJ_FEM:
+    case SUB_SOLVER::BASELINE_FEM:
+      genericSolver = new CBaselineSolver_FEM(geometry, config);
+      break;
+    case SUB_SOLVER::DISC_ADJ_FEA:
       genericSolver = new CDiscAdjFEASolver(geometry, config, solver[FEA_SOL], RUNTIME_FEA_SYS, iMGLevel);
       break;
-
+    case SUB_SOLVER::DISC_ADJ_MESH:
+      genericSolver = createMeshSolver(solver, geometry, config, iMGLevel, true);
+      break;
+    case SUB_SOLVER::DISC_ADJ_FLOW:
+      genericSolver = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
+      break;
+    case SUB_SOLVER::EULER:
+      genericSolver = createFlowSolver(SUB_SOLVER::EULER, solver, geometry, config, iMGLevel);
+      break;
+    case SUB_SOLVER::NAVIER_STOKES:
+      genericSolver = createFlowSolver(SUB_SOLVER::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      break;
+    case SUB_SOLVER::INC_EULER:
+      genericSolver = createFlowSolver(SUB_SOLVER::INC_EULER, solver, geometry, config, iMGLevel);
+      break;
+    case SUB_SOLVER::INC_NAVIER_STOKES:
+      genericSolver = createFlowSolver(SUB_SOLVER::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      break;
+    case SUB_SOLVER::FEA:
+      genericSolver = new CFEASolver(geometry, config);
+      break;
+    case SUB_SOLVER::MESH:
+      genericSolver = createMeshSolver(solver, geometry, config, iMGLevel, false);
+      break;
+    case SUB_SOLVER::DG_EULER:
+      genericSolver = createDGSolver(SUB_SOLVER::DG_EULER, geometry, config, iMGLevel);
+      break;
+    case SUB_SOLVER::DG_NAVIER_STOKES:
+      genericSolver = createDGSolver(SUB_SOLVER::DG_NAVIER_STOKES, geometry, config, iMGLevel);
+      break;
+    case SUB_SOLVER::HEAT:
+      genericSolver = createHeatSolver(solver, geometry, config, iMGLevel, false);
+      break;
+    case SUB_SOLVER::DISC_ADJ_HEAT:
+      genericSolver = createHeatSolver(solver, geometry, config, iMGLevel, true);
+      break;
+    case SUB_SOLVER::TRANSITION:
+      genericSolver = new CTransLMSolver(geometry, config, iMGLevel);
+      break;
+    case SUB_SOLVER::TURB: case SUB_SOLVER::TURB_SA: case SUB_SOLVER::TURB_SST:
+      genericSolver = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false);
+      break;
+    case SUB_SOLVER::TEMPLATE:
+      genericSolver = new CTemplateSolver(geometry, config);
+      break;
     default:
-      SU2_MPI::Error("Solver not found", CURRENT_FUNCTION);
+      SU2_MPI::Error("No proper allocation found for requested sub solver", CURRENT_FUNCTION);
+      break;
   }
 
   return genericSolver;
@@ -245,9 +286,11 @@ CSolver* CSolverFactory::createTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver
   return turbSolver;
 }
 
-CSolver* CSolverFactory::createHeatSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint, bool standalone){
+CSolver* CSolverFactory::createHeatSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint){
 
   CSolver *heatSolver = nullptr;
+
+  bool standalone = (config->GetKind_Solver() == HEAT_EQUATION);
 
   /*--- Only allocate a heat solver if it should run standalone
    * or if the weakly coupled heat solver is enabled and no energy equation is included ---*/
@@ -283,23 +326,20 @@ CSolver* CSolverFactory::createMeshSolver(CSolver **solver, CGeometry *geometry,
 
 }
 
-CSolver* CSolverFactory::createDGSolver(ENUM_SOLVER kindDGSolver, CGeometry *geometry, CConfig *config, int iMGLevel){
+CSolver* CSolverFactory::createDGSolver(SUB_SOLVER kindDGSolver, CGeometry *geometry, CConfig *config, int iMGLevel){
 
   CSolver *DGSolver = nullptr;
 
   switch (kindDGSolver) {
-    case FEM_EULER:
+    case SUB_SOLVER::DG_EULER:
       if (config->GetKind_FEM_DG_Shock() == PERSSON){
         DGSolver = new CFEM_DG_NSSolver(geometry, config, iMGLevel);
       } else {
         DGSolver = new CFEM_DG_EulerSolver(geometry, config, iMGLevel);
       }
       break;
-    case FEM_NAVIER_STOKES: case FEM_LES:
+    case SUB_SOLVER::DG_NAVIER_STOKES:
       DGSolver = new CFEM_DG_NSSolver(geometry, config, iMGLevel);
-      break;
-    case FEM_RANS:
-      SU2_MPI::Error("DG RANS solver not yet implemented.", CURRENT_FUNCTION);
       break;
     default:
       SU2_MPI::Error("Requested DG solver not found", CURRENT_FUNCTION);
@@ -309,23 +349,23 @@ CSolver* CSolverFactory::createDGSolver(ENUM_SOLVER kindDGSolver, CGeometry *geo
   return DGSolver;
 }
 
-CSolver* CSolverFactory::createFlowSolver(ENUM_SOLVER kindFlowSolver, CSolver **solver,  CGeometry *geometry, CConfig *config, int iMGLevel){
+CSolver* CSolverFactory::createFlowSolver(SUB_SOLVER kindFlowSolver, CSolver **solver,  CGeometry *geometry, CConfig *config, int iMGLevel){
 
   CSolver *flowSolver = nullptr;
 
   switch (kindFlowSolver) {
-    case EULER:
+    case SUB_SOLVER::EULER:
       flowSolver = new CEulerSolver(geometry, config, iMGLevel);
       flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       break;
-    case NAVIER_STOKES: case RANS:
+    case SUB_SOLVER::NAVIER_STOKES:
       flowSolver = new CNSSolver(geometry, config, iMGLevel);
       break;
-    case INC_EULER:
+    case SUB_SOLVER::INC_EULER:
       flowSolver = new CIncEulerSolver(geometry, config, iMGLevel);
       flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       break;
-    case INC_NAVIER_STOKES: case INC_RANS:
+    case SUB_SOLVER::INC_NAVIER_STOKES:
       flowSolver = new CIncNSSolver(geometry, config, iMGLevel);
       break;
     default:
