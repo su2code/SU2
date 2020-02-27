@@ -26,7 +26,42 @@
  */
 #pragma once
 
-#include "CSolver.hpp"
+#include "../../../Common/include/option_structure.hpp"
+
+/*!
+ * \brief Enum of different sub solvers the main solver can use. There is not a 1-to-1 correspondence between the actual classes
+ * and the types of sub solvers, as one class can be used for several sub solvers.
+ */
+enum class SUB_SOLVER {
+  CONT_ADJ_EULER,          /*!< \brief Continuous Adjoint Euler solver  */
+  CONT_ADJ_NAVIER_STOKES,  /*!< \brief Continuous Adjoint Navier Stokes solver  */
+  CONT_ADJ_TURB,           /*!< \brief Continuous Adjoint Turbulent solver  */
+  BASELINE,                /*!< \brief Baseline solver  */
+  TEMPLATE,                /*!< \brief Template solver  */
+  BASELINE_FEM,            /*!< \brief Baseline FEM solver */
+  DISC_ADJ_FEA,            /*!< \brief Discrete adjoint FEA solver  */
+  DISC_ADJ_MESH,           /*!< \brief Discrete adjoint mesh solver */
+  DISC_ADJ_FLOW,           /*!< \brief Discrete adjoint flow solver */
+  DISC_ADJ_TURB,           /*!< \brief Discrete adjoint turbulence solver */
+  DISC_ADJ_HEAT,           /*!< \brief Discrete adjoint heat solver */
+  EULER,                   /*!< \brief Compressible Euler solver */
+  NAVIER_STOKES,           /*!< \brief Compressible Navier-Stokes solver */
+  INC_EULER,               /*!< \brief Incompressible Euler solver */
+  INC_NAVIER_STOKES,       /*!< \brief Incompressible Navier-stokes solver */
+  FEA,                     /*!< \brief Structural Finite-Element solver */
+  DG_EULER,                /*!< \brief Higher-order DG Euler solver*/
+  DG_NAVIER_STOKES,        /*!< \brief Higher-order DG Navier-Stokes solver*/
+  HEAT,                    /*!< \brief Heat solver */
+  TRANSITION,              /*!< \brief Transition model solver*/
+  TURB_SA,                 /*!< \brief SA turbulence model solver */
+  TURB_SST,                /*!< \brief SST turbulence model solver */
+  TURB,                    /*!< \brief Turbulence model solver */
+  MESH                     /*!< \brief Mesh solver */
+};
+
+class CSolver;
+class CGeometry;
+class CConfig;
 
 class CSolverFactory {
   
@@ -50,10 +85,9 @@ private:
    * \param[in] config        - The configuration
    * \param[in] iMGLevel      - The multigrid level
    * \param[in] adjoint       - Boolean indicating whether a primal or adjoint solver should be allocated
-   * \param[in] standalone    - Boolean indicating whether the heat solver should be allocated as a standalone solver
    * \return                  - A pointer to the allocated heat solver
    */
-  static CSolver* createHeatSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint, bool standalone);
+  static CSolver* createHeatSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint);
   
   /*!
    * \brief Create a mesh solver 
@@ -74,7 +108,7 @@ private:
    * \param[in] iMGLevel      - The multigrid level
    * \return                  - A pointer to the allocated DG solver
    */
-  static CSolver* createDGSolver(ENUM_SOLVER kindDGSolver, CGeometry *geometry, CConfig *config, int iMGLevel);
+  static CSolver* createDGSolver(SUB_SOLVER kindDGSolver, CGeometry *geometry, CConfig *config, int iMGLevel);
   
   /*!
    * \brief Create a flow solver 
@@ -85,7 +119,7 @@ private:
    * \param[in] iMGLevel       - The multigrid level
    * \return                   - A pointer to the allocated flow solver
    */
-  static CSolver* createFlowSolver(ENUM_SOLVER kindFlowSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
+  static CSolver* createFlowSolver(SUB_SOLVER kindFlowSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
   
   /*!
    * \brief Generic routine to create a solver 
@@ -96,7 +130,7 @@ private:
    * \param[in] iMGLevel      - The multigrid level
    * \return                  - A pointer to the allocated solver
    */
-  static CSolver* createSolver(ENUM_SOLVER kindSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
+  static CSolver* createSubSolver(SUB_SOLVER kindSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
   
 public:
     
@@ -109,6 +143,6 @@ public:
    * \param[in] iMGLevel      - The multigrid level
    * \return                  - Pointer to the allocated solver array
    */
-  static CSolver** createSolverContainer(ENUM_SOLVER kindSolver, CConfig *config, CGeometry *geometry, int iMGLevel);
+  static CSolver** createSolverContainer(ENUM_MAIN_SOLVER kindSolver, CConfig *config, CGeometry *geometry, int iMGLevel);
 
 };
