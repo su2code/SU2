@@ -137,6 +137,7 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CDummyDriver.cpp'])
 
 su2_cfd_src += files(['integration/CIntegration.cpp',
+                      'integration/CIntegrationFactory.cpp',
                       'integration/CSingleGridIntegration.cpp',
                       'integration/CMultiGridIntegration.cpp',
                       'integration/CStructuralIntegration.cpp',
