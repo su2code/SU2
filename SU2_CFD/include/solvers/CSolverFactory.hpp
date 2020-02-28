@@ -66,6 +66,12 @@ class CConfig;
 class CSolverFactory {
   
 private:
+
+  /*!
+   * \brief Private constructor to avoid creating instances of this class
+   */
+  CSolverFactory();
+
   /*!
    * \brief Create a turbulent solver
    * \param[in] kindTurbModel - Kind of turbulent solver
