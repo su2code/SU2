@@ -90,7 +90,7 @@ void CPastixWrapper::Initialize(CGeometry *geometry, CConfig *config) {
   iparm[IPARM_INCOMPLETE]          = incomplete;
   iparm[IPARM_LEVEL_OF_FILL]       = pastix_int_t(config->GetPastixFillLvl());
   iparm[IPARM_THREAD_NBR]          = omp_get_max_threads();
-#ifdef HAVE_MPI
+#if defined(HAVE_MPI) && defined(HAVE_OMP)
   int comm_mode = MPI_THREAD_SINGLE;
   MPI_Query_thread(&comm_mode);
   if (comm_mode == MPI_THREAD_MULTIPLE)
