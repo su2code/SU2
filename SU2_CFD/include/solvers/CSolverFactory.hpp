@@ -84,7 +84,7 @@ class CSolverFactory {
   
 private:
 
-  static map<CSolver*, SolverMetaData> allocatedSolvers;
+  static map<const CSolver*, SolverMetaData> allocatedSolvers;
 
   /*!
    * \brief Private constructor to avoid creating instances of this class

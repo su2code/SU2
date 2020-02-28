@@ -50,7 +50,7 @@
 #include "../../include/solvers/CBaselineSolver_FEM.hpp"
 #include "../../include/solvers/CRadP1Solver.hpp"
 
-map<CSolver*, SolverMetaData> CSolverFactory::allocatedSolvers;
+map<const CSolver*, SolverMetaData> CSolverFactory::allocatedSolvers;
 
 CSolver** CSolverFactory::createSolverContainer(ENUM_MAIN_SOLVER kindMainSolver, CConfig *config, CGeometry *geometry, int iMGLevel){
 
@@ -192,6 +192,8 @@ CSolver* CSolverFactory::createSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
   
   SolverMetaData metaData;
 
+  metaData.solverType = kindSolver;
+
   switch (kindSolver) {
     case SUB_SOLVER_TYPE::CONT_ADJ_EULER:
       genericSolver = new CAdjEulerSolver(geometry, config, iMGLevel);
@@ -286,11 +288,13 @@ CSolver* CSolverFactory::createSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
         genericSolver = new CRadP1Solver(geometry, config);
       }
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      break;
     case SUB_SOLVER_TYPE::DISC_ADJ_RADIATION:
       if (config->AddRadiation()){
         genericSolver = new CDiscAdjSolver(geometry, config, solver[RAD_SOL], RUNTIME_RADIATION_SYS, iMGLevel);
       }
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
+      break;
     default:
       SU2_MPI::Error("No proper allocation found for requested sub solver", CURRENT_FUNCTION);
       break;

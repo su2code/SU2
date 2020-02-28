@@ -44,15 +44,16 @@ public:
 
   /*!
    * \brief Create the integration container based on the current main solver
-   * \param[in] kindSolver    - The kind of main solver
+   * \param[in] kindSolver       - The kind of main solver
+   * \param[in] solver_container - The solver container
    * \return                  - Pointer to the allocated integration container
    */
   static CIntegration** createIntegrationContainer(ENUM_MAIN_SOLVER kindSolver, CSolver **solver_container);
 
   /*!
    * \brief Create a new integration instance based on the current sub solver
-   * \param kindSubSolver    - The kind of sub solver
-   * \return                 - Pointer to the allocated integration instance
+   * \param[in] integrationType  - The integration type
+   * \return                     - Pointer to the allocated integration instance
    */
   static CIntegration* createIntegration(INTEGRATION_TYPE integrationType);
 
