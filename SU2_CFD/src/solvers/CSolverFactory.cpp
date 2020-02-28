@@ -290,7 +290,8 @@ CSolver* CSolverFactory::createHeatSolver(CSolver **solver, CGeometry *geometry,
 
   CSolver *heatSolver = nullptr;
 
-  bool standalone = (config->GetKind_Solver() == HEAT_EQUATION);
+  bool standalone = (config->GetKind_Solver() == HEAT_EQUATION) ||
+                    (config->GetKind_Solver() == DISC_ADJ_HEAT);
 
   /*--- Only allocate a heat solver if it should run standalone
    * or if the weakly coupled heat solver is enabled and no energy equation is included ---*/
