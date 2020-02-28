@@ -32,7 +32,7 @@
  * \brief Enum of different sub solvers the main solver can use. There is not a 1-to-1 correspondence between the actual classes
  * and the types of sub solvers, as one class can be used for several sub solvers.
  */
-enum class SUB_SOLVER {
+enum class SUB_SOLVER_TYPE {
   CONT_ADJ_EULER,          /*!< \brief Continuous Adjoint Euler solver  */
   CONT_ADJ_NAVIER_STOKES,  /*!< \brief Continuous Adjoint Navier Stokes solver  */
   CONT_ADJ_TURB,           /*!< \brief Continuous Adjoint Turbulent solver  */
@@ -56,8 +56,24 @@ enum class SUB_SOLVER {
   TURB_SA,                 /*!< \brief SA turbulence model solver */
   TURB_SST,                /*!< \brief SST turbulence model solver */
   TURB,                    /*!< \brief Turbulence model solver */
-  MESH                     /*!< \brief Mesh solver */
+  MESH,                     /*!< \brief Mesh solver */
+  NONE
 };
+
+enum class INTEGRATION_TYPE{
+  MULTIGRID,
+  SINGLEGRID,
+  BASELINE,
+  FEM_DG,
+  STRUCTURAL,
+  NONE
+};
+
+struct SolverMetaData{
+  SUB_SOLVER_TYPE solverType       = SUB_SOLVER_TYPE::NONE;
+  INTEGRATION_TYPE integrationType = INTEGRATION_TYPE::NONE;
+};
+
 
 class CSolver;
 class CGeometry;
@@ -66,6 +82,8 @@ class CConfig;
 class CSolverFactory {
   
 private:
+
+  static map<CSolver*, SolverMetaData> allocatedSolvers;
 
   /*!
    * \brief Private constructor to avoid creating instances of this class
@@ -114,7 +132,7 @@ private:
    * \param[in] iMGLevel      - The multigrid level
    * \return                  - A pointer to the allocated DG solver
    */
-  static CSolver* createDGSolver(SUB_SOLVER kindDGSolver, CGeometry *geometry, CConfig *config, int iMGLevel);
+  static CSolver* createDGSolver(SUB_SOLVER_TYPE kindDGSolver, CGeometry *geometry, CConfig *config, int iMGLevel);
   
   /*!
    * \brief Create a flow solver 
@@ -125,7 +143,7 @@ private:
    * \param[in] iMGLevel       - The multigrid level
    * \return                   - A pointer to the allocated flow solver
    */
-  static CSolver* createFlowSolver(SUB_SOLVER kindFlowSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
+  static CSolver* createFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
   
   /*!
    * \brief Generic routine to create a solver 
@@ -136,7 +154,7 @@ private:
    * \param[in] iMGLevel      - The multigrid level
    * \return                  - A pointer to the allocated solver
    */
-  static CSolver* createSubSolver(SUB_SOLVER kindSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
+  static CSolver* createSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
   
 public:
     
@@ -150,5 +168,18 @@ public:
    * \return                  - Pointer to the allocated solver array
    */
   static CSolver** createSolverContainer(ENUM_MAIN_SOLVER kindSolver, CConfig *config, CGeometry *geometry, int iMGLevel);
+
+
+  /*!
+   * \brief Return a sub solver object that contains information about the solver allocated at a specific memory address
+   * \param[in] solver - Address of the solver
+   * \return sub solver info struct.
+   */
+  static SolverMetaData GetSolverMeta(CSolver* solver) { return allocatedSolvers.at(solver); }
+
+  /*!
+   * \brief Clear the solver meta data
+   */
+  static void ClearSolverMeta() { allocatedSolvers.clear(); }
 
 };

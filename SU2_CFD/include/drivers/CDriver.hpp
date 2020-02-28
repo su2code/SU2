@@ -197,11 +197,11 @@ protected:
 
   /*!
    * \brief Definition and allocation of all integration classes.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[out] integration - Container vector with all the integration methods.
    */
-  void Integration_Preprocessing(CConfig *config, CIntegration **&integration);
+  void Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration);
 
   /*!
    * \brief Definition and allocation of all integration classes.
