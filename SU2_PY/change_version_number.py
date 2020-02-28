@@ -3,7 +3,7 @@
 ## \file change_version_number.py
 #  \brief Python script for updating the version number of the SU2 suite.
 #  \author A. Aranake
-#  \version 7.0.1 "Blackbird"
+#  \version 7.0.2 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -44,10 +44,10 @@ if not options.version:
 
 #oldvers = '2012-2018'
 #newvers = '2012-2019'
-oldvers  = '7.0.1 "Blackbird"'
-oldvers_q= r'7.0.1 \"Blackbird\"'
-newvers  = options.version + ' "' + options.releasename + '"'
-newvers_q= options.version + ' \\"' + options.releasename + '\\"'
+oldvers  = '7.0.2 "Blackbird"'
+oldvers_q= r'7.0.2 \"Blackbird\"'
+newvers  = str(options.version) + ' "' + str(options.releasename) + '"'
+newvers_q= str(options.version) + ' \\"' + str(options.releasename) + '\\"'
 
 if sys.version_info[0] > 2:
   # In PY3, raw_input is replaced with input.
