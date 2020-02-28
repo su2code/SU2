@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -123,6 +123,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   xadj      = NULL;
 #endif
 #endif
+
+  edgeColorGroupSize = config->GetEdgeColoringGroupSize();
 
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -310,6 +312,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   xadj      = NULL;
 #endif
 #endif
+
+  edgeColorGroupSize = config->GetEdgeColoringGroupSize();
 
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -7985,11 +7989,11 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   su2double rotCoord[3] = {0.0, 0.0, 0.0};
-  
+
   bool pointOnAxis = false;
-  
+
   bool chkSamePoint = false;
-  
+
   su2double distToAxis = 0.0;
 
   /*--- Tolerance for distance-based match to report warning. ---*/
@@ -8199,7 +8203,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                            rotMatrix[2][1]*dy +
                            rotMatrix[2][2]*dz + translation[2]);
 
-            /*--- Check if the point lies on the axis of rotation. If it does, 
+            /*--- Check if the point lies on the axis of rotation. If it does,
              the rotated coordinate and the original coordinate are the same. ---*/
 
             pointOnAxis = false;
@@ -8254,7 +8258,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                  and also perform checks just to be sure that this is an
                  independent periodic point (even if on the same rank),
                   unless it lies on the axis of rotation. ---*/
-                
+
                 chkSamePoint = false;
                 chkSamePoint = (((dist < mindist) && (iProcessor != rank)) ||
                                 ((dist < mindist) && (iProcessor == rank) &&
@@ -9864,12 +9868,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     config->fields.push_back("Point_ID");
     for (iVar = 0; iVar < nFields; iVar++) {
       index = iVar*CGNS_STRING_SIZE;
-      field_buf.append("\"");
       for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
         str_buf[iChar] = mpi_str_buf[index + iChar];
       }
       field_buf.append(str_buf);
-      field_buf.append("\"");
       config->fields.push_back(field_buf.c_str());
       field_buf.clear();
     }
@@ -9964,9 +9966,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
 #endif
 
-    std::vector<string>::iterator itx = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_x\"");
-    std::vector<string>::iterator ity = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_y\"");
-    std::vector<string>::iterator itz = std::find(config->fields.begin(), config->fields.end(), "\"Sensitivity_z\"");
+    std::vector<string>::iterator itx = std::find(config->fields.begin(), config->fields.end(), "Sensitivity_x");
+    std::vector<string>::iterator ity = std::find(config->fields.begin(), config->fields.end(), "Sensitivity_y");
+    std::vector<string>::iterator itz = std::find(config->fields.begin(), config->fields.end(), "Sensitivity_z");
 
     if (itx == config->fields.end()){
       SU2_MPI::Error("Sensitivity x not found in file.", CURRENT_FUNCTION);

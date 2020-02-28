@@ -274,6 +274,8 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
 
   Postprocess_HistoryData(driver_config);
 
+  MonitorTimeConvergence(driver_config, curTimeIter);
+
   /*--- Output using only the master node ---*/
 
   if (rank == MASTER_NODE && !noWriting) {
@@ -1121,6 +1123,9 @@ void COutput::SetScreen_Output(CConfig *config) {
         case ScreenOutputFormat::SCIENTIFIC:
           PrintingToolbox::PrintScreenScientific(out, historyOutput_Map.at(RequestedField).value, fieldWidth);
           break;
+        case ScreenOutputFormat::PERCENT:
+          PrintingToolbox::PrintScreenPercent(out, historyOutput_Map[RequestedField].value, fieldWidth);
+          break;
       }
     }
     if (historyOutputPerSurface_Map.count(RequestedField) > 0){
@@ -1133,6 +1138,9 @@ void COutput::SetScreen_Output(CConfig *config) {
           break;
         case ScreenOutputFormat::SCIENTIFIC:
           PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
+          break;
+        case ScreenOutputFormat::PERCENT:
+          PrintingToolbox::PrintScreenPercent(out, historyOutputPerSurface_Map[RequestedField][0].value, fieldWidth);
           break;
       }
     }
@@ -1171,7 +1179,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
     if (rank == MASTER_NODE && !noWriting){
 
       /*--- Open history file and print the header ---*/
-      if (!config->GetMultizone_Problem() || config->GetWrt_ZoneConv())
+      if (!config->GetMultizone_Problem() || config->GetWrt_ZoneHist())
         PrepareHistoryFile(config);
 
       total_width = nRequestedScreenFields*fieldWidth + (nRequestedScreenFields-1);
@@ -1950,7 +1958,7 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
   unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
   unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);
 
-  if (config->GetMultizone_Problem() && !config->GetWrt_ZoneConv()){
+  if (config->GetMultizone_Problem() && !config->GetWrt_ZoneHist()){
 
     return false;
 
@@ -2021,7 +2029,7 @@ void COutput::LoadCommonHistoryData(CConfig *config){
 
   /*--- Update the current time only if the time iteration has changed ---*/
 
-  if (SU2_TYPE::Int(GetHistoryFieldValue("TIME_ITER")) != curTimeIter){
+  if (SU2_TYPE::Int(GetHistoryFieldValue("TIME_ITER")) != static_cast<int>(curTimeIter)) {
     SetHistoryOutputValue("CUR_TIME",  GetHistoryFieldValue("CUR_TIME") + GetHistoryFieldValue("TIME_STEP"));
   }
 

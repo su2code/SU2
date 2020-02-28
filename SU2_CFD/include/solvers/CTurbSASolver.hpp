@@ -41,6 +41,16 @@ class CTurbSASolver final : public CTurbSolver {
 private:
   su2double nu_tilde_Inf, nu_tilde_Engine, nu_tilde_ActDisk;
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] solver - Solver container
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetDES_LengthScale(CSolver** solver,
+                          CGeometry *geometry,
+                          CConfig *config);
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -93,16 +103,15 @@ public:
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] second_numerics - Description of the second numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Source_Residual(CGeometry *geometry,
                        CSolver **solver_container,
-                       CNumerics *numerics,
-                       CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh) override;
+                       CNumerics **numerics_container,
+                       CConfig *config,
+                       unsigned short iMesh) override;
 
   /*!
    * \brief Source term computation.
@@ -361,17 +370,6 @@ public:
   inline void SetFreeStream_Solution(CConfig *config) override {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) nodes->SetSolution(iPoint, 0, nu_tilde_Inf);
   }
-
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] solver - Solver container
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetDES_LengthScale(CSolver** solver,
-                          CGeometry *geometry,
-                          CConfig *config) override;
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.

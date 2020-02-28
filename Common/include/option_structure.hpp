@@ -105,6 +105,8 @@ const su2double FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
 
 const su2double PI_NUMBER = 4.0 * atan(1.0);  /*!< \brief Pi number. */
 
+const su2double STEFAN_BOLTZMANN = 5.670367E-08;  /*!< \brief Stefan-Boltzmann constant in W/(m^2*K^4). */
+
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;			/*!< \brief There is only a zone. */
@@ -163,7 +165,7 @@ enum ENUM_SOLVER {
   INC_EULER = 4,                    /*!< \brief Definition of the incompressible Euler's solver. */
   INC_NAVIER_STOKES =5,             /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
   INC_RANS = 6,                     /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  HEAT_EQUATION_FVM = 7,            /*!< \brief Definition of the finite volume heat solver. */
+  HEAT_EQUATION = 7,                /*!< \brief Definition of the finite volume heat solver. */
   FLUID_STRUCTURE_INTERACTION = 8,  /*!< \brief Definition of a FSI solver. */
   FEM_ELASTICITY = 9,               /*!< \brief Definition of a FEM solver. */
   ADJ_EULER = 10,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
@@ -202,7 +204,7 @@ static const MapType<string, ENUM_SOLVER> Solver_Map = {
   MakePair("ADJ_EULER", ADJ_EULER)
   MakePair("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
   MakePair("ADJ_RANS", ADJ_RANS )
-  MakePair("HEAT_EQUATION_FVM", HEAT_EQUATION_FVM)
+  MakePair("HEAT_EQUATION", HEAT_EQUATION)
   MakePair("ELASTICITY", FEM_ELASTICITY)
   MakePair("DISC_ADJ_EULER", DISC_ADJ_EULER)
   MakePair("DISC_ADJ_RANS", DISC_ADJ_RANS)
@@ -210,7 +212,7 @@ static const MapType<string, ENUM_SOLVER> Solver_Map = {
   MakePair("DISC_ADJ_INC_EULER", DISC_ADJ_INC_EULER)
   MakePair("DISC_ADJ_INC_RANS", DISC_ADJ_INC_RANS)
   MakePair("DISC_ADJ_INC_NAVIERSTOKES", DISC_ADJ_INC_NAVIER_STOKES)
-  MakePair("DISC_ADJ_HEAT_EQUATION_FVM", DISC_ADJ_HEAT)
+  MakePair("DISC_ADJ_HEAT_EQUATION", DISC_ADJ_HEAT)
   MakePair("DISC_ADJ_FEM_EULER", DISC_ADJ_FEM_EULER)
   MakePair("DISC_ADJ_FEM_RANS", DISC_ADJ_FEM_RANS)
   MakePair("DISC_ADJ_FEM_NS", DISC_ADJ_FEM_NS)
@@ -335,7 +337,33 @@ static const MapType<string, ENUM_RADIALBASIS> RadialBasisFunction_Map = {
 };
 
 /*!
- * \brief Types of (coupling) transfers between distinct physical zones
+ * \brief type of radial spanwise interpolation function for the inlet face
+ */
+enum ENUM_INLET_SPANWISEINTERPOLATION {
+  NO_INTERPOLATION = 0,
+  LINEAR_1D = 1,
+  AKIMA_1D = 2,
+};
+static const map<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpolation_Map = {
+  MakePair("NONE", NO_INTERPOLATION)
+  MakePair("LINEAR_1D",LINEAR_1D)
+  MakePair("AKIMA_1D",AKIMA_1D)
+};
+
+/*!
+ * \brief type of radial spanwise interpolation data type for the inlet face
+ */
+enum ENUM_INLET_INTERPOLATIONTYPE {
+  VR_VTHETA = 0,
+  ALPHA_PHI = 1,
+};
+static const map<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map = {
+  MakePair("VR_VTHETA",VR_VTHETA)
+  MakePair("ALPHA_PHI",ALPHA_PHI)
+};
+
+/*!
+ * \brief types of (coupling) transfers between distinct physical zones
  */
 enum ENUM_TRANSFER {
   ZONES_ARE_EQUAL                   = 0,    /*!< \brief Zones are equal - no transfer. */
@@ -410,6 +438,8 @@ enum RUNTIME_TYPE {
   RUNTIME_HEAT_SYS = 21,      /*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_ADJHEAT_SYS = 31,   /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
   RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
+  RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
 };
 
 const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
@@ -421,6 +451,8 @@ const int ADJTURB_SOL = 3;  /*!< \brief Position of the continuous adjoint turbu
 const int TRANS_SOL = 4;    /*!< \brief Position of the transition model solution in the solver container array. */
 const int HEAT_SOL = 5;     /*!< \brief Position of the heat equation in the solution solver array. */
 const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array. */
+const int RAD_SOL = 7;      /*!< \brief Position of the radiation equation in the solution solver array. */
+const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 
 const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
@@ -1126,6 +1158,30 @@ static const MapType<string, ENUM_DVFEA> DVFEA_Map = {
   MakePair("DENSITY", DENSITY_VAL)
   MakePair("DEAD_WEIGHT", DEAD_WEIGHT)
   MakePair("ELECTRIC_FIELD", ELECTRIC_FIELD)
+};
+
+/*!
+ * \brief Kinds of radiation models
+ */
+enum ENUM_RADIATION {
+  NO_RADIATION = 0,      /*!< \brief No radiation model */
+  P1_MODEL = 1           /*!< \brief P1 Radiation model. */
+};
+static const MapType<string, ENUM_RADIATION> Radiation_Map = {
+  MakePair("NONE", NO_RADIATION)
+  MakePair("P1", P1_MODEL)
+};
+
+/*!
+ * \brief Kinds of P1 initialization
+ */
+enum ENUM_P1_INIT {
+  P1_INIT_ZERO = 0,      /*!< \brief Initialize the P1 model from zero values */
+  P1_INIT_TEMP = 1       /*!< \brief Initialize the P1 model from blackbody energy computed from the initial temperature. */
+};
+static const MapType<string, ENUM_P1_INIT> P1_Init_Map = {
+  MakePair("ZERO", P1_INIT_ZERO)
+  MakePair("TEMPERATURE_INIT", P1_INIT_TEMP)
 };
 
 /*!

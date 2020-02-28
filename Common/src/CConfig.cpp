@@ -812,13 +812,13 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_KindBC       = NULL;    Marker_All_SendRecv     = NULL;    Marker_All_PerBound   = NULL;
   Marker_ZoneInterface        = NULL;    Marker_All_ZoneInterface= NULL;    Marker_Riemann        = NULL;
   Marker_Fluid_InterfaceBound = NULL;    Marker_CHTInterface     = NULL;    Marker_Damper         = NULL;
-
+  Marker_Emissivity           = NULL;
 
     /*--- Boundary Condition settings ---*/
 
   Isothermal_Temperature = NULL;
-  Heat_Flux              = NULL;    Displ_Value            = NULL;    Load_Value = NULL;
-  FlowLoad_Value         = NULL;    Damper_Constant        = NULL;
+  Heat_Flux              = NULL;    Displ_Value            = NULL;    Load_Value      = NULL;
+  FlowLoad_Value         = NULL;    Damper_Constant        = NULL;    Wall_Emissivity = NULL;
 
   /*--- Inlet Outlet Boundary Condition settings ---*/
 
@@ -964,31 +964,6 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Initialize some default arrays to NULL. ---*/
 
-  default_vel_inf            = NULL;
-  default_ffd_axis           = NULL;
-  default_eng_cyl            = NULL;
-  default_eng_val            = NULL;
-  default_cfl_adapt          = NULL;
-  default_jst_coeff          = NULL;
-  default_ffd_coeff          = NULL;
-  default_mixedout_coeff     = NULL;
-  default_extrarelfac        = NULL;
-  default_rampRotFrame_coeff = NULL;
-  default_rampOutPres_coeff  = NULL;
-  default_jst_adj_coeff      = NULL;
-  default_ad_coeff_heat      = NULL;
-  default_obj_coeff          = NULL;
-  default_geo_loc            = NULL;
-  default_distortion         = NULL;
-  default_ea_lim             = NULL;
-  default_grid_fix           = NULL;
-  default_inc_crit           = NULL;
-  default_htp_axis           = NULL;
-  default_body_force         = NULL;
-  default_sineload_coeff     = NULL;
-  default_nacelle_location   = NULL;
-  default_wrt_freq           = NULL;
-
   default_cp_polycoeffs = NULL;
   default_mu_polycoeffs = NULL;
   default_kt_polycoeffs = NULL;
@@ -1062,6 +1037,8 @@ void CConfig::SetPointersNull(void) {
 
   Mesh_Box_Size = NULL;
 
+  Time_Ref = 1.0;
+
 }
 
 void CConfig::SetRunTime_Options(void) {
@@ -1081,30 +1058,6 @@ void CConfig::SetConfig_Options() {
 
   /*--- Allocate some default arrays needed for lists of doubles. ---*/
 
-  default_vel_inf            = new su2double[3];
-  default_ffd_axis           = new su2double[3];
-  default_eng_cyl            = new su2double[7];
-  default_eng_val            = new su2double[5];
-  default_cfl_adapt          = new su2double[4];
-  default_jst_coeff          = new su2double[2];
-  default_ffd_coeff          = new su2double[3];
-  default_mixedout_coeff     = new su2double[3];
-  default_extrarelfac        = new su2double[2];
-  default_rampRotFrame_coeff = new su2double[3];
-  default_rampOutPres_coeff  = new su2double[3];
-  default_jst_adj_coeff      = new su2double[2];
-  default_ad_coeff_heat      = new su2double[2];
-  default_obj_coeff          = new su2double[5];
-  default_geo_loc            = new su2double[2];
-  default_distortion         = new su2double[2];
-  default_ea_lim             = new su2double[3];
-  default_grid_fix           = new su2double[6];
-  default_inc_crit           = new su2double[3];
-  default_htp_axis           = new su2double[2];
-  default_body_force         = new su2double[3];
-  default_sineload_coeff     = new su2double[3];
-  default_nacelle_location   = new su2double[5];
-  default_wrt_freq           = new su2double[3];
 
   /*--- All temperature polynomial fits for the fluid models currently
    assume a quartic form (5 coefficients). For example,
@@ -1686,6 +1639,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map_FEA, NEWMARK_IMPLICIT);
+  /* DESCRIPTION: Time discretization for radiation problems*/
+  addEnumOption("TIME_DISCRE_RADIATION", Kind_TimeIntScheme_Radiation, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
@@ -2310,7 +2265,9 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to the FEA solver ---*/
 
   /*!\brief FEA_FILENAME \n DESCRIPTION: Filename to input for element-based properties \n Default: element_properties.dat \ingroup Config */
-  addStringOption("FEA_FILENAME", FEA_FileName, string("element_properties.dat"));
+  addStringOption("FEA_FILENAME", FEA_FileName, string("default_element_properties.dat"));
+  /* DESCRIPTION: Determine if advanced features are used from the element-based FEA analysis (NO, YES = experimental) */
+  addBoolOption("FEA_ADVANCED_MODE", FEAAdvancedMode, false);
 
   /* DESCRIPTION: Modulus of elasticity */
   addDoubleListOption("ELASTICITY_MODULUS", nElasticityMod, ElasticityMod);
@@ -2489,8 +2446,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Determines if the convergence history of each individual zone is written to screen */
   addBoolOption("WRT_ZONE_CONV", Wrt_ZoneConv, false);
   /* DESCRIPTION: Determines if the convergence history of each individual zone is written to file */
-  addBoolOption("WRT_ZONE_HIST", Wrt_ZoneHist, true);
-
+  addBoolOption("WRT_ZONE_HIST", Wrt_ZoneHist, false);
 
   /* DESCRIPTION: Determines if the special output is written out */
   addBoolOption("WRT_FORCES_BREAKDOWN", Wrt_ForcesBreakdown, false);
@@ -2520,6 +2476,20 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Radius for radial basis function */
   addDoubleOption("RADIAL_BASIS_FUNCTION_PARAMETER", RadialBasisFunction_Parameter, 1);
 
+   /*!\par INLETINTERPOLATION \n
+   * DESCRIPTION: Type of spanwise interpolation to use for the inlet face. \n OPTIONS: see \link Inlet_SpanwiseInterpolation_Map \endlink
+   * Sets Kind_InletInterpolation \ingroup Config
+   */
+  addEnumOption("INLET_INTERPOLATION_FUNCTION",Kind_InletInterpolationFunction, Inlet_SpanwiseInterpolation_Map, NO_INTERPOLATION);
+
+   /*!\par INLETINTERPOLATION \n
+   * DESCRIPTION: Type of spanwise interpolation to use for the inlet face. \n OPTIONS: see \link Inlet_SpanwiseInterpolation_Map \endlink
+   * Sets Kind_InletInterpolation \ingroup Config
+   */
+  addEnumOption("INLET_INTERPOLATION_DATA_TYPE", Kind_Inlet_InterpolationType, Inlet_SpanwiseInterpolationType_Map, VR_VTHETA);
+
+  addBoolOption("PRINT_INLET_INTERPOLATED_DATA", PrintInlet_InterpolatedData, false);
+
   /* DESCRIPTION: Maximum number of FSI iterations */
   addUnsignedShortOption("FSI_ITER", nIterFSI, 1);
   /* DESCRIPTION: Number of FSI iterations during which a ramp is applied */
@@ -2534,6 +2504,40 @@ void CConfig::SetConfig_Options() {
   addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, NO_RELAXATION);
   /* DESCRIPTION: Relaxation required */
   addBoolOption("RELAXATION", Relaxation, false);
+
+  /*!\par CONFIG_CATEGORY: Radiation solver \ingroup Config*/
+  /*--- Options related to the radiation solver ---*/
+
+  /* DESCRIPTION: Type of radiation model */
+  addEnumOption("RADIATION_MODEL", Kind_Radiation, Radiation_Map, NO_RADIATION);
+
+  /* DESCRIPTION: Kind of initialization of the P1 model  */
+  addEnumOption("P1_INITIALIZATION", Kind_P1_Init, P1_Init_Map, P1_INIT_TEMP);
+
+  /* DESCRIPTION: Absorption coefficient */
+  addDoubleOption("ABSORPTION_COEFF", Absorption_Coeff, 1.0);
+  /* DESCRIPTION: Scattering coefficient */
+  addDoubleOption("SCATTERING_COEFF", Scattering_Coeff, 0.0);
+
+  /* DESCRIPTION: Apply a volumetric heat source as a source term (NO, YES) in the form of an ellipsoid*/
+  addBoolOption("HEAT_SOURCE", HeatSource, false);
+  /* DESCRIPTION: Value of the volumetric heat source */
+  addDoubleOption("HEAT_SOURCE_VAL", ValHeatSource, 0.0);
+  /* DESCRIPTION: Rotation of the volumetric heat source respect to Z axis */
+  addDoubleOption("HEAT_SOURCE_ROTATION_Z", Heat_Source_Rot_Z, 0.0);
+  /* DESCRIPTION: Position of heat source center (Heat_Source_Center_X, Heat_Source_Center_Y, Heat_Source_Center_Z) */
+  default_hs_center[0] = 0.0; default_hs_center[1] = 0.0; default_hs_center[2] = 0.0;
+  addDoubleArrayOption("HEAT_SOURCE_CENTER", 3, Heat_Source_Center, default_hs_center);
+  /* DESCRIPTION: Vector of heat source radii (Heat_Source_Axes_A, Heat_Source_Axes_B, Heat_Source_Axes_C) */
+  default_hs_axes[0] = 1.0; default_hs_axes[1] = 1.0; default_hs_axes[2] = 1.0;
+  addDoubleArrayOption("HEAT_SOURCE_AXES", 3, Heat_Source_Axes, default_hs_axes);
+
+  /*!\brief MARKER_EMISSIVITY DESCRIPTION: Wall emissivity of the marker for radiation purposes \n
+   * Format: ( marker, emissivity of the marker, ... ) \ingroup Config  */
+  addStringDoubleListOption("MARKER_EMISSIVITY", nMarker_Emissivity, Marker_Emissivity, Wall_Emissivity);
+
+  /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid in radiation solvers */
+  addDoubleOption("CFL_NUMBER_RAD", CFL_Rad, 1.0);
 
   /*!\par CONFIG_CATEGORY: Heat solver \ingroup Config*/
   /*--- options related to the heat solver ---*/
@@ -2797,6 +2801,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Level of fill for PaStiX incomplete LU factorization. */
   addUnsignedShortOption("PASTIX_FILL_LEVEL", pastix_fill_lvl, 1);
+
+  /* DESCRIPTION: Size of the edge groups colored for OpenMP parallelization of edge loops. */
+  addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
 
   /* END_CONFIG_OPTIONS */
 
@@ -3436,6 +3443,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
+    if (Kind_Struct_Solver == SMALL_DEFORMATIONS){
+      MinLogResidual = log10(Linear_Solver_Error);
+    }
   }
 
   /*--- Initialize the ofstream ConvHistFile. ---*/
@@ -3449,6 +3459,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 //  } else {
 //    Wrt_Dynamic = false;
 //  }
+
+  if (Kind_Radiation != NO_RADIATION) {
+    Radiation = true;
+  }
+  else{
+    Radiation = false;
+  }
 
   /*--- Check for unsupported features. ---*/
 
@@ -4813,7 +4830,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       case FEM_ELASTICITY:
         Kind_Solver = DISC_ADJ_FEM;
         break;
-      case HEAT_EQUATION_FVM:
+      case HEAT_EQUATION:
         Kind_Solver = DISC_ADJ_HEAT;
         break;
       default:
@@ -5525,6 +5542,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
   iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
+  iMarker_Emissivity,
   iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
 
   bool fea = ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM));
@@ -5540,15 +5558,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
      cout <<"based on the physical case: ";
   }
     switch (Kind_Solver) {
-      case EULER: case DISC_ADJ_EULER: case FEM_EULER: case DISC_ADJ_FEM_EULER:
+      case EULER:     case DISC_ADJ_EULER:
+      case INC_EULER: case DISC_ADJ_INC_EULER:
+      case FEM_EULER: case DISC_ADJ_FEM_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         break;
-      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
+      case NAVIER_STOKES:     case DISC_ADJ_NAVIER_STOKES:
+      case INC_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES:
+      case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         break;
-      case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:
+      case RANS:     case DISC_ADJ_RANS:
+      case INC_RANS: case DISC_ADJ_INC_RANS:
+      case FEM_RANS: case DISC_ADJ_FEM_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
@@ -6986,6 +7010,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  if (nMarker_Emissivity != 0) {
+    BoundaryTable << "Radiative boundary";
+    for (iMarker_Emissivity = 0; iMarker_Emissivity < nMarker_Emissivity; iMarker_Emissivity++) {
+      BoundaryTable << Marker_Emissivity[iMarker_Emissivity]; // << "(" << Wall_Emissivity[iMarker_Emissivity] << ")";
+      if (iMarker_Emissivity < nMarker_Emissivity-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
   if (nMarker_Custom != 0) {
     BoundaryTable << "Custom boundary";
     for (iMarker_Custom = 0; iMarker_Custom < nMarker_Custom; iMarker_Custom++) {
@@ -7680,6 +7713,7 @@ CConfig::~CConfig(void) {
   if (Load_Sine_Amplitude != NULL)    delete[] Load_Sine_Amplitude;
   if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
   if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
+  if (Wall_Emissivity != NULL)    delete[] Wall_Emissivity;
 
   /*--- related to periodic boundary conditions ---*/
 
@@ -7733,6 +7767,7 @@ CConfig::~CConfig(void) {
   if (Marker_FlowLoad != NULL )           delete[] Marker_FlowLoad;
   if (Marker_Internal != NULL )            delete[] Marker_Internal;
   if (Marker_HeatFlux != NULL )               delete[] Marker_HeatFlux;
+  if (Marker_Emissivity != NULL )         delete[] Marker_Emissivity;
 
   if (Int_Coeffs != NULL) delete [] Int_Coeffs;
 
@@ -7745,31 +7780,6 @@ CConfig::~CConfig(void) {
   if (Electric_Field_Dir   != NULL) delete [] Electric_Field_Dir;
 
   /*--- Delete some arrays needed just for initializing options. ---*/
-
-  if (default_vel_inf       != NULL) delete [] default_vel_inf;
-  if (default_ffd_axis      != NULL) delete [] default_ffd_axis;
-  if (default_eng_cyl       != NULL) delete [] default_eng_cyl;
-  if (default_eng_val       != NULL) delete [] default_eng_val;
-  if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
-  if (default_jst_coeff != NULL) delete [] default_jst_coeff;
-  if (default_ffd_coeff != NULL) delete [] default_ffd_coeff;
-  if (default_mixedout_coeff!= NULL) delete [] default_mixedout_coeff;
-  if (default_extrarelfac!= NULL) delete [] default_extrarelfac;
-  if (default_rampRotFrame_coeff!= NULL) delete [] default_rampRotFrame_coeff;
-  if (default_rampOutPres_coeff!= NULL) delete[] default_rampOutPres_coeff;
-  if (default_jst_adj_coeff  != NULL) delete [] default_jst_adj_coeff;
-  if (default_ad_coeff_heat  != NULL) delete [] default_ad_coeff_heat;
-  if (default_obj_coeff     != NULL) delete [] default_obj_coeff;
-  if (default_geo_loc       != NULL) delete [] default_geo_loc;
-  if (default_distortion    != NULL) delete [] default_distortion;
-  if (default_ea_lim        != NULL) delete [] default_ea_lim;
-  if (default_grid_fix      != NULL) delete [] default_grid_fix;
-  if (default_inc_crit      != NULL) delete [] default_inc_crit;
-  if (default_htp_axis      != NULL) delete [] default_htp_axis;
-  if (default_body_force    != NULL) delete [] default_body_force;
-  if (default_sineload_coeff!= NULL) delete [] default_sineload_coeff;
-  if (default_nacelle_location    != NULL) delete [] default_nacelle_location;
-  if (default_wrt_freq != NULL) delete [] default_wrt_freq;
 
   if (default_cp_polycoeffs != NULL) delete [] default_cp_polycoeffs;
   if (default_mu_polycoeffs != NULL) delete [] default_mu_polycoeffs;
@@ -8017,6 +8027,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
     case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
     case RUNTIME_ADJFEA_SYS:    return ADJFEA_SOL;
+    case RUNTIME_RADIATION_SYS: return RAD_SOL;
     case RUNTIME_MULTIGRID_SYS: return 0;
   }
   return 0;
@@ -8169,7 +8180,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
       }
       break;
-    case HEAT_EQUATION_FVM:
+    case HEAT_EQUATION:
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
@@ -9197,6 +9208,19 @@ su2double* CConfig::GetLoad_Sine_Dir(string val_marker) {
     if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
   return Load_Sine_Dir[iMarker_Load_Sine];
 }
+
+su2double CConfig::GetWall_Emissivity(string val_marker) const {
+
+  unsigned short iMarker_Emissivity = 0;
+
+  if (nMarker_Emissivity > 0) {
+    for (iMarker_Emissivity = 0; iMarker_Emissivity < nMarker_Emissivity; iMarker_Emissivity++)
+      if (Marker_Emissivity[iMarker_Emissivity] == val_marker) break;
+  }
+
+  return Wall_Emissivity[iMarker_Emissivity];
+}
+
 
 su2double CConfig::GetFlowLoad_Value(string val_marker) {
   unsigned short iMarker_FlowLoad;

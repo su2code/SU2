@@ -442,6 +442,9 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
       if (config->GetWeakly_Coupled_Heat()){
         cout << "log10[Heat(0)]: "   << log10(solver[HEAT_SOL]->GetRes_RMS(0)) << "." << endl;
       }
+      if ( config->AddRadiation()) {
+        cout <<"log10[E(rad)]: " << log10(solver[RAD_SOL]->GetRes_RMS(0)) << endl;
+      }
       break;
 
     case DISC_ADJ_FEM:
@@ -541,8 +544,4 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   AD::ClearAdjoints();
 
-}
-
-bool CDiscAdjSinglezoneDriver::GetTimeConvergence() const{
-  return false;
 }

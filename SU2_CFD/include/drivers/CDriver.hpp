@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -29,31 +29,17 @@
 #pragma once
 
 #include "../../../Common/include/mpi_structure.hpp"
+
 #include "../iteration_structure.hpp"
-
-#include "../integration_structure.hpp"
-
-#include "../numerics_structure.hpp"
-/*--- Transfer includes ---*/
+#include "../integration/CIntegration.hpp"
+#include "../solvers/CSolver.hpp"
 #include "../interfaces/CInterface.hpp"
-#include "../interfaces/cfd/CConservativeVarsInterface.hpp"
-#include "../interfaces/cfd/CMixingPlaneInterface.hpp"
-#include "../interfaces/cfd/CSlidingInterface.hpp"
-#include "../interfaces/cht/CConjugateHeatInterface.hpp"
-#include "../interfaces/fsi/CDisplacementsInterface.hpp"
-#include "../interfaces/fsi/CFlowTractionInterface.hpp"
-#include "../interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
-#include "../interfaces/fsi/CDisplacementsInterfaceLegacy.hpp"
-#include "../interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.hpp"
-#include "../solvers/CDiscAdjMeshSolver.hpp"
-#include "../solvers/CMeshSolver.hpp"
+
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/grid_movement_structure.hpp"
-#include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/interpolation_structure.hpp"
 
 #include "../output/COutputLegacy.hpp"
-
 #include "../output/COutput.hpp"
 #include "../output/CMultizoneOutput.hpp"
 #include "../output/CElasticityOutput.hpp"
@@ -850,6 +836,23 @@ public:
    * \return Undeformed Vertex Coordinates
    */
   vector<passivedouble> GetVertex_UndeformedCoord(unsigned short iMarker, unsigned long iVertex);
+
+  /*!
+   * \brief Set the position of the heat source.
+   * \param[in] alpha - Angle of rotation respect to Z axis.
+   * \param[in] pos_x - Position X.
+   * \param[in] pos_y - Position Y.
+   * \param[in] pos_z - Position Z.
+   */
+  void SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z);
+
+  /*!
+   * \brief Set the direction of the inlet.
+   * \param[in] iMarker - Marker index.
+   * \param[in] alpha - Angle (Zpos).
+   */
+  void SetInlet_Angle(unsigned short iMarker, passivedouble alpha);
+
 
 };
 
