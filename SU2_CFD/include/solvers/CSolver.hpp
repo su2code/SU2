@@ -4055,6 +4055,14 @@ public:
                                        CConfig *config) { }
 
   /*!
+   * \brief A virtual member. Set the volumetric heat source
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void SetVolumetricHeatSource(CGeometry *geometry,
+                                              CConfig *config) { }
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with the solutions.

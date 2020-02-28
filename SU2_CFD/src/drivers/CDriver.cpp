@@ -47,6 +47,7 @@
 
 #include "../../include/numerics/template.hpp"
 #include "../../include/numerics/transition.hpp"
+#include "../../include/numerics/radiation.hpp"
 #include "../../include/numerics/heat.hpp"
 #include "../../include/numerics/flow/convection/roe.hpp"
 #include "../../include/numerics/flow/convection/fds.hpp"
@@ -1332,6 +1333,9 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
     if (turbulent) {
       solver[MESH_0][TURB_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
+    if (config->AddRadiation()) {
+      solver[MESH_0][RAD_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
+    }
     if (fem) {
       if (time_domain) val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       solver[MESH_0][FEA_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
@@ -1364,6 +1368,8 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
         solver[MESH_0][ADJTURB_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
       if (disc_adj_heat)
         solver[MESH_0][ADJHEAT_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
+      if (config->AddRadiation())
+        solver[MESH_0][ADJRAD_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (disc_adj_fem) {
         if (time_domain) val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
@@ -1442,6 +1448,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
   nVar_FEM              = 0,
+  nVar_Rad              = 0,
   nVar_Heat             = 0;
 
   numerics = new CNumerics***[config->GetnMGLevels()+1];
@@ -1574,6 +1581,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   if (fem)          nVar_FEM = solver[MESH_0][FEA_SOL]->GetnVar();
   if (heat)     nVar_Heat = solver[MESH_0][HEAT_SOL]->GetnVar();
+
+  if (config->AddRadiation())    nVar_Rad = solver[MESH_0][RAD_SOL]->GetnVar();
 
   /*--- Number of variables for adjoint problem ---*/
 
@@ -1891,7 +1900,11 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Flow, config);
       }
 
-      numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Flow, config);
+      /*--- At the moment it is necessary to have the RHT equation in order to have a volumetric heat source. ---*/
+      if (config->AddRadiation())
+        numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceRadiation(nDim, nVar_Flow, config);
+      else
+        numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Flow, config);
     }
 
   }
@@ -2078,6 +2091,19 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
           break;
       }
     }
+  }
+
+  /*--- Solver definition for the radiation model problem ---*/
+
+  if (config->AddRadiation()) {
+    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+    numerics[MESH_0][RAD_SOL][VISC_TERM] = new CAvgGradCorrected_P1(nDim, nVar_Rad, config);
+
+    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+    numerics[MESH_0][RAD_SOL][SOURCE_FIRST_TERM] = new CSourceP1(nDim, nVar_Rad, config);
+
+    /*--- Definition of the boundary condition method ---*/
+    numerics[MESH_0][RAD_SOL][VISC_BOUND_TERM] = new CAvgGradCorrected_P1(nDim, nVar_Rad, config);
   }
 
   /*--- Solver definition for the flow adjoint problem ---*/
@@ -3399,9 +3425,9 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
     case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
       StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
-  
+
   /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
-  
+
   StopCalc = StopCalc || (ExtIter == Max_Iter - 1);
 
   return StopCalc;
@@ -3658,9 +3684,9 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
     StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
-  
+
   /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
-  
+
   StopCalc = StopCalc || (ExtIter == Max_Iter - 1);
 
   return StopCalc;
