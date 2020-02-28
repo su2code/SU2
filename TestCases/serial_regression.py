@@ -1274,6 +1274,22 @@ def main():
     airfoilRBF.multizone = True
     airfoilRBF.tol       = 0.00001
     test_list.append(airfoilRBF)
+
+    # ###############################
+    # ### Radiative Heat Transfer ###
+    # ###############################
+
+    # Radiative heat transfer
+    p1rad           = TestCase('p1rad')
+    p1rad.cfg_dir   = "radiation/p1model"
+    p1rad.cfg_file  = "configp1.cfg"
+    p1rad.new_output= True
+    p1rad.test_iter = 100
+    p1rad.test_vals = [-7.751309, -7.923059, -2.119084, 0.091733] #last 4 columns
+    p1rad.su2_exec  = "SU2_CFD"
+    p1rad.timeout   = 1600
+    p1rad.tol       = 0.00001
+    test_list.append(p1rad)
    
     # ###############################
     # ### Conjugate heat transfer ###

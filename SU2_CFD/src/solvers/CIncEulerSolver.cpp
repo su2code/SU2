@@ -2040,6 +2040,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool body_force     = config->GetBody_Force();
   const bool boussinesq     = (config->GetKind_DensityModel() == BOUSSINESQ);
   const bool viscous        = config->GetViscous();
+  const bool radiation      = config->AddRadiation();
+  const bool vol_heat       = config->GetHeatSource();
 
   if (body_force) {
 
@@ -2219,6 +2221,48 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }
+  }
+
+  if (radiation) {
+
+    CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
+
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Store the radiation source term ---*/
+
+      second_numerics->SetRadVarSource(solver_container[RAD_SOL]->GetNodes()->GetRadiative_SourceTerm(iPoint));
+
+      /*--- Set control volume ---*/
+
+      second_numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+      /*--- Compute the residual ---*/
+
+      auto residual = second_numerics->ComputeResidual(config);
+
+      /*--- Add Residual ---*/
+
+      LinSysRes.AddBlock(iPoint, residual);
+
+      /*--- Implicit part ---*/
+
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+      if (vol_heat) {
+
+        if(solver_container[RAD_SOL]->GetNodes()->GetVol_HeatSource(iPoint)) {
+
+          auto Volume = geometry->node[iPoint]->GetVolume();
+
+          /*--- Subtract integrated source from the residual. ---*/
+          LinSysRes(iPoint, nDim+1) -= config->GetHeatSource_Val()*Volume;
+        }
+
+      }
+
+    }
+
   }
 
   /*--- Check if a verification solution is to be computed. ---*/

@@ -1179,7 +1179,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
     if (rank == MASTER_NODE && !noWriting){
 
       /*--- Open history file and print the header ---*/
-      if (!config->GetMultizone_Problem() || config->GetWrt_ZoneConv())
+      if (!config->GetMultizone_Problem() || config->GetWrt_ZoneHist())
         PrepareHistoryFile(config);
 
       total_width = nRequestedScreenFields*fieldWidth + (nRequestedScreenFields-1);
@@ -1958,7 +1958,7 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
   unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
   unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);
 
-  if (config->GetMultizone_Problem() && !config->GetWrt_ZoneConv()){
+  if (config->GetMultizone_Problem() && !config->GetWrt_ZoneHist()){
 
     return false;
 
