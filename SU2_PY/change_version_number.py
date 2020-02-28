@@ -40,7 +40,7 @@ parser.add_option("-y", action="store_true", dest="yes", help="Answer yes to all
 (options, args)=parser.parse_args()
 
 if not options.version:
-    parser.error("new version number must me provided with -v option")
+    parser.error("new version number must be provided with -v option")
 
 #oldvers = '2012-2018'
 #newvers = '2012-2019'
