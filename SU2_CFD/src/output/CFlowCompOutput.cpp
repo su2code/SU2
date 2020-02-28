@@ -409,6 +409,11 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
   }
 
+  // Wall functions
+  if(config->GetWall_Functions()){
+    AddVolumeOutput("TAU_WALL", "Tau_wall", "WALL_FUNCTION", "Shear stress at the wall as predicted by the wall function");
+  }
+
   if (config->GetTime_Domain()){
     SetTimeAveragedFields();
   }
@@ -546,6 +551,10 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
       SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));
     }
     SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
+  }
+
+  if(config->GetWall_Functions()){
+    SetVolumeOutputValue("TAU_WALL", iPoint, Node_Flow->GetTauWall(iPoint));
   }
 
   if (config->GetTime_Domain()){
