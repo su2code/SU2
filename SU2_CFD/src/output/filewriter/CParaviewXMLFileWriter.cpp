@@ -333,7 +333,7 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
   int totalByteSize, byteSize;
 
   std::string typeStr;
-  unsigned long typeSize;
+  unsigned long typeSize = 0;
 
   GetTypeInfo(type, typeStr, typeSize);
 
@@ -375,13 +375,9 @@ void CParaviewXMLFileWriter::AddDataArray(VTKDatatype type, string name,
   string offsetStr = ss.str();
 
   std::string typeStr;
-  unsigned long typeSize, byteSize, totalByteSize;
+  unsigned long typeSize = 0, totalByteSize;
 
   GetTypeInfo(type, typeStr, typeSize);
-
-  /*--- Compute the size of the data to write in bytes ---*/
-
-  byteSize = arraySize*typeSize;
 
   /*--- Total data size ---*/
 
