@@ -5281,7 +5281,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   }
   else {
     RomConverged = false;
-    ReducedResNorm_Old = sqrt(r_red_norm);
+    ReducedResNorm_Old = sqrt(ReducedRes);
   }
   
   // Set up variables for QR decomposition, A = QR
