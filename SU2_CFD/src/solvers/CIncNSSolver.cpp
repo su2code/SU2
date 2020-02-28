@@ -768,13 +768,13 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
 
-  solver_container[FLOW_SOL]->GetNodes()->SetVorticity_StrainMag();
+  nodes->SetVorticity_StrainMag();
 
   StrainMag_Max = 0.0; Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    StrainMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
-    Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+    StrainMag = nodes->GetStrainMag(iPoint);
+    Vorticity = nodes->GetVorticity(iPoint);
     Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
 
     StrainMag_Max = max(StrainMag_Max, StrainMag);
