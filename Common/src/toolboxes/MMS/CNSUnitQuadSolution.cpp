@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -38,7 +38,7 @@ CNSUnitQuadSolution::CNSUnitQuadSolution(unsigned short val_nDim,
   /*--- Write a message that the solution is initialized for the
    Navier-Stokes case on a unit quad. Note that heat conduction
    is neglected for this case. ---*/
-  
+
   if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
@@ -94,7 +94,7 @@ CNSUnitQuadSolution::~CNSUnitQuadSolution(void) { }
 
 void CNSUnitQuadSolution::GetBCState(const su2double *val_coords,
                                      const su2double val_t,
-                                     su2double       *val_solution) {
+                                     su2double       *val_solution) const {
 
   /*--- The exact solution is prescribed on the boundaries. ---*/
   GetSolution(val_coords, val_t, val_solution);
@@ -102,7 +102,7 @@ void CNSUnitQuadSolution::GetBCState(const su2double *val_coords,
 
 void CNSUnitQuadSolution::GetSolution(const su2double *val_coords,
                                       const su2double val_t,
-                                      su2double       *val_solution) {
+                                      su2double       *val_solution) const {
 
   /*--- Compute the flow direction and the coordinates in
         the rotated frame. ---*/

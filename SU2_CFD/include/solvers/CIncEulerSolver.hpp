@@ -299,7 +299,7 @@ public:
    * \brief Get the velocity at the infinity.
    * \return Value of the velocity at the infinity.
    */
-  inline su2double *GetVelocity_Inf(void) const final { return Velocity_Inf; }
+  inline su2double *GetVelocity_Inf(void) final { return Velocity_Inf; }
 
   /*!
    * \brief Set the velocity at infinity.
@@ -328,14 +328,14 @@ public:
    * \brief Compute the spatial integration using a centered scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void Centered_Residual(CGeometry *geometry,
                         CSolver **solver_container,
-                        CNumerics *numerics,
+                        CNumerics **numerics_container,
                         CConfig *config,
                         unsigned short iMesh,
                         unsigned short iRKStep) final;
@@ -344,13 +344,13 @@ public:
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Upwind_Residual(CGeometry *geometry,
                       CSolver **solver_container,
-                      CNumerics *numerics,
+                      CNumerics **numerics_container,
                       CConfig *config,
                       unsigned short iMesh) final;
 
@@ -358,16 +358,15 @@ public:
    * \brief Source term integration.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] second_numerics - Description of the second numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Source_Residual(CGeometry *geometry,
                        CSolver **solver_container,
-                       CNumerics *numerics,
-                       CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh) final;
+                       CNumerics **numerics_container,
+                       CConfig *config,
+                       unsigned short iMesh) final;
 
   /*!
    * \brief Source term integration.
@@ -421,7 +420,7 @@ public:
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
                                        CConfig *config,
-                                       bool Output) override;
+                                       bool Output);
 
   /*!
    * \brief Compute a pressure sensor switch.
@@ -429,7 +428,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) final;
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
@@ -465,14 +464,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) final;
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the max eigenvalue.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) final;
+  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
 
   /*!
    * \author H. Kline

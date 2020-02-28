@@ -1135,6 +1135,8 @@ private:
 
   string caseName;                 /*!< \brief Name of the current case */
 
+  unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
+
   unsigned short Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
   unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
@@ -4269,7 +4271,7 @@ public:
    * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).
    * \return yes/no.
    */
-  bool GetUse_Accurate_Jacobians(void) { return Use_Accurate_Jacobians; }
+  bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4472,7 +4474,7 @@ public:
    * \brief Factor by which to multiply the dissipation contribution to Jacobians of central schemes.
    * \return The factor.
    */
-  su2double GetCent_Jac_Fix_Factor(void) { return Cent_Jac_Fix_Factor; }
+  su2double GetCent_Jac_Fix_Factor(void) const { return Cent_Jac_Fix_Factor; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -5851,7 +5853,7 @@ public:
    * \brief Get a pointer to the body force vector.
    * \return A pointer to the body force vector.
    */
-  su2double* GetBody_Force_Vector(void) { return Body_Force_Vector; }
+  const su2double* GetBody_Force_Vector(void) const { return Body_Force_Vector; }
 
   /*!
    * \brief Get information about the streamwise periodicity (None, Pressure_Drop, Massflow).
@@ -8588,7 +8590,7 @@ public:
    * \param[in] val_coeff - Index of the coefficient.
    * \return Alpha coefficient for the Runge-Kutta integration scheme.
    */
-  su2double* Get_Electric_Field_Dir(void) { return Electric_Field_Dir; }
+  const su2double* Get_Electric_Field_Dir(void) const { return Electric_Field_Dir; }
 
   /*!
    * \brief Check if the user wants to apply the load as a ramp.
@@ -8810,26 +8812,25 @@ public:
   su2double GetRadialBasisFunctionParameter(void) const { return RadialBasisFunction_Parameter; }
 
   /*!
-   * \brief Get information about using UQ methodology
-   * \return <code>TRUE</code> means that UQ methodology of eigenspace perturbation will be used
-   */
-  bool GetUsing_UQ(void) const { return using_uq; }
-
-  /*!
    * \brief Get the kind of inlet face interpolation function to use.
    */
   inline unsigned short GetKindInletInterpolationFunction(void) const {return Kind_InletInterpolationFunction;}
 
-
-   /*!
+  /*!
    * \brief Get the kind of inlet face interpolation data type.
    */
   inline unsigned short GetKindInletInterpolationType (void) const  {return Kind_Inlet_InterpolationType;}
 
-   /*!
+  /*!
    * \brief Get whether to print inlet interpolated data or not.
    */
   bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData;}
+
+  /*!
+   * \brief Get information about using UQ methodology
+   * \return <code>TRUE</code> means that UQ methodology of eigenspace perturbation will be used
+   */
+  bool GetUsing_UQ(void) const { return using_uq; }
 
   /*!
    * \brief Get the amount of eigenvalue perturbation to be done
@@ -9317,5 +9318,10 @@ public:
    * \return Number of threads per rank.
    */
   unsigned long GetLinear_Solver_Prec_Threads(void) const { return Linear_Solver_Prec_Threads; }
+
+  /*!
+   * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
+   */
+  unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
 
 };

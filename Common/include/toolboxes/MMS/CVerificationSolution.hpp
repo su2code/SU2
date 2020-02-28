@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
@@ -38,14 +38,14 @@
  * \author T. Economon, E. van der Weide
  */
 class CVerificationSolution {
-  
+
 protected:
   int rank;  /*!< \brief MPI Rank. */
   int size;  /*!< \brief MPI Size. */
-  
+
   unsigned short nDim;  /*!< \brief Number of dimension of the problem. */
   unsigned short nVar;  /*!< \brief Number of variables of the problem  */
-  
+
   unsigned short Kind_Solver;                  /*!< \brief The kind of solver we are running. */
 
 private:
@@ -54,14 +54,14 @@ private:
   su2double *Error_Max;                        /*!< \brief Vector with the global max error for each variable in a verification case. */
   unsigned long *Error_Point_Max;              /*!< \brief Global index for the node with the max error in a verification case. */
   su2double **Error_Point_Max_Coord;           /*!< \brief Coordinates for the node with the max error in a verification case. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CVerificationSolution(void);
-  
+
   /*!
    * \overload
    * \param[in] val_nDim  - Number of dimensions of the problem.
@@ -73,7 +73,7 @@ public:
                         unsigned short val_nvar,
                         unsigned short val_iMesh,
                         CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
@@ -87,16 +87,16 @@ public:
    */
   virtual void GetSolution(const su2double *val_coords,
                            const su2double val_t,
-                           su2double       *val_solution);
-  
+                           su2double       *val_solution) const;
+
   /*!
    * \brief Get the exact solution at the current position and t = 0.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
   void GetInitialCondition(const su2double *val_coords,
-                           su2double       *val_solution);
-  
+                           su2double       *val_solution) const;
+
   /*!
    * \brief Get the boundary conditions state for an exact solution.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
@@ -105,8 +105,8 @@ public:
    */
   virtual void GetBCState(const su2double *val_coords,
                           const su2double val_t,
-                          su2double       *val_solution);
-  
+                          su2double       *val_solution) const;
+
   /*!
    * \brief Get the source term for the manufactured solution (MMS).
    * \param[in] val_coords   - Cartesian coordinates of the current position.
@@ -115,22 +115,22 @@ public:
    */
   virtual void GetMMSSourceTerm(const su2double *val_coords,
                                 const su2double val_t,
-                                su2double       *val_source);
+                                su2double       *val_source) const;
 
   /*!
    * \brief Whether or not this verification solution is a manufactured solution.
    * \return  - False as default value. Overwrite this function for a
                 manufactured solution.
    */
-  virtual bool IsManufacturedSolution(void);
+  virtual bool IsManufacturedSolution(void) const;
 
   /*!
    * \brief Whether or not the exact solution is known for this verification solution.
    * \return  - True as default value. Overwrite this function if the exact
                 solution is not known.
    */
-  virtual bool ExactSolutionKnown(void);
-  
+  virtual bool ExactSolutionKnown(void) const;
+
   /*!
    * \brief Get the local error defined as the local solution minus the verification solution.
    * \param[in]  val_coords   - Cartesian coordinates of the current position.
@@ -140,65 +140,75 @@ public:
   void GetLocalError(const su2double *val_coords,
                      const su2double val_t,
                      const su2double *GetLocalErrorval_solution,
-                     su2double       *val_error);
+                     su2double       *val_error) const;
 
   /*!
    * \brief Set the global RMS error for verification cases.
    * \param[in] val_var   - Index of the variable.
    * \param[in] val_error - Value of the RMS error to store in the position <i>val_var</i>.
    */
-  void SetError_RMS(unsigned short val_var, su2double val_error);
+  void SetError_RMS(unsigned short val_var, su2double val_error) { Error_RMS[val_var] = val_error; }
 
   /*!
    * \brief Increments the global RMS error for verification cases.
    * \param[in] val_var   - Index of the variable.
    * \param[in] val_error - Value of the RMS error to store in the position <i>val_var</i>.
    */
-  void AddError_RMS(unsigned short val_var, su2double val_error);
+  void AddError_RMS(unsigned short val_var, su2double val_error) { Error_RMS[val_var] += val_error; }
 
   /*!
    * \brief Get the global RMS error for verification cases.
    * \param[in] val_var - Index of the variable.
    * \return Value of global RMS error for the variable in the position <i>val_var</i>.
    */
-  su2double GetError_RMS(unsigned short val_var);
+  su2double GetError_RMS(unsigned short val_var) const { return Error_RMS[val_var]; }
 
   /*!
    * \brief Set the global maximum error for verification cases.
    * \param[in] val_var   - Index of the variable.
    * \param[in] val_error - Value of the maximum error to store in the position <i>val_var</i>.
    */
-  void SetError_Max(unsigned short val_var, su2double val_error, unsigned long val_point);
+  void SetError_Max(unsigned short val_var, su2double val_error, unsigned long val_point) {
+    Error_Max[val_var]       = val_error;
+    Error_Point_Max[val_var] = val_point;
+  }
 
-    /*!
+  /*!
    * \brief Increment the global maximum error for verification cases.
    * \param[in] val_var   - Index of the variable.
    * \param[in] val_error - Value of the maximum error to store in the position <i>val_var</i>.
    * \param[in] val_point - Value of the point index for the max error.
    * \param[in] val_coord - Location (x, y, z) of the max error point.
    */
-  void AddError_Max(unsigned short val_var, su2double val_error, unsigned long val_point, su2double* val_coord);
+  void AddError_Max(unsigned short val_var, su2double val_error, unsigned long val_point, const su2double* val_coord) {
+    if (val_error > Error_Max[val_var]) {
+      Error_Max[val_var] = val_error;
+      Error_Point_Max[val_var] = val_point;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Error_Point_Max_Coord[val_var][iDim] = val_coord[iDim];
+    }
+  }
 
   /*!
    * \brief Get the global maximum error for verification cases.
    * \param[in] val_var - Index of the variable.
    * \return Value of global maximum error for the variable in the position <i>val_var</i>.
    */
-  su2double GetError_Max(unsigned short val_var);
+  su2double GetError_Max(unsigned short val_var) const { return Error_Max[val_var]; }
 
   /*!
    * \brief Get the global index of the node with the max error for verification cases.
    * \param[in] val_var - Index of the variable.
    * \return Global index of the point with the max error for the variable in the position <i>val_var</i>.
    */
-  unsigned long GetError_Point_Max(unsigned short val_var);
+  unsigned long GetError_Point_Max(unsigned short val_var) const { return Error_Point_Max[val_var]; }
 
   /*!
    * \brief Get the coordinates of the node with the max error for verification cases.
    * \param[in] val_var - Index of the variable.
    * \return Coordinates of the point with the max error for the variable in the position <i>val_var</i>.
    */
-  su2double* GetError_Point_Max_Coord(unsigned short val_var);
+  const su2double* GetError_Point_Max_Coord(unsigned short val_var) const { return Error_Point_Max_Coord[val_var]; }
 
   /*!
    * \brief Calculate the global error metrics for verification cases.
@@ -208,5 +218,3 @@ public:
   void SetVerificationError(unsigned long nDOFsGlobal,
                             CConfig       *config);
 };
-
-#include "CVerificationSolution.inl"

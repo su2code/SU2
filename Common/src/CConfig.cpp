@@ -1062,6 +1062,8 @@ void CConfig::SetPointersNull(void) {
 
   Mesh_Box_Size = NULL;
 
+  Time_Ref = 1.0;
+
 }
 
 void CConfig::SetRunTime_Options(void) {
@@ -2825,6 +2827,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Level of fill for PaStiX incomplete LU factorization. */
   addUnsignedShortOption("PASTIX_FILL_LEVEL", pastix_fill_lvl, 1);
+
+  /* DESCRIPTION: Size of the edge groups colored for OpenMP parallelization of edge loops. */
+  addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
 
   /* END_CONFIG_OPTIONS */
 
@@ -4859,7 +4864,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       case FEM_ELASTICITY:
         Kind_Solver = DISC_ADJ_FEM;
         break;
-      case HEAT_EQUATION_FVM:
+      case HEAT_EQUATION:
         Kind_Solver = DISC_ADJ_HEAT;
         break;
       default:
@@ -5586,15 +5591,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
      cout <<"based on the physical case: ";
   }
     switch (Kind_Solver) {
-      case EULER: case DISC_ADJ_EULER: case FEM_EULER: case DISC_ADJ_FEM_EULER:
+      case EULER:     case DISC_ADJ_EULER:
+      case INC_EULER: case DISC_ADJ_INC_EULER:
+      case FEM_EULER: case DISC_ADJ_FEM_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         break;
-      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
+      case NAVIER_STOKES:     case DISC_ADJ_NAVIER_STOKES:
+      case INC_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES:
+      case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         break;
-      case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:
+      case RANS:     case DISC_ADJ_RANS:
+      case INC_RANS: case DISC_ADJ_INC_RANS:
+      case FEM_RANS: case DISC_ADJ_FEM_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
@@ -8215,7 +8226,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
       }
       break;
-    case HEAT_EQUATION_FVM:
+    case HEAT_EQUATION:
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
