@@ -63,17 +63,16 @@ enum class SUB_SOLVER_TYPE {
 enum class INTEGRATION_TYPE{
   MULTIGRID,
   SINGLEGRID,
-  BASELINE,
+  DEFAULT,
   FEM_DG,
   STRUCTURAL,
   NONE
 };
 
 struct SolverMetaData{
-  SUB_SOLVER_TYPE solverType       = SUB_SOLVER_TYPE::NONE;
-  INTEGRATION_TYPE integrationType = INTEGRATION_TYPE::NONE;
+  SUB_SOLVER_TYPE  solverType        = SUB_SOLVER_TYPE::NONE;
+  INTEGRATION_TYPE integrationType   = INTEGRATION_TYPE::NONE;
 };
-
 
 class CSolver;
 class CGeometry;

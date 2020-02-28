@@ -180,104 +180,103 @@ CSolver* CSolverFactory::createSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
 
   ENUM_TURB_MODEL kindTurbModel = static_cast<ENUM_TURB_MODEL>(config->GetKind_Turb_Model());
   
-  INTEGRATION_TYPE integrationType = INTEGRATION_TYPE::NONE;
+  SolverMetaData metaData;
 
   switch (kindSolver) {
     case SUB_SOLVER_TYPE::CONT_ADJ_EULER:
       genericSolver = new CAdjEulerSolver(geometry, config, iMGLevel);
-      integrationType = INTEGRATION_TYPE::MULTIGRID;
+      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       break;
     case SUB_SOLVER_TYPE::CONT_ADJ_NAVIER_STOKES:
       genericSolver = new CAdjNSSolver(geometry, config, iMGLevel);
-      integrationType = INTEGRATION_TYPE::MULTIGRID;
+      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       break;
     case SUB_SOLVER_TYPE::CONT_ADJ_TURB:
       genericSolver = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, true);
-      integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_TURB:
       genericSolver = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, true);
-      integrationType = INTEGRATION_TYPE::BASELINE;
+      metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::BASELINE:
       genericSolver = new CBaselineSolver(geometry, config);
-      integrationType = INTEGRATION_TYPE::BASELINE;
+      metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::BASELINE_FEM:
       genericSolver = new CBaselineSolver_FEM(geometry, config);
-      integrationType = INTEGRATION_TYPE::BASELINE;
+      metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_FEA:
       genericSolver = new CDiscAdjFEASolver(geometry, config, solver[FEA_SOL], RUNTIME_FEA_SYS, iMGLevel);
-      integrationType = INTEGRATION_TYPE::BASELINE;
+      metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_MESH:
       genericSolver = createMeshSolver(solver, geometry, config, iMGLevel, true);
-      integrationType = INTEGRATION_TYPE::BASELINE;
+      metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_FLOW:
       genericSolver = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
-      integrationType = INTEGRATION_TYPE::BASELINE;
+      metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::EULER:
       genericSolver = createFlowSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
-      integrationType = INTEGRATION_TYPE::MULTIGRID;
+      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       break;
     case SUB_SOLVER_TYPE::NAVIER_STOKES:
       genericSolver = createFlowSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      integrationType = INTEGRATION_TYPE::MULTIGRID;
+      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       break;
     case SUB_SOLVER_TYPE::INC_EULER:
       genericSolver = createFlowSolver(SUB_SOLVER_TYPE::INC_EULER, solver, geometry, config, iMGLevel);
-      integrationType = INTEGRATION_TYPE::MULTIGRID;
+      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       break;
     case SUB_SOLVER_TYPE::INC_NAVIER_STOKES:
       genericSolver = createFlowSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      integrationType = INTEGRATION_TYPE::MULTIGRID;
+      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       break;
     case SUB_SOLVER_TYPE::FEA:
       genericSolver = new CFEASolver(geometry, config);
-      integrationType = INTEGRATION_TYPE::STRUCTURAL;
+      metaData.integrationType = INTEGRATION_TYPE::STRUCTURAL;
       break;
     case SUB_SOLVER_TYPE::MESH:
       genericSolver = createMeshSolver(solver, geometry, config, iMGLevel, false);
-      integrationType = INTEGRATION_TYPE::NONE;
+      metaData.integrationType = INTEGRATION_TYPE::NONE;
       break;
     case SUB_SOLVER_TYPE::DG_EULER:
       genericSolver = createDGSolver(SUB_SOLVER_TYPE::DG_EULER, geometry, config, iMGLevel);
-      integrationType = INTEGRATION_TYPE::FEM_DG;
+      metaData.integrationType = INTEGRATION_TYPE::FEM_DG;
       break;
     case SUB_SOLVER_TYPE::DG_NAVIER_STOKES:
       genericSolver = createDGSolver(SUB_SOLVER_TYPE::DG_NAVIER_STOKES, geometry, config, iMGLevel);
-      integrationType = INTEGRATION_TYPE::FEM_DG;
+      metaData.integrationType = INTEGRATION_TYPE::FEM_DG;
       break;
     case SUB_SOLVER_TYPE::HEAT:
       genericSolver = createHeatSolver(solver, geometry, config, iMGLevel, false);
-      integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_HEAT:
       genericSolver = createHeatSolver(solver, geometry, config, iMGLevel, true);
-      integrationType = INTEGRATION_TYPE::BASELINE;
+      metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::TRANSITION:
       genericSolver = new CTransLMSolver(geometry, config, iMGLevel);
-      integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     case SUB_SOLVER_TYPE::TURB: case SUB_SOLVER_TYPE::TURB_SA: case SUB_SOLVER_TYPE::TURB_SST:
       genericSolver = createTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false);
-      integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     case SUB_SOLVER_TYPE::TEMPLATE:
       genericSolver = new CTemplateSolver(geometry, config);
-      integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     default:
       SU2_MPI::Error("No proper allocation found for requested sub solver", CURRENT_FUNCTION);
       break;
   }
   
-  allocatedSolvers[genericSolver].solverType      = kindSolver;
-  allocatedSolvers[genericSolver].integrationType = integrationType;
+  allocatedSolvers[genericSolver] = metaData;
 
   return genericSolver;
 
