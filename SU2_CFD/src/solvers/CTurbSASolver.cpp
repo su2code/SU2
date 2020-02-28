@@ -324,8 +324,6 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
-//  su2double rho = 0.0, mu = 0.0, nu, *nu_hat, muT, Ji, Ji_3, fv1;
-//  su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, roughness, dist;
   const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5;
 
   const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
@@ -491,8 +489,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   Roughness_Height = config->GetWall_RoughnessHeight(Marker_Tag);
-  if (Roughness_Height > 0.0 ) rough_wall = true;
-  unsigned short rank = SU2_MPI::GetRank();
+  if (config->GetKindWall(Marker_Tag) == ROUGH ) rough_wall = true;
 
   /*--- The dirichlet condition is used only without wall function, otherwise the
    convergence is compromised as we are providing nu tilde values for the
@@ -519,40 +516,40 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
           /*--- Includes 1 in the diagonal ---*/
 
           Jacobian.DeleteValsRowi(iPoint);
-       }
-     else {
-       /*--- For rough walls, the boundary condition is given by
-        * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
-        * where \nu is the solution variable, $n$ is the wall normal direction
-        * and k_s is the equivalent sand grain roughness specified. ---*/
+        }
+        else {
+          /*--- For rough walls, the boundary condition is given by
+           * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
+           * where \nu is the solution variable, $n$ is the wall normal direction
+           * and k_s is the equivalent sand grain roughness specified. ---*/
 
-       /*--- Compute dual-grid area and boundary normal ---*/
+          /*--- Compute dual-grid area and boundary normal ---*/
 
-       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+          Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-           Area = 0.0;
-       for (iDim = 0; iDim < nDim; iDim++)
-          Area += Normal[iDim]*Normal[iDim];
-       Area = sqrt(Area);
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
 
-       /*--- Get laminar_viscosity and density ---*/
+          /*--- Get laminar_viscosity and density ---*/
 
-       laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-           density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+          laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+          density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
 
-           nu_total = (laminar_viscosity/density + nodes->GetSolution(iPoint,0));
+          nu_total = (laminar_viscosity/density + nodes->GetSolution(iPoint,0));
 
-           coeff = (nu_total/sigma);
+          coeff = (nu_total/sigma);
 
-       RoughWallBC = nodes->GetSolution(iPoint,0)/(0.03*Roughness_Height);
+          RoughWallBC = nodes->GetSolution(iPoint,0)/(0.03*Roughness_Height);
 
-       Res_Wall[0] = coeff*RoughWallBC*Area;
-       LinSysRes.SubtractBlock(iPoint, Res_Wall);
+          Res_Wall[0] = coeff*RoughWallBC*Area;
+          LinSysRes.SubtractBlock(iPoint, Res_Wall);
 
-       Jacobian_i[0][0] = (laminar_viscosity*Area)/(0.03*Roughness_Height*sigma);
-       Jacobian_i[0][0] += 2.0*RoughWallBC*Area/sigma;
-       Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
-     }
+          Jacobian_i[0][0] = (laminar_viscosity*Area)/(0.03*Roughness_Height*sigma);
+          Jacobian_i[0][0] += 2.0*RoughWallBC*Area/sigma;
+          Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
+        }
       }
     }
   }
@@ -569,7 +566,16 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned long iPoint, iVertex;
-  unsigned short iVar;
+  unsigned short iVar, iDim;
+  bool rough_wall = false;
+  su2double RoughWallBC, Roughness_Height, laminar_viscosity, density, sigma = 2.0/3.0, nu_total, coeff;
+  su2double *Res_Wall = new su2double [nVar];
+  su2double *Normal, Area;
+
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  Roughness_Height = config->GetWall_RoughnessHeight(Marker_Tag);
+  if (config->GetKindWall(Marker_Tag) == ROUGH ) rough_wall = true;
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -578,18 +584,54 @@ void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
 
     if (geometry->node[iPoint]->GetDomain()) {
 
-      /*--- Get the velocity vector ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-        Solution[iVar] = 0.0;
+      if (!rough_wall) {
 
-      nodes->SetSolution_Old(iPoint,Solution);
-      LinSysRes.SetBlock_Zero(iPoint);
+        /*--- Get the solution vector ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          Solution[iVar] = 0.0;
 
-      /*--- Includes 1 in the diagonal ---*/
+          nodes->SetSolution_Old(iPoint,Solution);
+          LinSysRes.SetBlock_Zero(iPoint);
 
-      Jacobian.DeleteValsRowi(iPoint);
-    }
-  }
+          /*--- Includes 1 in the diagonal ---*/
+
+          Jacobian.DeleteValsRowi(iPoint);
+        }
+        else {
+          /*--- For rough walls, the boundary condition is given by
+           * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
+           * where \nu is the solution variable, $n$ is the wall normal direction
+           * and k_s is the equivalent sand grain roughness specified. ---*/
+
+          /*--- Compute dual-grid area and boundary normal ---*/
+
+          Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
+
+          /*--- Get laminar_viscosity and density ---*/
+
+          laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+          density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+
+          nu_total = (laminar_viscosity/density + nodes->GetSolution(iPoint,0));
+
+          coeff = (nu_total/sigma);
+
+          RoughWallBC = nodes->GetSolution(iPoint,0)/(0.03*Roughness_Height);
+
+          Res_Wall[0] = coeff*RoughWallBC*Area;
+          LinSysRes.SubtractBlock(iPoint, Res_Wall);
+
+          Jacobian_i[0][0] = (laminar_viscosity*Area)/(0.03*Roughness_Height*sigma);
+          Jacobian_i[0][0] += 2.0*RoughWallBC*Area/sigma;
+          Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
+        }
+     }
+   }
 
 }
 

@@ -4703,9 +4703,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
            Roughness_Height[nMarker_HeatFlux + iMarker] = temp_rough[nMarker_HeatFlux + iMarker];
            Kind_Wall[nMarker_HeatFlux + iMarker] = temp_kindrough[nMarker_HeatFlux + iMarker];
          }
-         /*--- Release memory allocated earlier. ---*/
-         vector<su2double> ().swap(temp_rough);
-         vector<unsigned short> ().swap(temp_kindrough);
        }
      }
    }

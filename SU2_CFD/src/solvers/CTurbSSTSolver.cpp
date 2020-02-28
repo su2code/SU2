@@ -508,6 +508,11 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
   su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
+  bool rough_wall = false;
+  su2double RoughWallBC, Roughness_Height, S_R, FrictionVel, kPlus, WallShearStress;
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  
+  if (config->GetKindWall(Marker_Tag) == ROUGH ) rough_wall = true;
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -515,24 +520,61 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->node[iPoint]->GetDomain()) {
 
-      /*--- distance to closest neighbor ---*/
-      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      distance = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*
-        (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+      if (rough_wall) {
+
+        /*--- Set wall values ---*/
+
+        density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+
+        WallShearStress = solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 0)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 0);
+        WallShearStress += solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 1)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 1);
+        if (nDim == 3) WallShearStress += solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 2)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 2);
+
+        WallShearStress = sqrt(WallShearStress);
+        /*--- Compute non-dimensional velocity ---*/
+        FrictionVel = sqrt(fabs(WallShearStress)/density);
+
+        /*--- Compute roughness in wall units. ---*/
+        Roughness_Height = config->GetWall_RoughnessHeight(Marker_Tag);
+        kPlus = FrictionVel*Roughness_Height*density/laminar_viscosity;
+
+        /*--- Reference 1 original Wilcox (1998) ---*/
+        /*if (kPlus <= 25)
+            S_R = (50/(kPlus+EPS))*(50/(kPlus+EPS));
+          else
+            S_R = 100/(kPlus+EPS);*/
+
+        /*--- Reference 2 from D.C. Wilcox Turbulence Modeling for CFD (2006) ---*/
+        if (kPlus <= 5)
+          S_R = (200/(kPlus+EPS))*(200/(kPlus+EPS));
+        else
+          S_R = 100/(kPlus+EPS) + ((200/(kPlus+EPS))*(200/(kPlus+EPS)) - 100/(kPlus+EPS))*exp(5-kPlus);
+
+        /*--- Modify the omega to account for a rough wall. ---*/
+        Solution[1] = FrictionVel*FrictionVel*S_R/(laminar_viscosity/density);
+      } else {
+        /*--- distance to closest neighbor ---*/
+        jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        distance = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          distance += pow(geometry->node[iPoint]->GetCoord(iDim)-
+                      geometry->node[jPoint]->GetCoord(iDim), 2);
+        }
+        distance = sqrt(distance);
+
+        /*--- Set wall values ---*/
+
+        density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
+        laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
+
+        beta_1 = constants[4];
+
+        Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
       }
-      distance = sqrt(distance);
 
-      /*--- Set wall values ---*/
-
-      density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-      laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
-
-      beta_1 = constants[4];
-
+      /*--- Only the \omega solution is modified at the wall. ---*/
       Solution[0] = 0.0;
-      Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
 
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
