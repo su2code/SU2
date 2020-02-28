@@ -32,39 +32,39 @@
 #include "../../include/integration/CFEM_DG_Integration.hpp"
 
 CIntegration** CIntegrationFactory::createIntegrationContainer(ENUM_MAIN_SOLVER kindMainSolver,
-                                                               CSolver** solver_container, CConfig *config){
+                                                               CSolver** solver_container){
 
   CIntegration **integration = new CIntegration* [MAX_SOLS]();
 
   for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++){
     if (solver_container[iSol] != nullptr){
       const SolverMetaData &solverInfo = CSolverFactory::GetSolverMeta(solver_container[iSol]);
-      integration[iSol] = createIntegration(solverInfo.integrationType, config);
+      integration[iSol] = createIntegration(solverInfo.integrationType);
     }
   }
 
   return integration;
 }
 
-CIntegration* CIntegrationFactory::createIntegration(INTEGRATION_TYPE integrationType, CConfig *config){
+CIntegration* CIntegrationFactory::createIntegration(INTEGRATION_TYPE integrationType){
 
   CIntegration *integration = nullptr;
 
   switch(integrationType){
-    case INTEGRATION_TYPE::BASELINE:
-      integration = new CIntegration(config);
+    case INTEGRATION_TYPE::DEFAULT:
+      integration = new CIntegration();
       break;
     case INTEGRATION_TYPE::SINGLEGRID:
-      integration = new CSingleGridIntegration(config);
+      integration = new CSingleGridIntegration();
       break;
     case INTEGRATION_TYPE::MULTIGRID:
-      integration = new CMultiGridIntegration(config);
+      integration = new CMultiGridIntegration();
       break;
     case INTEGRATION_TYPE::STRUCTURAL:
-      integration = new CStructuralIntegration(config);
+      integration = new CStructuralIntegration();
       break;
     case INTEGRATION_TYPE::FEM_DG:
-      integration = new CFEM_DG_Integration(config);
+      integration = new CFEM_DG_Integration();
       break;
     case INTEGRATION_TYPE::NONE:
       integration = nullptr;

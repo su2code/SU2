@@ -29,7 +29,7 @@
 #include "../../../Common/include/omp_structure.hpp"
 
 
-CSingleGridIntegration::CSingleGridIntegration(CConfig *config) : CIntegration(config) { }
+CSingleGridIntegration::CSingleGridIntegration() : CIntegration() { }
 
 void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                                   CNumerics ******numerics_container, CConfig **config,
