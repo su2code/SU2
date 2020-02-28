@@ -2,7 +2,7 @@
  * \file CTemplateSolver.hpp
  * \brief Headers of the CTemplateSolver class
  * \author F. Palacios
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

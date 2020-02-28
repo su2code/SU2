@@ -2,7 +2,7 @@
  * \file C1DInterpolation.cpp
  * \brief Inlet_interpolation_functions
  * \author Aman Baig
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
