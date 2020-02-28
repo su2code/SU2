@@ -1414,7 +1414,7 @@ void CDriver::Integration_Preprocessing(CConfig *config, CSolver **solver, CInte
 
   ENUM_MAIN_SOLVER kindMainSolver = static_cast<ENUM_MAIN_SOLVER>(config->GetKind_Solver());
 
-  integration = CIntegrationFactory::createIntegrationContainer(kindMainSolver, solver, config);
+  integration = CIntegrationFactory::createIntegrationContainer(kindMainSolver, solver);
 
 }
 

@@ -29,19 +29,12 @@
 #include "../../../Common/include/omp_structure.hpp"
 
 
-CIntegration::CIntegration(CConfig *config) {
+CIntegration::CIntegration() {
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
-  Cauchy_Value = 0;
-  Cauchy_Func = 0;
-  Old_Func = 0;
-  New_Func = 0;
-  Cauchy_Counter = 0;
   Convergence = false;
   Convergence_FSI = false;
   Convergence_FullMG = false;
-  Cauchy_Serie.resize(config->GetCauchy_Elems()+1, 0.0);
-  InitResidual = 0.0;
 }
 
 void CIntegration::Space_Integration(CGeometry *geometry,

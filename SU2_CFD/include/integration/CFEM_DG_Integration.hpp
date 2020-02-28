@@ -37,9 +37,8 @@ class CFEM_DG_Integration final : public CIntegration {
 public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
    */
-  CFEM_DG_Integration(CConfig *config);
+  CFEM_DG_Integration();
 
   /*!
    * \brief Do the numerical integration (implicit) of the turbulence solver.
