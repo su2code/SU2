@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.0.1',
+        version: '7.0.1 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
