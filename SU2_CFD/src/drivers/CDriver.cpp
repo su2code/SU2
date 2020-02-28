@@ -1094,7 +1094,17 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++){
     solver[iMesh] = CSolverFactory::createSolverContainer(kindSolver, config, geometry[iMesh], iMesh);
-  }    
+  }
+
+  /*--- Count the number of DOFs per solution point. ---*/
+
+  DOFsPerPoint = 0;
+
+  for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++){
+    if (solver[MESH_0][iSol] != nullptr){
+      DOFsPerPoint += solver[MESH_0][iSol]->GetnVar();
+    }
+  }
 
   bool update_geo = true;
   if (config->GetFSI_Simulation()) update_geo = false;
