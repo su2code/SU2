@@ -121,13 +121,13 @@ protected:
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
-  unsigned long nPoint = {0};  /*!< \brief Number of points in the domain. */
-  unsigned long nDim = {0};      /*!< \brief Number of dimension of the problem. */
-  unsigned long nVar = {0};        /*!< \brief Number of variables of the problem. */
-  unsigned long nPrimVar = {0};      /*!< \brief Number of primitive variables. */
-  unsigned long nPrimVarGrad = {0};    /*!< \brief Number of primitives for which a gradient is computed. */
-  unsigned long nSecondaryVar = {0};     /*!< \brief Number of secondary variables. */
-  unsigned long nSecondaryVarGrad = {0};   /*!< \brief Number of secondaries for which a gradient is computed. */
+  unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
+  unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
+  unsigned long nVar = 0;        /*!< \brief Number of variables of the problem. */
+  unsigned long nPrimVar = 0;      /*!< \brief Number of primitive variables. */
+  unsigned long nPrimVarGrad = 0;    /*!< \brief Number of primitives for which a gradient is computed. */
+  unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
+  unsigned long nSecondaryVarGrad = 0;   /*!< \brief Number of secondaries for which a gradient is computed. */
 
 public:
 
@@ -197,7 +197,7 @@ public:
     } else {
       Non_Physical_Counter(iPoint)++;
       if (Non_Physical_Counter(iPoint) > 20) {
-        Non_Physical(iPoint) = val_value;
+        Non_Physical(iPoint) = false;
       }
     }
   }
@@ -524,7 +524,9 @@ public:
   /*!
    * \brief Set summed residual vector to zero value.
    */
-  void SetResidualSumZero();
+  inline void SetResidualSumZero(unsigned long iPoint) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Residual_Sum(iPoint,iVar) = 0.0;
+  }
 
   /*!
    * \brief Set the velocity of the truncation error to zero.
@@ -1774,11 +1776,6 @@ public:
   inline virtual void Add_SurfaceLoad_Res(unsigned long iPoint, const su2double *val_surfForce) {}
 
   /*!
-   * \brief  A virtual member.
-   */
-  inline virtual void Set_SurfaceLoad_Res(unsigned long iPoint, unsigned long iVar, su2double val_surfForce) {}
-
-  /*!
    * \brief A virtual member.
    */
   inline virtual su2double Get_SurfaceLoad_Res(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
@@ -1786,7 +1783,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Clear_SurfaceLoad_Res(unsigned long iPoint) {}
+  inline virtual void Clear_SurfaceLoad_Res() {}
 
   /*!
    * \brief A virtual member.
@@ -2738,7 +2735,8 @@ public:
 
   inline virtual su2double GetTauWall(unsigned long iPoint) const { return 0.0; }
 
-  inline virtual void SetVortex_Tilting(unsigned long iPoint, su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity) {}
+  inline virtual void SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
+                                        const su2double* Vorticity, su2double LaminarViscosity) {}
 
   inline virtual su2double GetVortex_Tilting(unsigned long iPoint) const { return 0.0; }
 
@@ -2769,6 +2767,24 @@ public:
   inline virtual su2double GetSolution_Old_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   inline virtual su2double GetSolution_Old_Accel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+
+  /*!
+   * \brief Virtual member: Set the Radiative source term at the node
+   * \return value of the radiative source term
+   */
+  inline virtual const su2double *GetRadiative_SourceTerm(unsigned long iPoint) const { return nullptr;}
+
+  /*!
+   * \brief  Virtual member: Set the Radiative source term at the node
+   * \param[in] val_RadSourceTerm - value of the radiative source term
+   */
+  inline virtual void SetRadiative_SourceTerm(unsigned long iPoint, unsigned long iVar, su2double val_RadSourceTerm) { }
+
+  /*!
+   * \brief Get whether a volumetric heat source is to be introduced in point iPoint
+   * \return Bool, determines if this point introduces volumetric heat
+   */
+  inline virtual bool GetVol_HeatSource(unsigned long iPoint) const { return false; }
 
   /*!
    * \brief Set the FSI force sensitivity at the node

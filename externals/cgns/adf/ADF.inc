@@ -15,7 +15,7 @@ C     ----------------------------------------------------------------------
 
 C***********************************************************************
 C	Defines:  These defines are used within the ADF core routines
-C	to specify the size in bytes of varoius items.
+C	to specify the size in bytes of various items.
 C  Caution:  Simply changing a define here may not correctly adjust the
 C	ADF core code.  These sizes are provided for reference only!
 C***********************************************************************/
