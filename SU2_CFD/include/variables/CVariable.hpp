@@ -2769,6 +2769,24 @@ public:
   inline virtual su2double GetSolution_Old_Accel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
+   * \brief Virtual member: Set the Radiative source term at the node
+   * \return value of the radiative source term
+   */
+  inline virtual const su2double *GetRadiative_SourceTerm(unsigned long iPoint) const { return nullptr;}
+
+  /*!
+   * \brief  Virtual member: Set the Radiative source term at the node
+   * \param[in] val_RadSourceTerm - value of the radiative source term
+   */
+  inline virtual void SetRadiative_SourceTerm(unsigned long iPoint, unsigned long iVar, su2double val_RadSourceTerm) { }
+
+  /*!
+   * \brief Get whether a volumetric heat source is to be introduced in point iPoint
+   * \return Bool, determines if this point introduces volumetric heat
+   */
+  inline virtual bool GetVol_HeatSource(unsigned long iPoint) const { return false; }
+
+  /*!
    * \brief Set the FSI force sensitivity at the node
    * \param[in] iDim - spacial component
    * \param[in] val - value of the Sensitivity
