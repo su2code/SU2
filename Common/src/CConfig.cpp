@@ -5672,8 +5672,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if (Reduced_Model) {
       cout << "Reduced order model definitions:" << endl;
       cout << "   Test basis file name:         " << Rom_FileName << "." << endl;
-      cout << "   Inital solution file name:    " << Ref_Snapshot_FileName << "." << endl;
-      cout << "   Reference solution file name: " << Init_Snapshot_FileName << "." << endl;
+      cout << "   Inital solution file name:    " << Init_Snapshot_FileName << "." << endl;
+      cout << "   Reference solution file name: " << Ref_Snapshot_FileName << "." << endl;
     }
     
     if (ContinuousAdjoint)

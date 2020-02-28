@@ -250,7 +250,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
   unsigned long nInnerIter, InnerIter, nTimeIter;
   su2double MaxTime, CurTime;
-  bool TimeDomain, InnerConvergence, TimeConvergence, FinalTimeReached, MaxIterationsReached;
+  bool TimeDomain, InnerConvergence, TimeConvergence, FinalTimeReached, MaxIterationsReached, rom, RomConvergence;
 
   nInnerIter = config_container[ZONE_0]->GetnInner_Iter();
   InnerIter  = config_container[ZONE_0]->GetInnerIter();
@@ -259,7 +259,21 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   CurTime    = output_container[ZONE_0]->GetHistoryFieldValue("CUR_TIME");
 
   TimeDomain = config_container[ZONE_0]->GetTime_Domain();
-
+  rom        = config_container[ZONE_0]->GetReduced_Model();
+  
+  /*--- Check whether the ROM solver has converged TODO --- */
+  
+  if (rom) {
+    RomConvergence = output_container[ZONE_0]->GetConvergence();
+    if (RomConvergence) {
+      StopCalc = true;
+      cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
+      cout << "ROM criteria satisfied." << endl;
+      output_container[ZONE_0]->PrintConvergenceSummary();
+      cout << "-------------------------------------------------------------------------" << endl;
+      return StopCalc;
+    }
+  }
 
   /*--- Check whether the inner solver has converged --- */
 

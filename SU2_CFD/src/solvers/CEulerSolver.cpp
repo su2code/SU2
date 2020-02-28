@@ -5165,54 +5165,84 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   unsigned long iPoint, kNeigh, kPoint, jPoint, iPoint_mask;
   su2double *local_Residual, *local_Res_TruncError, Res;
   
-  int m = (int)nPointDomain * nVar;
-  //int m = (int)Mask.size();
+  //int m = (int)nPointDomain * nVar;
+  int m = (int)Mask.size() * nVar;
   int n = (int)TrialBasis[0].size();
-  
-  su2double* prod = new su2double[nVar];
   
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
   
-  /*--- Compute Test Basis: W = J * Phi ---*/
+  /*--- Find residual ---*/
+  
+  vector<double> r(m,0.0);
+  int index = 0;
+  //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+    iPoint = Mask[iPoint_mask];
+    local_Res_TruncError = nodes->GetResTruncError(iPoint);
+    local_Residual = LinSysRes.GetBlock(iPoint);
+  
+    for (iVar = 0; iVar < nVar; iVar++) {
+      r[index] = local_Residual[iVar] + local_Res_TruncError[iVar];
+      index++;
+    }
+  }
+  
+  /*--- Container for reduced residual ---*/
+  
+  vector<double> r_red(m,0.0);
+  double ReducedRes = 0.0;
+  
+  /*--- Compute Test Basis: W = J * Phi and reduced residual ---*/
   
   vector<double> TestBasis2(m*n, 0.0);
+  su2double* prod   = new su2double[nVar]();
+  //su2double* prod_t = new su2double[nVar]();
+  
   //for (iPoint_mask = 0; iPoint_mask < accumulate(Mask.begin(), Mask.end(), 0); iPoint_mask++)
     // how to find iPoint?
-  //for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
-    //iPoint = Mask[iPoint_mask];
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (Mask[iPoint] == 0); continue;
+  for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+    iPoint = Mask[iPoint_mask];
+  //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //  if (Mask[iPoint] == 0) continue;
     for (kNeigh = 0; kNeigh < geometry->node[iPoint]->GetnPoint(); kNeigh++) {
       kPoint = geometry->node[iPoint]->GetPoint(kNeigh);
+      
+      su2double* J_ik = Jacobian.GetBlock(iPoint, kPoint);
+      su2double* J_ii = Jacobian.GetBlock(iPoint, iPoint);
+      
       for (jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
-        
-        su2double* mat_i = Jacobian.GetBlock(iPoint, kPoint);
         
         // format phi matrix into su2double*
         su2double phi[nVar];
         for (unsigned long i = 0; i < nVar; i++){
-          phi[i] = TrialBasis[kPoint*nVar + i][jPoint];
+          phi[i]    = TrialBasis[kPoint*nVar + i][jPoint];
         }
         
         // TODO: try .MatrixVectorProduct(vec,prod,geometry,config) function for speed
         for (iVar = 0; iVar < nVar; iVar++) {
           prod[iVar] = 0.0;
           for (jVar = 0; jVar < nVar; jVar++) {
-            prod[iVar] += mat_i[iVar*nVar+jVar] * phi[jVar];
+            prod[iVar] += J_ik[iVar*nVar+jVar] * phi[jVar];
           }
         }
         
         for (unsigned long i = 0; i < nVar; i++){ // column order
-          TestBasis2[jPoint*m + iPoint*nVar + i] += prod[i];
+          TestBasis2[jPoint*m + iPoint_mask*nVar + i] += prod[i];
+        }
+        
+        /*--- Calculate reduced residual ---*/
+        
+        for (unsigned long i = 0; i < nVar; i++){
+          r_red[jPoint] = r[iPoint_mask*nVar + i] * prod[i];
+          ReducedRes += r_red[jPoint] * r_red[jPoint];
         }
         
         // Jacobian is defined for (iPoint, k=iPoint) but won't be listed as a neighbor
         if (kNeigh == 0) {
           unsigned long k = iPoint;
-          su2double* mat = Jacobian.GetBlock(iPoint, k);
           
           // format phi matrix into su2double*
           su2double phi[nVar];
@@ -5223,18 +5253,36 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
           for (iVar = 0; iVar < nVar; iVar++) {
             prod[iVar] = 0.0;
             for (jVar = 0; jVar < nVar; jVar++) {
-              prod[iVar] += mat[iVar*nVar+jVar] * phi[jVar];
+              prod[iVar] += J_ii[iVar*nVar+jVar] * phi[jVar];
             }
           }
           
           for (unsigned long i = 0; i < nVar; i++){
-            TestBasis2[jPoint*m + iPoint*nVar + i] += prod[i];
+            TestBasis2[jPoint*m + iPoint_mask*nVar + i] += prod[i];
           }
         }
       }
     }
   }
   
+  // Output reduced residual norm
+  ofstream fs;
+  std::string fname = "check_reduced_residual.csv";
+  fs.open(fname);
+  for(int i=0; i < n; i++){
+    fs << r_red[i] << "\n";
+  }
+  fs.close();
+  std::cout << sqrt(ReducedRes) << std::endl;
+  if (sqrt(ReducedRes) >= ReducedResNorm_Old) {
+    RomConverged = true;
+    std::cout << "ROM Converged." << std::endl;
+    
+  }
+  else {
+    RomConverged = false;
+    ReducedResNorm_Old = sqrt(r_red_norm);
+  }
   
   // Set up variables for QR decomposition, A = QR
   char TRANS = 'N';
@@ -5243,19 +5291,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   vector<double> WORK(LWORK,0.0);
   int INFO = 1;
   
-  vector<double> r(m,0.0);
-  int index = 0;
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
-    local_Residual = LinSysRes.GetBlock(iPoint);
   
-    for (iVar = 0; iVar < nVar; iVar++) {
-      r[index] = local_Residual[iVar] + local_Res_TruncError[iVar];
-      index++;
-    }
-  }
-  
-
   if (true) {
     ofstream fs;
     std::string fname = "check_testbasis.csv";
@@ -5297,7 +5333,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
 
   if (INFO < 0) SU2_MPI::Error("Unsucsessful exit of least-squares for ROM", CURRENT_FUNCTION);
   
-  ofstream fs;
   std::string fname3 = "check_LS_solution.csv";
   fs.open(fname3);
   for(int i=0; i < m; i++){
@@ -5323,7 +5358,8 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   /*--- Update solution ---*/
   
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+    iPoint = Mask[iPoint_mask];
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
     

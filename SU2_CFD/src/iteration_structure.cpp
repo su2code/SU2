@@ -681,6 +681,9 @@ bool CFluidIteration::Monitor(COutput *output,
   /*--- If convergence was reached --*/
   StopCalc =  output->GetConvergence();
   
+  /*--- If ROM convergence was reached --*/
+  StopCalc = solver[val_iZone][INST_0][MESH_0][0]->GetRom_Convergence();
+  
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 
   if (config[val_iZone]->GetFixed_CL_Mode()){

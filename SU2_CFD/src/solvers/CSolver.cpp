@@ -4659,14 +4659,19 @@ void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 }
 
 
-void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
-                                    unsigned short nVar, CGeometry *geometry, CConfig *config) {
+void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar,
+                               CGeometry *geometry, CConfig *config) {
   // Explanation of certain ROM-specific variables:
   // TrialBasis   ...POD-built reduced basis, Phi
   // GenCoordsY   ...generalized coordinate vector, y
   // Solution_Ref ...reference solution, w, typically a snapshot
   
   std::cout << "Setting up ROM variables" << std::endl;
+  
+  ReducedResNorm_Old = 1e30;
+  
+  /*--- Get solver nodes ---*/
+  CVariable* nodes = GetNodes();
   
   /*--- Read data from the following three files: ---*/
   
@@ -4765,10 +4770,17 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
   delete[] init_sol;
 }
 
+bool CSolver::GetRom_Convergence() {
+  return RomConverged;
+}
+
 
 void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   auto t_start = std::chrono::high_resolution_clock::now();
   // This function selects the masks E and E' using the Phi matrix and mesh data
+  
+  /*--- Get solver nodes ---*/
+  //CVariable* nodes = GetNodes();
   
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
@@ -4794,7 +4806,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     }
   }
   //unsigned long nsnaps = Phi.size();
-  unsigned long N = Phi[0].size();
+  //unsigned long N = Phi[0].size();
   //unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil
   //unsigned long i, j, k;
   //
@@ -4814,12 +4826,21 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   //}
   
   // set mask to all even nodes for now
-  for (unsigned long i = 0; i < N; i++) {
-    if (i % 2 == 0) {
+  for (unsigned long i = 0; i < nPointDomain; i++) {
+    //if (i % 2 == 0) {
       Mask.push_back(i);
       MaskNeighbors.push_back(i);
-    }
+    //}
   }
+  
+  ofstream fs;
+  std::string fname = "masked_nodes.csv";
+  fs.open(fname);
+  for(int i=0; i < (int)Mask.size(); i++){
+    fs << Mask[i] << "," ;
+  }
+  fs << "\n";
+  fs.close();
   
   auto t_end = std::chrono::high_resolution_clock::now();
   double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();

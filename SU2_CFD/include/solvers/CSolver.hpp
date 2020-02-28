@@ -179,6 +179,8 @@ public:
   vector<double> MaskNeighbors;             /*!< \brief vector to store selected nodes' neighbors. (rom) */
   vector<unsigned long> Edge_masked;        /*!<\brief vector to store masked edges (rom) */
   unsigned long nEdge_masked;               /*!<\brief number of masked edges (rom) */
+  double ReducedResNorm_Old;                /*!<\brief previous value of the reduced residual norm (rom) */
+  bool RomConverged;                        /*!<\brief whether or not the reduced order model has converged (rom) */
 
   CSysMatrix<su2double> StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
 
@@ -1564,13 +1566,19 @@ public:
   /*!
    * \brief Set up ROM-specific variables.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
   void SetROM_Variables(unsigned long nPoint,
                         unsigned long nPointDomain,
                         unsigned short nVar,
                         CGeometry *geometry,
-                        CConfig *config) { }
+                        CConfig *config);
+  
+  /*!
+   * \brief Convergence bool for reduced order models.
+   */
+  bool GetRom_Convergence(void);
   
   /*!
    * \brief Create mask for hyper-reduction.
