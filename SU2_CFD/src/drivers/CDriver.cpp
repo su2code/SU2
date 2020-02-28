@@ -190,7 +190,8 @@ CDriver::CDriver(char* confFile,
        the residual at each node, R(U) and then integrates the equations to a
        steady state or time-accurately. ---*/
 
-      Integration_Preprocessing(config_container[iZone], integration_container[iZone][iInst]);
+      Integration_Preprocessing(config_container[iZone], solver_container[iZone][iInst][MESH_0],
+                                integration_container[iZone][iInst]);
 
       /*--- Instantiate the type of physics iteration to be executed within each zone. For
        example, one can execute the same physics across multiple zones (mixing plane),
@@ -1401,17 +1402,19 @@ void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
     delete [] solver[val_iInst][iMGlevel];
   }
   delete [] solver[val_iInst];
+
+  CSolverFactory::ClearSolverMeta();
   
 }
 
-void CDriver::Integration_Preprocessing(CConfig *config, CIntegration **&integration) {
+void CDriver::Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration) {
 
   if (rank == MASTER_NODE)
     cout << endl <<"----------------- Integration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
 
   ENUM_MAIN_SOLVER kindMainSolver = static_cast<ENUM_MAIN_SOLVER>(config->GetKind_Solver());
 
-  integration = CIntegrationFactory::createIntegrationContainer(kindMainSolver, config);
+  integration = CIntegrationFactory::createIntegrationContainer(kindMainSolver, solver, config);
 
 }
 

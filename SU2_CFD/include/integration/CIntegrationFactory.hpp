@@ -48,7 +48,7 @@ public:
    * \param[in] config        - The configuration
    * \return                  - Pointer to the allocated integration container
    */
-  static CIntegration** createIntegrationContainer(ENUM_MAIN_SOLVER kindSolver, CConfig *config);
+  static CIntegration** createIntegrationContainer(ENUM_MAIN_SOLVER kindSolver, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief Create a new integration instance based on the current sub solver
@@ -56,6 +56,6 @@ public:
    * \param[in] config       - The configuration
    * \return                 - Pointer to the allocated integration instance
    */
-  static CIntegration* createIntegration(SUB_SOLVER kindSubSolver, CConfig *config);
+  static CIntegration* createIntegration(INTEGRATION_TYPE integrationType, CConfig *config);
 
 };

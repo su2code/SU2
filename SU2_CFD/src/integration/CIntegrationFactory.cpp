@@ -31,150 +31,43 @@
 #include "../../include/integration/CStructuralIntegration.hpp"
 #include "../../include/integration/CFEM_DG_Integration.hpp"
 
-CIntegration** CIntegrationFactory::createIntegrationContainer(ENUM_MAIN_SOLVER kindMainSolver, CConfig *config){
+CIntegration** CIntegrationFactory::createIntegrationContainer(ENUM_MAIN_SOLVER kindMainSolver,
+                                                               CSolver** solver_container, CConfig *config){
 
   CIntegration **integration = new CIntegration* [MAX_SOLS]();
 
-  switch (kindMainSolver) {
-    case TEMPLATE_SOLVER:
-      integration[FLOW_SOL] = createIntegration(SUB_SOLVER::TEMPLATE, config);
-      break;
-    case INC_EULER:
-      integration[FLOW_SOL] = createIntegration(SUB_SOLVER::INC_EULER, config);
-      break;
-    case EULER:
-      integration[FLOW_SOL] = createIntegration(SUB_SOLVER::EULER, config);
-      break;
-    case INC_NAVIER_STOKES:
-      integration[FLOW_SOL] = createIntegration(SUB_SOLVER::INC_NAVIER_STOKES, config);
-      integration[HEAT_SOL] = createIntegration(SUB_SOLVER::HEAT, config);
-      break;
-    case NAVIER_STOKES:
-      integration[FLOW_SOL] = createIntegration(SUB_SOLVER::NAVIER_STOKES, config);
-      break;
-    case RANS:
-      integration[FLOW_SOL] = createIntegration(SUB_SOLVER::NAVIER_STOKES, config);
-      integration[TURB_SOL] = createIntegration(SUB_SOLVER::TURB, config);
-      break;
-    case INC_RANS:
-      integration[FLOW_SOL] = createIntegration(SUB_SOLVER::INC_NAVIER_STOKES, config);
-      integration[HEAT_SOL] = createIntegration(SUB_SOLVER::HEAT, config);
-      integration[TURB_SOL] = createIntegration(SUB_SOLVER::TURB, config);
-      break;
-    case HEAT_EQUATION:
-      integration[HEAT_SOL] = createIntegration(SUB_SOLVER::HEAT, config);
-      break;
-    case ADJ_EULER:
-      integration[FLOW_SOL]    = createIntegration(SUB_SOLVER::EULER, config);
-      integration[ADJFLOW_SOL] = createIntegration(SUB_SOLVER::CONT_ADJ_EULER, config);
-      break;
-    case ADJ_NAVIER_STOKES:
-      integration[FLOW_SOL]    = createIntegration(SUB_SOLVER::NAVIER_STOKES, config);
-      integration[ADJFLOW_SOL] = createIntegration(SUB_SOLVER::CONT_ADJ_NAVIER_STOKES, config);
-      break;
-    case ADJ_RANS:
-      integration[FLOW_SOL]    = createIntegration(SUB_SOLVER::NAVIER_STOKES, config);
-      integration[ADJFLOW_SOL] = createIntegration(SUB_SOLVER::CONT_ADJ_NAVIER_STOKES, config);
-      integration[TURB_SOL]    = createIntegration(SUB_SOLVER::TURB, config);
-      integration[ADJTURB_SOL] = createIntegration(SUB_SOLVER::CONT_ADJ_TURB, config);
-      break;
-    case DISC_ADJ_EULER:
-      integration[FLOW_SOL]    = createIntegration(SUB_SOLVER::EULER, config);
-      integration[ADJFLOW_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_FLOW, config);
-      break;
-    case DISC_ADJ_NAVIER_STOKES:
-      integration[FLOW_SOL]    = createIntegration(SUB_SOLVER::NAVIER_STOKES, config);
-      integration[ADJFLOW_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_FLOW, config);
-      break;
-    case DISC_ADJ_RANS:
-      integration[FLOW_SOL]    = createIntegration(SUB_SOLVER::NAVIER_STOKES, config);
-      integration[ADJFLOW_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_FLOW, config);
-      integration[TURB_SOL]    = createIntegration(SUB_SOLVER::TURB, config);
-      integration[ADJTURB_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_TURB, config);
-      break;
-    case DISC_ADJ_INC_EULER:
-      integration[FLOW_SOL]    = createIntegration(SUB_SOLVER::INC_EULER, config);
-      integration[ADJFLOW_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_FLOW, config);
-      break;
-    case DISC_ADJ_INC_NAVIER_STOKES:
-      integration[FLOW_SOL]    = createIntegration(SUB_SOLVER::INC_NAVIER_STOKES, config);
-      integration[ADJFLOW_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_FLOW, config);
-      integration[HEAT_SOL]    = createIntegration(SUB_SOLVER::HEAT, config);
-      integration[ADJHEAT_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_HEAT, config);
-      break;
-    case DISC_ADJ_INC_RANS:
-      integration[FLOW_SOL]    = createIntegration(SUB_SOLVER::INC_NAVIER_STOKES, config);
-      integration[ADJFLOW_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_FLOW, config);
-      integration[HEAT_SOL]    = createIntegration(SUB_SOLVER::HEAT, config);
-      integration[ADJHEAT_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_HEAT, config);
-      integration[TURB_SOL]    = createIntegration(SUB_SOLVER::TURB, config);
-      integration[ADJTURB_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_TURB, config);
-      break;
-    case DISC_ADJ_HEAT:
-      integration[HEAT_SOL]    = createIntegration(SUB_SOLVER::HEAT, config);
-      integration[ADJHEAT_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_HEAT, config);
-      break;
-    case FEM_ELASTICITY:
-      integration[FEA_SOL] = createIntegration(SUB_SOLVER::FEA, config);
-      break;
-    case DISC_ADJ_FEM:
-      integration[FEA_SOL]    = createIntegration(SUB_SOLVER::FEA, config);
-      integration[ADJFEA_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_FEA, config);
-      break;
-    case FEM_EULER:
-      integration[FLOW_SOL] = createIntegration(SUB_SOLVER::DG_EULER, config);
-      break;
-    case FEM_NAVIER_STOKES: case FEM_LES:
-      integration[FLOW_SOL] = createIntegration(SUB_SOLVER::DG_NAVIER_STOKES, config);
-      break;
-    case FEM_RANS:
-      SU2_MPI::Error("FEM RANS not available", CURRENT_FUNCTION);
-      break;
-    case DISC_ADJ_FEM_EULER:
-      integration[FLOW_SOL]    = createIntegration(SUB_SOLVER::DG_EULER, config);
-      integration[ADJFLOW_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_FLOW, config);
-      break;
-    case DISC_ADJ_FEM_NS:
-      integration[FLOW_SOL]    = createIntegration(SUB_SOLVER::DG_NAVIER_STOKES, config);
-      integration[ADJFLOW_SOL] = createIntegration(SUB_SOLVER::DISC_ADJ_FLOW, config);
-      break;
-    case DISC_ADJ_FEM_RANS:
-      SU2_MPI::Error("Adjoint FEM RANS not available", CURRENT_FUNCTION);
-      break;
-     default:
-      integration = nullptr;
+  for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++){
+    if (solver_container[iSol] != nullptr){
+      const SolverMetaData &solverInfo = CSolverFactory::GetSolverMeta(solver_container[iSol]);
+      integration[iSol] = createIntegration(solverInfo.integrationType, config);
+    }
   }
 
   return integration;
 }
 
-CIntegration* CIntegrationFactory::createIntegration(SUB_SOLVER kindSubSolver, CConfig *config){
+CIntegration* CIntegrationFactory::createIntegration(INTEGRATION_TYPE integrationType, CConfig *config){
 
   CIntegration *integration = nullptr;
 
-  switch(kindSubSolver){
-    case SUB_SOLVER::EULER: case SUB_SOLVER::INC_EULER:
-    case SUB_SOLVER::NAVIER_STOKES: case SUB_SOLVER::INC_NAVIER_STOKES:
-    case SUB_SOLVER::CONT_ADJ_EULER: case SUB_SOLVER::CONT_ADJ_NAVIER_STOKES:
-      integration = new CMultiGridIntegration(config);
-      break;
-    case SUB_SOLVER::TURB: case SUB_SOLVER::TURB_SA: case SUB_SOLVER::TURB_SST:
-    case SUB_SOLVER::TRANSITION: case SUB_SOLVER::HEAT: case SUB_SOLVER::CONT_ADJ_TURB:
-    case SUB_SOLVER::TEMPLATE:
-      integration = new CSingleGridIntegration(config);
-      break;
-    case SUB_SOLVER::DISC_ADJ_FLOW: case SUB_SOLVER::DISC_ADJ_HEAT: case SUB_SOLVER::DISC_ADJ_TURB:
-    case SUB_SOLVER::DISC_ADJ_FEA:
+  switch(integrationType){
+    case INTEGRATION_TYPE::BASELINE:
       integration = new CIntegration(config);
       break;
-    case SUB_SOLVER::DG_EULER: case SUB_SOLVER::DG_NAVIER_STOKES:
-      integration = new CFEM_DG_Integration(config);
+    case INTEGRATION_TYPE::SINGLEGRID:
+      integration = new CSingleGridIntegration(config);
       break;
-    case SUB_SOLVER::FEA:
+    case INTEGRATION_TYPE::MULTIGRID:
+      integration = new CMultiGridIntegration(config);
+      break;
+    case INTEGRATION_TYPE::STRUCTURAL:
       integration = new CStructuralIntegration(config);
       break;
-    default:
-      SU2_MPI::Error("No proper integration class found for requested sub solver", CURRENT_FUNCTION);
+    case INTEGRATION_TYPE::FEM_DG:
+      integration = new CFEM_DG_Integration(config);
+      break;
+    case INTEGRATION_TYPE::NONE:
+      integration = nullptr;
       break;
   }
 
