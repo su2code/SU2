@@ -33,6 +33,13 @@ class CConfig;
 
 class CIntegrationFactory{
 
+private:
+
+  /*!
+   * \brief Private constructor to avoid creating instances of this class
+   */
+  CIntegrationFactory();
+
 public:
 
   /*!
