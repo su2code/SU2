@@ -424,7 +424,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
     /*--- Account for all the solvers ---*/
 
     for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL){
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != nullptr){
         solver_container[iZone][INST_0][MESH_0][iSol]->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
       }
     }
@@ -440,7 +440,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
     /*--- Accounting for all the solvers ---*/
     for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
       /*-- If the solver position iSol is enabled --*/
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL){
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != nullptr){
         solver_container[iZone][INST_0][MESH_0][iSol]->UpdateSolution_BGS(geometry_container[iZone][INST_0][MESH_0],
             config_container[iZone]);}
     }
