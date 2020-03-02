@@ -35,6 +35,9 @@
 #include "../../include/solvers/CSolverFactory.hpp"
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 
+#include "../../include/output/COutputFactory.hpp"
+#include "../../include/output/COutputLegacy.hpp"
+
 #include "../../include/interfaces/cfd/CConservativeVarsInterface.hpp"
 #include "../../include/interfaces/cfd/CMixingPlaneInterface.hpp"
 #include "../../include/interfaces/cfd/CSlidingInterface.hpp"
@@ -2957,65 +2960,9 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
     if (rank == MASTER_NODE)
       cout << endl <<"-------------------- Output Preprocessing ( Zone " << iZone <<" ) --------------------" << endl;
 
-    /*--- Loop over all zones and instantiate the physics iteration. ---*/
+    ENUM_MAIN_SOLVER kindSolver = static_cast<ENUM_MAIN_SOLVER>(config[iZone]->GetKind_Solver());
 
-    switch (config[iZone]->GetKind_Solver()) {
-
-    case EULER: case NAVIER_STOKES: case RANS:
-      if (rank == MASTER_NODE)
-        cout << "Euler/Navier-Stokes/RANS output structure." << endl;
-      output[iZone] = new CFlowCompOutput(config[iZone], nDim);
-      break;
-    case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
-      if (rank == MASTER_NODE)
-        cout << "Euler/Navier-Stokes/RANS output structure." << endl;
-      output[iZone] = new CFlowIncOutput(config[iZone], nDim);
-      break;
-    case HEAT_EQUATION:
-      if (rank == MASTER_NODE)
-        cout << "Heat output structure." << endl;
-      output[iZone] = new CHeatOutput(config[iZone], nDim);
-      break;
-    case FEM_ELASTICITY:
-      if (rank == MASTER_NODE)
-        cout << "FEM output structure." << endl;
-      output[iZone] = new CElasticityOutput(config[iZone], nDim);
-      break;
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-      if (rank == MASTER_NODE)
-        cout << "Adjoint Euler/Navier-Stokes/RANS output structure." << endl;
-      output[iZone] = new CAdjFlowCompOutput(config[iZone], nDim);
-      break;
-    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-      if (rank == MASTER_NODE)
-        cout << "Adjoint Euler/Navier-Stokes/RANS output structure." << endl;
-      output[iZone] = new CAdjFlowIncOutput(config[iZone], nDim);
-      break;
-    case DISC_ADJ_FEM:
-      if (rank == MASTER_NODE)
-        cout << "Discrete adjoint FEA output structure." << endl;
-      output[iZone] = new CAdjElasticityOutput(config[iZone], nDim);
-      break;
-
-    case DISC_ADJ_HEAT:
-      if (rank == MASTER_NODE)
-        cout << "Discrete adjoint heat output structure." << endl;
-      output[iZone] = new CAdjHeatOutput(config[iZone], nDim);
-      break;
-
-    case FEM_EULER: case FEM_LES: case FEM_RANS: case FEM_NAVIER_STOKES:
-      if (rank == MASTER_NODE)
-        cout << "FEM output structure." << endl;
-      output[iZone] = new CFlowCompFEMOutput(config[iZone], nDim);
-      break;
-
-    default:
-      if (rank == MASTER_NODE)
-        cout << "Default output structure." << endl;
-      output[iZone] = new COutput(config[iZone], nDim, false);
-      break;
-    }
+    output[iZone] = COutputFactory::createOutput(kindSolver, config[iZone], nDim);
 
     /*--- If dry-run is used, do not open/overwrite history file. ---*/
     output[iZone]->PreprocessHistoryOutput(config[iZone], !dry_run);
@@ -3028,7 +2975,8 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
     if (rank == MASTER_NODE)
       cout << endl <<"------------------- Output Preprocessing ( Multizone ) ------------------" << endl;
 
-    driver_output = new CMultizoneOutput(driver_config, config, nDim);
+    driver_output = COutputFactory::createMultizoneOutput(driver_config, config, nDim);
+
     driver_output->PreprocessMultizoneHistoryOutput(output, config, driver_config, !dry_run);
   }
 
@@ -3457,7 +3405,7 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
                                              SU2_Comm MPICommunicator):
                                              CFluidDriver(confFile, val_nZone, MPICommunicator) {
 
-  output_legacy = new COutputLegacy(config_container[ZONE_0]);
+  output_legacy = COutputFactory::createLegacyOutput(config_container[ZONE_0]);
 
   /*--- LEGACY OUTPUT (going to be removed soon) --- */
 
@@ -3706,7 +3654,7 @@ CHBDriver::CHBDriver(char* confFile,
   /*--- allocate dynamic memory for the Harmonic Balance operator ---*/
   D = new su2double*[nInstHB]; for (kInst = 0; kInst < nInstHB; kInst++) D[kInst] = new su2double[nInstHB];
 
-  output_legacy = new COutputLegacy(config_container[ZONE_0]);
+  output_legacy = COutputFactory::createLegacyOutput(config_container[ZONE_0]);
 
   /*--- Open the convergence history file ---*/
   ConvHist_file = NULL;

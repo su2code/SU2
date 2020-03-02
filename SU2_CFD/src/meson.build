@@ -10,7 +10,8 @@ su2_cfd_src = files(['transport_model.cpp',
                      'CMarkerProfileReaderFVM.cpp',
                      'SU2_CFD.cpp'])
 
-su2_cfd_src += files(['output/CAdjElasticityOutput.cpp',
+su2_cfd_src += files(['output/COutputFactory.cpp',
+                      'output/CAdjElasticityOutput.cpp',
                       'output/CAdjFlowCompOutput.cpp',
                       'output/CAdjFlowIncOutput.cpp',
                       'output/CAdjHeatOutput.cpp',

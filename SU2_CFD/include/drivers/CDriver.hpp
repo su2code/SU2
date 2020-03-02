@@ -39,20 +39,9 @@
 #include "../../../Common/include/grid_movement_structure.hpp"
 #include "../../../Common/include/interpolation_structure.hpp"
 
-#include "../output/COutputLegacy.hpp"
-#include "../output/COutput.hpp"
-#include "../output/CMultizoneOutput.hpp"
-#include "../output/CElasticityOutput.hpp"
-#include "../output/CAdjElasticityOutput.hpp"
-#include "../output/CFlowCompOutput.hpp"
-#include "../output/CAdjFlowOutput.hpp"
-#include "../output/CFlowCompFEMOutput.hpp"
-#include "../output/CFlowIncOutput.hpp"
-#include "../output/CAdjFlowIncOutput.hpp"
-#include "../output/CHeatOutput.hpp"
-#include "../output/CAdjHeatOutput.hpp"
-
 using namespace std;
+
+class COutputLegacy;
 
 /*!
  * \class CDriver
