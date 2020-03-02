@@ -3,14 +3,14 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.1 "Blackbird"
+# \version 7.0.2 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -54,8 +54,11 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid_model_pvdw.cpp \
   ../src/fluid_model_ppr.cpp \
   ../src/fluid_model_inc.cpp \
-  ../src/integration_structure.cpp \
-  ../src/integration_time.cpp \
+  ../src/integration/CIntegration.cpp \
+  ../src/integration/CSingleGridIntegration.cpp \
+  ../src/integration/CMultiGridIntegration.cpp \
+  ../src/integration/CStructuralIntegration.cpp \
+  ../src/integration/CFEM_DG_Integration.cpp \
   ../src/drivers/CMultizoneDriver.cpp \
   ../src/drivers/CSinglezoneDriver.cpp \
   ../src/drivers/CDiscAdjSinglezoneDriver.cpp \
@@ -63,23 +66,30 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/drivers/CDriver.cpp \
   ../src/drivers/CDummyDriver.cpp \
   ../src/iteration_structure.cpp \
-  ../src/numerics_adjoint_mean.cpp \
-  ../src/numerics_adjoint_turbulent.cpp \
-  ../src/numerics_direct_heat.cpp \
-  ../src/numerics_direct_mean.cpp \
-  ../src/numerics_direct_mean_inc.cpp \
-  ../src/numerics_direct_transition.cpp \
-  ../src/numerics_direct_turbulent.cpp \
+  ../src/numerics/CNumerics.cpp \
+  ../src/numerics/template.cpp \
+  ../src/numerics/transition.cpp \
+  ../src/numerics/heat.cpp \
+  ../src/numerics/radiation.cpp \
+  ../src/numerics/flow/convection/roe.cpp \
+  ../src/numerics/flow/convection/fds.cpp \
+  ../src/numerics/flow/convection/fvs.cpp \
+  ../src/numerics/flow/convection/cusp.cpp \
+  ../src/numerics/flow/convection/hllc.cpp \
+  ../src/numerics/flow/convection/ausm_slau.cpp \
+  ../src/numerics/flow/convection/centered.cpp \
+  ../src/numerics/flow/flow_diffusion.cpp \
+  ../src/numerics/flow/flow_sources.cpp \
+  ../src/numerics/continuous_adjoint/adj_convection.cpp \
+  ../src/numerics/continuous_adjoint/adj_diffusion.cpp \
+  ../src/numerics/continuous_adjoint/adj_sources.cpp \
+  ../src/numerics/turbulent/turb_convection.cpp \
+  ../src/numerics/turbulent/turb_diffusion.cpp \
+  ../src/numerics/turbulent/turb_sources.cpp \
   ../src/numerics/elasticity/CFEAElasticity.cpp \
   ../src/numerics/elasticity/CFEALinearElasticity.cpp \
-  ../src/numerics/elasticity/CFEAMeshElasticity.cpp \
   ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
-  ../src/numerics/elasticity/CFEM_NeoHookean_Comp.cpp \
-  ../src/numerics/elasticity/CFEM_Knowles_NearInc.cpp \
-  ../src/numerics/elasticity/CFEM_IdealDE.cpp \
-  ../src/numerics/elasticity/CFEM_DielectricElastomer.cpp \
-  ../src/numerics_structure.cpp \
-  ../src/numerics_template.cpp \
+  ../src/numerics/elasticity/nonlinear_models.cpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \
   ../src/output/filewriter/CSTLFileWriter.cpp \
   ../src/output/filewriter/CFEMDataSorter.cpp \
@@ -131,6 +141,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CIncEulerSolver.cpp \
   ../src/solvers/CIncNSSolver.cpp \
   ../src/solvers/CMeshSolver.cpp \
+  ../src/solvers/CRadSolver.cpp \
+  ../src/solvers/CRadP1Solver.cpp \
   ../src/solvers/CNSSolver.cpp \
   ../src/solvers/CSolver.cpp \
   ../src/solvers/CTemplateSolver.cpp \
@@ -138,6 +150,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CTurbSolver.cpp \
   ../src/solvers/CTurbSASolver.cpp \
   ../src/solvers/CTurbSSTSolver.cpp \
+  ../src/limiters/CLimiterDetails.cpp \
   ../src/CMarkerProfileReaderFVM.cpp \
   ../src/interfaces/CInterface.cpp \
   ../src/interfaces/cfd/CConservativeVarsInterface.cpp \
@@ -151,6 +164,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.cpp \
   ../src/transport_model.cpp \
   ../src/variables/CFEABoundVariable.cpp \
+  ../src/variables/CRadVariable.cpp \
+  ../src/variables/CRadP1Variable.cpp \
   ../src/variables/CDiscAdjMeshBoundVariable.cpp \
   ../src/variables/CMeshBoundVariable.cpp \
   ../src/variables/CMeshElement.cpp \
@@ -175,7 +190,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CEulerVariable.cpp
 
 su2_cfd_sources = \
-  ../include/SU2_CFD.hpp \
   ../src/SU2_CFD.cpp
 
 libSU2Core_cxx_flags = -fPIC -std=c++11

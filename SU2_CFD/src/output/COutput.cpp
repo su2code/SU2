@@ -2,14 +2,14 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -273,6 +273,8 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
   Convergence_Monitoring(driver_config, curOuterIter);
 
   Postprocess_HistoryData(driver_config);
+
+  MonitorTimeConvergence(driver_config, curTimeIter);
 
   /*--- Output using only the master node ---*/
 
@@ -1177,7 +1179,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
     if (rank == MASTER_NODE && !noWriting){
 
       /*--- Open history file and print the header ---*/
-      if (!config->GetMultizone_Problem() || config->GetWrt_ZoneConv())
+      if (!config->GetMultizone_Problem() || config->GetWrt_ZoneHist())
         PrepareHistoryFile(config);
 
       total_width = nRequestedScreenFields*fieldWidth + (nRequestedScreenFields-1);
@@ -1956,7 +1958,7 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
   unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
   unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);
 
-  if (config->GetMultizone_Problem() && !config->GetWrt_ZoneConv()){
+  if (config->GetMultizone_Problem() && !config->GetWrt_ZoneHist()){
 
     return false;
 
@@ -2027,7 +2029,7 @@ void COutput::LoadCommonHistoryData(CConfig *config){
 
   /*--- Update the current time only if the time iteration has changed ---*/
 
-  if (SU2_TYPE::Int(GetHistoryFieldValue("TIME_ITER")) != curTimeIter){
+  if (SU2_TYPE::Int(GetHistoryFieldValue("TIME_ITER")) != static_cast<int>(curTimeIter)) {
     SetHistoryOutputValue("CUR_TIME",  GetHistoryFieldValue("CUR_TIME") + GetHistoryFieldValue("TIME_STEP"));
   }
 

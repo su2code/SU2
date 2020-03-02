@@ -2,14 +2,14 @@
  * \file CFEABoundVariable.hpp
  * \brief Class for defining the variables on the FEA boundaries for FSI applications.
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,7 +37,7 @@
  * A map is constructed so that variables can be referenced by iPoint instead of iVertex.
  * \ingroup Structural Finite Element Analysis Variables
  * \author R. Sanchez.
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  */
 class CFEABoundVariable final : public CFEAVariable {
 protected:
@@ -83,14 +83,6 @@ public:
   }
 
   /*!
-   * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
-   */
-  inline void Set_SurfaceLoad_Res(unsigned long iPoint, unsigned long iVar, su2double val_surfForce) override {
-    if (!VertexMap.GetVertexIndex(iPoint)) return;
-    Residual_Ext_Surf(iPoint,iVar) = val_surfForce;
-  }
-
-  /*!
    * \brief Get the residual term due to surface load
    */
   inline su2double Get_SurfaceLoad_Res(unsigned long iPoint, unsigned long iVar) const override {
@@ -101,10 +93,7 @@ public:
   /*!
    * \brief Clear the surface load residual
    */
-  inline void Clear_SurfaceLoad_Res(unsigned long iPoint) override {
-    if (!VertexMap.GetVertexIndex(iPoint)) return;
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf(iPoint,iVar) = 0.0;
-  }
+  inline void Clear_SurfaceLoad_Res() override;
 
   /*!
    * \brief Store the surface load as the load for the previous time step.
