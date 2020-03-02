@@ -7760,11 +7760,8 @@ CConfig::~CConfig(void) {
   if (Load_Sine_Amplitude != NULL)    delete[] Load_Sine_Amplitude;
   if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
   if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
-<<<<<<< HEAD
   if (Roughness_Height != NULL)    delete[] Roughness_Height;
-=======
   if (Wall_Emissivity != NULL)    delete[] Wall_Emissivity;
->>>>>>> develop
 
   /*--- related to periodic boundary conditions ---*/
 
