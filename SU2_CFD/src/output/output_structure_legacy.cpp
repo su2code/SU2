@@ -2,14 +2,14 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -4356,6 +4356,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
 
   bool thermal = false; /* Flag for whether to print heat flux values */
   bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+  bool radiation            = config->AddRadiation();
 
   if (config->GetKind_Solver() == RANS || config->GetKind_Solver()  == NAVIER_STOKES ||
       config->GetKind_Solver() == INC_RANS || config->GetKind_Solver()  == INC_NAVIER_STOKES) {
@@ -4478,6 +4479,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   }
   char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
   char heat_resid[]= ",\"Res_Heat\"";
+  char rad_resid[]= ",\"Res_P1-rad\"";
 
   /*--- End of the header ---*/
 
@@ -4513,6 +4515,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
       ConvHist_file[0] << flow_resid;
       if (turbulent) ConvHist_file[0] << turb_resid;
       if (weakly_coupled_heat) ConvHist_file[0] << heat_resid;
+      if (radiation) ConvHist_file[0] << rad_resid;
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_surface) ConvHist_file[0] << surface_outputs;
@@ -4543,7 +4546,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
       if ((turbulent) && (!frozen_visc)) ConvHist_file[0] << adj_turb_resid;
       ConvHist_file[0] << end;
       break;
-      
+
     case HEAT_EQUATION:
       ConvHist_file[0] << begin << heat_coeff;
       ConvHist_file[0] << heat_resid << end;
@@ -4595,6 +4598,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
   bool incload              = config[val_iZone]->GetIncrementalLoad();
   bool fixed_cl             = config[val_iZone]->GetFixed_CL_Mode();
   bool output_files         = true;
+
+  bool radiation            = config[val_iZone]->AddRadiation();
 
   bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
@@ -4704,7 +4709,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
     char begin[1000], direct_coeff[1000], heat_coeff[1000], equivalent_area_coeff[1000], engine_coeff[1000], rotating_frame_coeff[1000], Cp_inverse_design[1000], Heat_inverse_design[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000], buffet_coeff[1000],
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
-    adj_turb_resid[1000],
+    adj_turb_resid[1000], rad_resid[1000],
     begin_fem[1000], fem_coeff[1000], heat_resid[1000], combo_obj[1000],
     fem_resid[1000], end[1000], end_fem[1000], surface_outputs[1000], d_surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
 
@@ -4815,6 +4820,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double *residual_fea          = NULL;
     su2double *residual_fem          = NULL;
     su2double *residual_heat         = NULL;
+    su2double *residual_rad          = NULL;
 
     /*--- Coefficients Monitored arrays ---*/
     su2double *aeroelastic_plunge = NULL,
@@ -4835,7 +4841,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     unsigned short nVar_Flow = 0, nVar_Turb = 0,
     nVar_Trans = 0, nVar_Heat = 0,
     nVar_AdjFlow = 0, nVar_AdjTurb = 0, nVar_AdjHeat = 0,
-    nVar_FEM = 0;
+    nVar_FEM = 0, nVar_Rad = 0;
 
     /*--- Direct problem variables ---*/
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+2;
@@ -4856,6 +4862,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
     }
 
+    if (radiation) nVar_Rad = 1;
+
     /*--- Adjoint problem variables ---*/
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+2;
     if (turbulent) {
@@ -4872,7 +4880,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     residual_transition = new su2double[nVar_Trans];
     residual_heat       = new su2double[nVar_Heat];
     residual_fem        = new su2double[nVar_FEM];
-
+    residual_rad        = new su2double[nVar_Rad];
     residual_adjflow      = new su2double[nVar_AdjFlow];
     residual_adjturbulent = new su2double[nVar_AdjTurb];
     residual_adjheat      = new su2double[nVar_AdjHeat];
@@ -5111,6 +5119,10 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           Total_Sens_BPressure = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_BPress();
           Total_Sens_ModVel    = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_ModVel();
 
+          if (radiation){
+            Total_Sens_Temp      += solver_container[val_iZone][val_iInst][FinestMesh][ADJRAD_SOL]->GetTotal_Sens_Temp();
+          }
+
           /*--- Adjoint flow residuals ---*/
 
           for (iVar = 0; iVar < nVar_AdjFlow; iVar++) {
@@ -5204,6 +5216,19 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
       Extra_Total_Heat      = solver_container[ExtraHeatOutputZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
       //Extra_Total_Temperature   = solver_container[ExtraHeatOutputZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
       Extra_Heat_Residual   = log10(solver_container[ExtraHeatOutputZone][val_iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(0));
+    }
+
+    if (radiation){
+      if (disc_adj){
+        for (iVar = 0; iVar < nVar_Rad; iVar++) {
+          residual_rad[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][ADJRAD_SOL]->GetRes_RMS(iVar);
+        }
+      }
+      else{
+        for (iVar = 0; iVar < nVar_Rad; iVar++) {
+          residual_rad[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][RAD_SOL]->GetRes_RMS(iVar);
+        }
+      }
     }
 
     /*--- Header frequency ---*/
@@ -5473,6 +5498,10 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
               SPRINTF (heat_resid, ", %14.8e", log10 (residual_heat[0]));
             }
 
+            if (radiation){
+              SPRINTF (rad_resid, ", %14.8e", log10 (residual_rad[0]));
+            }
+
             break;
 
           case HEAT_EQUATION:
@@ -5692,6 +5721,10 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
               cout <<  "     Res[Heat]" << "   HFlux(Total)";
             }
 
+            if (radiation){
+              cout << "     Res[P1-RAD]";
+            }
+
             cout << endl;
 
             break;
@@ -5763,6 +5796,10 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
               cout <<  "      Res[Heat]" << "   HFlux(Total)";
             }
 
+            if (radiation){
+              cout << "     Res[P1-RAD]";
+            }
+
             cout << endl;
 
             break;
@@ -5828,6 +5865,11 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                 else {cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";}
               }
               else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
+
+              if (radiation){
+                cout << "     Res[Psi_P1]";
+              }
+
               if (disc_adj) {
                 if (!turbo){
                   if (compressible) {
@@ -5884,6 +5926,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
               }
               if (weakly_coupled_heat) {
                 cout << "     Res[Psi_E]";
+              }
+              if (radiation){
+                cout << "    Res[Psi_P1]";
               }
               if (disc_adj) {
                 if (!turbo){
@@ -5967,6 +6012,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
               if (rotating_frame && !turbo) config[val_iZone]->GetHistFile()[0] << rotating_frame_coeff;
               config[val_iZone]->GetHistFile()[0] << flow_resid;
               if (weakly_coupled_heat) config[val_iZone]->GetHistFile()[0] << heat_resid;
+              if (radiation) config[val_iZone]->GetHistFile()[0] << rad_resid;
             }
             else {
               config[val_iZone]->GetHistFile()[0] << begin << turbo_coeff << flow_resid;
@@ -5985,7 +6031,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           }
 
           /*--- Write screen output ---*/
-          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure) {
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -6038,9 +6084,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
               }
 
               if (extra_heat_output) { cout.width(15); cout << Extra_Heat_Residual; cout.width(15); cout << Extra_Total_Heat; }
-              cout << endl;
-
+              if (radiation) { cout.width(15); cout << log10(residual_rad[0]); }
             }
+            cout << endl;
           }
           break;
 
@@ -6236,6 +6282,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                 else {cout.width(16); cout << log10(residual_adjflow[1]);}
               }
 
+              if (radiation) { cout.width(15); cout << log10(residual_rad[0]); }
+
               if (disc_adj) {
                 cout.precision(4);
                 cout.setf(ios::scientific, ios::floatfield);
@@ -6298,6 +6346,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
             if (weakly_coupled_heat) {
               cout.width(17); cout << log10(residual_adjheat[0]);
             }
+
+            if (radiation) { cout.width(15); cout << log10(residual_rad[0]); }
+
               if (disc_adj) {
                 if (!turbo){
                   if (compressible) {
@@ -6339,6 +6390,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     delete [] residual_fea;
     delete [] residual_fem;
     delete [] residual_heat;
+    delete [] residual_rad;
 
     delete [] residual_adjflow;
     delete [] residual_adjturbulent;
@@ -13178,6 +13230,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
                            (config->GetKind_FluidModel() == INC_IDEAL_GAS_POLY));
   bool wrt_kt           = ((config->GetKind_ConductivityModel() != CONSTANT_CONDUCTIVITY) &&
                            (config->GetViscous()));
+  bool p1_radiation = (config->GetKind_RadiationModel() == P1_MODEL);
   int *Local_Halo = NULL;
 
   stringstream varname;
@@ -13261,6 +13314,12 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
       /*--- S-A variants ---*/
       Variable_Names.push_back("Nu_Tilde");
     }
+  }
+
+  /*--- Add restart data for P1 radiative model. ---*/
+  if (p1_radiation){
+    nVar_Par += 1;
+    Variable_Names.push_back("Radiative_Energy(P1)");
   }
 
   /*--- If requested, register the limiter and residuals for all of the
@@ -13571,6 +13630,11 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
         for (jVar = 0; jVar < nVar_Second; jVar++) {
           Local_Data[jPoint][iVar] = solver[SecondIndex]->GetNodes()->GetSolution(iPoint, jVar); iVar++;
         }
+      }
+
+      /*--- Add restart data for P1 radiative model. ---*/
+      if (p1_radiation){
+        Local_Data[jPoint][iVar] = solver[RAD_SOL]->GetNodes()->GetSolution(iPoint,0); iVar++;
       }
 
       /*--- If limiters and/or residuals are requested. ---*/

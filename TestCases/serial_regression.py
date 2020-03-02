@@ -3,14 +3,14 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.1 "Blackbird"
+#  \version 7.0.2 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -1274,6 +1274,22 @@ def main():
     airfoilRBF.multizone = True
     airfoilRBF.tol       = 0.00001
     test_list.append(airfoilRBF)
+
+    # ###############################
+    # ### Radiative Heat Transfer ###
+    # ###############################
+
+    # Radiative heat transfer
+    p1rad           = TestCase('p1rad')
+    p1rad.cfg_dir   = "radiation/p1model"
+    p1rad.cfg_file  = "configp1.cfg"
+    p1rad.new_output= True
+    p1rad.test_iter = 100
+    p1rad.test_vals = [-7.751309, -7.923059, -2.119084, 0.091733] #last 4 columns
+    p1rad.su2_exec  = "SU2_CFD"
+    p1rad.timeout   = 1600
+    p1rad.tol       = 0.00001
+    test_list.append(p1rad)
    
     # ###############################
     # ### Conjugate heat transfer ###
