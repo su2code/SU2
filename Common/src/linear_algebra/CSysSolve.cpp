@@ -919,7 +919,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
         /*--- Enforce a hard limit on total number of iterations ---*/
         unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
         IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, IterLimit, residual, ScreenOutput, config);
-        if ( residual < SolverTol*norm0 ) break;
+        if ( residual <= SolverTol*norm0 ) break;
       }
       break;
     case SMOOTHER:
