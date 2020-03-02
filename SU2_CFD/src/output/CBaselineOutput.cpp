@@ -40,6 +40,7 @@ CBaselineOutput::CBaselineOutput(CConfig *config, unsigned short nDim, CSolver* 
 
   requestedVolumeFields.emplace_back("COORDINATES");
   requestedVolumeFields.emplace_back("SOLUTION");
+  requestedVolumeFields.emplace_back("NODE_ID");
 
   nRequestedVolumeFields = requestedVolumeFields.size();
 
@@ -96,6 +97,7 @@ void CBaselineOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput(fields[iField], fields[iField], "SOLUTION","");
   }
 
+  AddVolumeOutput("NODE_ID", "NODE_ID", "NODE_ID", "");
 }
 
 void CBaselineOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
@@ -114,4 +116,5 @@ void CBaselineOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue(fields[iField], iPoint, Node_Sol->GetSolution(iPoint, iField));
   }
 
+  SetVolumeOutputValue("NODE_ID", iPoint, geometry->node[iPoint]->GetGlobalIndex());
 }
