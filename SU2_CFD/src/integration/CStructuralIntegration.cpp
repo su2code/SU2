@@ -28,7 +28,7 @@
 #include "../../include/integration/CStructuralIntegration.hpp"
 
 
-CStructuralIntegration::CStructuralIntegration(CConfig *config) : CIntegration(config) { }
+CStructuralIntegration::CStructuralIntegration() : CIntegration() { }
 
 void CStructuralIntegration::Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                                   CNumerics ******numerics_container, CConfig **config,
