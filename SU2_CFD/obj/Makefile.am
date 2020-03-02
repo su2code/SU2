@@ -3,14 +3,14 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.1 "Blackbird"
+# \version 7.0.2 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -70,6 +70,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/template.cpp \
   ../src/numerics/transition.cpp \
   ../src/numerics/heat.cpp \
+  ../src/numerics/radiation.cpp \
   ../src/numerics/flow/convection/roe.cpp \
   ../src/numerics/flow/convection/fds.cpp \
   ../src/numerics/flow/convection/fvs.cpp \
@@ -140,6 +141,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CIncEulerSolver.cpp \
   ../src/solvers/CIncNSSolver.cpp \
   ../src/solvers/CMeshSolver.cpp \
+  ../src/solvers/CRadSolver.cpp \
+  ../src/solvers/CRadP1Solver.cpp \
   ../src/solvers/CNSSolver.cpp \
   ../src/solvers/CSolver.cpp \
   ../src/solvers/CTemplateSolver.cpp \
@@ -161,6 +164,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.cpp \
   ../src/transport_model.cpp \
   ../src/variables/CFEABoundVariable.cpp \
+  ../src/variables/CRadVariable.cpp \
+  ../src/variables/CRadP1Variable.cpp \
   ../src/variables/CDiscAdjMeshBoundVariable.cpp \
   ../src/variables/CMeshBoundVariable.cpp \
   ../src/variables/CMeshElement.cpp \

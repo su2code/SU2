@@ -2,14 +2,14 @@
  * \file flow_sources.hpp
  * \brief Delarations of numerics classes for source-term integration.
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -142,7 +142,7 @@ public:
  * \brief Class for the source term integration of a body force in the incompressible solver.
  * \ingroup SourceDiscr
  * \author T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  */
 class CSourceIncBodyForce final : public CSourceBase_Flow {
   su2double Body_Force_Vector[3];
@@ -169,7 +169,7 @@ public:
  * \brief Class for the source term integration of the Boussinesq approximation for incompressible flow.
  * \ingroup SourceDiscr
  * \author T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  */
 class CSourceBoussinesq final : public CSourceBase_Flow {
   su2double Gravity_Vector[3];
@@ -294,7 +294,6 @@ public:
 
 };
 
-
 /*!
  * \class CSourceIncStreamwise_Periodic
  * \brief Class for the source term integration of a streamwise periodic body force in the incompressible solver.
@@ -346,5 +345,28 @@ public:
   void ComputeResidual(su2double *val_residual,
                        su2double **Jacobian_i,
                        CConfig   *config);
+
+};
+
+/*!
+ * \class CSourceRadiation
+ * \brief Class for a source term due to radiation.
+ * \ingroup SourceDiscr
+ * \author Ruben Sanchez
+ */
+class CSourceRadiation : public CSourceBase_Flow {
+private:
+  bool implicit;
+
+public:
+
+  CSourceRadiation(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
+
+  /*!
+   * \brief Source term integration for a radiation source.
+   * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };

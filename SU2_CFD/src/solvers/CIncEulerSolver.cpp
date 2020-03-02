@@ -2,14 +2,14 @@
  * \file solution_direct_mean_inc.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2051,6 +2051,9 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool streamwise_periodic = config->GetKind_Streamwise_Periodic();
   bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
+  const bool radiation      = config->AddRadiation();
+  const bool vol_heat       = config->GetHeatSource();
+
 
   /*--- Initialize the source residual to zero ---*/
 
@@ -2394,6 +2397,48 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }
+  }
+
+  if (radiation) {
+
+    CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
+
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Store the radiation source term ---*/
+
+      second_numerics->SetRadVarSource(solver_container[RAD_SOL]->GetNodes()->GetRadiative_SourceTerm(iPoint));
+
+      /*--- Set control volume ---*/
+
+      second_numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+      /*--- Compute the residual ---*/
+
+      auto residual = second_numerics->ComputeResidual(config);
+
+      /*--- Add Residual ---*/
+
+      LinSysRes.AddBlock(iPoint, residual);
+
+      /*--- Implicit part ---*/
+
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+      if (vol_heat) {
+
+        if(solver_container[RAD_SOL]->GetNodes()->GetVol_HeatSource(iPoint)) {
+
+          auto Volume = geometry->node[iPoint]->GetVolume();
+
+          /*--- Subtract integrated source from the residual. ---*/
+          LinSysRes(iPoint, nDim+1) -= config->GetHeatSource_Val()*Volume;
+        }
+
+      }
+
+    }
+
   }
 
   /*--- Check if a verification solution is to be computed. ---*/

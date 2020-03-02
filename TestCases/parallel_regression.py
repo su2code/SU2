@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.1 "Blackbird"
+#  \version 7.0.2 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -1105,6 +1105,22 @@ def main():
     stat_fsi_restart.timeout   = 1600
     stat_fsi_restart.tol       = 0.00001
     test_list.append(stat_fsi_restart)
+
+    # ###############################
+    # ### Radiative Heat Transfer ###
+    # ###############################
+
+    # Radiative heat transfer
+    p1rad           = TestCase('p1rad')
+    p1rad.cfg_dir   = "radiation/p1model"
+    p1rad.cfg_file  = "configp1.cfg"
+    p1rad.new_output= True
+    p1rad.test_iter = 100
+    p1rad.test_vals = [-7.743540, -7.919958, -2.112177, 0.096091] #last 4 columns
+    p1rad.su2_exec  = "mpirun -n 2 SU2_CFD"
+    p1rad.timeout   = 1600
+    p1rad.tol       = 0.00001
+    test_list.append(p1rad)
 
     # ###############################
     # ### Conjugate heat transfer ###

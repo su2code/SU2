@@ -2,14 +2,14 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -823,13 +823,13 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
 
-  solver_container[FLOW_SOL]->GetNodes()->SetVorticity_StrainMag();
+  nodes->SetVorticity_StrainMag();
 
   StrainMag_Max = 0.0; Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    StrainMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
-    Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+    StrainMag = nodes->GetStrainMag(iPoint);
+    Vorticity = nodes->GetVorticity(iPoint);
     Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
 
     StrainMag_Max = max(StrainMag_Max, StrainMag);

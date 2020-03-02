@@ -2,14 +2,14 @@
  * \file output_flow_inc.cpp
  * \brief Main subroutines for incompressible flow output
  * \author R. Sanchez
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -105,6 +105,8 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
   if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the radiative energy (P1 model).
+  if (config->AddRadiation()) AddHistoryOutput("RMS_RAD_ENERGY", "rms[E_Rad]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the radiative energy.", HistoryFieldType::RESIDUAL);
 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -163,6 +165,8 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Maximum residual of the temperature.
   if (heat || weakly_coupled_heat)
     AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", HistoryFieldType::RESIDUAL);
+  /// DESCRIPTION: Multizone residual of the radiative energy (P1 model).
+  if (config->AddRadiation()) AddHistoryOutput("BGS_RAD_ENERGY", "bgs[E_Rad]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the radiative energy.", HistoryFieldType::RESIDUAL);
 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -228,6 +232,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   CSolver* flow_solver = solver[FLOW_SOL];
   CSolver* turb_solver = solver[TURB_SOL];
   CSolver* heat_solver = solver[HEAT_SOL];
+  CSolver* rad_solver  = solver[RAD_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
 
   SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
@@ -244,6 +249,10 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
     break;
   }
+
+  if (config->AddRadiation())
+    SetHistoryOutputValue("RMS_RAD_ENERGY", log10(rad_solver->GetRes_RMS(0)));
+
 
   SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
@@ -275,6 +284,10 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
       SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
       break;
     }
+
+    if (config->AddRadiation())
+      SetHistoryOutputValue("BGS_RAD_ENERGY", log10(rad_solver->GetRes_BGS(0)));
+
   }
 
   if (weakly_coupled_heat){
@@ -364,6 +377,10 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   case NONE:
     break;
   }
+
+  // Radiation variables
+  if (config->AddRadiation())
+    AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "SOLUTION", "Radiative Energy");
 
   // Grid velocity
   if (config->GetGrid_Movement()){
@@ -473,6 +490,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
   CVariable* Node_Heat = NULL;
   CVariable* Node_Turb = NULL;
+  CVariable* Node_Rad = NULL;
 
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
@@ -514,6 +532,12 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     break;
   case NONE:
     break;
+  }
+
+  // Radiation solver
+  if (config->AddRadiation()){
+    Node_Rad = solver[RAD_SOL]->GetNodes();
+    SetVolumeOutputValue("P1-RAD", iPoint, Node_Rad->GetSolution(iPoint,0));
   }
 
   if (config->GetGrid_Movement()){
