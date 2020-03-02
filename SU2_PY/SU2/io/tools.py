@@ -84,9 +84,9 @@ def read_surface_gradients( Grad_filename , scale = 1.0):
             break
         #print (line)
         if len(line) == 7:
-            grad_vals[int(line[6])] = [float(line[3]), float(line[4]), float(line[5])];
+            grad_vals[int(float(line[6]))] = [float(line[3]), float(line[4]), float(line[5])];
         else:
-            grad_vals[int(line[5])] = [float(line[2]), float(line[3])];
+            grad_vals[int(float(line[5]))] = [float(line[2]), float(line[3])];
 
         Node = Node+1    
     #: for each line
