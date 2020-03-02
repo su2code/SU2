@@ -345,7 +345,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const
 
 
 CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                                       unsigned long val_nElem, CConfig *config) :
+                                       unsigned long val_nElem, const CConfig *config) :
                                        CFEALinearElasticity() {
   DV_Val         = NULL;
   FAux_Dead_Load = NULL;
@@ -358,7 +358,7 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
 
   unsigned long iVar;
 
-  E = config->GetDeform_ElasticityMod();
+  E = 1.0;
   Nu = config->GetDeform_PoissonRatio();
   Compute_Lame_Parameters();
 
