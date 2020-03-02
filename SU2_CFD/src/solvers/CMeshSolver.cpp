@@ -120,15 +120,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   ElemColoring[0] = DummyGridColor<>(nElement);
 #endif
 
-  /*--- Structural parameters ---*/
-
-  E      = config->GetDeform_ElasticityMod();
-  Nu     = config->GetDeform_PoissonRatio();
-
-  Mu     = E / (2.0*(1.0 + Nu));
-  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-
-  /*--- Element container structure ---*/
+  /*--- Element container structure. ---*/
 
   if (nDim == 2) {
     for(int thread = 0; thread < omp_get_max_threads(); ++thread) {
@@ -410,23 +402,37 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
 void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
 
-  unsigned long iElem;
+  /*--- Use the config option as an upper bound on elasticity modulus.
+   *    For RANS meshes the range of element volume or wall distance is
+   *    very large and leads to an ill-conditioned stiffness matrix.
+   *    Absolute values of elasticity modulus are not important for
+   *    mesh deformation, since linear elasticity is used and all
+   *    boundary conditions are essential (Dirichlet). ---*/
+  const su2double maxE = config->GetDeform_ElasticityMod();
 
   if (!stiffness_set) {
-    for (iElem = 0; iElem < nElement; iElem++) {
+    /*--- All threads must execute the entire loop (no worksharing),
+     *    each sets the stiffnesses for its numerics instance. ---*/
+    SU2_OMP_PARALLEL
+    {
+    CNumerics* myNumerics = numerics[FEA_TERM + omp_get_thread_num()*MAX_TERMS];
+
+    for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+
+      su2double E = 1.0;
 
       switch (config->GetDeform_Stiffness_Type()) {
-      /*--- Stiffness inverse of the volume of the element ---*/
-      case INVERSE_VOLUME: E = 1.0 / element[iElem].GetRef_Volume();  break;
-      /*--- Stiffness inverse of the distance of the element to the closest wall ---*/
-      case SOLID_WALL_DISTANCE: E = 1.0 / element[iElem].GetWallDistance(); break;
+        /*--- Stiffness inverse of the volume of the element ---*/
+        case INVERSE_VOLUME: E = 1.0 / element[iElem].GetRef_Volume();  break;
+
+        /*--- Stiffness inverse of the distance of the element to the closest wall ---*/
+        case SOLID_WALL_DISTANCE: E = 1.0 / element[iElem].GetWallDistance(); break;
       }
 
       /*--- Set the element elastic properties in the numerics container ---*/
-      numerics[FEA_TERM]->SetMeshElasticProperties(iElem, E);
-
+      myNumerics->SetMeshElasticProperties(iElem, min(E,maxE));
     }
-
+    }
     stiffness_set = true;
   }
 
