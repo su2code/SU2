@@ -176,7 +176,7 @@ public:
    * \param[in] solver - Address of the solver
    * \return sub solver info struct.
    */
-  static SolverMetaData GetSolverMeta(CSolver* solver) { return allocatedSolvers.at(solver); }
+  static SolverMetaData GetSolverMeta(const CSolver* solver) { return allocatedSolvers.at(solver); }
 
   /*!
    * \brief Clear the solver meta data

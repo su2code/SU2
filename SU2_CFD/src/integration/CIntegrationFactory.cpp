@@ -32,7 +32,7 @@
 #include "../../include/integration/CFEM_DG_Integration.hpp"
 
 CIntegration** CIntegrationFactory::createIntegrationContainer(ENUM_MAIN_SOLVER kindMainSolver,
-                                                               CSolver** solver_container){
+                                                               const CSolver* const* solver_container){
 
   CIntegration **integration = new CIntegration* [MAX_SOLS]();
 

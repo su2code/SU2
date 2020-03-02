@@ -45,6 +45,8 @@ public:
   /*!
    * \brief Create the Output class based on the current main solver
    * \param[in] kindSolver       - The kind of main solver
+   * \param[in] config           - Pointer to the config
+   * \param[in] nDim                - Number of physical dimensions
    * \return                     - Pointer to the allocated Output
    */
   static COutput* createOutput(ENUM_MAIN_SOLVER kindSolver, CConfig *config, int nDim);

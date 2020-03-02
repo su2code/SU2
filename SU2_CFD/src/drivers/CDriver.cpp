@@ -1089,7 +1089,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
 }
 
 void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver ***&solver) {
-      
+
   ENUM_MAIN_SOLVER kindSolver = static_cast<ENUM_MAIN_SOLVER>(config->GetKind_Solver());
 
   if (rank == MASTER_NODE)
@@ -1403,7 +1403,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
 
 void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
                                     CConfig *config, unsigned short val_iInst) {
-  
+
   for (int iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++){
       delete solver[val_iInst][iMGlevel][iSol];
@@ -1413,7 +1413,7 @@ void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
   delete [] solver[val_iInst];
 
   CSolverFactory::ClearSolverMeta();
-  
+
 }
 
 void CDriver::Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration) {
