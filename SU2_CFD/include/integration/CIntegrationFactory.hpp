@@ -48,7 +48,7 @@ public:
    * \param[in] solver_container - The solver container
    * \return                  - Pointer to the allocated integration container
    */
-  static CIntegration** createIntegrationContainer(ENUM_MAIN_SOLVER kindSolver, CSolver **solver_container);
+  static CIntegration** createIntegrationContainer(ENUM_MAIN_SOLVER kindSolver, const CSolver * const *solver_container);
 
   /*!
    * \brief Create a new integration instance based on the current sub solver
