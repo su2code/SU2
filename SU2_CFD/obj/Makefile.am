@@ -59,6 +59,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/integration/CMultiGridIntegration.cpp \
   ../src/integration/CStructuralIntegration.cpp \
   ../src/integration/CFEM_DG_Integration.cpp \
+  ../src/integration/CIntegrationFactory.cpp \
   ../src/drivers/CMultizoneDriver.cpp \
   ../src/drivers/CSinglezoneDriver.cpp \
   ../src/drivers/CDiscAdjSinglezoneDriver.cpp \
@@ -123,6 +124,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/CAdjFlowCompOutput.cpp \
   ../src/output/CAdjFlowIncOutput.cpp \
   ../src/output/CMultizoneOutput.cpp \
+  ../src/output/COutputFactory.cpp \
   ../src/output/output_structure_legacy.cpp \
   ../src/python_wrapper_structure.cpp \
   ../src/solvers/CAdjEulerSolver.cpp \
@@ -150,6 +152,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CTurbSolver.cpp \
   ../src/solvers/CTurbSASolver.cpp \
   ../src/solvers/CTurbSSTSolver.cpp \
+  ../src/solvers/CSolverFactory.cpp \
   ../src/limiters/CLimiterDetails.cpp \
   ../src/CMarkerProfileReaderFVM.cpp \
   ../src/interfaces/CInterface.cpp \
