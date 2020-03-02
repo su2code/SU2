@@ -2,14 +2,14 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -3032,7 +3032,7 @@ void CConfig::SetHeader(unsigned short val_software){
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.0.0  \"Blackbird\"                        |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.1  \"Blackbird\"                        |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3051,7 +3051,7 @@ void CConfig::SetHeader(unsigned short val_software){
     cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
     cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2019, SU2 Contributors                                 |" << endl;
+    cout << "| Copyright 2012-2020, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
