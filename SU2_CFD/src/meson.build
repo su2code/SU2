@@ -10,7 +10,8 @@ su2_cfd_src = files(['transport_model.cpp',
                      'CMarkerProfileReaderFVM.cpp',
                      'SU2_CFD.cpp'])
 
-su2_cfd_src += files(['output/CAdjElasticityOutput.cpp',
+su2_cfd_src += files(['output/COutputFactory.cpp',
+                      'output/CAdjElasticityOutput.cpp',
                       'output/CAdjFlowCompOutput.cpp',
                       'output/CAdjFlowIncOutput.cpp',
                       'output/CAdjHeatOutput.cpp',
@@ -71,7 +72,8 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                       'variables/CIncEulerVariable.cpp',
                       'variables/CEulerVariable.cpp'])
 
-su2_cfd_src += files(['solvers/CAdjEulerSolver.cpp',
+su2_cfd_src += files(['solvers/CSolverFactory.cpp',
+                      'solvers/CAdjEulerSolver.cpp',
                       'solvers/CAdjNSSolver.cpp',
                       'solvers/CAdjTurbSolver.cpp',
                       'solvers/CBaselineSolver.cpp',
@@ -141,6 +143,7 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CDummyDriver.cpp'])
 
 su2_cfd_src += files(['integration/CIntegration.cpp',
+                      'integration/CIntegrationFactory.cpp',
                       'integration/CSingleGridIntegration.cpp',
                       'integration/CMultiGridIntegration.cpp',
                       'integration/CStructuralIntegration.cpp',
