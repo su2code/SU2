@@ -3,14 +3,14 @@
  * \brief Delaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -178,6 +178,7 @@ protected:
   su2double
   *AuxVar_Grad_i,    /*!< \brief Gradient of an auxiliary variable at point i. */
   *AuxVar_Grad_j;    /*!< \brief Gradient of an auxiliary variable at point i. */
+  const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
   *Coord_j;      /*!< \brief Cartesians coordinates of point j. */
@@ -1257,6 +1258,26 @@ public:
    */
   su2double GetRoe_Dissipation(const su2double Dissipation_i, const su2double Dissipation_j,
                                const su2double Sensor_i, const su2double Sensor_j, const CConfig* config) const;
+
+  /*!
+   * \brief Set the value of the radiation variable.
+   * \param[in] val_radvar_i - Value of the turbulent variable at point i.
+   * \param[in] val_radvar_j - Value of the turbulent variable at point j.
+   */
+  inline virtual void SetRadVar(const su2double *val_radvar_i, const su2double *val_radvar_j) { }
+
+  /*!
+   * \brief Set the gradient of the radiation variables.
+   * \param[in] val_radvar_grad_i - Gradient of the turbulent variable at point i.
+   * \param[in] val_radvar_grad_j - Gradient of the turbulent variable at point j.
+   */
+  inline virtual void SetRadVarGradient(const su2double* const* val_radvar_grad_i, const su2double* const* val_radvar_grad_j) { }
+
+  /*!
+   * \brief Set the gradient of the radiation variables.
+   * \param[in] val_radvar_source - Source term (and jacobian term) of the radiative heat transfer.
+   */
+  inline void SetRadVarSource(const su2double *val_radvar_source) { RadVar_Source = val_radvar_source; }
 
   /*!
    * \brief Decomposes the symmetric matrix A_ij, into eigenvectors and eigenvalues

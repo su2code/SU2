@@ -2,14 +2,14 @@
  * \file python_wrapper_structure.cpp
  * \brief Driver subroutines that are used by the Python wrapper. Those routines are usually called from an external Python environment.
  * \author D. Thomas
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -298,7 +298,7 @@ unsigned long CDriver::GetTime_Iter(){
 
 passivedouble CDriver::GetUnsteady_TimeStep(){
 
-  return  SU2_TYPE::GetValue(config_container[ZONE_0]->GetTime_Step());
+  return SU2_TYPE::GetValue(config_container[ZONE_0]->GetTime_Step());
 }
 
 passivedouble CDriver::GetVertexCoordX(unsigned short iMarker, unsigned long iVertex) {
@@ -1228,3 +1228,28 @@ vector<passivedouble> CDriver::GetVertex_UndeformedCoord(unsigned short iMarker,
   return MeshCoord_passive;
 
 }
+
+void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z){
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][RAD_SOL];
+
+  config_container[ZONE_0]->SetHeatSource_Rot_Z(alpha);
+  config_container[ZONE_0]->SetHeatSource_Center(pos_x, pos_y, pos_z);
+
+  solver->SetVolumetricHeatSource(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
+
+}
+
+void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha){
+
+  su2double alpha_rad = alpha * PI_NUMBER/180.0;
+
+  unsigned long iVertex;
+
+  for (iVertex = 0; iVertex < geometry_container[ZONE_0][INST_0][MESH_0]->nVertex[iMarker]; iVertex++){
+    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, 0, cos(alpha_rad));
+    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, 1, sin(alpha_rad));
+  }
+
+}
+

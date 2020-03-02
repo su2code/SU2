@@ -2,7 +2,7 @@
 % SU2 configuration file                                                 %
 % PaStiX support build instructions.                                     %
 % Institution: Imperial College London                                   %
-% File Version 7.0.1 "Blackbird"                                         %
+% File Version 7.0.2 "Blackbird"                                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % 1 - Download
@@ -18,7 +18,11 @@
 % cd scotch/src && cp Make.inc/Makefile.inc.x86-64_pc_linux2.XXXX Makefile.inc
 % (choose the XXXX that matches your compiler)
 % Edit Makefile.inc and delete the cflag -DSCOTCH_PTHREAD (see why in 3-ii)
-% make ptscotch
+% "make ptscotch"
+%
+% Note: If you build SU2 (7.0.1+) with OpenMP support (-Dwith-omp=true),
+%       AND your system supports MPI_THREAD_MULTIPLE, you do not need to
+%       delete the -DSCOTCH_PTHREAD flag (but doing so does no harm).
 %
 % 3 - Build PaStiX
 % Extract the tarball downloaded in 1 into "externals"
@@ -30,10 +34,18 @@
 %  ii  - Uncomment the lines for "VERSIONSMP  = _nosmp",
 %        SU2 does not currently support MPI+Threads.
 %  iii - Set SCOTCH_HOME as SCOTCH_HOME ?= ${PWD}/../../scotch/
-%  iv  - Comment out the lines for "Hardware Locality", this is only
-%        important for an MPI+Threads build.
-%  v   - Optionally look at the BLAS section (required by "make examples")
-% make all
+%  iv  - Comment out the lines for "Hardware Locality", this may only be
+%        important for an MPI+Threads build (usually it is not).
+%  v   - Optionally look at the BLAS section (only required by "make examples")
+% "make all"
+%
+% Note: If you build SU2 (7.0.1+) with OpenMP support (-Dwith-omp=true),
+%       skip 3-ii, note however that this may not work well with SU2_CFD_AD.
+%       If you do use MPI+Threads, it is important for good performance that your
+%       system supports MPI_THREAD_MULTIPLE (SU2_CFD --thread_multiple ...)
+%       Furthermore, if MPI_THREAD_MULTIPLE is NOT supported, you need to
+%       uncomment the line with "-DPASTIX_FUNNELED" in config.in.
+%       Finally, if you just use threads (no MPI) this is not important.
 %
 % 4 - Build SU2
 % Follow the normal meson build instructions, add -Denable-pastix=true,
@@ -42,6 +54,9 @@
 % If you did not build PaStiX and Scotch in the externals folders you must
 % use -Dpastix_root="some path" and -Dscotch_root="another path" to
 % indicate where they are RELATIVE to the SU2 directory.
+% You need sequential versions of BLAS. But when using MPI+Threads beware that
+% OpenBLAS needs to have parallel support otherwise the solver will crash, if
+% you get poor performance see 5.4 below.
 %
 % 5 - Common problems and known issues
 % - OpenMPI 4 does not work with PaStiX 5, downgrade to 3.1.4.
@@ -67,4 +82,4 @@
 % - CentOS 7.6.1810, gcc 5.4, ompi 3.1.4, mkl 2017
 % - CentOS 7.6.1810, gcc 5.4, impi 2018, mkl 2019
 % - CentOS 7.6.1810, gcc 8.2, impi 2018, mkl 2019
-
+%

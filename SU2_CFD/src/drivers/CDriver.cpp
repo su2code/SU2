@@ -2,14 +2,14 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +51,8 @@
 #include "../../include/solvers/CFEM_DG_NSSolver.hpp"
 #include "../../include/solvers/CDiscAdjMeshSolver.hpp"
 #include "../../include/solvers/CMeshSolver.hpp"
+#include "../../include/solvers/CRadSolver.hpp"
+#include "../../include/solvers/CRadP1Solver.hpp"
 
 #include "../../include/interfaces/cfd/CConservativeVarsInterface.hpp"
 #include "../../include/interfaces/cfd/CMixingPlaneInterface.hpp"
@@ -64,6 +66,7 @@
 
 #include "../../include/numerics/template.hpp"
 #include "../../include/numerics/transition.hpp"
+#include "../../include/numerics/radiation.hpp"
 #include "../../include/numerics/heat.hpp"
 #include "../../include/numerics/flow/convection/roe.hpp"
 #include "../../include/numerics/flow/convection/fds.hpp"
@@ -1292,6 +1295,10 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
       solver[iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
       if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][FEA_SOL]->GetnVar();
     }
+    if (config->AddRadiation()) {
+      solver[iMGlevel][RAD_SOL] = new CRadP1Solver(geometry[iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][RAD_SOL]->GetnVar();
+    }
 
     /*--- Allocate solution for adjoint problem ---*/
 
@@ -1328,6 +1335,10 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
       if (heat) {
         solver[iMGlevel][ADJHEAT_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver[iMGlevel][HEAT_SOL], RUNTIME_HEAT_SYS, iMGlevel);
         if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][ADJHEAT_SOL]->GetnVar();
+      }
+      if (config->AddRadiation()){
+        solver[iMGlevel][ADJRAD_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver[iMGlevel][RAD_SOL], RUNTIME_RADIATION_SYS, iMGlevel);
+        if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][ADJRAD_SOL]->GetnVar();
       }
     }
 
@@ -1579,6 +1590,9 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
     if (turbulent) {
       solver[MESH_0][TURB_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
+    if (config->AddRadiation()) {
+      solver[MESH_0][RAD_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
+    }
     if (fem) {
       if (time_domain) val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       solver[MESH_0][FEA_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
@@ -1611,6 +1625,8 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
         solver[MESH_0][ADJTURB_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
       if (disc_adj_heat)
         solver[MESH_0][ADJHEAT_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
+      if (config->AddRadiation())
+        solver[MESH_0][ADJRAD_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (disc_adj_fem) {
         if (time_domain) val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
@@ -1752,6 +1768,10 @@ void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
     if (disc_adj_fem) {
       delete solver[val_iInst][iMGlevel][ADJFEA_SOL];
     }
+    if (config->AddRadiation()) {
+      delete solver[val_iInst][iMGlevel][RAD_SOL];
+      if (disc_adj) delete solver[val_iInst][iMGlevel][ADJRAD_SOL];
+    }
 
     if (iMGlevel == 0){
       if (config->GetDeform_Mesh()){
@@ -1832,6 +1852,7 @@ void CDriver::Integration_Preprocessing(CConfig *config, CIntegration **&integra
   if (transition) integration[TRANS_SOL] = new CSingleGridIntegration(config);
   if (heat) integration[HEAT_SOL] = new CSingleGridIntegration(config);
   if (fem) integration[FEA_SOL] = new CStructuralIntegration(config);
+  if (config->AddRadiation()) integration[RAD_SOL] = new CSingleGridIntegration(config);
 
   /*--- Allocate integration container for finite element flow solver. ---*/
 
@@ -1907,6 +1928,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration, CGeometry 
   if (fem) delete integration[val_iInst][FEA_SOL];
   if (disc_adj_fem) delete integration[val_iInst][ADJFEA_SOL];
   if (disc_adj_heat) delete integration[val_iInst][ADJHEAT_SOL];
+  if (config->AddRadiation()) delete integration[val_iInst][RAD_SOL];
 
   /*--- DeAllocate solution for adjoint problem ---*/
   if (adj_euler || adj_ns || disc_adj) delete integration[val_iInst][ADJFLOW_SOL];
@@ -1936,6 +1958,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
   nVar_FEM              = 0,
+  nVar_Rad              = 0,
   nVar_Heat             = 0;
 
   numerics = new CNumerics***[config->GetnMGLevels()+1];
@@ -2068,6 +2091,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   if (fem)          nVar_FEM = solver[MESH_0][FEA_SOL]->GetnVar();
   if (heat)     nVar_Heat = solver[MESH_0][HEAT_SOL]->GetnVar();
+
+  if (config->AddRadiation())    nVar_Rad = solver[MESH_0][RAD_SOL]->GetnVar();
 
   /*--- Number of variables for adjoint problem ---*/
 
@@ -2385,7 +2410,11 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Flow, config);
       }
 
-      numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Flow, config);
+      /*--- At the moment it is necessary to have the RHT equation in order to have a volumetric heat source. ---*/
+      if (config->AddRadiation())
+        numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceRadiation(nDim, nVar_Flow, config);
+      else
+        numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Flow, config);
     }
 
   }
@@ -2572,6 +2601,19 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
           break;
       }
     }
+  }
+
+  /*--- Solver definition for the radiation model problem ---*/
+
+  if (config->AddRadiation()) {
+    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+    numerics[MESH_0][RAD_SOL][VISC_TERM] = new CAvgGradCorrected_P1(nDim, nVar_Rad, config);
+
+    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+    numerics[MESH_0][RAD_SOL][SOURCE_FIRST_TERM] = new CSourceP1(nDim, nVar_Rad, config);
+
+    /*--- Definition of the boundary condition method ---*/
+    numerics[MESH_0][RAD_SOL][VISC_BOUND_TERM] = new CAvgGradCorrected_P1(nDim, nVar_Rad, config);
   }
 
   /*--- Solver definition for the flow adjoint problem ---*/
@@ -3893,9 +3935,9 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
     case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
       StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
-  
+
   /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
-  
+
   StopCalc = StopCalc || (ExtIter == Max_Iter - 1);
 
   return StopCalc;
@@ -4152,9 +4194,9 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
     StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
-  
+
   /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
-  
+
   StopCalc = StopCalc || (ExtIter == Max_Iter - 1);
 
   return StopCalc;

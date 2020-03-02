@@ -4,14 +4,14 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2794,6 +2794,24 @@ public:
   inline virtual su2double GetSolution_Old_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   inline virtual su2double GetSolution_Old_Accel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+
+  /*!
+   * \brief Virtual member: Set the Radiative source term at the node
+   * \return value of the radiative source term
+   */
+  inline virtual const su2double *GetRadiative_SourceTerm(unsigned long iPoint) const { return nullptr;}
+
+  /*!
+   * \brief  Virtual member: Set the Radiative source term at the node
+   * \param[in] val_RadSourceTerm - value of the radiative source term
+   */
+  inline virtual void SetRadiative_SourceTerm(unsigned long iPoint, unsigned long iVar, su2double val_RadSourceTerm) { }
+
+  /*!
+   * \brief Get whether a volumetric heat source is to be introduced in point iPoint
+   * \return Bool, determines if this point introduces volumetric heat
+   */
+  inline virtual bool GetVol_HeatSource(unsigned long iPoint) const { return false; }
 
   /*!
    * \brief Set the FSI force sensitivity at the node

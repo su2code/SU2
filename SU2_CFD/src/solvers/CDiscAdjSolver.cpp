@@ -2,14 +2,14 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -132,6 +132,9 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     break;
   case RUNTIME_TURB_SYS:
     SolverName = "ADJ.TURB";
+    break;
+  case RUNTIME_RADIATION_SYS:
+    SolverName = "ADJ.RAD";
     break;
   default:
     SolverName = "ADJ.SOL";
@@ -353,6 +356,28 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   }
 
+  /*--- Register incompressible radiation values as input ---*/
+
+  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+      ((KindDirect_Solver == RUNTIME_RADIATION_SYS &&
+        (!config->GetBoolTurbomachinery())))) {
+
+    /*--- Access the nondimensional freestream temperature. ---*/
+
+    TemperatureRad = config->GetTemperature_FreeStreamND();
+
+    /*--- Register the variables for AD. ---*/
+
+    if (!reset) {
+      AD::RegisterInput(TemperatureRad);
+    }
+
+    /*--- Set the temperature at infinity in the direct solver class. ---*/
+
+    direct_solver->SetTemperature_Inf(TemperatureRad);
+
+  }
+
   /*--- Here it is possible to register other variables as input that influence the flow solution
    * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
    * extracted in the ExtractAdjointVariables routine. ---*/
@@ -401,6 +426,9 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
       break;
     case BUFFET_SENSOR:
       ObjFunc_Value = direct_solver->GetTotal_Buffet_Metric();
+      break;
+    case TOTAL_HEATFLUX:
+      ObjFunc_Value = direct_solver->GetTotal_HeatFlux();
       break;
     }
 
@@ -573,6 +601,20 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     SU2_MPI::Allreduce(&Local_Sens_ModVel, &Total_Sens_ModVel, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&Local_Sens_BPress, &Total_Sens_BPress, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&Local_Sens_Temp,   &Total_Sens_Temp,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  }
+
+  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+      (KindDirect_Solver == RUNTIME_RADIATION_SYS &&
+       (!config->GetBoolTurbomachinery()))) {
+
+    su2double Local_Sens_Temp_Rad;
+    Local_Sens_Temp_Rad   = SU2_TYPE::GetDerivative(TemperatureRad);
+
+    SU2_MPI::Allreduce(&Local_Sens_Temp_Rad, &Total_Sens_Temp_Rad, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    /*--- Store it in the Total_Sens_Temp container so it's accessible without the need of a new method ---*/
+    Total_Sens_Temp = Total_Sens_Temp_Rad;
+
   }
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
@@ -948,6 +990,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool rans = ((config->GetKind_Solver() == DISC_ADJ_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS)) ;
 
   /*--- Restart the solution from file information ---*/
 
@@ -985,6 +1028,13 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
     if (incompressible) {
       skipVars += nDim + 2;
     }
+  }
+
+  /*--- Skip flow adjoint and turbulent variables ---*/
+  if (KindDirect_Solver == RUNTIME_RADIATION_SYS) {
+    if (compressible) skipVars += nDim + 2;
+    if (incompressible) skipVars += nDim + 2;
+    if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
   }
 
   /*--- Load data from the restart into correct containers. ---*/

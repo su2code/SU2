@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -559,6 +559,42 @@ CNumerics::ResidualType<> CSourceWindGust::ComputeResidual(const CConfig* config
 
   /*--- For now the source term Jacobian is just set to zero ---*/
   //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  return ResidualType<>(residual, jacobian, nullptr);
+}
+
+CSourceRadiation::CSourceRadiation(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) :
+                  CSourceBase_Flow(val_nDim, val_nVar, config) {
+
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+}
+
+CNumerics::ResidualType<> CSourceRadiation::ComputeResidual(const CConfig *config) {
+
+  unsigned short iDim;
+
+  /*--- Zero the continuity contribution. ---*/
+
+  residual[0] = 0.0;
+
+  /*--- Zero the momentum contribution. ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    residual[iDim+1] = 0.0;
+
+  /*--- Set the energy contribution ---*/
+
+  residual[nDim+1] = -RadVar_Source[0]*Volume;
+
+  /*--- Set the energy contribution to the Jacobian. ---*/
+
+  if (implicit) {
+
+    /*--- Jacobian is set to zero on initialization. ---*/
+
+    jacobian[nDim+1][nDim+1] = -RadVar_Source[1]*Volume;
+
+  }
 
   return ResidualType<>(residual, jacobian, nullptr);
 }

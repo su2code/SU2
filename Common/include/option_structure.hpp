@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -104,6 +104,8 @@ const su2double TWO3 = 2.0 / 3.0;   /*!< \brief Two divided by three. */
 const su2double FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
 
 const su2double PI_NUMBER = 4.0 * atan(1.0);  /*!< \brief Pi number. */
+
+const su2double STEFAN_BOLTZMANN = 5.670367E-08;  /*!< \brief Stefan-Boltzmann constant in W/(m^2*K^4). */
 
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
@@ -436,6 +438,8 @@ enum RUNTIME_TYPE {
   RUNTIME_HEAT_SYS = 21,      /*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_ADJHEAT_SYS = 31,   /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
   RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
+  RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
 };
 
 const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
@@ -447,6 +451,8 @@ const int ADJTURB_SOL = 3;  /*!< \brief Position of the continuous adjoint turbu
 const int TRANS_SOL = 4;    /*!< \brief Position of the transition model solution in the solver container array. */
 const int HEAT_SOL = 5;     /*!< \brief Position of the heat equation in the solution solver array. */
 const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array. */
+const int RAD_SOL = 7;      /*!< \brief Position of the radiation equation in the solution solver array. */
+const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 
 const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
@@ -1152,6 +1158,30 @@ static const MapType<string, ENUM_DVFEA> DVFEA_Map = {
   MakePair("DENSITY", DENSITY_VAL)
   MakePair("DEAD_WEIGHT", DEAD_WEIGHT)
   MakePair("ELECTRIC_FIELD", ELECTRIC_FIELD)
+};
+
+/*!
+ * \brief Kinds of radiation models
+ */
+enum ENUM_RADIATION {
+  NO_RADIATION = 0,      /*!< \brief No radiation model */
+  P1_MODEL = 1           /*!< \brief P1 Radiation model. */
+};
+static const MapType<string, ENUM_RADIATION> Radiation_Map = {
+  MakePair("NONE", NO_RADIATION)
+  MakePair("P1", P1_MODEL)
+};
+
+/*!
+ * \brief Kinds of P1 initialization
+ */
+enum ENUM_P1_INIT {
+  P1_INIT_ZERO = 0,      /*!< \brief Initialize the P1 model from zero values */
+  P1_INIT_TEMP = 1       /*!< \brief Initialize the P1 model from blackbody energy computed from the initial temperature. */
+};
+static const MapType<string, ENUM_P1_INIT> P1_Init_Map = {
+  MakePair("ZERO", P1_INIT_ZERO)
+  MakePair("TEMPERATURE_INIT", P1_INIT_TEMP)
 };
 
 /*!
