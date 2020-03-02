@@ -85,11 +85,6 @@ public:
   }
 
   /*!
-   * \brief Destructor of the CAkimaInterpolation class.
-   */
-  ~CAkimaInterpolation(){}
-
-  /*!
    * \brief for setting the cofficients for the Akima spline.
    * \param[in] X - the x values.
    * \param[in] Data - the f(x) values.
@@ -118,11 +113,6 @@ public:
   CLinearInterpolation(vector<su2double> &X, vector<su2double> &Data){
       SetSpline(X,Data);
   }
-
-  /*!
-   * \brief Destructor of the CInletInterpolation class.
-   */
-  ~CLinearInterpolation(){}
 
   /*!
    * \brief for setting the cofficients for Linear 'spline'.

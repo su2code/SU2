@@ -137,7 +137,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CFEASolver.cpp \
   ../src/solvers/CFEM_DG_EulerSolver.cpp \
   ../src/solvers/CFEM_DG_NSSolver.cpp \
-  ../src/solvers/CHeatSolverFVM.cpp \
+  ../src/solvers/CHeatSolver.cpp \
   ../src/solvers/CIncEulerSolver.cpp \
   ../src/solvers/CIncNSSolver.cpp \
   ../src/solvers/CMeshSolver.cpp \
@@ -170,7 +170,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CMeshBoundVariable.cpp \
   ../src/variables/CMeshElement.cpp \
   ../src/variables/CMeshVariable.cpp \
-  ../src/variables/CHeatFVMVariable.cpp \
+  ../src/variables/CHeatVariable.cpp \
   ../src/variables/CVariable.cpp \
   ../src/variables/CAdjNSVariable.cpp \
   ../src/variables/CTurbSSTVariable.cpp \
