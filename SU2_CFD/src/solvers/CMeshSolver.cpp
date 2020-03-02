@@ -436,15 +436,15 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   if (multizone) nodes->Set_BGSSolution_k();
 
-  /*--- Initialize sparse matrix ---*/
-  Jacobian.SetValZero();
-
   /*--- Compute the stiffness matrix. ---*/
   Compute_StiffMatrix(geometry[MESH_0], numerics, config);
 
-  /*--- Initialize vectors and clean residual ---*/
-  LinSysSol.SetValZero();
-  LinSysRes.SetValZero();
+  /*--- Initialize vectors and clean residual. ---*/
+  SU2_OMP_PARALLEL
+  {
+    LinSysSol.SetValZero();
+    LinSysRes.SetValZero();
+  }
 
   /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
    Hence we still need a communication of the transformed coordinates, otherwise periodicity
