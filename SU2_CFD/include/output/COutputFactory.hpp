@@ -33,14 +33,12 @@ class COutputLegacy;
 
 class COutputFactory{
 
-private:
+public:
 
   /*!
-   * \brief Private constructor to avoid creating instances of this class
+   * \brief Deleted constructor to avoid creating instances of this class
    */
-  COutputFactory();
-
-public:
+  COutputFactory() = delete;
 
   /*!
    * \brief Create the Output class based on the current main solver

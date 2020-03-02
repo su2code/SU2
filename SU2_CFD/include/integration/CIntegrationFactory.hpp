@@ -33,14 +33,12 @@ class CConfig;
 
 class CIntegrationFactory{
 
-private:
+public:
 
   /*!
-   * \brief Private constructor to avoid creating instances of this class
+   * \brief Deleted constructor to avoid creating instances of this class
    */
-  CIntegrationFactory();
-
-public:
+  CIntegrationFactory() = delete;
 
   /*!
    * \brief Create the integration container based on the current main solver

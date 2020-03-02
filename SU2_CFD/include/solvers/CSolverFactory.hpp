@@ -87,11 +87,6 @@ private:
   static map<const CSolver*, SolverMetaData> allocatedSolvers;
 
   /*!
-   * \brief Private constructor to avoid creating instances of this class
-   */
-  CSolverFactory();
-
-  /*!
    * \brief Create a turbulent solver
    * \param[in] kindTurbModel - Kind of turbulent solver
    * \param[in] solver        - The solver container (used to call preprocessing of the flow solver)
@@ -158,7 +153,12 @@ private:
   static CSolver* createSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
   
 public:
-    
+
+  /*!
+   * \brief Deleted constructor to avoid creating instances of this class
+   */
+  CSolverFactory() = delete;
+
   /*!
    * \brief Create the solver container by allocating the primary solver 
    * and secondary solvers like heat solver, turbulent solver etc
