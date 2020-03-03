@@ -65,9 +65,8 @@ private:
 public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
    */
-  CSingleGridIntegration(CConfig *config);
+  CSingleGridIntegration();
 
   /*!
    * \brief Do the numerical integration (implicit) of the turbulence solver.
