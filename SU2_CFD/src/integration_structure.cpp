@@ -298,7 +298,7 @@ void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_con
   
 }
 
-void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
+void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned short iRKStep,
                                     unsigned short RunTime_EqSystem) {
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   unsigned short KindSolver = config->GetKind_Solver();
@@ -334,7 +334,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
       solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
       break;
     case (NEWMARK_IMPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
+      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, numerics, config);
       break;
     case (GENERALIZED_ALPHA):
       solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
@@ -355,10 +355,10 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
     case (CD_EXPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
+      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, numerics, config);
       break;
     case (NEWMARK_IMPLICIT):
-      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
+      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, numerics, config);
       break;
     case (GENERALIZED_ALPHA):
       solver_container[MainSolver]->GeneralizedAlpha_Iteration(geometry, solver_container, config);

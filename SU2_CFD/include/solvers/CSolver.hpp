@@ -1571,6 +1571,7 @@ public:
    */
   inline virtual void ImplicitNewmark_Iteration(CGeometry *geometry,
                                                 CSolver **solver_container,
+                                                CNumerics **numerics,
                                                 CConfig *config) { }
 
   /*!

@@ -1216,8 +1216,7 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CCon
             su2double Mab = simp_penalty * element->Get_Mab(iNode, jNode);
 
             for (iVar = 0; iVar < nVar; iVar++) {
-              TimeRes[indexNode[iNode]*nVar+iVar] += Mab * TimeRes_Aux.GetBlock(indexNode[iNode],iVar);
-              TimeRes[indexNode[jNode]*nVar+iVar] += Mab * TimeRes_Aux.GetBlock(indexNode[jNode],iVar);
+              TimeRes[indexNode[iNode]*nVar+iVar] += Mab * TimeRes_Aux.GetBlock(indexNode[jNode],iVar);
             }
           }
         }
@@ -1564,7 +1563,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
           }
 
           /*--- Once computed, compute M*TimeRes_Aux ---*/
-          MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
+          Compute_MassRes(geometry, numerics, config);
 
           /*--- Loop over all the markers  ---*/
           for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -2367,7 +2366,7 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
 
 }
 
-void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
   const bool first_iter = (config->GetInnerIter() == 0);
   const bool dynamic = (config->GetTime_Domain());
@@ -2444,7 +2443,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
 
       /*--- Add M*TimeRes_Aux to the residual. ---*/
 
-      MassMatrix.MatrixVectorProduct(TimeRes_Aux, TimeRes, geometry, config);
+      Compute_MassRes(geometry, numerics, config);
       LinSysRes += TimeRes;
     }
 
