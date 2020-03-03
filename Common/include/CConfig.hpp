@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -500,6 +500,7 @@ private:
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
   Kind_TimeIntScheme_FEA,       /*!< \brief Time integration for the FEA equations. */
   Kind_SpaceIteScheme_FEA,      /*!< \brief Iterative scheme for nonlinear structural analysis. */
+  Kind_TimeIntScheme_Radiation, /*!< \brief Time integration for the Radiation equations. */
   Kind_ConvNumScheme,           /*!< \brief Global definition of the convective term. */
   Kind_ConvNumScheme_Flow,      /*!< \brief Centered or upwind scheme for the flow equations. */
   Kind_ConvNumScheme_FEM_Flow,  /*!< \brief Finite element scheme for the flow equations. */
@@ -993,6 +994,7 @@ private:
   bool Prestretch;                           /*!< \brief Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;             /*!< \brief File name for reference geometry. */
   string FEA_FileName;              /*!< \brief File name for element-based properties. */
+  bool FEAAdvancedMode;             /*!< \brief Determine if advanced features are used from the element-based FEA analysis (experimental). */
   su2double RefGeom_Penalty,        /*!< \brief Penalty weight value for the reference geometry objective function. */
   RefNode_Penalty,                  /*!< \brief Penalty weight value for the reference node objective function. */
   DV_Penalty;                       /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
@@ -1009,27 +1011,6 @@ private:
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   bool QCR;                    /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
-  su2double *default_vel_inf,  /*!< \brief Default freestream velocity array for the COption class. */
-  *default_eng_cyl,            /*!< \brief Default engine box array for the COption class. */
-  *default_eng_val,            /*!< \brief Default engine box array values for the COption class. */
-  *default_cfl_adapt,          /*!< \brief Default CFL adapt param array for the COption class. */
-  *default_jst_coeff,          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
-  *default_ffd_coeff,          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
-  *default_mixedout_coeff,     /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
-  *default_rampRotFrame_coeff, /*!< \brief Default ramp rotating frame coefficients for the COption class. */
-  *default_rampOutPres_coeff,  /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
-  *default_jst_adj_coeff,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
-  *default_ad_coeff_heat,      /*!< \brief Default artificial dissipation (heat) array for the COption class. */
-  *default_obj_coeff,          /*!< \brief Default objective array for the COption class. */
-  *default_geo_loc,            /*!< \brief Default SU2_GEO section locations array for the COption class. */
-  *default_distortion,         /*!< \brief Default SU2_GEO section locations array for the COption class. */
-  *default_ea_lim,             /*!< \brief Default equivalent area limit array for the COption class. */
-  *default_grid_fix,           /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
-  *default_htp_axis,           /*!< \brief Default HTP axis for the COption class. */
-  *default_ffd_axis,           /*!< \brief Default FFD axis for the COption class. */
-  *default_inc_crit,           /*!< \brief Default incremental criteria array for the COption class. */
-  *default_extrarelfac,        /*!< \brief Default extra relaxation factor for Giles BC in the COption class. */
-  *default_sineload_coeff;     /*!< \brief Default values for a sine load. */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones;  /*!< \brief number of maximum span-wise sections for all zones */
@@ -1045,8 +1026,6 @@ private:
   su2double FinalRotation_Rate_Z;       /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalOutletPressure;        /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure;      /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
-  su2double *default_body_force;        /*!< \brief Default body force vector for the COption class. */
-  su2double *default_nacelle_location;  /*!< \brief Location of the nacelle. */
   su2double *default_cp_polycoeffs;     /*!< \brief Array for specific heat polynomial coefficients. */
   su2double *default_mu_polycoeffs;     /*!< \brief Array for viscosity polynomial coefficients. */
   su2double *default_kt_polycoeffs;     /*!< \brief Array for thermal conductivity polynomial coefficients. */
@@ -1069,6 +1048,46 @@ private:
             *top_optim_filter_radius;  /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
   unsigned short top_optim_proj_type;  /*!< \brief The projection function used in topology optimization. */
   su2double top_optim_proj_param;      /*!< \brief The value of the parameter for the projection function. */
+  bool HeatSource;              /*!< \brief Flag to know if there is a volumetric heat source on the flow. */
+  su2double ValHeatSource;      /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
+  su2double Heat_Source_Rot_Z;    /*!< \brief Rotation of the volumetric heat source on the Z axis. */
+  su2double *Heat_Source_Center,  /*!< \brief Position of the center of the heat source. */
+            *Heat_Source_Axes;  /*!< \brief Principal axes (x, y, z) of the ellipsoid containing the heat source. */
+  unsigned short Kind_Radiation;       /*!< \brief Kind of radiation model used. */
+  unsigned short Kind_P1_Init;         /*!< \brief Kind of initialization used in the P1 model. */
+  su2double Absorption_Coeff,          /*!< \brief Absorption coefficient of the medium (radiation). */
+  Scattering_Coeff;                    /*!< \brief Scattering coefficient of the medium (radiation). */
+  unsigned short nMarker_Emissivity;   /*!< \brief Number of markers for which the emissivity is defined. */
+  string *Marker_Emissivity;           /*!< \brief Wall markers with defined emissivity. */
+  su2double *Wall_Emissivity;          /*!< \brief Emissivity of the wall. */
+  bool Radiation;                      /*!< \brief Determines if a radiation model is incorporated. */
+  su2double CFL_Rad;                   /*!< \brief CFL Number for the radiation solver. */
+
+  su2double default_vel_inf[3],  /*!< \brief Default freestream velocity array for the COption class. */
+  default_eng_cyl[7],            /*!< \brief Default engine box array for the COption class. */
+  default_eng_val[5],            /*!< \brief Default engine box array values for the COption class. */
+  default_cfl_adapt[4],          /*!< \brief Default CFL adapt param array for the COption class. */
+  default_jst_coeff[2],          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  default_ffd_coeff[3],          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  default_mixedout_coeff[3],     /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
+  default_rampRotFrame_coeff[3], /*!< \brief Default ramp rotating frame coefficients for the COption class. */
+  default_rampOutPres_coeff[3],  /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
+  default_jst_adj_coeff[2],      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+  default_ad_coeff_heat[2],      /*!< \brief Default artificial dissipation (heat) array for the COption class. */
+  default_obj_coeff[5],          /*!< \brief Default objective array for the COption class. */
+  default_geo_loc[2],            /*!< \brief Default SU2_GEO section locations array for the COption class. */
+  default_distortion[2],         /*!< \brief Default SU2_GEO section locations array for the COption class. */
+  default_ea_lim[3],             /*!< \brief Default equivalent area limit array for the COption class. */
+  default_grid_fix[6],           /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
+  default_htp_axis[2],           /*!< \brief Default HTP axis for the COption class. */
+  default_ffd_axis[3],           /*!< \brief Default FFD axis for the COption class. */
+  default_inc_crit[3],           /*!< \brief Default incremental criteria array for the COption class. */
+  default_extrarelfac[2],        /*!< \brief Default extra relaxation factor for Giles BC in the COption class. */
+  default_sineload_coeff[3],     /*!< \brief Default values for a sine load. */
+  default_body_force[3],         /*!< \brief Default body force vector for the COption class. */
+  default_nacelle_location[5],   /*!< \brief Location of the nacelle. */
+  default_hs_axes[3],            /*!< \brief Default principal axes (x, y, z) of the ellipsoid containing the heat source. */
+  default_hs_center[3];          /*!< \brief Default position of the center of the heat source. */
 
   unsigned short Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
   su2double Quadrature_Factor_Straight;      /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
@@ -1093,7 +1112,7 @@ private:
   Restart_Iter;                  /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;           /*!< \brief Determines the time step for the multizone problem */
   su2double Max_Time;            /*!< \brief Determines the maximum time for the time-domain problems */
-  su2double *default_wrt_freq;
+
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
   unsigned long VolumeWrtFreq;        /*!< \brief Writing frequency for solution files. */
@@ -1123,6 +1142,12 @@ private:
   unsigned short pastix_fill_lvl;  /*!< \brief Fill level for PaStiX ILU */
 
   string caseName;                 /*!< \brief Name of the current case */
+
+  unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
+
+  unsigned short Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
+  unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
+  bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -2103,6 +2128,12 @@ public:
    * \return Name of the file with the element properties of the structural problem.
    */
   string GetFEA_FileName(void) const { return FEA_FileName; }
+
+  /*!
+    * \brief Determine if advanced features are used from the element-based FEA analysis (experimental feature).
+    * \return <code>TRUE</code> is experimental, <code>FALSE</code> is the default behaviour.
+    */
+  inline bool GetAdvanced_FEAElementBased(void) const { return FEAAdvancedMode; }
 
   /*!
    * \brief Get the name of the file with the reference geometry of the structural problem.
@@ -4249,7 +4280,7 @@ public:
    * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).
    * \return yes/no.
    */
-  bool GetUse_Accurate_Jacobians(void) { return Use_Accurate_Jacobians; }
+  bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4293,6 +4324,15 @@ public:
    * \return Kind of integration scheme for the plasma equations.
    */
   unsigned short GetKind_TimeIntScheme_FEA(void) const { return Kind_TimeIntScheme_FEA; }
+
+  /*!
+   * \brief Get the kind of integration scheme (explicit or implicit)
+   *        for the radiation equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of integration scheme for the radiation equations.
+   */
+  unsigned short GetKind_TimeIntScheme_Radiation(void) const { return Kind_TimeIntScheme_Radiation; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4452,7 +4492,7 @@ public:
    * \brief Factor by which to multiply the dissipation contribution to Jacobians of central schemes.
    * \return The factor.
    */
-  su2double GetCent_Jac_Fix_Factor(void) { return Cent_Jac_Fix_Factor; }
+  su2double GetCent_Jac_Fix_Factor(void) const { return Cent_Jac_Fix_Factor; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -5831,7 +5871,53 @@ public:
    * \brief Get a pointer to the body force vector.
    * \return A pointer to the body force vector.
    */
-  su2double* GetBody_Force_Vector(void) { return Body_Force_Vector; }
+  const su2double* GetBody_Force_Vector(void) const { return Body_Force_Vector; }
+
+  /*!
+   * \brief Get information about the volumetric heat source.
+   * \return <code>TRUE</code> if it uses a volumetric heat source; otherwise <code>FALSE</code>.
+   */
+  inline bool GetHeatSource(void) const { return HeatSource; }
+
+  /*!
+   * \brief Get information about the volumetric heat source.
+   * \return Value of the volumetric heat source
+   */
+  inline su2double GetHeatSource_Val(void) const {return ValHeatSource;}
+
+  /*!
+   * \brief Get the rotation angle of the volumetric heat source in axis Z.
+   * \return Rotation (Z) of the volumetric heat source
+   */
+  inline su2double GetHeatSource_Rot_Z(void) const {return Heat_Source_Rot_Z;}
+
+  /*!
+   * \brief Set the rotation angle of the volumetric heat source in axis Z.
+   * \param[in] val_rot - Rotation (Z) of the volumetric heat source
+   */
+  inline void SetHeatSource_Rot_Z(su2double val_rot) {Heat_Source_Rot_Z = val_rot;}
+
+  /*!
+   * \brief Get the position of the center of the volumetric heat source.
+   * \return Pointer to the center of the ellipsoid that introduces a volumetric heat source.
+   */
+  inline const su2double* GetHeatSource_Center(void) const {return Heat_Source_Center;}
+
+  /*!
+   * \brief Set the position of the center of the volumetric heat source.
+   * \param[in] x_cent = X position of the center of the volumetric heat source.
+   * \param[in] y_cent = Y position of the center of the volumetric heat source.
+   * \param[in] z_cent = Z position of the center of the volumetric heat source.
+   */
+  inline void SetHeatSource_Center(su2double x_cent, su2double y_cent, su2double z_cent) {
+    Heat_Source_Center[0] = x_cent; Heat_Source_Center[1] = y_cent; Heat_Source_Center[2] = z_cent;
+  }
+
+  /*!
+   * \brief Get the radius of the ellipsoid that introduces a volumetric heat source.
+   * \return Pointer to the radii (x, y, z) of the ellipsoid that introduces a volumetric heat source.
+   */
+  inline const su2double* GetHeatSource_Axes(void) const {return Heat_Source_Axes;}
 
   /*!
    * \brief Get information about the rotational frame.
@@ -8494,7 +8580,7 @@ public:
    * \param[in] val_coeff - Index of the coefficient.
    * \return Alpha coefficient for the Runge-Kutta integration scheme.
    */
-  su2double* Get_Electric_Field_Dir(void) { return Electric_Field_Dir; }
+  const su2double* Get_Electric_Field_Dir(void) const { return Electric_Field_Dir; }
 
   /*!
    * \brief Check if the user wants to apply the load as a ramp.
@@ -8714,6 +8800,21 @@ public:
    * \brief Get the basis function radius to use for radial basis function interpolation for FSI.
    */
   su2double GetRadialBasisFunctionParameter(void) const { return RadialBasisFunction_Parameter; }
+
+  /*!
+   * \brief Get the kind of inlet face interpolation function to use.
+   */
+  inline unsigned short GetKindInletInterpolationFunction(void) const {return Kind_InletInterpolationFunction;}
+
+  /*!
+   * \brief Get the kind of inlet face interpolation data type.
+   */
+  inline unsigned short GetKindInletInterpolationType (void) const  {return Kind_Inlet_InterpolationType;}
+
+  /*!
+   * \brief Get whether to print inlet interpolated data or not.
+   */
+  bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData;}
 
   /*!
    * \brief Get information about using UQ methodology
@@ -8992,6 +9093,49 @@ public:
   bool GetSinglezone_Driver(void) const { return SinglezoneDriver; }
 
   /*!
+   * \brief Get the Kind of Radiation model applied.
+   * \return Kind of radiation model used.
+   */
+  unsigned short GetKind_RadiationModel(void) const { return Kind_Radiation; }
+
+  /*!
+   * \brief Get the Kind of P1 initialization method applied.
+   * \return Kind of P1 initialization method used.
+   */
+  unsigned short GetKind_P1_Init(void) const { return Kind_P1_Init; }
+
+  /*!
+   * \brief Get the value of the absorption coefficient of the medium.
+   * \return Value of the absorption coefficient of the medium.
+   */
+  su2double GetAbsorption_Coeff(void) const { return Absorption_Coeff; }
+
+  /*!
+   * \brief Get the value of the scattering coefficient of the medium.
+   * \return Value of the scattering coefficient of the medium.
+   */
+  su2double GetScattering_Coeff(void) const { return Scattering_Coeff; }
+
+  /*!
+   * \brief Get the wall emissivity at a boundary.
+   * \param[in] val_index - Index corresponding to the boundary.
+   * \return The wall emissivity.
+   */
+  su2double GetWall_Emissivity(string val_index) const;
+
+  /*!
+   * \brief Get the value of the CFL condition for radiation solvers.
+   * \return Value of the CFL condition for radiation solvers.
+   */
+  su2double GetCFL_Rad(void) const { return CFL_Rad; }
+
+  /*!
+   * \brief Determines if radiation needs to be incorporated to the analysis.
+   * \return Radiation boolean
+   */
+  bool AddRadiation(void) const { return Radiation; }
+
+  /*!
    * \brief Check if the convergence history of each individual zone is written to screen
    * \return YES if the zone convergence history of each individual zone must be written to screen
    */
@@ -9207,5 +9351,10 @@ public:
    * \return Number of threads per rank.
    */
   unsigned long GetLinear_Solver_Prec_Threads(void) const { return Linear_Solver_Prec_Threads; }
+
+  /*!
+   * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
+   */
+  unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
 
 };

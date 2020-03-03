@@ -27,7 +27,7 @@
 
 #include "catch.hpp"
 #include <sstream>
-#include "../../../SU2_CFD/include/numerics_structure.hpp"
+#include "../../../SU2_CFD/include/numerics/CNumerics.hpp"
 
 TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
 
@@ -47,14 +47,15 @@ TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
   const su2double dissipation_j = 0;
   const su2double sensor_i = 0;
   const su2double sensor_j = 0;
-  su2double dissipation_ij;
 
   /*--- Test ---*/
 
   CNumerics numerics;
-  numerics.SetRoe_Dissipation(dissipation_i, dissipation_j,
-                              sensor_i, sensor_j,
-                              dissipation_ij, config);
+  const su2double dissipation_ij = numerics.GetRoe_Dissipation(dissipation_i,
+                                                               dissipation_j,
+                                                               sensor_i,
+                                                               sensor_j,
+                                                               config);
 
   REQUIRE(dissipation_ij >= 0.05);
 
