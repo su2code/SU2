@@ -206,6 +206,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
    *    do this since the working vectors are shared. ---*/
 
   if (!cg_ready) {
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER
     {
       auto nVar = b.GetNVar();
@@ -348,6 +349,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
    a temporary CSysVector object for the copy constructor ---*/
 
   if (!gmres_ready) {
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER
     {
       W.resize(m+1, x);
@@ -495,6 +497,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   /*--- Allocate if not allocated yet ---*/
 
   if (!bcg_ready) {
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER
     {
       auto nVar = b.GetNVar();
@@ -658,6 +661,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
    product (A_x), for the latter two this is done only on the first call to the method. ---*/
 
   if (!smooth_ready) {
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER
     {
       auto nVar = b.GetNVar();
