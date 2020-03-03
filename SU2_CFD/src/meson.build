@@ -167,24 +167,32 @@ if get_option('enable-normal')
 endif
 
 if get_option('enable-autodiff')
-  su2_cfd_src += files(['SU2_CFD.cpp'])
+  su2_cfd_lib_ad = static_library('SU2core_AD',
+                               su2_cfd_src,
+                               install : false,
+		               dependencies : [su2_deps, codi_dep, commonAD_dep],
+                               cpp_args: [default_warning_flags, su2_cpp_args, codi_rev_args])
+  su2_cfd_dep_ad = declare_dependency(link_with: su2_cfd_lib_ad,
+                                   include_directories: su2_cfd_include)
   su2_cfd_ad = executable('SU2_CFD_AD',
-                       su2_cfd_src,
-                       install : true, 
-                       dependencies : [su2_deps, codi_dep, commonAD_dep], 
-                       cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args])
-  # TODO: Add support for directdiff unit tests
-  su2_cfd_dep = disabler()
+                          'SU2_CFD.cpp',
+                          install : true,
+                          dependencies : [su2_cfd_dep_ad, su2_deps, codi_dep, commonAD_dep],
+                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args])
 endif
 
 if get_option('enable-directdiff')
-  su2_cfd_src += files(['SU2_CFD.cpp'])
+  su2_cfd_lib_dd = static_library('SU2core_DIRECTDIFF',
+                               su2_cfd_src,
+                               install : false,
+		               dependencies : [su2_deps, codi_dep, commonDD_dep],
+                               cpp_args: [default_warning_flags, su2_cpp_args, codi_for_args])
+  su2_cfd_dep_dd = declare_dependency(link_with: su2_cfd_lib_dd,
+                                   include_directories: su2_cfd_include)
   su2_cfd_dd = executable('SU2_CFD_DIRECTDIFF',
-                       su2_cfd_src,
-                       install : true, 
-                       dependencies : [su2_deps, codi_dep, commonDD_dep], 
-                       cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args])
-  # TODO: Add support for directdiff unit tests
-  su2_cfd_dep = disabler()
+                          'SU2_CFD.cpp',
+                          install : true,
+                          dependencies : [su2_cfd_dep_dd, su2_deps, codi_dep, commonDD_dep],
+                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args])
 endif
 
