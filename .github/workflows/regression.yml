@@ -100,15 +100,29 @@ jobs:
         include:
           - testdriver: 'test_driver'
             tag: MPI
+          - testdriver: 'test_driver_AD'
+            tag: MPI
+          - testdriver: 'test_driver_DD'
+            tag: MPI
     steps:
       - name: Download Base
         uses: actions/download-artifact@v1
         with:
           name: ${{format('Base{0}', matrix.tag)}}
+      - name: Download Reverse
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{format('Reverse{0}', matrix.tag)}}
+      - name: Download Forward
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{format('Forward{0}', matrix.tag)}}
       - name: Move Binaries
         run: |
           mkdir -p install/bin
           cp -r ${{format('Base{0}', matrix.tag)}}/. install/bin/
+          cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/
+          cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/
           chmod a+x install/bin/*  
       - name: Run Unit Tests
         uses: docker://su2code/test-su2:20191031
