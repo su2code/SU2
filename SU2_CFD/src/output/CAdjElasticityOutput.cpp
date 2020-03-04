@@ -93,9 +93,9 @@ CAdjElasticityOutput::~CAdjElasticityOutput(void) {}
 void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
   // Residuals
-  AddHistoryOutput("ADJOINT_DISP_X", "Res[Ux_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
-  AddHistoryOutput("ADJOINT_DISP_Y", "Res[Uy_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
-  AddHistoryOutput("ADJOINT_DISP_Z", "Res[Uz_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
+  AddHistoryOutput("ADJOINT_DISP_X", "rms[Ux_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the X displacements.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("ADJOINT_DISP_Y", "rms[Uy_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the Y displacements.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("ADJOINT_DISP_Z", "rms[Uz_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the Z displacements.", HistoryFieldType::RESIDUAL);
 
   //Sensitivities
   AddHistoryOutput("SENS_E", "Sens[E]",  ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "");
