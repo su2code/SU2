@@ -210,32 +210,32 @@ def main():
     ####################################################################################
 
     # NACA0012 Airfoil
-    turb_naca0012           = TestCase('unsteady_NACA0012_restart_adjoint')
-    turb_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
-    turb_naca0012.cfg_file  = "naca0012.cfg" 
-    turb_naca0012.test_iter = 5
+    unsteady_naca0012           = TestCase('unsteady_NACA0012_restart_adjoint')
+    unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
+    unsteady_naca0012.cfg_file  = "naca0012.cfg" 
+    unsteady_naca0012.test_iter = 15
     turb_naca0012.test_vals = [0.202376,-0.000030, 2.688758, -0.000032, 1.0679e+00] #last 5 columns
-    turb_naca0012.su2_exec  = "discrete_adjoint.py -f"
-    turb_naca0012.timeout   = 1600
-    turb_naca0012.tol       = 0.0001
-    turb_naca0012.unsteady  = True
-    test_list.append(turb_naca0012)
+    unsteady_naca0012.su2_exec  = "discrete_adjoint.py -f"
+    unsteady_naca0012.timeout   = 1600
+    unsteady_naca0012.tol       = 0.0001
+    unsteady_naca0012.unsteady  = True
+    test_list.append(unsteady_naca0012)
     
     ####################################################################################
     ### Unsteady Disc. adj. compressible RANS Windowed Average  only adjoint ###
     ####################################################################################
 
     # NACA0012 Airfoil
-    turb_naca0012           = TestCase('unsteady_NACA0012_restart_adjoint')
-    turb_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
-    turb_naca0012.cfg_file  = "naca0012.cfg" 
-    turb_naca0012.test_iter = 5
-    turb_naca0012.test_vals = [0.202376,-0.000030, 2.688758, -0.000032, 1.0679e+00] #last 5 columns
-    turb_naca0012.su2_exec  = "discrete_adjoint.py -a True -f"
-    turb_naca0012.timeout   = 1600
-    turb_naca0012.tol       = 0.0001
-    turb_naca0012.unsteady  = True
-    test_list.append(turb_naca0012)
+    unsteady_naca0012           = TestCase('unsteady_NACA0012_restart_adjoint')
+    unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
+    unsteady_naca0012.cfg_file  = "naca0012.cfg" 
+    unsteady_naca0012.test_iter = 15
+    unsteady_naca0012.test_vals = [0.202376,-0.000030, 2.688758, -0.000032, 1.0679e+00] #last 5 columns
+    unsteady_naca0012.su2_exec  = "discrete_adjoint.py -a True -f"
+    unsteady_naca0012.timeout   = 1600
+    unsteady_naca0012.tol       = 0.0001
+    unsteady_naca0012.unsteady  = True
+    test_list.append(unsteady_naca0012)
     
     
     ##########################################################################
