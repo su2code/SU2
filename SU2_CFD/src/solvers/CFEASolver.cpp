@@ -857,7 +857,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
@@ -949,7 +949,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
@@ -1084,7 +1084,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, C
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
@@ -1165,7 +1165,7 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CCon
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
@@ -1249,7 +1249,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
@@ -1350,7 +1350,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
@@ -1616,7 +1616,7 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CCo
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
