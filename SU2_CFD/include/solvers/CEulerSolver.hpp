@@ -264,16 +264,18 @@ protected:
 
 #ifdef HAVE_OMP
   vector<GridColor<> > EdgeColoring;   /*!< \brief Edge colors. */
+  bool ReducerStrategy = false;        /*!< \brief If the reducer strategy is in use. */
 #else
   array<DummyGridColor<>,1> EdgeColoring;
+  /*--- Never use the reducer strategy if compiling for MPI-only. ---*/
+  static constexpr bool ReducerStrategy = false;
 #endif
-  unsigned long ColorGroupSize; /*!< \brief Group size used for coloring, chunk size in edge loops must be a multiple of this. */
 
-  /*--- Edge fluxes, for OpenMP parallelization on coarse grids. As it is difficult to
-   * color them, we first store the fluxes and then compute the sum for each cell.
-   * This strategy is thread-safe but lower performance than writting to both end
-   * points of each edge, so we only use it when necessary, i.e. coarse grids and
-   * with more than one thread per MPI rank. ---*/
+  /*--- Edge fluxes, for OpenMP parallelization off difficult-to-color grids.
+   * We first store the fluxes and then compute the sum for each cell.
+   * This strategy is thread-safe but lower performance than writting to both
+   * end points of each edge, so we only use it when necessary, i.e. when the
+   * coloring does not allow "enough" parallelism. ---*/
 
   CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
 

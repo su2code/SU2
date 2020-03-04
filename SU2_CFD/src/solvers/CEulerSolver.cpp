@@ -208,6 +208,50 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
+#ifdef HAVE_OMP
+  /*--- Get the edge coloring. If the expected parallel efficiency becomes too low setup the
+   *    reducer strategy. Where one loop is performed over edges followed by a point loop to
+   *    sum the fluxes for each cell and set the diagonal of the system matrix. ---*/
+
+  su2double parallelEff = 1.0;
+  const auto& coloring = geometry->GetEdgeColoring(&parallelEff);
+
+  if (!coloring.empty()) {
+    auto nColor = coloring.getOuterSize();
+    EdgeColoring.reserve(nColor);
+
+    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
+      EdgeColoring.emplace_back(coloring.innerIdx(iColor),
+                                coloring.getNumNonZeros(iColor),
+                                geometry->GetEdgeColorGroupSize());
+    }
+  }
+
+  /*--- The decision to use the strategy is local to each rank. ---*/
+  ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
+
+  /*--- The warning messages are global. ---*/
+  su2double minEff = 1.0;
+  SU2_MPI::Reduce(&parallelEff, &minEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+
+  int tmp = ReducerStrategy, numRanksUsingReducer = 0;
+  SU2_MPI::Reduce(&tmp, &numRanksUsingReducer, 1, MPI_INT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+
+  if (minEff < COLORING_EFF_THRESH) {
+    cout << "WARNING: On " << numRanksUsingReducer << " MPI ranks the coloring efficiency was less than "
+         << COLORING_EFF_THRESH << " (min value was " << minEff << ").\n"
+         << "         Those ranks will now use a fallback strategy, better performance may be possible\n"
+         << "         with different value of config option EDGE_COLORING_GROUP_SIZE (default 512)." << endl;
+  }
+
+  if (ReducerStrategy)
+    EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+
+  omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
+#else
+  EdgeColoring[0] = DummyGridColor<>(geometry->GetnEdge());
+#endif
+
   /*--- Jacobians and vector structures for implicit computations ---*/
 
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
@@ -222,7 +266,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -420,32 +464,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   }
   SetBaseClassPointerToNodes();
 
-#ifdef HAVE_OMP
-  /*--- Get the edge coloring, on coarse grids (which are difficult to color) setup the reducer strategy,
-   *    if required (i.e. in parallel). One loop is performed over edges followed by a point loop to sum
-   *    the fluxes for each cell and set the diagonal of the system matrix. ---*/
-
-  const auto& coloring = geometry->GetEdgeColoring();
-
-  if (!coloring.empty()) {
-    auto nColor = coloring.getOuterSize();
-    EdgeColoring.reserve(nColor);
-
-    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      EdgeColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
-    }
-  }
-  ColorGroupSize = geometry->GetEdgeColorGroupSize();
-
-  if ((MGLevel != MESH_0) && (omp_get_max_threads() > 1)) {
-    EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
-  }
-
-  omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
-#else
-  EdgeColoring[0] = DummyGridColor<>(geometry->GetnEdge());
-#endif
-
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
   counter_local = 0;
@@ -485,7 +503,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 
     if ((rank == MASTER_NODE) && (counter_global != 0))
-      cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
+      cout << "Warning. The original solution contains " << counter_global << " points that are not physical." << endl;
   }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
@@ -538,6 +556,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "C.FLOW";
 
+  /*--- Finally, check that the static arrays will be large enough (keep this
+   *    check at the bottom to make sure we consider the "final" values). ---*/
+  if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR) || (nSecondaryVar > MAXNVAR))
+    SU2_MPI::Error("Oops! The CEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -2917,7 +2939,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   for (auto color : EdgeColoring)
   {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
@@ -2991,9 +3013,6 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  assert(nDim <= MAXNDIM && nPrimVar <= MAXNVAR && nSecondaryVar <= MAXNVAR &&
-         "Oops! The CEulerSolver static array sizes are not large enough.");
-
   const auto InnerIter        = config->GetInnerIter();
   const bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
@@ -3027,7 +3046,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   for (auto color : EdgeColoring)
   {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
@@ -3640,7 +3659,7 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
   for (auto color : EdgeColoring)
   {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
@@ -3714,7 +3733,7 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *
   for (auto color : EdgeColoring)
   {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
