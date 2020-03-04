@@ -55,7 +55,7 @@ protected:
   Gamma_Minus_One,              /*!< \brief Fluids's Gamma - 1.0  . */
   ***Inlet_TurbVars = nullptr;  /*!< \brief Turbulence variables at inlet profiles */
 
-  /* Sliding meshes variables */
+  /*--- Sliding meshes variables. ---*/
 
   su2double ****SlidingState = nullptr;
   int **SlidingStateNodes = nullptr;
@@ -64,10 +64,15 @@ protected:
 
 #ifdef HAVE_OMP
   vector<GridColor<> > EdgeColoring;   /*!< \brief Edge colors. */
+  bool ReducerStrategy = false;        /*!< \brief If the reducer strategy is in use. */
 #else
   array<DummyGridColor<>,1> EdgeColoring;
+  /*--- Never use the reducer strategy if compiling for MPI-only. ---*/
+  static constexpr bool ReducerStrategy = false;
 #endif
-  unsigned long ColorGroupSize; /*!< \brief Group size used for coloring, chunk size in edge loops must be a multiple of this. */
+
+  /*--- Edge fluxes for reducer strategy (see the notes in CEulerSolver.hpp). ---*/
+  CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
 
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use.
@@ -78,6 +83,12 @@ protected:
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
+
+  /*!
+   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SumEdgeFluxes(CGeometry* geometry);
 
 public:
 

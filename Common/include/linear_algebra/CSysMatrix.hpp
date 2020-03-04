@@ -95,7 +95,7 @@ private:
   const unsigned long *row_ptr;     /*!< \brief Pointers to the first element in each row. */
   const unsigned long *dia_ptr;     /*!< \brief Pointers to the diagonal element in each row. */
   const unsigned long *col_ind;     /*!< \brief Column index for each of the elements in val(). */
-  vector<const ScalarType*> col_ptr;/*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
+  const unsigned long *col_ptr;     /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
 
   ScalarType *ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
@@ -349,10 +349,12 @@ public:
    * \param[in] neqn - Number of equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] needTranspPtr - If "col_ptr" should be created.
    */
   void Initialize(unsigned long npoint, unsigned long npointdomain,
                   unsigned short nvar, unsigned short neqn,
-                  bool EdgeConnect, CGeometry *geometry, CConfig *config);
+                  bool EdgeConnect, CGeometry *geometry,
+                  CConfig *config, bool needTranspPtr = false);
 
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.

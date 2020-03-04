@@ -50,17 +50,25 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 #ifdef HAVE_OMP
   /*--- Get the edge coloring. ---*/
 
-  const auto& coloring = geometry->GetEdgeColoring();
+  su2double parallelEff = 1.0;
+  const auto& coloring = geometry->GetEdgeColoring(&parallelEff);
 
   if (!coloring.empty()) {
     auto nColor = coloring.getOuterSize();
-    EdgeColoring.resize(nColor);
+    EdgeColoring.reserve(nColor);
 
     for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      EdgeColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
+      EdgeColoring.emplace_back(coloring.innerIdx(iColor),
+                                coloring.getNumNonZeros(iColor),
+                                geometry->GetEdgeColorGroupSize());
     }
   }
-  ColorGroupSize = geometry->GetEdgeColorGroupSize();
+
+  /*--- Local (to the rank) decision to use the reducer strategy, any
+   * warnings have been, or will be, printed by the flow solver. ---*/
+  ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
+  if (ReducerStrategy)
+    EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
 
   nPoint = geometry->GetnPoint();
   omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
@@ -105,7 +113,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   for (auto color : EdgeColoring)
   {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
@@ -236,7 +244,7 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
   for (auto color : EdgeColoring)
   {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
@@ -685,7 +693,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
     for (auto color : EdgeColoring)
     {
     /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+    SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
     for(auto k = 0ul; k < color.size; ++k) {
 
       auto iEdge = color.indices[k];
