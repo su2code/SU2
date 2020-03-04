@@ -183,7 +183,7 @@ def main():
     discadj_cylinder.cfg_file  = "cylinder_Windowing_AD.cfg" 
     discadj_cylinder.test_iter = 9
     discadj_cylinder.test_vals = [3.004406] #last column
-    discadj_cylinder.su2_exec  = "parallel_computation.py -f"
+    discadj_cylinder.su2_exec  = "discrete_adjoint.py -a True -f"
     discadj_cylinder.timeout   = 1600
     discadj_cylinder.tol       = 0.00001
     discadj_cylinder.unsteady  = True
@@ -200,6 +200,22 @@ def main():
     discadj_cylinder.test_iter = 6
     discadj_cylinder.test_vals = [0.202376,-0.000030, 2.688758, -0.000032, 1.0679e+00] #last 5 columns
     discadj_cylinder.su2_exec  = "parallel_computation.py -f"
+    discadj_cylinder.timeout   = 1600
+    discadj_cylinder.tol       = 0.0001
+    discadj_cylinder.unsteady  = True
+    test_list.append(discadj_cylinder)
+    
+    ####################################################################################
+    ### Unsteady Disc. adj. compressible RANS Windowed Average with restart solution ###
+    ####################################################################################
+
+    # NACA0012 Airfoil
+    discadj_cylinder           = TestCase('unsteady_NACA0012_restart_adjoint')
+    discadj_cylinder.cfg_dir   = "disc_adj_rans/naca0012"
+    discadj_cylinder.cfg_file  = "naca0012.cfg" 
+    discadj_cylinder.test_iter = 5
+    discadj_cylinder.test_vals = [0.202376,-0.000030, 2.688758, -0.000032, 1.0679e+00] #last 5 columns
+    discadj_cylinder.su2_exec  = "discrete_adjoint.py -f"
     discadj_cylinder.timeout   = 1600
     discadj_cylinder.tol       = 0.0001
     discadj_cylinder.unsteady  = True
