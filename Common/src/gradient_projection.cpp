@@ -86,7 +86,7 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
  * Call the AD routine for each point to get the whole Jacobian
  * 31.01.2020 T. Dick
  */
-void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double **Jacobian) {
+void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian) {
 
 //// new version
 
@@ -210,7 +210,7 @@ void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CS
             localGradient = my_Gradient;
           #endif
 
-          Jacobian[iDV_index][total_index] = localGradient;
+          Jacobian[iDV_index*nPoint*nDim+total_index] = localGradient;
 
           iDV_index++;
         }
@@ -226,37 +226,19 @@ void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CS
 }
 
 
-/* development comments:
- * Multiply a shifted parameter vector by the Jacobian of the parameterization
- * 17.02.2020 T. Dick
- */
-void MultiplyParameterJacobian(su2double **Jacobian, std::vector<su2double>& shiftedP, std::vector<su2double>& surface_shift){
+MatrixType Cast2Eigenmatrix(CGeometry *geometry, CConfig *config, su2double *Jacobian) {
 
-  unsigned iDV, total_index;
-
-  // calculate the multiplication
-  for (iDV=0; iDV<shiftedP.size(); iDV++) {
-    shiftedP[iDV] = 0.0;
-    for (total_index=0; total_index<surface_shift.size(); total_index++) {
-      shiftedP[iDV] += Jacobian[iDV][total_index] * surface_shift[total_index];
-    }
+  unsigned nDV = config->GetnDV(), nDV_Total;
+  // calculate total number of design variables
+  for (auto iDV=0; iDV<nDV; iDV++) {
+    nDV_Total += config->GetnDV_Value(iDV);
   }
-}
+  unsigned short nDim    = geometry->GetnDim();
+  unsigned long nPoint  = geometry->GetnPoint();
 
+  Eigen::Map<Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> Jacobi_eigen(&Jacobian[0], nDV_Total, nPoint*nDim);
 
-/* development comments:
- * Multiply a shifted surface vector by the transposed Jacobian of the parameterization
- * 17.02.2020 T. Dick
- */
-void MultiplyParameterJacobianTransposed(su2double **Jacobian, std::vector<su2double>& shiftedP, std::vector<su2double>& surface_shift){
+  MatrixType Jacobi_eigen_trans = Jacobi_eigen.transpose();
 
-  unsigned iDV, total_index;
-
-  // calculate the multiplication
-  for (total_index=0; total_index<surface_shift.size(); total_index++) {
-    surface_shift[total_index] = 0.0;
-    for (iDV=0; iDV<shiftedP.size(); iDV++) {
-      surface_shift[total_index] += Jacobian[iDV][total_index] * shiftedP[iDV];
-    }
-  }
+  return Jacobi_eigen_trans;
 }

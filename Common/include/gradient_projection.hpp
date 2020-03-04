@@ -35,6 +35,7 @@
 #include "grid_movement_structure.hpp"
 #include "../../SU2_CFD/include/output/CBaselineOutput.hpp"
 #include "../../SU2_CFD/include/solver_structure.hpp"
+#include "eigen_structure.hpp"
 
 /*!
  * \brief GetParameterizationJacobianForward
@@ -52,21 +53,11 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
  * \param surface_movement
  * \param Jacobian of the parameterization
  */
-void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double **Jacobian);
+void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian);
+
 
 /*!
- * \brief MultiplyParameterJacobian
+ * \brief Cast2Eigenmatrix
  * \param Jacobian of the parameterization
- * \param shiftedP vector in param space
- * \param surface_shift vector in surface space
  */
-void MultiplyParameterJacobian(su2double **Jacobian, std::vector<su2double>& shiftedP, std::vector<su2double>& surface_shift);
-
-/*!
- * \brief MultiplyParameterJacobianTransposed
- * \param Jacobian of the parameterization
- * \param shiftedP vector in param space
- * \param surface_shift vector in surface space
- */
-void MultiplyParameterJacobianTransposed(su2double **Jacobian, std::vector<su2double>& shiftedP, std::vector<su2double>& surface_shift);
-
+MatrixType Cast2Eigenmatrix(CGeometry *geometry, CConfig *config, su2double *Jacobian);

@@ -11,6 +11,7 @@ python = pymod.find_installation()
 
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
+su2_deps     += [declare_dependency(include_directories: '/home/tdick/Programs/eigen')]
 
 if build_machine.system() == 'windows'
   default_warning_flags = []

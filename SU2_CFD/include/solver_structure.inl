@@ -1154,11 +1154,19 @@ inline void CSolver::MultiplyByVolumeDeformationStiffness(CGeometry *geometry, C
 
 inline void CSolver::ApplyGradientSmoothingOnSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker) { }
 
-inline void CSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config, unsigned long val_marker) { }
-
 inline void CSolver::WriteSens2Geometry(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::ReadSens2Geometry(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::MultiplyParameterJacobian(su2double *Jacobian, bool transposed) { }
+
+inline void CSolver::OutputDVGradient() { }
+
+inline void CSolver::CalculateOriginalGradient(CGeometry *geometry, CConfig *config, su2double *param_jacobi) { }
+
+inline void CSolver::SmoothConsecutive(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi) { }
+
+inline void CSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi) { }
 
 inline void CSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }
 

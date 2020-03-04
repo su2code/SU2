@@ -164,6 +164,12 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
   }
 
 
+  for (auto iDV=0; iDV<config->GetnDV(); iDV++) {
+    for(auto iDVvalue=0; iDVvalue<config->GetnDV_Value(iDV); iDVvalue++) {
+      deltaP.push_back(0.0);
+    }
+  }
+
 }
 
 
@@ -596,17 +602,6 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
       }
     }
 
-    /*--- Retrieve the reference normal for one of the points. They go INSIDE the structural domain.
-    normal = geometry->vertex[val_marker][indexVertex[0]]->GetNormal();
-    norm = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      norm += normal[iDim]*normal[iDim];
-    }
-    norm = sqrt(norm);
-    for (iDim = 0; iDim < nDim; iDim++) {
-      normal[iDim] = normal[iDim] / norm;
-    }---*/
-
     element_container[GRAD_TERM][EL_KIND]->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
     element_container[GRAD_TERM][EL_KIND]->ComputeGrad_Linear(Coord);
     unsigned short nGauss = element_container[GRAD_TERM][EL_KIND]->GetnGaussPoints();
@@ -618,17 +613,25 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
 
       for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
 
-        /*
+        normal = geometry->vertex[val_marker][indexVertex[iNode]]->GetNormal();
+        norm = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          norm += normal[iDim]*normal[iDim];
+        }
+        norm = sqrt(norm);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          normal[iDim] = normal[iDim] / norm;
+        }
+
         for (iDim = 0; iDim < nDim; iDim++) {
           if (config->GetSobDebugMode()) {
             normalSens += normal[iDim] * auxVecInp.GetBlock(indexVertex[iNode], iDim);
           } else {
-
-            normalSens += normal[iDim] * solver->GetNodes()->GetSensitivity(indexNode[iNode], iDim);
+            normalSens += normal[iDim] * nodes->GetSensitivity(indexNode[iNode], iDim);
           }
-        }
-        */
-        Residual[0] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * auxVecInp.GetBlock(indexVertex[iNode], 0);
+        }      
+
+        Residual[0] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * normalSens;
         LinSysRes.AddBlock(indexVertex[iNode], Residual);
 
         Residual[0] = 0;
@@ -823,6 +826,8 @@ void CGradientSmoothingSolver::WriteSensitivities(CGeometry *geometry, CSolver *
 
   unsigned long iPoint, total_index;
   unsigned short iDim;
+  su2double* normal;
+  su2double norm;
 
   if ( config->GetSepDim() ) {
 
@@ -835,9 +840,18 @@ void CGradientSmoothingSolver::WriteSensitivities(CGeometry *geometry, CSolver *
     for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
 
       iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+      normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      norm = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        norm += normal[iDim]*normal[iDim];
+      }
+      norm = sqrt(norm);
+      for (iDim = 0; iDim < nDim; iDim++) {
+        normal[iDim] = normal[iDim] / norm;
+      }
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        this->GetNodes()->SetSensitivity(iPoint, iDim, LinSysSol[iVertex]);
+        this->GetNodes()->SetSensitivity(iPoint, iDim, normal[iDim]*LinSysSol[iVertex]);
       }
     }
 
@@ -856,11 +870,13 @@ void CGradientSmoothingSolver::WriteSensitivities(CGeometry *geometry, CSolver *
 
 void CGradientSmoothingSolver::MultiplyByVolumeDeformationStiffness(CGeometry *geometry, CSolver *solver, CVolumetricMovement *grid_movement, CConfig *config, bool Transpose) {
 
+  // TODO: rework this function to be in line with the new layout for sensitivity storage and access.
+
   LinSysRes.SetValZero();
   LinSysSol.SetValZero();
 
   // extract the sensitivities
-  SetBoundaryDerivativesForMultiplication(geometry, solver, config, Transpose);
+  // SetBoundaryDerivativesForMultiplication(geometry, solver, config, Transpose);
 
   for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
     for (auto iDim = 0; iDim < nDim ; iDim++) {
@@ -883,38 +899,6 @@ void CGradientSmoothingSolver::MultiplyByVolumeDeformationStiffness(CGeometry *g
   WriteSensitivities(geometry, solver, config);
 
   delete mat_vec;
-}
-
-
-void CGradientSmoothingSolver::SetBoundaryDerivativesForMultiplication(CGeometry *geometry, CSolver *solver, CConfig *config, bool Transpose) {
-  unsigned short iDim, iMarker;
-  unsigned long iPoint, total_index, iVertex;
-
-  if ( Transpose ) {
-
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_SobolevBC(iMarker) == YES)) {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          for (iDim = 0; iDim < nDim; iDim++) {
-            total_index = iPoint*nDim + iDim;
-            LinSysRes[total_index] = solver->GetNodes()->GetSensitivity(iPoint, iDim);
-            LinSysSol[total_index] = solver->GetNodes()->GetSensitivity(iPoint, iDim);
-          }
-        }
-      }
-    }
-    if (LinSysRes.norm() == 0.0) cout << "Warning: Derivatives are zero!" << endl;
-  } else {
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        total_index = iPoint*nDim + iDim;
-        LinSysRes[total_index] = solver->GetNodes()->GetSensitivity(iPoint, iDim);
-        LinSysSol[total_index] = solver->GetNodes()->GetSensitivity(iPoint, iDim);
-      }
-    }
-  }
 }
 
 
@@ -987,27 +971,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingOnSurface(CGeometry *geomet
   LinSysRes.SetValZero();
 
   auxVecInp.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], nDim, 0.0);
-  auxVecRHS.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], 1, 0.0);
   auxVecInp.SetValZero();
-  auxVecRHS.SetValZero();
-
-  /*--- here we can set a customized rhs for the solver if SobolevDebugMode is set ---*/
-  for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
-
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    //su2double x = geometry->node[iPoint]->GetCoord(0);
-    //su2double y = geometry->node[iPoint]->GetCoord(1);
-    for (iDim=0;iDim<nDim;iDim++) {
-      auxVecInp.SetBlock(iVertex, iDim, 1.0);
-    }
-
-    //iPoint, iDim, -2.0*3.14159265359*3.14159265359*sin(3.14159265359*x)*sin(3.14159265359*y) );
-  }
-
-  ofstream input ("input.txt");
-  auxVecInp.printVec(input);
-  input.close();
 
   Compute_Surface_StiffMatrix(geometry, numerics, config, val_marker);
 
@@ -1017,84 +981,289 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingOnSurface(CGeometry *geomet
     BC_Surface_Dirichlet(geometry, config, val_marker);
   }
 
-  ofstream matrix ("matrix.dat");
-  Jacobian.printMat(matrix);
-  matrix.close();
-
-  for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
-    auxVecRHS.SetBlock(iVertex, 0, LinSysRes.GetBlock(iVertex,0));
-  }
-
-  ofstream rhs ("rhs.txt");
-  auxVecRHS.printVec(rhs);
-  rhs.close();
-
   Solve_Linear_System(geometry, config);
 
   WriteSensitivities(geometry, solver, config, val_marker);
 
-  ofstream output ("output.txt");
-  LinSysSol.printVec(output);
-  output.close();
+  // some tests for the matrix conversion
+
+  ofstream matrix ("matrix.dat");
+  Jacobian.printMat(matrix);
+  matrix.close();
+
+  // blow up the matrix to the fitting dimension
+  auto mat = Jacobian.ConvertToEigen();
+  MatrixType largeMat = MatrixType::Zero(nDim*mat.rows(), nDim*mat.cols());
+  for (auto i=0; i<mat.rows(); i++) {
+    for (auto j=0; j<mat.cols(); j++) {
+      largeMat(2*i,2*j) = mat(i,j);
+      largeMat(2*i+1,2*j+1) = mat(i,j);
+    }
+  }
+
+  ofstream eigen_matrix("eigen_matrix.dat");
+  eigen_matrix << largeMat;
+  eigen_matrix.close();
 
 }
 
 
 void CGradientSmoothingSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
-
   unsigned long iPoint;
   unsigned short iDim;
-
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-
       nodes->SetSensitivity(iPoint,iDim, solver[ADJFLOW_SOL]->GetNodes()->GetSensitivity(iPoint,iDim));
-
     }
   }
-
 }
 
 
 void CGradientSmoothingSolver::OutputSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
-
   unsigned long iPoint;
   unsigned short iDim;
-
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-
       solver[ADJFLOW_SOL]->GetNodes()->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
-
     }
   }
-
 }
 
 
 void CGradientSmoothingSolver::WriteSens2Geometry(CGeometry *geometry, CConfig *config) {
-
   unsigned long iPoint;
   unsigned short iDim;
-
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       geometry->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
     }
   }
-
 }
 
 
 void CGradientSmoothingSolver::ReadSens2Geometry(CGeometry *geometry, CConfig *config) {
-
   unsigned long iPoint;
   unsigned short iDim;
-
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       nodes->SetSensitivity(iPoint, iDim, geometry->GetSensitivity(iPoint,iDim));
     }
   }
+}
+
+
+void CGradientSmoothingSolver::MultiplyParameterJacobian(su2double *Jacobian, bool transposed){
+
+  unsigned iDV, iPoint, iDim,  total_index;
+  su2double Sens;
+
+  if (!transposed) {
+    for (iDV=0; iDV<deltaP.size(); iDV++) {
+      deltaP[iDV] = 0.0;
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          total_index = iPoint*nDim+iDim;
+          deltaP[iDV] += Jacobian[iDV * nPoint*nDim + total_index] * nodes->GetSensitivity(iPoint ,iDim);
+        }
+      }
+    }
+  } else if (transposed) {
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Sens = 0.0;
+        total_index = iPoint*nDim+iDim;
+        for (iDV=0; iDV<deltaP.size(); iDV++) {
+          Sens += Jacobian[iDV * nPoint*nDim + total_index] * deltaP[iDV];
+        }
+        nodes->SetSensitivity(iPoint ,iDim, Sens);
+      }
+    }
+  }
+
+}
+
+
+void CGradientSmoothingSolver::OutputDVGradient() {
+
+  unsigned iDV;
+
+  ofstream delta_p ("delta_p.txt");
+  delta_p.precision(17);
+  for (iDV = 0; iDV < deltaP.size(); iDV++) {
+    delta_p << deltaP[iDV] << ",";
+  }
+  delta_p.close();
+
+}
+
+
+void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CConfig *config, su2double *param_jacobi) {
+
+  cout << endl << "Calculating the original DV gradient." << endl;
+
+  WriteSens2Geometry(geometry,config);
+
+  CVolumetricMovement* grid_movement = new CVolumetricMovement(geometry, config);
+  grid_movement->SetVolume_Deformation(geometry, config, false, true);
+
+  ReadSens2Geometry(geometry,config);
+
+  MultiplyParameterJacobian(param_jacobi, false);
+
+  OutputDVGradient();
+
+}
+
+
+void CGradientSmoothingSolver::WriteReadSurfaceSensitivities(CGeometry *geometry, CConfig *config, VectorType& x, bool write) {
+
+  unsigned total_index, iPoint;
+
+  for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      for (auto iVertex = 0; iVertex <geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (auto iDim = 0; iDim < nDim; iDim++){
+          total_index = iPoint*nDim+iDim;
+          if (write) {
+            nodes->SetSensitivity(iPoint,iDim,x[total_index]);
+          } else {
+            x[total_index]=nodes->GetSensitivity(iPoint,iDim);
+          }
+        }
+      }
+    }
+  }
+
+}
+
+
+void CGradientSmoothingSolver::SmoothConsecutive(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi) {
+
+  cout << endl << "Applying Sobolev Smoothing by consecutive LES solve." << endl;
+
+  unsigned nDV = config->GetnDV(), nDV_Total=0;
+  // calculate total number of design variables
+  for (auto iDV=0; iDV<nDV; iDV++) {
+    nDV_Total += config->GetnDV_Value(iDV);
+  }
+  unsigned short nDim    = geometry->GetnDim();
+  unsigned long nPoint  = geometry->GetnPoint();
+
+  /// get the Eigenmatrices for the LES
+  Eigen::Map<Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> param_jacobi_eigen(&param_jacobi[0], nDV_Total, nPoint*nDim);
+  MatrixType param_jacobi_eigen_trans = param_jacobi_eigen.transpose();
+  QRdecomposition QR(param_jacobi_eigen);
+  QRdecomposition QRT(param_jacobi_eigen_trans);
+  VectorType x, b;
+
+  ofstream DVJac("DV_jacobi.dat");
+  DVJac << param_jacobi_eigen;
+  DVJac.close();
+
+  /// solve back to the surface
+
+  b = Eigen::Map<VectorType, Eigen::Unaligned>(deltaP.data(), deltaP.size());
+  x = QR.solve(b);
+
+  WriteReadSurfaceSensitivities(geometry, config, x, true);
+
+  ///operate on the surface
+  if (config->GetSmoothOnSurface()) {
+
+    cout << endl << "Smooth the system on the surface level. " << endl;
+
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ( config->GetMarker_All_SobolevBC(iMarker) == YES ) {
+        ApplyGradientSmoothingOnSurface(geometry, solver, numerics, config, iMarker);
+      }
+    }
+  }
+
+  /// solve back to the parameters
+
+  WriteReadSurfaceSensitivities(geometry, config, x, false);
+
+  b = QRT.solve(x);
+  std::vector<su2double> vec(b.data(), b.data()+b.size());
+  deltaP=vec;
+
+  OutputDVGradient();
+
+}
+
+
+MatrixType CGradientSmoothingSolver::GetSurfaceStiffnessMatrix(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker) {
+
+  /*--- Initialize the sparse matrix ---*/
+  Jacobian.InitOwnConnectivity(geometry->nVertex[val_marker], 1, 1, val_marker, geometry, config);
+
+  Compute_Surface_StiffMatrix(geometry, numerics, config, val_marker);
+
+  // blow up the matrix to the fitting dimension
+  auto mat = Jacobian.ConvertToEigen();
+  MatrixType largeMat = MatrixType::Zero(nDim*mat.rows(), nDim*mat.cols());
+  for (auto i=0; i<mat.rows(); i++) {
+    for (auto j=0; j<mat.cols(); j++) {
+      largeMat(2*i,2*j) = mat(i,j);
+      largeMat(2*i+1,2*j+1) = mat(i,j);
+    }
+  }
+
+  return largeMat;
+}
+
+
+void CGradientSmoothingSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi) {
+
+  cout << endl << "Applying Sobolev Smoothing by assembling the whole system matrix." << endl;
+
+  unsigned nDV = config->GetnDV(), nDV_Total=0, nSurfaceVertex=0, nVertex;
+  // calculate total number of design variables
+  for (auto iDV=0; iDV<nDV; iDV++) {
+    nDV_Total += config->GetnDV_Value(iDV);
+  }
+  unsigned short nDim    = geometry->GetnDim();
+  unsigned long nPoint  = geometry->GetnPoint();
+
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ( config->GetMarker_All_SobolevBC(iMarker) == YES ) {
+
+      nVertex = geometry->nVertex[iMarker];
+
+      // get the reduces parameterization jacobian
+      MatrixType param_jacobi_eigen(nDV_Total, nVertex*nDim);
+      for (auto iDVindex=0; iDVindex<nDV_Total; iDVindex++) {
+        for (auto iVertex = 0; iVertex <nVertex; iVertex++) {
+          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          for (auto iDim = 0; iDim < nDim; iDim++){
+            auto total_index = iPoint*nDim+iDim;
+            param_jacobi_eigen(iDVindex, iVertex*nDim+iDim) = param_jacobi[iDVindex*nPoint*nDim + total_index];
+          }
+        }
+      }
+
+      // get the stiffness matrix
+      MatrixType stiffness = GetSurfaceStiffnessMatrix(geometry, solver, numerics, config, iMarker);
+
+      // calculate the overall system
+      MatrixType SysMat = param_jacobi_eigen * stiffness * param_jacobi_eigen.transpose();
+
+      ofstream SysMatrix("SysMatrix.dat");
+      SysMatrix << SysMat;
+      SysMatrix.close();
+
+
+      // solve the system
+      QRdecomposition QR(SysMat);
+      VectorType b = Eigen::Map<VectorType, Eigen::Unaligned>(deltaP.data(), deltaP.size());
+      VectorType x = QR.solve(b);
+
+      deltaP = std::vector<su2double>(x.data(), x.data() + x.size());
+
+    }
+  }
+
+  OutputDVGradient();
 
 }

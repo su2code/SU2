@@ -32,6 +32,7 @@
 #include "../iteration_structure.hpp"
 #include "../solver_structure.hpp"
 #include "../integration_structure.hpp"
+#include "../../../Common/include/eigen_structure.hpp"
 
 #include "../numerics_structure.hpp"
 /*--- Transfer includes ---*/

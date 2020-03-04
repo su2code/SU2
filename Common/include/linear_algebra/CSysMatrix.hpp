@@ -40,6 +40,8 @@
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"
 
+#include "../eigen_structure.hpp"
+
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
 #include "mkl.h"
 #ifndef __INTEL_MKL__
@@ -653,8 +655,17 @@ public:
    */
   void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res);
 
-  // function for debugging only
+  /*!
+   * \brief print this matrix to an output stream for debugging purposes
+   * \param[in] file - the putput location
+   */
   void printMat(ofstream &file);
+
+  /*!
+   * \brief convert the matrix into a sparse eigen matrix
+   * \param[out] the type of eigen matrix used.
+   */
+  Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>  ConvertToEigen();
 
   /*!
    * \brief Factorize matrix using PaStiX.

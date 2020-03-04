@@ -568,7 +568,7 @@ void CDiscAdjSinglezoneDriver::OldDerivativeTreatment(){
   /*--- projections between design parameters and mesh coordinates ---*/
 
   if (config->GetSurface2DV()) {
-    GetParameterizationJacobianReverse(geometry, config, surface_movement[ZONE_0], Gradient);
+    //  GetParameterizationJacobianReverse(geometry, config, surface_movement[ZONE_0], Gradient);
 
     // output for some checks
 
@@ -670,49 +670,9 @@ void CDiscAdjSinglezoneDriver::OldDerivativeTreatment(){
     delete [] Gradient[iDVindex];
   }
   delete [] Gradient;
-}
 
-/* development comments:
- * Started with a new function cal since the old one was overloaded with debugging stuff
- * 17.02.2020 T. Dick
- */
-void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
-
-  /// variable declarations
-  unsigned iDV, nDVtotal=0, iPoint, iDim, iMarker, iVertex, total_index;
-  unsigned nPoint = geometry->GetnPoint();
-  for (iDV=0; iDV<config->GetnDV(); iDV++) {
-    nDVtotal += config->GetnDV_Value(iDV);
-  }
-
-  // vector to store the Gradient
-  su2double** param_jacobi;
-  std::vector<su2double> deltaP;
-  std::vector<su2double> deltaSurface(nPoint*nDim, 0.0);
-  param_jacobi =  new su2double*[nDVtotal];
-  for(iDV=0; iDV<nDVtotal; iDV++) {
-    param_jacobi[iDV] = new su2double[nPoint*nDim];
-    deltaP.push_back(0.0);
-  }
-
-  /// get the sensitivities from the adjoint solver to work with
-  solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,solver,config);
-
-  /// get the Jacobian of the parametrization for simplicity in the rest of the function
-  GetParameterizationJacobianReverse(geometry, config, surface_movement[ZONE_0], param_jacobi);
-
-  /// calculate the normal output gradient similar to SU2_DOT
-
-  // calculate the way to the surface
-
-  solver[GRADIENT_SMOOTHING]->WriteSens2Geometry(geometry,config);
-
-  grid_movement[ZONE_0][INST_0] = new CVolumetricMovement(geometry, config);
-  grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry, config, false, true);
-
-  solver[GRADIENT_SMOOTHING]->ReadSens2Geometry(geometry,config);
-
-  // extract surface sensitivity
+//// stuff that might be useful later
+/*
   ofstream delta_surface ("delta_surface.txt");
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_DV(iMarker) == YES) {
@@ -720,8 +680,7 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++) {
           total_index = iPoint*nDim+iDim;
-          deltaSurface[total_index] = solver[GRADIENT_SMOOTHING]->GetNodes()->GetSensitivity(iPoint ,iDim);
-          delta_surface << deltaSurface[total_index] << ",";
+          delta_surface << solver[GRADIENT_SMOOTHING]->GetNodes()->GetSensitivity(iPoint ,iDim) << ",";
         }
       }
     }
@@ -752,28 +711,87 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
     }
   }
   DV_Jacobian.close();
+*/
 
-  // get parameter gradient
-  MultiplyParameterJacobian(param_jacobi, deltaP, deltaSurface);
+}
 
-  ofstream delta_p ("delta_p.txt");
-  delta_p.precision(17);
-  for (iDV = 0; iDV < nDVtotal; iDV++) {
-    delta_p << deltaP[iDV] << ",";
+
+/* development comments:
+ * Started with a new function cal since the old one was overloaded with debugging stuff
+ * 17.02.2020 T. Dick
+ */
+void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
+
+  /// variable declarations
+  unsigned iDV, nDVtotal=0;
+  unsigned nPoint = geometry->GetnPoint();
+  for (iDV=0; iDV<config->GetnDV(); iDV++) {
+    nDVtotal += config->GetnDV_Value(iDV);
   }
-  delta_p.close();
 
-  /// smooth the gradient in several steps
+  // vector to store the Gradient
+  su2double* param_jacobi;
+  param_jacobi =  new su2double[nDVtotal*nPoint*nDim];
+
+  /// get the sensitivities from the adjoint solver to work with
+  solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,solver,config);
+
+  /// get the Jacobian of the parametrization for simplicity in the rest of the function
+  GetParameterizationJacobianReverse(geometry, config, surface_movement[ZONE_0], param_jacobi);
+
+  /// calculate the normal output gradient similar to SU2_DOT
+  solver[GRADIENT_SMOOTHING]->CalculateOriginalGradient(geometry, config, param_jacobi);
 
 
-  /// multiply by the transposed parameter Jacobian to go back to the surface level
-  // MultiplyParameterJacobianTransposed(param_jacobi, deltaP, deltaSurface);
+  ofstream DV_Jacobian ("DV_Jacobian.txt");
+  DV_Jacobian.precision(17);
+  auto iDVindex=0;
+  for (auto iDV=0; iDV<config->GetnDV(); iDV++) {
+    auto nDV_Value =  config->GetnDV_Value(iDV);
+    for (auto iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
 
-  /// smooth the stuff on a surface level
+      for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+        if (config->GetMarker_All_DV(iMarker) == YES) {
+          auto nVertex = geometry->nVertex[iMarker];
+          for (auto iVertex = 0; iVertex <nVertex; iVertex++) {
+            auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            for (auto iDim = 0; iDim < nDim; iDim++){
+              auto total_index = iPoint*nDim+iDim;
+              DV_Jacobian << param_jacobi[iDVindex*nPoint*nDim + total_index] << ",";
+            }
+          }
+        }
+      }
+      iDVindex++;
+      DV_Jacobian << std::endl;
+    }
+  }
+  DV_Jacobian.close();
 
 
-  /// multiply by the parameter Jacobi to go to parameter level
-  // MultiplyParameterJacobian(param_jacobi, deltaP, deltaSurface);
+  if (false) {
 
+    solver[GRADIENT_SMOOTHING]->SmoothConsecutive(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, param_jacobi);
+
+  } else if (true) {
+
+    solver[GRADIENT_SMOOTHING]->SmoothCompleteSystem(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, param_jacobi);
+
+  } else {
+
+    /// smooth the gradient in several steps
+    while (false) {
+      /// multiply by the transposed parameter Jacobian to go back to the surface level
+      solver[GRADIENT_SMOOTHING]->MultiplyParameterJacobian(param_jacobi, true);
+
+      /// smooth the stuff on a surface level
+      //solver[GRADIENT_SMOOTHING]->MultiplyByVolumeDeformationStiffness();
+
+      /// multiply by the parameter Jacobi to go to parameter level
+      solver[GRADIENT_SMOOTHING]->MultiplyParameterJacobian(param_jacobi, false);
+    }
+  }
+
+  delete [] param_jacobi;
 
 }

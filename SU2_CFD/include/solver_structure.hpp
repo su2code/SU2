@@ -69,6 +69,8 @@
 #include "variables/CDiscAdjFEABoundVariable.hpp"
 #include "variables/CMeshElement.hpp"
 
+#include "../../../Common/include/eigen_structure.hpp"
+
 using namespace std;
 
 /*!
@@ -4521,14 +4523,6 @@ public:
   virtual void ApplyGradientSmoothingOnSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker);
 
   /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Compute_Surface_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config, unsigned long val_marker);
-
-  /*!
    * \brief A virtual member
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -4541,6 +4535,33 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ReadSens2Geometry(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief multiply the surface sensitivities with the parametrization Jacobian
+   * \param Jacobian of the parameterization
+   * \param bool to clarify if we multiply by transposed or not
+   */
+  virtual void MultiplyParameterJacobian(su2double *Jacobian, bool transposed);
+
+  /*!
+   * \brief write the DV gradient into a file
+   */
+  virtual void OutputDVGradient();
+
+  /*!
+   * \brief calculate the original DV gradient similar to SU2_DOT_AD
+   */
+  virtual void CalculateOriginalGradient(CGeometry *geometry, CConfig *config, su2double *param_jacobi);
+
+  /*!
+   * \brief Smooth the system by solving each LES in consecutive order
+   */
+  virtual void SmoothConsecutive(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi);
+
+  /*!
+   * \brief Smooth the system by multiplying out the whole system matrix and solving it
+   */
+  virtual void SmoothCompleteSystem(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi);
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
@@ -12354,6 +12375,9 @@ public:
 
   CVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
+  std::vector<su2double> deltaP; /*!< \brief The smoothed gradient with respect to the design variables. */
+
+
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
@@ -12423,11 +12447,6 @@ public:
   void MultiplyByVolumeDeformationStiffness(CGeometry *geometry, CSolver *solver, CVolumetricMovement *grid_movement, CConfig *config, bool Transpose);
 
   /*!
-   * \brief Extract the sensitivities or the sensitivities on the boundary from the discrete adjoint solver
-   */
-  void SetBoundaryDerivativesForMultiplication(CGeometry *geometry, CSolver *solver, CConfig *config, bool Transpose);
-
-  /*!
    * \brief Main routine to apply the method only on the surface
    */
   void ApplyGradientSmoothingOnSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker);
@@ -12482,6 +12501,42 @@ public:
    */
   void ReadSens2Geometry(CGeometry *geometry, CConfig *config);
 
+  /*!
+   * \brief multiply the surface sensitivities with the parametrization Jacobian
+   * \param Jacobian of the parameterization
+   * \param bool to clarify if we multiply by transposed or not
+   */
+  void MultiplyParameterJacobian(su2double *Jacobian, bool transposed);
+
+  /*!
+   * \brief write the DV gradient into a file
+   */
+  void OutputDVGradient();
+
+  /*!
+   * \brief calculate the original DV gradient similar to SU2_DOT_AD
+   */
+  void CalculateOriginalGradient(CGeometry *geometry, CConfig *config, su2double *param_jacobi);
+
+  /*!
+   * \brief read or write the surface sensitivity into an Eigen vector
+   */
+  void WriteReadSurfaceSensitivities(CGeometry *geometry, CConfig *config, VectorType& x, bool write);
+
+  /*!
+   * \brief Smooth the system by solving each LES in consecutive order
+   */
+  void SmoothConsecutive(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi);
+
+  /*!
+   * \brief Return the stiffness matrix
+   */
+  MatrixType GetSurfaceStiffnessMatrix(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker);
+
+  /*!
+   * \brief Smooth the system by multiplying out the whole system matrix and solving it
+   */
+  void SmoothCompleteSystem(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi);
 
 };
 

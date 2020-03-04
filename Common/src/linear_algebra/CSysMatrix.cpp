@@ -1514,6 +1514,14 @@ void CSysMatrix<ScalarType>::printMat(ofstream &file) {
 }
 
 template<class ScalarType>
+Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> CSysMatrix<ScalarType>::ConvertToEigen() {
+
+  Eigen::Map<Eigen::SparseMatrix<ScalarType, Eigen::RowMajor, unsigned long int> > eigen_matrix(nPoint*nVar,nPoint*nVar,nnz,row_ptr,col_ind,matrix);
+  return eigen_matrix;
+
+}
+
+template<class ScalarType>
 template<class OtherType>
 void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b) {
 
