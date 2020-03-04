@@ -67,8 +67,6 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   /*--- Local (to the rank) decision to use the reducer strategy, any
    * warnings have been, or will be, printed by the flow solver. ---*/
   ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
-  if (ReducerStrategy)
-    EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
 
   nPoint = geometry->GetnPoint();
   omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
@@ -222,7 +220,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
-      Jacobian.UpdateBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
+      Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
     }
     else {
       LinSysRes.AddBlock(iPoint, residual);
@@ -295,6 +293,8 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+    LinSysRes.SetBlock_Zero(iPoint);
 
     for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
 
