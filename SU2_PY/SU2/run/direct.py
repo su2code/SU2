@@ -89,7 +89,8 @@ def direct ( config ):
     plot_extension   = su2io.get_extension(plot_format)
 
     # adapt the history_filename, if a restart solution is chosen
-    if konfig.get('RESTART_SOL','NO') == 'YES':
+    # check for 'RESTART_ITER' is to avoid forced restart situation in "compute_polar.py"...
+    if konfig.get('RESTART_SOL','NO') == 'YES' and konfig.get('RESTART_ITER',1) != 1:
         restart_iter = '_'+str(konfig['RESTART_ITER']).zfill(5)
         history_filename = konfig['CONV_FILENAME'] + restart_iter + plot_extension
     else:
