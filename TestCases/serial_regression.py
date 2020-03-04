@@ -281,7 +281,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-12.075893, -16.146770, 1.064326, 0.019770] #last 4 columns
+    turb_naca0012_sa.test_vals = [-12.075861, -16.146770, 1.064326, 0.019770] #last 4 columns
     turb_naca0012_sa.su2_exec  = "SU2_CFD"
     turb_naca0012_sa.new_output = True
     turb_naca0012_sa.timeout   = 3200
@@ -790,7 +790,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.003327, 1.312032, 6.085201, 2.413460] #last 4 columns
+    turb_naca0012_p1c1.test_vals = [-5.003335, 1.312021, 6.085201, 2.413460] #last 4 columns
     turb_naca0012_p1c1.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c1.new_output = True
     turb_naca0012_p1c1.timeout   = 1600
@@ -802,7 +802,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.263992, 1.251332, 6.085705, 2.413434] #last 4 columns
+    turb_naca0012_p1c2.test_vals = [-5.264009, 1.251324, 6.085705, 2.413434] #last 4 columns
     turb_naca0012_p1c2.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c2.new_output = True
     turb_naca0012_p1c2.timeout   = 1600
