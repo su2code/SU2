@@ -205,22 +205,7 @@ def main():
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
     
-    ####################################################################################
-    ### Unsteady Disc. adj. compressible RANS Windowed Average with restart solution ###
-    ####################################################################################
-
-    # NACA0012 Airfoil
-    unsteady_naca0012           = TestCase('unsteady_NACA0012_restart_adjoint')
-    unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
-    unsteady_naca0012.cfg_file  = "naca0012.cfg" 
-    unsteady_naca0012.test_iter = 14
-    unsteady_naca0012.su2_exec  = "discrete_adjoint.py -f"
-    unsteady_naca0012.timeout   = 1600
-    unsteady_naca0012.reference_file = "of_grad_cd_disc.csv.ref"
-    unsteady_naca0012.test_file = "of_grad_cd.csv"
-    pass_list.append(unsteady_naca0012.run_filediff())
-    test_list.append(unsteady_naca0012)
-    
+  
     ####################################################################################
     ### Unsteady Disc. adj. compressible RANS Windowed Average  only adjoint ###
     ####################################################################################
@@ -378,6 +363,22 @@ def main():
     pass_list.append(discadj_topol_optim.run_filediff())
     test_list.append(discadj_topol_optim)
 
+	####################################################################################
+    ### Unsteady Disc. adj. compressible RANS Windowed Average with restart solution ###
+    ####################################################################################
+
+    # NACA0012 Airfoil
+    unsteady_naca0012           = TestCase('unsteady_NACA0012_restart_adjoint')
+    unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
+    unsteady_naca0012.cfg_file  = "naca0012.cfg" 
+    unsteady_naca0012.test_iter = 14
+    unsteady_naca0012.su2_exec  = "discrete_adjoint.py -f"
+    unsteady_naca0012.timeout   = 1600
+    unsteady_naca0012.reference_file = "of_grad_cd_disc.csv.ref"
+    unsteady_naca0012.test_file = "of_grad_cd.csv"
+    pass_list.append(unsteady_naca0012.run_filediff())
+    test_list.append(unsteady_naca0012)
+    
 
     # Tests summary
     print('==================================================================')
