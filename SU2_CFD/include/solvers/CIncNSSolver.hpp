@@ -2,14 +2,14 @@
  * \file CIncNSSolver.hpp
  * \brief Headers of the CIncNSSolver class
  * \author F. Palacios, T. Economon, T. Albring
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -315,7 +315,7 @@ public:
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
                                        CConfig *config,
-                                       bool Output) override;
+                                       bool Output);
 
   /*!
    * \brief Impose a no-slip condition.
@@ -437,14 +437,14 @@ public:
    * \brief Compute the viscous residuals.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void Viscous_Residual(CGeometry *geometry,
                         CSolver **solver_container,
-                        CNumerics *numerics,
+                        CNumerics **numerics_container,
                         CConfig *config,
                         unsigned short iMesh,
                         unsigned short iRKStep) override;
@@ -512,17 +512,5 @@ public:
    * \return Value of the max Strain rate magnitude.
    */
   inline su2double GetStrainMag_Max(void) const override { return StrainMag_Max; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the StrainMag_Max
-   */
-  inline void SetStrainMag_Max(su2double val_strainmag_max) override { StrainMag_Max = val_strainmag_max; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the Omega_Max
-   */
-  inline void SetOmega_Max(su2double val_omega_max) override { Omega_Max = val_omega_max; }
 
 };

@@ -2,14 +2,14 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving multi-zone problems.
  * \author R. Sanchez, O. Burghardt
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -84,7 +84,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
     case FEM_ELASTICITY:
       structural_zone = true;
       break;
-    case HEAT_EQUATION_FVM:
+    case HEAT_EQUATION:
       heat_zone = true;
       break;
     }
@@ -139,6 +139,26 @@ CMultizoneDriver::~CMultizoneDriver(void) {
 
 void CMultizoneDriver::StartSolver() {
 
+  /*--- Find out the minimum of all references times and then set each zone to this (same) value.
+   * (To ensure that all zones run synchronously in time, be it a dimensional or non-dimensionalized one.) ---*/
+
+  su2double Time_Ref = config_container[ZONE_0]->GetTime_Ref();
+
+  for (iZone = 1; iZone < nZone; iZone++) {
+    if (config_container[iZone]->GetTime_Ref() < Time_Ref)
+      Time_Ref = config_container[iZone]->GetTime_Ref();
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    config_container[iZone]->SetTime_Ref(Time_Ref);
+
+    /*--- Recompute some values as the reference time might has changed in iZone ---*/
+
+    config_container[iZone]->SetDelta_UnstTimeND(config_container[iZone]->GetDelta_UnstTime() / Time_Ref);
+    config_container[iZone]->SetTotal_UnstTimeND(config_container[iZone]->GetTotal_UnstTime() / Time_Ref);
+  }
+
 #ifndef HAVE_MPI
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -146,10 +166,6 @@ void CMultizoneDriver::StartSolver() {
 #endif
 
   driver_config->Set_StartTime(StartTime);
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    config_container[iZone]->SetDelta_UnstTimeND(config_container[ZONE_0]->GetDelta_UnstTimeND());
-  }
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
@@ -163,7 +179,7 @@ void CMultizoneDriver::StartSolver() {
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
-  if (driver_config->GetRestart())
+  if (driver_config->GetRestart() && driver_config->GetTime_Domain())
     TimeIter = driver_config->GetRestart_Iter();
 
   /*--- Run the problem until the number of time iterations required is reached. ---*/
@@ -408,7 +424,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
     /*--- Account for all the solvers ---*/
 
     for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL){
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != nullptr){
         solver_container[iZone][INST_0][MESH_0][iSol]->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
       }
     }
@@ -424,7 +440,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
     /*--- Accounting for all the solvers ---*/
     for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
       /*-- If the solver position iSol is enabled --*/
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL){
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != nullptr){
         solver_container[iZone][INST_0][MESH_0][iSol]->UpdateSolution_BGS(geometry_container[iZone][INST_0][MESH_0],
             config_container[iZone]);}
     }

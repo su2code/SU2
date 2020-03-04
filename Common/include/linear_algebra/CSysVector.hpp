@@ -3,14 +3,14 @@
  * \brief Declararion of the vector class used in the solution of
  *        large, distributed, sparse linear systems.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -59,7 +59,7 @@ private:
    * \brief Generic initialization from a scalar or array.
    * \note If val==nullptr vec_val is not initialized, only allocated.
    * \param[in] numBlk - number of blocks locally
-   * \param[in] numBlkDomain - number of blocks locally (without g cells)
+   * \param[in] numBlkDomain - number of blocks locally (without ghost cells)
    * \param[in] numVar - number of variables in each block
    * \param[in] val - default value for elements
    * \param[in] valIsArray - if true val is treated as array
@@ -360,7 +360,11 @@ public:
    * \param[in] val_var - inde of the residual to be set.
    * \return Value of the residual.
    */
-  inline ScalarType GetBlock(unsigned long val_ipoint, unsigned long val_var) const {
+  inline const ScalarType& operator() (unsigned long val_ipoint, unsigned long val_var) const {
     return vec_val[val_ipoint*nVar+val_var];
   }
+  inline ScalarType& operator() (unsigned long val_ipoint, unsigned long val_var) {
+    return vec_val[val_ipoint*nVar+val_var];
+  }
+
 };

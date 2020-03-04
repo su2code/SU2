@@ -2,14 +2,14 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -105,17 +105,19 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
   const auto& coloring = geometry->GetElementColoring();
 
-  auto nColor = coloring.getOuterSize();
-  ElemColoring.resize(nColor);
+  if (!coloring.empty()) {
+    auto nColor = coloring.getOuterSize();
+    ElemColoring.reserve(nColor);
 
-  for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-    ElemColoring[iColor].size = coloring.getNumNonZeros(iColor);
-    ElemColoring[iColor].indices = coloring.innerIdx(iColor);
+    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
+      ElemColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
+    }
   }
-
   ColorGroupSize = geometry->GetElementColorGroupSize();
 
   omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
+#else
+  ElemColoring[0] = DummyGridColor<>(nElement);
 #endif
 
   /*--- Structural parameters ---*/
@@ -184,13 +186,16 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   /*--- Shared reduction variables. ---*/
 
   unsigned long ElemCounter = 0;
-  su2double MaxVolume = -1E22, MinVolume = -1E22;
+  su2double MaxVolume = -1E22, MinVolume = 1E22;
 
   SU2_OMP_PARALLEL
   {
+    /*--- Local min/max, final reduction outside loop. ---*/
+    su2double maxVol = -1E22, minVol = 1E22;
+
     /*--- Loop over the elements in the domain. ---*/
 
-    SU2_OMP(for schedule(dynamic,omp_chunk_size) reduction(max:MaxVolume,MinVolume))
+    SU2_OMP(for schedule(dynamic,omp_chunk_size) reduction(+:ElemCounter) nowait)
     for (unsigned long iElem = 0; iElem < nElement; iElem++) {
 
       int thread = omp_get_thread_num();
@@ -225,19 +230,21 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
       if (nDim == 2) ElemVolume = fea_elem->ComputeArea();
       else           ElemVolume = fea_elem->ComputeVolume();
 
-      MaxVolume = max(MaxVolume, ElemVolume);
-      MinVolume = max(MinVolume, -1.0*ElemVolume);
+      maxVol = max(maxVol, ElemVolume);
+      minVol = min(minVol, ElemVolume);
 
       if (updated) element[iElem].SetCurr_Volume(ElemVolume);
       else element[iElem].SetRef_Volume(ElemVolume);
 
       /*--- Count distorted elements. ---*/
-      if (ElemVolume <= 0.0) {
-        SU2_OMP(atomic)
-        ElemCounter++;
-      }
+      if (ElemVolume <= 0.0) ElemCounter++;
     }
-    MinVolume *= -1.0;
+    SU2_OMP_CRITICAL
+    {
+      MaxVolume = max(MaxVolume, maxVol);
+      MinVolume = min(MinVolume, minVol);
+    }
+    SU2_OMP_BARRIER
 
     SU2_OMP_MASTER
     {
@@ -483,7 +490,7 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
   /*--- Update the grid coordinates using the solution of the linear system ---*/
 
   /*--- LinSysSol contains the absolute x, y, z displacements. ---*/
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       auto total_index = iPoint*nDim + iDim;
@@ -528,7 +535,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
   /*--- Compute the velocity of each node in the domain of the current rank
    (halo nodes are not computed as the grid velocity is later communicated). ---*/
 
-  SU2_OMP(parallel for schedule(static,omp_chunk_size))
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Coordinates of the current point at n+1, n, & n-1 time levels. ---*/

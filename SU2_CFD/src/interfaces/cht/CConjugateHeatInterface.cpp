@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,13 +57,13 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
                || (donor_config->GetKind_Solver() == RANS)
                || (donor_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
                || (donor_config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool incompressible_flow = ((donor_config->GetKind_Solver() == INC_NAVIER_STOKES)
+  bool incompressible_flow = (((donor_config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (donor_config->GetKind_Solver() == INC_RANS)
                || (donor_config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
                || (donor_config->GetKind_Solver() == DISC_ADJ_INC_RANS))
-               && (donor_config->GetEnergy_Equation());
-  bool heat_equation = (donor_config->GetKind_Solver() == HEAT_EQUATION_FVM
-               || donor_config->GetKind_Solver() == DISC_ADJ_HEAT);
+               && (donor_config->GetEnergy_Equation()));
+  bool heat_equation = ((donor_config->GetKind_Solver() == HEAT_EQUATION)
+               || (donor_config->GetKind_Solver() == DISC_ADJ_HEAT));
 
   Coord         = donor_geometry->node[Point_Donor]->GetCoord();
 

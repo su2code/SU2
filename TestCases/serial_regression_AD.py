@@ -3,14 +3,14 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.0 "Blackbird"
+#  \version 7.0.2 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -236,6 +236,21 @@ def main():
     test_list.append(discadj_heat)
 
     ###################################
+    ### Coupled RHT-CFD Adjoint     ###
+    ###################################
+
+    # Coupled discrete adjoint for radiative heat transfer in heated cylinder
+    discadj_rht                = TestCase('discadj_rht')
+    discadj_rht.cfg_dir        = "radiation/p1adjoint"
+    discadj_rht.cfg_file       = "configp1adjoint.cfg"
+    discadj_rht.test_iter      = 10
+    discadj_rht.su2_exec       = "discrete_adjoint.py -f"
+    discadj_rht.timeout        = 1600
+    discadj_rht.reference_file = "of_grad_cd.csv.ref"
+    discadj_rht.test_file      = "of_grad_cd.csv"
+    test_list.append(discadj_rht)
+
+    ###################################
     ### Coupled FSI Adjoint         ###
     ###################################
    
@@ -260,7 +275,7 @@ def main():
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
     discadj_cht.test_vals = [-2.381658, -3.099873, -3.099844, -3.099841] #last 4 columns
-    discadj_cht.su2_exec  = "parallel_computation.py -f"
+    discadj_cht.su2_exec  = "SU2_CFD_AD"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
     test_list.append(discadj_cht)

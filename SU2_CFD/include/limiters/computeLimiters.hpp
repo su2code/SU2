@@ -2,14 +2,14 @@
  * \file computeLimiters.hpp
  * \brief Compute limiters wrapper function.
  * \author P. Gomes
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -58,13 +58,10 @@ computeLimiters_impl<FieldType, GradientType, KIND>(solver, kindMpiComm, \
   switch (LimiterKind) {
     case NO_LIMITER:
     {
-      SU2_OMP_PARALLEL
-      {
-        SU2_OMP_FOR_STAT(512)
-        for(size_t iPoint = 0; iPoint < geometry.GetnPoint(); ++iPoint)
-          for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
-           limiter(iPoint, iVar) = 1.0;
-      }
+      SU2_OMP_FOR_STAT(512)
+      for(size_t iPoint = 0; iPoint < geometry.GetnPoint(); ++iPoint)
+        for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
+         limiter(iPoint, iVar) = 1.0;
       break;
     }
     case BARTH_JESPERSEN:

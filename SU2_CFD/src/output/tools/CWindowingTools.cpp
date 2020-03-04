@@ -2,14 +2,15 @@
  * \file signal_processing_toolbox.cpp
  * \brief Signal processing tools
  * \author S. Schotthöfer
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
+>>>>>>> d1118950d691d9d01401e3d5c7460d23a654f588
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
