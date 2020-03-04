@@ -133,6 +133,8 @@ const int SU2_CONN_SIZE   = 10;  /*!< \brief Size of the connectivity array that
                                              that we read from a mesh file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
 const int SU2_CONN_SKIP   = 2;   /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
 
+const su2double COLORING_EFF_THRESH = 0.8;  /*!< \brief Below this value the reducer strategy is used instead. */
+
 /*!
  * \brief Boolean answers
  */

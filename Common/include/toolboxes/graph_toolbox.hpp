@@ -59,6 +59,7 @@ private:
   su2vector<Index_t> m_outerPtr; /*!< \brief Start positions of the inner indices for each outer index. */
   su2vector<Index_t> m_innerIdx; /*!< \brief Inner indices of the non zero entries. */
   su2vector<Index_t> m_diagPtr;  /*!< \brief Position of the diagonal entry. */
+  su2vector<Index_t> m_innerIdxTransp; /*!< \brief Position of the transpose non zero entries, requires symmetry. */
 
 public:
   using IndexType = Index_t;
@@ -109,6 +110,23 @@ public:
     m_diagPtr.resize(getOuterSize());
     for(Index_t k = 0; k < getOuterSize(); ++k)
       m_diagPtr(k) = findInnerIdx(k,k);
+  }
+
+  /*!
+   * \brief Build a list of pointers to the transpose entries of the pattern, requires symmetry.
+   */
+  void buildTransposePtr() {
+    if(!m_innerIdxTransp.empty()) return;
+
+    m_innerIdxTransp.resize(getNumNonZeros());
+
+    for(Index_t i = 0; i < getOuterSize(); ++i) {
+      for(Index_t k = m_outerPtr(i); k < m_outerPtr(i+1); ++k) {
+        auto j = m_innerIdx(k);
+        m_innerIdxTransp(k) = findInnerIdx(j,i);
+        assert(m_innerIdxTransp(k) != m_innerIdx.size() && "The pattern is not symmetric.");
+      }
+    }
   }
 
   /*!
@@ -222,6 +240,14 @@ public:
   inline const Index_t* diagPtr() const {
     assert(!m_diagPtr.empty() && "Diagonal map has not been built.");
     return m_diagPtr.data();
+  }
+
+  /*!
+   * \return Raw pointer to the transpose pointer vector.
+   */
+  inline const su2vector<Index_t>& transposePtr() const {
+    assert(!m_innerIdxTransp.empty() && "Transpose map has not been built.");
+    return m_innerIdxTransp;
   }
 
   /*!
@@ -404,7 +430,7 @@ CEdgeToNonZeroMap<Index_t> mapEdgesToSparsePattern(Geometry_t& geometry,
  * \param[out] indexColor - Optional, vector with colors given to the outer indices.
  * \return Coloring in the same type of the input pattern.
  */
-template<class T, typename Color_t = char, size_t MaxColors = 64, size_t MaxMB = 128>
+template<class T, typename Color_t = char, size_t MaxColors = 32, size_t MaxMB = 128>
 T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool balanceColors = false,
                      std::vector<Color_t>* indexColor = nullptr)
 {
@@ -553,9 +579,11 @@ struct GridColor
   static_assert(std::is_integral<T>::value,"");
 
   const T size;
+  T groupSize;
   const T* const indices;
 
-  GridColor(const T* idx = nullptr, T sz = 0) : size(sz), indices(idx) { }
+  GridColor(const T* idx = nullptr, T sz = 0, T grp = 0) :
+    size(sz), groupSize(grp), indices(idx) { }
 
   inline const T* begin() const {return indices;}
   inline const T* end() const {return indices+size;}
@@ -592,3 +620,25 @@ struct DummyGridColor
   inline IteratorLikeInt begin() const {return IteratorLikeInt(0);}
   inline IteratorLikeInt end() const {return IteratorLikeInt(size);}
 };
+
+
+/*!
+ * \brief Computes the efficiency of a grid coloring for given number of threads and chunk size.
+ */
+template<class SparsePattern>
+su2double coloringEfficiency(const SparsePattern& coloring, int numThreads, int chunkSize)
+{
+  using Index_t = typename SparsePattern::IndexType;
+
+  /*--- Ideally compute time is proportional to total work over number of threads. ---*/
+  su2double ideal = coloring.getNumNonZeros() / su2double(numThreads);
+
+  /*--- In practice the total work is quantized first by colors and then by chunks. ---*/
+  auto roundUpDiv = [](int n, int d){return (n+d-1)/d;};
+
+  Index_t real = 0;
+  for(Index_t color = 0; color < coloring.getOuterSize(); ++color)
+    real += chunkSize * roundUpDiv(roundUpDiv(coloring.getNumNonZeros(color), chunkSize), numThreads);
+
+  return ideal / real;
+}
