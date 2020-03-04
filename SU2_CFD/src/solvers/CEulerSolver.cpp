@@ -3647,53 +3647,35 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
 void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
 
-  nodes->SetUnd_LaplZero();
+  /*--- Loop domain points. ---*/
 
-  /*--- Loop over edge colors. ---*/
-  for (auto color : EdgeColoring)
-  {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-  for(auto k = 0ul; k < color.size; ++k) {
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    auto iEdge = color.indices[k];
+    const bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
 
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
-
-    /*--- Solution differences ---*/
-
-    su2double Diff[MAXNVAR] = {0.0};
-
+    /*--- Initialize. ---*/
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Diff[iVar] = nodes->GetSolution(iPoint,iVar) - nodes->GetSolution(jPoint,iVar);
+      nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
 
-    /*--- Correction for compressible flows which use the enthalpy ---*/
+    /*--- Loop over the neighbors of point i. ---*/
+    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
+    {
+      auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
 
-    Diff[nVar-1] += nodes->GetPressure(iPoint) - nodes->GetPressure(jPoint);
+      /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
+      if (boundary_i && !boundary_j) continue;
 
-    bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+      /*--- Add solution differences, with correction for compressible flows which use the enthalpy. ---*/
 
-    /*--- Both points inside the domain, or both in the boundary ---*/
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        nodes->AddUnd_Lapl(iPoint, iVar, nodes->GetSolution(jPoint,iVar)-nodes->GetSolution(iPoint,iVar));
 
-    if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
-      if (geometry->node[iPoint]->GetDomain()) nodes->SubtractUnd_Lapl(iPoint, Diff);
-      if (geometry->node[jPoint]->GetDomain()) nodes->AddUnd_Lapl(jPoint, Diff);
+      nodes->AddUnd_Lapl(iPoint, nVar-1, nodes->GetPressure(jPoint)-nodes->GetPressure(iPoint));
     }
 
-    /*--- iPoint inside the domain, jPoint on the boundary ---*/
-
-    if (!boundary_i && boundary_j)
-      if (geometry->node[iPoint]->GetDomain()) nodes->SubtractUnd_Lapl(iPoint, Diff);
-
-    /*--- jPoint inside the domain, iPoint on the boundary ---*/
-
-    if (boundary_i && !boundary_j)
-      if (geometry->node[jPoint]->GetDomain()) nodes->AddUnd_Lapl(jPoint, Diff);
-
   }
-  } // end color loop
 
   SU2_OMP_MASTER
   {
