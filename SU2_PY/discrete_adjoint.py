@@ -132,11 +132,11 @@ def discrete_adjoint( filename           ,
         state.update(info)
 
         # Workaround, since expandTime relies on UNST_ADJOINT_ITER to determine number of solution files.
-        if restart_sol_activated == True:
+        if restart_sol_activated:
             unst_adj_iter = konfig['UNST_ADJOINT_ITER']
             konfig['UNST_ADJOINT_ITER'] =  konfig['TIME_ITER'] - int(konfig['RESTART_ITER'])
         SU2.io.restart2solution(konfig,state)
-        if restart_sol_activated == True:
+        if restart_sol_activated:
             konfig['UNST_ADJOINT_ITER'] = unst_adj_iter
     # Gradient Projection
     info = SU2.run.projection(konfig,step)
