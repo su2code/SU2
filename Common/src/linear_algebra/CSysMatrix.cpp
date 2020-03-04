@@ -1319,6 +1319,8 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
 
     auto block_ii = &matrix[dia_ptr[iPoint]*nVar*nEqn];
 
+    for (auto k = 0ul; k < nVar*nEqn; ++k) block_ii[k] = 0.0;
+
     for (auto k = row_ptr[iPoint]; k < row_ptr[iPoint+1]; ++k) {
       auto block_ji = &matrix[col_ptr[k]*nVar*nEqn];
       if (block_ji != block_ii) MatrixSubtraction(block_ii, block_ji, block_ii);

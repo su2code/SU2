@@ -241,7 +241,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     cout << "WARNING: On " << numRanksUsingReducer << " MPI ranks the coloring efficiency was less than "
          << COLORING_EFF_THRESH << " (min value was " << minEff << ").\n"
          << "         Those ranks will now use a fallback strategy, better performance may be possible\n"
-         << "         with different value of config option EDGE_COLORING_GROUP_SIZE (default 512)." << endl;
+         << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)." << endl;
   }
 
   if (ReducerStrategy)
@@ -2627,9 +2627,14 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     }
   }
 
-  /*--- Initialize the Jacobian matrices ---*/
+  /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
+   *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
 
-  if (implicit && !disc_adjoint) Jacobian.SetValZero();
+  if(!ReducerStrategy && !Output) {
+    LinSysRes.SetValZero();
+    if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
+    else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
+  }
 
 }
 
@@ -2650,11 +2655,6 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
     /* Check for non-realizable states for reporting. */
 
     if (!physical) nonPhysicalPoints++;
-
-    /*--- Initialize the convective, source and viscous residual vector ---*/
-
-    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
-
   }
 
   return nonPhysicalPoints;
@@ -2981,13 +2981,11 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
       if (implicit)
-        Jacobian.UpdateBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
+        Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
     }
     else {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-
-      /*--- Set implicit computation ---*/
       if (implicit)
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
@@ -3209,7 +3207,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
       if (implicit)
-        Jacobian.UpdateBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
+        Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
     }
     else {
       LinSysRes.AddBlock(iPoint, residual);
@@ -3257,6 +3255,8 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+    LinSysRes.SetBlock_Zero(iPoint);
 
     for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
 

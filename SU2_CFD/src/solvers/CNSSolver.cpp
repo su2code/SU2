@@ -342,9 +342,14 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SU2_OMP_BARRIER
   }
 
-  /*--- Initialize the Jacobian matrices ---*/
+  /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
+   *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
 
-  if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
+  if(!ReducerStrategy && !Output) {
+    LinSysRes.SetValZero();
+    if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
+    else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
+  }
 
 }
 
@@ -382,10 +387,6 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
     /*--- Check for non-realizable states for reporting. ---*/
 
     nonPhysicalPoints += !physical;
-
-    /*--- Initialize the convective, source and viscous residual vector ---*/
-
-    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
 
   }
 

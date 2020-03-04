@@ -586,11 +586,13 @@ public:
    * \brief Update 2 blocks ij and ji (add to i* sub from j*).
    * \note The template parameter Sign, can be used create a "subtractive"
    *       update i.e. subtract from row i and add to row j instead.
+   *       The parameter Overwrite allows completely writing over the
+   *       current values held by the matrix.
    * \param[in] edge - Index of edge that connects iPoint and jPoint.
    * \param[in] block_i - Subs from ji.
    * \param[in] block_j - Adds to ij.
    */
-  template<class OtherType, int Sign = 1>
+  template<class OtherType, int Sign = 1, bool Overwrite = false>
   inline void UpdateBlocks(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
 
     ScalarType *bij = &matrix[edge_ptr(iEdge,0)*nVar*nEqn];
@@ -600,8 +602,8 @@ public:
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nEqn; jVar++) {
-        bij[offset] += PassiveAssign<ScalarType,OtherType>(block_j[iVar][jVar]) * Sign;
-        bji[offset] -= PassiveAssign<ScalarType,OtherType>(block_i[iVar][jVar]) * Sign;
+        bij[offset] = (Overwrite? ScalarType(0) : bij[offset]) + PassiveAssign<ScalarType,OtherType>(block_j[iVar][jVar]) * Sign;
+        bji[offset] = (Overwrite? ScalarType(0) : bji[offset]) - PassiveAssign<ScalarType,OtherType>(block_i[iVar][jVar]) * Sign;
         ++offset;
       }
     }
@@ -613,6 +615,14 @@ public:
   template<class OtherType>
   inline void UpdateBlocksSub(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
     UpdateBlocks<OtherType,-1>(iEdge, block_i, block_j);
+  }
+
+  /*!
+   * \brief Short-hand for the "additive overwrite" version of UpdateBlocks.
+   */
+  template<class OtherType>
+  inline void SetBlocks(unsigned long iEdge, const OtherType* const* block_i, const OtherType* const* block_j) {
+    UpdateBlocks<OtherType,1,true>(iEdge, block_i, block_j);
   }
 
   /*!
