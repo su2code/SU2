@@ -112,8 +112,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size (unless we use the reducer). ---*/
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, ReducerStrategy? 1 : color.groupSize))
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
@@ -216,80 +216,96 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
     }
 
-    /*--- Add and subtract residual ---*/
+    /*--- Update convective residual value ---*/
 
     auto residual = numerics->ComputeResidual(config);
 
-    LinSysRes.AddBlock(iPoint, residual);
-    LinSysRes.SubtractBlock(jPoint, residual);
+    if (ReducerStrategy) {
+      EdgeFluxes.SetBlock(iEdge, residual);
+      Jacobian.UpdateBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
+    }
+    else {
+      LinSysRes.AddBlock(iPoint, residual);
+      LinSysRes.SubtractBlock(jPoint, residual);
+      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+    }
 
-    /*--- Implicit part ---*/
+    /*--- Viscous contribution. ---*/
 
-    Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-
+    Viscous_Residual(iEdge, geometry, solver_container,
+                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
   } // end color loop
 
+  if (ReducerStrategy) {
+    SumEdgeFluxes(geometry);
+    Jacobian.SetDiagonalAsColumnSum();
+  }
 }
 
-void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
-                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                   CNumerics *numerics, CConfig *config) {
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  /*--- Pick one numerics object per thread. ---*/
-  CNumerics* numerics = numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS];
+  /*--- Points in edge ---*/
 
-  /*--- Loop over edge colors. ---*/
-  for (auto color : EdgeColoring)
-  {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
-  for(auto k = 0ul; k < color.size; ++k) {
+  auto iPoint = geometry->edge[iEdge]->GetNode(0);
+  auto jPoint = geometry->edge[iEdge]->GetNode(1);
 
-    auto iEdge = color.indices[k];
+  /*--- Points coordinates, and normal vector ---*/
 
-    /*--- Points in edge ---*/
+  numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                     geometry->node[jPoint]->GetCoord());
+  numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+  /*--- Conservative variables w/o reconstruction ---*/
 
-    /*--- Points coordinates, and normal vector ---*/
+  numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint),
+                         flowNodes->GetPrimitive(jPoint));
 
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                       geometry->node[jPoint]->GetCoord());
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+  /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-    /*--- Conservative variables w/o reconstruction ---*/
+  numerics->SetTurbVar(nodes->GetSolution(iPoint),
+                       nodes->GetSolution(jPoint));
+  numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
+                               nodes->GetGradient(jPoint));
 
-    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint),
-                           flowNodes->GetPrimitive(jPoint));
+  /*--- Menter's first blending function (only SST)---*/
+  if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+    numerics->SetF1blending(nodes->GetF1blending(iPoint),
+                            nodes->GetF1blending(jPoint));
 
-    /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+  /*--- Compute residual, and Jacobians ---*/
 
-    numerics->SetTurbVar(nodes->GetSolution(iPoint),
-                         nodes->GetSolution(jPoint));
-    numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
-                                 nodes->GetGradient(jPoint));
+  auto residual = numerics->ComputeResidual(config);
 
-    /*--- Menter's first blending function (only SST)---*/
-    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-      numerics->SetF1blending(nodes->GetF1blending(iPoint),
-                              nodes->GetF1blending(jPoint));
-
-    /*--- Compute residual, and Jacobians ---*/
-
-    auto residual = numerics->ComputeResidual(config);
-
-    /*--- Add and subtract residual, and update Jacobians ---*/
-
+  if (ReducerStrategy) {
+    EdgeFluxes.SubtractBlock(iEdge, residual);
+    Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
+  }
+  else {
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
-
     Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-
   }
-  } // end color loop
+}
+
+void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
+
+      auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+
+      if (iPoint == geometry->edge[iEdge]->GetNode(0))
+        LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+      else
+        LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+    }
+  }
 
 }
 
@@ -693,7 +709,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
     for (auto color : EdgeColoring)
     {
     /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
+    SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
     for(auto k = 0ul; k < color.size; ++k) {
 
       auto iEdge = color.indices[k];
