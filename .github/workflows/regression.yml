@@ -54,8 +54,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        testscript: ['parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py']
+        testscript: ['tutorials.py', 'parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py']
         include:
+          - testscript: 'tutorials.py'
+            tag: MPI
           - testscript: 'parallel_regression.py'
             tag: MPI
           - testscript: 'parallel_regression_AD.py'
@@ -85,7 +87,7 @@ jobs:
           cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/
           chmod a+x install/bin/*               
       - name: Run Tests in Container
-        uses: docker://su2code/test-su2:20191031
+        uses: docker://su2code/test-su2:20200303
         with:
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
   
