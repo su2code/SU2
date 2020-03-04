@@ -124,7 +124,7 @@ def discrete_adjoint( filename           ,
     # Run all-at-once
     if compute:
         restart_sol_activated = False
-        if konfig.get('RESTART_SOL','NO') == 'YES':
+        if konfig.get('TIME_DOMAIN','NO') == 'YES' and konfig.get('RESTART_SOL','NO') == 'YES':
             restart_sol_activated = True
             konfig['TIME_ITER'] = konfig['TIME_ITER'] - int(konfig['RESTART_ITER'])
             konfig.RESTART_SOL = 'NO'
