@@ -213,7 +213,7 @@ def main():
     unsteady_naca0012           = TestCase('unsteady_NACA0012_restart_adjoint')
     unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
     unsteady_naca0012.cfg_file  = "naca0012.cfg" 
-    unsteady_naca0012.test_iter = 15
+    unsteady_naca0012.test_iter = 14
     unsteady_naca0012.test_vals = [0.202376,-0.000030, 2.688758, -0.000032, 1.0679e+00] #last 5 columns
     unsteady_naca0012.su2_exec  = "discrete_adjoint.py -f"
     unsteady_naca0012.timeout   = 1600
@@ -226,10 +226,10 @@ def main():
     ####################################################################################
 
     # NACA0012 Airfoil
-    unsteady_naca0012           = TestCase('unsteady_NACA0012_restart_adjoint')
+    unsteady_naca0012           = TestCase('unsteady_NACA0012_adjoint_only')
     unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
     unsteady_naca0012.cfg_file  = "naca0012.cfg" 
-    unsteady_naca0012.test_iter = 15
+    unsteady_naca0012.test_iter = 14
     unsteady_naca0012.test_vals = [0.202376,-0.000030, 2.688758, -0.000032, 1.0679e+00] #last 5 columns
     unsteady_naca0012.su2_exec  = "discrete_adjoint.py -a True -f"
     unsteady_naca0012.timeout   = 1600

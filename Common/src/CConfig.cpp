@@ -6612,7 +6612,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if(Cauchy_Elems <1){
       SU2_MPI::Error(to_string(Cauchy_Elems) + string(" Cauchy elements are no viable input. Please check your configuration file."), CURRENT_FUNCTION);
     }
-    cout << "Begin windowed time average at iteration " << Wnd_StartConv_Iter << "." << endl;
+    cout << "Begin windowed time average at iteration " << StartWindowIteration << "." << endl;
 
     if(Wnd_Cauchy_Crit){
       cout << "Begin time convergence monitoring at iteration " << Wnd_StartConv_Iter + StartWindowIteration << "." << endl;
