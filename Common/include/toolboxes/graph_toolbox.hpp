@@ -28,6 +28,7 @@
 #pragma once
 
 #include "C2DContainer.hpp"
+#include "../omp_structure.hpp"
 
 #include <set>
 #include <vector>
@@ -108,6 +109,8 @@ public:
     if(!m_diagPtr.empty()) return;
 
     m_diagPtr.resize(getOuterSize());
+
+    SU2_OMP_PARALLEL_(for schedule(static,roundUpDiv(getOuterSize(),omp_get_max_threads())))
     for(Index_t k = 0; k < getOuterSize(); ++k)
       m_diagPtr(k) = findInnerIdx(k,k);
   }
@@ -120,6 +123,7 @@ public:
 
     m_innerIdxTransp.resize(getNumNonZeros());
 
+    SU2_OMP_PARALLEL_(for schedule(static,roundUpDiv(getOuterSize(),omp_get_max_threads())))
     for(Index_t i = 0; i < getOuterSize(); ++i) {
       for(Index_t k = m_outerPtr(i); k < m_outerPtr(i+1); ++k) {
         auto j = m_innerIdx(k);
@@ -634,8 +638,6 @@ su2double coloringEfficiency(const SparsePattern& coloring, int numThreads, int 
   su2double ideal = coloring.getNumNonZeros() / su2double(numThreads);
 
   /*--- In practice the total work is quantized first by colors and then by chunks. ---*/
-  auto roundUpDiv = [](int n, int d){return (n+d-1)/d;};
-
   Index_t real = 0;
   for(Index_t color = 0; color < coloring.getOuterSize(); ++color)
     real += chunkSize * roundUpDiv(roundUpDiv(coloring.getNumNonZeros(color), chunkSize), numThreads);
