@@ -230,18 +230,21 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- The decision to use the strategy is local to each rank. ---*/
   ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
 
-  /*--- The warning messages are global. ---*/
-  su2double minEff = 1.0;
-  SU2_MPI::Reduce(&parallelEff, &minEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+  /*--- If the reducer strategy is not being forced (by EDGE_COLORING_GROUP_SIZE=0) print some messages. ---*/
+  if (config->GetEdgeColoringGroupSize() != 1<<30) {
 
-  int tmp = ReducerStrategy, numRanksUsingReducer = 0;
-  SU2_MPI::Reduce(&tmp, &numRanksUsingReducer, 1, MPI_INT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    su2double minEff = 1.0;
+    SU2_MPI::Reduce(&parallelEff, &minEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
 
-  if (minEff < COLORING_EFF_THRESH) {
-    cout << "WARNING: On " << numRanksUsingReducer << " MPI ranks the coloring efficiency was less than "
-         << COLORING_EFF_THRESH << " (min value was " << minEff << ").\n"
-         << "         Those ranks will now use a fallback strategy, better performance may be possible\n"
-         << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)." << endl;
+    int tmp = ReducerStrategy, numRanksUsingReducer = 0;
+    SU2_MPI::Reduce(&tmp, &numRanksUsingReducer, 1, MPI_INT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+
+    if (minEff < COLORING_EFF_THRESH) {
+      cout << "WARNING: On " << numRanksUsingReducer << " MPI ranks the coloring efficiency was less than "
+           << COLORING_EFF_THRESH << " (min value was " << minEff << ").\n"
+           << "         Those ranks will now use a fallback strategy, better performance may be possible\n"
+           << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)." << endl;
+    }
   }
 
   if (ReducerStrategy)
