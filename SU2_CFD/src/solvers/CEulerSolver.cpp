@@ -3697,67 +3697,59 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
 
 void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
 
-  /*--- Reset variables to store the undivided pressure ---*/
+  /*--- We can access memory more efficiently if there are no periodic boundaries. ---*/
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  const bool isPeriodic = (config->GetnMarker_Periodic() > 0);
+
+  /*--- Loop domain points. ---*/
+
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    const bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
+    const su2double Pressure_i = nodes->GetPressure(iPoint);
+
+    /*--- Initialize. ---*/
     iPoint_UndLapl[iPoint] = 0.0;
     jPoint_UndLapl[iPoint] = 0.0;
-  }
 
-  /*--- Loop over edge colors. ---*/
-  for (auto color : EdgeColoring)
-  {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-  for(auto k = 0ul; k < color.size; ++k) {
+    /*--- Loop over the neighbors of point i. ---*/
+    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
+    {
+      auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
 
-    auto iEdge = color.indices[k];
+      /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
+      if (boundary_i && !boundary_j) continue;
 
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
-
-    su2double Pressure_i = nodes->GetPressure(iPoint);
-    su2double Pressure_j = nodes->GetPressure(jPoint);
-
-    bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
-
-    /*--- Both points inside the domain, or both on the boundary ---*/
-
-    if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
-      if (geometry->node[iPoint]->GetDomain()) { iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i); jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j); }
-      if (geometry->node[jPoint]->GetDomain()) { iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j); jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j); }
+      /*--- Add pressure difference and pressure sum. ---*/
+      su2double Pressure_j = nodes->GetPressure(jPoint);
+      iPoint_UndLapl[iPoint] += Pressure_j - Pressure_i;
+      jPoint_UndLapl[iPoint] += Pressure_j + Pressure_i;
     }
 
-    /*--- iPoint inside the domain, jPoint on the boundary ---*/
-
-    if (!boundary_i && boundary_j)
-      if (geometry->node[iPoint]->GetDomain()) { iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i); jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j); }
-
-    /*--- jPoint inside the domain, iPoint on the boundary ---*/
-
-    if (boundary_i && !boundary_j)
-      if (geometry->node[jPoint]->GetDomain()) { iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j); jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j); }
+    if (!isPeriodic)
+      nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
   }
-  } // end color loop
 
-  /*--- Correct the sensor values across any periodic boundaries. ---*/
+  if (isPeriodic) {
+    /*--- Correct the sensor values across any periodic boundaries. ---*/
 
-  SU2_OMP_MASTER
-  {
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+    SU2_OMP_MASTER
+    {
+      for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+        InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+        CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+      }
     }
+    SU2_OMP_BARRIER
+
+    /*--- Set pressure switch for each point ---*/
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+      nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
   }
-  SU2_OMP_BARRIER
-
-  /*--- Set pressure switch for each point ---*/
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
-    nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
 
   /*--- MPI parallelization ---*/
 
