@@ -96,29 +96,15 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
   /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
 
+  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Mesh Deformation)." << endl;
+
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
 
-#ifdef HAVE_OMP
-  /*--- Get the element coloring. ---*/
+  /*--- Initialize structures for hybrid-parallel mode. ---*/
 
-  const auto& coloring = geometry->GetElementColoring();
-
-  if (!coloring.empty()) {
-    auto nColor = coloring.getOuterSize();
-    ElemColoring.reserve(nColor);
-
-    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      ElemColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
-    }
-  }
-  ColorGroupSize = geometry->GetElementColorGroupSize();
-
-  omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
-#else
-  ElemColoring[0] = DummyGridColor<>(nElement);
-#endif
+  HybridParallelInitialization(geometry);
 
   /*--- Element container structure. ---*/
 

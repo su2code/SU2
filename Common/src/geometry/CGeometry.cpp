@@ -4036,13 +4036,25 @@ const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(void)
   return edgeToCSRMap;
 }
 
-const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
+const su2vector<unsigned long>& CGeometry::GetTransposeSparsePatternMap(ConnectivityType type)
 {
-  if (edgeColoring.empty() && nEdge) {
+  /*--- Yes the const cast is weird but it is still better than repeating code. ---*/
+  auto& pattern = const_cast<CCompressedSparsePatternUL&>(GetSparsePattern(type));
+  pattern.buildTransposePtr();
+  return pattern.transposePtr();
+}
 
-    /*--- When not using threading, and for coarse grids, use the natural coloring. ---*/
-    if ((omp_get_max_threads() == 1) || (MGLevel != MESH_0)) {
+const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficiency)
+{
+  if (nEdge==0) return edgeColoring;
+
+  /*--- Build if required. ---*/
+  if (edgeColoring.empty()) {
+
+    /*--- When not using threading use the natural coloring. ---*/
+    if (omp_get_max_threads() == 1) {
       edgeColoring = createNaturalColoring(nEdge);
+      if (efficiency != nullptr) *efficiency = 1.0; // by definition
       return edgeColoring;
     }
 
@@ -4051,7 +4063,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
     su2vector<unsigned long> outerPtr(nEdge+1);
     su2vector<unsigned long> innerIdx(nEdge*2);
 
-    for(unsigned long iEdge = 0; iEdge < nEdge; ++iEdge) {
+    for (unsigned long iEdge = 0; iEdge < nEdge; ++iEdge) {
       outerPtr(iEdge) = 2*iEdge;
       innerIdx(iEdge*2+0) = edge[iEdge]->GetNode(0);
       innerIdx(iEdge*2+1) = edge[iEdge]->GetNode(1);
@@ -4060,23 +4072,37 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
 
     CCompressedSparsePatternUL pattern(move(outerPtr), move(innerIdx));
 
-    /*--- Color the edges, only balance sizes on coarse levels. ---*/
-    bool balanceColors = (MGLevel != MESH_0);
+    /*--- Color the edges. ---*/
+    const bool balanceColors = true;
     edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
 
-    if(edgeColoring.empty())
-      SU2_MPI::Error("Edge coloring failed.", CURRENT_FUNCTION);
+    /*--- If the coloring fails use the natural coloring and set the group size
+     *    to nEdge to prevent client code from looping in parallel. This is a
+     *    "soft" failure as the "bad" coloring should be detected downstream
+     *    and a fallback strategy put in place. ---*/
+    if (edgeColoring.empty()) {
+      edgeColoring = createNaturalColoring(nEdge);
+      edgeColorGroupSize = nEdge;
+    }
+  }
+
+  if (efficiency != nullptr) {
+    *efficiency = coloringEfficiency(edgeColoring, omp_get_max_threads(), edgeColorGroupSize);
   }
   return edgeColoring;
 }
 
-const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
+const CCompressedSparsePatternUL& CGeometry::GetElementColoring(su2double* efficiency)
 {
-  if (elemColoring.empty() && nElem) {
+  if (nElem==0) return elemColoring;
+
+  /*--- Build if required. ---*/
+  if (elemColoring.empty()) {
 
     /*--- When not using threading use the natural coloring. ---*/
     if (omp_get_max_threads() == 1) {
       elemColoring = createNaturalColoring(nElem);
+      if (efficiency != nullptr) *efficiency = 1.0; // by definition
       return elemColoring;
     }
 
@@ -4085,10 +4111,10 @@ const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
     vector<unsigned long> outerPtr(nElem+1);
     vector<unsigned long> innerIdx; innerIdx.reserve(nElem);
 
-    for(unsigned long iElem = 0; iElem < nElem; ++iElem) {
+    for (unsigned long iElem = 0; iElem < nElem; ++iElem) {
       outerPtr[iElem] = innerIdx.size();
 
-      for(unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); ++iNode) {
+      for (unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); ++iNode) {
         innerIdx.push_back(elem[iElem]->GetNode(iNode));
       }
     }
@@ -4097,10 +4123,18 @@ const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
     CCompressedSparsePatternUL pattern(outerPtr, innerIdx);
 
     /*--- Color the elements. ---*/
-    elemColoring = colorSparsePattern(pattern, elemColorGroupSize);
+    const bool balanceColors = true;
+    elemColoring = colorSparsePattern(pattern, elemColorGroupSize, balanceColors);
 
-    if(elemColoring.empty())
-      SU2_MPI::Error("Element coloring failed.", CURRENT_FUNCTION);
+    /*--- Same as for the edge coloring. ---*/
+    if (elemColoring.empty()) {
+      elemColoring = createNaturalColoring(nElem);
+      elemColorGroupSize = nElem;
+    }
+  }
+
+  if (efficiency != nullptr) {
+    *efficiency = coloringEfficiency(elemColoring, omp_get_max_threads(), elemColorGroupSize);
   }
   return elemColoring;
 }
