@@ -122,6 +122,14 @@ inline constexpr size_t roundUpDiv(size_t numerator, size_t denominator)
 }
 
 /*!
+ * \brief Round up to next multiple.
+ */
+inline constexpr size_t nextMultiple(size_t argument, size_t multiple)
+{
+  return roundUpDiv(argument, multiple) * multiple;
+}
+
+/*!
  * \brief Compute a chunk size based on totalWork and number of threads such that
  *        all threads get the same number of chunks (with limited size).
  * \param[in] totalWork - e.g. total number of loop iterations.

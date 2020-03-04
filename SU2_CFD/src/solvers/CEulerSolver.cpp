@@ -2932,14 +2932,11 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
-  /*--- Determine if using the reducer strategy is necessary, see CEulerSolver::SumEdgeFluxes(). ---*/
-  const bool reducer_strategy = (MGLevel != MESH_0) && (omp_get_num_threads() > 1);
-
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size (unless we use the reducer). ---*/
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, ReducerStrategy? 1 : color.groupSize))
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
@@ -2981,7 +2978,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Update convective and artificial dissipation residuals. ---*/
 
-    if (reducer_strategy) {
+    if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
       if (implicit)
         Jacobian.UpdateBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
@@ -3002,7 +2999,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   }
   } // end color loop
 
-  if (reducer_strategy) {
+  if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
     if (implicit)
       Jacobian.SetDiagonalAsColumnSum();
@@ -3039,14 +3036,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
-  /*--- Determine if using the reducer strategy is necessary, see CEulerSolver::SumEdgeFluxes(). ---*/
-  const bool reducer_strategy = (MGLevel != MESH_0) && (omp_get_num_threads() > 1);
-
     /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size (unless we use the reducer). ---*/
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, ReducerStrategy? 1 : color.groupSize))
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
@@ -3212,7 +3206,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Update residual value ---*/
 
-    if (reducer_strategy) {
+    if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
       if (implicit)
         Jacobian.UpdateBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
@@ -3233,7 +3227,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   }
   } // end color loop
 
-  if (reducer_strategy) {
+  if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
     if (implicit)
       Jacobian.SetDiagonalAsColumnSum();
@@ -3659,7 +3653,7 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
   for (auto color : EdgeColoring)
   {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
@@ -3733,7 +3727,7 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *
   for (auto color : EdgeColoring)
   {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, color.groupSize)*color.groupSize)
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
