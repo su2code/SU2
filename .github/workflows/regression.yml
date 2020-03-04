@@ -95,8 +95,8 @@ jobs:
     needs: build
     strategy:
       fail-fast: false
-      matrix: 
-        testdriver: ['test_driver']
+      matrix:
+        testdriver: ['test_driver', 'test_driver_AD', 'test_driver_DD']
         include:
           - testdriver: 'test_driver'
             tag: MPI
