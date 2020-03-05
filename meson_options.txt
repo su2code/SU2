@@ -1,4 +1,5 @@
 option('with-mpi',   type : 'feature', value : 'auto', description: 'enable MPI support')
+option('with-omp',   type : 'boolean', value : false, description: 'enable OpenMP support')
 option('enable-tecio', type : 'boolean', value : true, description: 'enable TECIO support')
 option('enable-cgns',  type : 'boolean', value : true, description: 'enable CGNS support')
 option('enable-autodiff',  type : 'boolean', value : false, description: 'enable AD (reverse) support')
