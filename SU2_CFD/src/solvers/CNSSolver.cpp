@@ -171,108 +171,28 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   unsigned long InnerIter   = config->GetInnerIter();
   bool cont_adjoint         = config->GetContinuous_Adjoint();
-  bool disc_adjoint         = config->GetDiscrete_Adjoint();
-  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
-  bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
   bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
-  bool fixed_cl             = config->GetFixed_CL_Mode();
-  bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
-  bool actuator_disk        = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
-  bool nearfield            = (config->GetnMarker_NearFieldBound() != 0);
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
-  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
-                              (config->GetKind_Upwind_Flow() == ROE ||
-                               config->GetKind_Upwind_Flow() == SLAU ||
-                               config->GetKind_Upwind_Flow() == SLAU2);
   bool wall_functions       = config->GetWall_Functions();
 
-  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
+  /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
-  if (fixed_cl && !disc_adjoint && !cont_adjoint) {
-    SU2_OMP_MASTER
-    SetFarfield_AoA(geometry, solver_container, config, iMesh, Output);
-    SU2_OMP_BARRIER
-  }
-
-  /*--- Set the primitive variables ---*/
-
-  SU2_OMP_MASTER
-  ErrorCounter = 0;
-  SU2_OMP_BARRIER
-
-  SU2_OMP_ATOMIC
-  ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
-
-  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    {
-      unsigned long tmp = ErrorCounter;
-      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-      config->SetNonphysical_Points(ErrorCounter);
-    }
-    SU2_OMP_BARRIER
-  }
-
-  /*--- Compute the engine properties ---*/
-
-  if (engine) {
-    SU2_OMP_MASTER
-    GetPower_Properties(geometry, config, iMesh, Output);
-    SU2_OMP_BARRIER
-  }
-
-  /*--- Compute the actuator disk properties and distortion levels ---*/
-
-  if (actuator_disk) {
-    SU2_OMP_MASTER
-    {
-      Set_MPI_ActDisk(solver_container, geometry, config);
-      SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
-    }
-    SU2_OMP_BARRIER
-  }
-
-  /*--- Compute NearField MPI ---*/
-
-  if (nearfield) {
-    SU2_OMP_MASTER
-    Set_MPI_Nearfield(geometry, config);
-    SU2_OMP_BARRIER
-  }
-
-  /*--- Artificial dissipation ---*/
-
-  if (center && !Output) {
-    SetMax_Eigenvalue(geometry, config);
-    if ((center_jst) && (iMesh == MESH_0)) {
-      SetCentered_Dissipation_Sensor(geometry, config);
-      SetUndivided_Laplacian(geometry, config);
-    }
-  }
-
-  /*--- Roe Low Dissipation Sensor ---*/
-
-  if (roe_low_dissipation){
-    SetRoe_Dissipation(geometry, config);
-    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
-      SetUpwind_Ducros_Sensor(geometry, config);
-    }
-  }
+  CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
   /*--- Compute gradient for MUSCL reconstruction. ---*/
 
   if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetPrimitive_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
+    switch (config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS:
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
+      case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES:
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
+      default:
+        break;
+    }
   }
 
   /*--- Compute gradient of the primitive variables ---*/
@@ -280,12 +200,12 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     SetPrimitive_Gradient_GG(geometry, config);
   }
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
-  /*--- Compute the limiter in case we need it in the turbulence model
-   or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
+  /*--- Compute the limiter in case we need it in the turbulence model or to limit the
+   *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
     SetPrimitive_Limiter(geometry, config);
@@ -340,15 +260,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SU2_OMP_MASTER
     SetTauWall_WF(geometry, solver_container, config);
     SU2_OMP_BARRIER
-  }
-
-  /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
-   *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
-
-  if(!ReducerStrategy && !Output) {
-    LinSysRes.SetValZero();
-    if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
-    else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
   }
 
 }

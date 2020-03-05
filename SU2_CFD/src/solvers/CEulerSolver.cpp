@@ -2518,22 +2518,18 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
 }
 
-void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
-                                 unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                                       unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long InnerIter = config->GetInnerIter();
   bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
-  bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
+  bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool nearfield        = (config->GetnMarker_NearFieldBound() != 0);
   bool fixed_cl         = config->GetFixed_CL_Mode();
-  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
   bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
                               (config->GetKind_Upwind_Flow() == ROE ||
@@ -2596,33 +2592,12 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     SU2_OMP_BARRIER
   }
 
-  /*--- Upwind second order reconstruction ---*/
-
-  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
-
-    /*--- Gradient computation for MUSCL reconstruction. ---*/
-
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetPrimitive_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
-
-    /*--- Limiter computation ---*/
-
-    if (limiter && (iMesh == MESH_0) && !Output && !van_albada)
-      SetPrimitive_Limiter(geometry, config);
-  }
-
   /*--- Artificial dissipation ---*/
 
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
-    if ((center_jst) && (iMesh == MESH_0)) {
-      SetCentered_Dissipation_Sensor(geometry, config);
-      SetUndivided_Laplacian(geometry, config);
-    }
+    if (center_jst)
+      SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(geometry, config);
   }
 
   /*--- Roe Low Dissipation Sensor ---*/
@@ -2641,6 +2616,44 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     LinSysRes.SetValZero();
     if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
     else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
+  }
+
+}
+
+void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                                 unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+
+  unsigned long InnerIter = config->GetInnerIter();
+  bool cont_adjoint     = config->GetContinuous_Adjoint();
+  bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
+  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
+  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+
+  /*--- Common preprocessing steps. ---*/
+
+  CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
+
+  /*--- Upwind second order reconstruction ---*/
+
+  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
+
+    /*--- Gradient computation for MUSCL reconstruction. ---*/
+
+    switch (config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS:
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
+      case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES:
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
+      default:
+        break;
+    }
+
+    /*--- Limiter computation ---*/
+
+    if (limiter && (iMesh == MESH_0) && !Output && !van_albada)
+      SetPrimitive_Limiter(geometry, config);
   }
 
 }
@@ -3652,7 +3665,11 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
+
+  /*--- We can access memory more efficiently if there are no periodic boundaries. ---*/
+
+  const bool isPeriodic = (config->GetnMarker_Periodic() > 0);
 
   /*--- Loop domain points. ---*/
 
@@ -3660,10 +3677,14 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
     const bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
+    const su2double Pressure_i = nodes->GetPressure(iPoint);
 
     /*--- Initialize. ---*/
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
+
+    iPoint_UndLapl[iPoint] = 0.0;
+    jPoint_UndLapl[iPoint] = 0.0;
 
     /*--- Loop over the neighbors of point i. ---*/
     for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
@@ -3679,58 +3700,10 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
       for (unsigned short iVar = 0; iVar < nVar; iVar++)
         nodes->AddUnd_Lapl(iPoint, iVar, nodes->GetSolution(jPoint,iVar)-nodes->GetSolution(iPoint,iVar));
 
-      nodes->AddUnd_Lapl(iPoint, nVar-1, nodes->GetPressure(jPoint)-nodes->GetPressure(iPoint));
-    }
-
-  }
-
-  SU2_OMP_MASTER
-  {
-    /*--- Correct the Laplacian values across any periodic boundaries. ---*/
-
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
-    }
-
-    /*--- MPI parallelization ---*/
-
-    InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
-    CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
-  }
-  SU2_OMP_BARRIER
-
-}
-
-void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
-
-  /*--- We can access memory more efficiently if there are no periodic boundaries. ---*/
-
-  const bool isPeriodic = (config->GetnMarker_Periodic() > 0);
-
-  /*--- Loop domain points. ---*/
-
-  SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-
-    const bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    const su2double Pressure_i = nodes->GetPressure(iPoint);
-
-    /*--- Initialize. ---*/
-    iPoint_UndLapl[iPoint] = 0.0;
-    jPoint_UndLapl[iPoint] = 0.0;
-
-    /*--- Loop over the neighbors of point i. ---*/
-    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
-    {
-      auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-      bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
-
-      /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
-      if (boundary_i && !boundary_j) continue;
-
-      /*--- Add pressure difference and pressure sum. ---*/
       su2double Pressure_j = nodes->GetPressure(jPoint);
+      nodes->AddUnd_Lapl(iPoint, nVar-1, Pressure_j-Pressure_i);
+
+      /*--- Dissipation sensor, add pressure difference and pressure sum. ---*/
       iPoint_UndLapl[iPoint] += Pressure_j - Pressure_i;
       jPoint_UndLapl[iPoint] += Pressure_j + Pressure_i;
     }
@@ -3758,10 +3731,20 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *
       nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
   }
 
-  /*--- MPI parallelization ---*/
-
   SU2_OMP_MASTER
   {
+    /*--- Correct the Laplacian values across any periodic boundaries. ---*/
+
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+    }
+
+    /*--- MPI parallelization ---*/
+
+    InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
+    CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
+
     InitiateComms(geometry, config, SENSOR);
     CompleteComms(geometry, config, SENSOR);
   }
