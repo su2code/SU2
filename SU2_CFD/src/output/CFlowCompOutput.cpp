@@ -105,6 +105,8 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
+  ///   /// DESCRIPTION: Root-mean square residual of the density.
+  AddHistoryOutput("NORM_ROM",    "norm[r_hat]",  ScreenOutputFormat::SCIENTIFIC, "NORM_ROM", "Norm residual of the reduced variables (rom).", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the density.
   AddHistoryOutput("RMS_DENSITY",    "rms[Rho]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the density.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum x-component.
@@ -601,6 +603,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   CSolver* turb_solver = solver[TURB_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
 
+  SetHistoryOutputValue("NORM_ROM", flow_solver->GetRes_ROM());
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));
   SetHistoryOutputValue("RMS_MOMENTUM-Y", log10(flow_solver->GetRes_RMS(2)));

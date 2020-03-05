@@ -5273,7 +5273,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     fs << r_red[i] << "\n";
   }
   fs.close();
-  std::cout << sqrt(ReducedRes) << std::endl;
+  
   if (sqrt(ReducedRes) >= ReducedResNorm_Old) {
     RomConverged = true;
     std::cout << "ROM Converged." << std::endl;
@@ -5281,7 +5281,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   }
   else {
     RomConverged = false;
-    ReducedResNorm_Old = sqrt(ReducedRes);
+    SetRes_ROM(sqrt(ReducedRes));
   }
   
   // Set up variables for QR decomposition, A = QR
