@@ -4785,7 +4785,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
-  //int desired_nodes = 500; //TODO: create config file option
+  int desired_nodes = 5000; //TODO: create config file option
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   int firstrun = 0;
@@ -4805,25 +4805,61 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
       firstrun++;
     }
   }
-  //unsigned long nsnaps = Phi.size();
-  //unsigned long N = Phi[0].size();
-  //unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil
-  //unsigned long i, j, k;
-  //
-  //const auto nodewithMax = std::max_element(Phi[0].begin(), Phi[0].end());
+  unsigned long nsnaps = Phi.size();
+  unsigned long N = Phi[0].size();
+  unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil (nodes to add per loop)
+  unsigned long i, j, k, ii, imask, iVar;
   
-  //for (i = 0; i < nsnaps; i++) {
-  //
-  //  std::vector<std::vector<double>> U;
-  //  for (j = 0; j < i; j++) {
-  //    U.push_back(Phi[j]);
-  //  }
-  //
-  //  for (k = 0; k < nodestoAdd; k++) {
-  //    masked_Phi =
-  //  }
-  //
-  //}
+  std::vector<double> PhiNodes;
+  for (i = 0; i < nPointDomain; i++) {
+  
+    double norm_phi = 0.0;
+    for (j = 0; j < nVar; j++) {
+      norm_phi += Phi[0][(i +j) *nVar] * Phi[0][(i +j) *nVar];
+    }
+  
+    PhiNodes.push_back( sqrt(norm_phi) );
+  }
+  
+  const auto nodewithMax = std::distance(PhiNodes.begin(), std::max_element(PhiNodes.begin(), PhiNodes.end()) );
+  Mask.push_back(nodewithMax);
+  std::vector<double> masked_Phi;
+  
+  for (i = 1; i < nsnaps; i++) {
+  
+    std::vector<std::vector<double>> U;
+    std::vector<std::vector<double>> masked_U;
+    std::vector<double> gappy_Phi;
+    for (j = 0; j < i; j++) {
+      U.push_back(Phi[j]);
+      masked_U.push_back({});
+    }
+  
+    for (k = 0; k < nodestoAdd; k++) {
+  
+      //TODO : double check efficiency - does order matter?
+      // loop through nodes to add masked Phi entries in correct order
+      for (imask = 0; imask < nPointDomain; imask++) {
+        if (MaskedNode(imask)) {
+          for (iVar = 0; iVar < nVar; iVar++) { masked_Phi.push_back(Phi[i][imask+iVar]); }
+  
+          for (j = 0; j < i; j++) {
+            for (iVar = 0; iVar < nVar; iVar++) { masked_U[j].push_back(U[j][imask+iVar]); }
+          }
+        }
+      }
+  
+      // compute gappy reconstruction
+      for (ii = 0; ii < nPointDomain; ii++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          
+        }
+      }
+  
+  
+    }
+  
+  }
   
   // set mask to all even nodes for now
   for (unsigned long i = 0; i < nPointDomain; i++) {

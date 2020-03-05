@@ -5274,10 +5274,14 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   }
   fs.close();
   
-  if (sqrt(ReducedRes) >= ReducedResNorm_Old) {
+  if (sqrt(ReducedRes) == ReducedResNorm_Old) {
     RomConverged = true;
     std::cout << "ROM Converged." << std::endl;
     
+  }
+  else if (sqrt(ReducedRes) > ReducedResNorm_Old) {
+    RomConverged = true;
+    std::cout << "ROM Diverged." << std::endl;
   }
   else {
     RomConverged = false;
