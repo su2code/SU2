@@ -429,6 +429,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
           }
 
+          /*--- Start turbulent sol update once flow vars have converged a few orders ---*/
+          if (log10(solver_container[FLOW_SOL]->GetRes_RMS(0)) < config->GetMinLogResidual()/2.0)
           for (iVar = 0; iVar < nVar; iVar++) {
             nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
           }
