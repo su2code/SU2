@@ -2614,7 +2614,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
   if(!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
-    if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
+    if (implicit && !disc_adjoint) Jacobian.SetValZero();
     else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
   }
 
@@ -2646,8 +2646,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       case LEAST_SQUARES:
       case WEIGHTED_LEAST_SQUARES:
         SetPrimitive_Gradient_LS(geometry, config, true); break;
-      default:
-        break;
+      default: break;
     }
 
     /*--- Limiter computation ---*/
@@ -3713,18 +3712,21 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
   }
 
   if (isPeriodic) {
-    /*--- Correct the sensor values across any periodic boundaries. ---*/
+    /*--- Correct the Laplacian and sensor values across any periodic boundaries. ---*/
 
     SU2_OMP_MASTER
     {
       for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+        InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+        CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+
         InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
         CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
       }
     }
     SU2_OMP_BARRIER
 
-    /*--- Set pressure switch for each point ---*/
+    /*--- Set final pressure switch for each point ---*/
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -3733,13 +3735,6 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
 
   SU2_OMP_MASTER
   {
-    /*--- Correct the Laplacian values across any periodic boundaries. ---*/
-
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
-    }
-
     /*--- MPI parallelization ---*/
 
     InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
