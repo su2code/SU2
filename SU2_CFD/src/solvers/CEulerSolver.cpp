@@ -216,19 +216,23 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   su2double parallelEff = 1.0;
   const auto& coloring = geometry->GetEdgeColoring(&parallelEff);
 
+  /*--- The decision to use the strategy is local to each rank. ---*/
+  ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
+
+  /*--- When using the reducer force a single color to reduce the color loop overhead. ---*/
+  if (ReducerStrategy && (coloring.getOuterSize()>1))
+    geometry->SetNaturalEdgeColoring();
+
   if (!coloring.empty()) {
+    /*--- If the reducer strategy is used we are not constrained by group
+     *    size as we have no other edge loops in the Euler/NS solvers. ---*/
+    auto groupSize = ReducerStrategy? 1ul : geometry->GetEdgeColorGroupSize();
     auto nColor = coloring.getOuterSize();
     EdgeColoring.reserve(nColor);
 
-    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      EdgeColoring.emplace_back(coloring.innerIdx(iColor),
-                                coloring.getNumNonZeros(iColor),
-                                geometry->GetEdgeColorGroupSize());
-    }
+    for(auto iColor = 0ul; iColor < nColor; ++iColor)
+      EdgeColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor), groupSize);
   }
-
-  /*--- The decision to use the strategy is local to each rank. ---*/
-  ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
 
   /*--- If the reducer strategy is not being forced (by EDGE_COLORING_GROUP_SIZE=0) print some messages. ---*/
   if (config->GetEdgeColoringGroupSize() != 1<<30) {
@@ -2938,8 +2942,8 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size (unless we use the reducer). ---*/
-  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, ReducerStrategy? 1 : color.groupSize))
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
@@ -3040,8 +3044,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size (unless we use the reducer). ---*/
-  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, ReducerStrategy? 1 : color.groupSize))
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
