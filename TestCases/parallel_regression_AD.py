@@ -345,7 +345,7 @@ def main():
     pass_list.append(discadj_topol_optim.run_filediff())
     test_list.append(discadj_topol_optim)
 
-	####################################################################################
+    ####################################################################################
     ### Unsteady Disc. adj. compressible RANS Windowed Average with restart solution ###
     ####################################################################################
 
@@ -358,6 +358,7 @@ def main():
     unsteady_naca0012.timeout   = 1600
     unsteady_naca0012.reference_file = "of_grad_cd.csv.ref"
     unsteady_naca0012.test_file = "of_grad_cd.csv"
+    unsteady_naca0012.unsteady  = True
     pass_list.append(unsteady_naca0012.run_filediff())
     test_list.append(unsteady_naca0012)
     
