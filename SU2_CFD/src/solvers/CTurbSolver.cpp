@@ -48,25 +48,23 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   dynamic_grid = config->GetDynamic_Grid();
 
 #ifdef HAVE_OMP
-  /*--- Get the edge coloring. ---*/
-
+  /*--- Get the edge coloring, see notes in CEulerSolver's constructor. ---*/
   su2double parallelEff = 1.0;
   const auto& coloring = geometry->GetEdgeColoring(&parallelEff);
 
+  ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
+
+  if (ReducerStrategy && (coloring.getOuterSize()>1))
+    geometry->SetNaturalEdgeColoring();
+
   if (!coloring.empty()) {
+    auto groupSize = ReducerStrategy? 1ul : geometry->GetEdgeColorGroupSize();
     auto nColor = coloring.getOuterSize();
     EdgeColoring.reserve(nColor);
 
-    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      EdgeColoring.emplace_back(coloring.innerIdx(iColor),
-                                coloring.getNumNonZeros(iColor),
-                                geometry->GetEdgeColorGroupSize());
-    }
+    for(auto iColor = 0ul; iColor < nColor; ++iColor)
+      EdgeColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor), groupSize);
   }
-
-  /*--- Local (to the rank) decision to use the reducer strategy, any
-   * warnings have been, or will be, printed by the flow solver. ---*/
-  ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
 
   nPoint = geometry->GetnPoint();
   omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
@@ -110,8 +108,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size (unless we use the reducer). ---*/
-  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, ReducerStrategy? 1 : color.groupSize))
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
@@ -705,14 +703,9 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
      we will loop over the edges and boundaries to compute the GCL component
      of the dual time source term that depends on grid velocities. ---*/
 
-    /*--- Loop over edge colors. ---*/
-    for (auto color : EdgeColoring)
-    {
-    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-    SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-    for(auto k = 0ul; k < color.size; ++k) {
-
-      auto iEdge = color.indices[k];
+    /// TODO: Make this a point loop.
+    SU2_OMP_MASTER
+    for(auto iEdge = 0ul; iEdge < geometry->GetnEdge(); ++iEdge) {
 
       /*--- Get indices for nodes i & j plus the face normal ---*/
 
@@ -771,9 +764,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         for (iVar = 0; iVar < nVar; iVar++)
           LinSysRes(jPoint,iVar) -= U_time_n[iVar]*Residual_GCL;
       }
-
     }
-    } // end color loop
+    SU2_OMP_BARRIER
 
     /*---  Loop over the boundary edges ---*/
 

@@ -84,6 +84,22 @@ protected:
    */
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
+private:
+
+  /*!
+   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
+   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Viscous_Residual(unsigned long iEdge,
+                        CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *numerics,
+                        CConfig *config);
+
   /*!
    * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -117,26 +133,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-
   void Upwind_Residual(CGeometry *geometry,
                        CSolver **solver_container,
                        CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) override;
-
-  /*!
-   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
-   * \param[in] iEdge - Edge for which we want to compute the flux
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Viscous_Residual(unsigned long iEdge,
-                        CGeometry *geometry,
-                        CSolver **solver_container,
-                        CNumerics *numerics,
-                        CConfig *config);
 
   /*!
    * \brief Impose the Symmetry Plane boundary condition.
