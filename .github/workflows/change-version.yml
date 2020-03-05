@@ -1,7 +1,7 @@
 name: Change Version
 
 on:
-  create:
+  push:
      branches:
       - 'release_v*'
 
