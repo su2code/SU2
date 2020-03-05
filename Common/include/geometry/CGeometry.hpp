@@ -1646,6 +1646,11 @@ public:
   const CCompressedSparsePatternUL& GetEdgeColoring(su2double* efficiency = nullptr);
 
   /*!
+   * \brief Force the natural (sequential) edge coloring.
+   */
+  void SetNaturalEdgeColoring();
+
+  /*!
    * \brief Get the group size used in edge coloring.
    * \return Group size.
    */
@@ -1658,6 +1663,11 @@ public:
    * \return Reference to the coloring.
    */
   const CCompressedSparsePatternUL& GetElementColoring(su2double* efficiency = nullptr);
+
+  /*!
+   * \brief Force the natural (sequential) element coloring.
+   */
+  void SetNaturalElementColoring();
 
   /*!
    * \brief Get the group size used in element coloring.
