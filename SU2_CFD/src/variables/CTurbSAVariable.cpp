@@ -2,14 +2,14 @@
  * \file CTurbSAVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,8 +29,9 @@
 #include "../../include/variables/CTurbSAVariable.hpp"
 
 
-CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned long npoint, unsigned long ndim, unsigned long nvar,
-                                 CConfig *config) : CTurbVariable(npoint, ndim, nvar, config) {
+CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned long npoint,
+                                 unsigned long ndim, unsigned long nvar, CConfig *config) :
+                 CTurbVariable(npoint, ndim, nvar, config) {
 
   Solution_Old = Solution = val_nu_tilde;
 
@@ -50,8 +51,8 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
   Vortex_Tilting.resize(nPoint);
 }
 
-void CTurbSAVariable::SetVortex_Tilting(unsigned long iPoint, su2double **PrimGrad_Flow,
-                                        su2double* Vorticity, su2double LaminarViscosity) {
+void CTurbSAVariable::SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
+                                        const su2double* Vorticity, su2double LaminarViscosity) {
 
   su2double Strain[3][3] = {{0,0,0}, {0,0,0}, {0,0,0}}, Omega, StrainDotVort[3], numVecVort[3];
   su2double numerator, trace0, trace1, denominator;

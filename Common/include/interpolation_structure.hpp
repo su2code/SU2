@@ -1,16 +1,16 @@
 ﻿/*!
  * \file interpolation_structure.hpp
- * \brief Headers of the main subroutines used by SU2_FSI.
- *        The subroutines and functions are in the <i>interpolation_structure.cpp</i> file.
+ * \brief Headers of classes used for multiphysics interpolation.
+ *        The implementation is in the <i>interpolation_structure.cpp</i> file.
  * \author H. Kline
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -244,7 +244,7 @@ public:
    * \param[in] nDim - the dimension of the coordinates.
    * \param[in] iZone_1 - zone index of the element to use for interpolation (the DONOR zone)
    * \param[in] donor_elem - element index of the element to use for interpolation (or global index of a point in 2D)
-   * \param[in[ nDonorPoints - number of donor points in the element.
+   * \param[in] nDonorPoints - number of donor points in the element.
    * \param[in] xj - point projected onto the plane of the donor element.
    * \param[out] isoparams - isoparametric coefficients. Must be allocated to size nNodes ahead of time. (size> nDonors)
    *

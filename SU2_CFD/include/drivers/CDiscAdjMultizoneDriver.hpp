@@ -2,14 +2,14 @@
  * \class CDiscAdjMultizoneDriver.hpp
  * \brief Class for driving adjoint multi-zone problems.
  * \author O. Burghardt, T. Albring, R. Sanchez
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -198,4 +198,11 @@ protected:
    * \param[in] iZone - Zone where solver residuals are computed.
    */
   void SetResidual_BGS(unsigned short iZone);
+
+  /*!
+   * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
+   * \return false
+   */
+  inline bool GetTimeConvergence() const override {return false;};
+
 };
