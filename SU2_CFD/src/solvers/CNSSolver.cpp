@@ -190,8 +190,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
       case LEAST_SQUARES:
       case WEIGHTED_LEAST_SQUARES:
         SetPrimitive_Gradient_LS(geometry, config, true); break;
-      default:
-        break;
+      default: break;
     }
   }
 
