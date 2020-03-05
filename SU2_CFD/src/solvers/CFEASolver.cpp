@@ -335,15 +335,22 @@ void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {
   su2double parallelEff = 1.0;
   const auto& coloring = geometry->GetElementColoring(&parallelEff);
 
+  /*--- If the coloring is too bad use lock-guarded accesses
+   *    to CSysMatrix/Vector in element loops instead. ---*/
+  LockStrategy = parallelEff < COLORING_EFF_THRESH;
+
+  /*--- When using locks force a single color to reduce the color loop overhead. ---*/
+  if (LockStrategy && (coloring.getOuterSize()>1))
+    geometry->SetNaturalElementColoring();
+
   if (!coloring.empty()) {
+    /*--- We are not constrained by the color group size when using locks. ---*/
+    auto groupSize = LockStrategy? 1ul : geometry->GetElementColorGroupSize();
     auto nColor = coloring.getOuterSize();
     ElemColoring.reserve(nColor);
 
-    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      ElemColoring.emplace_back(coloring.innerIdx(iColor),
-                                coloring.getNumNonZeros(iColor),
-                                geometry->GetElementColorGroupSize());
-    }
+    for(auto iColor = 0ul; iColor < nColor; ++iColor)
+      ElemColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor), groupSize);
   }
 
   su2double minEff = 1.0;
@@ -358,8 +365,6 @@ void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {
     UpdateLocks.resize(nPoint);
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
       omp_init_lock(&UpdateLocks[iPoint]);
-    /*--- We are no longer constrained by the color group size. ---*/
-    for(auto& color : ElemColoring) color.groupSize = OMP_MIN_SIZE;
   }
 
   omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
