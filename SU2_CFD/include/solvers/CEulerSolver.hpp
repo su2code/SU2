@@ -302,6 +302,18 @@ protected:
   void SumEdgeFluxes(CGeometry* geometry);
 
   /*!
+   * \brief Preprocessing actions common to the Euler and NS solvers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+
+  /*!
    * \brief Update the AoA and freestream velocity at the farfield.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -311,14 +323,6 @@ protected:
    */
   void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                        CConfig *config, unsigned short iMesh, bool Output);
-
-  /*!
-   * \brief Compute a pressure sensor switch.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute Ducros Sensor for Roe Dissipation.
@@ -362,11 +366,13 @@ protected:
   void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Compute the undivided laplacian for the solution, except the energy equation.
+   * \brief Compute the undivided laplacian for the solution and the
+   *        dissipation sensor for centered schemes.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
+  void SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeometry *geometry,
+                                                              CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -439,7 +445,6 @@ public:
       Vel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
     return sqrt(Vel2);
   }
-
 
   /*!
    * \brief Compute the density multiply by energy at the infinity.
