@@ -380,6 +380,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Residual      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
   Residual_RMS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+  Residual_RMS_Init = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_RMS_Init[iVar] = 0.0;
   Residual_Max  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
   Residual_i    = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
   Residual_j    = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
@@ -4985,6 +4986,9 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
 
   SetResidual_RMS(geometry, config);
 
+  if (config->GetInnerIter() == 0)
+    for (iVar = 0; iVar < nVar; iVar++) SetRes_RMS_Init(iVar, GetRes_RMS(iVar));
+
   /*--- For verification cases, compute the global error metrics. ---*/
 
   ComputeVerificationError(geometry, config);
@@ -5051,6 +5055,9 @@ void CEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_
 
   SetResidual_RMS(geometry, config);
 
+  if (config->GetInnerIter() == 0)
+    for (iVar = 0; iVar < nVar; iVar++) SetRes_RMS_Init(iVar, GetRes_RMS(iVar));
+
   /*--- For verification cases, compute the global error metrics. ---*/
 
   ComputeVerificationError(geometry, config);
@@ -5097,6 +5104,9 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Compute the root mean square residual ---*/
 
   SetResidual_RMS(geometry, config);
+
+  if (config->GetInnerIter() == 0)
+    for (iVar = 0; iVar < nVar; iVar++) SetRes_RMS_Init(iVar, GetRes_RMS(iVar));
 
   /*--- For verification cases, compute the global error metrics. ---*/
 
@@ -5217,6 +5227,9 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Compute the root mean square residual ---*/
 
   SetResidual_RMS(geometry, config);
+
+  if (config->GetInnerIter() == 0)
+    for (iVar = 0; iVar < nVar; iVar++) SetRes_RMS_Init(iVar, GetRes_RMS(iVar));
 
   /*--- For verification cases, compute the global error metrics. ---*/
 

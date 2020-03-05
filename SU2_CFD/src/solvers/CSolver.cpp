@@ -61,6 +61,7 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
 
   OutputHeadingNames = NULL;
   Residual_RMS       = NULL;
+  Residual_RMS_Init  = NULL;
   Residual_Max       = NULL;
   Residual_BGS       = NULL;
   Residual_Max_BGS   = NULL;
@@ -150,6 +151,7 @@ CSolver::~CSolver(void) {
   /*--- Private ---*/
 
   if (Residual_RMS != NULL) delete [] Residual_RMS;
+  if (Residual_RMS_Init != NULL) delete [] Residual_RMS_Init;
   if (Residual_Max != NULL) delete [] Residual_Max;
   if (Residual != NULL) delete [] Residual;
   if (Residual_i != NULL) delete [] Residual_i;

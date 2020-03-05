@@ -87,6 +87,7 @@ protected:
   su2double Min_CFL_Local;  /*!< \brief Minimum value of the CFL across all the control volumes. */
   su2double Avg_CFL_Local;  /*!< \brief Average value of the CFL across all the control volumes. */
   su2double *Residual_RMS,  /*!< \brief Vector with the mean residual for each variable. */
+  *Residual_RMS_Init,       /*!< \brief Vector with the initial mean residual for each variable. */
   *Residual_Max,            /*!< \brief Vector with the maximal residual for each variable. */
   *Residual,                /*!< \brief Auxiliary nVar vector. */
   *Residual_i,              /*!< \brief Auxiliary nVar vector for storing the residual at point i. */
@@ -502,6 +503,20 @@ public:
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
   inline su2double GetRes_RMS(unsigned short val_var) const { return Residual_RMS[val_var]; }
+
+  /*!
+   * \brief Set the initial mean residual, this is useful for the convergence history.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+   */
+  inline void SetRes_RMS_Init(unsigned short val_var, su2double val_residual) { Residual_RMS_Init[val_var] = val_residual; }
+
+  /*!
+   * \brief Get the initial mean residual, this is useful for the convergence history.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
+   */
+  inline su2double GetRes_RMS_Init(unsigned short val_var) const { return Residual_RMS_Init[val_var]; }
 
   /*!
    * \brief Set the maximal residual, this is useful for the convergence history.
