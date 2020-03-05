@@ -3,7 +3,6 @@
  * \brief Header file for the signal processing toolbox.
  * \author S. Schotthöfer
  * \version 7.0.2 "Blackbird"
->>>>>>> d1118950d691d9d01401e3d5c7460d23a654f588
  *
  * SU2 Project Website: https://su2code.github.io
  *
