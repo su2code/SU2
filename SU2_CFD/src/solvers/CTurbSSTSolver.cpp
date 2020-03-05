@@ -433,15 +433,15 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
     if (geometry->node[iPoint]->GetDomain()) {
 
       if (rough_wall) {
-        
+
         /*--- Set wall values ---*/
 
         density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
         laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-        WallShearStress = solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 0)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 0);
-        WallShearStress += solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 1)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 1);
-        if (nDim == 3) WallShearStress += solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 2)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 2);
+        WallShearStress = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          WallShearStress += pow(solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, iDim),2.0);
 
         WallShearStress = sqrt(WallShearStress);
         /*--- Compute non-dimensional velocity ---*/
@@ -511,7 +511,7 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
   bool rough_wall = false;
   su2double RoughWallBC, Roughness_Height, S_R, FrictionVel, kPlus, WallShearStress;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  
+
   if (config->GetKindWall(Marker_Tag) == ROUGH ) rough_wall = true;
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -527,9 +527,9 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
         density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
         laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-        WallShearStress = solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 0)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 0);
-        WallShearStress += solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 1)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 1);
-        if (nDim == 3) WallShearStress += solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 2)*solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, 2);
+        WallShearStress = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          WallShearStress += pow(solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, iDim),2.0);
 
         WallShearStress = sqrt(WallShearStress);
         /*--- Compute non-dimensional velocity ---*/

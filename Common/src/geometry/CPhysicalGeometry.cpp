@@ -5218,8 +5218,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
       /*--- Use the markerID to find the corresponding wall roughness height. ---*/
 
-    Marker_Tag = config->GetMarker_All_TagBound(markerID);
-    roughness = config->GetWall_RoughnessHeight(Marker_Tag);
+      Marker_Tag = config->GetMarker_All_TagBound(markerID);
+      roughness = config->GetWall_RoughnessHeight(Marker_Tag);
 
       node[iPoint]->SetRoughnessHeight(localRoughness);
 

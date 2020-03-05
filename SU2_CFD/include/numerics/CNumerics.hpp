@@ -560,14 +560,14 @@ public:
 
   /*!
    * \brief Set the value of the roughness from the nearest wall.
-   * \param[in] val_dist_i - Value of of the roughness of the nearest wall from point i 
-   * \param[in] val_dist_j - Value of of the roughness of the nearest wall from point j 
+   * \param[in] val_dist_i - Value of of the roughness of the nearest wall from point i
+   * \param[in] val_dist_j - Value of of the roughness of the nearest wall from point j
    */
   void SetRoughness(su2double val_roughness_i, su2double val_roughness_j) {
-  roughness_i = val_roughness_i;
-  roughness_j = val_roughness_j;
-}
-  
+    roughness_i = val_roughness_i;
+    roughness_j = val_roughness_j;
+  }
+
   /*!
    * \brief Set coordinates of the points.
    * \param[in] val_coord_i - Coordinates of the point i.

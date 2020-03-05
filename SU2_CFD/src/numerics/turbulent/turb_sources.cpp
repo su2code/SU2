@@ -79,7 +79,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
 //  BC Transition Model variables
   su2double vmag, rey, re_theta, re_theta_t, re_v;
   su2double tu , nu_cr, nu_t, nu_BC, chi_1, chi_2, term1, term2, term_exponential;
-  
+
   // Set the boolean here depending on whether the point is closest to a rough wall or not.
   roughwall = (roughness_i > 0.0);
 
@@ -124,31 +124,31 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
 
     dist_i_2 = dist_i*dist_i;
     nu = Laminar_Viscosity_i/Density_i;
-    
+
     /*--- Old values without roughness ---*/
     /*Ji = TurbVar_i[0]/nu;
     Ji_2 = Ji*Ji;
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);
     fv2 = 1.0 - Ji/(1.0+Ji*fv1);*/
-    
+
     /*--- Modified values for roughness ---*/
-    /*--- Ref: Aupoix, B. and Spalart, P. R., "Extensions of the Spalart-Allmaras Turbulence Model to Account for Wall Roughness," 
+    /*--- Ref: Aupoix, B. and Spalart, P. R., "Extensions of the Spalart-Allmaras Turbulence Model to Account for Wall Roughness,"
      * International Journal of Heat and Fluid Flow, Vol. 24, 2003, pp. 454-462. ---*/
     /* --- See https://turbmodels.larc.nasa.gov/spalart.html#sarough for detailed explanation. ---*/
-    
+
     Ji = TurbVar_i[0]/nu  + cr1*(roughness_i/(dist_i+EPS)); //roughness_i = 0 for smooth walls and Ji remains the same, changes only if roughness is specified.
     Ji_2 = Ji*Ji;
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);
-    
+
     /*--- Using a modified relation so as to not change the Shat that depends on fv2. ---*/
     fv2 = 1.0 - TurbVar_i[0]/(nu+TurbVar_i[0]*fv1);   // From NASA turb modeling resource and 2003 paper
-    
+
     ft2 = ct3*exp(-ct4*Ji_2);
     S = Omega;
     inv_k2_d2 = 1.0/(k2*dist_i_2);
-    
+
     Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
     Shat = max(Shat, 1.0e-10);
     inv_Shat = 1.0/Shat;
