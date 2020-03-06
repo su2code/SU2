@@ -366,7 +366,7 @@ def main():
     ### Unsteady Disc. adj. compressible RANS Windowed Average  only adjoint ###
     ####################################################################################
 
-    # NACA0012 Airfoil
+    # NACA0012 Airfoil (Test depends on results of "unsteady_NACA0012_restart_adjoint")
     unsteady_naca0012           = TestCase('unsteady_NACA0012_adjoint_only')
     unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
     unsteady_naca0012.cfg_file  = "naca0012.cfg" 
@@ -377,7 +377,8 @@ def main():
     unsteady_naca0012.tol       = 0.0001
     unsteady_naca0012.unsteady  = True
     test_list.append(unsteady_naca0012)
-
+	pass_list.append(unsteady_naca0012)
+	
     # Tests summary
     print('==================================================================')
     print('Summary of the parallel tests')
