@@ -45,6 +45,7 @@ protected:
   su2double Gamma;             /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;   /*!< \brief Fluids's Gamma - 1.0  . */
   su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
+  bool UpdateKOmega;           /*!< \brief Whether flow has converged adequately. */
 
   CTurbVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 

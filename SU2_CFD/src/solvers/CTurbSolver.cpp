@@ -39,6 +39,7 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
   nMarker       = 0;
   Inlet_TurbVars = NULL;
   snode = nullptr;
+  UpdateKOmega = false;
 }
 
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
@@ -51,6 +52,7 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   lowerlimit    = NULL;
   upperlimit    = NULL;
   nMarker       = config->GetnMarker_All();
+  UpdateKOmega  = false;
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
   nVertex = new unsigned long[nMarker];
@@ -432,8 +434,12 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
           /*--- Start turbulent sol update once flow vars have converged a few orders ---*/
           if (((log10(solver_container[FLOW_SOL]->GetRes_RMS(0)) - log10(solver_container[FLOW_SOL]->GetRes_RMS_Init(0))) < -3.0) ||
               (config->GetDiscrete_Adjoint()))
+            UpdateKOmega = true;
+
+          if (UpdateKOmega) {
           for (iVar = 0; iVar < nVar; iVar++) {
             nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+          }
           }
 
         }
