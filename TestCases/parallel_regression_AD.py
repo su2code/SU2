@@ -371,13 +371,14 @@ def main():
     unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
     unsteady_naca0012.cfg_file  = "naca0012.cfg" 
     unsteady_naca0012.test_iter = 14
-    unsteady_naca0012.test_vals = [0.202376,-0.000030, 2.688758, -0.000032, 1.0679e+00] #last 5 columns
     unsteady_naca0012.su2_exec  = "discrete_adjoint.py -a True -f"
     unsteady_naca0012.timeout   = 1600
-    unsteady_naca0012.tol       = 0.0001
+    unsteady_naca0012.reference_file = "of_grad_cd.csv.ref"
+    unsteady_naca0012.test_file = "of_grad_cd.csv"
     unsteady_naca0012.unsteady  = True
+    pass_list.append(unsteady_naca0012.run_filediff())
     test_list.append(unsteady_naca0012)
-    pass_list.append(unsteady_naca0012)
+
 	
     # Tests summary
     print('==================================================================')
