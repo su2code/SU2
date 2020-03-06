@@ -1241,13 +1241,13 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
      - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
    }
    else {
-     // pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-     pk = 0.0;
-     for (iDim = 0; iDim < nDim; iDim++) {
-       for (jDim = 0; iDim < nDim; jDim++) {
-         pk += Eddy_Viscosity_i*PrimVar_Grad_i[iDim+1][jDim]*(PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]);
-       }
-     }
+     pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+     // pk = 0.0;
+     // for (iDim = 0; iDim < nDim; iDim++) {
+     //   for (jDim = 0; iDim < nDim; jDim++) {
+     //     pk += Eddy_Viscosity_i*PrimVar_Grad_i[iDim+1][jDim]*(PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]);
+     //   }
+     // }
 
      /*--- Implicit part ---*/
      if (pk < 10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
