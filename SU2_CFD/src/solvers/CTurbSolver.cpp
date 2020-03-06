@@ -431,16 +431,9 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
           }
 
-          /*--- Start turbulent sol update once flow vars have converged a few orders ---*/
-          // if (((log10(solver_container[FLOW_SOL]->GetRes_RMS(0)) - log10(solver_container[FLOW_SOL]->GetRes_RMS_Init(0))) < -1.0) ||
-          //     (config->GetDiscrete_Adjoint()))
-          //   UpdateKOmega = true;
-
-          // if (UpdateKOmega) {
           for (iVar = 0; iVar < nVar; iVar++) {
             nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
           }
-          // }
 
         }
 
@@ -509,13 +502,15 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
     else if (sst_model) {
 
       /* We impose a limit on the maximum percentage that the
-       omega can change over a nonlinear iteration. */
+       turbulent variables can change over a nonlinear iteration. */
 
-      // const unsigned long index = iPoint*nVar + 1;
-      // su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, 1)+EPS);
-      // // if (ratio > allowableRatio) {
-      // //   localUnderRelaxation = min(allowableRatio/ratio, localUnderRelaxation);
-      // // }
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        const unsigned long index = iPoint*nVar + iVar;
+        su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, iVar)+EPS);
+        if (ratio > allowableRatio) {
+          localUnderRelaxation = min(allowableRatio/ratio, localUnderRelaxation);
+        }
+      }
       // if (ratio > allowableIncrease) {
       //   localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
       // } else if (ratio < allowableDecrease) {
