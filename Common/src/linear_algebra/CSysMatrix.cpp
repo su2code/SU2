@@ -1485,7 +1485,7 @@ void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<ScalarType> & Li
     //   Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
     // }
 
-    LinSysSol_tmp.SuperLU_pdgssvx(&A, nDOFsLocOwned_acc_allranks_counts);
+    LinSysSol_tmp.SuperLU_pdgssvx(&A, nDOFsLocOwned_acc_allranks_counts, nDOFsGlobal);
 
     // if (rank == MASTER_NODE)
     // {
@@ -1536,7 +1536,7 @@ void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<ScalarType> & Li
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::SuperLU_pdgssvx(SuperLU::SuperMatrix* A, const int* nDOFsLocOwned_acc_allranks_counts) const {
+void CSysMatrix<ScalarType>::SuperLU_pdgssvx(SuperLU::SuperMatrix* A, const int* nDOFsLocOwned_acc_allranks_counts, const unsigned long nDOFsGlobal,) const {
 
     /* SUPERLU STUFF */
     SuperLU::superlu_dist_options_t options;
