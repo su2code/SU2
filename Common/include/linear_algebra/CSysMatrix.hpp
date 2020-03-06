@@ -775,6 +775,8 @@ public:
                         const unsigned long nDOFsGlobal,
                         CSysVector<ScalarType> & LinSysSol_tmp) const;
 
+  void SuperLU_pdgssvx(SuperLU::SuperMatrix* A, const int* nDOFsLocOwned_acc_allranks_counts) const;
+
 };
 
 #ifdef CODI_REVERSE_TYPE

@@ -34,17 +34,17 @@
 
 #include <cmath>
 
-// namespace SuperLU
-// {
-// #ifdef __cplusplus
-//   extern "C" {
-// #endif
-//     #include "superlu_ddefs.h"
-//     #undef Reduce
-// #ifdef __cplusplus
-//   }
-// #endif
-// }
+namespace SuperLU
+{
+#ifdef __cplusplus
+  extern "C" {
+#endif
+    #include "superlu_ddefs.h"
+    #undef Reduce
+#ifdef __cplusplus
+  }
+#endif
+}
 
 template<class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix(void) {
@@ -1466,34 +1466,7 @@ void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<ScalarType> & Li
                                               const unsigned long nDOFsGlobal,
                                               CSysVector<ScalarType> & LinSysSol_tmp) const {
 
-    /* SUPERLU STUFF */
-    SuperLU::superlu_dist_options_t options;
-    SuperLU::SuperLUStat_t stat;
     SuperLU::SuperMatrix A;
-    SuperLU::ScalePermstruct_t ScalePermstruct;
-    SuperLU::LUstruct_t LUstruct;
-    SuperLU::SOLVEstruct_t SOLVEstruct;
-    SuperLU::gridinfo_t grid;
-    double   berr[1];
-    int      info, iam;
-    int      nprow, npcol;
-
-    nprow = size;  /* Default process rows.   */
-    npcol = 1;  /* Default process columns.   */
-
-     // ------------------------------------------------------------
-     // INITIALIZE THE SUPERLU PROCESS GRID. 
-     // ------------------------------------------------------------
-    superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
-
-    set_default_options_dist(&options);
-
-     // Initialize ScalePermstruct and LUstruct. 
-    ScalePermstructInit(nDOFsGlobal*nVar, nDOFsGlobal*nVar, &ScalePermstruct);
-    LUstructInit(nDOFsGlobal*nVar, &LUstruct);
-
-    /* Initialize the statistics variables. */
-    PStatInit(&stat);
 
     SuperLU::dCreate_CompRowLoc_Matrix_dist(&A, nDOFsGlobal*nVar, nDOFsGlobal*nVar, nnz, 
       nDOFsLocOwned_acc_allranks_counts[rank], nDOFsLocOwned_acc_allranks_displs[rank], matrix, col_ind, 
@@ -1512,8 +1485,7 @@ void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<ScalarType> & Li
     //   Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
     // }
 
-    SuperLU::pdgssvx(&options, &A, &ScalePermstruct, LinSysSol_tmp.vec_val, nDOFsLocOwned_acc_allranks_counts[rank], 1, &grid,
-      &LUstruct, &SOLVEstruct, berr, &stat, &info);
+    LinSysSol_tmp.SuperLU_pdgssvx(&A, nDOFsLocOwned_acc_allranks_counts);
 
     // if (rank == MASTER_NODE)
     // {
@@ -1561,6 +1533,43 @@ void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<ScalarType> & Li
     //   }
     // }
 
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::SuperLU_pdgssvx(SuperLU::SuperMatrix* A, const int* nDOFsLocOwned_acc_allranks_counts) const {
+
+    /* SUPERLU STUFF */
+    SuperLU::superlu_dist_options_t options;
+    SuperLU::SuperLUStat_t stat;
+    
+    SuperLU::ScalePermstruct_t ScalePermstruct;
+    SuperLU::LUstruct_t LUstruct;
+    SuperLU::SOLVEstruct_t SOLVEstruct;
+    SuperLU::gridinfo_t grid;
+    double   berr[1];
+    int      info, iam;
+    int      nprow, npcol;
+
+    nprow = size;  /* Default process rows.   */
+    npcol = 1;  /* Default process columns.   */
+
+     // ------------------------------------------------------------
+     // INITIALIZE THE SUPERLU PROCESS GRID. 
+     // ------------------------------------------------------------
+    superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
+
+    set_default_options_dist(&options);
+
+     // Initialize ScalePermstruct and LUstruct. 
+    ScalePermstructInit(nDOFsGlobal*nVar, nDOFsGlobal*nVar, &ScalePermstruct);
+    LUstructInit(nDOFsGlobal*nVar, &LUstruct);
+
+    /* Initialize the statistics variables. */
+    PStatInit(&stat);
+
+    SuperLU::pdgssvx(&options, &A, &ScalePermstruct, vec_val, nDOFsLocOwned_acc_allranks_counts[rank], 1, &grid,
+      &LUstruct, &SOLVEstruct, berr, &stat, &info);
+
     // std::cout << "Jacobian_global.resize(0, 0);" << std::endl;
     // Jacobian_global.resize(0, 0);
     // std::cout << "SuperLU::PStatFree(&stat);" << std::endl;
@@ -1584,5 +1593,4 @@ void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<ScalarType> & Li
     }
     // std::cout << "SuperLU::superlu_gridexit(&grid);" << std::endl;
     SuperLU::superlu_gridexit(&grid);
-
 }
