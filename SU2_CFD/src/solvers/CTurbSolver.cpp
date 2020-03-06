@@ -432,15 +432,15 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
           }
 
           /*--- Start turbulent sol update once flow vars have converged a few orders ---*/
-          if (((log10(solver_container[FLOW_SOL]->GetRes_RMS(0)) - log10(solver_container[FLOW_SOL]->GetRes_RMS_Init(0))) < -1.0) ||
-              (config->GetDiscrete_Adjoint()))
-            UpdateKOmega = true;
+          // if (((log10(solver_container[FLOW_SOL]->GetRes_RMS(0)) - log10(solver_container[FLOW_SOL]->GetRes_RMS_Init(0))) < -1.0) ||
+          //     (config->GetDiscrete_Adjoint()))
+          //   UpdateKOmega = true;
 
-          if (UpdateKOmega) {
+          // if (UpdateKOmega) {
           for (iVar = 0; iVar < nVar; iVar++) {
             nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
           }
-          }
+          // }
 
         }
 
