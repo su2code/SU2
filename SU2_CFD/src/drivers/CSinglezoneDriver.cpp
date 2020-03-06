@@ -2,14 +2,14 @@
  * \file driver_direct_singlezone.cpp
  * \brief The main subroutines for driving single-zone problems.
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -250,7 +250,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
   unsigned long nInnerIter, InnerIter, nTimeIter;
   su2double MaxTime, CurTime;
-  bool TimeDomain, InnerConvergence, FinalTimeReached, MaxIterationsReached;
+  bool TimeDomain, InnerConvergence, TimeConvergence, FinalTimeReached, MaxIterationsReached;
 
   nInnerIter = config_container[ZONE_0]->GetnInner_Iter();
   InnerIter  = config_container[ZONE_0]->GetInnerIter();
@@ -271,7 +271,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
       cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
       if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << " ) before convergence." << endl;
+      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << ") before convergence." << endl;
       output_container[ZONE_0]->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
     }
@@ -280,21 +280,23 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   }
 
 
+
   if (TimeDomain == YES) {
 
     /*--- Check whether the outer time integration has reached the final time ---*/
 
+    TimeConvergence = GetTimeConvergence();
     FinalTimeReached     = CurTime >= MaxTime;
     MaxIterationsReached = TimeIter+1 >= nTimeIter;
 
-    if ((FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
+    if ((FinalTimeReached || MaxIterationsReached || TimeConvergence) && (rank == MASTER_NODE)){
       cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (FinalTimeReached) cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
-      else cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
+      if (TimeConvergence)     cout << endl << "All windowed time-averaged convergence criteria are fullfilled." << endl;
+      if (FinalTimeReached)     cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
+      if (MaxIterationsReached) cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
       cout << "-------------------------------------------------------------------------" << endl;
     }
-
-    StopCalc = FinalTimeReached || MaxIterationsReached;
+    StopCalc = FinalTimeReached || MaxIterationsReached|| TimeConvergence;
   }
 
   /*--- Reset the inner convergence --- */

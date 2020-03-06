@@ -2,14 +2,14 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation 
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,7 +45,12 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization, and buffer setting ---*/
 
 #ifdef HAVE_MPI
-  SU2_MPI::Init(&argc,&argv);
+#ifdef HAVE_OMP
+  int provided;
+  SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+#else
+  SU2_MPI::Init(&argc, &argv);
+#endif
   SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
 #else
   SU2_Comm MPICommunicator(0);
@@ -307,31 +312,28 @@ int main(int argc, char *argv[]) {
     SetSensitivity_Files(geometry_container, config_container, nZone);
   }
 
-  if ((config_container[ZONE_0]->GetDesign_Variable(0) != NONE) &&
-      (config_container[ZONE_0]->GetDesign_Variable(0) != SURFACE_FILE)) {
+  for (iZone = 0; iZone < nZone; iZone++){
+    if ((config_container[iZone]->GetDesign_Variable(0) != NONE) &&
+        (config_container[iZone]->GetDesign_Variable(0) != SURFACE_FILE)) {
 
-    /*--- Initialize structure to store the gradient ---*/
+      /*--- Initialize structure to store the gradient ---*/
 
-    Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
+      Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
 
-    for (iDV = 0; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
-      Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)];
-      for (iDV_Value = 0; iDV_Value < config_container[ZONE_0]->GetnDV_Value(iDV); iDV_Value++){
-        Gradient[iDV][iDV_Value] = 0.0;
+      for (iDV = 0; iDV  < config_container[iZone]->GetnDV(); iDV++){
+        Gradient[iDV] = new su2double[config_container[iZone]->GetnDV_Value(iDV)];
+        for (iDV_Value = 0; iDV_Value < config_container[iZone]->GetnDV_Value(iDV); iDV_Value++){
+          Gradient[iDV][iDV_Value] = 0.0;
+        }
       }
-    }
 
-    if (rank == MASTER_NODE)
-      cout << "\n---------- Start gradient evaluation using sensitivity information ----------" << endl;
+      if (rank == MASTER_NODE)
+        cout << "\n---------- Start gradient evaluation using sensitivity information ----------" << endl;
 
-    /*--- Write the gradient in a external file ---*/
+      /*--- Write the gradient in a external file ---*/
 
-    if (rank == MASTER_NODE)
-      Gradient_file.open(config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str(), ios::out);
-
-    /*--- Loop through each zone and add it's contribution to the gradient array ---*/
-
-    for (iZone = 0; iZone < nZone; iZone++){
+      if (rank == MASTER_NODE)
+        Gradient_file.open(config_container[iZone]->GetObjFunc_Grad_FileName().c_str(), ios::out);
 
       /*--- Definition of the Class for surface deformation ---*/
 
@@ -348,20 +350,20 @@ int main(int argc, char *argv[]) {
         SetProjection_AD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
       else
         SetProjection_FD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
+
+      /*--- Print gradients to screen and file ---*/
+
+      OutputGradient(Gradient, config_container[iZone], Gradient_file);
+
+      if (rank == MASTER_NODE)
+        Gradient_file.close();
+
+      for (iDV = 0; iDV  < config_container[iZone]->GetnDV(); iDV++){
+        delete [] Gradient[iDV];
+      }
     }
-
-    /*--- Print gradients to screen and file ---*/
-
-    OutputGradient(Gradient, config_container[ZONE_0], Gradient_file);
-
-    if (rank == MASTER_NODE)
-      Gradient_file.close();
-
-    for (iDV = 0; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
-      delete [] Gradient[iDV];
-    }
-    delete [] Gradient;
   }
+  delete [] Gradient;
 
   delete config;
   config = NULL;
