@@ -377,7 +377,7 @@ def main():
     unsteady_naca0012.tol       = 0.0001
     unsteady_naca0012.unsteady  = True
     test_list.append(unsteady_naca0012)
-	pass_list.append(unsteady_naca0012)
+    pass_list.append(unsteady_naca0012)
 	
     # Tests summary
     print('==================================================================')
