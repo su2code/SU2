@@ -1536,7 +1536,7 @@ void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<ScalarType> & Li
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::SuperLU_pdgssvx(SuperLU::SuperMatrix* A, const int* nDOFsLocOwned_acc_allranks_counts, const unsigned long nDOFsGlobal,) const {
+void CSysMatrix<ScalarType>::SuperLU_pdgssvx(SuperLU::SuperMatrix* A, const int* nDOFsLocOwned_acc_allranks_counts, const unsigned long nDOFsGlobal) const {
 
     /* SUPERLU STUFF */
     SuperLU::superlu_dist_options_t options;
