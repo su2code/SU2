@@ -768,12 +768,12 @@ public:
                                    CGeometry *geometry, CConfig *config) const;
 
 
-  void SuperLU_LinSolver(const CSysVector<su2double> & LinSysRes,
-                        CSysVector<su2double> & LinSysSol, CGeometry *geometry, CConfig *config,
+  void SuperLU_LinSolver(const CSysVector<ScalarType> & LinSysRes,
+                        CSysVector<ScalarType> & LinSysSol, CGeometry *geometry, CConfig *config,
                         const unsigned long* nDOFsLocOwned_acc_allranks_counts,
                         const unsigned long* nDOFsLocOwned_acc_allranks_displs, 
                         const unsigned long nDOFsGlobal,
-                        const CSysMatrix<su2double> & MassMatrix_local) const;
+                        const CSysMatrix<ScalarType> & MassMatrix_local) const;
 
 };
 

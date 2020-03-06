@@ -219,10 +219,10 @@ protected:
                                                                      for the locally owned DOFs. */
   vector<passivedouble> SpatialJacobian;    /*!< \brief Vector containing the Spatial Jacobian used for implicit schemes. */
 
-  CSysMatrix<passivedouble> MassMatrix_local;
+  CSysMatrix<su2double> MassMatrix_local;
 
   vector<unsigned long> MassMatrix_col_ind;
-  
+
   vector<unsigned long> MassMatrix_row_ptr;
 
   vector<unsigned long> nNonZeroEntries;

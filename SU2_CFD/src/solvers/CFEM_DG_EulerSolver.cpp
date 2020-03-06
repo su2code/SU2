@@ -7317,7 +7317,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
                   tripletList.push_back(T(i*nVar+iVar/nVar,nonZeroEntriesJacobian[i][j]*nVar+iVar%nVar,SpatialJacobian[iJac]));
                 }
                 iJac++;
-                Jacobian.PrintInner(nVolElemOwned*3);
+                // Jacobian.PrintInner(nVolElemOwned*3);
             }
         }
     }
