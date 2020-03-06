@@ -432,7 +432,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
           }
 
           /*--- Start turbulent sol update once flow vars have converged a few orders ---*/
-          if (((log10(solver_container[FLOW_SOL]->GetRes_RMS(0)) - log10(solver_container[FLOW_SOL]->GetRes_RMS_Init(0))) < -3.0) ||
+          if (((log10(solver_container[FLOW_SOL]->GetRes_RMS(0)) - log10(solver_container[FLOW_SOL]->GetRes_RMS_Init(0))) < -1.0) ||
               (config->GetDiscrete_Adjoint()))
             UpdateKOmega = true;
 
@@ -476,12 +476,16 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
                    (config->GetKind_Turb_Model() == SA_COMP)   ||
                    (config->GetKind_Turb_Model() == SA_E_COMP));
 
+  bool sst_model = ((config->GetKind_Turb_Model() == SST) ||
+                    (config->GetKind_Turb_Model() == SST_SUST));
+
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
   su2double localUnderRelaxation    =  1.00;
   const su2double allowableDecrease = -0.99;
   const su2double allowableIncrease =  0.99;
+  const su2double allowableRatio    = 0.2;
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -501,6 +505,18 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
         }
 
       }
+    }
+    else if (sst_model) {
+
+      /* We impose a limit on the maximum percentage that the
+       omega can change over a nonlinear iteration. */
+
+      const unsigned long index = iPoint*nVar + 1;
+      su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, 1)+EPS);
+      if (ratio > allowableRatio) {
+        localUnderRelaxation = min(allowableRatio/ratio, localUnderRelaxation);
+      }
+
     }
 
     /* Choose the minimum factor between mean flow and turbulence. */
