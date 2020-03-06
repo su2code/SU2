@@ -511,16 +511,16 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
       /* We impose a limit on the maximum percentage that the
        omega can change over a nonlinear iteration. */
 
-      const unsigned long index = iPoint*nVar + 1;
-      su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, 1)+EPS);
-      // if (ratio > allowableRatio) {
-      //   localUnderRelaxation = min(allowableRatio/ratio, localUnderRelaxation);
+      // const unsigned long index = iPoint*nVar + 1;
+      // su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, 1)+EPS);
+      // // if (ratio > allowableRatio) {
+      // //   localUnderRelaxation = min(allowableRatio/ratio, localUnderRelaxation);
+      // // }
+      // if (ratio > allowableIncrease) {
+      //   localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
+      // } else if (ratio < allowableDecrease) {
+      //   localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
       // }
-      if (ratio > allowableIncrease) {
-        localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
-      } else if (ratio < allowableDecrease) {
-        localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
-      }
 
     }
 
