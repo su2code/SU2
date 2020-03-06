@@ -3604,7 +3604,7 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
     }
   }
 
-  Jacobian.Initialize_DG(nDOFsGlobal, nDOFsLocOwned, nVar, nVar, nNonZeroEntries, nonZeroEntriesJacobian_flat, nDOFsLocOwned, geometry, config);
+  Jacobian_DG.Initialize_DG(nDOFsGlobal, nDOFsLocOwned, nVar, nVar, nNonZeroEntries, nonZeroEntriesJacobian_flat, nDOFsLocOwned, geometry, config);
 
   MassMatrix_col_ind.clear(); //0,1,2,0,1,2,0,1,2,3,4,5,3,4,5,3,4,5...
   MassMatrix_row_ptr.clear(); // 0,3,6,9,
@@ -3625,7 +3625,7 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
     for (unsigned int j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
       // std::cout << "i = " << i << ", j = " << j << ", nonZeroEntriesJacobian[i][j] = " << nonZeroEntriesJacobian[i][j] 
       // << ", nNonZeroEntries[i] + j = " << nNonZeroEntries[i] + j << std::endl;
-      Jacobian.SetBlock(i, nonZeroEntriesJacobian[i][j], SpatialJacobian.data()+nVar2*(nNonZeroEntries[i] + j));
+      Jacobian_DG.SetBlock(i, nonZeroEntriesJacobian[i][j], SpatialJacobian.data()+nVar2*(nNonZeroEntries[i] + j));
     }
   }
 
@@ -7392,7 +7392,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
             unsigned long block_j = offset + k + nDOFsLocOwned_acc_allranks[rank];
             // std::cout << "block_i =" << block_i << ", block_j =" << block_j << std::endl;
             auto v = 1.0/(ResRatio*Min_Delta_Time)*volElem[l].massMatrix[j*nDOFs + k];
-            Jacobian.AddBlockDiag(block_i, block_j, v);
+            Jacobian_DG.AddBlockDiag(block_i, block_j, v);
             MassMatrix_local.AddBlockDiag(offset+j, offset+k, v);
           }
         }
@@ -7506,7 +7506,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     {
       Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
     }
-      Jacobian.SuperLU_LinSolver(LinSysRes, LinSysSol, geometry, config, nDOFsLocOwned_acc_allranks_counts, nDOFsLocOwned_acc_allranks_displs, nDOFsGlobal, LinSysSol_tmp);
+    Jacobian_DG.SuperLU_LinSolver(LinSysRes, LinSysSol, geometry, config, nDOFsLocOwned_acc_allranks_counts, nDOFsLocOwned_acc_allranks_displs, nDOFsGlobal, LinSysSol_tmp);
     
   //   // std::cout << "Starting SUPERLU" << std::endl;
   //   SuperLU::pdgssvx(&options, &A, &ScalePermstruct, mSol_delta.data(), nDOFsLocOwned_acc_allranks_counts[rank], 1, &grid,

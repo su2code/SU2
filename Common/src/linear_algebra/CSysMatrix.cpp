@@ -1459,12 +1459,13 @@ template void  CSysMatrix<passivedouble>::MatrixMatrixAddition(su2double, const 
 #endif
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<ScalarType> & LinSysRes,
-                                              CSysVector<ScalarType> & LinSysSol, CGeometry *geometry, CConfig *config,
+template<class OtherType>
+void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<OtherType> & LinSysRes,
+                                              CSysVector<OtherType> & LinSysSol, CGeometry *geometry, CConfig *config,
                                               const int* nDOFsLocOwned_acc_allranks_counts,
                                               const int* nDOFsLocOwned_acc_allranks_displs, 
                                               const unsigned long nDOFsGlobal,
-                                              CSysVector<ScalarType> & LinSysSol_tmp) const {
+                                              CSysVector<OtherType> & LinSysSol_tmp) const {
 
     /* SUPERLU STUFF */
     SuperLU::superlu_dist_options_t options;
