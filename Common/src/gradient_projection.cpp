@@ -88,7 +88,7 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
  */
 void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian) {
 
-//// new version
+ /// new version
 
   unsigned short nDim, nMarker, nDV, nDV_Value, nDV_Total, nPoint, nTotal_Index, nVertex;
   unsigned short iDV, iDV_Value, iDV_index, iPoint, iDim, total_index, iMarker, iVertex, subDim;
@@ -102,10 +102,8 @@ void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CS
   nPoint  = geometry->GetnPoint();
   nTotal_Index = nPoint*nDim;
   nDV     = config->GetnDV();
-  // calculate total number of design variables
-  for (iDV=0; iDV<nDV; iDV++) {
-    nDV_Total += config->GetnDV_Value(iDV);
-  }
+  nDV_Total = config->GetnDV_Total();
+
   // structure to calculate and manage the total number of marked points
   unsigned* visitedPoints = new unsigned[nPoint];
   for (iPoint=0; iPoint<nPoint; iPoint++){
@@ -228,11 +226,8 @@ void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CS
 
 MatrixType Cast2Eigenmatrix(CGeometry *geometry, CConfig *config, su2double *Jacobian) {
 
-  unsigned nDV = config->GetnDV(), nDV_Total;
-  // calculate total number of design variables
-  for (auto iDV=0; iDV<nDV; iDV++) {
-    nDV_Total += config->GetnDV_Value(iDV);
-  }
+  unsigned nDV_Total = config->GetnDV_Total();
+
   unsigned short nDim    = geometry->GetnDim();
   unsigned long nPoint  = geometry->GetnPoint();
 

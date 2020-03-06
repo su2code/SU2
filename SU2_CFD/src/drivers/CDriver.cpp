@@ -3271,15 +3271,10 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
   }
 
   /*--- For gradient smoothing we need to calculate the projections between volume, surface and design parameters ---*/
-  // TODO: check if this is the correct initialization
-  if ( config->GetProject2Surface() || config->GetSmoothOnSurface() ) {
+  if ( config->GetSmoothGradient() ) {
     grid_movement = new CVolumetricMovement(geometry[MESH_0], config);
-  }
-
-  if ( config->GetSurface2DV() ) {
     surface_movement = new CSurfaceMovement();
     surface_movement->CopyBoundary(geometry[MESH_0], config);
-    // TODO: Check if surface_movement->SetSurface_Derivative(geometry[MESH_0],config); here is useful for forward projection
   }
 
 }

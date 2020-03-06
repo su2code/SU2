@@ -328,8 +328,6 @@ inline su2double CConfig::GetSmoothingParamSecond(void) { return SmoothingParamS
 
 inline bool CConfig::GetSepDim(void) { return SepDim; }
 
-inline bool CConfig::GetProject2Surface(void) { return Project2Surface; }
-
 inline bool CConfig::GetSmoothOnSurface(void) { return SmoothOnSurface; }
 
 inline bool CConfig::GetDirichletSurfaceBound(void) { return DirichletSurfaceBound; }
@@ -337,8 +335,6 @@ inline bool CConfig::GetDirichletSurfaceBound(void) { return DirichletSurfaceBou
 inline bool CConfig::GetSobDebugMode(void) { return DebugMode; }
 
 inline bool CConfig::GetSecOrdQuad(void) { return SecOrdQuad; }
-
-inline bool CConfig::GetSurface2DV(void) { return Surface2DV; }
 
 inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
 
@@ -780,6 +776,14 @@ inline string CConfig::GetTagFFDBox(unsigned short val_ffd) {	return TagFFDBox[v
 inline unsigned short CConfig::GetnDV(void) {	return nDV; }
 
 inline unsigned short CConfig::GetnDV_Value(unsigned short iDV) {	return nDV_Value[iDV]; }
+
+inline unsigned short CConfig::GetnDV_Total(void) {
+  unsigned short sum=0;
+  for (unsigned short iDV=0; iDV<nDV; iDV++) {
+    sum += nDV_Value[iDV];
+  }
+  return sum;
+  }
 
 inline unsigned short CConfig::GetnFFDBox(void) {	return nFFDBox; }
 

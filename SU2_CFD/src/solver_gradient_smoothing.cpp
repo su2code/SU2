@@ -163,11 +163,9 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
     }
   }
 
-
-  for (auto iDV=0; iDV<config->GetnDV(); iDV++) {
-    for(auto iDVvalue=0; iDVvalue<config->GetnDV_Value(iDV); iDVvalue++) {
-      deltaP.push_back(0.0);
-    }
+  /*--- vector for the parameter gradient ---*/
+  for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++) {
+    deltaP.push_back(0.0);
   }
 
 }
@@ -213,10 +211,6 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
 
   Compute_StiffMatrix(geometry, numerics, config);
 
-  ofstream matrix ("matrix.dat");
-  Jacobian.printMat(matrix);
-  matrix.close();
-
   if ( config->GetSepDim() ) {
 
     for (dir = 0; dir < nDim ; dir++) {
@@ -247,33 +241,13 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
       LinSysRes.SetValZero();
     }
 
-    ofstream input ("input.txt");
-    auxVecInp.printVec(input);
-    input.close();
-
-    ofstream rhs ("rhs.txt");
-    auxVecRHS.printVec(rhs);
-    rhs.close();
-
-    ofstream output ("output.txt");
-    auxVecOut.printVec(output);
-    output.close();
-
   } else {
 
     for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
-      su2double x = geometry->node[iPoint]->GetCoord(0);
-      su2double y = geometry->node[iPoint]->GetCoord(1);
       for (auto iDim = 0; iDim < nDim ; iDim++) {
-        auxVecInp.SetBlock(iPoint, iDim, 1.0 );
+        auxVecInp.SetBlock(iPoint, iDim, solver->GetNodes()->GetSensitivity(iPoint ,iDim));
       }
     }
-
-    /*
-    -2.0*3.14159265359*3.14159265359*sin(3.14159265359*x)*sin(3.14159265359*y)
-    cos(3.14159265359*geometry->node[iPoint]->GetCoord(0))*cos(3.14159265359*geometry->node[iPoint]->GetCoord(1))
-
-    */
 
     Compute_Residual(geometry, solver, config);
 
@@ -282,24 +256,6 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
     Solve_Linear_System(geometry, config);
 
     WriteSensitivities(geometry, solver, config);
-
-    for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
-      for (auto iDim = 0; iDim < nDim ; iDim++) {
-        auxVecOut.SetBlock(iPoint, iDim, solver->GetNodes()->GetSensitivity(iPoint ,iDim));
-      }
-    }
-
-    ofstream input ("input.txt");
-    auxVecInp.printVec(input);
-    input.close();
-
-    ofstream rhs ("rhs.txt");
-    LinSysRes.printVec(rhs);
-    rhs.close();
-
-    ofstream output ("output.txt");
-    auxVecOut.printVec(output);
-    output.close();
 
   }
 
@@ -348,17 +304,6 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
 
     }
 
-    for (iNode=0;iNode<nNodes;iNode++) {
-
-      su2double x = geometry->node[indexNode[iNode]]->GetCoord(0);
-      su2double y = geometry->node[indexNode[iNode]]->GetCoord(1);
-      auto meshVertexI = geometry->node[indexNode[iNode]]->GetGlobalIndex();
-      /*std::cout << "For elem " << iElem << " Point (" << x << ", " << y << ")" << std::endl <<
-                   "local Index: " << iNode << std::endl <<
-                   "global SU2 Index: " << indexNode[iNode] << std::endl <<
-                   "mesh Index: " << meshVertexI << std::endl;*/
-  }
-
     /*--- compute the contributions of the single elements inside the numerics container ---*/
 
     numerics[GRAD_TERM]->Compute_Tangent_Matrix(element_container[GRAD_TERM][EL_KIND], config);
@@ -394,9 +339,6 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
 
 
 void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config, unsigned long val_marker){
-
-  // TO DO
-  // - check initialisation of nElem_Bound and bound
 
   unsigned long iElem, iPoint, iVertex;
   unsigned short iNode, jNode, nNodes = 0, NelNodes;
@@ -438,21 +380,6 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
       }
     }
 
-  /*
-  for (iNode=0;iNode<nNodes;iNode++) {
-
-    su2double x = Get_ValCoord(geometry, indexNode[iNode], 0);
-    su2double y = Get_ValCoord(geometry, indexNode[iNode], 1);
-    su2double z = Get_ValCoord(geometry, indexNode[iNode], 2);
-    auto meshVertexI = geometry->node[indexNode[iNode]]->GetGlobalIndex();
-    std::cout << "For elem " << iElem << " Point (" << x << ", " << y << ", " << z << ")" << std::endl <<
-                 "local Index: " << iNode << std::endl <<
-                 "global SU2 Index: " << indexNode[iNode] << std::endl <<
-                 "boundary Index: "<< indexVertex[iNode] << std::endl <<
-                 "mesh Index: " << meshVertexI << std::endl;
-  }
-  */
-
     /*--- compute the contributions of the single elements inside the numerics container ---*/
     numerics[GRAD_TERM]->SetCoord(Coord);
     numerics[GRAD_TERM]->Compute_Tangent_Matrix(element_container[GRAD_TERM][EL_KIND], config);
@@ -466,11 +393,7 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
 
         DHiDHj = element_container[GRAD_TERM][EL_KIND]->Get_DHiDHj(iNode, jNode);
         HiHj = element_container[GRAD_TERM][EL_KIND]->Get_HiHj(iNode, jNode);
-
         Jacobian_ij[0][0] = DHiDHj[0][0] + HiHj;
-
-        //std::cout << iNode << ", " << jNode << ", " << indexVertex[iNode] <<", " <<indexVertex[jNode] << ", "<< DHiDHj[0][0] <<std::endl;
-
         Jacobian.AddBlock(indexVertex[iNode], indexVertex[jNode], Jacobian_ij);
 
       }
@@ -544,8 +467,6 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
           for (iDim = 0; iDim < nDim; iDim++) {
 
             if (config->GetSobDebugMode()) {
-              su2double Ni =element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss);
-              su2double input = auxVecInp.GetBlock(indexNode[iNode], iDim);
               Residual[iDim] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * auxVecInp.GetBlock(indexNode[iNode], iDim);
             } else {
               Residual[iDim] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * solver->GetNodes()->GetSensitivity(indexNode[iNode], iDim);
@@ -647,6 +568,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
 void CGradientSmoothingSolver::Impose_BC(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
   unsigned short iMarker;
+
   /*--- Get the boundary markers and iterate over them ---------------------------------*/
   /* Notice that for no marker we automatically impose Zero Neumann boundary conditions */
 
@@ -875,12 +797,9 @@ void CGradientSmoothingSolver::MultiplyByVolumeDeformationStiffness(CGeometry *g
   LinSysRes.SetValZero();
   LinSysSol.SetValZero();
 
-  // extract the sensitivities
-  // SetBoundaryDerivativesForMultiplication(geometry, solver, config, Transpose);
-
   for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
     for (auto iDim = 0; iDim < nDim ; iDim++) {
-      LinSysRes.SetBlock(iPoint, iDim, 1.0);
+      LinSysRes.SetBlock(iPoint, iDim, nodes->GetSensitivity(iPoint,iDim));
     }
   }
 
@@ -960,9 +879,6 @@ su2activematrix CGradientSmoothingSolver::GetElementCoordinates(CGeometry *geome
 
 void CGradientSmoothingSolver::ApplyGradientSmoothingOnSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker) {
 
-  unsigned long iPoint;
-  unsigned short iDim;
-
   /*--- Initialize vector and sparse matrix ---*/
   LinSysSol.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], 1, 0.0);
   LinSysRes.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], 1, 0.0);
@@ -984,26 +900,6 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingOnSurface(CGeometry *geomet
   Solve_Linear_System(geometry, config);
 
   WriteSensitivities(geometry, solver, config, val_marker);
-
-  // some tests for the matrix conversion
-
-  ofstream matrix ("matrix.dat");
-  Jacobian.printMat(matrix);
-  matrix.close();
-
-  // blow up the matrix to the fitting dimension
-  auto mat = Jacobian.ConvertToEigen();
-  MatrixType largeMat = MatrixType::Zero(nDim*mat.rows(), nDim*mat.cols());
-  for (auto i=0; i<mat.rows(); i++) {
-    for (auto j=0; j<mat.cols(); j++) {
-      largeMat(2*i,2*j) = mat(i,j);
-      largeMat(2*i+1,2*j+1) = mat(i,j);
-    }
-  }
-
-  ofstream eigen_matrix("eigen_matrix.dat");
-  eigen_matrix << largeMat;
-  eigen_matrix.close();
 
 }
 
@@ -1097,20 +993,17 @@ void CGradientSmoothingSolver::OutputDVGradient() {
 }
 
 
-void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CConfig *config, su2double *param_jacobi) {
+void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CConfig *config, CVolumetricMovement* grid_movement, su2double *param_jacobi) {
 
   cout << endl << "Calculating the original DV gradient." << endl;
 
   WriteSens2Geometry(geometry,config);
 
-  CVolumetricMovement* grid_movement = new CVolumetricMovement(geometry, config);
   grid_movement->SetVolume_Deformation(geometry, config, false, true);
 
   ReadSens2Geometry(geometry,config);
 
   MultiplyParameterJacobian(param_jacobi, false);
-
-  OutputDVGradient();
 
 }
 
@@ -1142,13 +1035,9 @@ void CGradientSmoothingSolver::SmoothConsecutive(CGeometry *geometry, CSolver *s
 
   cout << endl << "Applying Sobolev Smoothing by consecutive LES solve." << endl;
 
-  unsigned nDV = config->GetnDV(), nDV_Total=0;
-  // calculate total number of design variables
-  for (auto iDV=0; iDV<nDV; iDV++) {
-    nDV_Total += config->GetnDV_Value(iDV);
-  }
-  unsigned short nDim    = geometry->GetnDim();
-  unsigned long nPoint  = geometry->GetnPoint();
+  unsigned nDV_Total = config->GetnDV_Total();
+  unsigned short nDim = geometry->GetnDim();
+  unsigned long nPoint = geometry->GetnPoint();
 
   /// get the Eigenmatrices for the LES
   Eigen::Map<Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> param_jacobi_eigen(&param_jacobi[0], nDV_Total, nPoint*nDim);
@@ -1218,12 +1107,7 @@ void CGradientSmoothingSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver
 
   cout << endl << "Applying Sobolev Smoothing by assembling the whole system matrix." << endl;
 
-  unsigned nDV = config->GetnDV(), nDV_Total=0, nSurfaceVertex=0, nVertex;
-  // calculate total number of design variables
-  for (auto iDV=0; iDV<nDV; iDV++) {
-    nDV_Total += config->GetnDV_Value(iDV);
-  }
-  unsigned short nDim    = geometry->GetnDim();
+  unsigned short nDV_Total= config->GetnDV_Total(), nVertex, nDim = geometry->GetnDim();
   unsigned long nPoint  = geometry->GetnPoint();
 
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -1231,7 +1115,7 @@ void CGradientSmoothingSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver
 
       nVertex = geometry->nVertex[iMarker];
 
-      // get the reduces parameterization jacobian
+      // get the reduced parameterization jacobian
       MatrixType param_jacobi_eigen(nDV_Total, nVertex*nDim);
       for (auto iDVindex=0; iDVindex<nDV_Total; iDVindex++) {
         for (auto iVertex = 0; iVertex <nVertex; iVertex++) {
@@ -1252,7 +1136,6 @@ void CGradientSmoothingSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver
       ofstream SysMatrix("SysMatrix.dat");
       SysMatrix << SysMat;
       SysMatrix.close();
-
 
       // solve the system
       QRdecomposition QR(SysMat);

@@ -1162,7 +1162,7 @@ inline void CSolver::MultiplyParameterJacobian(su2double *Jacobian, bool transpo
 
 inline void CSolver::OutputDVGradient() { }
 
-inline void CSolver::CalculateOriginalGradient(CGeometry *geometry, CConfig *config, su2double *param_jacobi) { }
+inline void CSolver::CalculateOriginalGradient(CGeometry *geometry, CConfig *config, CVolumetricMovement* grid_movement, su2double *param_jacobi) { }
 
 inline void CSolver::SmoothConsecutive(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi) { }
 

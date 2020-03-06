@@ -132,8 +132,4 @@ public:
    */
   void DerivativeTreatment(void);
 
-  /*!
-   * \brief TODO: only for development, remove later
-   */
-  void OldDerivativeTreatment(void);
 };

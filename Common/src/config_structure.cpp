@@ -1681,16 +1681,12 @@ void CConfig::SetConfig_Options() {
   addBoolOption("SEPARATE_DIMENSIONS",SepDim, false);
   /* DESCRIPTION: Switch to calculate dimensions separated */
   addBoolOption("SECOND_ORDER_INTEGRATION",SecOrdQuad, true);
-  /* DESCRIPTION: Switch to activate the projection onto the surface */
-  addBoolOption("PROJECT_TO_SURFACE",Project2Surface, false);
   /* DESCRIPTION: Switch to activate working on the surface only */
   addBoolOption("SMOOTH_ON_SURFACE",SmoothOnSurface, false);
   /* DESCRIPTION: Switch to activate zero Dirichlet boundary for surface mode */
   addBoolOption("DIRICHLET_SURFACE_BOUNDARY",DirichletSurfaceBound, false);
   /* DESCRIPTION: Switch to activate somecode pieces for debbuging */
   addBoolOption("DEBUG_MODE",DebugMode, false);
-  /* DESCRIPTION: Switch to activate the projection to the design variables in SU2_CFD */
-  addBoolOption("SURFACE_TO_DV",Surface2DV, false);
 
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
@@ -8197,7 +8193,7 @@ bool CConfig::GetVolumetric_Movement(){
       DirectDiff)
   { volumetric_movement = true;}
 
-  if (GetProject2Surface() || GetSmoothOnSurface())
+  if (GetSmoothGradient())
   { volumetric_movement=true; }
 
   return volumetric_movement;

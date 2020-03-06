@@ -535,183 +535,12 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
     solver[IDX_SOL]->SetSensitivity(geometry, solver, config);
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
-  // TODO: check if all sensitivities are correctly copied to the nodes structure before clearing the adjoints?
   AD::ClearAdjoints();
 
   /*--- If necessary smooth the calculated geometry sensitivities ---*/
   if (config->GetSmoothGradient()) {
     DerivativeTreatment();
   }
-
-}
-
-void CDiscAdjSinglezoneDriver::OldDerivativeTreatment(){
-
-  unsigned nDV = 0, nDV_Value, nDVtotal=0, nPoint = 0, iDV, iDV_Value, iDVindex=0, iPoint, iDim, total_index;
-  unsigned iMarker, nMarker, iVertex,  nVertex;
-  nDV = config->GetnDV();
-  nMarker = config->GetnMarker_All();
-
-  // calculate total number of design variables
-  for (iDV=0; iDV<nDV; iDV++) {
-    nDVtotal += config->GetnDV_Value(iDV);
-  }
-  // soo far just work with all the points
-  nPoint = geometry->GetnPoint();
-  // vector to store the Gradient
-  su2double** Gradient;
-  Gradient =  new su2double*[nDVtotal];
-  for(iDVindex=0; iDVindex<nDVtotal; iDVindex++) {
-    Gradient[iDVindex] = new su2double[nPoint*nDim];
-  }
-
-  /*--- projections between design parameters and mesh coordinates ---*/
-
-  if (config->GetSurface2DV()) {
-    //  GetParameterizationJacobianReverse(geometry, config, surface_movement[ZONE_0], Gradient);
-
-    // output for some checks
-
-    /* only output surface */
-    ofstream DV_Jacobian ("DV_Jacobian.csv");
-    DV_Jacobian.precision(17);
-    iDVindex=0;
-    for (iDV=0; iDV<nDV; iDV++) {
-      nDV_Value =  config->GetnDV_Value(iDV);
-      for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-
-        for (iMarker = 0; iMarker < nMarker; iMarker++) {
-          if (config->GetMarker_All_DV(iMarker) == YES) {
-            nVertex = geometry->nVertex[iMarker];
-            for (iVertex = 0; iVertex <nVertex; iVertex++) {
-              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-              for (iDim = 0; iDim < nDim; iDim++){
-                total_index = iPoint*nDim+iDim;
-                DV_Jacobian << Gradient[iDVindex][total_index] << ",";
-              }
-            }
-          }
-        }
-        iDVindex++;
-        DV_Jacobian << std::endl;
-      }
-    }
-    DV_Jacobian.close();
-
-    ofstream Coordinates ("surface_coordinates.csv");
-    Coordinates.precision(17);
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (config->GetMarker_All_DV(iMarker) == YES) {
-        nVertex = geometry->nVertex[iMarker];
-        for (iVertex = 0; iVertex <nVertex; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          for (iDim = 0; iDim < nDim; iDim++){
-            Coordinates << geometry->node[iPoint]->GetCoord(iDim) << ",";
-          }
-        }
-      }
-    }
-    Coordinates.close();
-
-    /* output all the stuff
-    ofstream DV_Jacobian ("DV_Jacobian.csv");
-    iDVindex=0;
-    for (iDV=0; iDV<nDV; iDV++) {
-      nDV_Value =  config->GetnDV_Value(iDV);
-      for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-        for (auto total_index=0; total_index<nPoint*nDim; total_index++) {
-          DV_Jacobian << Gradient[iDVindex][total_index] << ",";
-        }
-        DV_Jacobian << std::endl;
-      }
-      iDVindex++;
-    }
-    DV_Jacobian.close();
-
-    ofstream Coordinates ("surface_coordinates.csv");
-    for (iPoint=0; iPoint < geometry->GetnPoint(); iPoint++) {
-      for (iDim=0; iDim < geometry->GetnDim(); iDim++) {
-        Coordinates << geometry->node[iPoint]->GetCoord(iDim) << ",";
-      }
-    }
-    Coordinates.close();
-    */
-  }
-
-  /*--- apply the method on the marked surfaces only ---*/
-  if ( config->GetSmoothGradient() && config->GetSmoothOnSurface() ) {
-
-    // project to the surfaces
-    // grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry, config, false, true);
-    // smooth on the marked boundaries
-    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ( config->GetMarker_All_SobolevBC(iMarker) == YES ) {
-            solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingOnSurface(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, iMarker);
-      }
-    }
-
-  /*--- apply the method in the volume and project onto the surfaces ---*/
-  } else if ( config->GetSmoothGradient() && config->GetProject2Surface() ) {
-
-    std::cout << "Smoothing the gradient in the volume." <<std::endl;
-    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config);
-    std::cout << "Calculating projection of the gradient onto the surface." <<std::endl;
-    solver[GRADIENT_SMOOTHING]->MultiplyByVolumeDeformationStiffness(geometry, solver[ADJFLOW_SOL], grid_movement[ZONE_0][INST_0], config, false);
-
-  /*--- apply the method in the volume ---*/
-  } else if ( config->GetSmoothGradient() ) {
-
-    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config);
-
-  }
-
-
-  for(iDVindex=0; iDVindex<nDVtotal; iDVindex++) {
-    delete [] Gradient[iDVindex];
-  }
-  delete [] Gradient;
-
-//// stuff that might be useful later
-/*
-  ofstream delta_surface ("delta_surface.txt");
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_DV(iMarker) == YES) {
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        for (iDim = 0; iDim < nDim; iDim++) {
-          total_index = iPoint*nDim+iDim;
-          delta_surface << solver[GRADIENT_SMOOTHING]->GetNodes()->GetSensitivity(iPoint ,iDim) << ",";
-        }
-      }
-    }
-  }
-  delta_surface.close();
-
-  ofstream DV_Jacobian ("DV_Jacobian.txt");
-  DV_Jacobian.precision(17);
-  auto iDVindex=0;
-  for (auto iDV=0; iDV<config->GetnDV(); iDV++) {
-    auto nDV_Value =  config->GetnDV_Value(iDV);
-    for (auto iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-
-      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-        if (config->GetMarker_All_DV(iMarker) == YES) {
-          auto nVertex = geometry->nVertex[iMarker];
-          for (iVertex = 0; iVertex <nVertex; iVertex++) {
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            for (iDim = 0; iDim < nDim; iDim++){
-              total_index = iPoint*nDim+iDim;
-              DV_Jacobian << param_jacobi[iDVindex][total_index] << ",";
-            }
-          }
-        }
-      }
-      iDVindex++;
-      DV_Jacobian << std::endl;
-    }
-  }
-  DV_Jacobian.close();
-*/
 
 }
 
@@ -725,9 +554,7 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
   /// variable declarations
   unsigned iDV, nDVtotal=0;
   unsigned nPoint = geometry->GetnPoint();
-  for (iDV=0; iDV<config->GetnDV(); iDV++) {
-    nDVtotal += config->GetnDV_Value(iDV);
-  }
+  nDVtotal = config->GetnDV_Total();
 
   // vector to store the Gradient
   su2double* param_jacobi;
@@ -740,7 +567,7 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
   GetParameterizationJacobianReverse(geometry, config, surface_movement[ZONE_0], param_jacobi);
 
   /// calculate the normal output gradient similar to SU2_DOT
-  solver[GRADIENT_SMOOTHING]->CalculateOriginalGradient(geometry, config, param_jacobi);
+  solver[GRADIENT_SMOOTHING]->CalculateOriginalGradient(geometry, config, grid_movement[ZONE_0][INST_0], param_jacobi);
 
 
   ofstream DV_Jacobian ("DV_Jacobian.txt");

@@ -4551,7 +4551,7 @@ public:
   /*!
    * \brief calculate the original DV gradient similar to SU2_DOT_AD
    */
-  virtual void CalculateOriginalGradient(CGeometry *geometry, CConfig *config, su2double *param_jacobi);
+  virtual void CalculateOriginalGradient(CGeometry *geometry, CConfig *config, CVolumetricMovement* grid_movement, su2double *param_jacobi);
 
   /*!
    * \brief Smooth the system by solving each LES in consecutive order
@@ -12516,7 +12516,7 @@ public:
   /*!
    * \brief calculate the original DV gradient similar to SU2_DOT_AD
    */
-  void CalculateOriginalGradient(CGeometry *geometry, CConfig *config, su2double *param_jacobi);
+  void CalculateOriginalGradient(CGeometry *geometry, CConfig *config, CVolumetricMovement* grid_movement, su2double *param_jacobi);
 
   /*!
    * \brief read or write the surface sensitivity into an Eigen vector

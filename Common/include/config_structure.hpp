@@ -427,11 +427,9 @@ private:
   su2double SmoothingParamSecond; /*!< \brief Parameter for the identity part in gradient smoothing. */
   bool SepDim; /*!< \brief Flag for enabling separated calculation for every dimension. */
   bool SecOrdQuad; /*!< \brief Flag for using second order quadrature rules in numerical integration. */
-  bool Project2Surface; /*!< \brief Flag for calculating the projection onto the surface mesh from the SetVolume_Deformation routines stiffness matrix. */
   bool SmoothOnSurface; /*!< \brief Flag for assembling the system only on the surface. */
   bool DirichletSurfaceBound; /*!< \brief Flag for using zero Dirichlet boundary in the surface case. */
   bool DebugMode; /*!< \brief temporary flag for some debuging stuff */
-  bool Surface2DV; /*!< \brief flag to initialize the surface_movement container in SU2_CFD. */
 
   bool AddIndNeighbor;		   /*!< \brief Include indirect neighbor in the agglomeration process. */
   unsigned short nDV,		           /*!< \brief Number of design variables. */
@@ -2844,12 +2842,6 @@ public:
   bool GetSepDim(void);
 
   /*!
-   * \brief Check if we project the sensitivities to the surface
-   * \return true means that the sensitivities are projected analog to grid_movement.cpp
-   */
-  bool GetProject2Surface(void);
-
-  /*!
    * \brief Check if we assemble the operator on the surface
    * \return true means that smoothing is done on the surface level
    */
@@ -2872,12 +2864,6 @@ public:
    * \return true means that we use second order accurate methods
    */
   bool GetSecOrdQuad(void);
-
-  /*!
-   * \brief Activate to have the projections between surface and design variables available in SU2_CFD
-   * \return true means that the surface_movement and grid_movement containers are initialized
-   */
-  bool GetSurface2DV(void);
 
   /*!
    * \brief Get the Courant Friedrich Levi number for unsteady simulations.
@@ -2935,6 +2921,11 @@ public:
    */
   unsigned short GetnDV_Value(unsigned short iDV);
   
+  /*!
+   * \brief Get the total number of design variables.
+   */
+  unsigned short GetnDV_Total(void);
+
   /*!
    * \brief Get the number of FFD boxes.
    * \return Number of FFD boxes.
