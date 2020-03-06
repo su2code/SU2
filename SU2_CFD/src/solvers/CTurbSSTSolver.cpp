@@ -381,6 +381,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
                               + solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,3,1)), 2);
     }
 
+    StrainMag = sqrt(2.0*StrainMag);
+
     nodes->SetBlendingFunc(iPoint,mu, dist, rho);
 
     F2 = nodes->GetF2blending(iPoint);
