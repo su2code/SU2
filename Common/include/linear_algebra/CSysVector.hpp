@@ -31,18 +31,6 @@
 #include <cmath>
 #include <cstdlib>
 
-namespace SuperLU
-{
-#ifdef __cplusplus
-  extern "C" {
-#endif
-    #include "superlu_ddefs.h"
-    #undef Reduce
-#ifdef __cplusplus
-  }
-#endif
-}
-
 /*!
  * \class CSysVector
  * \brief Class for holding and manipulating vectors needed by linear solvers
@@ -374,6 +362,4 @@ public:
   inline ScalarType GetBlock(unsigned long val_ipoint, unsigned long val_var) const {
     return vec_val[val_ipoint*nVar+val_var];
   }
-
-  void SuperLU_pdgssvx(SuperLU::SuperMatrix* A, const int* nDOFsLocOwned_acc_allranks_counts, const unsigned long nDOFsGlobal) const;
 };
