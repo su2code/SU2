@@ -7499,7 +7499,8 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   //   // for (unsigned long i = 0; i < nDOFsLocOwned*nVar; ++i) {
   //   //   b[i] = -(double)Res_global(i);
   //   // }
-    LinSysSol_tmp.Initialize(nPoint, nPointDomian, nVar, nullptr);
+    CSysVector<su2double> LinSysSol_tmp;
+    LinSysSol_tmp.Initialize(nDOFsGlobal, nDOFsLocOwned, nVar, nullptr);
 
     su2double Timer_start, Timer_end;
     if (rank == MASTER_NODE)
