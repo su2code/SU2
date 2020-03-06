@@ -7398,7 +7398,6 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
         }
     }
 
-    Jacobian.SuperLU_LinSolver(LinSysRes, LinSysSol, geometry, config, nDOFsLocOwned_acc_allranks_counts, nDOFsLocOwned_acc_allranks_displs, nDOFsGlobal, MassMatrix_local);
     // std::cout << "MassMatrix_global = " << MassMatrix_global.rows() << " x " << MassMatrix_global.cols() << " with nonzeros " << MassMatrix_global.nonZeros() << std::endl;
     /*--- Solve the linear system using the Eigen linear solver ---*/
     // std::string Jacobian_name;
@@ -7500,24 +7499,25 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   //   // for (unsigned long i = 0; i < nDOFsLocOwned*nVar; ++i) {
   //   //   b[i] = -(double)Res_global(i);
   //   // }
+    LinSysSol_tmp.Initialize(nPoint, nPointDomian, nVar, nullptr);
 
-
-  //   su2double Timer_start, Timer_end;
-  //   if (rank == MASTER_NODE)
-  //   {
-  //     Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
-  //   }
-
+    su2double Timer_start, Timer_end;
+    if (rank == MASTER_NODE)
+    {
+      Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
+    }
+      Jacobian.SuperLU_LinSolver(LinSysRes, LinSysSol, geometry, config, nDOFsLocOwned_acc_allranks_counts, nDOFsLocOwned_acc_allranks_displs, nDOFsGlobal, LinSysSol_tmp);
+    
   //   // std::cout << "Starting SUPERLU" << std::endl;
   //   SuperLU::pdgssvx(&options, &A, &ScalePermstruct, mSol_delta.data(), nDOFsLocOwned_acc_allranks_counts[rank], 1, &grid,
   //     &LUstruct, &SOLVEstruct, berr, &stat, &info);
   //   // std::cout << "Finishing SUPERLU" << std::endl;
 
-  //   if (rank == MASTER_NODE)
-  //   {
-  //     Timer_end = su2double(clock())/su2double(CLOCKS_PER_SEC);
-  //     Time_LINSOL = Timer_end - Timer_start;
-  //   }
+    if (rank == MASTER_NODE)
+    {
+      Timer_end = su2double(clock())/su2double(CLOCKS_PER_SEC);
+      Time_LINSOL = Timer_end - Timer_start;
+    }
 
   //   // PStatPrint(&options, &stat, &grid);
 
@@ -7552,16 +7552,16 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   //   // std::cout << "after mass matrix, nonzero = " << Jacobian_global.nonZeros() << std::endl;
   //   /*--- Newton iteration with damping parameter lambda ---*/
     
-  //   double lambda = 1.0;
-  //   // double norm_temp = (Jacobian_global*(mSol_delta*lambda)+Res_global).norm();
-  //   // while (norm_temp/norm0 > 1 && lambda > 1e-6)
-  //   // {
-  //   //   lambda = lambda/2;
-  //   //   norm_temp = (Jacobian_global*(mSol_delta*lambda)+Res_global).norm();
-  //   // }
-  //   if (rank == MASTER_NODE) {
-  //     cout << "lambda = " << lambda << endl;
-  //   }
+    double lambda = 1.0;
+    // double norm_temp = (Jacobian_global*(mSol_delta*lambda)+Res_global).norm();
+    // while (norm_temp/norm0 > 1 && lambda > 1e-6)
+    // {
+    //   lambda = lambda/2;
+    //   norm_temp = (Jacobian_global*(mSol_delta*lambda)+Res_global).norm();
+    // }
+    if (rank == MASTER_NODE) {
+      cout << "lambda = " << lambda << endl;
+    }
     
 
   //   /*--- update final solution ---*/
@@ -7583,7 +7583,10 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   //   // std::cout << "nDOFsLocOwned_acc_allranks[rank] = " << nDOFsLocOwned_acc_allranks[rank] << " in rank " << rank << std::endl;
   //   Sol_global += mSol_delta * lambda;
   //   Res_global += MassMatrix_global.block(0,nDOFsLocOwned_acc_allranks_displs[rank],nDOFsLocOwned*nVar,nDOFsLocOwned*nVar)*mSol_delta * lambda;
-
+    LinSysSol += LinSysSol_tmp * lambda;
+    
+    MassMatrix_local.MatrixVectorProduct(LinSysSol_tmp, LinSysRes, geometry, config);
+    LinSysRes *= lambda;
   //   /*--- convert solution back into the SU2 solver format ---*/
   //   // for (int j = 0; j < size; j++)
   //   // {
@@ -7604,14 +7607,14 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   // /*--- Compute the root mean square residual. Note that the SetResidual_RMS
   // function of CSolver cannot be used, because that is for the FV solver. ---*/
   
-  // SetResidual_RMS_FEM(geometry, config);
+  SetResidual_RMS_FEM(geometry, config);
 
-  // if (config->GetInnerIter() == 0) {
-  //   ResRMSinitial.resize(nVar);
-  //   for (unsigned int iVar = 0; iVar<nVar; ++iVar) {
-  //     ResRMSinitial[iVar] = GetRes_RMS(iVar);
-  //   }
-  // }
+  if (config->GetInnerIter() == 0) {
+    ResRMSinitial.resize(nVar);
+    for (unsigned int iVar = 0; iVar<nVar; ++iVar) {
+      ResRMSinitial[iVar] = GetRes_RMS(iVar);
+    }
+  }
 
   // // std::cout << "Jacobian_global.resize(0, 0);" << std::endl;
   // // Jacobian_global.resize(0, 0);
