@@ -7584,7 +7584,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   //   // std::cout << "nDOFsLocOwned_acc_allranks[rank] = " << nDOFsLocOwned_acc_allranks[rank] << " in rank " << rank << std::endl;
   //   Sol_global += mSol_delta * lambda;
   //   Res_global += MassMatrix_global.block(0,nDOFsLocOwned_acc_allranks_displs[rank],nDOFsLocOwned*nVar,nDOFsLocOwned*nVar)*mSol_delta * lambda;
-    LinSysSol += LinSysSol_tmp * lambda;
+    LinSysSol.Plus_AX(lambda, LinSysSol_tmp);
     
     MassMatrix_local.MatrixVectorProduct(LinSysSol_tmp, LinSysRes, geometry, config);
     LinSysRes *= lambda;
