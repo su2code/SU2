@@ -219,6 +219,16 @@ protected:
                                                                      for the locally owned DOFs. */
   vector<passivedouble> SpatialJacobian;    /*!< \brief Vector containing the Spatial Jacobian used for implicit schemes. */
 
+  CSysMatrix<passivedouble> MassMatrix_local;
+
+  vector<unsigned long> MassMatrix_col_ind;
+  
+  vector<unsigned long> MassMatrix_row_ptr;
+
+  vector<unsigned long> nNonZeroEntries;
+
+  vector<unsigned long> nonZeroEntriesJacobian_flat;
+
   vector<su2double> ResRMSinitial;       /*!< \brief Vector containing the initial RMS residuals used for implicit schemes. */
 
   int nGlobalColors;              /*!< \brief Number of global colors for the Jacobian computation. */

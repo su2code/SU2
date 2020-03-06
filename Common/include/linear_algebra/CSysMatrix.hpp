@@ -767,6 +767,14 @@ public:
   void ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
                                    CGeometry *geometry, CConfig *config) const;
 
+
+  void SuperLU_LinSolver(const CSysVector<su2double> & LinSysRes,
+                        CSysVector<su2double> & LinSysSol, CGeometry *geometry, CConfig *config,
+                        const unsigned long* nDOFsLocOwned_acc_allranks_counts,
+                        const unsigned long* nDOFsLocOwned_acc_allranks_displs, 
+                        const unsigned long nDOFsGlobal,
+                        const CSysMatrix<su2double> & MassMatrix_local) const;
+
 };
 
 #ifdef CODI_REVERSE_TYPE
