@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
   ofstream Gradient_file;
   bool fem_solver = false;
 
-  su2double** Gradient;
+  su2double** Gradient = NULL;
   unsigned short iDV, iDV_Value;
   int rank, size;
 
