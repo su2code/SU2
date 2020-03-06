@@ -218,7 +218,7 @@ protected:
 
   /* Supporting data structures for the eigenspace perturbation for UQ methodology */
   su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
-  su2double *Eig_Val, *Barycentric_Coord, *New_Coord;
+  su2double *Eig_Val, *Barycentric_Coord, *New_Coord, *Target_Eig_Val;
 
 public:
   /*!
@@ -1314,6 +1314,12 @@ public:
    * \param[in] n: order of matrix V
    */
   static void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
+
+  /*!
+   * \brief GetUQ_Delta_B
+   * \return magnitude of perturbation
+   */
+  inline su2double GetUQ_Delta_B(void) { return uq_delta_b; }
 
 };
 

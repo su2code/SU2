@@ -401,6 +401,10 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     auto residual = numerics->ComputeResidual(config);
 
+    /* --- Set perturbation magnitude --- */
+
+    nodes->SetUQ_Delta_B(iPoint, numerics->GetUQ_Delta_B());
+
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, residual);
