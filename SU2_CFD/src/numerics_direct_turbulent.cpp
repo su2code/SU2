@@ -1198,6 +1198,9 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   unsigned short iDim, jDim;
   su2double alfa_blended, beta_blended;
   su2double diverg, pk, pw, zeta;
+  // su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
+  //                               Vorticity_i[1]*Vorticity_i[1] +
+  //                               Vorticity_i[2]*Vorticity_i[2]);
   
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6);
@@ -1242,23 +1245,6 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    }
    else {
      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-     // pk = 0.0;
-     // for (iDim = 0; iDim < nDim; iDim++) {
-     //   for (jDim = 0; iDim < nDim; jDim++) {
-     //     pk += Eddy_Viscosity_i*PrimVar_Grad_i[iDim+1][jDim]*(PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]);
-     //   }
-     // }
-
-     /*--- Implicit part ---*/
-     // if (pk < 10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
-     //  if (pk > 0.0) {
-     //    // val_Jacobian_i[0][0] = -2.0/3.0*diverg*Volume;
-     //  }
-     // }
-     // else {
-     //  val_Jacobian_i[0][0] = 10.0*beta_star*TurbVar_i[1]*Volume;
-     //  val_Jacobian_i[0][1] = 10.0*beta_star*TurbVar_i[0]*Volume;
-     // }
    }
 
 
@@ -1267,6 +1253,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    pk = max(pk,0.0);
 
    zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
+   // zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
@@ -1275,17 +1262,6 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    }
    else {
      // pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
-
-     /*--- Implicit part ---*/
-     // if (pk < 10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
-     //   if (pk > 0.0 && TurbVar_i[0] > StrainMag_i*F2_i/a1) {
-     //     // val_Jacobian_i[1][0] = -alfa_blended*2.0/3.0*diverg*Volume;
-     //   }
-     // }
-     // else {
-     //   val_Jacobian_i[1][0] = 10.0*alfa_blended*Density_i*beta_star*TurbVar_i[1]/Eddy_Viscosity_i*Volume;
-     //   val_Jacobian_i[1][1] = 10.0*alfa_blended*Density_i*beta_star*TurbVar_i[0]/Eddy_Viscosity_i*Volume;
-     // }
    }
    // pw = min(pw,10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
    // pw = alfa_blended*Density_i*max(pw,0.0);

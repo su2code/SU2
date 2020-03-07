@@ -366,7 +366,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     // su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
     //                               Vorticity[1]*Vorticity[1] +
     //                               Vorticity[2]*Vorticity[2]);
-    // su2double StrainMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
+    // // su2double StrainMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
     su2double StrainMag = 0.0;
     for (unsigned long iDim = 0; iDim < nDim; iDim++) {
       StrainMag += pow(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,iDim+1,iDim), 2.0);
