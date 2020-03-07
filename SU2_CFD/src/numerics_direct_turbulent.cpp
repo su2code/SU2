@@ -1198,9 +1198,9 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   unsigned short iDim, jDim;
   su2double alfa_blended, beta_blended;
   su2double diverg, pk, pw, zeta;
-  // su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
-  //                               Vorticity_i[1]*Vorticity_i[1] +
-  //                               Vorticity_i[2]*Vorticity_i[2]);
+  su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
+                                Vorticity_i[1]*Vorticity_i[1] +
+                                Vorticity_i[2]*Vorticity_i[2]);
   
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6);
@@ -1252,8 +1252,8 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    pk = min(pk,10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
    pk = max(pk,0.0);
 
-   zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
-   // zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
+   // zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
+   zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 

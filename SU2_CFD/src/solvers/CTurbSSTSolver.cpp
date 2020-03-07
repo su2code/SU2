@@ -362,26 +362,26 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     dist = geometry->node[iPoint]->GetWall_Distance();
 
-    // su2double *Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
-    // su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
-    //                               Vorticity[1]*Vorticity[1] +
-    //                               Vorticity[2]*Vorticity[2]);
+    su2double *Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+    su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
+                                  Vorticity[1]*Vorticity[1] +
+                                  Vorticity[2]*Vorticity[2]);
     // // su2double StrainMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
-    su2double StrainMag = 0.0;
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      StrainMag += pow(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,iDim+1,iDim), 2.0);
-    }
-    StrainMag += 2.0*pow(0.5*(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,1,1) 
-                            + solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,2,0)), 2);
+    // su2double StrainMag = 0.0;
+    // for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+    //   StrainMag += pow(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,iDim+1,iDim), 2.0);
+    // }
+    // StrainMag += 2.0*pow(0.5*(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,1,1) 
+    //                         + solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,2,0)), 2);
 
-    if (nDim == 3) {
-      StrainMag += 2.0*pow(0.5*(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,1,2) 
-                              + solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,3,0)), 2);
-      StrainMag += 2.0*pow(0.5*(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,2,2) 
-                              + solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,3,1)), 2);
-    }
+    // if (nDim == 3) {
+    //   StrainMag += 2.0*pow(0.5*(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,1,2) 
+    //                           + solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,3,0)), 2);
+    //   StrainMag += 2.0*pow(0.5*(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,2,2) 
+    //                           + solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint,3,1)), 2);
+    // }
 
-    StrainMag = sqrt(2.0*StrainMag);
+    // StrainMag = sqrt(2.0*StrainMag);
 
     nodes->SetBlendingFunc(iPoint,mu, dist, rho);
 
@@ -391,8 +391,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     kine  = nodes->GetSolution(iPoint,0);
     omega = nodes->GetSolution(iPoint,1);
-    // zeta  = min(1.0/omega, a1/(VorticityMag*F2));
-    zeta  = min(1.0/omega, a1/(StrainMag*F2));
+    zeta  = min(1.0/omega, a1/(VorticityMag*F2));
+    // zeta  = min(1.0/omega, a1/(StrainMag*F2));
     muT   = max(rho*kine*zeta,0.0);
     nodes->SetmuT(iPoint,muT);
 
