@@ -1204,10 +1204,15 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
   su2double StrainMag = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-     for (jDim = iDim; jDim < nDim; jDim++) {
-       StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]), 2.0);
-     }
-   }
+    StrainMag += pow(PrimVar_Grad_i[iDim+1][iDim], 2.0);
+  }
+  StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[1][1] + PrimVar_Grad_i[2][0]), 2);
+
+  if (nDim == 3) {
+    StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[1][2] + PrimVar_Grad_i[3][0]), 2);
+    StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[2][2] + PrimVar_Grad_i[3][1]), 2);
+  }
+  StrainMag = sqrt(2.0*StrainMag);
   
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6);
