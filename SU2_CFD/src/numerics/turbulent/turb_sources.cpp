@@ -792,6 +792,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+  su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
+                                Vorticity_i[1]*Vorticity_i[1] +
+                                Vorticity_i[2]*Vorticity_i[2]);
 
   unsigned short iDim;
   su2double alfa_blended, beta_blended;
@@ -846,11 +849,12 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
    pk = max(pk,0.0);
 
-   zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
+   zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
    if (using_uq){
+    zeta = max(TurbVar_i[1], PerturbedStrainMag*F2_i/a1);
     pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
    }
    else {
@@ -1019,9 +1023,9 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, const CConfig*
   }
 
   uq_delta_b = 1.0;
-  for (iDim = 0; iDim < 3; iDim++){
-    uq_delta_b = min(uq_delta_b, 1/(1+Target_Eig_Val[iDim]/Eig_Val[iDim]));
-  }
+  //for (iDim = 0; iDim < 3; iDim++){
+  //  uq_delta_b = min(uq_delta_b, 1/(1+Target_Eig_Val[iDim]/Eig_Val[iDim]));
+  //}
   //uq_delta_b = max(uq_delta_b,0.0);
 
   /* calculate perturbed barycentric coordinates */
