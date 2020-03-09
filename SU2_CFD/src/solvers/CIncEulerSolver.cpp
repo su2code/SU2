@@ -6054,8 +6054,11 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   }
 
   /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy ---*/
-  if (dual_time && config->GetGrid_Movement() && (config->GetKind_GridMovement() != RIGID_MOTION))
-    Restart_OldGeometry(geometry[MESH_0], config);
+  if (dual_time && config->GetGrid_Movement() && (config->GetKind_GridMovement() != RIGID_MOTION)) {
+    if (!config->GetDeform_Mesh()) {
+      Restart_OldGeometry(geometry[MESH_0], config);
+    }
+  }
 
   delete [] Coord;
 
