@@ -7323,7 +7323,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
                                  CConfig        *config,
                                  unsigned short val_marker) {
 
-  if (false) {
+  if (true) {
     /*--- Call the equivalent symmetry plane boundary condition. ---*/
     BC_Sym_Plane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
   }
