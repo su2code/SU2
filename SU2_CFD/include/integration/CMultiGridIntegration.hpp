@@ -36,9 +36,8 @@ class CMultiGridIntegration final : public CIntegration {
 public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
    */
-  CMultiGridIntegration(CConfig *config);
+  CMultiGridIntegration();
 
   /*!
    * \brief This subroutine calls the MultiGrid_Cycle and also prepare the multigrid levels and the monitoring.

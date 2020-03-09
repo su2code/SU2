@@ -1039,6 +1039,11 @@ void CConfig::SetPointersNull(void) {
 
   Time_Ref = 1.0;
 
+  Delta_UnstTime   = 0.0;
+  Delta_UnstTimeND = 0.0;
+  Total_UnstTime   = 0.0;
+  Total_UnstTimeND = 0.0;
+
 }
 
 void CConfig::SetRunTime_Options(void) {
@@ -3044,7 +3049,7 @@ void CConfig::SetHeader(unsigned short val_software){
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.0.1  \"Blackbird\"                        |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.2 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;

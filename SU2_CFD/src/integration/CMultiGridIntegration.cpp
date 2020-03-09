@@ -29,7 +29,7 @@
 #include "../../../Common/include/omp_structure.hpp"
 
 
-CMultiGridIntegration::CMultiGridIntegration(CConfig *config) : CIntegration(config) { }
+CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
 
 void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                 CSolver *****solver_container,
