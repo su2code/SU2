@@ -99,4 +99,19 @@ public:
       adj_mesh[iDim] = SU2_TYPE::GetDerivative(Mesh_Coord(iPoint,iDim));
   }
 
+  /*!
+   * \brief Register the variables in the solution_time_n array as input/output variable.
+   */
+  void RegisterSolution(bool input, bool push_index = true);
+
+  /*!
+   * \brief Register the variables in the solution_time_n array as input/output variable.
+   */
+  void RegisterSolution_time_n();
+
+  /*!
+   * \brief Register the variables in the solution_time_n1 array as input/output variable.
+   */
+  void RegisterSolution_time_n1();
+
 };

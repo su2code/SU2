@@ -60,3 +60,40 @@ void CMeshVariable::Register_MeshCoord(bool input) {
         AD::RegisterOutput(Mesh_Coord(iPoint,iDim));
   }
 }
+
+void CMeshVariable::RegisterSolution(bool input, bool push_index) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+      if(input) {
+        if(push_index) {
+          AD::RegisterInput(Solution(iPoint,iDim));
+        }
+        else {
+          AD::RegisterInput(Solution(iPoint,iDim), false);
+          AD::SetIndex(AD_InputIndex(iPoint,iDim), Solution(iPoint,iDim));
+        }
+      }
+      else {
+        AD::RegisterOutput(Solution(iPoint,iDim));
+        if(!push_index)
+          AD::SetIndex(AD_OutputIndex(iPoint,iDim), Solution(iPoint,iDim));
+      }
+    }
+  }
+}
+
+void CMeshVariable::RegisterSolution_time_n() {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for(unsigned long iDim=0; iDim<nVar; ++iDim) {
+      AD::RegisterInput(Solution_time_n(iPoint,iDim));
+    }
+  }
+}
+
+void CMeshVariable::RegisterSolution_time_n1() {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for(unsigned long iDim=0; iDim<nVar; ++iDim) {
+      AD::RegisterInput(Solution_time_n1(iPoint,iDim));
+    }
+  }
+}

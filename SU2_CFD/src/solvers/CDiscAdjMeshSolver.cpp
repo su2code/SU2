@@ -123,17 +123,59 @@ CDiscAdjMeshSolver::~CDiscAdjMeshSolver(void){
 
 void CDiscAdjMeshSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
 
+  bool dual_time = (config_container->GetTime_Marching() == DT_STEPPING_1ST ||
+                    config_container->GetTime_Marching() == DT_STEPPING_2ND);
+  su2double *solution_n, *solution_n1;
+  unsigned long iPoint;
+  unsigned short iVar;
+  if (dual_time) {
+    for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++) {
+      solution_n = nodes->GetSolution_time_n(iPoint);
+      solution_n1 = nodes->GetSolution_time_n1(iPoint);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        nodes->SetDual_Time_Derivative(iPoint, iVar, solution_n[iVar]+nodes->GetDual_Time_Derivative_n(iPoint, iVar));
+        nodes->SetDual_Time_Derivative_n(iPoint,iVar, solution_n1[iVar]);
+      }
+    }
+  }
 
 }
 
 void CDiscAdjMeshSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
+  bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
+  bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
+  bool time_domain = config->GetTime_Domain();
 
   unsigned long iPoint;
+  unsigned short iDim;
+
   /*--- Reset the solution to the initial (converged) solution ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     direct_solver->GetNodes()->SetBound_Disp(iPoint,nodes->GetBoundDisp_Direct(iPoint));
+  }
+
+  if (time_domain) {
+    // for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    //   for (iDim = 0; iDim < nVar; iDim++) {
+    //     AD::ResetInput(direct_solver->GetNodes()->GetSolution(iPoint)[iDim]);
+    //   }
+    // }
+    if (time_n_needed) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iDim = 0; iDim < nVar; iDim++) {
+          AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n(iPoint)[iDim]);
+        }
+      }
+    }
+    if (time_n1_needed) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iDim = 0; iDim < nVar; iDim++) {
+          AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n1(iPoint)[iDim]);
+        }
+      }
+    }
   }
 
   /*--- Set indices to zero ---*/
@@ -144,10 +186,20 @@ void CDiscAdjMeshSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 void CDiscAdjMeshSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
+  bool time_n1_needed = (config->GetTime_Marching() == DT_STEPPING_2ND);
+  bool time_n_needed  = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
+  bool time_domain = config->GetTime_Domain();
+
   /*--- Register reference mesh coordinates ---*/
   bool input = true;
   direct_solver->GetNodes()->Register_MeshCoord(input);
-
+  if (time_domain) {
+    // direct_solver->GetNodes()->RegisterSolution(input);
+    if (time_n_needed)
+      direct_solver->GetNodes()->RegisterSolution_time_n();
+    if (time_n1_needed)
+      direct_solver->GetNodes()->RegisterSolution_time_n1();
+  }
 }
 
 void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
@@ -160,7 +212,13 @@ void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config,
 
 void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
+  bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
+  bool time_domain = config->GetTime_Domain();
+  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST ||
+                    config->GetTime_Marching() == DT_STEPPING_2ND);
+
   unsigned long iPoint;
+  unsigned short iDim;
 
   /*--- Extract the sensitivities of the mesh coordinates ---*/
 
@@ -176,6 +234,56 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *c
 
   }
 
+  if (time_domain) {
+    // for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    //   /*--- Extract the adjoint solution at time n ---*/
+
+    //   direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
+
+    //   /*--- Store the adjoint solution at time n ---*/
+
+    //   nodes->SetSolution(iPoint,Solution);
+    // }
+
+    if (dual_time) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+        /*--- Extract the adjoint solution at time n ---*/
+
+        direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
+
+        /*--- Store the adjoint solution at time n ---*/
+
+        nodes->Set_Solution_time_n(iPoint,Solution);
+      }
+    }
+    if (time_n1_needed) {
+
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+        /*--- Extract the adjoint solution at time n-1 ---*/
+
+        direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
+
+        /*--- Store the adjoint solution at time n-1 ---*/
+
+        nodes->Set_Solution_time_n1(iPoint,Solution);
+      }
+    }
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iDim = 0; iDim < nVar; iDim++) {
+        Solution[iDim] = nodes->GetSolution(iPoint,iDim);
+      }
+      if (dual_time) {
+        for (iDim = 0; iDim < nVar; iDim++) {
+          Solution[iDim] += nodes->GetDual_Time_Derivative(iPoint,iDim);
+        }
+      }
+      nodes->SetSolution(iPoint,Solution);
+    }
+  }
 }
 
 void CDiscAdjMeshSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){

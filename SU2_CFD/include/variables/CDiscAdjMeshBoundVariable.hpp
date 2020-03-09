@@ -37,6 +37,9 @@ private:
   MatrixType Bound_Disp_Sens;     /*!< \brief Store the reference coordinates of the mesh. */
   MatrixType Bound_Disp_Direct;   /*!< \brief Store the reference boundary displacements of the mesh. */
 
+  MatrixType DualTime_Derivative;
+  MatrixType DualTime_Derivative_n;
+
   MatrixType Solution_BGS_k;      /*!< \brief BGS solution to compute overall convergence. */
 
   CVertexMap<unsigned> VertexMap; /*!< \brief Object that controls accesses to the variables of this class. */
@@ -61,6 +64,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void AllocateBoundaryVariables(CConfig *config);
+
+  inline void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) override { DualTime_Derivative(iPoint,iVar) = der; }
+
+  inline void SetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) override { DualTime_Derivative_n(iPoint,iVar) = der; }
+
+  inline su2double GetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar) const override { return DualTime_Derivative(iPoint,iVar); }
+
+  inline su2double GetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar) const override { return DualTime_Derivative_n(iPoint,iVar); }
 
   /*!
    * \brief Get the value of the displacement imposed at the boundary.
