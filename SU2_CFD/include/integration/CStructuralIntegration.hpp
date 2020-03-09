@@ -36,9 +36,8 @@ class CStructuralIntegration final : public CIntegration {
 public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
    */
-  CStructuralIntegration(CConfig *config);
+  CStructuralIntegration();
 
   /*!
    * \brief Do the numerical integration (implicit) of the structural solver.

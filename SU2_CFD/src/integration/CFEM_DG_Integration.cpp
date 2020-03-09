@@ -28,7 +28,7 @@
 #include "../../include/integration/CFEM_DG_Integration.hpp"
 
 
-CFEM_DG_Integration::CFEM_DG_Integration(CConfig *config) : CIntegration(config) { }
+CFEM_DG_Integration::CFEM_DG_Integration() : CIntegration() { }
 
 void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
                                                CSolver *****solver_container,
