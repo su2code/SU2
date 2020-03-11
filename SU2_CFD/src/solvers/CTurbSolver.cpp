@@ -607,14 +607,18 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
   const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
+  /*--- Flow solution, needed to get density. ---*/
+
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
   /*--- Store the physical time step ---*/
 
   const su2double TimeStep = config->GetDelta_UnstTimeND();
 
   /*--- Local variables ---*/
 
-  unsigned short iVar, iMarker, iDim;
-  unsigned long iPoint, jPoint, iVertex;
+  unsigned short iVar, iMarker, iDim, iNeigh;
+  unsigned long iPoint, jPoint, iVertex, iEdge;
 
   const su2double *U_time_nM1 = nullptr, *U_time_n = nullptr, *U_time_nP1 = nullptr;
   su2double Volume_nM1, Volume_nP1;
@@ -656,14 +660,14 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           density could also be temperature dependent, but as it is not a part
           of the solution vector it's neither stored for previous time steps
           nor updated with the solution at the end of each iteration. */
-          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+          Density_nM1 = flowNodes->GetDensity(iPoint);
+          Density_n   = flowNodes->GetDensity(iPoint);
+          Density_nP1 = flowNodes->GetDensity(iPoint);
         }
         else{
-          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint)[0];
-          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
-          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint,0);
+          Density_nM1 = flowNodes->GetSolution_time_n1(iPoint)[0];
+          Density_n   = flowNodes->GetSolution_time_n(iPoint,0);
+          Density_nP1 = flowNodes->GetSolution(iPoint,0);
         }
 
         for (iVar = 0; iVar < nVar; iVar++) {
@@ -703,71 +707,43 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
      we will loop over the edges and boundaries to compute the GCL component
      of the dual time source term that depends on grid velocities. ---*/
 
-    /// TODO: Make this a point loop.
-    SU2_OMP_MASTER
-    for(auto iEdge = 0ul; iEdge < geometry->GetnEdge(); ++iEdge) {
-
-      /*--- Get indices for nodes i & j plus the face normal ---*/
-
-      iPoint = geometry->edge[iEdge]->GetNode(0);
-      jPoint = geometry->edge[iEdge]->GetNode(1);
-      Normal = geometry->edge[iEdge]->GetNormal();
-
-      /*--- Grid velocities stored at nodes i & j ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
       GridVel_i = geometry->node[iPoint]->GetGridVel();
-      GridVel_j = geometry->node[jPoint]->GetGridVel();
-
-      /*--- Compute the GCL term by averaging the grid velocities at the
-       edge mid-point and dotting with the face normal. ---*/
-
-      Residual_GCL = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Residual_GCL += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
-
-      /*--- Compute the GCL component of the source term for node i ---*/
-
-      U_time_n = nodes->GetSolution_time_n(iPoint);
-
-      /*--- Multiply by density at node i for the SST model ---*/
+      U_time_n  = nodes->GetSolution_time_n(iPoint);
+      Density_n = 1.0;
 
       if (sst_model) {
         if (incompressible)
-          Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
+          Density_n = flowNodes->GetDensity(iPoint); // Temporary fix
         else
-          Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
-
-        for (iVar = 0; iVar < nVar; iVar++)
-          LinSysRes(iPoint,iVar) += Density_n*U_time_n[iVar]*Residual_GCL;
+          Density_n = flowNodes->GetSolution_time_n(iPoint,0);
       }
-      else {
+
+      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnNeighbor(); iNeigh++) {
+
+        iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+        Normal = geometry->edge[iEdge]->GetNormal();
+
+        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+        GridVel_j = geometry->node[jPoint]->GetGridVel();
+
+        /*--- Determine whether to consider the normal outward or inward. ---*/
+        su2double dir = (geometry->edge[iEdge]->GetNode(0) == iPoint)? 0.5 : -0.5;
+
+        Residual_GCL = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Residual_GCL += dir*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+
+        Residual_GCL *= Density_n;
+
         for (iVar = 0; iVar < nVar; iVar++)
           LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
       }
-
-      /*--- Compute the GCL component of the source term for node j ---*/
-
-      U_time_n = nodes->GetSolution_time_n(jPoint);
-
-      /*--- Multiply by density at node j for the SST model ---*/
-
-      if (sst_model) {
-        if (incompressible)
-          Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint); // Temporary fix
-        else
-          Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(jPoint)[0];
-
-        for (iVar = 0; iVar < nVar; iVar++)
-          LinSysRes(jPoint,iVar) -= Density_n*U_time_n[iVar]*Residual_GCL;
-      }
-      else {
-        for (iVar = 0; iVar < nVar; iVar++)
-          LinSysRes(jPoint,iVar) -= U_time_n[iVar]*Residual_GCL;
-      }
     }
-    SU2_OMP_BARRIER
 
-    /*---  Loop over the boundary edges ---*/
+    /*--- Loop over the boundary edges ---*/
 
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
@@ -800,9 +776,9 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 
           if (sst_model) {
             if (incompressible)
-              Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
+              Density_n = flowNodes->GetDensity(iPoint); // Temporary fix
             else
-              Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
+              Density_n = flowNodes->GetSolution_time_n(iPoint,0);
 
             for (iVar = 0; iVar < nVar; iVar++)
               LinSysRes(iPoint,iVar) += Density_n*U_time_n[iVar]*Residual_GCL;
@@ -850,14 +826,14 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           density could also be temperature dependent, but as it is not a part
           of the solution vector it's neither stored for previous time steps
           nor updated with the solution at the end of each iteration. */
-          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+          Density_nM1 = flowNodes->GetDensity(iPoint);
+          Density_n   = flowNodes->GetDensity(iPoint);
+          Density_nP1 = flowNodes->GetDensity(iPoint);
         }
         else {
-          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint)[0];
-          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint,0);
-          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint,0);
+          Density_nM1 = flowNodes->GetSolution_time_n1(iPoint)[0];
+          Density_n   = flowNodes->GetSolution_time_n(iPoint,0);
+          Density_nP1 = flowNodes->GetSolution(iPoint,0);
         }
 
         for (iVar = 0; iVar < nVar; iVar++) {
