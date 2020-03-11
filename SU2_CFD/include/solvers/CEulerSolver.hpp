@@ -26,7 +26,6 @@
  */
 
 #pragma once
-
 #include "CSolver.hpp"
 #include "../variables/CEulerVariable.hpp"
 
@@ -269,7 +268,7 @@ protected:
   unsigned short nMarkerTurboPerf;   /*!< \brief Number of turbo performance. */
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
-
+  std::shared_ptr<CTurbomachineryPerformance> TurbomachineryPerformance;
   /*--- Turbomachinery Solver Variables ---*/
   su2double *** AverageFlux,
             ***SpanTotalFlux,
@@ -292,9 +291,7 @@ protected:
              **ExtAverageOmega;
 
   su2double  ***TurboVelocityIn,
-             ***TurboVelocityOut,
-             ***MachIn,
-             ***MachOut;
+             ***TurboVelocityOut;
              
   su2double  **DensityIn,
              **PressureIn,         
@@ -305,48 +302,7 @@ protected:
              **NuIn,
              **KineOut,
              **OmegaOut,
-             **NuOut,
-             **TotalStaticEfficiency,
-             **TotalTotalEfficiency,
-             **KineticEnergyLoss,
-             **TRadius,
-             **TotalPressureLoss,
-             **MassFlowIn,
-             **MassFlowOut,
-             **FlowAngleIn,
-             **FlowAngleIn_BC,
-             **FlowAngleOut,
-             **EulerianWork,
-             **TotalEnthalpyIn,
-             **TotalEnthalpyIn_BC,
-             **EntropyIn,
-             **EntropyOut,
-             **EntropyIn_BC,
-             **PressureRatio,
-             **TotalTemperatureIn,
-             **EnthalpyOut,
-             **VelocityOutIs,
-             **EnthalpyOutIs,
-             **EntropyGen,
-             **AbsFlowAngleIn,
-             **TotalEnthalpyOut,
-             **RothalpyIn,
-             **RothalpyOut,
-             **TotalEnthalpyOutIs,
-             **AbsFlowAngleOut,
-             **PressureOut_BC,
-             **TemperatureIn,
-             **TemperatureOut,
-             **TotalPressureIn,
-             **TotalPressureOut,
-             **TotalTemperatureOut,
-             **EnthalpyIn,
-             **TurbIntensityIn,
-             **Turb2LamViscRatioIn,
-             **TurbIntensityOut,
-             **Turb2LamViscRatioOut,
-             **NuFactorIn,
-             **NuFactorOut;
+             **NuOut;
 
   complex<su2double> ***CkInflow,
                      ***CkOutflow1,
@@ -2401,6 +2357,13 @@ public:
   void InitTurboContainers(CGeometry *geometry, CConfig *config) final;
 
   /*!
+   * \brief Initilize turbomachinery performance shared_ptr.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InitTurboPerformance(CGeometry *geometry, CConfig *config) final;
+
+  /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
@@ -2671,6 +2634,12 @@ public:
                                  su2double valOmega) final {
     ExtAverageOmega[valMarker][valSpan] = valOmega;
   }
+
+  /*!
+   * \brief Getter for TurbomachineryPerformance
+   * \return TurbomachineryPerformance container
+   */
+  inline shared_ptr<CTurbomachineryPerformance> GetTurbomachineryPerformance() const {return TurbomachineryPerformance;}
 
   /*!
    * \brief Provide the inlet density to check convergence of conservative mixing-plane.

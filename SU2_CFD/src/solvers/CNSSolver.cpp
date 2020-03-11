@@ -173,8 +173,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Initialize quantities for turboperformace ---*/
   TurboVelocityIn               = nullptr;
   TurboVelocityOut              = nullptr;
-  MachIn                        = nullptr;
-  MachOut                       = nullptr;
 
   DensityIn                     = nullptr;
   DensityOut                    = nullptr;
@@ -186,49 +184,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   OmegaOut                      = nullptr;
   NuIn                          = nullptr;
   NuOut                         = nullptr;
-
-  TotalStaticEfficiency         = nullptr;
-  TotalTotalEfficiency          = nullptr;
-  KineticEnergyLoss             = nullptr;
-  TRadius                       = nullptr;
-  TotalPressureLoss             = nullptr;
-  MassFlowIn                    = nullptr;
-  MassFlowOut                   = nullptr;
-  FlowAngleIn                   = nullptr;
-  FlowAngleIn_BC                = nullptr;
-  FlowAngleOut                  = nullptr;
-  EulerianWork                  = nullptr;
-  TotalEnthalpyIn               = nullptr;
-  TotalEnthalpyIn_BC            = nullptr;
-  EntropyIn                     = nullptr;
-  EntropyOut                    = nullptr;
-  EntropyIn_BC                  = nullptr; 
-  PressureRatio                 = nullptr;
-  TotalTemperatureIn            = nullptr;
-  EnthalpyOut                   = nullptr;
-  VelocityOutIs                 = nullptr;
-  EnthalpyOutIs                 = nullptr;
-  EntropyGen                    = nullptr;
-  AbsFlowAngleIn                = nullptr;
-  TotalEnthalpyOut              = nullptr;
-  RothalpyIn                    = nullptr;
-  RothalpyOut                   = nullptr;
-  TotalEnthalpyOutIs            = nullptr;
-  AbsFlowAngleOut               = nullptr;
-  PressureOut_BC                = nullptr;
-  TemperatureIn                 = nullptr;
-  TemperatureOut                = nullptr;
-  TotalPressureIn               = nullptr;
-  TotalPressureOut              = nullptr;
-  TotalTemperatureOut           = nullptr;
-  EnthalpyIn                    = nullptr;
-  TurbIntensityIn               = nullptr;
-  Turb2LamViscRatioIn           = nullptr;
-  TurbIntensityOut              = nullptr;
-  Turb2LamViscRatioOut          = nullptr;
-  NuFactorIn                    = nullptr;
-  NuFactorOut                   = nullptr;
-
 
   /*--- Initialize quantities for Giles BC ---*/
 

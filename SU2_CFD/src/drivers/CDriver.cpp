@@ -3442,6 +3442,11 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
     config[ZONE_0]->SetnBlades(iZone, nBlades);
   }
 
+  if (rank == MASTER_NODE) cout<<"Initialize solver containers for turbomachinery-performance quantities." << endl;
+  for (iZone = 0; iZone < nZone; iZone++) {
+    solver[iZone][INST_0][MESH_0][FLOW_SOL]->InitTurboPerformance(geometry[iZone][INST_0][MESH_0],config[iZone]);
+  }
+
   if (rank == MASTER_NODE){
     for (iZone = 0; iZone < nZone; iZone++) {
     areaIn  = geometry[iZone][INST_0][MESH_0]->GetSpanAreaIn(iZone, config[iZone]->GetnSpanWiseSections());

@@ -35,6 +35,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <memory>
 #include <iostream>
 #include <set>
 #include <stdlib.h>
@@ -55,6 +56,7 @@
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../variables/CVariable.hpp"
+#include "../objectives/turbomachinery/CTurbomachineryPerformance.hpp"
 
 using namespace std;
 
@@ -4302,6 +4304,14 @@ public:
    */
   inline virtual void InitTurboContainers(CGeometry *geometry, CConfig *config) { }
 
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void InitTurboPerformance(CGeometry *geometry, CConfig *config) { }
+
   /*!
    * \brief virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4457,6 +4467,12 @@ public:
   inline virtual void SetExtAverageOmega(unsigned short valMarker,
                                          unsigned short valSpan,
                                          su2double valOmega) { }
+
+  /*!
+   * \brief Getter for TurbomachineryPerformance
+   * \return TurbomachineryPerformance container
+   */
+  inline virtual shared_ptr<CTurbomachineryPerformance> GetTurbomachineryPerformance() const {return 0;}
 
   /*!
    * \brief A virtual member.
