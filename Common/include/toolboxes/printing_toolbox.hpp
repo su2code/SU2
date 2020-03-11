@@ -2,14 +2,14 @@
  * \file printing_toolbox.hpp
  * \brief Header file for the printing toolbox.
  * \author T. Albring
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -217,6 +217,12 @@ inline void PrintScreenScientific(std::ostream &stream, su2double val, unsigned 
 inline void PrintScreenInteger(std::ostream &stream, unsigned long val, unsigned short field_width){
   stream.width(field_width);
   stream << std::right << val;
+}
+
+inline void PrintScreenPercent(std::ostream &stream, su2double val, unsigned short field_width){
+  stream.precision(2); stream.setf(std::ios::fixed, std::ios::floatfield); stream.width(field_width-1);
+  stream << std::right << val << "%";
+  stream.unsetf(std::ios::fixed);
 }
 
 

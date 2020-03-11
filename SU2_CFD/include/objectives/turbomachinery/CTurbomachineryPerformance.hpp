@@ -27,6 +27,7 @@
 
 
 #pragma once
+
 #include <vector>
 #include <memory>
 #include <algorithm>
@@ -39,110 +40,162 @@
 #include "../../../../Common/include/CConfig.hpp"
 #include "../../fluid_model.hpp"
 
-using namespace std; 
+using namespace std;
 
-class CTurbomachineryPrimitiveState
-{  
-   private: 
-      su2double Density, Pressure, TangVelocity;
-      vector<su2double> Velocity;
-   public:
-      CTurbomachineryPrimitiveState(); 
-      CTurbomachineryPrimitiveState(su2double density, su2double pressure, su2double* velocity, unsigned short nDim, su2double tangVel);
-      ~CTurbomachineryPrimitiveState();
-      su2double GetDensity() const { return Density; }
-      su2double GetPressure() const { return Pressure; }
-      su2double GetTangVelocity() const { return TangVelocity; }
-      vector<su2double> GetVelocity() const { return Velocity; }
-      
+class CTurbomachineryPrimitiveState {
+  private:
+  su2double Density, Pressure, TangVelocity;
+  vector <su2double> Velocity;
+  public:
+  CTurbomachineryPrimitiveState();
+
+  CTurbomachineryPrimitiveState(su2double density, su2double pressure, su2double *velocity, unsigned short nDim,
+                                su2double tangVel);
+
+  ~CTurbomachineryPrimitiveState();
+
+  su2double GetDensity() const { return Density; }
+
+  su2double GetPressure() const { return Pressure; }
+
+  su2double GetTangVelocity() const { return TangVelocity; }
+
+  vector <su2double> GetVelocity() const { return Velocity; }
+
 };
 
-class CTurbomachineryCombinedPrimitiveStates
-{
-   private:
-      CTurbomachineryPrimitiveState  InletPrimitiveState;
-      CTurbomachineryPrimitiveState  OutletPrimitiveState;
-   public:
-      CTurbomachineryCombinedPrimitiveStates(); 
-      CTurbomachineryCombinedPrimitiveStates(const CTurbomachineryPrimitiveState& inletPrimitiveState, const CTurbomachineryPrimitiveState& outletPrimitiveState);
-      ~CTurbomachineryCombinedPrimitiveStates();
-      CTurbomachineryPrimitiveState  GetInletPrimitiveState() const { return InletPrimitiveState; }
-      CTurbomachineryPrimitiveState  GetOutletPrimitiveState() const { return OutletPrimitiveState; }
+class CTurbomachineryCombinedPrimitiveStates {
+  private:
+  CTurbomachineryPrimitiveState InletPrimitiveState;
+  CTurbomachineryPrimitiveState OutletPrimitiveState;
+  public:
+  CTurbomachineryCombinedPrimitiveStates();
+
+  CTurbomachineryCombinedPrimitiveStates(const CTurbomachineryPrimitiveState &inletPrimitiveState,
+                                         const CTurbomachineryPrimitiveState &outletPrimitiveState);
+
+  ~CTurbomachineryCombinedPrimitiveStates();
+
+  CTurbomachineryPrimitiveState GetInletPrimitiveState() const { return InletPrimitiveState; }
+
+  CTurbomachineryPrimitiveState GetOutletPrimitiveState() const { return OutletPrimitiveState; }
 };
 
-class CTurbomachineryState
-{  
-   private: 
-      su2double Density, Pressure, Entropy, Enthalpy, Temperature, TotalTemperature, TotalPressure, TotalEnthalpy;
-      su2double AbsFlowAngle, FlowAngle, MassFlow, Rothalpy, TotalRelPressure;
-      vector<su2double> Velocity, RelVelocity, Mach, RelMach;
-      su2double Area, Radius;
+class CTurbomachineryState {
+  private:
+  su2double Density, Pressure, Entropy, Enthalpy, Temperature, TotalTemperature, TotalPressure, TotalEnthalpy;
+  su2double AbsFlowAngle, FlowAngle, MassFlow, Rothalpy, TotalRelPressure;
+  vector <su2double> Velocity, RelVelocity, Mach, RelMach;
+  su2double Area, Radius;
 
 
-   public:
-      CTurbomachineryState(); 
-      CTurbomachineryState(unsigned short nDim, su2double area, su2double radius);
-      ~CTurbomachineryState();
-      void ComputeState(CFluidModel* const fluidModel, const CTurbomachineryPrimitiveState&  primitiveState);
-      su2double GetDensity() const { return Density; }
-      su2double GetPressure() const { return Pressure; }
-      su2double GetEntropy() const {return Entropy; }
-      su2double GetEnthalpy() const {return Enthalpy; }
-      su2double GetTemperature() const { return Temperature; }
-      su2double GetTotalTemerature() const { return TotalTemperature; }
-      su2double GetTotalPressure() const { return TotalPressure; }
-      su2double GetTotalRelPressure() const { return TotalRelPressure; }
-      su2double GetTotalEnthalpy() const { return TotalEnthalpy; }
-      su2double GetAbsFlowAngle() const { return AbsFlowAngle; }
-      su2double GetFlowAngle() const { return FlowAngle; }
-      su2double GetMassFlow() const { return MassFlow; }
-      su2double GetRothalpy() const { return Rothalpy;}
-      vector<su2double> GetVelocity() const { return Velocity; }
-      vector<su2double> GetMach() const { return Mach; }
-      su2double GetVelocityValue() const { return  sqrt(inner_product(Velocity.begin(), Velocity.end(), Velocity.begin(), 0.0));}
-      su2double GetMachValue() const { return  sqrt(inner_product(Mach.begin(), Mach.end(), Mach.begin(), 0.0)); }
-      su2double GetRelVelocityValue() const { return  sqrt(inner_product(RelVelocity.begin(), RelVelocity.end(), RelVelocity.begin(), 0.0)); }
-      su2double GetRelMachValue() const { return  sqrt(inner_product(RelMach.begin(), RelMach.end(), RelMach.begin(), 0.0)); }
+  public:
+  CTurbomachineryState();
+
+  CTurbomachineryState(unsigned short nDim, su2double area, su2double radius);
+
+  ~CTurbomachineryState();
+
+  void ComputeState(CFluidModel *const fluidModel, const CTurbomachineryPrimitiveState &primitiveState);
+
+  su2double GetDensity() const { return Density; }
+
+  su2double GetPressure() const { return Pressure; }
+
+  su2double GetEntropy() const { return Entropy; }
+
+  su2double GetEnthalpy() const { return Enthalpy; }
+
+  su2double GetTemperature() const { return Temperature; }
+
+  su2double GetTotalTemerature() const { return TotalTemperature; }
+
+  su2double GetTotalPressure() const { return TotalPressure; }
+
+  su2double GetTotalRelPressure() const { return TotalRelPressure; }
+
+  su2double GetTotalEnthalpy() const { return TotalEnthalpy; }
+
+  su2double GetAbsFlowAngle() const { return AbsFlowAngle; }
+
+  su2double GetFlowAngle() const { return FlowAngle; }
+
+  su2double GetMassFlow() const { return MassFlow; }
+
+  su2double GetRothalpy() const { return Rothalpy; }
+
+  vector <su2double> GetVelocity() const { return Velocity; }
+
+  vector <su2double> GetMach() const { return Mach; }
+
+  su2double GetVelocityValue() const {
+    return sqrt(inner_product(Velocity.begin(), Velocity.end(), Velocity.begin(), 0.0));
+  }
+
+  su2double GetMachValue() const { return sqrt(inner_product(Mach.begin(), Mach.end(), Mach.begin(), 0.0)); }
+
+  su2double GetRelVelocityValue() const {
+    return sqrt(inner_product(RelVelocity.begin(), RelVelocity.end(), RelVelocity.begin(), 0.0));
+  }
+
+  su2double GetRelMachValue() const {
+    return sqrt(inner_product(RelMach.begin(), RelMach.end(), RelMach.begin(), 0.0));
+  }
 };
 
 
 class CTurbomachineryBladePerformance {
-   protected:
-      CTurbomachineryState InletState;
-      CTurbomachineryState OutletState;
-      su2double  KineticEnergyLoss, TotalPressureLoss, EntropyGen, PressureRatio, EulerianWork;
-      CFluidModel* FluidModel;
+  protected:
+  CTurbomachineryState InletState;
+  CTurbomachineryState OutletState;
+  su2double KineticEnergyLoss, TotalPressureLoss, EntropyGen, PressureRatio, EulerianWork;
+  CFluidModel *FluidModel;
 
-   public:
-      CTurbomachineryBladePerformance(CFluidModel* const fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn, su2double areaOut, su2double radiusOut);
-      virtual ~CTurbomachineryBladePerformance();
-      virtual void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates& primitives){ };
+  public:
+  CTurbomachineryBladePerformance(CFluidModel *const fluidModel, unsigned short nDim, su2double areaIn,
+                                  su2double radiusIn, su2double areaOut, su2double radiusOut);
 
-      CTurbomachineryState GetInletState() const { return InletState; }
-      CTurbomachineryState GetOutletState() const { return OutletState; }
-      su2double GetKineticEnergyLoss() const { return KineticEnergyLoss; }
-      su2double GetTotalPressureLoss() const { return TotalPressureLoss; }
-      su2double GetEntropyGen() const { return EntropyGen; }
-      su2double GetPressureRatio() const { return PressureRatio; }
-      su2double GetEulerianWork() const { return EulerianWork; }
+  virtual ~CTurbomachineryBladePerformance();
 
-}; 
+  virtual void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates &primitives) {};
+
+  CTurbomachineryState GetInletState() const { return InletState; }
+
+  CTurbomachineryState GetOutletState() const { return OutletState; }
+
+  su2double GetKineticEnergyLoss() const { return KineticEnergyLoss; }
+
+  su2double GetTotalPressureLoss() const { return TotalPressureLoss; }
+
+  su2double GetEntropyGen() const { return EntropyGen; }
+
+  su2double GetPressureRatio() const { return PressureRatio; }
+
+  su2double GetEulerianWork() const { return EulerianWork; }
+
+};
 
 class CTurbineBladePerformance : public CTurbomachineryBladePerformance {
 
-   public:
-      CTurbineBladePerformance(CFluidModel* const fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn, su2double areaOut, su2double radiusOut);
-      ~CTurbineBladePerformance();
-      void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates& primitives) override;
+  public:
+  CTurbineBladePerformance(CFluidModel *const fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn,
+                           su2double areaOut, su2double radiusOut);
+
+  ~CTurbineBladePerformance();
+
+  void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates &primitives) override;
 
 };
 
 class CCompressorBladePerformance : public CTurbomachineryBladePerformance {
 
-   public:
-      CCompressorBladePerformance(CFluidModel* const fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn, su2double areaOut, su2double radiusOut);
-      ~CCompressorBladePerformance();
-      void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates& primitives) override;
+  public:
+  CCompressorBladePerformance(CFluidModel *const fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn,
+                              su2double areaOut, su2double radiusOut);
+
+  ~CCompressorBladePerformance();
+
+  void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates &primitives) override;
 
 };
 // class CTurbomachineryStagePerformance :  CTurbomachineryBladePerformance {
@@ -174,21 +227,28 @@ class CCompressorBladePerformance : public CTurbomachineryBladePerformance {
 
 // };
 
-class CTurbomachineryPerformance
-{
-   private:
-      vector<vector<shared_ptr<CTurbomachineryBladePerformance>>> BladesPerformances;
-      
-   static void ComputePerBlade(vector<shared_ptr<CTurbomachineryBladePerformance>> const bladePerformances, vector<CTurbomachineryCombinedPrimitiveStates> const bladePrimitives);
+class CTurbomachineryPerformance {
+  private:
+  vector <vector<shared_ptr < CTurbomachineryBladePerformance>>>
+  BladesPerformances;
 
-   static void ComputePerSpan(shared_ptr<CTurbomachineryBladePerformance> const  spanPerformances, const CTurbomachineryCombinedPrimitiveStates& spanPrimitives);
-      // vector<shared_ptr<CTurbomachineryStagePerformance>> StagePerformances;
-      // shared_ptr<CTurbomachineryStagePerformance> MachinePerformances;
-   public:
-      CTurbomachineryPerformance(CConfig* const config, CGeometry* const geometry, CFluidModel* const fluidModel);
-      ~CTurbomachineryPerformance();
-      vector<vector<shared_ptr<CTurbomachineryBladePerformance>>> GetBladesPerformances() const { return BladesPerformances; }
-      // vector<shared_ptr<CTurbomachineryStagePerformance>> GetStagePerformances() const { return StagePerformances; }
-      // shared_ptr<CTurbomachineryStagePerformance> GetMachinePerformances() const { return MachinePerformances; }
-      void ComputeTurbomachineryPerformance(vector<vector<CTurbomachineryCombinedPrimitiveStates>> const primitives);      
+  static void ComputePerBlade(vector <shared_ptr<CTurbomachineryBladePerformance>> const bladePerformances,
+                              vector <CTurbomachineryCombinedPrimitiveStates> const bladePrimitives);
+
+  static void ComputePerSpan(shared_ptr <CTurbomachineryBladePerformance> const spanPerformances,
+                             const CTurbomachineryCombinedPrimitiveStates &spanPrimitives);
+  // vector<shared_ptr<CTurbomachineryStagePerformance>> StagePerformances;
+  // shared_ptr<CTurbomachineryStagePerformance> MachinePerformances;
+  public:
+  CTurbomachineryPerformance(CConfig *const config, CGeometry *const geometry, CFluidModel *const fluidModel);
+
+  ~CTurbomachineryPerformance();
+
+  vector <vector<shared_ptr < CTurbomachineryBladePerformance>>>
+
+  GetBladesPerformances() const { return BladesPerformances; }
+
+  // vector<shared_ptr<CTurbomachineryStagePerformance>> GetStagePerformances() const { return StagePerformances; }
+  // shared_ptr<CTurbomachineryStagePerformance> GetMachinePerformances() const { return MachinePerformances; }
+  void ComputeTurbomachineryPerformance(vector <vector<CTurbomachineryCombinedPrimitiveStates>> const primitives);
 };
