@@ -46,7 +46,7 @@ protected:
 
   su2double Total_CFEA;             /*!< \brief Total FEA coefficient for all the boundaries. */
 
-  unsigned short *iElem_iDe;        /*!< \brief For DE cases, ID of the region considered for each iElem. */
+  unsigned short *iElem_iDe = nullptr; /*!< \brief For DE cases, ID of the region considered for each iElem. */
 
   su2double a_dt[9];                /*!< \brief Integration constants. */
 
@@ -179,8 +179,8 @@ public:
 
   CSysMatrix<su2double> MassMatrix;     /*!< \brief Sparse structure for storing the mass matrix. */
 
-  CElement*** element_container;   /*!< \brief Vector which the define the finite element structure for each problem. */
-  CProperty** element_properties;  /*!< \brief Vector which stores the properties of each element */
+  CElement*** element_container = nullptr;  /*!< \brief Vector which the define the finite element structure for each problem. */
+  CProperty** element_properties = nullptr; /*!< \brief Vector which stores the properties of each element */
 
   /*!
    * \brief Constructor of the class.

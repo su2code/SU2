@@ -96,12 +96,6 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++)
     element_container[iTerm] = new CElement* [MAX_FE_KINDS*omp_get_max_threads()]();
 
-  nodes = nullptr;
-
-  element_properties = nullptr;
-
-  iElem_iDe = nullptr;
-
   topol_filter_applied = false;
 
   element_based = false;
@@ -243,8 +237,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Initialize structures for hybrid-parallel mode. ---*/
   HybridParallelInitialization(geometry);
 
-  iElem_iDe = nullptr;
-
   /*--- Initialize the value of the total objective function ---*/
   Total_OFRefGeom = 0.0;
   Total_OFRefNode = 0.0;
@@ -312,15 +304,15 @@ CFEASolver::~CFEASolver(void) {
     delete [] element_container;
   }
 
-  if (element_properties != nullptr){
+  if (element_properties != nullptr) {
     for (unsigned long iElem = 0; iElem < nElement; iElem++)
-      if (element_properties[iElem] != nullptr) delete element_properties[iElem];
+      delete element_properties[iElem];
     delete [] element_properties;
   }
 
-  if (iElem_iDe != nullptr) delete [] iElem_iDe;
+  delete [] iElem_iDe;
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 
   if (LockStrategy) {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
