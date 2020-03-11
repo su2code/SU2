@@ -12796,7 +12796,8 @@ void CEulerSolver::ComputeTurboPerformance(CConfig *config, CGeometry *geometry)
   if (rank == MASTER_NODE){
     for (iBlade = 0; iBlade < nBladesRow; iBlade++ ){
       std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
-      for (iSpan = 0; iSpan < config->GetnSpan_iZones(iBlade) + 1; iSpan++){
+      auto nSpan = config->GetnSpan_iZones(iBlade);
+      for (iSpan = 0; iSpan < nSpan + 1; iSpan++){
         auto spanInletPrimitive = CTurbomachineryPrimitiveState(DensityIn[iBlade][iSpan], PressureIn[iBlade][iSpan], TurboVelocityIn[iBlade][iSpan], nDim, geometry->GetTangGridVelIn(iBlade, iSpan));
         auto spanOutletPrimitive = CTurbomachineryPrimitiveState(DensityOut[iBlade][iSpan], PressureOut[iBlade][iSpan], TurboVelocityOut[iBlade][iSpan], nDim, geometry->GetTangGridVelOut(iBlade, iSpan));
         auto spanCombinedPrimitive = CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive);

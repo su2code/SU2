@@ -143,7 +143,8 @@ CTurbomachineryPerformance::CTurbomachineryPerformance(CConfig *const config, CG
 
   for (unsigned short iBladeRow = 0; iBladeRow < nBladesRow; iBladeRow++) {
     vector <shared_ptr<CTurbomachineryBladePerformance>> bladeSpanPerformances;
-    for (unsigned short iSpan = 0; iSpan < config->GetnSpan_iZones(iBladeRow) + 1; iSpan++) {
+    auto nSpan = config->GetnSpan_iZones(iBladeRow);
+    for (unsigned short iSpan = 0; iSpan < nSpan + 1; iSpan++) {
 
       auto areaIn = geometry->GetSpanAreaIn(iBladeRow, iSpan);
       auto areaOut = geometry->GetSpanAreaOut(iBladeRow, iSpan);
