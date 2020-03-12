@@ -2,14 +2,14 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CSolver.hpp"
+#include "../../../Common/include/omp_structure.hpp"
 
 /*!
  * \class CFEASolver
@@ -38,7 +39,7 @@ class CFEASolver : public CSolver {
 protected:
   enum : size_t {MAXNNODE = 8};
   enum : size_t {MAXNVAR = 3};
-  enum : size_t {OMP_MIN_SIZE = 64};
+  enum : size_t {OMP_MIN_SIZE = 32};
   enum : size_t {OMP_MAX_SIZE = 512};
 
   unsigned long omp_chunk_size;     /*!< \brief Chunk size used in light point loops. */
@@ -74,20 +75,23 @@ protected:
   su2double RelaxCoeff;             /*!< \brief Relaxation coefficient . */
   su2double FSI_Residual;           /*!< \brief FSI residual. */
 
-  struct ElemColor {
-    unsigned long size;             /*!< \brief Number of elements with a given color. */
-    const unsigned long* indices;   /*!< \brief Array of element indices for a given color. */
-  };
-  vector<ElemColor> ElemColoring;   /*!< \brief Element colors. */
+#ifdef HAVE_OMP
+  vector<GridColor<> > ElemColoring;   /*!< \brief Element colors. */
+#else
+  array<DummyGridColor<>,1> ElemColoring;
+#endif
   unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size must be a multiple of this. */
 
   bool element_based;               /*!< \brief Bool to determine if an element-based file is used. */
   bool topol_filter_applied;        /*!< \brief True if density filtering has been performed. */
 
   unsigned long nElement;           /*!< \brief Number of elements. */
-  unsigned long IterLinSol;         /*!< \brief Number of iterations of the linear solver. */
 
-  CVariable* nodes = nullptr;       /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  /*!
+   * \brief The highest level in the variable hierarchy this solver can safely use,
+   * CVariable is the common denominator between the FEA and Mesh deformation variables.
+   */
+  CVariable* nodes = nullptr;
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.

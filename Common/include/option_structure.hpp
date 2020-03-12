@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -79,7 +79,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 10;             /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+const unsigned int MAX_SOLS = 12;             /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
@@ -104,6 +104,8 @@ const su2double TWO3 = 2.0 / 3.0;   /*!< \brief Two divided by three. */
 const su2double FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
 
 const su2double PI_NUMBER = 4.0 * atan(1.0);  /*!< \brief Pi number. */
+
+const su2double STEFAN_BOLTZMANN = 5.670367E-08;  /*!< \brief Stefan-Boltzmann constant in W/(m^2*K^4). */
 
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
@@ -155,7 +157,7 @@ static const MapType<string, AVERAGE_TYPE> Average_Map = {
 /*!
  * \brief different solver types for the CFD component
  */
-enum ENUM_SOLVER {
+enum ENUM_MAIN_SOLVER {
   NO_SOLVER = 0,                    /*!< \brief Definition of no solver. */
   EULER = 1,                        /*!< \brief Definition of the Euler's solver. */
   NAVIER_STOKES = 2,                /*!< \brief Definition of the Navier-Stokes' solver. */
@@ -163,7 +165,7 @@ enum ENUM_SOLVER {
   INC_EULER = 4,                    /*!< \brief Definition of the incompressible Euler's solver. */
   INC_NAVIER_STOKES =5,             /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
   INC_RANS = 6,                     /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  HEAT_EQUATION_FVM = 7,            /*!< \brief Definition of the finite volume heat solver. */
+  HEAT_EQUATION = 7,                /*!< \brief Definition of the finite volume heat solver. */
   FLUID_STRUCTURE_INTERACTION = 8,  /*!< \brief Definition of a FSI solver. */
   FEM_ELASTICITY = 9,               /*!< \brief Definition of a FEM solver. */
   ADJ_EULER = 10,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
@@ -187,7 +189,7 @@ enum ENUM_SOLVER {
   FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIPHYSICS = 30
 };
-static const MapType<string, ENUM_SOLVER> Solver_Map = {
+static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", NO_SOLVER)
   MakePair("EULER", EULER)
   MakePair("NAVIER_STOKES", NAVIER_STOKES)
@@ -202,7 +204,7 @@ static const MapType<string, ENUM_SOLVER> Solver_Map = {
   MakePair("ADJ_EULER", ADJ_EULER)
   MakePair("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
   MakePair("ADJ_RANS", ADJ_RANS )
-  MakePair("HEAT_EQUATION_FVM", HEAT_EQUATION_FVM)
+  MakePair("HEAT_EQUATION", HEAT_EQUATION)
   MakePair("ELASTICITY", FEM_ELASTICITY)
   MakePair("DISC_ADJ_EULER", DISC_ADJ_EULER)
   MakePair("DISC_ADJ_RANS", DISC_ADJ_RANS)
@@ -210,7 +212,7 @@ static const MapType<string, ENUM_SOLVER> Solver_Map = {
   MakePair("DISC_ADJ_INC_EULER", DISC_ADJ_INC_EULER)
   MakePair("DISC_ADJ_INC_RANS", DISC_ADJ_INC_RANS)
   MakePair("DISC_ADJ_INC_NAVIERSTOKES", DISC_ADJ_INC_NAVIER_STOKES)
-  MakePair("DISC_ADJ_HEAT_EQUATION_FVM", DISC_ADJ_HEAT)
+  MakePair("DISC_ADJ_HEAT_EQUATION", DISC_ADJ_HEAT)
   MakePair("DISC_ADJ_FEM_EULER", DISC_ADJ_FEM_EULER)
   MakePair("DISC_ADJ_FEM_RANS", DISC_ADJ_FEM_RANS)
   MakePair("DISC_ADJ_FEM_NS", DISC_ADJ_FEM_NS)
@@ -436,6 +438,8 @@ enum RUNTIME_TYPE {
   RUNTIME_HEAT_SYS = 21,      /*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_ADJHEAT_SYS = 31,   /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
   RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
+  RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
 };
 
 const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
@@ -447,6 +451,11 @@ const int ADJTURB_SOL = 3;  /*!< \brief Position of the continuous adjoint turbu
 const int TRANS_SOL = 4;    /*!< \brief Position of the transition model solution in the solver container array. */
 const int HEAT_SOL = 5;     /*!< \brief Position of the heat equation in the solution solver array. */
 const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array. */
+const int RAD_SOL = 7;      /*!< \brief Position of the radiation equation in the solution solver array. */
+const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+
+const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
+const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
 
 const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
@@ -466,9 +475,6 @@ const int DE_TERM = 1;       /*!< \brief Position of the dielectric terms in the
 const int MAT_NHCOMP  = 2;   /*!< \brief Position of the Neo-Hookean compressible material model. */
 const int MAT_IDEALDE = 3;   /*!< \brief Position of the Ideal-DE material model. */
 const int MAT_KNOWLES = 4;   /*!< \brief Position of the Knowles material model. */
-
-const int MESH_SOL = 8;      /*!< \brief Position of the mesh solver. */
-const int ADJMESH_SOL = 9;   /*!< \brief Position of the adjoint of the mesh solver. */
 
 /*!
  * \brief Types of finite elements (in 2D or 3D)
@@ -1152,6 +1158,30 @@ static const MapType<string, ENUM_DVFEA> DVFEA_Map = {
   MakePair("DENSITY", DENSITY_VAL)
   MakePair("DEAD_WEIGHT", DEAD_WEIGHT)
   MakePair("ELECTRIC_FIELD", ELECTRIC_FIELD)
+};
+
+/*!
+ * \brief Kinds of radiation models
+ */
+enum ENUM_RADIATION {
+  NO_RADIATION = 0,      /*!< \brief No radiation model */
+  P1_MODEL = 1           /*!< \brief P1 Radiation model. */
+};
+static const MapType<string, ENUM_RADIATION> Radiation_Map = {
+  MakePair("NONE", NO_RADIATION)
+  MakePair("P1", P1_MODEL)
+};
+
+/*!
+ * \brief Kinds of P1 initialization
+ */
+enum ENUM_P1_INIT {
+  P1_INIT_ZERO = 0,      /*!< \brief Initialize the P1 model from zero values */
+  P1_INIT_TEMP = 1       /*!< \brief Initialize the P1 model from blackbody energy computed from the initial temperature. */
+};
+static const MapType<string, ENUM_P1_INIT> P1_Init_Map = {
+  MakePair("ZERO", P1_INIT_ZERO)
+  MakePair("TEMPERATURE_INIT", P1_INIT_TEMP)
 };
 
 /*!

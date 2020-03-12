@@ -2,14 +2,14 @@
  * \file CAdjElasticityOutput.cpp
  * \brief Main subroutines for elasticity discrete adjoint output
  * \author R. Sanchez
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -93,9 +93,9 @@ CAdjElasticityOutput::~CAdjElasticityOutput(void) {}
 void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
   // Residuals
-  AddHistoryOutput("ADJOINT_DISP_X", "Res[Ux_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
-  AddHistoryOutput("ADJOINT_DISP_Y", "Res[Uy_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
-  AddHistoryOutput("ADJOINT_DISP_Z", "Res[Uz_adj]", ScreenOutputFormat::FIXED,   "RESIDUALS", "");
+  AddHistoryOutput("ADJOINT_DISP_X", "rms[Ux_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the X displacements.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("ADJOINT_DISP_Y", "rms[Uy_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the Y displacements.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("ADJOINT_DISP_Z", "rms[Uz_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the Z displacements.", HistoryFieldType::RESIDUAL);
 
   //Sensitivities
   AddHistoryOutput("SENS_E", "Sens[E]",  ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "");
