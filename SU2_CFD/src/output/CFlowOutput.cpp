@@ -269,7 +269,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
         }
       }
-	  config->SetSurface_MassFlow(iMarker, Surface_MassFlow[iMarker]);
+	  config->SetSurface_MassFlow(0, Surface_MassFlow[iMarker]);
     }
 
   }
