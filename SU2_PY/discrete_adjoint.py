@@ -42,31 +42,30 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-c", "--compute",    dest="compute",    default="True",
-                      help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
-    parser.add_option("-a", "--onlyadjoint", dest="onlyadjoint", default="False",
-                      help="compute ONLY adjoint problem", metavar="ONLY_ADJ")
     parser.add_option("-s", "--step",       dest="step",       default=1E-4,
                       help="DOT finite difference STEP", metavar="STEP")
     parser.add_option("-v", "--validate", dest="validate", default="False",
                       help="Validate the gradient using direct diff. mode", metavar="VALIDATION")
     parser.add_option("-z", "--zones", dest="nzones", default="1",
                       help="Number of Zones", metavar="ZONES")
+    parser.add_option("-m", "--mode", dest="mode", default="0",
+                      help="Determine the calculation mode \n 0: compute primal & adjoint problem & gradient (DEFAULT) \n 1: compute adjoint (with primal restart) & gradient \n 2: compute gradient (with primal and adjoint restarts)", metavar="MODE")
 
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
     options.step        = float( options.step )
-    options.compute     = options.compute.upper() == 'TRUE'
-    options.onlyadjoint = options.onlyadjoint.upper() == 'TRUE'
     options.validate    = options.validate.upper() == 'TRUE'
     options.nzones      = int( options.nzones )
+    options.mode        = int( options.mode )
+
+    if options.mode > 2 or options.mode < 0:
+        sys.exit('Infeasible input for --mode. Use --help for more information')
 
     discrete_adjoint( options.filename    ,
                       options.partitions  ,
-                      options.compute     ,
-                      options.onlyadjoint,
                       options.step        ,
-                      options.nzones       )
+                      options.nzones       ,
+                      options.mode)
 
 #: def main()
 
@@ -76,11 +75,10 @@ def main():
 # -------------------------------------------------------------------
 
 def discrete_adjoint( filename           ,
-                      partitions  = 0    , 
-                      compute     = True ,
-                      onlyadjoint = False ,
+                      partitions  = 0    ,
                       step        = 1e-4 ,
-                      nzones      = 1     ):
+                      nzones      = 1,
+                      mode = 0):
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
@@ -96,7 +94,7 @@ def discrete_adjoint( filename           ,
     config['GRADIENT_METHOD'] = 'DISCRETE_ADJOINT'
 
     # check for existing files
-    if not compute:
+    if mode == 2:
         config.RESTART_SOL = 'YES'
         state.find_files(config)
     else:
@@ -106,7 +104,7 @@ def discrete_adjoint( filename           ,
     konfig = copy.deepcopy(config)
 
     # Direct Solution
-    if compute and not onlyadjoint:
+    if mode == 0:
         info = SU2.run.direct(config)
         state.update(info)
         # Update konfig
@@ -122,7 +120,7 @@ def discrete_adjoint( filename           ,
     # Adjoint Solution
 
     # Run all-at-once
-    if compute:
+    if mode == 0 or mode == 1:
         restart_sol_activated = False
         if konfig.get('TIME_DOMAIN','NO') == 'YES' and konfig.get('RESTART_SOL','NO') == 'YES':
             restart_sol_activated = True
