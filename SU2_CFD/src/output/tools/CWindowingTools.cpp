@@ -3,7 +3,6 @@
  * \brief Signal processing tools
  * \author S. Schotthöfer
  * \version 7.0.2 "Blackbird"
->>>>>>> d1118950d691d9d01401e3d5c7460d23a654f588
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +33,7 @@ su2double CWindowingTools::GetWndWeight(WINDOW_FUNCTION windowId, unsigned long 
     case HANN:        return HannWindow(curTimeIter, endTimeIter);
     case HANN_SQUARE: return HannSquaredWindow(curTimeIter, endTimeIter);
     case BUMP:        return BumpWindow(curTimeIter, endTimeIter);
-    default:return 1.0;
+    default:          return 1.0;
   }
 }
 su2double CWindowingTools::HannWindow(unsigned long curTimeIter, unsigned long endTimeIter) const{
