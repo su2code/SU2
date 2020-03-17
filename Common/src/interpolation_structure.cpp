@@ -2683,7 +2683,6 @@ bool CSlidingMesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
   return (check == 3);     
 }
 
-/*--- Radial Basis Function Interpolator ---*/
 CRadialBasisFunction::CRadialBasisFunction(void): CInterpolator() { }
 
 CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, CConfig **config, unsigned int iZone,
@@ -2693,15 +2692,43 @@ CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, CCo
   Set_TransferCoeff(config);
 }
 
+su2double CRadialBasisFunction::Get_RadialBasisValue(ENUM_RADIALBASIS type, const su2double radius, const su2double dist)
+{
+  su2double rbf = dist/radius;
+
+  switch (type) {
+
+    case WENDLAND_C2:
+      if(rbf < 1) rbf = pow(pow((1-rbf),2),2)*(4*rbf+1); // double use of pow(x,2) for optimization
+      else        rbf = 0.0;
+      break;
+
+    case GAUSSIAN:
+      rbf = exp(-rbf*rbf);
+      break;
+
+    case THIN_PLATE_SPLINE:
+      if(rbf < numeric_limits<float>::min()) rbf = 0.0;
+      else rbf *= rbf*log(rbf);
+      break;
+
+    case MULTI_QUADRIC:
+    case INV_MULTI_QUADRIC:
+      rbf = sqrt(1.0+rbf*rbf);
+      if(type == INV_MULTI_QUADRIC) rbf = 1.0/rbf;
+      break;
+  }
+
+  return rbf;
+}
+
 void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
   /*--- RBF options. ---*/
-  const unsigned short kindRBF = config[donorZone]->GetKindRadialBasisFunction();
+  const auto kindRBF = static_cast<ENUM_RADIALBASIS>(config[donorZone]->GetKindRadialBasisFunction());
   const bool usePolynomial = config[donorZone]->GetRadialBasisFunctionPolynomialOption();
   const su2double paramRBF = config[donorZone]->GetRadialBasisFunctionParameter();
   const su2double pruneTol = config[donorZone]->GetRadialBasisFunctionPruneTol();
-  const passivedouble eps = numeric_limits<passivedouble>::epsilon();
-  const su2double interfaceCoordTol = 1e6 * eps;
 
   const auto nMarkerInt = config[donorZone]->GetMarker_n_ZoneInterface()/2;
   const int nDim = donor_geometry->GetnDim();
@@ -2755,7 +2782,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
     Collect_VertexInfo(false, mark_donor, mark_target, nVertexDonor, nDim);
 
-    /*--- Compresses the gathered donor point information to simplify computation. ---*/
+    /*--- Compresses the gathered donor point information to simplify computations. ---*/
     auto& DonorCoord = DonorCoordinates[iMarkerInt];
     auto& DonorPoint = DonorGlobalPoint[iMarkerInt];
     auto& DonorProc = DonorProcessor[iMarkerInt];
@@ -2800,102 +2827,11 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
   SU2_OMP_PARALLEL_(for schedule(dynamic,1))
   for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; ++iMarkerInt) {
-
-    if (rank != AssignedProcessor[iMarkerInt]) continue; // #notmyjob
-
-    const auto& DonorCoord = DonorCoordinates[iMarkerInt];
-    const auto nGlobalVertexDonor = DonorCoord.rows();
-
-    auto& C_inv_trunc = CinvTrucVec[iMarkerInt];
-    auto& nPolynomial = nPolynomialVec[iMarkerInt];
-    auto& keepPolynomialRow = keepPolynomialRowVec[iMarkerInt];
-
-    /*--- Populate interpolation kernel. ---*/
-    CSymmetricMatrix global_M(nGlobalVertexDonor);
-
-    for (auto iVertex = 0ul; iVertex < nGlobalVertexDonor; ++iVertex)
-      for (auto jVertex = iVertex; jVertex < nGlobalVertexDonor; ++jVertex)
-        global_M(iVertex, jVertex) = SU2_TYPE::GetValue(Get_RadialBasisValue(kindRBF, paramRBF,
-                                     PointsDistance(nDim, DonorCoord[iVertex], DonorCoord[jVertex])));
-
-    /*--- Invert M matrix (operation is in-place). ---*/
-    switch (kindRBF) {
-      /*--- Basis functions that make M positive definite. ---*/
-      case WENDLAND_C2:
-      case INV_MULTI_QUADRIC:
-      case GAUSSIAN:
-        global_M.Invert(true); break;
-
-      /*--- Basis functions that make M semi-positive definite. ---*/
-      case THIN_PLATE_SPLINE:
-      case MULTI_QUADRIC:
-        global_M.Invert(false); break;
+    if (rank == AssignedProcessor[iMarkerInt]) {
+      ComputeGeneratorMatrix(kindRBF, usePolynomial, paramRBF,
+                             DonorCoordinates[iMarkerInt], nPolynomialVec[iMarkerInt],
+                             keepPolynomialRowVec[iMarkerInt], CinvTrucVec[iMarkerInt]);
     }
-
-    /*--- Compute C_inv_trunc. ---*/
-    if (usePolynomial) {
-
-      /*--- Fill P matrix (P for points, with an extra top row of ones). ---*/
-      su2passivematrix P(1+nDim, nGlobalVertexDonor);
-
-      for (auto iVertex = 0ul; iVertex < nGlobalVertexDonor; iVertex++) {
-        P(0, iVertex) = 1.0;
-        for (int iDim = 0; iDim < nDim; ++iDim)
-          P(1+iDim, iVertex) = SU2_TYPE::GetValue(DonorCoord(iVertex, iDim));
-      }
-
-      /*--- Check if points lie on a plane and remove one coordinate from P if so. ---*/
-      nPolynomial = CheckPolynomialTerms(interfaceCoordTol, keepPolynomialRow, P);
-
-      /*--- Compute Mp = (P * M^-1 * P^T)^-1 ---*/
-      CSymmetricMatrix Mp(nPolynomial+1);
-
-      su2passivematrix tmp;
-      global_M.MatMatMult('R', P, tmp); // tmp = P * M^-1
-
-      for (int i = 0; i <= nPolynomial; ++i) // Mp = tmp * P
-        for (int j = i; j <= nPolynomial; ++j) {
-          Mp(i,j) = 0.0;
-          for (auto k = 0ul; k < nGlobalVertexDonor; ++k) Mp(i,j) += tmp(i,k) * P(j,k);
-        }
-      Mp.Invert(false); // Mp = Mp^-1
-
-      /*--- Compute M_p * P * M^-1, the top part of C_inv_trunc. ---*/
-      Mp.MatMatMult('L', P, tmp);
-      su2passivematrix C_inv_top;
-      global_M.MatMatMult('R', tmp, C_inv_top);
-
-      /*--- Compute tmp = (I - P^T * M_p * P * M^-1), part of the bottom part of
-       C_inv_trunc. Note that most of the product is known from the top part. ---*/
-      tmp.resize(nGlobalVertexDonor, nGlobalVertexDonor);
-
-      for (auto i = 0ul; i < nGlobalVertexDonor; ++i) {
-        for (auto j = 0ul; j < nGlobalVertexDonor; ++j) {
-          tmp(i,j) = 0.0;
-          for (int k = 0; k <= nPolynomial; ++k) tmp(i,j) -= P(k,i) * C_inv_top(k,j);
-        }
-        tmp(i,i) += 1.0; // identity part
-      }
-
-      /*--- Compute M^-1 * (I - P^T * M_p * P * M^-1), finalize bottom of C_inv_trunc. ---*/
-      global_M.MatMatMult('L', tmp, C_inv_trunc);
-
-      /*--- Merge top and bottom of C_inv_trunc. ---*/
-      tmp = move(C_inv_trunc);
-      C_inv_trunc.resize(1+nPolynomial+nGlobalVertexDonor, nGlobalVertexDonor);
-      memcpy(C_inv_trunc[0], C_inv_top.data(), C_inv_top.size()*sizeof(passivedouble));
-      memcpy(C_inv_trunc[1+nPolynomial], tmp.data(), tmp.size()*sizeof(passivedouble));
-    }
-    else {
-      /*--- No polynomial term used in the interpolation, C_inv_trunc = M^-1. ---*/
-
-      C_inv_trunc.resize(nGlobalVertexDonor, nGlobalVertexDonor);
-      for (auto i = 0ul; i < nGlobalVertexDonor; ++i)
-        for (auto j = 0ul; j < nGlobalVertexDonor; ++j)
-          C_inv_trunc(i,j) = global_M(i,j);
-
-    } // end usePolynomial
-
   }
 
   /*--- Final loop over interface markers to compute the interpolation coefficients. ---*/
@@ -3028,31 +2964,91 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
 }
 
-int CRadialBasisFunction::PruneSmallCoefficients(passivedouble tolerance,
-                                                 su2passivevector& coeffs) const {
+void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool usePolynomial,
+                           su2double radius, const su2activematrix& coords, int& nPolynomial,
+                           vector<int>& keepPolynomialRow, su2passivematrix& C_inv_trunc) const {
 
-  /*--- Determine the pruning threshold. ---*/
-  passivedouble thresh = 0.0;
-  for (auto i = 0ul; i < coeffs.size(); ++i)
-    thresh = max(thresh, fabs(coeffs(i)));
-  thresh *= tolerance;
+  const su2double interfaceCoordTol = 1e6 * numeric_limits<passivedouble>::epsilon();
 
-  /*--- Prune and count non-zeros. ---*/
-  int numNonZeros = 0;
-  passivedouble coeffSum = 0.0;
-  for (auto i = 0ul; i < coeffs.size(); ++i) {
-    if (fabs(coeffs(i)) > thresh) {
-      coeffSum += coeffs(i);
-      ++numNonZeros;
+  const auto nVertexDonor = coords.rows();
+  const int nDim = coords.cols();
+
+  /*--- Populate interpolation kernel. ---*/
+  CSymmetricMatrix global_M(nVertexDonor);
+
+  for (auto iVertex = 0ul; iVertex < nVertexDonor; ++iVertex)
+    for (auto jVertex = iVertex; jVertex < nVertexDonor; ++jVertex)
+      global_M(iVertex, jVertex) = SU2_TYPE::GetValue(Get_RadialBasisValue(type, radius,
+                                   PointsDistance(nDim, coords[iVertex], coords[jVertex])));
+
+  /*--- Invert M matrix (operation is in-place). ---*/
+  const bool kernelIsSPD = (type==WENDLAND_C2) || (type==GAUSSIAN) || (type==INV_MULTI_QUADRIC);
+  global_M.Invert(kernelIsSPD);
+
+  /*--- Compute C_inv_trunc. ---*/
+  if (usePolynomial) {
+
+    /*--- Fill P matrix (P for points, with an extra top row of ones). ---*/
+    su2passivematrix P(1+nDim, nVertexDonor);
+
+    for (auto iVertex = 0ul; iVertex < nVertexDonor; iVertex++) {
+      P(0, iVertex) = 1.0;
+      for (int iDim = 0; iDim < nDim; ++iDim)
+        P(1+iDim, iVertex) = SU2_TYPE::GetValue(coords(iVertex, iDim));
     }
-    else coeffs(i) = 0.0;
+
+    /*--- Check if points lie on a plane and remove one coordinate from P if so. ---*/
+    nPolynomial = CheckPolynomialTerms(interfaceCoordTol, keepPolynomialRow, P);
+
+    /*--- Compute Mp = (P * M^-1 * P^T)^-1 ---*/
+    CSymmetricMatrix Mp(nPolynomial+1);
+
+    su2passivematrix tmp;
+    global_M.MatMatMult('R', P, tmp); // tmp = P * M^-1
+
+    for (int i = 0; i <= nPolynomial; ++i) // Mp = tmp * P
+      for (int j = i; j <= nPolynomial; ++j) {
+        Mp(i,j) = 0.0;
+        for (auto k = 0ul; k < nVertexDonor; ++k) Mp(i,j) += tmp(i,k) * P(j,k);
+      }
+    Mp.Invert(false); // Mp = Mp^-1
+
+    /*--- Compute M_p * P * M^-1, the top part of C_inv_trunc. ---*/
+    Mp.MatMatMult('L', P, tmp);
+    su2passivematrix C_inv_top;
+    global_M.MatMatMult('R', tmp, C_inv_top);
+
+    /*--- Compute tmp = (I - P^T * M_p * P * M^-1), part of the bottom part of
+     C_inv_trunc. Note that most of the product is known from the top part. ---*/
+    tmp.resize(nVertexDonor, nVertexDonor);
+
+    for (auto i = 0ul; i < nVertexDonor; ++i) {
+      for (auto j = 0ul; j < nVertexDonor; ++j) {
+        tmp(i,j) = 0.0;
+        for (int k = 0; k <= nPolynomial; ++k) tmp(i,j) -= P(k,i) * C_inv_top(k,j);
+      }
+      tmp(i,i) += 1.0; // identity part
+    }
+
+    /*--- Compute M^-1 * (I - P^T * M_p * P * M^-1), finalize bottom of C_inv_trunc. ---*/
+    global_M.MatMatMult('L', tmp, C_inv_trunc);
+
+    /*--- Merge top and bottom of C_inv_trunc. ---*/
+    tmp = move(C_inv_trunc);
+    C_inv_trunc.resize(1+nPolynomial+nVertexDonor, nVertexDonor);
+    memcpy(C_inv_trunc[0], C_inv_top.data(), C_inv_top.size()*sizeof(passivedouble));
+    memcpy(C_inv_trunc[1+nPolynomial], tmp.data(), tmp.size()*sizeof(passivedouble));
   }
+  else {
+    /*--- No polynomial term used in the interpolation, C_inv_trunc = M^-1. ---*/
 
-  /*--- Correct remaining coefficients, sum must be 1 for conservation. ---*/
-  passivedouble correction = 1.0 / coeffSum;
-  for (auto i = 0ul; i < coeffs.size(); ++i) coeffs(i) *= correction;
+    C_inv_trunc.resize(nVertexDonor, nVertexDonor);
+    for (auto i = 0ul; i < nVertexDonor; ++i)
+      for (auto j = 0ul; j < nVertexDonor; ++j)
+        C_inv_trunc(i,j) = global_M(i,j);
 
-  return numNonZeros;
+  } // end usePolynomial
+
 }
 
 int CRadialBasisFunction::CheckPolynomialTerms(su2double max_diff_tol, vector<int>& keep_row,
@@ -3125,34 +3121,31 @@ int CRadialBasisFunction::CheckPolynomialTerms(su2double max_diff_tol, vector<in
   return n_polynomial;
 }
 
-su2double CRadialBasisFunction::Get_RadialBasisValue(const unsigned short type, const su2double radius, const su2double dist)
-{
-  su2double rbf = dist/radius;
+int CRadialBasisFunction::PruneSmallCoefficients(passivedouble tolerance,
+                                                 su2passivevector& coeffs) const {
 
-  switch (type) {
+  /*--- Determine the pruning threshold. ---*/
+  passivedouble thresh = 0.0;
+  for (auto i = 0ul; i < coeffs.size(); ++i)
+    thresh = max(thresh, fabs(coeffs(i)));
+  thresh *= tolerance;
 
-    case WENDLAND_C2:
-      if(rbf < 1) rbf = pow(pow((1-rbf),2),2)*(4*rbf+1); // double use of pow(x,2) for optimization
-      else        rbf = 0.0;
-      break;
-
-    case GAUSSIAN:
-      rbf = exp(-rbf*rbf);
-      break;
-
-    case THIN_PLATE_SPLINE:
-      if(rbf < numeric_limits<float>::min()) rbf = 0.0;
-      else rbf *= rbf*log(rbf);
-      break;
-
-    case MULTI_QUADRIC:
-    case INV_MULTI_QUADRIC:
-      rbf = sqrt(1.0+rbf*rbf);
-      if(type == INV_MULTI_QUADRIC) rbf = 1.0/rbf;
-      break;
+  /*--- Prune and count non-zeros. ---*/
+  int numNonZeros = 0;
+  passivedouble coeffSum = 0.0;
+  for (auto i = 0ul; i < coeffs.size(); ++i) {
+    if (fabs(coeffs(i)) > thresh) {
+      coeffSum += coeffs(i);
+      ++numNonZeros;
+    }
+    else coeffs(i) = 0.0;
   }
 
-  return rbf;
+  /*--- Correct remaining coefficients, sum must be 1 for conservation. ---*/
+  passivedouble correction = 1.0 / coeffSum;
+  for (auto i = 0ul; i < coeffs.size(); ++i) coeffs(i) *= correction;
+
+  return numNonZeros;
 }
 
 void CSymmetricMatrix::Initialize(int N)

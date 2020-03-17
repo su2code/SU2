@@ -415,10 +415,28 @@ public:
    * \param[in] type - of radial basis function
    * \param[in] radius - the characteristic dimension
    * \param[in] dist - distance
+   * \return value of the RBF.
    */
-  static su2double Get_RadialBasisValue(const unsigned short type, const su2double radius, const su2double dist);
+  static su2double Get_RadialBasisValue(ENUM_RADIALBASIS type, const su2double radius, const su2double dist);
 
 private:
+  /*!
+   * \brief Compute the RBF "generator" matrix with or without polynomial terms.
+   * \note Multiplying C_inv_trunc by a column vector gives specific coefficients for given "known values",
+   * conversely, multiplying (on the left) by a row vector of polynomial and RBF values gives generic
+   * interpolation coefficients for a given target evaluation point.
+   * \param[in] type - Type of radial basis function.
+   * \param[in] usePolynomial - Whether to use polynomial terms.
+   * \param[in] radius - Normalizes point-to-point distance when computing RBF values.
+   * \param[in] coords - Coordinates of the donor points.
+   * \param[out] nPolynomial - Num of poly terms, -1 if !usePolynomial, nDim-1 if coords lie on plane, else nDim.
+   * \param[out] keepPolynomialRow - Size nDim, signals which (if any) iDim was removed from polynomial term.
+   * \param[out] C_inv_trunc - The generator matrix as described above.
+   */
+  void ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool usePolynomial, su2double radius,
+                              const su2activematrix& coords, int& nPolynomial,
+                              vector<int>& keepPolynomialRow, su2passivematrix& C_inv_trunc) const;
+
   /*!
    * \brief If the polynomial term is included in the interpolation, and the points lie on a plane, the matrix
    * becomes rank deficient and cannot be inverted. This method detects that condition and corrects it by
