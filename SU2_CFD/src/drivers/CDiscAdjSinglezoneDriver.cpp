@@ -639,11 +639,11 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
       if(rank == MASTER_NODE) cout << "Computing turbulent adjoint volume gradient via L2 Projection." << endl;
       solver_adjturb->SetGradient_L2Proj3(geometry, config);
     }
-
-    //--- Metric
-    if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
-    solver_flow->ComputeMetric(solver, geometry, config);
   }
+
+  //--- Metric
+  if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
+  solver_flow->ComputeMetric(solver, geometry, config);
 }
 
 bool CDiscAdjSinglezoneDriver::GetTimeConvergence() const{
