@@ -2154,12 +2154,12 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case ANISO_GRADIENT:
             for (iDim = 0; iDim < nDim; iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
-                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetAnisoSourceGrad(iPoint, iVar*nDim+iDim);
+                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetAnisoGrad(iPoint, iVar*nDim+iDim);
             break;
           case ANISO_HESSIAN:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
-                bufDSend[buf_offset+iVar*3*(nDim-1)+iDim] = base_nodes->GetAnisoSourceHess(iPoint, iVar*3*(nDim-1)+iDim);
+                bufDSend[buf_offset+iVar*3*(nDim-1)+iDim] = base_nodes->GetAnisoHess(iPoint, iVar*3*(nDim-1)+iDim);
             break;
           case ANISO_METRIC:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
@@ -2340,12 +2340,12 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case ANISO_GRADIENT:
             for (iDim = 0; iDim < nDim; iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
-                base_nodes->SetAnisoSourceGrad(iPoint, iVar*nDim+iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+                base_nodes->SetAnisoGrad(iPoint, iVar*nDim+iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
             break;
           case ANISO_HESSIAN:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
-                base_nodes->SetAnisoSourceHess(iPoint, iVar*3*(nDim-1)+iDim, bufDRecv[buf_offset+iVar*3*(nDim-1)+iDim]);
+                base_nodes->SetAnisoHess(iPoint, iVar*3*(nDim-1)+iDim, bufDRecv[buf_offset+iVar*3*(nDim-1)+iDim]);
             break;
           case ANISO_METRIC:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
@@ -5365,7 +5365,6 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iVar, iMetr, iMarker;
   unsigned short nMetr = 3*(nDim-1);
   unsigned long iVertex;
-  bool viscous = config->GetViscous();
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
@@ -5381,7 +5380,7 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
           
           //--- Correct if any of the neighbors belong to the volume
           unsigned short iNeigh, counter = 0;
-          su2double hess[nMetr*nVar*nDim], hessvisc[nMetr*nVar*nDim];
+          su2double hess[nMetr*nVar*nDim];
           for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             if(!geometry->node[jPoint]->GetBoundary()) {
@@ -5392,12 +5391,10 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
                 if(counter == 0) {
                   for(iMetr = 0; iMetr < nMetr; iMetr++) {
                     hess[i+iMetr] = base_nodes->GetAnisoHess(iPoint, i+iMetr);
-                    if(viscous) hessvisc[i+iMetr] = base_nodes->GetAnisoViscHess(iPoint, i+iMetr);
                   }// iMetr
                 }// if counter
                 for(iMetr = 0; iMetr < nMetr; iMetr++) {
                   hess[i+iMetr] += base_nodes->GetAnisoHess(jPoint, i+iMetr);
-                  if(viscous) hessvisc[i+iMetr] += base_nodes->GetAnisoViscHess(jPoint, i+iMetr);
                 }// iMetr
               }// iVar
               counter ++;
@@ -5408,7 +5405,6 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
               const unsigned short i = iVar*nMetr;
               for(iMetr = 0; iMetr < nMetr; iMetr++) {
                 base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]/su2double(counter+1));
-                if(viscous) base_nodes->SetAnisoViscHess(iPoint, i+iMetr, hessvisc[i+iMetr]/su2double(counter+1));
               }// iMetr
             }// iVar
           }// if counter
@@ -5443,11 +5439,7 @@ void CSolver::ComputeMetric(CSolver   **solver,
     //--- Turbulent terms
 
     //--- Add Hessians
-    SumWeightedHessians(CSolver          **solver,
-                        CGeometry         *geometry,
-                        CConfig           *config,
-                        unsigned long     iPoint,
-                        vector<su2double> &weights)
+    SumWeightedHessians(solver, geometry, config, iPoint, HessianWeights);
   }
 
   if(nDim == 2) NormalizeMetric2(geometry, config);
@@ -5498,7 +5490,7 @@ void CSolver::ConvectiveMetric(CSolver          **solver,
     A[0][1] = -u*u + (g-1.)/2.*v2; A[0][2] = -u*v; A[0][3] = -u*w; A[0][4] = -u*(g*e-(g-1)*v2);
     A[1][0] = 1.; A[1][1] = (3.-g)*u; A[1][2] = v; A[1][3] = w;    A[1][4] = g*e-(g-1.)/2.*(v2+2*u*u);
     A[2][1] = -(g-1.)*v; A[2][2] = u; A[2][4] = -(g-1.)*u*v;
-    A[3]]1] = -(g-1.)*w; A[3][3] = u; A[3][4] = -(g-1.)*u*w;
+    A[3][1] = -(g-1.)*w; A[3][3] = u; A[3][4] = -(g-1.)*u*w;
     A[4][1] = g-1.; A[4][4] = g*u;
 
     B[0][1] = -u*v; B[0][2] = -v*v + (g-1.)/2.*v2; B[0][3] = -v*w; B[0][4] = -v*(g*e-(g-1)*v2);
@@ -5589,9 +5581,9 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = nodes->GetAnisoMetr(iPoint, 0);
-    const su2double b = nodes->GetAnisoMetr(iPoint, 1);
-    const su2double c = nodes->GetAnisoMetr(iPoint, 2);
+    const su2double a = base_nodes->GetAnisoMetr(iPoint, 0);
+    const su2double b = base_nodes->GetAnisoMetr(iPoint, 1);
+    const su2double c = base_nodes->GetAnisoMetr(iPoint, 2);
     
     if (fabs(a*c - b*b) < 1.0E-16) {
       A[0][0] = a+1.0E-16; A[0][1] = b;
@@ -5618,9 +5610,9 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = nodes->GetAnisoMetr(iPoint, 0);
-    const su2double b = nodes->GetAnisoMetr(iPoint, 1);
-    const su2double c = nodes->GetAnisoMetr(iPoint, 2);
+    const su2double a = base_nodes->GetAnisoMetr(iPoint, 0);
+    const su2double b = base_nodes->GetAnisoMetr(iPoint, 1);
+    const su2double c = base_nodes->GetAnisoMetr(iPoint, 2);
     
     if (fabs(a*c - b*b) < 1.0E-16) {
       A[0][0] = a+1.0E-16; A[0][1] = b;
@@ -5703,12 +5695,12 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = nodes->GetAnisoMetr(iPoint, 0);
-    const su2double b = nodes->GetAnisoMetr(iPoint, 1);
-    const su2double c = nodes->GetAnisoMetr(iPoint, 2);
-    const su2double d = nodes->GetAnisoMetr(iPoint, 3);
-    const su2double e = nodes->GetAnisoMetr(iPoint, 4);
-    const su2double f = nodes->GetAnisoMetr(iPoint, 5);
+    const su2double a = base_nodes->GetAnisoMetr(iPoint, 0);
+    const su2double b = base_nodes->GetAnisoMetr(iPoint, 1);
+    const su2double c = base_nodes->GetAnisoMetr(iPoint, 2);
+    const su2double d = base_nodes->GetAnisoMetr(iPoint, 3);
+    const su2double e = base_nodes->GetAnisoMetr(iPoint, 4);
+    const su2double f = base_nodes->GetAnisoMetr(iPoint, 5);
 
     if (fabs(a*(d*f-e*e) - b*(b*f-e*c) + c*(b*e-d*c)) < 1.0E-16) {
       A[0][0] = a+1.0E-16; A[0][1] = b;         A[0][2] = c;
@@ -5737,12 +5729,12 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = nodes->GetAnisoMetr(iPoint, 0);
-    const su2double b = nodes->GetAnisoMetr(iPoint, 1);
-    const su2double c = nodes->GetAnisoMetr(iPoint, 2);
-    const su2double d = nodes->GetAnisoMetr(iPoint, 3);
-    const su2double e = nodes->GetAnisoMetr(iPoint, 4);
-    const su2double f = nodes->GetAnisoMetr(iPoint, 5);
+    const su2double a = base_nodes->GetAnisoMetr(iPoint, 0);
+    const su2double b = base_nodes->GetAnisoMetr(iPoint, 1);
+    const su2double c = base_nodes->GetAnisoMetr(iPoint, 2);
+    const su2double d = base_nodes->GetAnisoMetr(iPoint, 3);
+    const su2double e = base_nodes->GetAnisoMetr(iPoint, 4);
+    const su2double f = base_nodes->GetAnisoMetr(iPoint, 5);
 
     if (fabs(a*(d*f-e*e) - b*(b*f-e*c) + c*(b*e-d*c)) < 1.0E-16) {
       A[0][0] = a+1.0E-16; A[0][1] = b;         A[0][2] = c;
