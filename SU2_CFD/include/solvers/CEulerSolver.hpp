@@ -564,38 +564,6 @@ public:
                                 bool reconstruction = false) final;
 
   /*!
-   * \brief Compute the gradient using a L2 Projection method,
-   *        and stores the result in the <i>AnisoGrad</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetGradient_L2Proj2(CGeometry *geometry, CConfig *config) final;
-
-  /*!
-   * \brief Compute the Hessian using a L2 Projection method,
-   *        and stores the result in the <i>AnisoHess</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetHessian_L2Proj2(CGeometry *geometry, CConfig *config) final;
-
-  /*!
-   * \brief Compute the gradient using a L2 Projection method,
-   *        and stores the result in the <i>AnisoGrad</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetGradient_L2Proj3(CGeometry *geometry, CConfig *config) final;
-
-  /*!
-   * \brief Compute the Hessian using a L2 Projection method,
-   *        and stores the result in the <i>AnisoHess</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetHessian_L2Proj3(CGeometry *geometry, CConfig *config) final;
-
-  /*!
    * \brief Compute the limiter of the primitive variables.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

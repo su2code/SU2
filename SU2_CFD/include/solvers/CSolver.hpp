@@ -317,49 +317,36 @@ public:
   void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void SetGradient_L2Proj2(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] solver_flow - Pointer to the flow solver.
-   */
-  virtual void SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config, CSolver *solver_flow) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void SetHessian_L2Proj2(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void SetGradient_L2Proj3(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief Compute the gradient using a L2 Projection method,
+   * \brief Compute the gradient using a L2 Projection method (2D),
    *        and stores the result in the <i>AnisoGrad</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] solver_flow - Pointer to the flow solver.
    */
-  virtual void SetTurbGradient_L2Proj3(CGeometry *geometry, CConfig *config, CSolver *solver_flow) { }
+  void SetGradient_L2Proj2(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief A virtual member.
+   * \brief Compute the Hessian using a L2 Projection method (2D),
+   *        and stores the result in the <i>AnisoHess</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetHessian_L2Proj3(CGeometry *geometry, CConfig *config) { }
+  void SetHessian_L2Proj2(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the gradient using a L2 Projection method (3D),
+   *        and stores the result in the <i>AnisoGrad</i> variable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetGradient_L2Proj3(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the Hessian using a L2 Projection method (3D),
+   *        and stores the result in the <i>AnisoHess</i> variable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHessian_L2Proj3(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Apply a correction to the boundary Hessian using the volume Hessian.
@@ -367,14 +354,48 @@ public:
   void CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Apply a correction to the boundary source term Hessian using the volume Hessian.
+   * \brief Compute the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  void CorrectBoundAnisoSourceHess(CGeometry *geometry, CConfig *config);
+  void ComputeMetric(CSolver **solver, CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Apply a correction to the boundary metric using the volume metric.
+   * \brief Compute the convective term of the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of current node.
+   * \param[in] weights - Weights of each Hessian in the metric.
    */
-  void CorrectBoundAnisoMetr(CGeometry *geometry, CConfig *config);
+  void ConvectiveMetric(CSolver **solver, CGeometry *geometry, CConfig *config, 
+                        unsigned long iPoint, vector<su2double> &weights);
+
+  /*!
+   * \brief Sum up the weighted Hessians to obtain the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of current node.
+   * \param[in] weights - Weights of each Hessian in the metric.
+   */
+  void SumWeightedHessians(CSolver **solver, CGeometry *geometry, CConfig *config, 
+                           unsigned long iPoint, vector<su2double> &weights);
+
+  /*!
+   * \brief Perform an Lp-norm normalization of the metric (2D).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void NormalizeMetric2(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Perform an Lp-norm normalization of the metric (3D).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void NormalizeMetric3(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the solver nondimensionalization.

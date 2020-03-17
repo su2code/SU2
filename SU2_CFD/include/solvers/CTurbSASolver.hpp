@@ -432,37 +432,4 @@ public:
                      CConfig *config,
                      unsigned short val_marker) override;
 
-  /*!
-   * \brief Compute the gradient using a L2 Projection method,
-   *        and stores the result in the <i>AnisoGrad</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] solver_flow - Pointer to the flow solver.
-   */
-  void SetTurbGradient_L2Proj2(CGeometry *geometry, CConfig *config, CSolver *solver_flow) final;
-
-  /*!
-   * \brief Compute the Hessian using a L2 Projection method,
-   *        and stores the result in the <i>AnisoHess</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetHessian_L2Proj2(CGeometry *geometry, CConfig *config) final;
-
-  /*!
-   * \brief Compute the gradient using a L2 Projection method,
-   *        and stores the result in the <i>AnisoGrad</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] solver_flow - Pointer to the flow solver.
-   */
-  void SetTurbGradient_L2Proj3(CGeometry *geometry, CConfig *config, CSolver *solver_flow) final;
-
-  /*!
-   * \brief Compute the Hessian using a L2 Projection method,
-   *        and stores the result in the <i>AnisoHess</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetHessian_L2Proj3(CGeometry *geometry, CConfig *config) final;
 };
