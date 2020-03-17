@@ -5631,9 +5631,9 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
-    nodes->SetAnisoMetr(iPoint, 1, A[0][1]);
-    nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
+    base_nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
+    base_nodes->SetAnisoMetr(iPoint, 1, A[0][1]);
+    base_nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
 
     //--- compute min, max, total complexity
     const su2double Vol = geometry->node[iPoint]->GetVolume();
@@ -5756,12 +5756,12 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
     //--- store lower triangle to be consistent with AMG
-    nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
-    nodes->SetAnisoMetr(iPoint, 1, A[1][0]);
-    nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
-    nodes->SetAnisoMetr(iPoint, 3, A[2][0]);
-    nodes->SetAnisoMetr(iPoint, 4, A[2][1]);
-    nodes->SetAnisoMetr(iPoint, 5, A[2][2]);
+    base_nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
+    base_nodes->SetAnisoMetr(iPoint, 1, A[1][0]);
+    base_nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
+    base_nodes->SetAnisoMetr(iPoint, 3, A[2][0]);
+    base_nodes->SetAnisoMetr(iPoint, 4, A[2][1]);
+    base_nodes->SetAnisoMetr(iPoint, 5, A[2][2]);
 
     //--- compute min, max, total complexity
     const su2double Vol = geometry->node[iPoint]->GetVolume();
