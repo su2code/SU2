@@ -990,7 +990,8 @@ private:
   bool ConservativeInterpolation;            /*!< \brief Conservative approach for non matching mesh interpolation. */
   unsigned short Kind_RadialBasisFunction;   /*!< \brief type of radial basis function to use for radial basis FSI. */
   bool RadialBasisFunction_PolynomialOption; /*!< \brief Option of whether to include polynomial terms in Radial Basis Function Interpolation or not. */
-  su2double RadialBasisFunction_Parameter;   /*!< \brief Radial basis function parameter. */
+  su2double RadialBasisFunction_Parameter;   /*!< \brief Radial basis function parameter (radius). */
+  su2double RadialBasisFunction_PruneTol;    /*!< \brief Tolerance to prune the RBF interpolation matrix. */
   bool Prestretch;                           /*!< \brief Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;             /*!< \brief File name for reference geometry. */
   string FEA_FileName;              /*!< \brief File name for element-based properties. */
@@ -8786,6 +8787,11 @@ public:
    * \brief Get the basis function radius to use for radial basis function interpolation for FSI.
    */
   su2double GetRadialBasisFunctionParameter(void) const { return RadialBasisFunction_Parameter; }
+
+  /*!
+   * \brief Get the tolerance used to prune the interpolation matrix (making it sparser).
+   */
+  su2double GetRadialBasisFunctionPruneTol(void) const { return RadialBasisFunction_PruneTol; }
 
   /*!
    * \brief Get the kind of inlet face interpolation function to use.

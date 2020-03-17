@@ -2697,8 +2697,9 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
   /*--- RBF options. ---*/
   const unsigned short kindRBF = config[donorZone]->GetKindRadialBasisFunction();
-  const su2double paramRBF = config[donorZone]->GetRadialBasisFunctionParameter();
   const bool usePolynomial = config[donorZone]->GetRadialBasisFunctionPolynomialOption();
+  const su2double paramRBF = config[donorZone]->GetRadialBasisFunctionParameter();
+  const su2double pruneTol = config[donorZone]->GetRadialBasisFunctionPruneTol();
   const passivedouble eps = numeric_limits<passivedouble>::epsilon();
   const su2double interfaceCoordTol = 1e6 * eps;
 
@@ -2792,7 +2793,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
           global_M.Invert(false); break;
       }
 
-      /*--- Calculate C_inv_trunc. ---*/
+      /*--- Compute C_inv_trunc. ---*/
       if (usePolynomial) {
 
         /*--- Fill P matrix (P for points, with an extra top row of ones). ---*/
@@ -2807,7 +2808,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
         /*--- Check if points lie on a plane and remove one coordinate from P if so. ---*/
         nPolynomial = CheckPolynomialTerms(interfaceCoordTol, keepPolynomialRow, P);
 
-        /*--- Calculate Mp = (P * M^-1 * P^T)^-1 ---*/
+        /*--- Compute Mp = (P * M^-1 * P^T)^-1 ---*/
         CSymmetricMatrix Mp(nPolynomial+1);
 
         su2passivematrix tmp;
@@ -2820,12 +2821,12 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
           }
         Mp.Invert(false); // Mp = Mp^-1
 
-        /*--- Calculate M_p * P * M^-1, the top part of C_inv_trunc. ---*/
+        /*--- Compute M_p * P * M^-1, the top part of C_inv_trunc. ---*/
         Mp.MatMatMult('L', P, tmp);
         su2passivematrix C_inv_top;
         global_M.MatMatMult('R', tmp, C_inv_top);
 
-        /*--- Calculate tmp = (I - P^T * M_p * P * M^-1), part of the bottom part of
+        /*--- Compute tmp = (I - P^T * M_p * P * M^-1), part of the bottom part of
          C_inv_trunc. Note that most of the product is known from the top part. ---*/
         tmp.resize(nGlobalVertexDonor, nGlobalVertexDonor);
 
@@ -2837,7 +2838,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
           tmp(i,i) += 1.0; // identity part
         }
 
-        /*--- Calculate M^-1 * (I - P^T * M_p * P * M^-1), finalize bottom of C_inv_trunc. ---*/
+        /*--- Compute M^-1 * (I - P^T * M_p * P * M^-1), finalize bottom of C_inv_trunc. ---*/
         global_M.MatMatMult('L', tmp, C_inv_trunc);
 
         /*--- Merge top and bottom of C_inv_trunc. ---*/
@@ -2901,18 +2902,32 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
         target_vec(iVertexDonor+idx) = SU2_TYPE::GetValue(Get_RadialBasisValue(kindRBF, paramRBF,
                                        PointsDistance(nDim, coord_i, DonorCoord[iVertexDonor])));
 
-      /*--- Multiply target vector by C_inv_trunc to obtain the interpolation coefficients. ---*/
+      /*--- Multiply target vector by C_inv_trunc to obtain the interpolation coefficients.
+            Simultaneously determine a reference for dropping small coefficients. ---*/
+      passivedouble coeffRef = 0.0;
       for (auto iVertex = 0ul; iVertex < nGlobalVertexDonor; ++iVertex) {
         coeff_vec(iVertex) = 0.0;
         for (auto jVertex = 0ul; jVertex < target_vec.size(); ++jVertex)
           coeff_vec(iVertex) += target_vec(jVertex) * C_inv_trunc(jVertex, iVertex);
+        coeffRef = max(coeffRef, fabs(coeff_vec(iVertex)));
       }
+      coeffRef *= SU2_TYPE::GetValue(pruneTol);
 
-      /*--- Count the number of donor points (non zero coefficients) for this target point. ---*/
+      /*--- Prune and count the number of donor points for this target point. ---*/
       idx = 0;
-      for (auto iVertex = 0ul; iVertex < nGlobalVertexDonor; ++iVertex)
-        idx += (fabs(coeff_vec(iVertex)) > eps);
+      passivedouble coeffSum = 0.0;
+      for (auto iVertex = 0ul; iVertex < nGlobalVertexDonor; ++iVertex) {
+        if (fabs(coeff_vec(iVertex)) > coeffRef) {
+          coeffSum += coeff_vec(iVertex);
+          ++idx;
+        }
+        else coeff_vec(iVertex) = 0.0;
+      }
+      /*--- Correct remaining coefficients, sum must be 1 for conservation. ---*/
+      passivedouble correction = 1.0 / coeffSum;
+      for (auto i = 0ul; i < nGlobalVertexDonor; ++i) coeff_vec(i) *= correction;
 
+      /*--- Allocate and set donor information for this target point. ---*/
       target_vertex->SetnDonorPoints(idx);
       target_vertex->Allocate_DonorInfo();
 
@@ -2920,7 +2935,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
       for (int iProcessor = 0, iTest = -1; iProcessor < nProcessor; ++iProcessor) {
         const auto offset = iProcessor * MaxLocalVertex_Donor;
         for (auto iVertex = 0ul; iVertex < Buffer_Receive_nVertex_Donor[iProcessor]; ++iVertex)
-          if (fabs(coeff_vec(++iTest)) > eps) {
+          if (fabs(coeff_vec(++iTest)) > 0.0) {
             auto point_donor = Buffer_Receive_GlobalPoint[offset + iVertex];
             target_vertex->SetInterpDonorProcessor(iSet, iProcessor);
             target_vertex->SetInterpDonorPoint(iSet, point_donor);
