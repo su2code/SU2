@@ -145,10 +145,16 @@ public:
   
   /*!
    * \brief compute distance between 2 points
+   * \param[in] nDim - number of dimensions
    * \param[in] point_i
    * \param[in] point_i
    */
-  su2double PointsDistance(su2double *point_i, su2double *point_j);
+  inline su2double PointsDistance(unsigned short nDim, const su2double *point_i, const su2double *point_j) const {
+    su2double m = 0;
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      m += pow(point_j[iDim] - point_i[iDim], 2);
+    return sqrt(m);
+  }
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
@@ -382,9 +388,8 @@ public:
 /*!
  * \brief Radial basis function interpolation
  */
-class CRadialBasisFunction : public CInterpolator {
+class CRadialBasisFunction final : public CInterpolator {
 public:
-
   /*!
    * \brief Constructor of the class.
    */
@@ -400,15 +405,10 @@ public:
   CRadialBasisFunction(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CRadialBasisFunction(void);
-
-  /*!
    * \brief Set up transfer matrix defining relation between two meshes
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_TransferCoeff(CConfig **config);
+  void Set_TransferCoeff(CConfig **config) override;
 
   /*!
    * \brief Compute the value of a radial basis function, this is static so it can be re-used.
@@ -416,76 +416,77 @@ public:
    * \param[in] radius - the characteristic dimension
    * \param[in] dist - distance
    */
-  static su2double Get_RadialBasisValue(const short unsigned int type, const su2double &radius, const su2double &dist);
-  
+  static su2double Get_RadialBasisValue(const unsigned short type, const su2double radius, const su2double dist);
+
 private:
   /*!
-   * \brief If the polynomial term is included in the interpolation, and the points lie on a plane, the matrix becomes rank deficient
-   * and cannot be inverted. This method detects that condition and corrects it by removing a row from P (the polynomial part of the matrix).
-   * \param[in] m - number of rows of P
-   * \param[in] n - number of columns of P
-   * \param[in] skip_row - marks the row of P which is all ones (by construction)
-   * \param[in] max_diff_tol_in - tolerance to detect points are on a plane
-   * \param[out] keep_row - marks the rows of P kept
-   * \param[out] n_polynomial - size of the polynomial part on exit (i.e. new number of rows)
-   * \param[in,out] P - polynomial part of the matrix, may be changed or not!
+   * \brief If the polynomial term is included in the interpolation, and the points lie on a plane, the matrix
+   * becomes rank deficient and cannot be inverted. This method detects that condition and corrects it by
+   * removing a row from P (the polynomial part of the interpolation matrix).
+   * \param[in] max_diff_tol - Tolerance to detect whether points are on a plane.
+   * \param[out] keep_row - Marks the dimensions of P kept.
+   * \param[in,out] P - Polynomial part of the interpolation matrix, one row may be eliminated.
+   * \return n_polynomial - Size of the polynomial part on exit (in practice nDim or nDim-1).
    */
-  void Check_PolynomialTerms(int m, unsigned long n, const int *skip_row, su2double max_diff_tol_in, int *keep_row, int &n_polynomial, su2double *P);
+  int CheckPolynomialTerms(su2double max_diff_tol, vector<int>& keep_row, su2passivematrix &P) const;
 
 };
 
 /*!
- * \brief Helper class used by CRadialBasisFunction to calculate the interpolation weights.
- * This does not inherit from CSysMatrix because: it is a dense format rather than block sparse;
- * as the interpolation is done on a single core there are no methods for communication.
- * The code can be compiled with LAPACK to use optimized matrix inversion and multiplication routines.
- * CPPFLAGS="-DHAVE_LAPACK" LDFLAGS=-L/path/to/lapack_lib LIBS="-llapack -lrefblas -lgfortran"
+ * \brief Helper class used by CRadialBasisFunction to compute the interpolation weights.
+ * The matrix is symmetric but full storage is used as that gives much better performance
+ * for some BLAS libraries (notably OpenBLAS). The code should be compiled with LAPACK
+ * to use optimized matrix inversion and multiplication routines.
  */
 class CSymmetricMatrix{
+private:
+  enum DecompositionType { NONE, CHOLESKY, LU };
 
-  private:
-    
-    bool initialized, inversed;
-    int sz, num_val;
-    int *perm_vec;
-    passivedouble *val_vec, *decompose_vec, *inv_val_vec;
+  vector<passivedouble> val_vec, decomp_vec;
+  vector<int> perm_vec;
+  int sz = 0;
+  bool initialized = false;
+  DecompositionType decomposed = NONE;
 
-    enum DecompositionType { none, cholesky, lu };
-    
-    DecompositionType decomposed;
-    
-    inline int CalcIdx(int i, int j);
-    inline int CalcIdxFull(int i, int j);
-    inline void CheckBounds(int i, int j);
-    
-    passivedouble ReadL(int i, int j);
-    passivedouble ReadU(int i, int j);
-    passivedouble ReadInv(int i,int j);
-    
-    // not optimized dense matrix factorization and inversion for portability
-    void CholeskyDecompose(bool overwrite);
-    void LUDecompose();
-    void CalcInv(bool overwrite);
-    // matrix inversion using LAPACK routines (LDLT factorization)
-    void CalcInv_sptri();
-    void CalcInv_potri() {}; // LLT not implemented yet
+  inline void CheckBounds(int i, int j) const {
+    assert(initialized && "Matrix not initialized.");
+    assert(i>=0 && i<sz && j>=0 && j<sz && "Index to access matrix out of bounds.");
+  }
 
-  public:
-	
-    /*--- Methods ---*/
-    CSymmetricMatrix();
-    ~CSymmetricMatrix();
+  inline int IdxFull(int i, int j) const {CheckBounds(i,j); return i*sz + j;}
 
-    void Initialize(int N);
-    void Initialize(int N, su2double *formed_val_vec);
+  inline int IdxSym(int i, int j) const {return IdxFull(min(i,j), max(i,j));}
 
-    inline int GetSize();
+  inline passivedouble& decomp(int i, int j) { return decomp_vec[IdxFull(i,j)]; }
 
-    void Write(int i, int j, const su2double& val);
-    passivedouble Read(int i, int j);
+  // Not optimized dense matrix factorization and inversion for portability.
+  void CholeskyDecompose();
+  void LUDecompose();
+  void CalcInv();
+  // Matrix inversion using LAPACK routines (LDLT and LLT factorization).
+  void CalcInv_sytri();
+  void CalcInv_potri();
 
-    void MatVecMult(passivedouble *v);
-    void MatMatMult(bool left_mult, su2double *mat_vec, int N);
-    void Invert(const bool is_spd);
+public:
+  CSymmetricMatrix() = default;
+  CSymmetricMatrix(int N) {Initialize(N);}
+
+  void Initialize(int N);
+
+  inline int GetSize() const { return sz; }
+
+  inline passivedouble Get(int i, int j) const { return val_vec[IdxSym(i,j)]; }
+  
+  inline void Set(int i, int j, passivedouble val) { val_vec[IdxSym(i,j)] = val; }
+
+  inline passivedouble& operator() (int i, int j) { return val_vec[IdxSym(i,j)]; }
+
+  inline const passivedouble& operator() (int i, int j) const { return val_vec[IdxSym(i,j)]; }
+
+  void MatVecMult(passivedouble *v) const;
+
+  void MatMatMult(const char side, su2passivematrix& mat_in, su2passivematrix& mat_out);
+
+  void Invert(const bool is_spd);
 
 };
