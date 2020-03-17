@@ -2720,13 +2720,13 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
   vector<int> AssignedProcessor(nMarkerInt,-1);
   vector<unsigned long> TotalWork(nProcessor,0);
 
-  for (unsigned short iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
+  for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; ++iMarkerInt) {
 
     /*--- On the donor side: find the tag of the boundary sharing the interface. ---*/
-    int mark_donor = Find_InterfaceMarker(config[donorZone], iMarkerInt);
+    int mark_donor = Find_InterfaceMarker(config[donorZone], iMarkerInt+1);
 
     /*--- On the target side: find the tag of the boundary sharing the interface. ---*/
-    int mark_target = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+    int mark_target = Find_InterfaceMarker(config[targetZone], iMarkerInt+1);
 
     /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on
           the processor because of the partition or because the zone does not include it. ---*/
@@ -2756,9 +2756,9 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
     Collect_VertexInfo(false, mark_donor, mark_target, nVertexDonor, nDim);
 
     /*--- Compresses the gathered donor point information to simplify computation. ---*/
-    auto& DonorCoord = DonorCoordinates[iMarkerInt-1];
-    auto& DonorPoint = DonorGlobalPoint[iMarkerInt-1];
-    auto& DonorProc = DonorProcessor[iMarkerInt-1];
+    auto& DonorCoord = DonorCoordinates[iMarkerInt];
+    auto& DonorPoint = DonorGlobalPoint[iMarkerInt];
+    auto& DonorProc = DonorProcessor[iMarkerInt];
     DonorCoord.resize(nGlobalVertexDonor, nDim);
     DonorPoint.resize(nGlobalVertexDonor);
     DonorProc.resize(nGlobalVertexDonor);
@@ -2788,7 +2788,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
     TotalWork[iProcessor] += pow(nGlobalVertexDonor,3); // based on matrix inversion.
 
-    AssignedProcessor[iMarkerInt-1] = iProcessor;
+    AssignedProcessor[iMarkerInt] = iProcessor;
 
   }
 
@@ -2950,7 +2950,6 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
     /*--- Compute H matrix, distributing target points over the threads in the rank. ---*/
     SU2_OMP_PARALLEL
     {
-    su2passivevector target_vec(nGlobalVertexDonor+nPolynomial+1);
     su2passivevector coeff_vec(nGlobalVertexDonor);
 
     SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget, 2*omp_get_max_threads()))
@@ -2964,55 +2963,52 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
       const su2double* coord_i = target_geometry->node[point_target]->GetCoord();
 
-      /*--- Prepare target vector (one row of the target matrix). ---*/
-      /*--- polynominal part ---*/
-      int idx = 0;
-      if (usePolynomial) {
-        target_vec(idx++) = 1.0; // constant term
-        for (int iDim = 0; iDim < nDim; ++iDim) // linear terms
-          if (keepPolynomialRow[iDim]) // of which one may have been excluded
-            target_vec(idx++) = SU2_TYPE::GetValue(coord_i[iDim]);
-      }
-      /*--- RBF part ---*/
-      for (auto iVertexDonor = 0ul; iVertexDonor < nGlobalVertexDonor; ++iVertexDonor)
-        target_vec(iVertexDonor+idx) = SU2_TYPE::GetValue(Get_RadialBasisValue(kindRBF, paramRBF,
-                                       PointsDistance(nDim, coord_i, DonorCoord[iVertexDonor])));
-
       /*--- Multiply target vector by C_inv_trunc to obtain the interpolation coefficients.
-            Simultaneously determine a reference for dropping small coefficients. ---*/
-      passivedouble coeffRef = 0.0;
-      for (auto iVertex = 0ul; iVertex < nGlobalVertexDonor; ++iVertex) {
-        coeff_vec(iVertex) = 0.0;
-        for (auto jVertex = 0ul; jVertex < target_vec.size(); ++jVertex)
-          coeff_vec(iVertex) += target_vec(jVertex) * C_inv_trunc(jVertex, iVertex);
-        coeffRef = max(coeffRef, fabs(coeff_vec(iVertex)));
-      }
-      coeffRef *= SU2_TYPE::GetValue(pruneTol);
+       *    The target vector is not stored, we consume its entries immediately to avoid
+       *    strided access to C_inv_trunc (as it is row-major). ---*/
 
-      /*--- Prune and count the number of donor points for this target point. ---*/
-      idx = 0;
-      passivedouble coeffSum = 0.0;
-      for (auto iVertex = 0ul; iVertex < nGlobalVertexDonor; ++iVertex) {
-        if (fabs(coeff_vec(iVertex)) > coeffRef) {
-          coeffSum += coeff_vec(iVertex);
-          ++idx;
+      /*--- Polynominal part: ---*/
+      if (usePolynomial) {
+        /*--- Constant term. ---*/
+        for (auto j = 0ul; j < nGlobalVertexDonor; ++j)
+          coeff_vec(j) = C_inv_trunc(0,j);
+
+        /*--- Linear terms. ---*/
+        for (int iDim = 0, idx = 1; iDim < nDim; ++iDim) {
+          /*--- Of which one may have been excluded. ---*/
+          if (!keepPolynomialRow[iDim]) continue;
+          for (auto j = 0ul; j < nGlobalVertexDonor; ++j)
+            coeff_vec(j) += SU2_TYPE::GetValue(coord_i[iDim]) * C_inv_trunc(idx,j);
+          idx += 1;
         }
-        else coeff_vec(iVertex) = 0.0;
       }
-      /*--- Correct remaining coefficients, sum must be 1 for conservation. ---*/
-      passivedouble correction = 1.0 / coeffSum;
-      for (auto i = 0ul; i < nGlobalVertexDonor; ++i) coeff_vec(i) *= correction;
+      else {
+        /*--- Initialize vector to zero. ---*/
+        for (auto j = 0ul; j < nGlobalVertexDonor; ++j) coeff_vec(j) = 0.0;
+      }
+
+      /*--- RBF terms: ---*/
+      for (auto iVertexDonor = 0ul; iVertexDonor < nGlobalVertexDonor; ++iVertexDonor) {
+        auto w_ij = SU2_TYPE::GetValue(Get_RadialBasisValue(kindRBF, paramRBF,
+                    PointsDistance(nDim, coord_i, DonorCoord[iVertexDonor])));
+
+        for (auto j = 0ul; j < nGlobalVertexDonor; ++j)
+          coeff_vec(j) += w_ij * C_inv_trunc(1+nPolynomial+iVertexDonor, j);
+      }
+
+      /*--- Prune small coefficients. ---*/
+      auto nnz = PruneSmallCoefficients(SU2_TYPE::GetValue(pruneTol), coeff_vec);
 
       /*--- Allocate and set donor information for this target point. ---*/
-      target_vertex->SetnDonorPoints(idx);
+      target_vertex->SetnDonorPoints(nnz);
       target_vertex->Allocate_DonorInfo();
-      idx = 0;
-      for (auto iVertex = 0ul; iVertex < nGlobalVertexDonor; ++iVertex) {
+
+      for (unsigned long iVertex = 0, iSet = 0; iVertex < nGlobalVertexDonor; ++iVertex) {
         if (fabs(coeff_vec(iVertex)) > 0.0) {
-          target_vertex->SetInterpDonorProcessor(idx, DonorProc[iVertex]);
-          target_vertex->SetInterpDonorPoint(idx, DonorPoint[iVertex]);
-          target_vertex->SetDonorCoeff(idx, coeff_vec(iVertex));
-          ++idx;
+          target_vertex->SetInterpDonorProcessor(iSet, DonorProc[iVertex]);
+          target_vertex->SetInterpDonorPoint(iSet, DonorPoint[iVertex]);
+          target_vertex->SetDonorCoeff(iSet, coeff_vec(iVertex));
+          ++iSet;
         }
       }
 
@@ -3030,6 +3026,33 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
   delete[] Buffer_Send_nVertex_Donor;
   delete[] Buffer_Receive_nVertex_Donor;
 
+}
+
+int CRadialBasisFunction::PruneSmallCoefficients(passivedouble tolerance,
+                                                 su2passivevector& coeffs) const {
+
+  /*--- Determine the pruning threshold. ---*/
+  passivedouble thresh = 0.0;
+  for (auto i = 0ul; i < coeffs.size(); ++i)
+    thresh = max(thresh, fabs(coeffs(i)));
+  thresh *= tolerance;
+
+  /*--- Prune and count non-zeros. ---*/
+  int numNonZeros = 0;
+  passivedouble coeffSum = 0.0;
+  for (auto i = 0ul; i < coeffs.size(); ++i) {
+    if (fabs(coeffs(i)) > thresh) {
+      coeffSum += coeffs(i);
+      ++numNonZeros;
+    }
+    else coeffs(i) = 0.0;
+  }
+
+  /*--- Correct remaining coefficients, sum must be 1 for conservation. ---*/
+  passivedouble correction = 1.0 / coeffSum;
+  for (auto i = 0ul; i < coeffs.size(); ++i) coeffs(i) *= correction;
+
+  return numNonZeros;
 }
 
 int CRadialBasisFunction::CheckPolynomialTerms(su2double max_diff_tol, vector<int>& keep_row,

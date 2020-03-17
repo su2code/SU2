@@ -430,6 +430,15 @@ private:
    */
   int CheckPolynomialTerms(su2double max_diff_tol, vector<int>& keep_row, su2passivematrix &P) const;
 
+  /*!
+   * \brief Prunes (by setting to zero) small interpolation coefficients, i.e.
+   * <= tolerance*max(abs(coeffs)). The vector is re-scaled such that sum(coeffs)==1.
+   * \param[in] tolerance - Relative pruning tolerance.
+   * \param[in,out] coeffs - The vector of interpolation coefficients.
+   * \return Number of non-zero coefficients after pruning.
+   */
+  int PruneSmallCoefficients(passivedouble tolerance, su2passivevector& coeffs) const;
+
 };
 
 /*!
