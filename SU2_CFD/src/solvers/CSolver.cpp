@@ -5439,7 +5439,7 @@ void CSolver::ComputeMetric(CSolver   **solver,
   bool turb = (config->GetKind_Turb_Model() != NONE);
 
   //--- Vector to store weights from various error contributions
-  unsigned long nVarTot = nVar;
+  unsigned long nVarTot = solver[FLOW_SOL]->GetnVar();
   if(turb) nVarTot += solver[TURB_SOL]->GetnVar();
   vector<su2double> HessianWeights(nVarTot, 0.0);
 
@@ -5554,7 +5554,7 @@ void CSolver::SumWeightedHessians(CSolver          **solver,
   bool turb = (config->GetKind_Turb_Model() != NONE);
 
   //--- Mean flow variables
-  for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+  for (unsigned short iVar = 0; iVar < solFlo->GetnVar(); ++iVar) {
 
     for (unsigned short im = 0; im < nMetr; ++im) {
       const unsigned short ih = iVar*nMetr + im;  
