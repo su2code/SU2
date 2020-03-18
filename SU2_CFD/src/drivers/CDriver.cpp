@@ -38,6 +38,12 @@
 #include "../../include/output/COutputFactory.hpp"
 #include "../../include/output/COutputLegacy.hpp"
 
+#include "../../../Common/include/interface_interpolation/CMirror.hpp"
+#include "../../../Common/include/interface_interpolation/CSlidingMesh.hpp"
+#include "../../../Common/include/interface_interpolation/CIsoparametric.hpp"
+#include "../../../Common/include/interface_interpolation/CNearestNeighbor.hpp"
+#include "../../../Common/include/interface_interpolation/CRadialBasisFunction.hpp"
+
 #include "../../include/interfaces/cfd/CConservativeVarsInterface.hpp"
 #include "../../include/interfaces/cfd/CMixingPlaneInterface.hpp"
 #include "../../include/interfaces/cfd/CSlidingInterface.hpp"
@@ -2636,7 +2642,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
       Target_check = markTarget;
 #endif
 
-      /* --- Check ifzones are actually sharing the interface boundary, if not skip ---*/
+      /* --- Check if zones are actually sharing the interface boundary, if not skip. ---*/
       if(Target_check == -1 || Donor_check == -1) {
         interface_types[donorZone][targetZone] = NO_COMMON_INTERFACE;
         continue;

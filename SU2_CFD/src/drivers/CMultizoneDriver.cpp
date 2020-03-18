@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -27,7 +27,7 @@
 
 #include "../../include/drivers/CMultizoneDriver.hpp"
 #include "../../include/definition_structure.hpp"
-
+#include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
 
 CMultizoneDriver::CMultizoneDriver(char* confFile,
                        unsigned short val_nZone,

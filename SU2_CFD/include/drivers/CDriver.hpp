@@ -37,11 +37,11 @@
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/grid_movement_structure.hpp"
-#include "../../../Common/include/interpolation_structure.hpp"
 
 using namespace std;
 
 class COutputLegacy;
+class CInterpolator;
 
 /*!
  * \class CDriver
