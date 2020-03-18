@@ -2130,7 +2130,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
 
       /*--- Load solution timestep n ---*/
 
-      LoadUnsteady_Solution(geometry, solver,config, val_iInst, val_iZone, Direct_Iter);
+      LoadUnsteady_Solution(geometry, solver,config, val_iZone, val_iInst, Direct_Iter);
 
       if (config[val_iZone]->GetDeform_Mesh()) {
         solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->LoadRestart(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], Direct_Iter, true);
@@ -2151,9 +2151,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
 
       /*--- Load solution timestep n-1 | n-2 for DualTimestepping 1st | 2nd order ---*/
       if (dual_time_1st){
-        LoadUnsteady_Solution(geometry, solver,config, val_iInst, val_iZone, Direct_Iter - 1);
+        LoadUnsteady_Solution(geometry, solver,config, val_iZone, val_iInst, Direct_Iter - 1);
       } else {
-        LoadUnsteady_Solution(geometry, solver,config, val_iInst, val_iZone, Direct_Iter - 2);
+        LoadUnsteady_Solution(geometry, solver,config, val_iZone, val_iInst, Direct_Iter - 2);
       }
   
 
