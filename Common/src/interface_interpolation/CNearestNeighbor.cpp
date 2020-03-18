@@ -47,7 +47,7 @@ CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, CConfig **c
 void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
   /*--- Desired number of donor points. ---*/
-  const auto nDonor = config[donorZone]->GetNumNearestNeighbors();
+  const auto nDonor = max<unsigned long>(config[donorZone]->GetNumNearestNeighbors(), 1);
 
   const su2double eps = numeric_limits<passivedouble>::epsilon();
 
@@ -126,21 +126,28 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
       partial_sort(donorInfo.begin(), donorInfo.begin()+nDonor, donorInfo.end(),
                    [](const DonorInfo& a, const DonorInfo& b){return a.dist < b.dist;});
 
-      /*--- Compute interpolation numerators and denominator. ---*/
-      su2double denom = 0.0;
-      for (auto iDonor = 0ul; iDonor < nDonor; ++iDonor) {
-        donorInfo[iDonor].dist = 1.0 / (donorInfo[iDonor].dist + eps);
-        denom += donorInfo[iDonor].dist;
-      }
-
       /*--- Set interpolation coefficients. ---*/
       target_vertex->SetnDonorPoints(nDonor);
       target_vertex->Allocate_DonorInfo();
 
-      for (auto iDonor = 0ul; iDonor < nDonor; ++iDonor) {
-        target_vertex->SetInterpDonorPoint(iDonor, donorInfo[iDonor].pidx);
-        target_vertex->SetInterpDonorProcessor(iDonor, donorInfo[iDonor].proc);
-        target_vertex->SetDonorCoeff(iDonor, donorInfo[iDonor].dist/denom);
+      if (nDonor > 1) {
+        /*--- Compute interpolation numerators and denominator. ---*/
+        su2double denom = 0.0;
+        for (auto iDonor = 0ul; iDonor < nDonor; ++iDonor) {
+          donorInfo[iDonor].dist = 1.0 / (donorInfo[iDonor].dist + eps);
+          denom += donorInfo[iDonor].dist;
+        }
+
+        for (auto iDonor = 0ul; iDonor < nDonor; ++iDonor) {
+          target_vertex->SetInterpDonorPoint(iDonor, donorInfo[iDonor].pidx);
+          target_vertex->SetInterpDonorProcessor(iDonor, donorInfo[iDonor].proc);
+          target_vertex->SetDonorCoeff(iDonor, donorInfo[iDonor].dist/denom);
+        }
+      }
+      else {
+        target_vertex->SetInterpDonorPoint(0, donorInfo[0].pidx);
+        target_vertex->SetInterpDonorProcessor(0, donorInfo[0].proc);
+        target_vertex->SetDonorCoeff(0, 1.0);
       }
     }
     } // end SU2_OMP_PARALLEL
