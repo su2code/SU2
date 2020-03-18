@@ -1909,7 +1909,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
   /*--- Local variables ---*/
   
-  unsigned short iVar, iDim, jDim;
+  unsigned short iVar, iDim;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
 
@@ -2186,7 +2186,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
   /*--- Local variables ---*/
   
-  unsigned short iDim, jDim, iVar;
+  unsigned short iDim, iVar;
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
 
   int ind, source, iMessage, jRecv;
@@ -5096,6 +5096,14 @@ void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
       base_nodes->SetAnisoHess(iPoint, i+2, A[1][1]);
     }
   }
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    delete [] A[iDim];
+    delete [] EigVec[iDim];
+  }
+  delete [] A;
+  delete [] EigVec;
+  delete [] EigVal;
 }
 
 void CSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
@@ -5359,6 +5367,14 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
       base_nodes->SetAnisoHess(iPoint, i+5, A[2][2]);
     }
   }
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    delete [] A[iDim];
+    delete [] EigVec[iDim];
+  }
+  delete [] A;
+  delete [] EigVec;
+  delete [] EigVal;
 }
 
 void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
