@@ -988,6 +988,7 @@ private:
   unsigned short Pred_Order;              /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation;         /*!< \brief type of interpolation to use for FSI applications. */
   bool ConservativeInterpolation;            /*!< \brief Conservative approach for non matching mesh interpolation. */
+  unsigned short NumNearestNeighbors;        /*!< \brief Number of neighbors used for Nearest Neighbor interpolation. */
   unsigned short Kind_RadialBasisFunction;   /*!< \brief type of radial basis function to use for radial basis FSI. */
   bool RadialBasisFunction_PolynomialOption; /*!< \brief Option of whether to include polynomial terms in Radial Basis Function Interpolation or not. */
   su2double RadialBasisFunction_Parameter;   /*!< \brief Radial basis function parameter (radius). */
@@ -8792,6 +8793,11 @@ public:
    * \brief Get the tolerance used to prune the interpolation matrix (making it sparser).
    */
   su2double GetRadialBasisFunctionPruneTol(void) const { return RadialBasisFunction_PruneTol; }
+
+  /*!
+   * \brief Get the number of donor points to use in Nearest Neighbor interpolation.
+   */
+  unsigned short GetNumNearestNeighbors(void) const { return NumNearestNeighbors; }
 
   /*!
    * \brief Get the kind of inlet face interpolation function to use.

@@ -29,7 +29,10 @@
 #include "CInterpolator.hpp"
 
 /*!
- * \brief Nearest Neighbor interpolation.
+ * \brief Nearest Neighbor(s) interpolation.
+ * \note The closest k neighbors are used for IDW interpolation, the computational
+ * cost of setting up the interpolation is O(N^2 log(k)), this can be improved
+ * by using a kd-tree.
  */
 class CNearestNeighbor final : public CInterpolator {
 public:
@@ -43,7 +46,7 @@ public:
   CNearestNeighbor(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
-   * \brief Set up transfer matrix defining relation between two meshes
+   * \brief Set up transfer matrix defining relation between two meshes.
    * \param[in] config - Definition of the particular problem.
    */
   void Set_TransferCoeff(CConfig **config) override;

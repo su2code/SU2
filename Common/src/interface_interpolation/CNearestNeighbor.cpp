@@ -30,6 +30,15 @@
 #include "../../include/geometry/CGeometry.hpp"
 
 
+/*! \brief Helper struct to search sort neighbours according to distance. */
+struct DonorInfo {
+  su2double dist;
+  unsigned long pidx;
+  int proc;
+  DonorInfo(su2double d = 0.0, unsigned long i = 0, int p = 0) :
+    dist(d), pidx(i), proc(p) {}
+};
+
 CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, CConfig **config,  unsigned int iZone,
                                    unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
   Set_TransferCoeff(config);
@@ -37,9 +46,8 @@ CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, CConfig **c
 
 void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
-  /*--- By definition, one donor point per target point. ---*/
-  constexpr auto numDonor = 1;
-  constexpr auto idxDonor = 0;
+  /*--- Desired number of donor points. ---*/
+  const auto nDonor = config[donorZone]->GetNumNearestNeighbors();
 
   const su2double eps = numeric_limits<passivedouble>::epsilon();
 
@@ -49,6 +57,8 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
   Buffer_Send_nVertex_Donor = new unsigned long [1];
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
+
+  vector<vector<DonorInfo> > DonorInfoVec(omp_get_max_threads());
 
   /*--- Cycle over nMarkersInt interface to determine communication pattern. ---*/
 
@@ -70,6 +80,9 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
     /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor. */
     Determine_ArraySize(false, markDonor, markTarget, nVertexDonor, nDim);
 
+    const auto nPossibleDonor = accumulate(Buffer_Receive_nVertex_Donor,
+                                Buffer_Receive_nVertex_Donor+nProcessor, 0ul);
+
     Buffer_Send_Coord = new su2double [ MaxLocalVertex_Donor * nDim ];
     Buffer_Send_GlobalPoint = new long [ MaxLocalVertex_Donor ];
     Buffer_Receive_Coord = new su2double [ nProcessor * MaxLocalVertex_Donor * nDim ];
@@ -78,8 +91,14 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
     /*-- Collect coordinates and global point indices. ---*/
     Collect_VertexInfo( false, markDonor, markTarget, nVertexDonor, nDim );
 
-    /*--- Compute the closest donor point to each target. ---*/
-    SU2_OMP_PARALLEL_(for schedule(dynamic,roundUpDiv(nVertexTarget,2*omp_get_max_threads())))
+    /*--- Find the closest donor points to each target. ---*/
+    SU2_OMP_PARALLEL
+    {
+    /*--- Working array for this thread. ---*/
+    auto& donorInfo = DonorInfoVec[omp_get_thread_num()];
+    donorInfo.resize(nPossibleDonor);
+
+    SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget,2*omp_get_max_threads()))
     for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; iVertexTarget++) {
 
       auto target_vertex = target_geometry->vertex[markTarget][iVertexTarget];
@@ -90,38 +109,41 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
       /*--- Coordinates of the target point. ---*/
       const su2double* Coord_i = target_geometry->node[Point_Target]->GetCoord();
 
-      su2double mindist = 1e20;
-      long pGlobalPoint = 0;
-      int pProcessor = 0;
-
-      for (int iProcessor = 0; iProcessor < nProcessor; ++iProcessor) {
+      /*--- Compute all distances. ---*/
+      for (int iProcessor = 0, iDonor = 0; iProcessor < nProcessor; ++iProcessor) {
         for (auto jVertex = 0ul; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; ++jVertex) {
 
           const auto idx = iProcessor*MaxLocalVertex_Donor + jVertex;
-
+          const auto pGlobalPoint = Buffer_Receive_GlobalPoint[idx];
           const su2double* Coord_j = &Buffer_Receive_Coord[idx*nDim];
+          const auto dist2 = PointsSquareDistance(nDim, Coord_i, Coord_j);
 
-          const auto dist = PointsSquareDistance(nDim, Coord_i, Coord_j);
-
-          if (dist < mindist) {
-            mindist = dist;
-            pProcessor = iProcessor;
-            pGlobalPoint = Buffer_Receive_GlobalPoint[idx];
-          }
-
-          /*--- Test for "exact" match. ---*/
-          if (dist < eps) break;
+          donorInfo[iDonor++] = DonorInfo(dist2, pGlobalPoint, iProcessor);
         }
       }
 
-      /*--- Store matching pair. ---*/
-      target_vertex->SetnDonorPoints(numDonor);
-      target_vertex->Allocate_DonorInfo();
-      target_vertex->SetInterpDonorPoint(idxDonor, pGlobalPoint);
-      target_vertex->SetInterpDonorProcessor(idxDonor, pProcessor);
-      target_vertex->SetDonorCoeff(idxDonor, 1.0);
+      /*--- Find k closest points. ---*/
+      partial_sort(donorInfo.begin(), donorInfo.begin()+nDonor, donorInfo.end(),
+                   [](const DonorInfo& a, const DonorInfo& b){return a.dist < b.dist;});
 
+      /*--- Compute interpolation numerators and denominator. ---*/
+      su2double denom = 0.0;
+      for (auto iDonor = 0ul; iDonor < nDonor; ++iDonor) {
+        donorInfo[iDonor].dist = 1.0 / (donorInfo[iDonor].dist + eps);
+        denom += donorInfo[iDonor].dist;
+      }
+
+      /*--- Set interpolation coefficients. ---*/
+      target_vertex->SetnDonorPoints(nDonor);
+      target_vertex->Allocate_DonorInfo();
+
+      for (auto iDonor = 0ul; iDonor < nDonor; ++iDonor) {
+        target_vertex->SetInterpDonorPoint(iDonor, donorInfo[iDonor].pidx);
+        target_vertex->SetInterpDonorProcessor(iDonor, donorInfo[iDonor].proc);
+        target_vertex->SetDonorCoeff(iDonor, donorInfo[iDonor].dist/denom);
+      }
     }
+    } // end SU2_OMP_PARALLEL
 
     delete[] Buffer_Send_Coord;
     delete[] Buffer_Send_GlobalPoint;

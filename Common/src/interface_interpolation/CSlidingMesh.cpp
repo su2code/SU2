@@ -37,14 +37,7 @@ CSlidingMesh::CSlidingMesh(CGeometry ****geometry_container, CConfig **config, u
 
 void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
 
-  /* --- This routine sets the transfer coefficient for sliding mesh approach --- */
-
-  /*
-   * The algorithm is based on Rinaldi et al. "Flux-conserving treatment of non-conformal interfaces
-   * for finite-volume discritization of conservation laws" 2015, Comp. Fluids, 120, pp 126-139
-   */
-
-  /*  0 - Variable declaration - */
+  /* 0 - Variable declaration */
 
   /* --- General variables --- */
 
@@ -102,7 +95,7 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
   su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
   su2double **donor_element, *DonorPoint_Coord;
 
-  /*  1 - Variable pre-processing - */
+  /* 1 - Variable pre-processing */
 
   nDim = donor_geometry->GetnDim();
 

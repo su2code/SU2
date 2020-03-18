@@ -2457,16 +2457,16 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_FORCES_BREAKDOWN", Wrt_ForcesBreakdown, false);
 
 
-
-  /*  DESCRIPTION: Use conservative approach for interpolating between meshes.
-  *  Options: NO, YES \ingroup Config */
-  addBoolOption("CONSERVATIVE_INTERPOLATION", ConservativeInterpolation, true);
-
   /*!\par KIND_INTERPOLATION \n
    * DESCRIPTION: Type of interpolation to use for multi-zone problems. \n OPTIONS: see \link Interpolator_Map \endlink
    * Sets Kind_Interpolation \ingroup Config
    */
   addEnumOption("KIND_INTERPOLATION", Kind_Interpolation, Interpolator_Map, NEAREST_NEIGHBOR);
+
+  /*  DESCRIPTION: Use conservative approach for interpolating between meshes. */
+  addBoolOption("CONSERVATIVE_INTERPOLATION", ConservativeInterpolation, true);
+
+  addUnsignedShortOption("NUM_NEAREST_NEIGHBORS", NumNearestNeighbors, 1);
 
   /*!\par KIND_INTERPOLATION \n
    * DESCRIPTION: Type of radial basis function to use for radial basis function interpolation. \n OPTIONS: see \link RadialBasis_Map \endlink

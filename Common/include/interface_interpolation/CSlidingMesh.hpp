@@ -30,6 +30,8 @@
 
 /*!
  * \brief Sliding mesh approach.
+ * \note The algorithm is based on Rinaldi et al. "Flux-conserving treatment of non-conformal interfaces
+ *       for finite-volume discritization of conservation laws" 2015, Comp. Fluids, 120, pp 126-139
  */
 class CSlidingMesh final : public CInterpolator {
 public:
@@ -81,7 +83,8 @@ private:
    * \param[in] B3 - third  point of triangle B
    * \param[in] Direction - vector normal to projection plane
    */
-  su2double Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3, su2double* B1, su2double* B2, su2double* B3, su2double* Direction);
+  su2double Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3, su2double* B1,
+                                          su2double* B2, su2double* B3, su2double* Direction);
 
   /*!
    * \brief For 3-Dimensional grids, compute intersection area between two triangle projected on a given plane
@@ -93,7 +96,7 @@ private:
    * \param[in] Q2 - second point of triangle B
    * \param[in] Q3 - third  point of triangle B
    */
-  su2double ComputeIntersectionArea( su2double* P1, su2double* P2, su2double* P3, su2double* Q1, su2double* Q2, su2double* Q3 );
+  su2double ComputeIntersectionArea(su2double* P1, su2double* P2, su2double* P3, su2double* Q1, su2double* Q2, su2double* Q3);
 
   /*!
    * \brief For 2-Dimensional grids, check whether, and compute, two lines are intersecting
@@ -103,7 +106,7 @@ private:
    * \param[in] B2 - second defining second line
    * \param[in] IntersectionPoint - Container for intersection coordinates
    */
-  void ComputeLineIntersectionPoint( su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* IntersectionPoint );
+  void ComputeLineIntersectionPoint(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* IntersectionPoint);
 
   /*!
    * \brief For N-Dimensional grids, check whether a point is inside a triangle specified by 3 T points
