@@ -210,7 +210,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
     iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                                 solver_container, numerics_container, config_container,
-                                                surface_movement, grid_movement, FFDBox, iZone, INST_0);
+                                                surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
     Add_Solution_To_External(iZone);
   }
 
@@ -289,7 +289,7 @@ void CDiscAdjMultizoneDriver::Run() {
         /*--- Extracting adjoints for solvers in iZone w.r.t. to outputs in iZone (diagonal part). ---*/
         iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                                     solver_container, numerics_container, config_container,
-                                                    surface_movement, grid_movement, FFDBox, iZone, INST_0);
+                                                    surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
 
         /*--- Print out the convergence data to screen and history file ---*/
 
@@ -312,7 +312,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
           iteration_container[jZone][INST_0]->Iterate(output_container[jZone], integration_container, geometry_container,
                                                       solver_container, numerics_container, config_container,
-                                                      surface_movement, grid_movement, FFDBox, jZone, INST_0);
+                                                      surface_movement, grid_movement, FFDBox, jZone, INST_0, true);
 
           /*--- Extract the cross-term performing a relaxed update of it and of the sum (External) for jZone. ---*/
 
@@ -597,7 +597,7 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
   /*--- Iterate the zone as a block a single time ---*/
   direct_iteration[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                            solver_container, numerics_container, config_container,
-                                           surface_movement, grid_movement, FFDBox, iZone, INST_0);
+                                           surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
 
   /*--- Print residuals in the first iteration ---*/
 

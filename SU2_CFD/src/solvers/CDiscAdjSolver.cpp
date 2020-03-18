@@ -446,7 +446,7 @@ void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
   }
 }
 
-void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
+void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
 
   bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
   bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
@@ -503,7 +503,7 @@ if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_tim
 if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n[1] = " << Solution[1] << endl;
 if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n[2] = " << Solution[2] << endl;
 if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n[3] = " << Solution[3] << endl;
-      nodes->Set_Solution_time_n(iPoint,Solution);
+      if (!CrossTerm) nodes->Set_Solution_time_n(iPoint,Solution);
     }
   }
   if (time_n1_needed) {
@@ -523,7 +523,7 @@ if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_tim
 if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n1[1] = " << Solution[1] << endl;
 if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n1[2] = " << Solution[2] << endl;
 if (rank == MASTER_NODE && iPoint == 0) cout << "CVC: Debug: AdjointSolution_time_n1[3] = " << Solution[3] << endl;
-      nodes->Set_Solution_time_n1(iPoint,Solution);
+      if (!CrossTerm) nodes->Set_Solution_time_n1(iPoint,Solution);
     }
   }
 

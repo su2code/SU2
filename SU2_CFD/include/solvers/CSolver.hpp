@@ -3991,6 +3991,7 @@ public:
    * \param[in] config - The particular config.
    */
   inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){}
+  inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){}
 
   /*!
    * \brief A virtual member.

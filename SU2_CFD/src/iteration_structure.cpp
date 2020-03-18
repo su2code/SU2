@@ -429,7 +429,8 @@ void CIteration::Iterate(COutput *output,
                          CVolumetricMovement ***grid_movement,
                          CFreeFormDefBox*** FFDBox,
                          unsigned short val_iZone,
-                         unsigned short val_iInst) { }
+                         unsigned short val_iInst,
+                         bool CrossTerm) { }
 void CIteration::Solve(COutput *output,
                          CIntegration ****integration,
                          CGeometry ****geometry,
@@ -562,7 +563,8 @@ void CFluidIteration::Iterate(COutput *output,
                                  CVolumetricMovement ***grid_movement,
                                  CFreeFormDefBox*** FFDBox,
                                  unsigned short val_iZone,
-                                 unsigned short val_iInst) {
+                                 unsigned short val_iInst,
+                                 bool CrossTerm) {
   unsigned long InnerIter, TimeIter;
   
   bool unsteady = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) || (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
@@ -822,7 +824,7 @@ void CFluidIteration::Solve(COutput *output,
 
     /*--- Run a single iteration of the solver ---*/
     Iterate(output, integration, geometry, solver, numerics, config,
-            surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+            surface_movement, grid_movement, FFDBox, val_iZone, INST_0, false);
 
     /*--- Monitor the pseudo-time ---*/
     StopCalc = Monitor(output, integration, geometry, solver, numerics, config,
@@ -1176,7 +1178,8 @@ void CFEMFluidIteration::Iterate(COutput *output,
                                  CVolumetricMovement ***grid_movement,
                                  CFreeFormDefBox*** FFDBox,
                                  unsigned short val_iZone,
-                                 unsigned short val_iInst) {
+                                 unsigned short val_iInst,
+                                 bool CrossTerm) {
     
   /*--- Update global parameters ---*/
   
@@ -1253,7 +1256,8 @@ void CHeatIteration::Iterate(COutput *output,
                              CVolumetricMovement ***grid_movement,
                              CFreeFormDefBox*** FFDBox,
                              unsigned short val_iZone,
-                             unsigned short val_iInst) {
+                             unsigned short val_iInst,
+                             bool CrossTerm) {
 
   /*--- Update global parameters ---*/
 
@@ -1347,7 +1351,7 @@ void CHeatIteration::Solve(COutput *output,
 
     Iterate(output, integration, geometry,
         solver, numerics, config,
-        surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+        surface_movement, grid_movement, FFDBox, val_iZone, INST_0, false);
 
     if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()){
       output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(), Inner_Iter);
@@ -1391,8 +1395,8 @@ void CFEAIteration::Iterate(COutput *output,
                                 CVolumetricMovement ***grid_movement,
                                 CFreeFormDefBox*** FFDBox,
                                 unsigned short val_iZone,
-                                unsigned short val_iInst
-                                ) {
+                                unsigned short val_iInst,
+                                bool CrossTerm) {
 
   su2double loadIncrement;
   unsigned long IntIter = 0;
@@ -1821,7 +1825,7 @@ void CFEAIteration::Solve(COutput *output,
   /*------------------ Structural subiteration ----------------------*/
   Iterate(output, integration, geometry,
       solver, numerics, config,
-      surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+      surface_movement, grid_movement, FFDBox, val_iZone, INST_0, false);
 
 
   /*--- Write the convergence history for the structure (only screen output) ---*/
@@ -1954,7 +1958,8 @@ void CAdjFluidIteration::Iterate(COutput *output,
                                     CVolumetricMovement ***grid_movement,
                                     CFreeFormDefBox*** FFDBox,
                                     unsigned short val_iZone,
-                                    unsigned short val_iInst) {
+                                    unsigned short val_iInst,
+                                    bool CrossTerm) {
   
   switch( config[val_iZone]->GetKind_Solver() ) {
 
@@ -2333,7 +2338,8 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
                                         CVolumetricMovement ***volume_grid_movement,
                                         CFreeFormDefBox*** FFDBox,
                                         unsigned short val_iZone,
-                                        unsigned short val_iInst) {
+                                        unsigned short val_iInst,
+                                        bool CrossTerm) {
   
   unsigned short Kind_Solver = config[val_iZone]->GetKind_Solver();
   bool frozen_visc = config[val_iZone]->GetFrozen_Visc_Disc();
@@ -2345,7 +2351,7 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) ||
       (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) || (Kind_Solver == DISC_ADJ_INC_EULER)) {
 
-    solver[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+    solver[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], CrossTerm);
 
     solver[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
@@ -2817,7 +2823,8 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
                                         CVolumetricMovement ***volume_grid_movement,
                                         CFreeFormDefBox*** FFDBox,
                                         unsigned short val_iZone,
-                                        unsigned short val_iInst) {
+                                        unsigned short val_iInst,
+                                        bool CrossTerm) {
 
 
   bool dynamic = (config[val_iZone]->GetTime_Domain());
@@ -2874,7 +2881,7 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
     /*--- Run one iteration while tape is passive - this clears all indices ---*/
 
     fem_iteration->Iterate(output,integration,geometry,solver,numerics,
-                                config,surface_movement,grid_movement,FFDBox,val_iZone, val_iInst);
+                                config,surface_movement,grid_movement,FFDBox,val_iZone, val_iInst, false);
 
   }
 
@@ -2903,7 +2910,7 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
   /*--- Run the direct iteration ---*/
 
   fem_iteration->Iterate(output,integration,geometry,solver,numerics,
-                              config,surface_movement,grid_movement,FFDBox, val_iZone, val_iInst);
+                              config,surface_movement,grid_movement,FFDBox, val_iZone, val_iInst, false);
 
   config[val_iZone]->SetTimeIter(TimeIter);
 
@@ -3457,7 +3464,8 @@ void CDiscAdjHeatIteration::Iterate(COutput *output,
                                         CVolumetricMovement ***volume_grid_movement,
                                         CFreeFormDefBox*** FFDBox,
                                         unsigned short val_iZone,
-                                        unsigned short val_iInst) {
+                                        unsigned short val_iInst,
+                                        bool CrossTerm) {
 
 
   solver[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0],

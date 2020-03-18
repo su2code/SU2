@@ -3674,7 +3674,7 @@ void CFluidDriver::Run() {
 
     for (iZone = 0; iZone < nZone; iZone++) {
       config_container[iZone]->SetInnerIter(IntIter);
-      iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+      iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
     }
 
     /*--- Check convergence in each zone --*/
@@ -3845,7 +3845,7 @@ void CTurbomachineryDriver::Run() {
   for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
-                                        surface_movement, grid_movement, FFDBox, iZone, INST_0);
+                                        surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -4087,7 +4087,7 @@ void CHBDriver::Run() {
   for (iInst = 0; iInst < nInstHB; iInst++)
     iteration_container[ZONE_0][iInst]->Iterate(output_container[ZONE_0], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
-        surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
+        surface_movement, grid_movement, FFDBox, ZONE_0, iInst, false);
 
   /*--- Update the convergence history file (serial and parallel computations). ---*/
 
@@ -5363,7 +5363,7 @@ void CDiscAdjFSIDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, unsigne
 
   direct_iteration[ZONE_FLOW]->Iterate(output_container[ZONE_FLOW], integration_container, geometry_container,
       solver_container, numerics_container, config_container,
-      surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
+      surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0, false);
 
   /*-----------------------------------------------------------------*/
   /*--------------------- Set MPI Solution --------------------------*/
@@ -5414,7 +5414,7 @@ void CDiscAdjFSIDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW, un
 
   direct_iteration[ZONE_STRUCT]->Iterate(output_container[ZONE_STRUCT], integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
-                                        surface_movement, grid_movement, FFDBox, ZONE_STRUCT, INST_0);
+                                        surface_movement, grid_movement, FFDBox, ZONE_STRUCT, INST_0, false);
 
   /*-----------------------------------------------------------------*/
   /*--------------------- Set MPI Solution --------------------------*/
@@ -5834,7 +5834,7 @@ void CDiscAdjFSIDriver::ExtractAdjoint(unsigned short ZONE_FLOW,
     /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
     solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry_container[ZONE_FLOW][INST_0][MESH_0],
-                                                      config_container[ZONE_FLOW]);
+                                                      config_container[ZONE_FLOW], false);
 
     solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry_container[ZONE_FLOW][INST_0][MESH_0],
                                                       config_container[ZONE_FLOW]);

@@ -142,7 +142,8 @@ public:
                        CVolumetricMovement ***grid_movement,
                        CFreeFormDefBox*** FFDBox,
                        unsigned short val_iZone,
-                       unsigned short val_iInst);
+                       unsigned short val_iInst,
+                       bool CrossTerm);
   
   /*!
    * \brief A virtual member.
@@ -408,7 +409,8 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst,
+               bool CrossTerm);
   
   /*!
    * \brief Iterate the fluid system for a number of Inner_Iter iterations.
@@ -640,7 +642,8 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst,
+               bool CrossTerm);
   
   /*!
    * \brief Updates the containers for the finite element flow system.
@@ -734,7 +737,8 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst,
+               bool CrossTerm);
 
   /*!
    * \brief Perform a single iteration of the wave system.
@@ -864,7 +868,8 @@ public:
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
-              unsigned short val_iInst);
+              unsigned short val_iInst,
+              bool CrossTerm);
 
   /*!
    * \brief Iterate the structural system for a number of Inner_Iter iterations.
@@ -1049,7 +1054,8 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst,
+               bool CrossTerm);
   
   /*!
    * \brief Updates the containers for the adjoint fluid system.
@@ -1148,7 +1154,8 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst,
+               bool CrossTerm);
   
 
   /*!
@@ -1443,7 +1450,8 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst,
+               bool CrossTerm);
 
   /*!
    * \brief Updates the containers for the discrete adjoint mean flow system.
@@ -1720,7 +1728,8 @@ public:
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
-               unsigned short val_iInst);
+               unsigned short val_iInst,
+               bool CrossTerm);
 
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.
