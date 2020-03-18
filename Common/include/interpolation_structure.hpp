@@ -50,11 +50,10 @@ using namespace std;
  */
 class CInterpolator {
 protected:
-  int rank, 	            /*!< \brief MPI Rank. */
-  size;       	            /*!< \brief MPI Size. */
-  unsigned int nZone;       /*!< \brief Number of zones*/
-  unsigned int donorZone,
-  targetZone;               /*!< \brief Type of MPI zone */
+  const int rank; 	         /*!< \brief MPI Rank. */
+  const int size;       	   /*!< \brief MPI Size. */
+  const unsigned donorZone;  /*!< \brief Index of donor zone. */
+  const unsigned targetZone; /*!< \brief Index of target zone. */
 
   unsigned long
   MaxLocalVertex_Donor,     /*!< \brief Maximum vertices per processor*/
@@ -77,7 +76,7 @@ protected:
   *Buffer_Send_FaceProc,             /*!< \brief Buffer to send processor which stores the node indicated in Buffer_Receive_FaceNodes*/
   *Buffer_Receive_FaceProc;          /*!< \brief Buffer to receive processor which stores the node indicated in Buffer_Receive_FaceNodes*/
 
-  long   *Buffer_Send_GlobalPoint,   /*!< \brief Buffer to send global point indices*/
+  long *Buffer_Send_GlobalPoint,     /*!< \brief Buffer to send global point indices*/
   *Buffer_Receive_GlobalPoint;       /*!< \brief Buffer to receive global point indices*/
 
   su2double *Buffer_Send_Coord,  /*!< \brief Buffer to send coordinate values*/
@@ -98,18 +97,12 @@ protected:
   nGlobalVertex,                       /*!< \brief Dummy variable to temporarily store the global number of vertex of a boundary*/
   nLocalLinkedNodes;                   /*!< \brief Dummy variable to temporarily store the number of vertex of a boundary*/
 
-public:
-  CGeometry**** Geometry;      /*! \brief Vector which stores n zones of geometry. */
-  CGeometry* donor_geometry;   /*! \brief Vector which stores the donor geometry. */
-  CGeometry* target_geometry;  /*! \brief Vector which stores the target geometry. */
+  CGeometry**** const Geometry;      /*! \brief Vector which stores n zones of geometry. */
+  CGeometry* const donor_geometry;   /*! \brief Vector which stores the donor geometry. */
+  CGeometry* const target_geometry;  /*! \brief Vector which stores the target geometry. */
 
   /*!
-   * \brief Constructor of the class.
-   */
-  CInterpolator(void);
-
-  /*!
-   * \brief Constructor of the class.
+   * \brief Constructor of the class, protected as it does not make sense to instantiate base class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - index of the donor zone
@@ -117,25 +110,39 @@ public:
    */
   CInterpolator(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
+public:
   /*!
-   * \brief Destructor of the class.
+   * \brief No default construction allowed.
    */
-  virtual ~CInterpolator(void);
+  CInterpolator(void) = delete;
 
+  /*!
+   * \brief Destructor of the class, nothing is deleted, derived classes need to manage the MPI buffers.
+   */
+  virtual ~CInterpolator(void) = default;
+
+  /*!
+   * \brief Set up transfer matrix defining relation between two meshes
+   * \note Main method that derived classes should implement.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void Set_TransferCoeff(CConfig **config) {}
+
+protected:
   /*!
    * \brief Find the index of the interface marker shared by that zone
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker_interface - Interface tag.
    */
-  int Find_InterfaceMarker(CConfig *config, unsigned short val_marker_interface);
+  int Find_InterfaceMarker(const CConfig *config, unsigned short val_marker_interface) const;
 
   /*!
-   * \brief Check whether the interface should be processed or not
+   * \brief Check whether an interface should be processed or not, i.e. if it is part of the zones.
    * \param[in] val_markDonor  - Marker tag from donor zone.
    * \param[in] val_markTarget - Marker tag from target zone.
    */  
-  bool CheckInterfaceBoundary(int val_markDonor, int val_markTarget);
-  
+  bool CheckInterfaceBoundary(int val_markDonor, int val_markTarget) const;
+
   /*!
    * \brief Recontstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads
    * \param[in] val_zone   - index of the zone
@@ -167,12 +174,6 @@ public:
   }
 
   /*!
-   * \brief Set up transfer matrix defining relation between two meshes
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_TransferCoeff(CConfig **config);
-
-  /*!
    * \brief Determine array sizes used to collect and send coordinate and global point
    * information.
    * \param[in] faces - boolean that determines whether or not to set face information as well
@@ -202,11 +203,6 @@ class CNearestNeighbor final : public CInterpolator {
 public:
   /*!
    * \brief Constructor of the class.
-   */
-  CNearestNeighbor(void);
-
-  /*!
-   * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - index of the donor zone
@@ -225,9 +221,8 @@ public:
 /*!
  * \brief Isoparametric interpolation
  */
-class CIsoparametric : public CInterpolator {
+class CIsoparametric final : public CInterpolator {
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -238,16 +233,12 @@ public:
   CIsoparametric(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CIsoparametric(void);
-
-  /*!
    * \brief Set up transfer matrix defining relation between two meshes
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_TransferCoeff(CConfig **config);
+  void Set_TransferCoeff(CConfig **config) override;
 
+private:
   /*!
    * \brief Calculate the isoparametric representation of point iVertex in marker iZone_0 by nodes of element donor_elem in marker jMarker of zone iZone_1.
    * \param[in] iVertex - vertex index of the point being interpolated.
@@ -258,7 +249,7 @@ public:
    * \param[in] xj - point projected onto the plane of the donor element.
    * \param[out] isoparams - isoparametric coefficients. Must be allocated to size nNodes ahead of time. (size> nDonors)
    *
-   * If the problem is 2D, the 'face' projected onto is actually an edge; the local index
+   * \note If the problem is 2D, the 'face' projected onto is actually an edge; the local index
    * of the edge is then stored in iFace, and the global index of the node (from which the edge
    * is referenced)
    */
@@ -270,40 +261,31 @@ public:
  * \brief Mirror interpolation: copy point linking and coefficient values from the opposing mesh
  * Assumes that the oppoosing mesh has already run interpolation. (otherwise this will result in empty/trivial interpolation)
  */
-class CMirror : public CInterpolator {
+class CMirror final : public CInterpolator {
 public:
-
   /*!
    * \brief Constructor of the class.
+   * \note Data is set in geometry[targetZone].
    * \param[in] geometry_container
    * \param[in] config - config container
    * \param[in] iZone - First zone
    * \param[in] jZone - Second zone
-   *
-   * Data is set in geometry[targetZone]
-   *
    */
   CMirror(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CMirror(void);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_TransferCoeff(CConfig **config);
-  
+  void Set_TransferCoeff(CConfig **config) override;
+
 };
 
 /*!
  * \brief Sliding mesh approach
   */
-class CSlidingMesh : public CInterpolator {
+class CSlidingMesh final : public CInterpolator {
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -314,16 +296,12 @@ public:
   CSlidingMesh(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CSlidingMesh(void);
-
-  /*!
    * \brief Set up transfer matrix defining relation between two meshes
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_TransferCoeff(CConfig **config);
-  
+  void Set_TransferCoeff(CConfig **config) override;
+
+private:
   /*!
    * \brief For 3-Dimensional grids, build the dual surface element
    * \param[in] map         - array containing the index of the boundary points connected to the node
@@ -333,7 +311,8 @@ public:
    * \param[in] centralNode - label of the vertex around which the dual surface element is built
    * \param[in] element  - double array where element node coordinates will be stored
    */  
-  int Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element);
+  int Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor,
+                               su2double *coord, unsigned long centralNode, su2double** element);
    
   /*!
    * \brief For 2-Dimensional grids, compute intersection length of two segments projected along a given direction
@@ -387,6 +366,7 @@ public:
    * \param[in] T3 - third  point of triangle T
    */
   bool CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3);
+
 };
 
 /*!
@@ -394,11 +374,6 @@ public:
  */
 class CRadialBasisFunction final : public CInterpolator {
 public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CRadialBasisFunction(void);
-
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
