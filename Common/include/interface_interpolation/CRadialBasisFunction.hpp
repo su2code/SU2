@@ -59,7 +59,6 @@ public:
    */
   static su2double Get_RadialBasisValue(ENUM_RADIALBASIS type, const su2double radius, const su2double dist);
 
-private:
   /*!
    * \brief Compute the RBF "generator" matrix with or without polynomial terms.
    * \note Multiplying C_inv_trunc by a column vector gives specific coefficients for given "known values",
@@ -73,9 +72,9 @@ private:
    * \param[out] keepPolynomialRow - Size nDim, signals which (if any) iDim was removed from polynomial term.
    * \param[out] C_inv_trunc - The generator matrix as described above.
    */
-  void ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool usePolynomial, su2double radius,
-                              const su2activematrix& coords, int& nPolynomial,
-                              vector<int>& keepPolynomialRow, su2passivematrix& C_inv_trunc) const;
+  static void ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool usePolynomial, su2double radius,
+                                     const su2activematrix& coords, int& nPolynomial,
+                                     vector<int>& keepPolynomialRow, su2passivematrix& C_inv_trunc);
 
   /*!
    * \brief If the polynomial term is included in the interpolation, and the points lie on a plane, the matrix
@@ -86,7 +85,7 @@ private:
    * \param[in,out] P - Polynomial part of the interpolation matrix, one row may be eliminated.
    * \return n_polynomial - Size of the polynomial part on exit (in practice nDim or nDim-1).
    */
-  int CheckPolynomialTerms(su2double max_diff_tol, vector<int>& keep_row, su2passivematrix &P) const;
+  static int CheckPolynomialTerms(su2double max_diff_tol, vector<int>& keep_row, su2passivematrix &P);
 
   /*!
    * \brief Prunes (by setting to zero) small interpolation coefficients, i.e.
@@ -95,65 +94,6 @@ private:
    * \param[in,out] coeffs - The vector of interpolation coefficients.
    * \return Number of non-zero coefficients after pruning.
    */
-  int PruneSmallCoefficients(passivedouble tolerance, su2passivevector& coeffs) const;
-
-};
-
-/*!
- * \brief Helper class used by CRadialBasisFunction to compute the interpolation weights.
- * The matrix is symmetric but full storage is used as that gives much better performance
- * for some BLAS libraries (notably OpenBLAS). The code should be compiled with LAPACK
- * to use optimized matrix inversion and multiplication routines.
- */
-class CSymmetricMatrix {
-private:
-  enum DecompositionType { NONE, CHOLESKY, LU };
-
-  vector<passivedouble> val_vec, decomp_vec;
-  vector<int> perm_vec;
-  int sz = 0;
-  bool initialized = false;
-  DecompositionType decomposed = NONE;
-
-  inline void CheckBounds(int i, int j) const {
-    assert(initialized && "Matrix not initialized.");
-    assert(i>=0 && i<sz && j>=0 && j<sz && "Index to access matrix out of bounds.");
-  }
-
-  inline int IdxFull(int i, int j) const {CheckBounds(i,j); return i*sz + j;}
-
-  inline int IdxSym(int i, int j) const {return IdxFull(min(i,j), max(i,j));}
-
-  inline passivedouble& decomp(int i, int j) { return decomp_vec[IdxFull(i,j)]; }
-
-  // Not optimized dense matrix factorization and inversion for portability.
-  void CholeskyDecompose();
-  void LUDecompose();
-  void CalcInv();
-  // Matrix inversion using LAPACK routines (LDLT and LLT factorization).
-  void CalcInv_sytri();
-  void CalcInv_potri();
-
-public:
-  CSymmetricMatrix() = default;
-  CSymmetricMatrix(int N) {Initialize(N);}
-
-  void Initialize(int N);
-
-  inline int GetSize() const { return sz; }
-
-  inline passivedouble Get(int i, int j) const { return val_vec[IdxSym(i,j)]; }
-
-  inline void Set(int i, int j, passivedouble val) { val_vec[IdxSym(i,j)] = val; }
-
-  inline passivedouble& operator() (int i, int j) { return val_vec[IdxSym(i,j)]; }
-
-  inline const passivedouble& operator() (int i, int j) const { return val_vec[IdxSym(i,j)]; }
-
-  void MatVecMult(passivedouble *v) const;
-
-  void MatMatMult(const char side, su2passivematrix& mat_in, su2passivematrix& mat_out);
-
-  void Invert(const bool is_spd);
+  static int PruneSmallCoefficients(passivedouble tolerance, su2passivevector& coeffs);
 
 };

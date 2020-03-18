@@ -147,7 +147,7 @@ protected:
    * \param[in] point_i - coordinates of point i
    * \param[in] point_j - coordinates of point j
    */
-  inline su2double PointsSquareDistance(unsigned short nDim, const su2double *point_i, const su2double *point_j) const {
+  static inline su2double PointsSquareDistance(unsigned short nDim, const su2double *point_i, const su2double *point_j) {
     su2double d = 0.0;
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       d += pow(point_j[iDim] - point_i[iDim], 2);
@@ -160,7 +160,7 @@ protected:
    * \param[in] point_i - coordinates of point i
    * \param[in] point_j - coordinates of point j
    */
-  inline su2double PointsDistance(unsigned short nDim, const su2double *point_i, const su2double *point_j) const {
+  static inline su2double PointsDistance(unsigned short nDim, const su2double *point_i, const su2double *point_j) {
     return sqrt(PointsSquareDistance(nDim, point_i, point_j));
   }
 
