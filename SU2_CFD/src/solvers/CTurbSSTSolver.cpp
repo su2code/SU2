@@ -450,10 +450,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
 
-    if(config->GetError_Estimate()) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) nodes->SetSource(iPoint, iVar, Residual[iVar]/geometry->node[iPoint]->GetVolume());
-    }
-
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, Residual);
