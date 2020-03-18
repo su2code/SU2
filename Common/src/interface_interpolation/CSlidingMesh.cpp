@@ -244,8 +244,10 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
 
           dTMP = 0;
           for(iDim = 0; iDim < nDim; iDim++){
-            target_iMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[0] + iDim ] + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
-            target_jMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[1] + iDim ] + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
+            target_iMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[0] + iDim ] +
+                                            target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
+            target_jMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[1] + iDim ] +
+                                            target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
 
             Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
             dTMP += Direction[iDim] * Direction[iDim];
@@ -288,11 +290,14 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
             }
 
             for(iDim = 0; iDim < nDim; iDim++){
-              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
-              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
+              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] +
+                                             DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
+              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] +
+                                             DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
             }
 
-            LineIntersectionLength = ComputeLineIntersectionLength(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
+            LineIntersectionLength = ComputeLineIntersectionLength(target_iMidEdge_point, target_jMidEdge_point,
+                                                                   donor_iMidEdge_point, donor_jMidEdge_point, Direction);
 
             if ( LineIntersectionLength == 0.0 ){
               check = true;
@@ -368,11 +373,14 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
             }
 
             for(iDim = 0; iDim < nDim; iDim++){
-              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
-              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
+              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] +
+                                             DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
+              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] +
+                                             DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
             }
 
-            LineIntersectionLength = ComputeLineIntersectionLength(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
+            LineIntersectionLength = ComputeLineIntersectionLength(target_iMidEdge_point, target_jMidEdge_point,
+                                                                   donor_iMidEdge_point, donor_jMidEdge_point, Direction);
 
             if ( LineIntersectionLength == 0.0 ){
               check = true;
@@ -476,7 +484,8 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
         for (ii = 0; ii < nNode_target; ii++)
           target_element[ii] = new su2double[nDim];
 
-        nNode_target = Build_3D_surface_element(Target_LinkedNodes, Target_StartLinkedNodes, Target_nLinkedNodes, TargetPoint_Coord, target_iPoint, target_element);
+        nNode_target = Build_3D_surface_element(Target_LinkedNodes, Target_StartLinkedNodes, Target_nLinkedNodes,
+                                                TargetPoint_Coord, target_iPoint, target_element);
 
         /*--- Brute force to find the closest donor_node ---*/
 
@@ -508,13 +517,14 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
         for (ii = 0; ii < 2*nEdges_donor + 2; ii++)
           donor_element[ii] = new su2double[nDim];
 
-        nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes, DonorPoint_Coord, donor_iPoint, donor_element);
+        nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
+                                               DonorPoint_Coord, donor_iPoint, donor_element);
 
         Area = 0;
         for (ii = 1; ii < nNode_target-1; ii++){
           for (jj = 1; jj < nNode_donor-1; jj++){
-            Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal);
-            //cout << Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal) << endl;
+            Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1],
+                                                  donor_element[0], donor_element[jj], donor_element[jj+1], Normal);
           }
         }
 
@@ -608,12 +618,14 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
                 for (ii = 0; ii < 2*nEdges_donor + 2; ii++)
                   donor_element[ii] = new su2double[nDim];
 
-                nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes, DonorPoint_Coord, donor_iPoint, donor_element);
+                nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
+                                                       DonorPoint_Coord, donor_iPoint, donor_element);
 
                 tmp_Area = 0;
                 for (ii = 1; ii < nNode_target-1; ii++)
                   for (jj = 1; jj < nNode_donor-1; jj++)
-                    tmp_Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal);
+                    tmp_Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1],
+                                                              donor_element[0], donor_element[jj], donor_element[jj+1], Normal);
 
                 for (ii = 0; ii < 2*nEdges_donor + 2; ii++)
                   delete [] donor_element[ii];
@@ -687,7 +699,6 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
           target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]/Area);
           target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, Donor_GlobalPoint[ Donor_Vect[iDonor] ] );
           target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
-          //cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;
         }
 
         for (ii = 0; ii < 2*nEdges_target + 2; ii++)
@@ -724,9 +735,11 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
   if (storeProc  != NULL) delete [] storeProc;
 }
 
-int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element){
+int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor,
+                                           su2double *coord, unsigned long centralNode, su2double** element){
 
-  /*--- Given a node "centralNode", this routines reconstruct the vertex centered surface element around the node and store it into "element" ---*/
+  /*--- Given a node "centralNode", this routines reconstruct the vertex centered
+   *    surface element around the node and store it into "element" ---*/
   /*--- Returns the number of points included in the element ---*/
 
   unsigned long iNode, jNode, kNode, iElementNode, iPoint, jPoint, nOuterNodes;
@@ -798,8 +811,8 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
     iElementNode++;
 
     for (iDim = 0; iDim < nDim; iDim++)
-      element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim] + coord[ OuterNodes[ NextNode ] * nDim + iDim] )/3;
-
+      element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim] +
+                                        coord[ OuterNodes[ NextNode ] * nDim + iDim] )/3;
     iElementNode++;
 
     if( OuterNodesNeighbour[ NextNode ][0] == CurrentNode){
@@ -835,9 +848,11 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
 
 }
 
-su2double CSlidingMesh::ComputeLineIntersectionLength(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction){
+su2double CSlidingMesh::ComputeLineIntersectionLength(su2double* A1, su2double* A2, su2double* B1,
+                                                      su2double* B2, su2double* Direction){
 
-  /*--- Given 2 segments, each defined by 2 points, it projects them along a given direction and it computes the length of the segment resulting from their intersection ---*/
+  /*--- Given 2 segments, each defined by 2 points, it projects them along a given direction
+   *    and it computes the length of the segment resulting from their intersection ---*/
   /*--- The algorithm works for both 2D and 3D problems ---*/
 
   unsigned short iDim;
@@ -890,7 +905,8 @@ su2double CSlidingMesh::ComputeLineIntersectionLength(su2double* A1, su2double* 
   return 0.0;
 }
 
-su2double CSlidingMesh::Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3, su2double* B1, su2double* B2, su2double* B3, su2double* Direction){
+su2double CSlidingMesh::Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3,
+                                                      su2double* B1, su2double* B2, su2double* B3, su2double* Direction){
 
   /* --- This routine is ONLY for 3D grids --- */
   /* --- Projects triangle points onto a plane, specified by its normal "Direction", and calls the ComputeIntersectionArea routine --- */
@@ -972,7 +988,8 @@ su2double CSlidingMesh::Compute_Triangle_Intersection(su2double* A1, su2double* 
   return ComputeIntersectionArea( a1, a2, a3, b1, b2, b3 );
 }
 
-su2double CSlidingMesh::ComputeIntersectionArea( su2double* P1, su2double* P2, su2double* P3, su2double* Q1, su2double* Q2, su2double* Q3 ){
+su2double CSlidingMesh::ComputeIntersectionArea(su2double* P1, su2double* P2, su2double* P3,
+                                                su2double* Q1, su2double* Q2, su2double* Q3 ){
 
   /* --- This routines computes the area of the polygonal element generated by the superimposition of 2 planar triangle --- */
   /* --- The 2 triangle must lie on the same plane --- */
@@ -1028,7 +1045,8 @@ su2double CSlidingMesh::ComputeIntersectionArea( su2double* P1, su2double* P2, s
   for( j = 0; j < 3; j++){
     for( i = 0; i < 3; i++){
 
-      det = (TriangleP[j][0] - TriangleP[j+1][0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (TriangleP[j][1] - TriangleP[j+1][1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
+      det = (TriangleP[j][0] - TriangleP[j+1][0]) * (TriangleQ[i][1] - TriangleQ[i+1][1]) -
+            (TriangleP[j][1] - TriangleP[j+1][1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
 
       if ( det != 0.0 ){
         ComputeLineIntersectionPoint( TriangleP[j], TriangleP[j+1], TriangleQ[i], TriangleQ[i+1], IntersectionPoint );
@@ -1109,7 +1127,8 @@ su2double CSlidingMesh::ComputeIntersectionArea( su2double* P1, su2double* P2, s
     }
   }
 
-  // compute area using cross product rule, points position are referred to the 2-dimensional, local, reference frame centered in points[0]
+  // compute area using cross product rule, points position are referred to the
+  // 2-dimensional, local, reference frame centered in points[0]
 
   Area = 0;
 
@@ -1127,7 +1146,8 @@ su2double CSlidingMesh::ComputeIntersectionArea( su2double* P1, su2double* P2, s
   return fabs(Area)/2;
 }
 
-void CSlidingMesh::ComputeLineIntersectionPoint( su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* IntersectionPoint ){
+void CSlidingMesh::ComputeLineIntersectionPoint(su2double* A1, su2double* A2, su2double* B1, su2double* B2,
+                                                su2double* IntersectionPoint ){
 
   /* --- Uses determinant rule to compute the intersection point between 2 straight segments --- */
   /* This works only for lines on a 2D plane, A1, A2 and B1, B2 are respectively the head and the tail points of each segment,

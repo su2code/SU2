@@ -89,10 +89,9 @@
 #endif
 #include <fenv.h>
 
-CDriver::CDriver(char* confFile,
-                 unsigned short val_nZone,
-                 SU2_Comm MPICommunicator, bool dummy_geo):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0),
-                 TimeIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false), dry_run(dummy_geo) {
+CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator, bool dummy_geo) :
+  config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0),
+  TimeIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false), dry_run(dummy_geo) {
 
   /*--- Initialize Medipack (must also be here so it is initialized from python) ---*/
 #ifdef HAVE_MPI
@@ -2532,22 +2531,11 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
   unsigned short donorZone, targetZone;
   unsigned short nVar, nVarTransfer;
 
-  unsigned short nMarkerTarget, iMarkerTarget, nMarkerDonor, iMarkerDonor;
-
   /*--- Initialize some useful booleans ---*/
   bool fluid_donor, structural_donor, heat_donor;
   bool fluid_target, structural_target, heat_target;
 
-  bool discrete_adjoint = config[ZONE_0]->GetDiscrete_Adjoint();
-
-  int markDonor, markTarget, Donor_check, Target_check, iMarkerInt, nMarkerInt;
-
-#ifdef HAVE_MPI
-  int *Buffer_Recv_mark = NULL, iRank, nProcessor = size;
-
-  if (rank == MASTER_NODE)
-    Buffer_Recv_mark = new int[nProcessor];
-#endif
+  const bool discrete_adjoint = config[ZONE_0]->GetDiscrete_Adjoint();
 
   /*--- Coupling between zones ---*/
   // There's a limit here, the interface boundary must connect only 2 zones
@@ -2566,278 +2554,209 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
         continue;
       }
 
-      nMarkerInt = (int) ( config[donorZone]->GetMarker_n_ZoneInterface() / 2 );
+      const auto nMarkerInt = config[donorZone]->GetMarker_n_ZoneInterface() / 2;
 
       /*--- Loops on Interface markers to find if the 2 zones are sharing the boundary and to
        *--- determine donor and target marker tag ---*/
-      for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+      for (unsigned short iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
 
-        markDonor  = -1;
-        markTarget = -1;
-
-        /*--- On the donor side ---*/
-        nMarkerDonor = config[donorZone]->GetnMarker_All();
-
-        for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
-
-          /*--- If the tag GetMarker_All_ZoneInterface(iMarker) equals the index we are looping at ---*/
-          if ( config[donorZone]->GetMarker_All_ZoneInterface(iMarkerDonor) == iMarkerInt ) {
-            /*--- We have identified the identifier for the interface marker ---*/
-            markDonor = iMarkerDonor;
-
-            break;
-          }
+        /* --- Check if zones are actually sharing the interface boundary, if not skip. ---*/
+        if(!CInterpolator::CheckInterfaceBoundary(CInterpolator::Find_InterfaceMarker(config[donorZone],iMarkerInt),
+                                                  CInterpolator::Find_InterfaceMarker(config[targetZone],iMarkerInt))) {
+          interface_types[donorZone][targetZone] = NO_COMMON_INTERFACE;
+          continue;
         }
-
-        /*--- On the target side ---*/
-        nMarkerTarget = config[targetZone]->GetnMarker_All();
-
-        for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
-
-            /*--- If the tag GetMarker_All_ZoneInterface(iMarker) equals the index we are looping at ---*/
-          if ( config[targetZone]->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
-              /*--- We have identified the identifier for the interface marker ---*/
-              markTarget = iMarkerTarget;
-
-              break;
-          }
-        }
-
-#ifdef HAVE_MPI
-
-      Donor_check  = -1;
-      Target_check = -1;
-
-      /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because
-       * of the partition or because the zone does not include it ---*/
-
-      SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-      if (rank == MASTER_NODE) {
-        for (iRank = 0; iRank < nProcessor; iRank++) {
-          if( Buffer_Recv_mark[iRank] != -1 ) {
-            Donor_check = Buffer_Recv_mark[iRank];
-            break;
-          }
-        }
-      }
-
-      SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-      SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-      if (rank == MASTER_NODE){
-        for (iRank = 0; iRank < nProcessor; iRank++){
-          if( Buffer_Recv_mark[iRank] != -1 ){
-            Target_check = Buffer_Recv_mark[iRank];
-            break;
-          }
-        }
-      }
-
-      SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-
-#else
-      Donor_check  = markDonor;
-      Target_check = markTarget;
-#endif
-
-      /* --- Check if zones are actually sharing the interface boundary, if not skip. ---*/
-      if(Target_check == -1 || Donor_check == -1) {
-        interface_types[donorZone][targetZone] = NO_COMMON_INTERFACE;
-        continue;
-      }
 
         /*--- Set some boolean to properly allocate data structure later ---*/
-      fluid_target      = false;
-      structural_target = false;
+        fluid_target      = false;
+        structural_target = false;
 
-      fluid_donor       = false;
-      structural_donor  = false;
+        fluid_donor       = false;
+        structural_donor  = false;
 
-      heat_donor        = false;
-      heat_target       = false;
+        heat_donor        = false;
+        heat_target       = false;
 
-      switch ( config[targetZone]->GetKind_Solver() ) {
+        switch ( config[targetZone]->GetKind_Solver() ) {
 
-        case EULER : case NAVIER_STOKES: case RANS:
-        case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:
-        case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-        case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-          fluid_target  = true;
-          break;
+          case EULER : case NAVIER_STOKES: case RANS:
+          case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:
+          case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+          case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+            fluid_target  = true;
+            break;
 
-        case FEM_ELASTICITY: case DISC_ADJ_FEM:
-          structural_target = true;
-          break;
+          case FEM_ELASTICITY: case DISC_ADJ_FEM:
+            structural_target = true;
+            break;
 
-        case HEAT_EQUATION: case DISC_ADJ_HEAT:
-          heat_target = true;
-          break;
-      }
+          case HEAT_EQUATION: case DISC_ADJ_HEAT:
+            heat_target = true;
+            break;
+        }
 
-      switch ( config[donorZone]->GetKind_Solver() ) {
+        switch ( config[donorZone]->GetKind_Solver() ) {
 
-        case EULER : case NAVIER_STOKES: case RANS:
-        case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:
-        case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-        case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-          fluid_donor  = true;
-          break;
+          case EULER : case NAVIER_STOKES: case RANS:
+          case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:
+          case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+          case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+            fluid_donor  = true;
+            break;
 
-        case FEM_ELASTICITY: case DISC_ADJ_FEM:
-          structural_donor = true;
-          break;
+          case FEM_ELASTICITY: case DISC_ADJ_FEM:
+            structural_donor = true;
+            break;
 
-        case HEAT_EQUATION : case DISC_ADJ_HEAT:
-          heat_donor = true;
-          break;
-      }
+          case HEAT_EQUATION : case DISC_ADJ_HEAT:
+            heat_donor = true;
+            break;
+        }
 
-      /*--- Begin the creation of the communication pattern among zones ---*/
+        /*--- Begin the creation of the communication pattern among zones ---*/
 
-      /*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
-      if (fluid_donor && fluid_target)
-        nVar = solver[donorZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-      else
-        /*--- If at least one of the components is structural ---*/
-        nVar = nDim;
+        /*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
+        if (fluid_donor && fluid_target)
+          nVar = solver[donorZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+        else
+          /*--- If at least one of the components is structural ---*/
+          nVar = nDim;
 
-      if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
+        if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
 
         /*--- Match Zones ---*/
-      if (rank == MASTER_NODE) cout << "Setting coupling ";
+        if (rank == MASTER_NODE) cout << "Setting coupling ";
 
-      bool conservative_interp = config[donorZone]->GetConservativeInterpolation();
+        bool conservative_interp = config[donorZone]->GetConservativeInterpolation();
 
-      /*--- Conditions for conservative interpolation are not met, we cannot fallback on the consistent approach
-            because CFlowTractionInterface relies on the information in config to be correct. ---*/
-      if ( conservative_interp && targetZone == 0 && structural_target )
-        SU2_MPI::Error("Conservative interpolation assumes the structural model mesh is evaluated second, "
-                       "somehow this has not happened.",CURRENT_FUNCTION);
+        /*--- Conditions for conservative interpolation are not met, we cannot fallback on the consistent approach
+              because CFlowTractionInterface relies on the information in config to be correct. ---*/
+        if ( conservative_interp && targetZone == 0 && structural_target )
+          SU2_MPI::Error("Conservative interpolation assumes the structural model mesh is evaluated second, "
+                         "somehow this has not happened.",CURRENT_FUNCTION);
 
-      switch (config[donorZone]->GetKindInterpolation()) {
+        switch (config[donorZone]->GetKindInterpolation()) {
 
-        case NEAREST_NEIGHBOR:
-          if ( conservative_interp && targetZone > 0 && structural_target ) {
-            interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
-            if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
-                                             "from opposite mesh." << endl;
-          }
-          else {
-            interpolation[donorZone][targetZone] = new CNearestNeighbor(geometry, config, donorZone, targetZone);
-            if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
-          }
-          break;
-
-        case ISOPARAMETRIC:
-          if ( conservative_interp && targetZone > 0 && structural_target ) {
-            interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
-            if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
-                                             "from opposite mesh." << endl;
-          }
-          else {
-            interpolation[donorZone][targetZone] = new CIsoparametric(geometry, config, donorZone, targetZone);
-            if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
-          }
-          break;
-
-        case WEIGHTED_AVERAGE:
-          interpolation[donorZone][targetZone] = new CSlidingMesh(geometry, config, donorZone, targetZone);
-          if (rank == MASTER_NODE) cout << "using an sliding mesh approach." << endl;
-
-          break;
-
-        case RADIAL_BASIS_FUNCTION:
-          if ( conservative_interp && targetZone > 0 && structural_target ) {
+          case NEAREST_NEIGHBOR:
+            if ( conservative_interp && targetZone > 0 && structural_target ) {
               interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
               if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
                                                "from opposite mesh." << endl;
-          }
-          else {
-            interpolation[donorZone][targetZone] = new CRadialBasisFunction(geometry, config,
-                                                                            donorZone, targetZone);
-            if (rank == MASTER_NODE) cout << "using a radial basis function approach." << endl;
-          }
-        break;
-      }
+            }
+            else {
+              interpolation[donorZone][targetZone] = new CNearestNeighbor(geometry, config, donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
+            }
+            break;
+
+          case ISOPARAMETRIC:
+            if ( conservative_interp && targetZone > 0 && structural_target ) {
+              interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
+                                               "from opposite mesh." << endl;
+            }
+            else {
+              interpolation[donorZone][targetZone] = new CIsoparametric(geometry, config, donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
+            }
+            break;
+
+          case WEIGHTED_AVERAGE:
+            interpolation[donorZone][targetZone] = new CSlidingMesh(geometry, config, donorZone, targetZone);
+            if (rank == MASTER_NODE) cout << "using an sliding mesh approach." << endl;
+
+            break;
+
+          case RADIAL_BASIS_FUNCTION:
+            if ( conservative_interp && targetZone > 0 && structural_target ) {
+                interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
+                if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
+                                                 "from opposite mesh." << endl;
+            }
+            else {
+              interpolation[donorZone][targetZone] = new CRadialBasisFunction(geometry, config,
+                                                                              donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using a radial basis function approach." << endl;
+            }
+            break;
+        }
 
         /*--- Initialize the appropriate transfer strategy ---*/
-      if (rank == MASTER_NODE) cout << "Transferring ";
+        if (rank == MASTER_NODE) cout << "Transferring ";
 
-      if (fluid_donor && structural_target) {
-        interface_types[donorZone][targetZone] = FLOW_TRACTION;
-        nVarTransfer = 2;
-        if(!discrete_adjoint) {
-          interface[donorZone][targetZone] = new CFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
-        } else {
-          interface[donorZone][targetZone] = new CDiscAdjFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
-        }
-        if (rank == MASTER_NODE) cout << "flow tractions. " << endl;
-      }
-      else if (structural_donor && fluid_target) {
-        /*--- If we are using the new mesh solver, we transfer the total boundary displacements (not incremental) --*/
-        if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] != NULL) {
-          interface_types[donorZone][targetZone] = BOUNDARY_DISPLACEMENTS;
-          nVarTransfer = 0;
-          interface[donorZone][targetZone] = new CDisplacementsInterface(nVar, nVarTransfer, config[donorZone]);
-          if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver. " << endl;
-        }
-        /*--- We keep the legacy method temporarily until FSI-adjoint has been adapted ---*/
-        /// TODO: LEGACY CLEANUP remove the "else" part and every class and enum referenced there,
-        ///       add a check above to make sure MESH_SOL has been instantiated.
-        else {
-          nVarTransfer = 0;
+        if (fluid_donor && structural_target) {
+          interface_types[donorZone][targetZone] = FLOW_TRACTION;
+          nVarTransfer = 2;
           if(!discrete_adjoint) {
-            interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_LEGACY;
-            interface[donorZone][targetZone] = new CDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
+            interface[donorZone][targetZone] = new CFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
           } else {
-            interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_DISC_ADJ;
-            interface[donorZone][targetZone] = new CDiscAdjDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
+            interface[donorZone][targetZone] = new CDiscAdjFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
           }
-          if (rank == MASTER_NODE) cout << "structural displacements (legacy). " << endl;
+          if (rank == MASTER_NODE) cout << "flow tractions. " << endl;
         }
-      }
-      else if (fluid_donor && fluid_target) {
-        interface_types[donorZone][targetZone] = SLIDING_INTERFACE;
-        nVarTransfer = 0;
-        nVar = solver[donorZone][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
-        interface[donorZone][targetZone] = new CSlidingInterface(nVar, nVarTransfer, config[donorZone]);
-        if (rank == MASTER_NODE) cout << "sliding interface. " << endl;
-      }
-      else if (fluid_donor && heat_target) {
-        nVarTransfer = 0;
-        nVar = 4;
-        if(config[donorZone]->GetEnergy_Equation() || (config[donorZone]->GetKind_Regime() == COMPRESSIBLE))
-          interface_types[donorZone][targetZone] = CONJUGATE_HEAT_FS;
-        else if (config[donorZone]->GetWeakly_Coupled_Heat())
-          interface_types[donorZone][targetZone] = CONJUGATE_HEAT_WEAKLY_FS;
-        else { }
-        interface[donorZone][targetZone] = new CConjugateHeatInterface(nVar, nVarTransfer, config[donorZone]);
-        if (rank == MASTER_NODE) cout << "conjugate heat variables. " << endl;
-      }
-      else if (heat_donor && fluid_target) {
-        nVarTransfer = 0;
-        nVar = 4;
-        if(config[targetZone]->GetEnergy_Equation() || (config[targetZone]->GetKind_Regime() == COMPRESSIBLE))
-          interface_types[donorZone][targetZone] = CONJUGATE_HEAT_SF;
-        else if (config[targetZone]->GetWeakly_Coupled_Heat())
-          interface_types[donorZone][targetZone] = CONJUGATE_HEAT_WEAKLY_SF;
-        else { }
-        interface[donorZone][targetZone] = new CConjugateHeatInterface(nVar, nVarTransfer, config[donorZone]);
-        if (rank == MASTER_NODE) cout << "conjugate heat variables. " << endl;
-      }
-      else if (heat_donor && heat_target) {
-        SU2_MPI::Error("Conjugate heat transfer between solids not implemented yet.", CURRENT_FUNCTION);
-      }
-      else {
-        interface_types[donorZone][targetZone] = CONSERVATIVE_VARIABLES;
-        nVarTransfer = 0;
-        interface[donorZone][targetZone] = new CConservativeVarsInterface(nVar, nVarTransfer, config[donorZone]);
-        if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;
-      }
+        else if (structural_donor && fluid_target) {
+          /*--- If we are using the new mesh solver, we transfer the total boundary displacements (not incremental) --*/
+          if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] != NULL) {
+            interface_types[donorZone][targetZone] = BOUNDARY_DISPLACEMENTS;
+            nVarTransfer = 0;
+            interface[donorZone][targetZone] = new CDisplacementsInterface(nVar, nVarTransfer, config[donorZone]);
+            if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver. " << endl;
+          }
+          /*--- We keep the legacy method temporarily until FSI-adjoint has been adapted ---*/
+          /// TODO: LEGACY CLEANUP remove the "else" part and every class and enum referenced there,
+          ///       add a check above to make sure MESH_SOL has been instantiated.
+          else {
+            nVarTransfer = 0;
+            if(!discrete_adjoint) {
+              interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_LEGACY;
+              interface[donorZone][targetZone] = new CDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
+            } else {
+              interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_DISC_ADJ;
+              interface[donorZone][targetZone] = new CDiscAdjDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
+            }
+            if (rank == MASTER_NODE) cout << "structural displacements (legacy). " << endl;
+          }
+        }
+        else if (fluid_donor && fluid_target) {
+          interface_types[donorZone][targetZone] = SLIDING_INTERFACE;
+          nVarTransfer = 0;
+          nVar = solver[donorZone][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
+          interface[donorZone][targetZone] = new CSlidingInterface(nVar, nVarTransfer, config[donorZone]);
+          if (rank == MASTER_NODE) cout << "sliding interface. " << endl;
+        }
+        else if (fluid_donor && heat_target) {
+          nVarTransfer = 0;
+          nVar = 4;
+          if(config[donorZone]->GetEnergy_Equation() || (config[donorZone]->GetKind_Regime() == COMPRESSIBLE))
+            interface_types[donorZone][targetZone] = CONJUGATE_HEAT_FS;
+          else if (config[donorZone]->GetWeakly_Coupled_Heat())
+            interface_types[donorZone][targetZone] = CONJUGATE_HEAT_WEAKLY_FS;
+          else { }
+          interface[donorZone][targetZone] = new CConjugateHeatInterface(nVar, nVarTransfer, config[donorZone]);
+          if (rank == MASTER_NODE) cout << "conjugate heat variables. " << endl;
+        }
+        else if (heat_donor && fluid_target) {
+          nVarTransfer = 0;
+          nVar = 4;
+          if(config[targetZone]->GetEnergy_Equation() || (config[targetZone]->GetKind_Regime() == COMPRESSIBLE))
+            interface_types[donorZone][targetZone] = CONJUGATE_HEAT_SF;
+          else if (config[targetZone]->GetWeakly_Coupled_Heat())
+            interface_types[donorZone][targetZone] = CONJUGATE_HEAT_WEAKLY_SF;
+          else { }
+          interface[donorZone][targetZone] = new CConjugateHeatInterface(nVar, nVarTransfer, config[donorZone]);
+          if (rank == MASTER_NODE) cout << "conjugate heat variables. " << endl;
+        }
+        else if (heat_donor && heat_target) {
+          SU2_MPI::Error("Conjugate heat transfer between solids not implemented yet.", CURRENT_FUNCTION);
+        }
+        else {
+          interface_types[donorZone][targetZone] = CONSERVATIVE_VARIABLES;
+          nVarTransfer = 0;
+          interface[donorZone][targetZone] = new CConservativeVarsInterface(nVar, nVarTransfer, config[donorZone]);
+          if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;
+        }
 
-      break;
+        break;
 
       }
 
@@ -2855,10 +2774,6 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
   }
 
-#ifdef HAVE_MPI
-  if (rank == MASTER_NODE)
-  delete [] Buffer_Recv_mark;
-#endif
 }
 
 void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CSurfaceMovement* surface_movement){

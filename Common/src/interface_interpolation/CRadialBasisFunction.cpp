@@ -29,6 +29,22 @@
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
 
+#if defined(HAVE_MKL)
+#include "mkl.h"
+#ifndef HAVE_LAPACK
+#define HAVE_LAPACK
+#endif
+#elif defined(HAVE_LAPACK)
+/*--- Lapack / Blas routines used in RBF interpolation. ---*/
+extern "C" void dsptrf_(char*, int*, passivedouble*, int*, int*);
+extern "C" void dsptri_(char*, int*, passivedouble*, int*, passivedouble*, int*);
+extern "C" void dsytrf_(char*, int*, passivedouble*, int*, int*, passivedouble*, int*, int*);
+extern "C" void dsytri_(char*, int*, passivedouble*, int*, int*, passivedouble*, int*);
+extern "C" void dpotrf_(char*, int*, passivedouble*, int*, int*);
+extern "C" void dpotri_(char*, int*, passivedouble*, int*, int*);
+extern "C" void dsymm_(char*, char*, int*, int*, passivedouble*, passivedouble*, int*,
+                       passivedouble*, int*, passivedouble*, passivedouble*, int*);
+#endif
 
 CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, CConfig **config, unsigned int iZone,
                                            unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {

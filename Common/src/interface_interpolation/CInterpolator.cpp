@@ -40,7 +40,7 @@ CInterpolator::CInterpolator(CGeometry ****geometry_container, CConfig **config,
   target_geometry(geometry_container[jZone][INST_0][MESH_0]) {
 }
 
-int CInterpolator::Find_InterfaceMarker(const CConfig *config, unsigned short val_marker_interface) const {
+int CInterpolator::Find_InterfaceMarker(const CConfig *config, unsigned short val_marker_interface) {
 
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     /*--- If the tag GetMarker_All_ZoneInterface(iMarker) equals the interface we are looking for. ---*/
@@ -49,7 +49,7 @@ int CInterpolator::Find_InterfaceMarker(const CConfig *config, unsigned short va
   return -1;
 }
 
-bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget) const {
+bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget) {
 
   /*--- Determine whether the boundary is not on the rank because of
    *    the partition or because it is not part of the zone. ---*/

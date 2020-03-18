@@ -29,12 +29,8 @@
 #include "../../include/definition_structure.hpp"
 #include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
 
-CMultizoneDriver::CMultizoneDriver(char* confFile,
-                       unsigned short val_nZone,
-                       SU2_Comm MPICommunicator) : CDriver(confFile,
-                                                          val_nZone,
-                                                          MPICommunicator,
-                                                          false) {
+CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) :
+                  CDriver(confFile, val_nZone, MPICommunicator, false) {
 
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;

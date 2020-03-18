@@ -77,6 +77,14 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
   Coord = new su2double[nDim];
   Normal = new su2double[nDim];
 
+  Buffer_Send_nVertex_Donor    = new unsigned long [1];
+  Buffer_Send_nFace_Donor      = new unsigned long [1];
+  Buffer_Send_nFaceNodes_Donor = new unsigned long [1];
+
+  Buffer_Receive_nVertex_Donor    = new unsigned long [nProcessor];
+  Buffer_Receive_nFace_Donor      = new unsigned long [nProcessor];
+  Buffer_Receive_nFaceNodes_Donor = new unsigned long [nProcessor];
+
   nMarkerInt = (config[donorZone]->GetMarker_n_ZoneInterface())/2;
 
   /*--- For the number of markers on the interface... ---*/
@@ -105,14 +113,6 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
       nVertexTarget = target_geometry->GetnVertex( markTarget );
     else
       nVertexTarget  = 0;
-
-    Buffer_Send_nVertex_Donor    = new unsigned long [1];
-    Buffer_Send_nFace_Donor      = new unsigned long [1];
-    Buffer_Send_nFaceNodes_Donor = new unsigned long [1];
-
-    Buffer_Receive_nVertex_Donor    = new unsigned long [nProcessor];
-    Buffer_Receive_nFace_Donor      = new unsigned long [nProcessor];
-    Buffer_Receive_nFaceNodes_Donor = new unsigned long [nProcessor];
 
     /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
     Determine_ArraySize(true, markDonor, markTarget, nVertexDonor, nDim);
@@ -332,20 +332,11 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
 
       for (iDonor=0; iDonor<nNodes; iDonor++) {
         target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(iDonor,storeGlobal[iDonor]);
-        //cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;
         target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor,storeCoeff[iDonor]);
         target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
       }
 
     }
-
-    delete[] Buffer_Send_nVertex_Donor;
-    delete[] Buffer_Send_nFace_Donor;
-    delete[] Buffer_Send_nFaceNodes_Donor;
-
-    delete[] Buffer_Receive_nVertex_Donor;
-    delete[] Buffer_Receive_nFace_Donor;
-    delete[] Buffer_Receive_nFaceNodes_Donor;
 
     delete[] Buffer_Send_Coord;
     delete[] Buffer_Send_Normal;
@@ -363,6 +354,15 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
     delete[] Buffer_Receive_FaceNodes;
     delete[] Buffer_Receive_FaceProc;
   }
+
+  delete[] Buffer_Send_nVertex_Donor;
+  delete[] Buffer_Send_nFace_Donor;
+  delete[] Buffer_Send_nFaceNodes_Donor;
+
+  delete[] Buffer_Receive_nVertex_Donor;
+  delete[] Buffer_Receive_nFace_Donor;
+  delete[] Buffer_Receive_nFaceNodes_Donor;
+
   delete [] Coord;
   delete [] Normal;
 

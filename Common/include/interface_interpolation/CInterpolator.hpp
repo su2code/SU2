@@ -45,11 +45,11 @@ protected:
   const unsigned targetZone; /*!< \brief Index of target zone. */
 
   unsigned long
-  MaxLocalVertex_Donor,     /*!< \brief Maximum vertices per processor*/
-  nGlobalFace_Donor,        /*!< \brief Number of global donor faces*/
-  nGlobalFaceNodes_Donor,   /*!< \brief Number of global donor face nodes*/
-  MaxFace_Donor,            /*!< \brief Maximum faces per processor*/
-  MaxFaceNodes_Donor;       /*!< \brief Maximum nodes associated with faces per processor*/
+  MaxLocalVertex_Donor,      /*!< \brief Maximum vertices per processor*/
+  nGlobalFace_Donor,         /*!< \brief Number of global donor faces*/
+  nGlobalFaceNodes_Donor,    /*!< \brief Number of global donor face nodes*/
+  MaxFace_Donor,             /*!< \brief Maximum faces per processor*/
+  MaxFaceNodes_Donor;        /*!< \brief Maximum nodes associated with faces per processor*/
 
   unsigned long
   *Buffer_Receive_nVertex_Donor,     /*!< \brief Buffer to store the number of vertices per processor on the Donor domain */
@@ -68,23 +68,25 @@ protected:
   long *Buffer_Send_GlobalPoint,     /*!< \brief Buffer to send global point indices*/
   *Buffer_Receive_GlobalPoint;       /*!< \brief Buffer to receive global point indices*/
 
-  su2double *Buffer_Send_Coord,  /*!< \brief Buffer to send coordinate values*/
-  *Buffer_Send_Normal,           /*!< \brief Buffer to send normal vector values */
-  *Buffer_Receive_Coord,         /*!< \brief Buffer to receive coordinate values*/
-  *Buffer_Receive_Normal;        /*!< \brief Buffer to receive normal vector values*/
+  su2double *Buffer_Send_Coord,      /*!< \brief Buffer to send coordinate values*/
+  *Buffer_Send_Normal,               /*!< \brief Buffer to send normal vector values */
+  *Buffer_Receive_Coord,             /*!< \brief Buffer to receive coordinate values*/
+  *Buffer_Receive_Normal;            /*!< \brief Buffer to receive normal vector values*/
 
-  unsigned long *Receive_GlobalPoint, /*!< \brief Buffer to receive Global point indexes*/
-  *Buffer_Receive_nLinkedNodes,       /*!< \brief Buffer to receive the number of edges connected to each node*/
-  *Buffer_Receive_LinkedNodes,        /*!< \brief Buffer to receive the list of notes connected to the nodes through an edge*/
-  *Buffer_Receive_StartLinkedNodes,   /*!< \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins */
-  *Buffer_Receive_Proc;               /*!< \brief Buffer to receive the thread that owns the node*/
+  unsigned long
+  *Receive_GlobalPoint,              /*!< \brief Buffer to receive Global point indexes*/
+  *Buffer_Receive_nLinkedNodes,      /*!< \brief Buffer to receive the number of edges connected to each node*/
+  *Buffer_Receive_LinkedNodes,       /*!< \brief Buffer to receive the list of notes connected to the nodes through an edge*/
+  *Buffer_Receive_StartLinkedNodes,  /*!< \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins */
+  *Buffer_Receive_Proc;              /*!< \brief Buffer to receive the thread that owns the node*/
 
-  unsigned long  nGlobalVertex_Target, /*!< \brief Global number of vertex of the target boundary*/
-  nLocalVertex_Target,                 /*!< \brief Number of vertex of the target boundary owned by the thread*/
-  nGlobalVertex_Donor,                 /*!< \brief Global number of vertex of the donor boundary*/
-  nLocalVertex_Donor,                  /*!< \brief Number of vertex of the donor boundary owned by the thread*/
-  nGlobalVertex,                       /*!< \brief Dummy variable to temporarily store the global number of vertex of a boundary*/
-  nLocalLinkedNodes;                   /*!< \brief Dummy variable to temporarily store the number of vertex of a boundary*/
+  unsigned long
+  nGlobalVertex_Target,              /*!< \brief Global number of vertex of the target boundary*/
+  nLocalVertex_Target,               /*!< \brief Number of vertex of the target boundary owned by the thread*/
+  nGlobalVertex_Donor,               /*!< \brief Global number of vertex of the donor boundary*/
+  nLocalVertex_Donor,                /*!< \brief Number of vertex of the donor boundary owned by the thread*/
+  nGlobalVertex,                     /*!< \brief Dummy variable to temporarily store the global number of vertex of a boundary*/
+  nLocalLinkedNodes;                 /*!< \brief Dummy variable to temporarily store the number of vertex of a boundary*/
 
   CGeometry**** const Geometry;      /*! \brief Vector which stores n zones of geometry. */
   CGeometry* const donor_geometry;   /*! \brief Donor geometry. */
@@ -117,21 +119,21 @@ public:
    */
   virtual void Set_TransferCoeff(CConfig **config) = 0;
 
-protected:
   /*!
    * \brief Find the index of the interface marker shared by that zone
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker_interface - Interface tag.
    */
-  int Find_InterfaceMarker(const CConfig *config, unsigned short val_marker_interface) const;
+  static int Find_InterfaceMarker(const CConfig *config, unsigned short val_marker_interface);
 
   /*!
    * \brief Check whether an interface should be processed or not, i.e. if it is part of the zones.
    * \param[in] val_markDonor  - Marker tag from donor zone.
    * \param[in] val_markTarget - Marker tag from target zone.
    */
-  bool CheckInterfaceBoundary(int val_markDonor, int val_markTarget) const;
+  static bool CheckInterfaceBoundary(int val_markDonor, int val_markTarget);
 
+protected:
   /*!
    * \brief Recontstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads
    * \param[in] val_zone   - index of the zone
