@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -83,13 +83,13 @@ protected:
   *Buffer_Send_Normal,           /*!< \brief Buffer to send normal vector values */
   *Buffer_Receive_Coord,         /*!< \brief Buffer to receive coordinate values*/
   *Buffer_Receive_Normal;        /*!< \brief Buffer to receive normal vector values*/
-  
+
   unsigned long *Receive_GlobalPoint, /*!< \brief Buffer to receive Global point indexes*/
   *Buffer_Receive_nLinkedNodes,       /*!< \brief Buffer to receive the number of edges connected to each node*/
   *Buffer_Receive_LinkedNodes,        /*!< \brief Buffer to receive the list of notes connected to the nodes through an edge*/
   *Buffer_Receive_StartLinkedNodes,   /*!< \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins */
   *Buffer_Receive_Proc;               /*!< \brief Buffer to receive the thread that owns the node*/
-  
+
   unsigned long  nGlobalVertex_Target, /*!< \brief Global number of vertex of the target boundary*/
   nLocalVertex_Target,                 /*!< \brief Number of vertex of the target boundary owned by the thread*/
   nGlobalVertex_Donor,                 /*!< \brief Global number of vertex of the donor boundary*/
@@ -140,7 +140,7 @@ protected:
    * \brief Check whether an interface should be processed or not, i.e. if it is part of the zones.
    * \param[in] val_markDonor  - Marker tag from donor zone.
    * \param[in] val_markTarget - Marker tag from target zone.
-   */  
+   */
   bool CheckInterfaceBoundary(int val_markDonor, int val_markTarget) const;
 
   /*!
@@ -305,15 +305,15 @@ private:
   /*!
    * \brief For 3-Dimensional grids, build the dual surface element
    * \param[in] map         - array containing the index of the boundary points connected to the node
-   * \param[in] startIndex  - for each vertex specifies the corresponding index in the global array containing the indexes of all its neighbouring vertexes 
+   * \param[in] startIndex  - for each vertex specifies the corresponding index in the global array containing the indexes of all its neighbouring vertexes
    * \param[in] nNeighbour  - for each vertex specifies the number of its neighbouring vertexes (on the boundary)
    * \param[in] coord       - array containing the coordinates of all the boundary vertexes
    * \param[in] centralNode - label of the vertex around which the dual surface element is built
    * \param[in] element  - double array where element node coordinates will be stored
-   */  
+   */
   int Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor,
                                su2double *coord, unsigned long centralNode, su2double** element);
-   
+
   /*!
    * \brief For 2-Dimensional grids, compute intersection length of two segments projected along a given direction
    * \param[in] A1 - first  point of segment A
@@ -323,7 +323,7 @@ private:
    * \param[in] Direction - along which segments are projected
    */
   su2double ComputeLineIntersectionLength(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction);
-  
+
   /*!
    * \brief For 3-Dimensional grids, compute intersection area between two triangle projected on a given plane
    * \param[in] A1 - first  point of triangle A
@@ -335,7 +335,7 @@ private:
    * \param[in] Direction - vector normal to projection plane
    */
   su2double Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3, su2double* B1, su2double* B2, su2double* B3, su2double* Direction);
-  
+
   /*!
    * \brief For 3-Dimensional grids, compute intersection area between two triangle projected on a given plane
    * P1 from triangle P MUST be inside triangle Q, points order doesn't matter
@@ -347,7 +347,7 @@ private:
    * \param[in] Q3 - third  point of triangle B
    */
   su2double ComputeIntersectionArea( su2double* P1, su2double* P2, su2double* P3, su2double* Q1, su2double* Q2, su2double* Q3 );
-  
+
   /*!
    * \brief For 2-Dimensional grids, check whether, and compute, two lines are intersecting
    * \param[in] A1 - first  defining first line
@@ -357,7 +357,7 @@ private:
    * \param[in] IntersectionPoint - Container for intersection coordinates
    */
   void ComputeLineIntersectionPoint( su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* IntersectionPoint );
-  
+
   /*!
    * \brief For N-Dimensional grids, check whether a point is inside a triangle specified by 3 T points
    * \param[in] Point - query point
@@ -482,7 +482,7 @@ public:
   inline int GetSize() const { return sz; }
 
   inline passivedouble Get(int i, int j) const { return val_vec[IdxSym(i,j)]; }
-  
+
   inline void Set(int i, int j, passivedouble val) { val_vec[IdxSym(i,j)] = val; }
 
   inline passivedouble& operator() (int i, int j) { return val_vec[IdxSym(i,j)]; }
