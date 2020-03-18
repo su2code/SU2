@@ -544,139 +544,114 @@ bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget){
     return true;
 }
 
-/* Nearest Neighbor Interpolator */
-CNearestNeighbor::CNearestNeighbor(void):  CInterpolator() { }
+CNearestNeighbor::CNearestNeighbor(void): CInterpolator() { }
 
-CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, CConfig **config,  unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone) {
+CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, CConfig **config,  unsigned int iZone,
+                                   unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
 
-  /*--- Initialize transfer coefficients between the zones ---*/
+  /*--- Initialize transfer coefficients between the zones. ---*/
   Set_TransferCoeff(config);
 }
 
-CNearestNeighbor::~CNearestNeighbor() {}
-
 void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
-  int iProcessor, pProcessor, nProcessor = size;
-  int markDonor, markTarget;
+  /*--- By definition, one donor point per target point. ---*/
+  constexpr auto numDonor = 1;
+  constexpr auto idxDonor = 0;
 
-  unsigned short nDim, iMarkerInt, nMarkerInt, iDonor;    
+  const su2double eps = numeric_limits<passivedouble>::epsilon();
 
-  unsigned long nVertexDonor, nVertexTarget, Point_Target, jVertex, iVertexTarget;
-  unsigned long Global_Point_Donor;
-  long pGlobalPoint = 0;
+  const int nProcessor = size;
+  const auto nMarkerInt = config[donorZone]->GetMarker_n_ZoneInterface()/2;
+  const auto nDim = donor_geometry->GetnDim();
 
-  su2double *Coord_i, *Coord_j, dist, mindist, maxdist;
-
-  /*--- Initialize variables --- */
-  
-  nMarkerInt = (int) ( config[donorZone]->GetMarker_n_ZoneInterface() / 2 );
-  
-  nDim = donor_geometry->GetnDim();
-
-  iDonor = 0;
-  
+  Buffer_Send_nVertex_Donor = new unsigned long [1];
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
 
+  /*--- Cycle over nMarkersInt interface to determine communication pattern. ---*/
 
-  /*--- Cycle over nMarkersInt interface to determine communication pattern ---*/
+  for (unsigned short iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
 
-  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
-
-
-    /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
-    markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
+    /*--- On the donor side: find the tag of the boundary sharing the interface. ---*/
+    const auto markDonor = Find_InterfaceMarker(config[donorZone], iMarkerInt);
       
-    /*--- On the target side: find the tag of the boundary sharing the interface ---*/
-    markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+    /*--- On the target side: find the tag of the boundary sharing the interface. ---*/
+    const auto markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
-    /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
-    if( !CheckInterfaceBoundary(markDonor, markTarget) )
-      continue;
+    /*--- Checks if the zone contains the interface, if not continue to the next step. ---*/
+    if (!CheckInterfaceBoundary(markDonor, markTarget)) continue;
 
-    if(markDonor != -1)
-      nVertexDonor  = donor_geometry->GetnVertex( markDonor );
-    else
-      nVertexDonor  = 0;
-    
-    if(markTarget != -1)
-      nVertexTarget = target_geometry->GetnVertex( markTarget );
-    else
-      nVertexTarget  = 0;
-    
-    Buffer_Send_nVertex_Donor  = new unsigned long [ 1 ];
+    unsigned long nVertexDonor = 0, nVertexTarget = 0;
+    if(markDonor != -1) nVertexDonor = donor_geometry->GetnVertex( markDonor );
+    if(markTarget != -1) nVertexTarget = target_geometry->GetnVertex( markTarget );
 
-    /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
+    /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor. */
     Determine_ArraySize(false, markDonor, markTarget, nVertexDonor, nDim);
 
-    Buffer_Send_Coord          = new su2double     [ MaxLocalVertex_Donor * nDim ];
-    Buffer_Send_GlobalPoint    = new long [ MaxLocalVertex_Donor ];
-    Buffer_Receive_Coord       = new su2double     [ nProcessor * MaxLocalVertex_Donor * nDim ];
+    Buffer_Send_Coord = new su2double [ MaxLocalVertex_Donor * nDim ];
+    Buffer_Send_GlobalPoint = new long [ MaxLocalVertex_Donor ];
+    Buffer_Receive_Coord = new su2double [ nProcessor * MaxLocalVertex_Donor * nDim ];
     Buffer_Receive_GlobalPoint = new long [ nProcessor * MaxLocalVertex_Donor ];
 
-    /*-- Collect coordinates, global points, and normal vectors ---*/
+    /*-- Collect coordinates and global point indices. ---*/
     Collect_VertexInfo( false, markDonor, markTarget, nVertexDonor, nDim );
 
-    /*--- Compute the closest point to a Near-Field boundary point ---*/
-    maxdist = 0.0;
+    /*--- Compute the closest donor point to each target. ---*/
+    SU2_OMP_PARALLEL_(for schedule(dynamic,roundUpDiv(nVertexTarget,2*omp_get_max_threads())))
+    for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; iVertexTarget++) {
 
-    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
+      auto target_vertex = target_geometry->vertex[markTarget][iVertexTarget];
+      const auto Point_Target = target_vertex->GetNode();
 
-      Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
+      if (!target_geometry->node[Point_Target]->GetDomain()) continue;
 
-      if ( target_geometry->node[Point_Target]->GetDomain() ) {
+      /*--- Coordinates of the target point. ---*/
+      const su2double* Coord_i = target_geometry->node[Point_Target]->GetCoord();
 
-        target_geometry->vertex[markTarget][iVertexTarget]->SetnDonorPoints(1);
-        target_geometry->vertex[markTarget][iVertexTarget]->Allocate_DonorInfo(); // Possible meme leak?
+      su2double mindist = 1e20; 
+      long pGlobalPoint = 0;
+      int pProcessor = 0;
 
-        /*--- Coordinates of the boundary point ---*/
-        Coord_i = target_geometry->node[Point_Target]->GetCoord();
+      for (int iProcessor = 0; iProcessor < nProcessor; ++iProcessor) {
+        for (auto jVertex = 0ul; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; ++jVertex) {
 
-        mindist    = 1E6; 
-        pProcessor = 0;
+          const auto idx = iProcessor*MaxLocalVertex_Donor + jVertex;
 
-        /*--- Loop over all the boundaries to find the pair ---*/
+          const su2double* Coord_j = &Buffer_Receive_Coord[idx*nDim];
 
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-          for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
-           
-            Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
-            
-            if (Buffer_Receive_GlobalPoint[Global_Point_Donor] != -1){
-              
-              Coord_j = &Buffer_Receive_Coord[ Global_Point_Donor*nDim];
-              
-              dist = PointsDistance(nDim, Coord_i, Coord_j);
-              
-              if (dist < mindist) {
-                mindist = dist; pProcessor = iProcessor; 
-                pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];                
-              }
-              
-              if (dist == 0.0) break;
-            }
+          const auto dist = PointsSquareDistance(nDim, Coord_i, Coord_j);
+
+          if (dist < mindist) {
+            mindist = dist;
+            pProcessor = iProcessor; 
+            pGlobalPoint = Buffer_Receive_GlobalPoint[idx];                
           }
-        }
 
-        /*--- Store the value of the pair ---*/
-        maxdist = max(maxdist, mindist);
-        target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorPoint(iDonor, pGlobalPoint);
-        target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorProcessor(iDonor, pProcessor);
-        target_geometry->vertex[markTarget][iVertexTarget]->SetDonorCoeff(iDonor, 1.0);
+          /*--- Test for "exact" match. ---*/
+          if (dist < eps) break;
+        }
       }
+
+      /*--- Store matching pair. ---*/
+      target_vertex->SetnDonorPoints(numDonor);
+      target_vertex->Allocate_DonorInfo();
+      target_vertex->SetInterpDonorPoint(idxDonor, pGlobalPoint);
+      target_vertex->SetInterpDonorProcessor(idxDonor, pProcessor);
+      target_vertex->SetDonorCoeff(idxDonor, 1.0);
+
     }
 
     delete[] Buffer_Send_Coord;
     delete[] Buffer_Send_GlobalPoint;
-    
+
     delete[] Buffer_Receive_Coord;
     delete[] Buffer_Receive_GlobalPoint;
 
-    delete[] Buffer_Send_nVertex_Donor;
-
   }
 
+  delete[] Buffer_Send_nVertex_Donor;
   delete[] Buffer_Receive_nVertex_Donor;
+
 }
 
 
@@ -2883,7 +2858,8 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
     }
 #endif
 
-    /*--- Compute H matrix, distributing target points over the threads in the rank. ---*/
+    /*--- Compute H (interpolation) matrix, distributing
+     *    target points over the threads in the rank. ---*/
     SU2_OMP_PARALLEL
     {
     su2passivevector coeff_vec(nGlobalVertexDonor);

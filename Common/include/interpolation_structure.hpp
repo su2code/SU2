@@ -142,18 +142,28 @@ public:
    * \param[in] val_marker - index of the marker
    */
   void ReconstructBoundary(unsigned long val_zone, int val_marker);
-  
+
+  /*!
+   * \brief compute squared distance between 2 points
+   * \param[in] nDim - number of dimensions
+   * \param[in] point_i - coordinates of point i
+   * \param[in] point_j - coordinates of point j
+   */
+  inline su2double PointsSquareDistance(unsigned short nDim, const su2double *point_i, const su2double *point_j) const {
+    su2double d = 0.0;
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      d += pow(point_j[iDim] - point_i[iDim], 2);
+    return d;
+  }
+
   /*!
    * \brief compute distance between 2 points
    * \param[in] nDim - number of dimensions
-   * \param[in] point_i
-   * \param[in] point_i
+   * \param[in] point_i - coordinates of point i
+   * \param[in] point_j - coordinates of point j
    */
   inline su2double PointsDistance(unsigned short nDim, const su2double *point_i, const su2double *point_j) const {
-    su2double m = 0;
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      m += pow(point_j[iDim] - point_i[iDim], 2);
-    return sqrt(m);
+    return sqrt(PointsSquareDistance(nDim, point_i, point_j));
   }
 
   /*!
@@ -188,9 +198,8 @@ public:
 /*!
  * \brief Nearest Neighbor interpolation
  */
-class CNearestNeighbor : public CInterpolator {
+class CNearestNeighbor final : public CInterpolator {
 public:
-
   /*!
    * \brief Constructor of the class.
    */
@@ -206,15 +215,10 @@ public:
   CNearestNeighbor(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CNearestNeighbor(void);
-
-  /*!
    * \brief Set up transfer matrix defining relation between two meshes
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_TransferCoeff(CConfig **config);
+  void Set_TransferCoeff(CConfig **config) override;
 
 };
 
