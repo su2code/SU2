@@ -25,7 +25,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../include/SU2_CFD.hpp"
 
 /* LIBXSMM include files, if supported. */
