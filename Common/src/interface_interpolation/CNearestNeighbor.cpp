@@ -30,13 +30,14 @@
 #include "../../include/geometry/CGeometry.hpp"
 
 
-/*! \brief Helper struct to search sort neighbours according to distance. */
+/*! \brief Helper struct to (partially) sort neighbours according to distance while
+ *         keeping track of the origin of the point (i.e. index and processor). */
 struct DonorInfo {
   su2double dist;
-  unsigned long pidx;
+  unsigned pidx;
   int proc;
-  DonorInfo(su2double d = 0.0, unsigned long i = 0, int p = 0) :
-    dist(d), pidx(i), proc(p) {}
+  DonorInfo(su2double d = 0.0, unsigned i = 0, int p = 0) :
+    dist(d), pidx(i), proc(p) { }
 };
 
 CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, CConfig **config,  unsigned int iZone,

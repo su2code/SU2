@@ -126,7 +126,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/CMultizoneOutput.cpp \
   ../src/output/COutputFactory.cpp \
   ../src/output/output_structure_legacy.cpp \
-  ../src/output/COutputFactory.cpp \
   ../src/python_wrapper_structure.cpp \
   ../src/solvers/CAdjEulerSolver.cpp \
   ../src/solvers/CAdjNSSolver.cpp \
