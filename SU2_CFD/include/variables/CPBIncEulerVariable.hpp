@@ -80,11 +80,18 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CPBIncEulerVariable() = default;
-
+  
   /*!
-   * \brief Set to zero the gradient of the primitive variables.
+   * \brief Get the primitive variable gradients for all points.
+   * \return Reference to primitive variable gradient.
    */
-  void SetGradient_PrimitiveZero() final;
+  inline VectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+  
+   /*!
+   * \brief Get the reconstruction gradient for primitive variable at all points.
+   * \return Reference to variable reconstruction gradient.
+   */
+  inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
 
   /*!
    * \brief Add <i>value</i> to the gradient of the primitive variables.
@@ -98,17 +105,6 @@ public:
   }
 
   /*!
-   * \brief Subtract <i>value</i> to the gradient of the primitive variables.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to subtract to the gradient of the primitive variables.
-   */
-  inline void SubtractGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Primitive(iPoint,iVar,iDim) -= value;
-  }
-
-  /*!
    * \brief Get the value of the primitive variables gradient.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
@@ -118,6 +114,12 @@ public:
   inline su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
     return Gradient_Primitive(iPoint,iVar,iDim);
   }
+
+  /*!
+   * \brief Get the primitive variables limiter.
+   * \return Primitive variables limiter for the entire domain.
+   */
+  inline MatrixType& GetLimiter_Primitive(void) {return Limiter_Primitive; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -198,6 +200,12 @@ public:
    */
   inline void SetPressure_val(unsigned long iPoint, su2double val_pressure) { Primitive(iPoint,0) = val_pressure; }
 
+  /*!
+   * \brief Get the primitive variables for all points.
+   * \return Reference to primitives.
+   */
+  inline const MatrixType& GetPrimitive(void) const { return Primitive; }
+  
   /*!
    * \brief Get the primitive variables.
    * \param[in] iPoint - Point index.

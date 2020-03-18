@@ -145,10 +145,6 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double pressure, const su2double *ve
  MassFlux.resize(nPoint) = su2double(0.0);
 }
 
-void CPBIncEulerVariable::SetGradient_PrimitiveZero() {
-  Gradient_Primitive.storage.setConstant(0.0);
-}
-
 bool CPBIncEulerVariable::SetPrimVar(unsigned long iPoint, su2double Density_Inf,  CConfig *config) {
 
   unsigned long iVar;

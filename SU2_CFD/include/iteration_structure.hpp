@@ -3,14 +3,14 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,17 +28,14 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
-
 #include <ctime>
 
-#include "solver_structure.hpp"
-#include "integration_structure.hpp"
-#include "output/COutput.hpp"
-#include "numerics_structure.hpp"
+#include "../../Common/include/mpi_structure.hpp"
 #include "../../Common/include/geometry/CGeometry.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
+#include "output/COutput.hpp"
+#include "../../Common/include/CConfig.hpp"
+#include "../include/integration/CIntegration.hpp"
 
 using namespace std;
 
@@ -53,7 +50,7 @@ protected:
   size;       	/*!< \brief MPI Size. */
   unsigned short nZone;  /*!< \brief Total number of zones in the problem. */
   unsigned short nInst;  /*!< \brief Total number of instances in the problem. */
-  
+
   bool multizone,  /*!< \brief Flag for multizone problems. */
        singlezone; /*!< \brief Flag for singlezone problems. */
 
@@ -62,12 +59,12 @@ protected:
             UsedTime;
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CIteration(CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
@@ -103,7 +100,7 @@ public:
                            CNumerics ***numerics_container,
                            CConfig *config_container,
                            unsigned short kind_recording);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] ??? - Description here.
@@ -119,7 +116,7 @@ public:
                           CFreeFormDefBox*** FFDBox,
                           unsigned short val_iZone,
                           unsigned short val_iInst);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] output - Pointer to the COutput class.
@@ -191,7 +188,7 @@ public:
                       CFreeFormDefBox*** FFDBox,
                       unsigned short val_iZone,
                       unsigned short val_iInst);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] output - Pointer to the COutput class.
@@ -255,7 +252,7 @@ public:
       CFreeFormDefBox*** FFDBox,
       unsigned short val_iZone,
       unsigned short val_iInst);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] ??? - Description here.
@@ -268,7 +265,7 @@ public:
       bool StopCalc,
       unsigned short val_iZone,
       unsigned short val_iInst);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] output - Pointer to the COutput class.
@@ -358,18 +355,18 @@ public:
  */
 class CFluidIteration : public CIteration {
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
   CFluidIteration(CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CFluidIteration(void);
-  
+
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
@@ -385,7 +382,7 @@ public:
                   CFreeFormDefBox*** FFDBox,
                   unsigned short val_iZone,
                   unsigned short val_iInst);
-  
+
   /*!
    * \brief Perform a single iteration of the fluid system.
    * \param[in] output - Pointer to the COutput class.
@@ -409,7 +406,7 @@ public:
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
                unsigned short val_iInst);
-  
+
   /*!
    * \brief Iterate the fluid system for a number of Inner_Iter iterations.
    * \param[in] output - Pointer to the COutput class.
@@ -449,7 +446,7 @@ public:
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
               unsigned short val_iInst);
-  
+
   /*!
    * \brief Monitors the convergence and other metrics for the fluid system.
    * \param[in] ??? - Description here.
@@ -465,7 +462,7 @@ public:
       CFreeFormDefBox*** FFDBox,
       unsigned short val_iZone,
       unsigned short val_iInst);
-  
+
   /*!
    * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.
    * \param[in] solver - Container vector with all the solutions.
@@ -483,7 +480,7 @@ public:
                    CFreeFormDefBox*** FFDBox,
                    unsigned short val_iZone,
                    unsigned short val_iInst);
-  
+
   /*!
    * \brief Imposes a gust via the grid velocities.
    * \author S. Padron
@@ -492,7 +489,7 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    */
   void SetWind_GustField(CConfig *config, CGeometry **geometry, CSolver ***solver);
-  
+
   /*!
    * \brief Reads and initializes the vortex positions, strengths and gradient.
    * \author S. Padron
@@ -503,7 +500,7 @@ public:
    * \param[in] r_core - Vector of vortex core size.
    */
   void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core);
-  
+
 
   /*!
    * \brief Fixed CL monitoring function
@@ -512,7 +509,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Pointer to the flow solver
    * \param[in] config - Definition of the particular problem.
-   * \return Boolean indicating weather calculation should be stopped  
+   * \return Boolean indicating weather calculation should be stopped
    */
   bool MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver **solver, CConfig *config);
 };
@@ -655,22 +652,22 @@ public:
  * \class CFEMFluidIteration
  * \brief Class for driving an iteration of the finite element flow system.
  * \author T. Economon, E. van der Weide
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  */
 class CFEMFluidIteration : public CFluidIteration {
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
   CFEMFluidIteration(CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CFEMFluidIteration(void);
-  
+
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] output - Pointer to the COutput class.
@@ -717,7 +714,7 @@ public:
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
                unsigned short val_iInst);
-  
+
   /*!
    * \brief Updates the containers for the finite element flow system.
    * \param[in] ??? - Description here.
@@ -733,7 +730,7 @@ public:
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
               unsigned short val_iInst);
-  
+
   /*!
    * \brief Postprocess routine for the finite element flow system.
    * \param[in] solver - Container vector with all the solutions.
@@ -758,36 +755,21 @@ public:
  * \brief Class for driving an iteration of the heat system.
  * \author T. Economon
  */
-class CHeatIteration : public CIteration {
+class CHeatIteration : public CFluidIteration {
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
   CHeatIteration(CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CHeatIteration(void);
-  
-  /*!
-   * \brief Preprocessing to prepare for an iteration of the physics.
-   * \param[in] ??? - Description here.
-   */
-  void Preprocess(COutput *output,
-                  CIntegration ****integration,
-                  CGeometry ****geometry,
-                  CSolver *****solver,
-                  CNumerics ******numerics,
-                  CConfig **config,
-                  CSurfaceMovement **surface_movement,
-                  CVolumetricMovement ***grid_movement,
-                  CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone,
-                  unsigned short val_iInst);
-  
+
   /*!
    * \brief Perform a single iteration of the heat system.
    * \param[in] output - Pointer to the COutput class.
@@ -813,7 +795,7 @@ public:
                unsigned short val_iInst);
 
   /*!
-   * \brief Perform a single iteration of the wave system.
+   * \brief Iterate the heat system for a number of Inner_Iter iterations.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration - Container vector with all the integration methods.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -823,19 +805,18 @@ public:
    * \param[in] surface_movement - Surface movement classes of the problem.
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   * \param[in] val_iZone - zone of the problem.
    */
   void Solve(COutput *output,
-               CIntegration ****integration,
-               CGeometry ****geometry,
-               CSolver *****solver,
-               CNumerics ******numerics,
-               CConfig **config,
-               CSurfaceMovement **surface_movement,
-               CVolumetricMovement ***grid_movement,
-               CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone,
-               unsigned short val_iInst);
+             CIntegration ****integration,
+             CGeometry ****geometry,
+             CSolver *****solver,
+             CNumerics ******numerics,
+             CConfig **config,
+             CSurfaceMovement **surface_movement,
+             CVolumetricMovement ***grid_movement,
+             CFreeFormDefBox*** FFDBox,
+             unsigned short val_iZone,
+             unsigned short val_iInst);
 
   /*!
    * \brief Updates the containers for the heat system.
@@ -852,48 +833,13 @@ public:
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
               unsigned short val_iInst);
-  
-  /*!
-   * \brief Monitors the convergence and other metrics for the heat system.
-   * \param[in] ??? - Description here.
-   */
-  bool Monitor(COutput *output,
-      CIntegration ****integration,
-      CGeometry ****geometry,
-      CSolver *****solver,
-      CNumerics ******numerics,
-      CConfig **config,
-      CSurfaceMovement **surface_movement,
-      CVolumetricMovement ***grid_movement,
-      CFreeFormDefBox*** FFDBox,
-      unsigned short val_iZone,
-      unsigned short val_iInst);
-  
-  /*!
-   * \brief Postprocess ???.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Postprocess(COutput *output,
-                   CIntegration ****integration,
-                   CGeometry ****geometry,
-                   CSolver *****solver,
-                   CNumerics ******numerics,
-                   CConfig **config,
-                   CSurfaceMovement **surface_movement,
-                   CVolumetricMovement ***grid_movement,
-                   CFreeFormDefBox*** FFDBox,
-                   unsigned short val_iZone,
-                   unsigned short val_iInst);
-  
 };
 
 /*!
  * \class CFEAIteration
  * \brief Class for driving an iteration of structural analysis.
  * \author R. Sanchez
- * \version 7.0.0 "Blackbird"
+ * \version 7.0.2 "Blackbird"
  */
 class CFEAIteration : public CIteration {
 public:
@@ -1065,7 +1011,6 @@ public:
                    unsigned short val_iZone,
                    unsigned short val_iInst);
 
-
 };
 
 /*!
@@ -1075,18 +1020,18 @@ public:
  */
 class CAdjFluidIteration : public CFluidIteration {
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
   CAdjFluidIteration(CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CAdjFluidIteration(void);
-  
+
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
@@ -1102,7 +1047,7 @@ public:
                   CFreeFormDefBox*** FFDBox,
                   unsigned short val_iZone,
                   unsigned short val_iInst);
-  
+
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.
    * \param[in] output - Pointer to the COutput class.
@@ -1126,7 +1071,7 @@ public:
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
                unsigned short val_iInst);
-  
+
   /*!
    * \brief Updates the containers for the adjoint fluid system.
    * \param[in] ??? - Description here.
@@ -1142,9 +1087,9 @@ public:
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
               unsigned short val_iInst);
-  
 
-  
+
+
 };
 
 /*!
@@ -1161,18 +1106,18 @@ private:
   bool turbulent;       /*!< \brief Stores the turbulent flag. */
 
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
   CDiscAdjFluidIteration(CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CDiscAdjFluidIteration(void);
-  
+
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \brief Perform a single iteration of the adjoint fluid system.
@@ -1199,7 +1144,7 @@ public:
                   CFreeFormDefBox*** FFDBox,
                   unsigned short val_iZone,
                   unsigned short val_iInst);
-  
+
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.
    * \param[in] output - Pointer to the COutput class.
@@ -1225,7 +1170,7 @@ public:
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone,
                unsigned short val_iInst);
-  
+
 
   /*!
    * \brief Updates the containers for the discrete adjoint fluid system.
@@ -1252,7 +1197,7 @@ public:
               CFreeFormDefBox*** FFDBox,
               unsigned short val_iZone,
               unsigned short val_iInst);
-  
+
   /*!
    * \brief Monitors the convergence and other metrics for the discrete adjoint fluid system.
    * \param[in] output - Pointer to the COutput class.
@@ -1278,7 +1223,7 @@ public:
       CFreeFormDefBox*** FFDBox,
       unsigned short val_iZone,
       unsigned short val_iInst);
-  
+
   /*!
    * \brief Postprocess the discrete adjoint fluid iteration.
    * \param[in] output - Pointer to the COutput class.
@@ -1619,7 +1564,7 @@ public:
    */
   void RegisterOutput(CSolver *****solver, CGeometry ****geometry, CConfig** config, unsigned short iZone, unsigned short iInst);
   using CIteration::RegisterOutput;
-  
+
   /*!
    * \brief Initializes the adjoints of the output variables of the FEM iteration.
    * \param[in] solver - Container vector with all the solutions.
@@ -1849,7 +1794,7 @@ public:
               bool StopCalc,
               unsigned short val_iZone,
               unsigned short val_iInst);
-  
+
 
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.
