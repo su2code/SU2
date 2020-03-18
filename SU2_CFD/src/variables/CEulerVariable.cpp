@@ -142,6 +142,10 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   /* Non-physical point (first-order) initialization. */
   Non_Physical.resize(nPoint) = false;
   Non_Physical_Counter.resize(nPoint) = 0;
+
+  if (config->GetError_Estimate()) {
+    AnisoMetr.resize(nPoint,3*(nDim-1)) = su2double(0.0);
+  }
   
 }
 
