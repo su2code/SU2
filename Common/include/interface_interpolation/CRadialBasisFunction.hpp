@@ -34,6 +34,9 @@
  * \brief Radial basis function interpolation.
  */
 class CRadialBasisFunction final : public CInterpolator {
+private:
+  unsigned long MinDonors = 0, AvgDonors = 0, MaxDonors = 0;
+
 public:
   static_assert(su2passivematrix::Storage == StorageType::RowMajor,
                 "This class does not work otherwise.");
@@ -52,6 +55,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_TransferCoeff(const CConfig* const* config) override;
+
+  /*!
+   * \brief Print information about the interpolation.
+   */
+  void PrintStatistics(void) const override;
 
   /*!
    * \brief Compute the value of a radial basis function, this is static so it can be re-used.

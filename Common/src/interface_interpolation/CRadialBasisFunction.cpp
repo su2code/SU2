@@ -49,6 +49,12 @@ CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, con
   Set_TransferCoeff(config);
 }
 
+void CRadialBasisFunction::PrintStatistics() const {
+  if (rank == MASTER_NODE)
+    cout << "Min / avg / max number of RBF donors per target point: "
+         << MinDonors << " / " << AvgDonors << " / " << MaxDonors << endl;
+}
+
 su2double CRadialBasisFunction::Get_RadialBasisValue(ENUM_RADIALBASIS type, const su2double radius, const su2double dist)
 {
   su2double rbf = dist/radius;
@@ -188,6 +194,9 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
 
   /*--- Final loop over interface markers to compute the interpolation coefficients. ---*/
 
+  unsigned long totalTargetPoints = 0, totalDonorPoints = 0;
+  MinDonors = 1<<30; MaxDonors = 0;
+
   for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
 
     /*--- Identify the rank that computed the interpolation matrix for this marker. ---*/
@@ -256,6 +265,7 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
       }
     }
     nVertexTarget = targetVertices.size();
+    totalTargetPoints += nVertexTarget;
 
     /*--- Distribute target slabs over the threads in the rank for processing. ---*/
 
@@ -266,6 +276,8 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
 
     su2passivematrix funcMat(targetSlabSize, 1+nPolynomial+nGlobalVertexDonor);
     su2passivematrix interpMat(targetSlabSize, nGlobalVertexDonor);
+
+    unsigned long minDonors = 1<<30, maxDonors = 0, totalDonors = 0;
 
     SU2_OMP_FOR_DYN(1)
     for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; iVertexTarget += targetSlabSize) {
@@ -323,6 +335,9 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
 
         /*--- Prune small coefficients. ---*/
         auto nnz = PruneSmallCoefficients(SU2_TYPE::GetValue(pruneTol), interpMat.cols(), interpMat[k]);
+        totalDonors += nnz;
+        minDonors = min(minDonors, nnz);
+        maxDonors = max(maxDonors, nnz);
 
         /*--- Allocate and set donor information for this target point. ---*/
         targetVertex->Allocate_DonorInfo(nnz);
@@ -338,6 +353,13 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
         }
       }
     } // end target vertex loop
+
+    SU2_OMP_CRITICAL
+    {
+      totalDonorPoints += totalDonors;
+      MinDonors = min(MinDonors, minDonors);
+      MaxDonors = max(MaxDonors, maxDonors);
+    }
     } // end SU2_OMP_PARALLEL
 
     /*--- Free global data that will no longer be used. ---*/
@@ -348,6 +370,20 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
 
   } // end loop over interface markers
 
+  /*--- Final reduction of interpolation statistics. ---*/
+  auto Reduce = [](SU2_MPI::Op op, unsigned long &val) {
+    auto tmp = val;
+    SU2_MPI::Reduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, op, MASTER_NODE, MPI_COMM_WORLD);
+  };
+  Reduce(MPI_SUM, totalTargetPoints);
+  Reduce(MPI_SUM, totalDonorPoints);
+  Reduce(MPI_MIN, MinDonors);
+  Reduce(MPI_MAX, MaxDonors);
+  AvgDonors = passivedouble(totalDonorPoints) / totalTargetPoints;
+  if (MinDonors == 0)
+    SU2_MPI::Error("One or more target points have no donors, either:\n"
+                   " - The RBF radius is too small.\n"
+                   " - The pruning tolerance is too aggressive.", CURRENT_FUNCTION);
 }
 
 void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool usePolynomial,

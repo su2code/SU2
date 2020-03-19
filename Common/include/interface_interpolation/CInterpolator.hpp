@@ -103,7 +103,7 @@ public:
   CInterpolator(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
 
   /*!
-   * \brief No default construction allowed.
+   * \brief No default construction allowed to force zones and geometry to always be set.
    */
   CInterpolator(void) = delete;
 
@@ -118,6 +118,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Set_TransferCoeff(const CConfig* const* config) = 0;
+
+  /*!
+   * \brief Print information about the interpolation.
+   */
+  virtual void PrintStatistics(void) const { }
 
   /*!
    * \brief Find the index of the interface marker shared by that zone

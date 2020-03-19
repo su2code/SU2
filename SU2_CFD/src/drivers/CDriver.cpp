@@ -100,8 +100,6 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
   #endif
 #endif
 
-  unsigned short jZone;
-
   SU2_MPI::SetComm(MPICommunicator);
 
   rank = SU2_MPI::GetRank();
@@ -149,13 +147,8 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
     /*--- Allocate transfer and interpolation container --- */
 
-    interface_container[iZone]    = new CInterface*[nZone];
-    interpolator_container[iZone] = new CInterpolator*[nZone];
-
-    for (jZone = 0; jZone < nZone; jZone++){
-      interface_container[iZone][jZone]            = NULL;
-      interpolator_container[iZone][jZone]         = NULL;
-    }
+    interface_container[iZone]    = new CInterface*[nZone] ();
+    interpolator_container[iZone] = new CInterpolator*[nZone] ();
 
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
@@ -212,7 +205,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
       /*--- Dynamic mesh processing.  ---*/
 
       DynamicMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst],
-                                 iteration_container[iZone][iInst], grid_movement[iZone][iInst], surface_movement[iZone]);
+                                iteration_container[iZone][iInst], grid_movement[iZone][iInst], surface_movement[iZone]);
       /*--- Static mesh processing.  ---*/
 
       StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], surface_movement[iZone]);
@@ -2680,6 +2673,9 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
             }
             break;
         }
+
+        if (interpolation[donorZone][targetZone])
+          interpolation[donorZone][targetZone]->PrintStatistics();
 
         /*--- Initialize the appropriate transfer strategy ---*/
         if (rank == MASTER_NODE) cout << "Transferring ";
