@@ -1639,30 +1639,27 @@ void COutput::Postprocess_HistoryData(CConfig *config){
   map<string, pair<su2double, int> > Average;
   map<string, int> Count;
 
-  const auto& fieldReferences = historyFieldsAll.GetReferencesAll();
-  for (auto field : fieldReferences){
-    if (field->second.fieldType == HistoryFieldType::RESIDUAL){
-      if (SetInit_Residuals(config) || (field->second.value > initialResiduals[field->first])) {
-        initialResiduals[field->first] = field->second.value;
-      }
-      SetHistoryOutputValue("REL_" + field->first, field->second.value - initialResiduals[field->first]);
-      Average[field->second.outputGroup].first += field->second.value;
-      Average[field->second.outputGroup].second++;
+  for (auto field : historyFieldsAll.GetFieldsByType({HistoryFieldType::RESIDUAL})){
+    if (SetInit_Residuals(config) || (field->second.value > initialResiduals[field->first])) {
+      initialResiduals[field->first] = field->second.value;
     }
+    SetHistoryOutputValue("REL_" + field->first, field->second.value - initialResiduals[field->first]);
+    Average[field->second.outputGroup].first += field->second.value;
+    Average[field->second.outputGroup].second++;
+  }
 
-    if (field->second.fieldType == HistoryFieldType::COEFFICIENT){
-      if (SetUpdate_Averages(config)){
-        if (config->GetTime_Domain()){
-          windowedTimeAverages[field->first].addValue(field->second.value, config->GetTimeIter(), config->GetStartWindowIteration());
-          SetHistoryOutputValue("TAVG_" + field->first, windowedTimeAverages[field->first].WindowedUpdate(config->GetKindWindow()));
-          if (config->GetDirectDiff()){
-            SetHistoryOutputValue("D_TAVG_" + field->first, SU2_TYPE::GetDerivative(windowedTimeAverages[field->first].GetVal()));
-          }
+  for (auto field : historyFieldsAll.GetFieldsByType({HistoryFieldType::COEFFICIENT})){
+    if (SetUpdate_Averages(config)){
+      if (config->GetTime_Domain()){
+        windowedTimeAverages[field->first].addValue(field->second.value, config->GetTimeIter(), config->GetStartWindowIteration());
+        SetHistoryOutputValue("TAVG_" + field->first, windowedTimeAverages[field->first].WindowedUpdate(config->GetKindWindow()));
+        if (config->GetDirectDiff()){
+          SetHistoryOutputValue("D_TAVG_" + field->first, SU2_TYPE::GetDerivative(windowedTimeAverages[field->first].GetVal()));
         }
       }
-      if (config->GetDirectDiff()){
-        SetHistoryOutputValue("D_" + field->first, SU2_TYPE::GetDerivative(field->second.value));
-      }
+    }
+    if (config->GetDirectDiff()){
+      SetHistoryOutputValue("D_" + field->first, SU2_TYPE::GetDerivative(field->second.value));
     }
   }
 
@@ -1680,8 +1677,6 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
 
   map<string, bool> Average;
   map<string, string> AverageGroupName = {{"BGS_RES", "bgs"},{"RMS_RES","rms"},{"MAX_RES", "max"}};
-
-  const auto& fieldReferences = historyFieldsAll.GetReferencesAll();
 
   for (auto field : historyFieldsAll.GetFieldsByType({HistoryFieldType::RESIDUAL})){
     AddHistoryOutput("REL_" + field->first, "rel" + field->second.fieldName, field->second.screenFormat,
