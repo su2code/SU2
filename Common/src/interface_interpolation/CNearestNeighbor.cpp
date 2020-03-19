@@ -56,7 +56,6 @@ void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
   const auto nMarkerInt = config[donorZone]->GetMarker_n_ZoneInterface()/2;
   const auto nDim = donor_geometry->GetnDim();
 
-  Buffer_Send_nVertex_Donor = new unsigned long [1];
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
 
   vector<vector<DonorInfo> > DonorInfoVec(omp_get_max_threads());
@@ -135,8 +134,7 @@ void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
       }
 
       /*--- Set interpolation coefficients. ---*/
-      target_vertex->SetnDonorPoints(nDonor);
-      target_vertex->Allocate_DonorInfo();
+      target_vertex->Allocate_DonorInfo(nDonor);
 
       for (auto iDonor = 0ul; iDonor < nDonor; ++iDonor) {
         target_vertex->SetInterpDonorPoint(iDonor, donorInfo[iDonor].pidx);
@@ -154,7 +152,6 @@ void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
 
   }
 
-  delete[] Buffer_Send_nVertex_Donor;
   delete[] Buffer_Receive_nVertex_Donor;
 
 }

@@ -30,6 +30,18 @@
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/toolboxes/CSymmetricMatrix.hpp"
 
+#if defined(HAVE_MKL)
+#include "mkl.h"
+#ifndef HAVE_LAPACK
+#define HAVE_LAPACK
+#endif
+#elif defined(HAVE_LAPACK)
+// dgemm(opA, opB, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc)
+extern "C" void dgemm_(const char*, const char*, const int*, const int*, const int*,
+  const passivedouble*, const passivedouble*, const int*, const passivedouble*,
+  const int*, const passivedouble*, passivedouble*, const int*);
+#endif
+
 
 CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
                                            unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
@@ -78,35 +90,35 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
   const int nDim = donor_geometry->GetnDim();
 
   const int nProcessor = size;
-  Buffer_Send_nVertex_Donor = new unsigned long [1];
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
 
   /*--- Process interface patches in parallel, fetch all donor point coordinates,
    *    then distribute interpolation matrix computation over ranks and threads.
    *    To avoid repeating calls to Collect_VertexInfo we also save the global
    *    indices of the donor points and the mpi rank index that owns them. ---*/
-  vector<su2activematrix> DonorCoordinates(nMarkerInt);
-  vector<vector<long> > DonorGlobalPoint(nMarkerInt);
-  vector<vector<int> > DonorProcessor(nMarkerInt);
-  vector<int> AssignedProcessor(nMarkerInt,-1);
-  vector<unsigned long> TotalWork(nProcessor,0);
+
+  vector<su2activematrix> donorCoordinates(nMarkerInt);
+  vector<vector<long> > donorGlobalPoint(nMarkerInt);
+  vector<vector<int> > donorProcessor(nMarkerInt);
+  vector<int> assignedProcessor(nMarkerInt,-1);
+  vector<unsigned long> totalWork(nProcessor,0);
 
   for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; ++iMarkerInt) {
 
     /*--- On the donor side: find the tag of the boundary sharing the interface. ---*/
-    const auto mark_donor = Find_InterfaceMarker(config[donorZone], iMarkerInt+1);
+    const auto markDonor = Find_InterfaceMarker(config[donorZone], iMarkerInt+1);
 
     /*--- On the target side: find the tag of the boundary sharing the interface. ---*/
-    const auto mark_target = Find_InterfaceMarker(config[targetZone], iMarkerInt+1);
+    const auto markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt+1);
 
     /*--- If the zone does not contain the interface continue to the next pair of markers. ---*/
-    if(!CheckInterfaceBoundary(mark_donor,mark_target)) continue;
+    if(!CheckInterfaceBoundary(markDonor,markTarget)) continue;
 
     unsigned long nVertexDonor = 0;
-    if(mark_donor != -1) nVertexDonor = donor_geometry->GetnVertex(mark_donor);
+    if(markDonor != -1) nVertexDonor = donor_geometry->GetnVertex(markDonor);
 
     /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor. ---*/
-    Determine_ArraySize(false, mark_donor, mark_target, nVertexDonor, nDim);
+    Determine_ArraySize(false, markDonor, markTarget, nVertexDonor, nDim);
 
     /*--- Compute total number of donor vertices. ---*/
     auto nGlobalVertexDonor = accumulate(Buffer_Receive_nVertex_Donor,
@@ -118,24 +130,24 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
     Buffer_Receive_Coord = new su2double [ nProcessor * MaxLocalVertex_Donor * nDim ];
     Buffer_Receive_GlobalPoint = new long [ nProcessor * MaxLocalVertex_Donor ];
 
-    Collect_VertexInfo(false, mark_donor, mark_target, nVertexDonor, nDim);
+    Collect_VertexInfo(false, markDonor, markTarget, nVertexDonor, nDim);
 
     /*--- Compresses the gathered donor point information to simplify computations. ---*/
-    auto& DonorCoord = DonorCoordinates[iMarkerInt];
-    auto& DonorPoint = DonorGlobalPoint[iMarkerInt];
-    auto& DonorProc = DonorProcessor[iMarkerInt];
-    DonorCoord.resize(nGlobalVertexDonor, nDim);
-    DonorPoint.resize(nGlobalVertexDonor);
-    DonorProc.resize(nGlobalVertexDonor);
+    auto& donorCoord = donorCoordinates[iMarkerInt];
+    auto& donorPoint = donorGlobalPoint[iMarkerInt];
+    auto& donorProc = donorProcessor[iMarkerInt];
+    donorCoord.resize(nGlobalVertexDonor, nDim);
+    donorPoint.resize(nGlobalVertexDonor);
+    donorProc.resize(nGlobalVertexDonor);
 
     auto iCount = 0ul;
     for (int iProcessor = 0; iProcessor < nProcessor; ++iProcessor) {
       auto offset = iProcessor * MaxLocalVertex_Donor;
       for (auto iVertex = 0ul; iVertex < Buffer_Receive_nVertex_Donor[iProcessor]; ++iVertex) {
         for (int iDim = 0; iDim < nDim; ++iDim)
-          DonorCoord(iCount,iDim) = Buffer_Receive_Coord[(offset+iVertex)*nDim + iDim];
-        DonorPoint[iCount] = Buffer_Receive_GlobalPoint[offset+iVertex];
-        DonorProc[iCount] = iProcessor;
+          donorCoord(iCount,iDim) = Buffer_Receive_Coord[(offset+iVertex)*nDim + iDim];
+        donorPoint[iCount] = Buffer_Receive_GlobalPoint[offset+iVertex];
+        donorProc[iCount] = iProcessor;
         ++iCount;
       }
     }
@@ -149,13 +161,14 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
     /*--- Static work scheduling over ranks based on which one has less work currently. ---*/
     int iProcessor = 0;
     for (int i = 1; i < nProcessor; ++i)
-      if (TotalWork[i] < TotalWork[iProcessor]) iProcessor = i;
+      if (totalWork[i] < totalWork[iProcessor]) iProcessor = i;
 
-    TotalWork[iProcessor] += pow(nGlobalVertexDonor,3); // based on matrix inversion.
+    totalWork[iProcessor] += pow(nGlobalVertexDonor,3); // based on matrix inversion.
 
-    AssignedProcessor[iMarkerInt] = iProcessor;
+    assignedProcessor[iMarkerInt] = iProcessor;
 
   }
+  delete[] Buffer_Receive_nVertex_Donor;
 
   /*--- Compute the interpolation matrices for each patch of coordinates
    *    assigned to the rank. Subdivide work further by threads. ---*/
@@ -165,9 +178,9 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
 
   SU2_OMP_PARALLEL_(for schedule(dynamic,1))
   for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; ++iMarkerInt) {
-    if (rank == AssignedProcessor[iMarkerInt]) {
+    if (rank == assignedProcessor[iMarkerInt]) {
       ComputeGeneratorMatrix(kindRBF, usePolynomial, paramRBF,
-                             DonorCoordinates[iMarkerInt], nPolynomialVec[iMarkerInt],
+                             donorCoordinates[iMarkerInt], nPolynomialVec[iMarkerInt],
                              keepPolynomialRowVec[iMarkerInt], CinvTrucVec[iMarkerInt]);
     }
   }
@@ -177,25 +190,25 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
   for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
 
     /*--- Identify the rank that computed the interpolation matrix for this marker. ---*/
-    const int iProcessor = AssignedProcessor[iMarkerInt];
+    const int iProcessor = assignedProcessor[iMarkerInt];
     /*--- If no processor was assigned to work, the zone does not contain the interface. ---*/
     if (iProcessor < 0) continue;
 
     /*--- Setup target information. ---*/
-    const int mark_target = Find_InterfaceMarker(config[targetZone], iMarkerInt+1);
+    const int markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt+1);
     unsigned long nVertexTarget = 0;
-    if(mark_target != -1) nVertexTarget = target_geometry->GetnVertex(mark_target);
+    if(markTarget != -1) nVertexTarget = target_geometry->GetnVertex(markTarget);
 
     /*--- Set references to donor information. ---*/
-    auto& DonorCoord = DonorCoordinates[iMarkerInt];
-    auto& DonorPoint = DonorGlobalPoint[iMarkerInt];
-    auto& DonorProc = DonorProcessor[iMarkerInt];
+    auto& donorCoord = donorCoordinates[iMarkerInt];
+    auto& donorPoint = donorGlobalPoint[iMarkerInt];
+    auto& donorProc = donorProcessor[iMarkerInt];
 
     auto& C_inv_trunc = CinvTrucVec[iMarkerInt];
     auto& nPolynomial = nPolynomialVec[iMarkerInt];
     auto& keepPolynomialRow = keepPolynomialRowVec[iMarkerInt];
 
-    const auto nGlobalVertexDonor = DonorCoord.rows();
+    const auto nGlobalVertexDonor = donorCoord.rows();
 
 #ifdef HAVE_MPI
     /*--- For simplicity, broadcast small information about the interpolation matrix. ---*/
@@ -221,85 +234,118 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
     }
 #endif
 
-    /*--- Compute H (interpolation) matrix, distributing
-     *    target points over the threads in the rank. ---*/
+    /*--- Compute interpolation matrix (H). This is a large matrix-matrix product with
+     *    the generator matrix (C_inv_trunc) on the right. We avoid instantiation
+     *    of the entire function matrix (A) and of the result (H), but work
+     *    on a slab (set of rows) of A/H to amortize accesses to C_inv_trunc. ---*/
+
+    /*--- Fetch domain target vertices. ---*/
+
+    vector<CVertex*> targetVertices; targetVertices.reserve(nVertexTarget);
+    vector<const su2double*> targetCoord; targetCoord.reserve(nVertexTarget);
+
+    for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; ++iVertexTarget) {
+
+      auto targetVertex = target_geometry->vertex[markTarget][iVertexTarget];
+      auto pointTarget = targetVertex->GetNode();
+
+      if (target_geometry->node[pointTarget]->GetDomain()) {
+        targetVertices.push_back(targetVertex);
+        targetCoord.push_back(target_geometry->node[pointTarget]->GetCoord());
+      }
+    }
+    nVertexTarget = targetVertices.size();
+
+    /*--- Distribute target slabs over the threads in the rank for processing. ---*/
+
     SU2_OMP_PARALLEL
-    {
-    su2passivevector coeff_vec(nGlobalVertexDonor);
+    if (nVertexTarget > 0) {
 
-    SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget, 2*omp_get_max_threads()))
-    for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; iVertexTarget++) {
+    constexpr unsigned long targetSlabSize = 32;
 
-      auto target_vertex = target_geometry->vertex[mark_target][iVertexTarget];
-      const auto point_target = target_vertex->GetNode();
+    su2passivematrix funcMat(targetSlabSize, 1+nPolynomial+nGlobalVertexDonor);
+    su2passivematrix interpMat(targetSlabSize, nGlobalVertexDonor);
 
-      /*--- If not domain point move to next. ---*/
-      if (!target_geometry->node[point_target]->GetDomain()) continue;
+    SU2_OMP_FOR_DYN(1)
+    for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; iVertexTarget += targetSlabSize) {
 
-      const su2double* coord_i = target_geometry->node[point_target]->GetCoord();
+      const auto iLastVertex = min(nVertexTarget, iVertexTarget+targetSlabSize);
+      const auto slabSize = iLastVertex - iVertexTarget;
 
-      /*--- Multiply target vector by C_inv_trunc to obtain the interpolation coefficients.
-       *    The target vector is not stored, we consume its entries immediately to avoid
-       *    strided access to C_inv_trunc (as it is row-major). ---*/
+      /*--- Prepare matrix of functions A (the targets to donors matrix). ---*/
 
       /*--- Polynominal part: ---*/
       if (usePolynomial) {
         /*--- Constant term. ---*/
-        for (auto j = 0ul; j < nGlobalVertexDonor; ++j)
-          coeff_vec(j) = C_inv_trunc(0,j);
+        for (auto k = 0ul; k < slabSize; ++k) funcMat(k,0) = 1.0;
 
         /*--- Linear terms. ---*/
         for (int iDim = 0, idx = 1; iDim < nDim; ++iDim) {
           /*--- Of which one may have been excluded. ---*/
           if (!keepPolynomialRow[iDim]) continue;
-          for (auto j = 0ul; j < nGlobalVertexDonor; ++j)
-            coeff_vec(j) += SU2_TYPE::GetValue(coord_i[iDim]) * C_inv_trunc(idx,j);
+          for (auto k = 0ul; k < slabSize; ++k)
+            funcMat(k, idx) = SU2_TYPE::GetValue(targetCoord[iVertexTarget+k][iDim]);
           idx += 1;
         }
       }
-      else {
-        /*--- Initialize vector to zero. ---*/
-        for (auto j = 0ul; j < nGlobalVertexDonor; ++j) coeff_vec(j) = 0.0;
-      }
-
       /*--- RBF terms: ---*/
       for (auto iVertexDonor = 0ul; iVertexDonor < nGlobalVertexDonor; ++iVertexDonor) {
-        auto w_ij = SU2_TYPE::GetValue(Get_RadialBasisValue(kindRBF, paramRBF,
-                    PointsDistance(nDim, coord_i, DonorCoord[iVertexDonor])));
-
-        for (auto j = 0ul; j < nGlobalVertexDonor; ++j)
-          coeff_vec(j) += w_ij * C_inv_trunc(1+nPolynomial+iVertexDonor, j);
-      }
-
-      /*--- Prune small coefficients. ---*/
-      auto nnz = PruneSmallCoefficients(SU2_TYPE::GetValue(pruneTol), coeff_vec);
-
-      /*--- Allocate and set donor information for this target point. ---*/
-      target_vertex->SetnDonorPoints(nnz);
-      target_vertex->Allocate_DonorInfo();
-
-      for (unsigned long iVertex = 0, iSet = 0; iVertex < nGlobalVertexDonor; ++iVertex) {
-        if (fabs(coeff_vec(iVertex)) > 0.0) {
-          target_vertex->SetInterpDonorProcessor(iSet, DonorProc[iVertex]);
-          target_vertex->SetInterpDonorPoint(iSet, DonorPoint[iVertex]);
-          target_vertex->SetDonorCoeff(iSet, coeff_vec(iVertex));
-          ++iSet;
+        for (auto k = 0ul; k < slabSize; ++k) {
+          auto dist = PointsDistance(nDim, targetCoord[iVertexTarget+k], donorCoord[iVertexDonor]);
+          auto rbf = Get_RadialBasisValue(kindRBF, paramRBF, dist);
+          funcMat(k, 1+nPolynomial+iVertexDonor) = SU2_TYPE::GetValue(rbf);
         }
       }
 
+      /*--- Compute slab of the interpolation matrix. ---*/
+#ifdef HAVE_LAPACK
+      /*--- interpMat = funcMat * C_inv_trunc, but order of gemm arguments
+       *    is swapped due to row-major storage of su2passivematrix. ---*/
+      const char op = 'N';
+      const int M = interpMat.cols(), N = slabSize, K = funcMat.cols();
+      // lda = C_inv_trunc.cols() = M; ldb = funcMat.cols() = K; ldc = interpMat.cols() = M;
+      const passivedouble alpha = 1.0, beta = 0.0;
+      dgemm_(&op, &op, &M, &N, &K, &alpha, C_inv_trunc[0], &M, funcMat[0], &K, &beta, interpMat[0], &M);
+#else
+      /*--- Naive product, loop order considers short-wide
+       *    nature of funcMat and interpMat. ---*/
+      interpMat = 0.0;
+      for (auto k = 0ul; k < funcMat.cols(); ++k)
+        for (auto i = 0ul; i < slabSize; ++i)
+          for (auto j = 0ul; j < interpMat.cols(); ++j)
+            interpMat(i,j) += funcMat(i,k) * C_inv_trunc(k,j);
+#endif
+      /*--- Set interpolation coefficients. ---*/
+
+      for (auto k = 0ul; k < slabSize; ++k) {
+        auto targetVertex = targetVertices[iVertexTarget+k];
+
+        /*--- Prune small coefficients. ---*/
+        auto nnz = PruneSmallCoefficients(SU2_TYPE::GetValue(pruneTol), interpMat.cols(), interpMat[k]);
+
+        /*--- Allocate and set donor information for this target point. ---*/
+        targetVertex->Allocate_DonorInfo(nnz);
+
+        for (unsigned long iVertex = 0, iSet = 0; iVertex < nGlobalVertexDonor; ++iVertex) {
+          auto coeff = interpMat(k,iVertex);
+          if (fabs(coeff) > 0.0) {
+            targetVertex->SetInterpDonorProcessor(iSet, donorProc[iVertex]);
+            targetVertex->SetInterpDonorPoint(iSet, donorPoint[iVertex]);
+            targetVertex->SetDonorCoeff(iSet, coeff);
+            ++iSet;
+          }
+        }
+      }
     } // end target vertex loop
     } // end SU2_OMP_PARALLEL
 
-    /*--- Delete global data that will no longer be used. ---*/
-    DonorCoord.resize(0,0);
-    vector<long>().swap(DonorPoint);
-    vector<int>().swap(DonorProc);
+    /*--- Free global data that will no longer be used. ---*/
+    donorCoord.resize(0,0);
+    vector<long>().swap(donorPoint);
+    vector<int>().swap(donorProc);
     C_inv_trunc.resize(0,0);
 
   } // end loop over interface markers
-
-  delete[] Buffer_Send_nVertex_Donor;
-  delete[] Buffer_Receive_nVertex_Donor;
 
 }
 
@@ -459,31 +505,4 @@ int CRadialBasisFunction::CheckPolynomialTerms(su2double max_diff_tol, vector<in
   }
 
   return n_polynomial;
-}
-
-int CRadialBasisFunction::PruneSmallCoefficients(passivedouble tolerance,
-                                                 su2passivevector& coeffs) {
-
-  /*--- Determine the pruning threshold. ---*/
-  passivedouble thresh = 0.0;
-  for (auto i = 0ul; i < coeffs.size(); ++i)
-    thresh = max(thresh, fabs(coeffs(i)));
-  thresh *= tolerance;
-
-  /*--- Prune and count non-zeros. ---*/
-  int numNonZeros = 0;
-  passivedouble coeffSum = 0.0;
-  for (auto i = 0ul; i < coeffs.size(); ++i) {
-    if (fabs(coeffs(i)) > thresh) {
-      coeffSum += coeffs(i);
-      ++numNonZeros;
-    }
-    else coeffs(i) = 0.0;
-  }
-
-  /*--- Correct remaining coefficients, sum must be 1 for conservation. ---*/
-  passivedouble correction = 1.0 / coeffSum;
-  for (auto i = 0ul; i < coeffs.size(); ++i) coeffs(i) *= correction;
-
-  return numNonZeros;
 }

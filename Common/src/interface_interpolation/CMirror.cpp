@@ -39,9 +39,6 @@ void CMirror::Set_TransferCoeff(const CConfig* const* config) {
 
   const int nProcessor = size;
 
-  Buffer_Send_nFace_Donor= new unsigned long [1];
-  Buffer_Send_nFaceNodes_Donor= new unsigned long [1];
-
   Buffer_Receive_nFace_Donor = new unsigned long [nProcessor];
   Buffer_Receive_nFaceNodes_Donor = new unsigned long [nProcessor];
 
@@ -158,8 +155,7 @@ void CMirror::Set_TransferCoeff(const CConfig* const* config) {
         }
       }
 
-      target_vertex->SetnDonorPoints(nNodes);
-      target_vertex->Allocate_DonorInfo();
+      target_vertex->Allocate_DonorInfo(nNodes);
 
       for (int iProcessor = 0, iDonor = 0; iProcessor < nProcessor; iProcessor++) {
         for (auto iFace = 0ul; iFace < Buffer_Receive_nFace_Donor[iProcessor]; iFace++) {
@@ -191,9 +187,6 @@ void CMirror::Set_TransferCoeff(const CConfig* const* config) {
     delete[] Buffer_Receive_GlobalPoint;
     delete[] Buffer_Receive_Coeff;
   }
-
-  delete[] Buffer_Send_nFace_Donor;
-  delete[] Buffer_Send_nFaceNodes_Donor;
 
   delete[] Buffer_Receive_nFace_Donor;
   delete[] Buffer_Receive_nFaceNodes_Donor;

@@ -35,6 +35,8 @@
  */
 class CRadialBasisFunction final : public CInterpolator {
 public:
+  static_assert(su2passivematrix::Storage == StorageType::RowMajor,
+                "This class does not work otherwise.");
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -89,12 +91,39 @@ public:
   static int CheckPolynomialTerms(su2double max_diff_tol, vector<int>& keep_row, su2passivematrix &P);
 
   /*!
-   * \brief Prunes (by setting to zero) small interpolation coefficients, i.e.
-   * <= tolerance*max(abs(coeffs)). The vector is re-scaled such that sum(coeffs)==1.
+   * \brief Helper function, prunes (by setting to zero) small interpolation coefficients,
+   * i.e. <= tolerance*max(abs(coeffs)). The vector is re-scaled such that sum(coeffs)==1.
    * \param[in] tolerance - Relative pruning tolerance.
-   * \param[in,out] coeffs - The vector of interpolation coefficients.
+   * \param[in] size - Size of the coefficient vector.
+   * \param[in,out] coeffs - Iterator to start of vector of interpolation coefficients.
    * \return Number of non-zero coefficients after pruning.
    */
-  static int PruneSmallCoefficients(passivedouble tolerance, su2passivevector& coeffs);
+  template<class ForwardIt, typename Int, typename Float>
+  static Int PruneSmallCoefficients(Float tolerance, Int size, ForwardIt coeffs) {
+
+    /*--- Determine the pruning threshold. ---*/
+    Float thresh = 0.0;
+    auto end = coeffs;
+    for (Int i = 0; i < size; ++i)
+      thresh = max(thresh, fabs(*(++end)));
+    thresh *= tolerance;
+
+    /*--- Prune and count non-zeros. ---*/
+    Int numNonZeros = 0;
+    Float coeffSum = 0.0;
+    for (auto it = coeffs; it != end; ++it) {
+      if (fabs(*it) > thresh) { // keep
+        coeffSum += *it;
+        ++numNonZeros;
+      }
+      else { *it = 0.0; } // prune
+    }
+
+    /*--- Correct remaining coefficients, sum must be 1 for conservation. ---*/
+    Float correction = 1.0 / coeffSum;
+    for (auto it = coeffs; it != end; ++it) *it *= correction;
+
+    return numNonZeros;
+  }
 
 };

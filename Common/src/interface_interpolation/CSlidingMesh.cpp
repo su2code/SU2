@@ -412,9 +412,7 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
 
           /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
 
-          target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nDonorPoints);
-
-          target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+          target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo(nDonorPoints);
 
           for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){
             target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]);
@@ -685,8 +683,7 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
 
         /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
 
-        target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nDonorPoints);
-        target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+        target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo(nDonorPoints);
 
         for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){
           target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]/Area);

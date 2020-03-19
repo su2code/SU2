@@ -77,10 +77,6 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
   Coord = new su2double[nDim];
   Normal = new su2double[nDim];
 
-  Buffer_Send_nVertex_Donor    = new unsigned long [1];
-  Buffer_Send_nFace_Donor      = new unsigned long [1];
-  Buffer_Send_nFaceNodes_Donor = new unsigned long [1];
-
   Buffer_Receive_nVertex_Donor    = new unsigned long [nProcessor];
   Buffer_Receive_nFace_Donor      = new unsigned long [nProcessor];
   Buffer_Receive_nFaceNodes_Donor = new unsigned long [nProcessor];
@@ -259,7 +255,7 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
           /*--- ---*/
 
           nNodes = (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1] -
-                  (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace];
+                   (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace];
 
           su2double *X = new su2double[nNodes*(nDim+1)];
           faceindex = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace]; // first index of this face
@@ -314,7 +310,6 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
             /*--- Store info ---*/
             donor_elem = temp_donor;
             target_geometry->vertex[markTarget][iVertex]->SetDonorElem(donor_elem); // in 2D is nearest neighbor
-            target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nNodes);
             for (iDonor=0; iDonor<nNodes; iDonor++) {
               storeCoeff[iDonor] = myCoeff[iDonor];
               jVertex = Buffer_Receive_FaceNodes[faceindex+iDonor];
@@ -326,9 +321,9 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
           delete [] X;
         }
       }
+
       /*--- Set the appropriate amount of memory and fill ---*/
-      nNodes =target_geometry->vertex[markTarget][iVertex]->GetnDonorPoints();
-      target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+      target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo(nNodes);
 
       for (iDonor=0; iDonor<nNodes; iDonor++) {
         target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(iDonor,storeGlobal[iDonor]);
@@ -354,10 +349,6 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
     delete[] Buffer_Receive_FaceNodes;
     delete[] Buffer_Receive_FaceProc;
   }
-
-  delete[] Buffer_Send_nVertex_Donor;
-  delete[] Buffer_Send_nFace_Donor;
-  delete[] Buffer_Send_nFaceNodes_Donor;
 
   delete[] Buffer_Receive_nVertex_Donor;
   delete[] Buffer_Receive_nFace_Donor;

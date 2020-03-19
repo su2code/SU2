@@ -34,15 +34,13 @@
 #define HAVE_LAPACK
 #endif
 #elif defined(HAVE_LAPACK)
-/*--- Lapack / Blas routines used in RBF interpolation. ---*/
-extern "C" void dsptrf_(char*, int*, passivedouble*, int*, int*);
-extern "C" void dsptri_(char*, int*, passivedouble*, int*, passivedouble*, int*);
-extern "C" void dsytrf_(char*, int*, passivedouble*, int*, int*, passivedouble*, int*, int*);
-extern "C" void dsytri_(char*, int*, passivedouble*, int*, int*, passivedouble*, int*);
-extern "C" void dpotrf_(char*, int*, passivedouble*, int*, int*);
-extern "C" void dpotri_(char*, int*, passivedouble*, int*, int*);
-extern "C" void dsymm_(char*, char*, int*, int*, passivedouble*, passivedouble*, int*,
-                       passivedouble*, int*, passivedouble*, passivedouble*, int*);
+/*--- Lapack / Blas routines used in CSymmetricMatrix. ---*/
+extern "C" void dsytrf_(const char*, const int*, passivedouble*, const int*, int*, passivedouble*, const int*, int*);
+extern "C" void dsytri_(const char*, const int*, passivedouble*, const int*, const int*, passivedouble*, int*);
+extern "C" void dpotrf_(const char*, const int*, passivedouble*, const int*, int*);
+extern "C" void dpotri_(const char*, const int*, passivedouble*, const int*, int*);
+extern "C" void dsymm_(const char*, const char*, const int*, const int*, const passivedouble*, const passivedouble*,
+                       const int*, const passivedouble*, const int*, const passivedouble*, passivedouble*, const int*);
 #endif
 
 
@@ -283,10 +281,10 @@ void CSymmetricMatrix::MatMatMult(const char side,
       val_vec.data(), M, mat_in.data(), N, beta, mat_out.data(), N);
 #else // BLAS/LAPACK
     /*--- Right and lower because matrices are in row major order. ---*/
-    char side = 'R', uplo = 'L';
-    passivedouble alpha = 1.0, beta = 0.0;
-    dsymm_(&side, &uplo, &N, &M, &alpha, const_cast<passivedouble*>(val_vec.data()),
-      &M, const_cast<passivedouble*>(mat_in.data()), &N, &beta, mat_out.data(), &N);
+    const char side = 'R', uplo = 'L';
+    const passivedouble alpha = 1.0, beta = 0.0;
+    dsymm_(&side, &uplo, &N, &M, &alpha, val_vec.data(), &M,
+           mat_in.data(), &N, &beta, mat_out.data(), &N);
 #endif
   }
   /*--- Right_side: mat_out = mat_in * this. ---*/
@@ -309,10 +307,10 @@ void CSymmetricMatrix::MatMatMult(const char side,
       val_vec.data(), N, mat_in.data(), N, beta, mat_out.data(), N);
 #else // BLAS/LAPACK
     /*--- Left and lower because matrices are in row major order. ---*/
-    char side = 'L', uplo = 'L';
-    passivedouble alpha = 1.0, beta = 0.0;
-    dsymm_(&side, &uplo, &N, &M, &alpha, const_cast<passivedouble*>(val_vec.data()),
-      &N, const_cast<passivedouble*>(mat_in.data()), &N, &beta, mat_out.data(), &N);
+    const char side = 'L', uplo = 'L';
+    const passivedouble alpha = 1.0, beta = 0.0;
+    dsymm_(&side, &uplo, &N, &M, &alpha, val_vec.data(), &N,
+           mat_in.data(), &N, &beta, mat_out.data(), &N);
 #endif
   }
 

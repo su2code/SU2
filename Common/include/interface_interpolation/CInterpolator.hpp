@@ -55,9 +55,9 @@ protected:
   *Buffer_Receive_nVertex_Donor,     /*!< \brief Buffer to store the number of vertices per processor on the Donor domain */
   *Buffer_Receive_nFace_Donor,       /*!< \brief Buffer to store the number of faces per processor*/
   *Buffer_Receive_nFaceNodes_Donor,  /*!< \brief Buffer to store the number of nodes associated with faces per processor*/
-  *Buffer_Send_nVertex_Donor,        /*!< \brief Buffer to send number of vertices on the local processor*/
-  *Buffer_Send_nFace_Donor,          /*!< \brief Buffer to send number of faces on the local processor*/
-  *Buffer_Send_nFaceNodes_Donor,     /*!< \brief Buffer to send the number of nodes assocated with faces per processor*/
+  Buffer_Send_nVertex_Donor[1],      /*!< \brief Buffer to send number of vertices on the local processor*/
+  Buffer_Send_nFace_Donor[1],        /*!< \brief Buffer to send number of faces on the local processor*/
+  Buffer_Send_nFaceNodes_Donor[1],   /*!< \brief Buffer to send the number of nodes assocated with faces per processor*/
   *Buffer_Send_FaceIndex,            /*!< \brief Buffer to send indices pointing to the node indices that define the faces*/
   *Buffer_Receive_FaceIndex,         /*!< \brief Buffer to receive indices pointing to the node indices that define the faces*/
   *Buffer_Send_FaceNodes,            /*!< \brief Buffer to send indices pointing to the location of node information in other buffers, defining faces*/
