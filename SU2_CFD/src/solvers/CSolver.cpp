@@ -5214,7 +5214,7 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
   su2double hesTet[6];
   su2double Crd[4][3], Grad[4][3][nVar];
 
-  //--- note: currently only implemented for Tri
+  //--- note: currently only implemented for Tet
 
   for (iElem=0; iElem<nElem; ++iElem) {
     for (unsigned short iNode=0; iNode<4; ++iNode) {
