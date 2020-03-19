@@ -68,7 +68,7 @@ void CSymmetricMatrix::CholeskyDecompose()
 #endif
 }
 
-void CSymmetricMatrix::LUDecompose(su2activematrix& decomp, vector<int>& perm) const
+void CSymmetricMatrix::LUDecompose(su2passivematrix& decomp, vector<int>& perm) const
 {
 #ifndef HAVE_LAPACK
   const int sz = Size();
@@ -205,8 +205,6 @@ void CSymmetricMatrix::CalcInv_sytri()
   if (info!=0) SU2_MPI::Error("LDLT factorization failed.", CURRENT_FUNCTION);
   dsytri_(&uplo, &sz, mat.data(), &sz, ipiv.data(), work.data(), &info);
   if (info!=0) SU2_MPI::Error("Inversion with LDLT factorization failed.", CURRENT_FUNCTION);
-
-  decomposed = NONE;
 #endif
 }
 
@@ -221,8 +219,6 @@ void CSymmetricMatrix::CalcInv_potri()
   if (info!=0) SU2_MPI::Error("LLT factorization failed.", CURRENT_FUNCTION);
   dpotri_(&uplo, &sz, mat.data(), &sz, &info);
   if (info!=0) SU2_MPI::Error("Inversion with LLT factorization failed.", CURRENT_FUNCTION);
-
-  decomposed = NONE;
 #endif
 }
 

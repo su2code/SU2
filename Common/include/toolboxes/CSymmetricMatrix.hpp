@@ -45,7 +45,7 @@ private:
   // Not optimized dense matrix factorization and inversion for portability.
   void CalcInv(bool is_spd);
   void CholeskyDecompose();
-  void LUDecompose(su2activematrix& decomp, vector<int>& perm) const;
+  void LUDecompose(su2passivematrix& decomp, vector<int>& perm) const;
   // Matrix inversion using LAPACK routines (LDLT and LLT factorization).
   void CalcInv_sytri();
   void CalcInv_potri();
