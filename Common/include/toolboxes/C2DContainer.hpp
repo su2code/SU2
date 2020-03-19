@@ -371,6 +371,7 @@ public:
   using Base::size;
   using Index = Index_t;
   using Scalar = Scalar_t;
+  static constexpr StorageType Storage = Store;
 
 private:
   /*!

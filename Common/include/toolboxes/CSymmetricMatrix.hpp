@@ -81,9 +81,19 @@ public:
 
   inline const passivedouble& operator() (int i, int j) const { return val_vec[IdxSym(i,j)]; }
 
-  void MatVecMult(passivedouble *v) const;
+  template<class ForwardIt>
+  void MatVecMult(ForwardIt vec_in, ForwardIt vec_out) const
+  {
+    for (int i = 0; i < sz; ++i) {
+      *vec_out = 0.0;
+      auto vec = vec_in;
+      for (int k = 0; k < sz; ++k)
+        *vec_out += *(vec++) * Get(i,k);
+      ++vec_out;
+    }
+  }
 
-  void MatMatMult(const char side, su2passivematrix& mat_in, su2passivematrix& mat_out);
+  void MatMatMult(const char side, const su2passivematrix& mat_in, su2passivematrix& mat_out) const;
 
   void Invert(const bool is_spd);
 

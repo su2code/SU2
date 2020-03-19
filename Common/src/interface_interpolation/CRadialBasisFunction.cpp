@@ -401,6 +401,7 @@ int CRadialBasisFunction::CheckPolynomialTerms(su2double max_diff_tol, vector<in
 
   /*--- By default assume points are not on a plane (all rows kept). ---*/
   int n_polynomial = n_rows;
+  keep_row.resize(n_rows);
   for (int i = 0; i < n_rows; ++i) keep_row[i] = 1;
 
   /*--- Fit a plane through the points in P. ---*/
@@ -416,14 +417,14 @@ int CRadialBasisFunction::CheckPolynomialTerms(su2double max_diff_tol, vector<in
   PPT.Invert(true);
 
   /*--- RHS for the least squares fit (vector of ones times P). ---*/
-  vector<passivedouble> coeff(n_rows,0.0);
+  vector<passivedouble> rhs(n_rows,0.0), coeff(n_rows);
 
   for (int i = 0; i < n_rows; ++i)
     for (int j = 0; j < n; ++j)
-      coeff[i] += P(i+1,j);
+      rhs[i] += P(i+1,j);
 
   /*--- Multiply the RHS by the inverse thus obtaining the coefficients. ---*/
-  PPT.MatVecMult(coeff.data());
+  PPT.MatVecMult(rhs.begin(), coeff.begin());
 
   /*--- Determine the maximum deviation of the points from the fitted plane. ---*/
   passivedouble max_diff = 0.0;

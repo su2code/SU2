@@ -43,7 +43,7 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
 
   bool check;
 
-  unsigned short iDim, nDim;
+  unsigned short iDim;
 
   unsigned long ii, jj, *uptr;
   unsigned long vPoint;
@@ -97,17 +97,17 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
 
   /* 1 - Variable pre-processing */
 
-  nDim = donor_geometry->GetnDim();
+  const unsigned short nDim = donor_geometry->GetnDim();
 
   /*--- Setting up auxiliary vectors ---*/
 
-  Donor_Vect = NULL;
-  Coeff_Vect = NULL;
-  storeProc  = NULL;
+  Donor_Vect = nullptr;
+  Coeff_Vect = nullptr;
+  storeProc  = nullptr;
 
-  tmp_Donor_Vect = NULL;
-  tmp_Coeff_Vect = NULL;
-  tmp_storeProc  = NULL;
+  tmp_Donor_Vect = nullptr;
+  tmp_Coeff_Vect = nullptr;
+  tmp_storeProc  = nullptr;
 
   Normal    = new su2double[nDim];
   Direction = new su2double[nDim];
@@ -289,7 +289,7 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
                                              DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
             }
 
-            LineIntersectionLength = ComputeLineIntersectionLength(target_iMidEdge_point, target_jMidEdge_point,
+            LineIntersectionLength = ComputeLineIntersectionLength(nDim, target_iMidEdge_point, target_jMidEdge_point,
                                                                    donor_iMidEdge_point, donor_jMidEdge_point, Direction);
 
             if ( LineIntersectionLength == 0.0 ){
@@ -313,9 +313,9 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
             tmp_Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;
             tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-            if (Donor_Vect != NULL) delete [] Donor_Vect;
-            if (Coeff_Vect != NULL) delete [] Coeff_Vect;
-            if (storeProc  != NULL) delete [] storeProc;
+            if (Donor_Vect != nullptr) delete [] Donor_Vect;
+            if (Coeff_Vect != nullptr) delete [] Coeff_Vect;
+            if (storeProc  != nullptr) delete [] storeProc;
 
             Donor_Vect = tmp_Donor_Vect;
             Coeff_Vect = tmp_Coeff_Vect;
@@ -372,7 +372,7 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
                                              DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
             }
 
-            LineIntersectionLength = ComputeLineIntersectionLength(target_iMidEdge_point, target_jMidEdge_point,
+            LineIntersectionLength = ComputeLineIntersectionLength(nDim, target_iMidEdge_point, target_jMidEdge_point,
                                                                    donor_iMidEdge_point, donor_jMidEdge_point, Direction);
 
             if ( LineIntersectionLength == 0.0 ){
@@ -396,9 +396,9 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
             tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
             tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-            if (Donor_Vect != NULL) delete [] Donor_Vect;
-            if (Coeff_Vect != NULL) delete [] Coeff_Vect;
-            if (storeProc  != NULL) delete [] storeProc;
+            if (Donor_Vect != nullptr) delete [] Donor_Vect;
+            if (Coeff_Vect != nullptr) delete [] Coeff_Vect;
+            if (storeProc  != nullptr) delete [] storeProc;
 
             Donor_Vect = tmp_Donor_Vect;
             Coeff_Vect = tmp_Coeff_Vect;
@@ -554,7 +554,7 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
 
           Area_old = Area;
 
-          ToVisit = NULL;
+          ToVisit = nullptr;
           nToVisit = 0;
 
           for( iNodeVisited = StartVisited; iNodeVisited < nAlreadyVisited; iNodeVisited++ ){
@@ -578,7 +578,7 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
                 }
               }
 
-              if( check == 0 && ToVisit != NULL){
+              if( check == 0 && ToVisit != nullptr){
                 for( jj = 0; jj < nToVisit; jj++ )
                   if( donor_iPoint == ToVisit[jj] ){
                     check = 1;
@@ -595,11 +595,11 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
                   tmpVect[jj] = ToVisit[jj];
                 tmpVect[nToVisit] = donor_iPoint;
 
-                if( ToVisit != NULL )
+                if( ToVisit != nullptr )
                   delete [] ToVisit;
 
                 ToVisit = tmpVect;
-                tmpVect = NULL;
+                tmpVect = nullptr;
 
                 nToVisit++;
 
@@ -640,17 +640,17 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
                 tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
                 tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-                if (Donor_Vect != NULL) {delete [] Donor_Vect; }
-                if (Coeff_Vect != NULL) {delete [] Coeff_Vect; }
-                if (storeProc  != NULL) {delete [] storeProc;  }
+                if (Donor_Vect != nullptr) {delete [] Donor_Vect; }
+                if (Coeff_Vect != nullptr) {delete [] Coeff_Vect; }
+                if (storeProc  != nullptr) {delete [] storeProc;  }
 
                 Donor_Vect = tmp_Donor_Vect;
                 Coeff_Vect = tmp_Coeff_Vect;
                 storeProc  = tmp_storeProc;
 
-                tmp_Coeff_Vect = NULL;
-                tmp_Donor_Vect = NULL;
-                tmp_storeProc  = NULL;
+                tmp_Coeff_Vect = nullptr;
+                tmp_Donor_Vect = nullptr;
+                tmp_storeProc  = nullptr;
 
                 nDonorPoints++;
 
@@ -671,7 +671,7 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
           for( jj = 0; jj < nToVisit; jj++ )
             tmpVect[ nAlreadyVisited + jj ] = ToVisit[jj];
 
-          if( alreadyVisitedDonor != NULL )
+          if( alreadyVisitedDonor != nullptr )
             delete [] alreadyVisitedDonor;
 
           alreadyVisitedDonor = tmpVect;
@@ -698,9 +698,9 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
           delete [] target_element[ii];
         delete [] target_element;
 
-        delete [] Donor_Vect; Donor_Vect = NULL;
-        delete [] Coeff_Vect; Coeff_Vect = NULL;
-        delete [] storeProc;  storeProc  = NULL;
+        delete [] Donor_Vect; Donor_Vect = nullptr;
+        delete [] Coeff_Vect; Coeff_Vect = nullptr;
+        delete [] storeProc;  storeProc  = nullptr;
       }
     }
 
@@ -723,24 +723,25 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
   delete [] Normal;
   delete [] Direction;
 
-  if (Donor_Vect != NULL) delete [] Donor_Vect;
-  if (Coeff_Vect != NULL) delete [] Coeff_Vect;
-  if (storeProc  != NULL) delete [] storeProc;
+  if (Donor_Vect != nullptr) delete [] Donor_Vect;
+  if (Coeff_Vect != nullptr) delete [] Coeff_Vect;
+  if (storeProc  != nullptr) delete [] storeProc;
 }
 
-int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor,
-                                           su2double *coord, unsigned long centralNode, su2double** element){
+int CSlidingMesh::Build_3D_surface_element(const unsigned long *map, const unsigned long *startIndex,
+                                           const unsigned long* nNeighbor, const su2double *coord,
+                                           unsigned long centralNode, su2double** element) {
 
   /*--- Given a node "centralNode", this routines reconstruct the vertex centered
    *    surface element around the node and store it into "element" ---*/
-  /*--- Returns the number of points included in the element ---*/
 
   unsigned long iNode, jNode, kNode, iElementNode, iPoint, jPoint, nOuterNodes;
 
-  unsigned short nDim = 3, iDim, nTmp;
+  constexpr unsigned short nDim = 3;
+  unsigned short iDim, nTmp;
 
   int NextNode, **OuterNodesNeighbour, CurrentNode, StartIndex, count;
-  unsigned long *OuterNodes, *ptr;
+  const unsigned long *OuterNodes, *ptr;
 
   /* --- Store central node as element first point --- */
 
@@ -841,15 +842,14 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
 
 }
 
-su2double CSlidingMesh::ComputeLineIntersectionLength(su2double* A1, su2double* A2, su2double* B1,
-                                                      su2double* B2, su2double* Direction){
+su2double CSlidingMesh::ComputeLineIntersectionLength(unsigned short nDim, const su2double* A1, const su2double* A2,
+                                                      const su2double* B1, const su2double* B2, const su2double* Direction) {
 
   /*--- Given 2 segments, each defined by 2 points, it projects them along a given direction
    *    and it computes the length of the segment resulting from their intersection ---*/
   /*--- The algorithm works for both 2D and 3D problems ---*/
 
   unsigned short iDim;
-  unsigned short nDim = donor_geometry->GetnDim();
 
   su2double dotA2, dotB1, dotB2;
 
@@ -898,14 +898,15 @@ su2double CSlidingMesh::ComputeLineIntersectionLength(su2double* A1, su2double* 
   return 0.0;
 }
 
-su2double CSlidingMesh::Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3,
-                                                      su2double* B1, su2double* B2, su2double* B3, su2double* Direction){
+su2double CSlidingMesh::Compute_Triangle_Intersection(const su2double* A1, const su2double* A2, const su2double* A3,
+                                                      const su2double* B1, const su2double* B2, const su2double* B3,
+                                                      const su2double* Direction) {
 
   /* --- This routine is ONLY for 3D grids --- */
   /* --- Projects triangle points onto a plane, specified by its normal "Direction", and calls the ComputeIntersectionArea routine --- */
 
   unsigned short iDim;
-  unsigned short nDim = 3;
+  constexpr unsigned short nDim = 3;
 
   su2double I[3], J[3], K[3];
   su2double a1[3], a2[3], a3[3];
@@ -981,21 +982,20 @@ su2double CSlidingMesh::Compute_Triangle_Intersection(su2double* A1, su2double* 
   return ComputeIntersectionArea( a1, a2, a3, b1, b2, b3 );
 }
 
-su2double CSlidingMesh::ComputeIntersectionArea(su2double* P1, su2double* P2, su2double* P3,
-                                                su2double* Q1, su2double* Q2, su2double* Q3 ){
+su2double CSlidingMesh::ComputeIntersectionArea(const su2double* P1, const su2double* P2, const su2double* P3,
+                                                const su2double* Q1, const su2double* Q2, const su2double* Q3) {
 
   /* --- This routines computes the area of the polygonal element generated by the superimposition of 2 planar triangle --- */
   /* --- The 2 triangle must lie on the same plane --- */
 
-  unsigned short iDim, nPoints, i, j, k;
-  unsigned short nDim, min_theta_index;
+  unsigned short iDim, nPoints = 0, i, j, k;
+  unsigned short min_theta_index;
 
   su2double points[16][2], IntersectionPoint[2], theta[6];
   su2double TriangleP[4][2], TriangleQ[4][2];
   su2double Area, det, dot1, dot2, dtmp, min_theta;
 
-  nDim    = 2;
-  nPoints = 0;
+  constexpr unsigned short nDim = 2;
 
   for(iDim = 0; iDim < nDim; iDim++){
     TriangleP[0][iDim] = 0;
@@ -1139,8 +1139,8 @@ su2double CSlidingMesh::ComputeIntersectionArea(su2double* P1, su2double* P2, su
   return fabs(Area)/2;
 }
 
-void CSlidingMesh::ComputeLineIntersectionPoint(su2double* A1, su2double* A2, su2double* B1, su2double* B2,
-                                                su2double* IntersectionPoint ){
+void CSlidingMesh::ComputeLineIntersectionPoint(const su2double* A1, const su2double* A2, const su2double* B1,
+                                                const su2double* B2, su2double* IntersectionPoint ){
 
   /* --- Uses determinant rule to compute the intersection point between 2 straight segments --- */
   /* This works only for lines on a 2D plane, A1, A2 and B1, B2 are respectively the head and the tail points of each segment,
@@ -1156,7 +1156,7 @@ void CSlidingMesh::ComputeLineIntersectionPoint(su2double* A1, su2double* A2, su
   }
 }
 
-bool CSlidingMesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3){
+bool CSlidingMesh::CheckPointInsideTriangle(const su2double* Point, const su2double* T1, const su2double* T2, const su2double* T3) {
 
   /* --- Check whether a point "Point" lies inside or outside a triangle defined by 3 points "T1", "T2", "T3" --- */
   /* For each edge it checks on which side the point lies:
@@ -1166,13 +1166,12 @@ bool CSlidingMesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
    * - If the check is positive for all the 3 edges, then the point lies within the triangle
    */
 
-  unsigned short iDim, nDim, check;
+  unsigned short iDim, check = 0;
 
   su2double vect1[2], vect2[2], r[2];
   su2double dot;
 
-  check = 0;
-  nDim  = 2;
+  constexpr unsigned short nDim  = 2;
 
   /* --- Check first edge --- */
 

@@ -256,25 +256,12 @@ void CSymmetricMatrix::Invert(const bool is_spd)
 #endif
 }
 
-void CSymmetricMatrix::MatVecMult(passivedouble *v) const
-{
-  passivedouble *tmp_res = new passivedouble [sz];
-
-  for (int i=0; i<sz; i++) {
-    tmp_res[i] = 0.0;
-    for (int k=0; k<sz; k++) tmp_res[i] += v[k]*Get(i,k);
-  }
-
-  for (int i=0; i<sz; i++) v[i] = tmp_res[i];
-
-  delete [] tmp_res;
-}
-
 void CSymmetricMatrix::MatMatMult(const char side,
-                                  su2passivematrix& mat_in,
-                                  su2passivematrix& mat_out)
+                                  const su2passivematrix& mat_in,
+                                  su2passivematrix& mat_out) const
 {
-  /*--- Assumes row major storage. ---*/
+  /*--- Assumes row major storage of in/out matrices for LAPACK. ---*/
+  static_assert(su2passivematrix::Storage == StorageType::RowMajor,"");
 
   /*--- Left side: mat_out = this * mat_in. ---*/
   if (side == 'L' || side == 'l') {
@@ -298,8 +285,8 @@ void CSymmetricMatrix::MatMatMult(const char side,
     /*--- Right and lower because matrices are in row major order. ---*/
     char side = 'R', uplo = 'L';
     passivedouble alpha = 1.0, beta = 0.0;
-    dsymm_(&side, &uplo, &N, &M, &alpha, val_vec.data(), &M,
-           mat_in.data(), &N, &beta, mat_out.data(), &N);
+    dsymm_(&side, &uplo, &N, &M, &alpha, const_cast<passivedouble*>(val_vec.data()),
+      &M, const_cast<passivedouble*>(mat_in.data()), &N, &beta, mat_out.data(), &N);
 #endif
   }
   /*--- Right_side: mat_out = mat_in * this. ---*/
@@ -324,8 +311,8 @@ void CSymmetricMatrix::MatMatMult(const char side,
     /*--- Left and lower because matrices are in row major order. ---*/
     char side = 'L', uplo = 'L';
     passivedouble alpha = 1.0, beta = 0.0;
-    dsymm_(&side, &uplo, &N, &M, &alpha, val_vec.data(), &N,
-           mat_in.data(), &N, &beta, mat_out.data(), &N);
+    dsymm_(&side, &uplo, &N, &M, &alpha, const_cast<passivedouble*>(val_vec.data()),
+      &N, const_cast<passivedouble*>(mat_in.data()), &N, &beta, mat_out.data(), &N);
 #endif
   }
 
