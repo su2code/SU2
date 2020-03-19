@@ -5756,7 +5756,7 @@ void CSolver::ViscousMetric(CSolver          **solver,
   }
 
   //--- Add TmpWeights to weights
-  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[iVar] += TmpWeights[iVar];
+  for (unsigned short iVar = 0; iVar < nVarFlo; ++iVar) weights[iVar] += TmpWeights[iVar];
 
 }
 
