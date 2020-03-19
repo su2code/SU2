@@ -39,6 +39,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
+#include "fields/output_fields.hpp"
 
 class CGeometry;
 class CSolver;
@@ -81,49 +82,7 @@ protected:
   char char_histfile[200];  /*! \brief Temporary variable to store the history filename */
   ofstream histFile;        /*! \brief Output file stream for the history */
 
-  /** \brief Enum to identify the screen output format. */
-  enum class ScreenOutputFormat {
-    INTEGER,         /*!< \brief Integer format. Example: 34 */
-    FIXED,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
-    SCIENTIFIC,      /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */
-    PERCENT          /*!< \brief Format with fixed precision for floating point values with a % signs. Example: 99.52% */
-  };
-
-  /** \brief Enum to identify the screen/history field type. */
-  enum class HistoryFieldType {
-    RESIDUAL,         /*!< \brief A user-defined residual field type*/
-    AUTO_RESIDUAL,    /*!< \brief An automatically generated residual field type */
-    COEFFICIENT,      /*!< \brief User defined coefficient field type  */
-    AUTO_COEFFICIENT, /*!< \brief Automatically generated coefficient field type  */
-    DEFAULT           /*!< \brief Default field type */
-  };
-
-  /** \brief Structure to store information for a history output field.
-   *
-   *  The stored information is printed to the history file and to screen.
-   * Each individual instance represents a single field (i.e. column) in the history file or on screen.
-   */
-  struct HistoryOutputField {
-    /*! \brief The name of the field, i.e. the name that is printed in the screen or file header.*/
-    string              fieldName = "";
-    /*! \brief The value of the field. */
-    su2double           value = 0.0;
-    /*! \brief The format that is used to print this value to screen. */
-    ScreenOutputFormat  screenFormat = ScreenOutputFormat::FIXED;
-    /*! \brief The group this field belongs to. */
-    string              outputGroup  ="";
-    /*! \brief The field type*/
-    HistoryFieldType     fieldType = HistoryFieldType::DEFAULT;
-    /*! \brief String containing the description of the field */
-    string              description = "";
-    /*! \brief Default constructor. */
-    HistoryOutputField() {}
-    /*! \brief Constructor to initialize all members. */
-    HistoryOutputField(string fieldName_, ScreenOutputFormat screenFormat_, string OutputGroup_,
-                       HistoryFieldType fieldType_, string description_):
-      fieldName(std::move(fieldName_)), value(0.0), screenFormat(screenFormat_),
-      outputGroup(std::move(OutputGroup_)), fieldType(fieldType_), description(std::move(description_)){}
-  };
+  COutFieldCollection historyFieldsAll;
 
   /*! \brief Associative map to access data stored in the history output fields by a string identifier. */
   std::map<string, HistoryOutputField >         historyOutput_Map;
@@ -167,27 +126,6 @@ protected:
    string volumeFilename,               //!< Volume output filename
    surfaceFilename,                     //!< Surface output filename
    restartFilename;                     //!< Restart output filename
-
-  /** \brief Structure to store information for a volume output field.
-   *
-   *  The stored information is used to create the volume solution file.
-   */
-  struct VolumeOutputField {
-    /*! \brief The name of the field, i.e. the name that is printed in the file header.*/
-    string fieldName;
-    /*! \brief This value identifies the position of the values of this field at each node in the ::Local_Data array. */
-    short  offset;
-    /*! \brief The group this field belongs to. */
-    string outputGroup;
-    /*! \brief String containing the description of the field */
-    string description;
-    /*! \brief Default constructor. */
-    VolumeOutputField () {}
-    /*! \brief Constructor to initialize all members. */
-    VolumeOutputField(string fieldName_, int offset_, string volumeOutputGroup_, string description_):
-      fieldName(std::move(fieldName_)), offset(std::move(offset_)),
-      outputGroup(std::move(volumeOutputGroup_)), description(std::move(description_)){}
-  };
 
   /*! \brief Associative map to access data stored in the volume output fields by a string identifier. */
   std::map<string, VolumeOutputField >          volumeOutput_Map;
@@ -363,48 +301,12 @@ public:
     curInnerIter = InnerIter;
   }
 
-  /*!
-   * \brief Get the value of particular history output field
-   * \param[in] field - Name of the field
-   * \return Value of the field
-   */
-  su2double GetHistoryFieldValue(string field){
-    return historyOutput_Map.at(field).value;
+  const COutFieldCollection& GetHistoryFieldsAll(){
+    return historyFieldsAll;
   }
 
   su2double GetHistoryFieldValuePerSurface(string field, unsigned short iMarker){
     return historyOutputPerSurface_Map.at(field)[iMarker].value;
-  }
-
-  /*!
-   * \brief Get a vector with all output fields in a particular group
-   * \param groupname - Name of the history group
-   * \return Vector containing all output fields of a group
-   */
-  vector<HistoryOutputField> GetHistoryGroup(string groupname){
-    vector<HistoryOutputField> HistoryGroup;
-    for (unsigned short iField = 0; iField < historyOutput_Map.size(); iField++){
-      if (historyOutput_Map.at(historyOutput_List[iField]).outputGroup == groupname){
-        HistoryGroup.push_back((historyOutput_Map[historyOutput_List[iField]]));
-      }
-    }
-    return HistoryGroup;
-  }
-
-  /*!
-   * \brief Get the list of all output fields
-   * \return Vector container all output fields
-   */
-  vector<string> GetHistoryOutput_List(){
-    return historyOutput_List;
-  }
-
-  /*!
-   * \brief Get the map containing all output fields
-   * \return Map containing all output fields
-   */
-  map<string, HistoryOutputField> GetHistoryFields(){
-    return historyOutput_Map;
   }
 
   /*!
@@ -519,8 +421,7 @@ protected:
   inline void AddHistoryOutput(string name, string field_name, ScreenOutputFormat format,
                                string groupname, string description,
                                HistoryFieldType field_type = HistoryFieldType::DEFAULT ){
-    historyOutput_Map[name] = HistoryOutputField(field_name, format, groupname, field_type, description);
-    historyOutput_List.push_back(name);
+    historyFieldsAll.AddItem(name, HistoryOutputField(field_name, format, groupname, field_type, description));
   }
 
   /*!
@@ -529,11 +430,7 @@ protected:
    * \param[in] value - The new value of this field.
    */
   inline void SetHistoryOutputValue(string name, su2double value){
-    if (historyOutput_Map.count(name) > 0){
-      historyOutput_Map[name].value = value;
-    } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
-    }
+    historyFieldsAll.SetValue(name, value);
   }
 
   /*!
