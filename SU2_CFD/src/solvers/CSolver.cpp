@@ -4907,6 +4907,11 @@ void CSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
   su2double graTri[2];
   su2double Crd[3][2], Sens[3][nVar];
 
+  //--- communicate the solution values via MPI
+
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
   //--- note: currently only implemented for Tri
 
   for (iElem=0; iElem<nElem; ++iElem) {
@@ -4967,7 +4972,7 @@ void CSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- Communicate the gradient values via MPI. ---*/
+  //--- communicate the gradient values via MPI
   
   InitiateComms(geometry, config, ANISO_GRADIENT);
   CompleteComms(geometry, config, ANISO_GRADIENT);
@@ -4975,7 +4980,8 @@ void CSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
 
 void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, nPoint = geometry->GetnPoint(), nPointDomain = geometry->GetnPointDomain(), iElem, nElem = geometry->GetnElem(), iVertex;
+  unsigned long iPoint, nPoint = geometry->GetnPoint(), nPointDomain = geometry->GetnPointDomain(), 
+                iElem, nElem = geometry->GetnElem();
   unsigned short iVar, iDim, iMarker;
   unsigned short nMetr = 3;
   su2double vnx[3], vny[3];
@@ -5066,14 +5072,14 @@ void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- Communicate the Hessian values via MPI. ---*/
+  //--- communicate the Hessian values via MPI
   
   InitiateComms(geometry, config, ANISO_HESSIAN);
   CompleteComms(geometry, config, ANISO_HESSIAN);
 
   CorrectBoundAnisoHess(geometry, config);
 
-  //--- Make positive definite matrix
+  //--- make positive definite matrix
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     for(iVar = 0; iVar < nVar; iVar++){
       const unsigned short i = iVar*nMetr;
@@ -5113,6 +5119,11 @@ void CSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
   su2double vnx[4], vny[4], vnz[4];
   su2double graTet[3];
   su2double Crd[4][3], Sens[4][nVar];
+
+  //--- communicate the solution values via MPI
+
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
 
   //--- note: currently only implemented for Tet
 
@@ -5187,7 +5198,7 @@ void CSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- Communicate the gradient values via MPI. ---*/
+  //--- communicate the gradient values via MPI
   
   InitiateComms(geometry, config, ANISO_GRADIENT);
   CompleteComms(geometry, config, ANISO_GRADIENT);
@@ -5195,7 +5206,8 @@ void CSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
 
 void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, nPoint = geometry->GetnPoint(), nPointDomain = geometry->GetnPointDomain(), iElem, nElem = geometry->GetnElem(), iVertex;
+  unsigned long iPoint, nPoint = geometry->GetnPoint(), nPointDomain = geometry->GetnPointDomain(), 
+                iElem, nElem = geometry->GetnElem();
   unsigned short iVar, iDim, iMarker;
   unsigned short nMetr = 6;
   su2double vnx[4], vny[4], vnz[4];
@@ -5321,14 +5333,14 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- Communicate the Hessian values via MPI. ---*/
+  //--- communicate the Hessian values via MPI
   
   InitiateComms(geometry, config, ANISO_HESSIAN);
   CompleteComms(geometry, config, ANISO_HESSIAN);
 
   CorrectBoundAnisoHess(geometry, config);
 
-  //--- Make positive definite matrix
+  //--- make positive definite matrix
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
             *EigVal  = new su2double[nDim];
