@@ -811,25 +811,24 @@ void COutput::PrintConvergenceSummary(){
   ConvSummary.AddColumn("Converged",12);
   ConvSummary.SetAlign(PrintingToolbox::CTablePrinter::CENTER);
   ConvSummary.PrintHeader();
-  for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
-    const string &convField = convFields[iField_Conv];
-    const HistoryOutputField& outField = historyFieldsAll[convField];
 
-    if (outField.fieldType == HistoryFieldType::COEFFICIENT) {
-      const HistoryOutputField& cauchyField = historyFieldsAll["CAUCHY_" + convField];
-      ConvSummary << cauchyField.fieldName
-                  << cauchyField.value
-                  << " < " + PrintingToolbox::to_string(cauchyEps)
-                  << (cauchyField.value < cauchyEps ? "Yes" : "No");
-    }
-    else if (outField.fieldType == HistoryFieldType::RESIDUAL ||
-             outField.fieldType == HistoryFieldType::AUTO_RESIDUAL) {
-      ConvSummary << outField.fieldName
-                  << outField.value
-                  << " < " + PrintingToolbox::to_string(minLogResidual)
-                  << (outField.value < minLogResidual ? "Yes" : "No");
-    }
+  const auto& convFieldRef = historyFieldsAll.GetFieldsByKey(convFields);
+
+  for (auto field : COutFieldCollection::GetFieldsByType({HistoryFieldType::COEFFICIENT}, convFieldRef)){
+    ConvSummary << field->second.fieldName
+                << field->second.value
+                << " < " + PrintingToolbox::to_string(cauchyEps)
+                << (field->second.value < cauchyEps ? "Yes" : "No");
   }
+
+  for (auto field : COutFieldCollection::GetFieldsByType({HistoryFieldType::RESIDUAL,
+                                                         HistoryFieldType::AUTO_RESIDUAL}, convFieldRef)){
+    ConvSummary << field->second.fieldName
+                << field->second.value
+                << " < " + PrintingToolbox::to_string(minLogResidual)
+                << (field->second.value < minLogResidual ? "Yes" : "No");
+  }
+
   ConvSummary.PrintFooter();
 }
 
@@ -845,7 +844,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
     const string &convField = convFields[iField_Conv];
 
-    if (GetHistoryFieldsAll().FindItem(convField)){
+    if (GetHistoryFieldsAll().FindKey(convField)){
 
       const HistoryOutputField& outField = historyFieldsAll[convField];
 
@@ -958,7 +957,7 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
   if(TimeIteration == 0){
     for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
       const string WndConv_Field= wndConvFields[iField_Conv];
-      if (GetHistoryFieldsAll().FindItem(WndConv_Field)){
+      if (GetHistoryFieldsAll().FindKey(WndConv_Field)){
         SetHistoryOutputValue("CAUCHY_"+ WndConv_Field, 1.0);
       }
     }
@@ -971,7 +970,7 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
       bool fieldConverged = false;
       const string WndConv_Field= wndConvFields[iField_Conv];
 
-      if (GetHistoryFieldsAll().FindItem(WndConv_Field)){
+      if (GetHistoryFieldsAll().FindKey(WndConv_Field)){
         su2double monitor = historyOutput_Map[WndConv_Field].value;
 
         /*--- Cauchy based convergence criteria ---*/

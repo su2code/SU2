@@ -47,7 +47,7 @@ public:
    * \param[in] key - The key that should be checked
    * \return <TRUE> then when the key could be found, otherwise <FALSE>
    */
-  bool FindItem(const Key& key) const {
+  bool FindKey(const Key& key) const {
     return (map.count(key) > 0);
   }
 

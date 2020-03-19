@@ -125,7 +125,7 @@ public:
    * \param[out] notFound  - Vector containing a list of group names that have not been found
    * \return Vector containing references to the entries with the specified group names
    */
-  InsertionVector GetFieldsbyGroup(const std::vector<std::string>& groupList, std::vector<std::string>& notFound){
+  InsertionVector GetFieldsByGroup(const std::vector<std::string>& groupList, std::vector<std::string>& notFound){
     return COutFieldCollection::GetFieldsByGroup(groupList, notFound, insertionVector);
   }
 
@@ -134,7 +134,7 @@ public:
    * \param[in] groupList  - A vector of group names
    * \return Vector containing references to the entries with the specified group names
    */
-  InsertionVector GetFieldsbyGroup(const std::vector<std::string>& groupList){
+  InsertionVector GetFieldsByGroup(const std::vector<std::string>& groupList){
     std::vector<std::string> dummy;
     return COutFieldCollection::GetFieldsByGroup(groupList, dummy, insertionVector);
   }
