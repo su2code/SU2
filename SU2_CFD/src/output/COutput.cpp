@@ -1327,10 +1327,6 @@ void COutput::CheckHistoryOutput(){
   requestedHistoryFields = COutFieldCollection::GetKeys(historyFields);
   nRequestedHistoryFields = requestedHistoryFields.size();
 
-  printInfo(requestedHistoryFields, "Monitoring fields in file: ");
-
-  printInfo(FieldsToRemove, "Fields ignored: ");
-
   const auto& convergenceFields = GetHistoryFieldsAll().GetFieldsByKey(convFields, FieldsToRemove);
 
   convFields = COutFieldCollection::GetKeys(convergenceFields);
@@ -1341,7 +1337,7 @@ void COutput::CheckHistoryOutput(){
   const auto& timeConvergenceFields = GetHistoryFieldsAll().GetFieldsByKey(wndConvFields, FieldsToRemove);
 
   wndConvFields = COutFieldCollection::GetKeys(timeConvergenceFields);
-  printInfo(convFields, "Time Convergence monitoring fields: ");
+  printInfo(wndConvFields, "Time Convergence monitoring fields: ");
   printInfo(FieldsToRemove, "Fields ignored: ");
 
 }
@@ -1667,7 +1663,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     const su2double& value = it->second.first;
     const int& count = it->second.second;
     const su2double average = value/count;
-    if (historyOutput_Map.count("AVG_" + it->first) > 0 )
+    if (historyFieldsAll.FindKey("AVG_" + it->first))
       SetHistoryOutputValue("AVG_" + it->first, average);
   }
 }
@@ -1727,8 +1723,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
                      HistoryFieldType::AUTO_COEFFICIENT);
   }
 
-  const auto& wndConvergenceFields = COutFieldCollection::GetFieldsByType({HistoryFieldType::COEFFICIENT},
-                                                                          historyFieldsAll.GetFieldsByKey(wndConvFields));
+  const auto& wndConvergenceFields = historyFieldsAll.GetFieldsByKey(wndConvFields);
 
   for (auto field : wndConvergenceFields){
     AddHistoryOutput("CAUCHY_" + field->first, "Cauchy["  + field->second.fieldName + "]",
