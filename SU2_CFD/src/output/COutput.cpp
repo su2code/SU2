@@ -1024,9 +1024,6 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
 
 void COutput::SetHistoryFile_Header(CConfig *config) {
 
-  unsigned short iField_Output = 0,
-      iReqField = 0,
-      iMarker = 0;
   stringstream out;
   int width = 20;
 
@@ -1041,21 +1038,6 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
     historyFileTable->AddColumn("\"" + field->second.fieldName + "\"", width);
   }
 
-  for (iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
-    const string &fieldIdentifier = historyOutputPerSurface_List[iField_Output];
-    for (iMarker = 0; iMarker < historyOutputPerSurface_Map[fieldIdentifier].size(); iMarker++){
-      const HistoryOutputField &field = historyOutputPerSurface_Map.at(fieldIdentifier)[iMarker];
-      for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-        const string &requestedField = requestedHistoryFields[iReqField];
-        if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
-          if (field.screenFormat == ScreenOutputFormat::INTEGER) width = std::max((int)field.fieldName.size()+2, 10);
-          else{ width = std::max((int)field.fieldName.size()+2, 18);}
-          historyFileTable->AddColumn("\"" + field.fieldName + "\"", width);
-        }
-      }
-    }
-  }
-
   if (config->GetTabular_FileFormat() == TAB_TECPLOT) {
     histFile << "VARIABLES = \\" << endl;
   }
@@ -1066,28 +1048,12 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
 
 void COutput::SetHistoryFile_Output(CConfig *config) {
 
-  unsigned short iField_Output = 0,
-      iReqField = 0,
-      iMarker = 0;
   stringstream out;
 
   const auto& historyFields = GetHistoryFieldsAll().GetFieldsByKey(requestedHistoryFields, true);
 
   for (auto field : historyFields){
     (*historyFileTable) << field->second.value;
-  }
-
-  for (iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
-    const string &fieldIdentifier = historyOutputPerSurface_List[iField_Output];
-    for (iMarker = 0; iMarker < historyOutputPerSurface_Map[fieldIdentifier].size(); iMarker++){
-      const HistoryOutputField &field = historyOutputPerSurface_Map.at(fieldIdentifier)[iMarker];
-      for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-        const string &RequestedField = requestedHistoryFields[iReqField];
-        if (RequestedField == field.outputGroup){
-          (*historyFileTable) << field.value;
-        }
-      }
-    }
   }
 
   /*--- Print the string to file and remove the last two characters (a separator and a space) ---*/
@@ -1127,43 +1093,6 @@ void COutput::SetScreen_Output(CConfig *config) {
     (*convergenceTable) << out.str();
   }
 
-//  for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++){
-//    stringstream out;
-//    RequestedField = requestedScreenFields[iReqField];
-////    if (historyOutput_Map.count(RequestedField) > 0){
-////      switch (historyOutput_Map.at(RequestedField).screenFormat) {
-////        case ScreenOutputFormat::INTEGER:
-////          PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(historyOutput_Map.at(RequestedField).value), fieldWidth);
-////          break;
-////        case ScreenOutputFormat::FIXED:
-////          PrintingToolbox::PrintScreenFixed(out, historyOutput_Map.at(RequestedField).value, fieldWidth);
-////          break;
-////        case ScreenOutputFormat::SCIENTIFIC:
-////          PrintingToolbox::PrintScreenScientific(out, historyOutput_Map.at(RequestedField).value, fieldWidth);
-////          break;
-////        case ScreenOutputFormat::PERCENT:
-////          PrintingToolbox::PrintScreenPercent(out, historyOutput_Map[RequestedField].value, fieldWidth);
-////          break;
-////      }
-////    }
-//    if (historyOutputPerSurface_Map.count(RequestedField) > 0){
-//      switch (historyOutputPerSurface_Map.at(RequestedField)[0].screenFormat) {
-//        case ScreenOutputFormat::INTEGER:
-//          PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(historyOutputPerSurface_Map.at(RequestedField)[0].value), fieldWidth);
-//          break;
-//        case ScreenOutputFormat::FIXED:
-//          PrintingToolbox::PrintScreenFixed(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
-//          break;
-//        case ScreenOutputFormat::SCIENTIFIC:
-//          PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
-//          break;
-//        case ScreenOutputFormat::PERCENT:
-//          PrintingToolbox::PrintScreenPercent(out, historyOutputPerSurface_Map[RequestedField][0].value, fieldWidth);
-//          break;
-//      }
-//    }
-//    (*convergenceTable) << out.str();
-//  }
   SetAdditionalScreenOutput(config);
 }
 

@@ -84,15 +84,6 @@ protected:
 
   COutFieldCollection historyFieldsAll;
 
-  /*! \brief Associative map to access data stored in the history output fields by a string identifier. */
-  std::map<string, HistoryOutputField >         historyOutput_Map;
-  /*! \brief Vector that contains the keys of the ::historyOutput_Map in the order of their insertion. */
-  std::vector<string>                           historyOutput_List;
-  /*! \brief Associative map to access data stored in the history per surface output fields by a string identifier. */
-  std::map<string, vector<HistoryOutputField> > historyOutputPerSurface_Map;
-  /*! \brief Vector that contains the keys of the ::historyOutputPerSurface_Map in the order of their insertion. */
-  std::vector<string>                           historyOutputPerSurface_List;
-
   /*! \brief Requested history field names in the config file. */
   std::vector<string> requestedHistoryFields;
   /*! \brief Number of requested history field names in the config file. */
@@ -305,10 +296,6 @@ public:
     return historyFieldsAll;
   }
 
-  su2double GetHistoryFieldValuePerSurface(string field, unsigned short iMarker){
-    return historyOutputPerSurface_Map.at(field)[iMarker].value;
-  }
-
   /*!
    * \brief Monitor the convergence of an output field
    * \param[in] config - Definition of the particular problem.
@@ -446,9 +433,10 @@ protected:
                                          string groupname, vector<string> marker_names,
                                          HistoryFieldType field_type = HistoryFieldType::DEFAULT){
     if (marker_names.size() != 0){
-      historyOutputPerSurface_List.push_back(name);
       for (unsigned short i = 0; i < marker_names.size(); i++){
-        historyOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname, field_type, ""));
+        historyFieldsAll.AddItem(name + "@" + marker_names[i],
+                                 HistoryOutputField(field_name + "@" + marker_names[i],
+                                                    format, groupname + "@" + marker_names[i], field_type, ""));
       }
     }
   }
@@ -457,14 +445,10 @@ protected:
    * \brief Set the value of a history output field for a specific surface marker
    * \param[in] name - Name of the field.
    * \param[in] value - The new value of this field.
-   * \param[in] iMarker - The index of the marker.
+   * \param[in] marker_name - name of the marker.
    */
-  inline void SetHistoryOutputPerSurfaceValue(string name, su2double value, unsigned short iMarker){
-    if (historyOutputPerSurface_Map.count(name) > 0){
-      historyOutputPerSurface_Map[name][iMarker].value = value;
-    } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
-    }
+  inline void SetHistoryOutputPerSurfaceValue(string name, su2double value, const string marker_name){
+    SetHistoryOutputValue(name + "@" + marker_name, value);
   }
 
   /*!

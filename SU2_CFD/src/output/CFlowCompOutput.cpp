@@ -189,12 +189,6 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
   }
-  /// BEGIN_GROUP: AEROELASTIC, DESCRIPTION: Aeroelastic plunge, pitch
-  /// DESCRIPTION: Aeroelastic plunge
-  AddHistoryOutputPerSurface("PLUNGE", "plunge", ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Aeroelastic pitch
-  AddHistoryOutputPerSurface("PITCH",  "pitch",  ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// END_GROUP
 
 
   /// DESCRIPTION: Linear solver iterations
@@ -709,25 +703,25 @@ void CFlowCompOutput::SetAdditionalScreenOutput(CConfig *config){
 void CFlowCompOutput::SetFixedCLScreenOutput(CConfig *config){
   PrintingToolbox::CTablePrinter FixedCLSummary(&cout);
 
-  if (fabs(historyOutput_Map["CL_DRIVER_COMMAND"].value) > 1e-16){
+  if (fabs(historyFieldsAll["CL_DRIVER_COMMAND"].value) > 1e-16){
     FixedCLSummary.AddColumn("Fixed CL Mode", 40);
     FixedCLSummary.AddColumn("Value", 30);
     FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
     FixedCLSummary.PrintHeader();
-    FixedCLSummary << "Current CL" << historyOutput_Map["LIFT"].value;
+    FixedCLSummary << "Current CL" << historyFieldsAll["LIFT"].value;
     FixedCLSummary << "Target CL" << config->GetTarget_CL();
-    FixedCLSummary << "Previous AOA" << historyOutput_Map["PREV_AOA"].value;
+    FixedCLSummary << "Previous AOA" << historyFieldsAll["PREV_AOA"].value;
     if (config->GetFinite_Difference_Mode()){
-      FixedCLSummary << "Changed AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+      FixedCLSummary << "Changed AoA by (Finite Difference step)" << historyFieldsAll["CL_DRIVER_COMMAND"].value;
       lastInnerIter = curInnerIter - 1;
     }
     else
-      FixedCLSummary << "Changed AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+      FixedCLSummary << "Changed AoA by" << historyFieldsAll["CL_DRIVER_COMMAND"].value;
     FixedCLSummary.PrintFooter();
     SetScreen_Header(config);
   }
 
-  else if (config->GetFinite_Difference_Mode() && historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value){
+  else if (config->GetFinite_Difference_Mode() && historyFieldsAll["AOA"].value == historyFieldsAll["PREV_AOA"].value){
     FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", 40);
     FixedCLSummary.AddColumn("Value", 30);
     FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
