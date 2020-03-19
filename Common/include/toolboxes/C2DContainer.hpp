@@ -113,15 +113,14 @@ public:
                                                                         \
   AccessorImpl& operator= (AccessorImpl&& other) noexcept               \
   {                                                                     \
-    if(m_data!=nullptr) free(m_data);                                   \
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
     MOVE; m_data=other.m_data; other.m_data=nullptr;                    \
     return *this;                                                       \
   }                                                                     \
                                                                         \
   ~AccessorImpl()                                                       \
   {                                                                     \
-    if(m_data!=nullptr)                                                 \
-      MemoryAllocation::aligned_free<Scalar_t>(m_data);                 \
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
   }
   /*!
    * Shorthand for when specialization has only one more member than m_data.
@@ -381,7 +380,7 @@ private:
   {
     /*--- fully static, no allocation needed ---*/
     if(StaticRows!=DynamicSize && StaticCols!=DynamicSize)
-        return StaticRows*StaticCols;
+      return StaticRows*StaticCols;
 
     /*--- dynamic row vector, swap size specification ---*/
     if(StaticRows==1 && StaticCols==DynamicSize) {cols = rows; rows = 1;}
@@ -400,12 +399,10 @@ private:
     /*--- compare with current dimensions to determine if deallocation
      is needed, also makes the container safe against self assignment
      no need to check for 0 size as the allocators handle that ---*/
-    if(m_data!=nullptr)
-    {
-      if(rows==this->rows() && cols==this->cols())
-        return reqSize;
-      free(m_data);
-    }
+    if(rows==this->rows() && cols==this->cols())
+      return reqSize;
+
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);
 
     /*--- request actual allocation to base class as it needs specialization ---*/
     size_t bytes = reqSize*sizeof(Scalar_t);
