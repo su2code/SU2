@@ -256,7 +256,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   InnerIter  = config_container[ZONE_0]->GetInnerIter();
   nTimeIter  = config_container[ZONE_0]->GetnTime_Iter();
   MaxTime    = config_container[ZONE_0]->GetMax_Time();
-  CurTime    = output_container[ZONE_0]->GetHistoryFieldValue("CUR_TIME");
+  CurTime    = output_container[ZONE_0]->GetHistoryFieldsAll()["CUR_TIME"].value;
 
   TimeDomain = config_container[ZONE_0]->GetTime_Domain();
 

@@ -92,20 +92,21 @@ void CMultizoneOutput::LoadMultizoneHistoryData(COutput **output, CConfig **conf
 
   for (iZone = 0; iZone < nZone; iZone++){
 
-    map<string, HistoryOutputField> ZoneHistoryFields = output[iZone]->GetHistoryFields();
-    vector<string>                  ZoneHistoryNames  = output[iZone]->GetHistoryOutput_List();
+    const COutFieldCollection& ZoneHistoryFields = output[iZone]->GetHistoryFieldsAll();
 
-    nField = ZoneHistoryNames.size();
-
+    nField = ZoneHistoryFields.GetSize();
 
     /*-- For all the variables per solver --*/
+
     for (iField = 0; iField < nField; iField++){
 
-      if (ZoneHistoryNames[iField] != "TIME_ITER" && ZoneHistoryNames[iField] != "OUTER_ITER"){
+      const HistoryOutputField& curField = ZoneHistoryFields[iField];
 
-        name   = ZoneHistoryNames[iField]+ "[" + PrintingToolbox::to_string(iZone) + "]";
+      if (curField.fieldName != "TIME_ITER" && curField.fieldName != "OUTER_ITER"){
 
-        SetHistoryOutputValue(name, ZoneHistoryFields[ZoneHistoryNames[iField]].value);
+        name   = ZoneHistoryFields.GetKey(iField) + "[" + PrintingToolbox::to_string(iZone) + "]";
+
+        SetHistoryOutputValue(name, curField.value);
 
       }
     }
@@ -118,24 +119,26 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig
   string name, header, group;
 
   /*--- Set the fields ---*/
+
   for (iZone = 0; iZone < nZone; iZone++){
 
-    map<string, HistoryOutputField> ZoneHistoryFields = output[iZone]->GetHistoryFields();
-    vector<string>                  ZoneHistoryNames  = output[iZone]->GetHistoryOutput_List();
+    const COutFieldCollection& ZoneHistoryFields = output[iZone]->GetHistoryFieldsAll();
 
-    nField = ZoneHistoryNames.size();
-
+    nField = ZoneHistoryFields.GetSize();
 
     /*-- For all the variables per solver --*/
+
     for (iField = 0; iField < nField; iField++){
 
-      if (ZoneHistoryNames[iField] != "TIME_ITER" && ZoneHistoryNames[iField] != "OUTER_ITER"){
+      const HistoryOutputField& curField = ZoneHistoryFields[iField];
 
-        name   = ZoneHistoryNames[iField]+ "[" + PrintingToolbox::to_string(iZone) + "]";
-        header = ZoneHistoryFields[ZoneHistoryNames[iField]].fieldName + "[" + PrintingToolbox::to_string(iZone) + "]";
-        group  = ZoneHistoryFields[ZoneHistoryNames[iField]].outputGroup + "[" + PrintingToolbox::to_string(iZone) + "]";
+      if (curField.fieldName != "TIME_ITER" && curField.fieldName != "OUTER_ITER"){
 
-        AddHistoryOutput(name, header, ZoneHistoryFields[ZoneHistoryNames[iField]].screenFormat, group, "", ZoneHistoryFields[ZoneHistoryNames[iField]].fieldType );
+        name   = ZoneHistoryFields.GetKey(iField) + "[" + PrintingToolbox::to_string(iZone) + "]";
+        header = curField.fieldName + "[" + PrintingToolbox::to_string(iZone) + "]";
+        group  = curField.outputGroup + "[" + PrintingToolbox::to_string(iZone) + "]";
+
+        AddHistoryOutput(name, header, curField.screenFormat, group, "", curField.fieldType );
       }
     }
   }
