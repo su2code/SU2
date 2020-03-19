@@ -30,12 +30,12 @@
 #include "../../include/geometry/CGeometry.hpp"
 
 
-CSlidingMesh::CSlidingMesh(CGeometry ****geometry_container, CConfig **config, unsigned int iZone,
+CSlidingMesh::CSlidingMesh(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
                            unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
   Set_TransferCoeff(config);
 }
 
-void CSlidingMesh::Set_TransferCoeff(CConfig **config) {
+void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
 
   /* 0 - Variable declaration */
 

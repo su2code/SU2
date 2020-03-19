@@ -43,12 +43,12 @@ public:
    * \param[in] iZone - index of the donor zone
    * \param[in] jZone - index of the target zone
    */
-  CNearestNeighbor(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CNearestNeighbor(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_TransferCoeff(CConfig **config) override;
+  void Set_TransferCoeff(const CConfig* const* config) override;
 
 };

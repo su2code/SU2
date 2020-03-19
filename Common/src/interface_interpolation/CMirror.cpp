@@ -30,12 +30,12 @@
 #include "../../include/geometry/CGeometry.hpp"
 
 
-CMirror::CMirror(CGeometry ****geometry_container, CConfig **config,  unsigned int iZone,
+CMirror::CMirror(CGeometry ****geometry_container, const CConfig* const* config,  unsigned int iZone,
                  unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
   Set_TransferCoeff(config);
 }
 
-void CMirror::Set_TransferCoeff(CConfig **config) {
+void CMirror::Set_TransferCoeff(const CConfig* const* config) {
 
   const int nProcessor = size;
 

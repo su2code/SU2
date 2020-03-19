@@ -30,7 +30,8 @@
 #include "../../include/geometry/CGeometry.hpp"
 
 
-CInterpolator::CInterpolator(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone) :
+CInterpolator::CInterpolator(CGeometry ****geometry_container, const CConfig* const* config,
+                             unsigned int iZone, unsigned int jZone) :
   rank(SU2_MPI::GetRank()),
   size(SU2_MPI::GetSize()),
   donorZone(iZone),

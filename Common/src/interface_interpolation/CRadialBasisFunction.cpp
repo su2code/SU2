@@ -31,7 +31,7 @@
 #include "../../include/toolboxes/CSymmetricMatrix.hpp"
 
 
-CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, CConfig **config, unsigned int iZone,
+CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
                                            unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
   Set_TransferCoeff(config);
 }
@@ -66,7 +66,7 @@ su2double CRadialBasisFunction::Get_RadialBasisValue(ENUM_RADIALBASIS type, cons
   return rbf;
 }
 
-void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
+void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
 
   /*--- RBF options. ---*/
   const auto kindRBF = static_cast<ENUM_RADIALBASIS>(config[donorZone]->GetKindRadialBasisFunction());

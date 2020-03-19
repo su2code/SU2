@@ -30,12 +30,12 @@
 #include "../../include/geometry/CGeometry.hpp"
 
 
-CIsoparametric::CIsoparametric(CGeometry ****geometry_container, CConfig **config, unsigned int iZone,
+CIsoparametric::CIsoparametric(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
                                unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
   Set_TransferCoeff(config);
 }
 
-void CIsoparametric::Set_TransferCoeff(CConfig **config) {
+void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
 
   unsigned long iVertex, jVertex;
   unsigned long  dPoint, inode, jElem, nElem;

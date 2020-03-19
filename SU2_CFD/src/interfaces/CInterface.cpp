@@ -300,11 +300,6 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
   const su2double *SpanValuesDonor, *SpanValuesTarget;
   su2double dist, test, dist2, test2;
 
-#ifdef HAVE_MPI
-  int iSize;
-  int *BuffMarkerDonor, *BuffDonorFlag;
-#endif
-
   nMarkerDonor   = donor_geometry->GetnMarker();
   nMarkerTarget  = target_geometry->GetnMarker();
   //TODO turbo this approach only works if all the turboamchinery marker
@@ -333,25 +328,23 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
   }
 
 #ifdef HAVE_MPI
-  BuffMarkerDonor          = new int[size];
-  BuffDonorFlag            = new int[size];
-  for (iSize=0; iSize<size;iSize++){
-    BuffMarkerDonor[iSize]            = -1;
-    BuffDonorFlag[iSize]              = -1;
+  auto BuffMarkerDonor = new int[size];
+  auto BuffDonorFlag = new int[size];
+  for (int iSize=0; iSize<size; iSize++){
+    BuffMarkerDonor[iSize] = -1;
+    BuffDonorFlag[iSize] = -1;
   }
 
   SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, MPI_COMM_WORLD);
   SU2_MPI::Allgather(&Donor_Flag, 1 , MPI_INT, BuffDonorFlag, 1, MPI_INT, MPI_COMM_WORLD);
 
-
   Marker_Donor= -1;
   Donor_Flag= -1;
 
-
-  for (iSize=0; iSize<size;iSize++){
+  for (int iSize=0; iSize<size; iSize++){
     if(BuffMarkerDonor[iSize] > 0.0){
       Marker_Donor = BuffMarkerDonor[iSize];
-      Donor_Flag   = BuffDonorFlag[iSize];
+      Donor_Flag = BuffDonorFlag[iSize];
       break;
     }
   }
@@ -623,7 +616,6 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
   delete [] BuffAvgKineDonor;
   delete [] BuffAvgOmegaDonor;
   delete [] BuffMarkerDonor;
-
 #endif
 
   /*--- On the target side we have to identify the marker as well ---*/
@@ -760,4 +752,3 @@ void CInterface::GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometr
   SetAverageTurboGeoValues(donor_geometry, target_geometry, donorZone);
 
 }
-

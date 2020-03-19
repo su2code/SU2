@@ -100,7 +100,7 @@ public:
    * \param[in] iZone - index of the donor zone
    * \param[in] jZone - index of the target zone
    */
-  CInterpolator(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CInterpolator(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief No default construction allowed.
@@ -117,7 +117,7 @@ public:
    * \note Main method that derived classes must implement.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Set_TransferCoeff(CConfig **config) = 0;
+  virtual void Set_TransferCoeff(const CConfig* const* config) = 0;
 
   /*!
    * \brief Find the index of the interface marker shared by that zone
