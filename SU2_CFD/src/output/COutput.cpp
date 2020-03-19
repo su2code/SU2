@@ -971,7 +971,7 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
       const string WndConv_Field= wndConvFields[iField_Conv];
 
       if (GetHistoryFieldsAll().FindKey(WndConv_Field)){
-        su2double monitor = historyOutput_Map[WndConv_Field].value;
+        su2double monitor = historyFieldsAll[WndConv_Field].value;
 
         /*--- Cauchy based convergence criteria ---*/
 
@@ -1934,19 +1934,16 @@ void COutput::PrintHistoryFields(){
 
     unsigned short NameSize = 0, GroupSize = 0, DescrSize = 0;
 
-    for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
-
-      HistoryOutputField &Field = historyOutput_Map.at(historyOutput_List[iField]);
-
-      if (Field.description != ""){
-        if (historyOutput_List[iField].size() > NameSize){
-          NameSize = historyOutput_List[iField].size();
+    for (auto field : historyFieldsAll.GetReferencesAll()){
+      if (field->second.description != ""){
+        if (field->first.size() > NameSize){
+          NameSize =field->first.size();
         }
-        if (Field.outputGroup.size() > GroupSize){
-          GroupSize = Field.outputGroup.size();
+        if (field->second.outputGroup.size() > GroupSize){
+          GroupSize = field->second.outputGroup.size();
         }
-        if (Field.description.size() > DescrSize){
-          DescrSize = Field.description.size();
+        if (field->second.description.size() > DescrSize){
+          DescrSize = field->second.description.size();
         }
       }
     }
@@ -1961,15 +1958,13 @@ void COutput::PrintHistoryFields(){
 
     HistoryFieldTable.PrintHeader();
 
-    for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
+    for (auto field : historyFieldsAll.GetReferencesAll()){
 
-      HistoryOutputField &Field = historyOutput_Map.at(historyOutput_List[iField]);
-
-      if (Field.fieldType == HistoryFieldType::DEFAULT
-          || Field.fieldType == HistoryFieldType::COEFFICIENT
-          || Field.fieldType == HistoryFieldType::RESIDUAL){
+      if (field->second.fieldType == HistoryFieldType::DEFAULT
+          || field->second.fieldType == HistoryFieldType::COEFFICIENT
+          || field->second.fieldType == HistoryFieldType::RESIDUAL){
         string type;
-        switch (Field.fieldType) {
+        switch (field->second.fieldType) {
           case HistoryFieldType::COEFFICIENT:
             type = "C";
             break;
@@ -1981,8 +1976,8 @@ void COutput::PrintHistoryFields(){
             break;
         }
 
-        if (Field.description != "")
-          HistoryFieldTable << historyOutput_List[iField] << Field.outputGroup << type << Field.description;
+        if (field->second.description != "")
+          HistoryFieldTable << field->first << field->second.outputGroup << type << field->second.description;
 
       }
     }
@@ -2004,14 +1999,12 @@ void COutput::PrintHistoryFields(){
 
     std::map<string, bool> GroupVisited;
 
-    for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
+    for (auto field : historyFieldsAll.GetReferencesAll()){
 
-      HistoryOutputField &Field = historyOutput_Map.at(historyOutput_List[iField]);
-
-      if ((Field.fieldType == HistoryFieldType::AUTO_COEFFICIENT ||
-           Field.fieldType == HistoryFieldType::AUTO_RESIDUAL) && (GroupVisited.count(Field.outputGroup) == 0)){
+      if ((field->second.fieldType == HistoryFieldType::AUTO_COEFFICIENT ||
+           field->second.fieldType == HistoryFieldType::AUTO_RESIDUAL) && (GroupVisited.count(field->second.outputGroup) == 0)){
         string type;
-        switch (Field.fieldType) {
+        switch (field->second.fieldType) {
           case HistoryFieldType::AUTO_COEFFICIENT:
             type = "AC";
             break;
@@ -2023,12 +2016,13 @@ void COutput::PrintHistoryFields(){
             break;
         }
 
-        if (Field.description != "")
-          ModifierTable << historyOutput_List[iField] << Field.outputGroup << type << Field.description;
+        if (field->second.description != "")
+          ModifierTable << field->first << field->second.outputGroup << type << field->second.description;
 
-        GroupVisited[Field.outputGroup] = true;
+        GroupVisited[field->second.outputGroup] = true;
       }
     }
+
     ModifierTable.PrintFooter();
 
   }
