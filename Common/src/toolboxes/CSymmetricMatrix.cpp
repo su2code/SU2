@@ -41,49 +41,44 @@ extern "C" void dpotrf_(const char*, const int*, passivedouble*, const int*, int
 extern "C" void dpotri_(const char*, const int*, passivedouble*, const int*, int*);
 extern "C" void dsymm_(const char*, const char*, const int*, const int*, const passivedouble*, const passivedouble*,
                        const int*, const passivedouble*, const int*, const passivedouble*, passivedouble*, const int*);
+#define DSYMM dsymm_
 #endif
 
-
-void CSymmetricMatrix::Initialize(int N)
-{
-  sz = N;
-  val_vec.resize(sz*sz);
-  initialized = true;
-}
+void CSymmetricMatrix::Initialize(int N) { mat.resize(N,N); }
 
 void CSymmetricMatrix::CholeskyDecompose()
 {
 #ifndef HAVE_LAPACK
-  assert(initialized && "Matrix not initialized.");
-
-  for (int j = 0; j < sz; ++j) {
+  int j;
+  for (j = 0; j < Size(); ++j) {
     passivedouble sum = 0.0;
     for (int k = 0; k < j; ++k) sum -= pow(Get(j,k), 2);
     sum += Get(j,j);
-    assert(sum > 0.0 && "LLT failed, matrix is not SPD.");
+    if (sum < 0.0) break; // not SPD
     Set(j, j, sqrt(sum));
 
-    for (int i = j+1; i < sz; ++i) {
+    for (int i = j+1; i < Size(); ++i) {
       passivedouble sum = 0.0;
       for (int k = 0; k < j; ++k) sum -= Get(i,k) * Get(j,k);
       sum += Get(i,j);
       Set(i, j, sum / Get(j,j));
     }
   }
-  decomposed = CHOLESKY;
+  if (j!=Size()) SU2_MPI::Error("LLT factorization failed.", CURRENT_FUNCTION);
 #endif
 }
 
-void CSymmetricMatrix::LUDecompose()
+void CSymmetricMatrix::LUDecompose(su2activematrix& decomp, vector<int>& perm) const
 {
 #ifndef HAVE_LAPACK
-  assert(initialized && "Matrix not initialized.");
+  const int sz = Size();
 
   /*--- Copy matrix values to LU matrix, init permutation vec. ---*/
-  decomp_vec.resize(sz*sz);
-  perm_vec.resize(sz);
+  decomp.resize(sz,sz);
+  perm.resize(sz);
+
   for (int i = 0; i < sz; ++i) {
-    perm_vec[i] = i;
+    perm[i] = i;
     for (int j = i; j < sz; ++j) decomp(j,i) = decomp(i,j) = Get(i,j);
   }
 
@@ -99,7 +94,7 @@ void CSymmetricMatrix::LUDecompose()
       }
 
     if (pivot_idx != j) {
-      swap(perm_vec[j], perm_vec[pivot_idx]);
+      swap(perm[j], perm[pivot_idx]);
       for (int k = 0; k < sz; ++k)
         swap(decomp(j,k), decomp(pivot_idx,k));
     }
@@ -111,116 +106,104 @@ void CSymmetricMatrix::LUDecompose()
       for (int i = j+1; i < sz; ++i)
         decomp(i,k) -= decomp(j,k)*decomp(i,j);
   }
-
-  decomposed = LU;
 #endif
 }
 
-void CSymmetricMatrix::CalcInv()
+void CSymmetricMatrix::CalcInv(bool is_spd)
 {
 #ifndef HAVE_LAPACK
-  assert(initialized && "Matrix not initialized.");
-
-  /*--- Decompose matrix if not done yet. ---*/
-  if (decomposed == NONE) { LUDecompose(); }
+  const int sz = Size();
 
   /*--- Compute inverse from decomposed matrices. ---*/
-  switch (decomposed) {
+  if (is_spd)
+  {
+    CholeskyDecompose();
 
-    case CHOLESKY:
-    {
-      /*--- Initialize inverse matrix. ---*/
-      vector<passivedouble> inv(sz*sz, 0.0);
+    /*--- Initialize inverse matrix. ---*/
+    CSymmetricMatrix inv(sz);
 
-      /*--- Compute L inverse. ---*/
-      /*--- Solve smaller and smaller systems. ---*/
-      for (int j = 0; j < sz; ++j) {
-        /*--- Forward substitution. ---*/
-        inv[IdxSym(j,j)] = 1.0 / Get(j,j);
+    /*--- Compute L inverse. ---*/
+    /*--- Solve smaller and smaller systems. ---*/
+    for (int j = 0; j < sz; ++j) {
+      /*--- Forward substitution. ---*/
+      inv(j,j) = 1.0 / Get(j,j);
 
-        for (int i = j+1; i < sz; ++i) {
-          passivedouble sum = 0.0;
-          for (int k = j; k < i; ++k) sum -= Get(i,k) * inv[IdxSym(k,j)];
-          inv[IdxSym(i,j)] = sum / Get(i,i);
-        }
-      } // L inverse in inv
-
-      /*--- Multiply inversed matrices overwrite val_vec. ---*/
-      for (int j = 0; j < sz; ++j)
-        for (int i = j; i < sz; ++i) {
-          passivedouble sum = 0.0;
-          for (int k = i; k < sz; ++k) sum += inv[IdxSym(k,i)] * inv[IdxSym(k,j)];
-          Set(i, j, sum);
-        }
-
-      break;
-    }
-
-    case LU:
-    {
-      /*--- Alias val_vec. ---*/
-      vector<passivedouble>& inv = val_vec;
-
-      /*--- Invert L and U matrices in place. ---*/
-      for (int j = 0; j < sz; ++j) {
-        inv[IdxFull(j,j)] = 1.0 / decomp(j,j);
-
-        for (int i = j+1; i < sz; ++i) {
-          inv[IdxFull(i,j)] = -decomp(i,j);
-          inv[IdxFull(j,i)] = -decomp(j,i) * inv[IdxFull(j,j)];
-
-          for (int k = j+1; k < i; ++k) {
-            inv[IdxFull(i,j)] -= decomp(i,k) * inv[IdxFull(k,j)];
-            inv[IdxFull(j,i)] -= decomp(k,i) * inv[IdxFull(j,k)];
-          }
-          if (j+1 <= i) inv[IdxFull(j,i)] /= decomp(i,i);
-        }
+      for (int i = j+1; i < sz; ++i) {
+        passivedouble sum = 0.0;
+        for (int k = j; k < i; ++k) sum -= Get(i,k) * inv(k,j);
+        inv(i,j) = sum / Get(i,i);
       }
-      // inverses in val_vec
+    } // L inverse in inv
 
-      /*--- Multiply U_inv by L_inv, overwrite decomp_vec. ---*/
-      for (int i = 0; i < sz; ++i)
-        for (int j = 0; j < sz; ++j) {
-          decomp(i,j) = 0.0;
-          for (int k = max(i,j); k < sz; ++k)
-            decomp(i,j) += inv[IdxFull(i,k)] * ((k==j)? 1.0 : inv[IdxFull(k,j)]);
-        }
-
-      /*--- Permute multiplied matrix to recover A_inv, overwrite val_vec. ---*/
-      for (int j = 0; j < sz; ++j) {
-        int k = perm_vec[j];
-        for (int i = k; i < sz; ++i) Set(i, k, decomp(i,j));
+    /*--- Multiply inversed matrices overwrite mat. ---*/
+    for (int j = 0; j < sz; ++j)
+      for (int i = j; i < sz; ++i) {
+        passivedouble sum = 0.0;
+        for (int k = i; k < sz; ++k) sum += inv(k,i) * inv(k,j);
+        Set(i, j, sum);
       }
-
-      /*--- Decomposition no longer needed. ---*/
-      vector<passivedouble>().swap(decomp_vec);
-
-      break;
-    }
-    default: assert(false && "Default (LU) decomposition failed.");
   }
+  else
+  {
+    su2passivematrix decomp;
+    vector<int> perm;
+    LUDecompose(decomp, perm);
 
-  decomposed = NONE;
+    /*--- Alias mat. ---*/
+    auto& inv = mat;
+
+    /*--- Invert L and U matrices in place. ---*/
+    for (int j = 0; j < sz; ++j) {
+      inv(j,j) = 1.0 / decomp(j,j);
+
+      for (int i = j+1; i < sz; ++i) {
+        inv(i,j) = -decomp(i,j);
+        inv(j,i) = -decomp(j,i) * inv(j,j);
+
+        for (int k = j+1; k < i; ++k) {
+          inv(i,j) -= decomp(i,k) * inv(k,j);
+          inv(j,i) -= decomp(k,i) * inv(j,k);
+        }
+        if (j+1 <= i) inv(j,i) /= decomp(i,i);
+      }
+    }
+    // inverses in mat
+
+    /*--- Multiply U_inv by L_inv, overwrite decomp_vec. ---*/
+    for (int i = 0; i < sz; ++i)
+      for (int j = 0; j < sz; ++j) {
+        decomp(i,j) = 0.0;
+        for (int k = max(i,j); k < sz; ++k)
+          decomp(i,j) += inv(i,k) * ((k==j)? 1.0 : inv(k,j));
+      }
+
+    /*--- Permute multiplied matrix to recover A_inv, overwrite mat. ---*/
+    for (int j = 0; j < sz; ++j) {
+      int k = perm[j];
+      for (int i = k; i < sz; ++i) Set(i, k, decomp(i,j));
+    }
+  }
 #endif
 }
 
 void CSymmetricMatrix::CalcInv_sytri()
 {
 #ifdef HAVE_LAPACK
-  char uplo = 'L';
+  const char uplo = 'L';
+  const int sz = Size();
   int info;
-  perm_vec.resize(sz); // ipiv array
+  vector<int> ipiv(sz);
 
   /*--- Query the optimum work size. ---*/
   int query = -1; passivedouble tmp;
-  dsytrf_(&uplo, &sz, val_vec.data(), &sz, perm_vec.data(), &tmp, &query, &info);
+  dsytrf_(&uplo, &sz, mat.data(), &sz, ipiv.data(), &tmp, &query, &info);
   query = static_cast<int>(tmp);
-  decomp_vec.resize(query); // work array
+  vector<passivedouble> work(query);
 
   /*--- Factorize and invert. ---*/
-  dsytrf_(&uplo, &sz, val_vec.data(), &sz, perm_vec.data(), decomp_vec.data(), &query, &info);
+  dsytrf_(&uplo, &sz, mat.data(), &sz, ipiv.data(), work.data(), &query, &info);
   if (info!=0) SU2_MPI::Error("LDLT factorization failed.", CURRENT_FUNCTION);
-  dsytri_(&uplo, &sz, val_vec.data(), &sz, perm_vec.data(), decomp_vec.data(), &info);
+  dsytri_(&uplo, &sz, mat.data(), &sz, ipiv.data(), work.data(), &info);
   if (info!=0) SU2_MPI::Error("Inversion with LDLT factorization failed.", CURRENT_FUNCTION);
 
   decomposed = NONE;
@@ -230,12 +213,13 @@ void CSymmetricMatrix::CalcInv_sytri()
 void CSymmetricMatrix::CalcInv_potri()
 {
 #ifdef HAVE_LAPACK
-  char uplo = 'L';
+  const char uplo = 'L';
+  const int sz = Size();
   int info;
 
-  dpotrf_(&uplo, &sz, val_vec.data(), &sz, &info);
+  dpotrf_(&uplo, &sz, mat.data(), &sz, &info);
   if (info!=0) SU2_MPI::Error("LLT factorization failed.", CURRENT_FUNCTION);
-  dpotri_(&uplo, &sz, val_vec.data(), &sz, &info);
+  dpotri_(&uplo, &sz, mat.data(), &sz, &info);
   if (info!=0) SU2_MPI::Error("Inversion with LLT factorization failed.", CURRENT_FUNCTION);
 
   decomposed = NONE;
@@ -248,9 +232,7 @@ void CSymmetricMatrix::Invert(const bool is_spd)
   if(is_spd) CalcInv_potri();
   else CalcInv_sytri();
 #else
-  if(!is_spd) LUDecompose();
-  else CholeskyDecompose();
-  CalcInv();
+  CalcInv(is_spd);
 #endif
 }
 
@@ -258,60 +240,58 @@ void CSymmetricMatrix::MatMatMult(const char side,
                                   const su2passivematrix& mat_in,
                                   su2passivematrix& mat_out) const
 {
-  /*--- Assumes row major storage of in/out matrices for LAPACK. ---*/
-  static_assert(su2passivematrix::Storage == StorageType::RowMajor,"");
-
   /*--- Left side: mat_out = this * mat_in. ---*/
   if (side == 'L' || side == 'l') {
-    int M = sz, N = mat_in.cols();
+    const int M = Size(), N = mat_in.cols();
     assert(M == mat_in.rows());
 
     mat_out.resize(M,N);
 
-#if !defined(HAVE_LAPACK) // Naive product
+#ifdef HAVE_LAPACK
+    /*--- Right and lower because matrices are in row major order. ---*/
+    const char side = 'R', uplo = 'L';
+    const passivedouble alpha = 1.0, beta = 0.0;
+    DSYMM(&side, &uplo, &N, &M, &alpha, mat.data(), &M,
+          mat_in.data(), &N, &beta, mat_out.data(), &N);
+#else // Naive product
     for (int i = 0; i < M; ++i)
       for (int j = 0; j < N; ++j) {
         mat_out(i,j) = 0.0;
         for (int k = 0; k < M; ++k)
           mat_out(i,j) += Get(i,k) * mat_in(k,j);
       }
-#elif defined(HAVE_MKL)
-    passivedouble alpha = 1.0, beta = 0.0;
-    cblas_dsymm(CblasRowMajor, CblasLeft, CblasUpper, M, N, alpha,
-      val_vec.data(), M, mat_in.data(), N, beta, mat_out.data(), N);
-#else // BLAS/LAPACK
-    /*--- Right and lower because matrices are in row major order. ---*/
-    const char side = 'R', uplo = 'L';
-    const passivedouble alpha = 1.0, beta = 0.0;
-    dsymm_(&side, &uplo, &N, &M, &alpha, val_vec.data(), &M,
-           mat_in.data(), &N, &beta, mat_out.data(), &N);
 #endif
   }
   /*--- Right_side: mat_out = mat_in * this. ---*/
   else {
-    int M = mat_in.rows(), N = sz;
+    const int M = mat_in.rows(), N = Size();
     assert(N == mat_in.cols());
 
     mat_out.resize(M,N);
 
-#if !defined(HAVE_LAPACK) // Naive product
+#ifdef HAVE_LAPACK
+    /*--- Left and lower because matrices are in row major order. ---*/
+    const char side = 'L', uplo = 'L';
+    const passivedouble alpha = 1.0, beta = 0.0;
+    DSYMM(&side, &uplo, &N, &M, &alpha, mat.data(), &N,
+          mat_in.data(), &N, &beta, mat_out.data(), &N);
+#else // Naive product
     for (int i = 0; i < M; ++i)
       for (int j = 0; j < N; ++j) {
         mat_out(i,j) = 0.0;
         for (int k = 0; k < N; ++k)
           mat_out(i,j) += mat_in(i,k) * Get(k,j);
       }
-#elif defined(HAVE_MKL)
-    passivedouble alpha = 1.0, beta = 0.0;
-    cblas_dsymm(CblasRowMajor, CblasRight, CblasUpper, M, N, alpha,
-      val_vec.data(), N, mat_in.data(), N, beta, mat_out.data(), N);
-#else // BLAS/LAPACK
-    /*--- Left and lower because matrices are in row major order. ---*/
-    const char side = 'L', uplo = 'L';
-    const passivedouble alpha = 1.0, beta = 0.0;
-    dsymm_(&side, &uplo, &N, &M, &alpha, val_vec.data(), &N,
-           mat_in.data(), &N, &beta, mat_out.data(), &N);
 #endif
   }
+}
 
+su2passivematrix CSymmetricMatrix::StealData()
+{
+  /*--- Fill lower triangular part. ---*/
+  for (int i = 1; i < Size(); ++i)
+    for (int j = 0; j < i; ++j)
+      mat(i,j) = mat(j,i);
+
+  return move(mat);
 }

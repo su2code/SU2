@@ -37,30 +37,15 @@ using namespace std;
  * with LAPACK to use optimized matrix inversion and multiplication routines.
  */
 class CSymmetricMatrix {
+  static_assert(su2passivematrix::Storage == StorageType::RowMajor,
+                "Row major storage is assumed for LAPACK.");
 private:
-  enum DecompositionType { NONE, CHOLESKY, LU };
-
-  vector<passivedouble> val_vec, decomp_vec;
-  vector<int> perm_vec;
-  int sz = 0;
-  bool initialized = false;
-  DecompositionType decomposed = NONE;
-
-  inline void CheckBounds(int i, int j) const {
-    assert(initialized && "Matrix not initialized.");
-    assert(i>=0 && i<sz && j>=0 && j<sz && "Index to access matrix out of bounds.");
-  }
-
-  inline int IdxFull(int i, int j) const {CheckBounds(i,j); return i*sz + j;}
-
-  inline int IdxSym(int i, int j) const {return IdxFull(min(i,j), max(i,j));}
-
-  inline passivedouble& decomp(int i, int j) { return decomp_vec[IdxFull(i,j)]; }
+  su2passivematrix mat;
 
   // Not optimized dense matrix factorization and inversion for portability.
+  void CalcInv(bool is_spd);
   void CholeskyDecompose();
-  void LUDecompose();
-  void CalcInv();
+  void LUDecompose(su2activematrix& decomp, vector<int>& perm) const;
   // Matrix inversion using LAPACK routines (LDLT and LLT factorization).
   void CalcInv_sytri();
   void CalcInv_potri();
@@ -71,23 +56,23 @@ public:
 
   void Initialize(int N);
 
-  inline int GetSize() const { return sz; }
+  inline int Size() const { return mat.rows(); }
 
-  inline passivedouble Get(int i, int j) const { return val_vec[IdxSym(i,j)]; }
+  inline passivedouble Get(int i, int j) const { return mat(min(i,j),max(i,j)); }
 
-  inline void Set(int i, int j, passivedouble val) { val_vec[IdxSym(i,j)] = val; }
+  inline void Set(int i, int j, passivedouble val) { mat(min(i,j),max(i,j)) = val; }
 
-  inline passivedouble& operator() (int i, int j) { return val_vec[IdxSym(i,j)]; }
+  inline passivedouble& operator() (int i, int j) { return mat(min(i,j),max(i,j)); }
 
-  inline const passivedouble& operator() (int i, int j) const { return val_vec[IdxSym(i,j)]; }
+  inline const passivedouble& operator() (int i, int j) const { return mat(min(i,j),max(i,j)); }
 
   template<class ForwardIt>
   void MatVecMult(ForwardIt vec_in, ForwardIt vec_out) const
   {
-    for (int i = 0; i < sz; ++i) {
+    for (int i = 0; i < Size(); ++i) {
       *vec_out = 0.0;
       auto vec = vec_in;
-      for (int k = 0; k < sz; ++k)
+      for (int k = 0; k < Size(); ++k)
         *vec_out += *(vec++) * Get(i,k);
       ++vec_out;
     }
@@ -95,6 +80,8 @@ public:
 
   void MatMatMult(const char side, const su2passivematrix& mat_in, su2passivematrix& mat_out) const;
 
-  void Invert(const bool is_spd);
+  void Invert(bool is_spd = false);
+
+  su2passivematrix StealData();
 
 };

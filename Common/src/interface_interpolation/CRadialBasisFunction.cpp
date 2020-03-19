@@ -40,6 +40,7 @@
 extern "C" void dgemm_(const char*, const char*, const int*, const int*, const int*,
   const passivedouble*, const passivedouble*, const int*, const passivedouble*,
   const int*, const passivedouble*, passivedouble*, const int*);
+#define DGEMM dgemm_
 #endif
 
 
@@ -305,7 +306,7 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
       const int M = interpMat.cols(), N = slabSize, K = funcMat.cols();
       // lda = C_inv_trunc.cols() = M; ldb = funcMat.cols() = K; ldc = interpMat.cols() = M;
       const passivedouble alpha = 1.0, beta = 0.0;
-      dgemm_(&op, &op, &M, &N, &K, &alpha, C_inv_trunc[0], &M, funcMat[0], &K, &beta, interpMat[0], &M);
+      DGEMM(&op, &op, &M, &N, &K, &alpha, C_inv_trunc[0], &M, funcMat[0], &K, &beta, interpMat[0], &M);
 #else
       /*--- Naive product, loop order considers short-wide
        *    nature of funcMat and interpMat. ---*/
@@ -427,10 +428,7 @@ void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool us
   else {
     /*--- No polynomial term used in the interpolation, C_inv_trunc = M^-1. ---*/
 
-    C_inv_trunc.resize(nVertexDonor, nVertexDonor);
-    for (auto i = 0ul; i < nVertexDonor; ++i)
-      for (auto j = 0ul; j < nVertexDonor; ++j)
-        C_inv_trunc(i,j) = global_M(i,j);
+    C_inv_trunc = global_M.StealData();
 
   } // end usePolynomial
 
