@@ -5608,8 +5608,9 @@ void CSolver::ViscousMetric(CSolver          **solver,
   lam  = cp*mu/Pr;
   lamt = cp*mut/Prt;
 
-  su2double gradu[3][3] gradT[3], gradk[3], gradomega[3], divu, tau[3][3], taut[3][3],
+  su2double gradu[3][3], gradT[3], gradk[3], gradomega[3], divu, tau[3][3], taut[3][3],
             delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0 ; jDim < nDim; jDim++) {
       gradu[iDim][jDim] = varFlo->GetGradient_Primitive(iPoint, iDim+1, jDim);
@@ -5679,7 +5680,7 @@ void CSolver::ViscousMetric(CSolver          **solver,
   TmpWeights[0] -= e*TmpWeights[nVarFlo-1];
 
   //--- Add TmpWeights to weights, then reset for second-order terms
-  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[iVar] += TmpWeights[iVar];
+  for (unsigned short iVar = 0; iVar < nVarFlo; ++iVar) weights[iVar] += TmpWeights[iVar];
   fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
 
   //--- Second-order terms (error due to gradients)
@@ -5698,7 +5699,7 @@ void CSolver::ViscousMetric(CSolver          **solver,
                                      +u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+xzi))
                    - (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
                                             +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-                                            +varAdjFlo->GetAnisoHess(iPoint, rei+zzi));
+                                            +varAdjFlo->GetAnisoHess(iPoint, rei+zzi)); // Hrhou
     TmpWeights[2] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetAnisoHess(iPoint, rui+xxi)
                                      +4.*varAdjFlo->GetAnisoHess(iPoint, rui+yyi)
                                      +3.*varAdjFlo->GetAnisoHess(iPoint, rui+zzi)
@@ -5711,7 +5712,7 @@ void CSolver::ViscousMetric(CSolver          **solver,
                                      +u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+yzi))
                    - (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
                                             +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-                                            +varAdjFlo->GetAnisoHess(iPoint, rei+zzi));
+                                            +varAdjFlo->GetAnisoHess(iPoint, rei+zzi)); // Hrhov
     TmpWeights[3] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetAnisoHess(iPoint, rui+xxi)
                                      +3.*varAdjFlo->GetAnisoHess(iPoint, rui+yyi)
                                      +4.*varAdjFlo->GetAnisoHess(iPoint, rui+zzi)
@@ -5720,15 +5721,15 @@ void CSolver::ViscousMetric(CSolver          **solver,
                                      +3.*u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
                                      +3.*u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
                                      +4.*u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+zzi)
-                                     +u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+xai)
+                                     +u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+xzi)
                                      +u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+yzi))
                    - (lam+lamt)/(r*cv)*u[2]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
                                             +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-                                            +varAdjFlo->GetAnisoHess(iPoint, rei+zzi));
+                                            +varAdjFlo->GetAnisoHess(iPoint, rei+zzi)); // Hrhow
     TmpWeights[4] -= (lam+lamt)/(r*cv)*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
                                        +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-                                       +varAdjFlo->GetAnisoHess(iPoint, rei+zzi));
-    TmpWeights[0] -= u[0]*TmpWeights[1]+u[1]*TmpWeights[2]+u[2]*TmpWeights[3]+e*TmpWeights[4];
+                                       +varAdjFlo->GetAnisoHess(iPoint, rei+zzi)); // Hrhoe
+    TmpWeights[0] -= u[0]*TmpWeights[1]+u[1]*TmpWeights[2]+u[2]*TmpWeights[3]+e*TmpWeights[4]; // Hrho
   }
   else {
     const unsigned short rui = 1*nMetr, rvi = 2*nMetr, rei = 3*nMetr,
@@ -5740,7 +5741,7 @@ void CSolver::ViscousMetric(CSolver          **solver,
                                      +3.*u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
                                      +u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+xyi))
                    - (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                            +varAdjFlo->GetAnisoHess(iPoint, rei+yyi));
+                                            +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)); // Hrhou
     TmpWeights[2] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetAnisoHess(iPoint, rui+xxi)
                                      +4.*varAdjFlo->GetAnisoHess(iPoint, rui+yyi)
                                      +varAdjFlo->GetAnisoHess(iPoint, rvi+xyi)
@@ -5748,10 +5749,10 @@ void CSolver::ViscousMetric(CSolver          **solver,
                                      +4.*u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
                                      +u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+xyi))
                    - (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                            +varAdjFlo->GetAnisoHess(iPoint, rei+yyi));
-    TmpWeights[4] -= (lam+lamt)/(r*cv)*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                       +varAdjFlo->GetAnisoHess(iPoint, rei+yyi));
-    TmpWeights[0] -= u[0]*TmpWeights[1]+u[1]*TmpWeights[2]+e*TmpWeights[3];
+                                            +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)); // Hrhov
+    TmpWeights[3] -= (lam+lamt)/(r*cv)*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
+                                       +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)); // Hrhoe
+    TmpWeights[0] -= u[0]*TmpWeights[1]+u[1]*TmpWeights[2]+e*TmpWeights[3]; // Hrho
   }
 
   //--- Add TmpWeights to weights
