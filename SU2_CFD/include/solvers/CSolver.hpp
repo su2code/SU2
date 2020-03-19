@@ -362,7 +362,7 @@ public:
   void ComputeMetric(CSolver **solver, CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Compute the convective term of the goal-oriented metric.
+   * \brief Compute the convective terms of the goal-oriented metric.
    * \param[in] solver - Physical definition of the problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -371,6 +371,17 @@ public:
    */
   void ConvectiveMetric(CSolver **solver, CGeometry *geometry, CConfig *config, 
                         unsigned long iPoint, vector<su2double> &weights);
+
+  /*!
+   * \brief Compute the viscous terms of the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of current node.
+   * \param[in] weights - Weights of each Hessian in the metric.
+   */
+  void ViscousMetric(CSolver **solver, CGeometry *geometry, CConfig *config, 
+                     unsigned long iPoint, vector<su2double> &weights);
 
   /*!
    * \brief Sum up the weighted Hessians to obtain the goal-oriented metric.
