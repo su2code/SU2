@@ -5564,7 +5564,7 @@ void CSolver::ConvectiveMetric(CSolver          **solver,
         const unsigned short i = iVar*nDim;
         const su2double adjx = varAdjTur->GetAnisoGrad(iPoint, i+0),
                         adjy = varAdjTur->GetAnisoGrad(iPoint, i+1);
-        weights[nVarFlo+iVar] -= u*adjx + v*adjy;å
+        weights[nVarFlo+iVar] -= u*adjx + v*adjy;
         if (nDim == 3) {
           const su2double adjz = varAdjTur->GetAnisoGrad(iPoint, i+2);
           weights[nVarFlo+iVar] -= w*adjz;
