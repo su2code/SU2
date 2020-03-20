@@ -391,8 +391,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     F2 = nodes->GetF2blending(iPoint);
 
-    nodes->SetSolution(iPoint, 0, nodes->GetConservative(iPoint, 0)/rho);
-    nodes->SetSolution(iPoint, 1, nodes->GetConservative(iPoint, 1)/rho);
+    // nodes->SetSolution(iPoint, 0, nodes->GetConservative(iPoint, 0)/rho);
+    // nodes->SetSolution(iPoint, 1, nodes->GetConservative(iPoint, 1)/rho);
 
     /*--- Compute the eddy viscosity ---*/
 

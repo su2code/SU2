@@ -434,6 +434,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
           for (iVar = 0; iVar < nVar; iVar++) {
             // nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
             nodes->AddConservative(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint], lowerlimit[iVar], upperlimit[iVar]);
+            nodes->SetSolution(iPoint, iVar, nodes->GetConservative(iPoint, iVar)/density);
           }
 
         }
@@ -452,6 +453,15 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   InitiateComms(geometry, config, SOLUTION_EDDY);
   CompleteComms(geometry, config, SOLUTION_EDDY);
+
+  if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        nodes->SetConservative(iPoint, iVar, nodes->GetSolution(iPoint, iVar)*density);
+      }
+    }
+  }
 
   /*--- Compute the root mean square residual ---*/
 
