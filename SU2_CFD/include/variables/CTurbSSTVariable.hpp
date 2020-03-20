@@ -104,4 +104,21 @@ public:
    * \return Value of the solution for the index <i>iVar</i>.
    */
   virtual su2double GetConservative(unsigned long iPoint, unsigned long iVar) const { return Conservative(iPoint,iVar); }
+
+  /*!
+   * \brief Register the variables in the solution array as input/output variable.
+   * \param[in] input - input or output variables.
+   * \param[in] push_index - boolean whether we want to push the index or save it in a member variable.
+   */
+  void RegisterConservativeSolution(bool input, bool push_index = true);
+
+  /*!
+   * \brief Register the variables in the solution_time_n array as input/output variable.
+   */
+  void RegisterConservativeSolution_time_n();
+
+  /*!
+   * \brief Register the variables in the solution_time_n1 array as input/output variable.
+   */
+  void RegisterConservativeSolution_time_n1();
 };

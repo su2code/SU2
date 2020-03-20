@@ -2752,17 +2752,17 @@ public:
    * \param[in] input - input or output variables.
    * \param[in] push_index - boolean whether we want to push the index or save it in a member variable.
    */
-  void RegisterConservativeSolution(bool input, bool push_index = true);
+  virtual void RegisterConservativeSolution(bool input, bool push_index = true) { }
 
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
    */
-  void RegisterConservativeSolution_time_n();
+  virtual void RegisterConservativeSolution_time_n() { }
 
   /*!
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
-  void RegisterConservativeSolution_time_n1();
+  virtual void RegisterConservativeSolution_time_n1() { }
 
   /*!
    * \brief Set the adjoint values of the solution.
