@@ -350,7 +350,11 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
   su2double rho = 0.0, mu = 0.0, dist, omega, kine, F2, muT, zeta;
   su2double a1 = constants[7];
-  unsigned long iPoint;
+  unsigned long iPoint, ErrorCounter = 0;
+
+  /*--- Set the primitive variables ---*/
+
+  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
 
   /*--- Compute mean flow and turbulence gradients ---*/
 
@@ -398,14 +402,14 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Compute the eddy viscosity ---*/
 
-    const su2double rhokine  = nodes->GetSolution(iPoint,0);
-    const su2double rhoomega = nodes->GetSolution(iPoint,1);
+    // const su2double rhokine  = nodes->GetSolution(iPoint,0);
+    // const su2double rhoomega = nodes->GetSolution(iPoint,1);
 
-    kine  = rhokine/rho;
-    omega = rhoomega/rho;
+    // kine  = rhokine/rho;
+    // omega = rhoomega/rho;
 
-    // kine  = nodes->GetPrimitive(iPoint,0);
-    // omega = nodes->GetPrimitive(iPoint,1);
+    kine  = nodes->GetPrimitive(iPoint,0);
+    omega = nodes->GetPrimitive(iPoint,1);
     // zeta  = min(1.0/omega, a1/(VorticityMag*F2));
     zeta  = min(1.0/omega, a1/(StrainMag*F2));
     muT   = max(rho*kine*zeta,0.0);
