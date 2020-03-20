@@ -1435,124 +1435,91 @@ void CTurbSSTSolver::TurbulentMetric(CSolver          **solver,
     }
   }
 
-  // su2double factor = 0.0;
-  // for (iDim = 0; iDim < nDim; ++iDim) {
-  //   for (jDim = 0; jDim < nDim; ++jDim) {
-  //     iVar = iDim+1;
-  //     if(turb) {
-  //       factor += (tau[iDim][jDim]+(2./3.)*r*k*delta[iDim][jDim])/(mu+mut)
-  //               * (varFlo->GetAnisoGrad(iPoint, iVar*nDim+jDim)
-  //               + u[jDim]*varFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim));
-  //     }
-  //     else {
-  //       factor += tau[iDim][jDim]/(mu+mut)
-  //               * (varFlo->GetAnisoGrad(iPoint, iVar*nDim+iDim)
-  //               + u[jDim]*varFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim));
-  //     }
-  //   }
-  //   factor += cp/Pr*gradT[iDim]*varFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim);
-  //   if (sst) {
-  //     factor += gradk[iDim]*varTur->GetAnisoGrad(iPoint, 0*nDim+iDim)
-  //             + gradomega[iDim]*varTur->GetAnisoGrad(iPoint, 1*nDim+iDim);
-  //   }
-  // }
-  // factor *= dmudT;
+  const su2double F1 = varTur->GetF1blending(iPoint);
+  const su2double F2 = varTur->GetF2blending(iPoint);
 
-  // //--- Momentum weights
-  // vector<su2double> TmpWeights(weights.size(), 0.0);
-  // TmpWeights[1] += u[0]*factor;
-  // TmpWeights[2] += u[1]*factor;
-  // if(nDim == 3) weights[3] += u[2]*factor;
-  // for (iDim = 0; iDim < nDim; ++iDim) {
-  //   for (jDim = 0; jDim < nDim; ++jDim) {
-  //     TmpWeights[iDim+1] += 1./r*tau[iDim][jDim]*varFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+jDim);
-  //   }
-  // }
+  const su2double alfa        = F1*constants[8] + (1.0 - F1)*constants[9];
+  const su2double sigmak      = F1*constants[0] + (1.0 - F1)*constants[1];
+  const su2double sigmaomega  = F1*constants[2] + (1.0 - F1)*constants[3];
+  const su2double sigmaomega2 = constants[3];
+  const su2double beta        = F1*constants[4] + (1.0 - F1)*constants[5];
+  const su2double betastar    = constants[6];
 
-  // //--- Energy weight
-  // TmpWeights[nVarFlo-1] += factor/(r*cv);
+  //--- Momentum weights
+  vector<su2double> TmpWeights(weights.size(), 0.0);
+  su2double factor = 0.0;
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    factor = -(2./3.)*(mut/r*varAdjTur->GetAnisoGrad(iPoint, 0*nDim+iDim)
+                                +alfa*varAdjTur->GetAnisoGrad(iPoint, 1*nDim+iDim));
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      factor += (taut[iDim][jDim]+mut*gradu[iDim][jDim])*(1./r*varAdjTur->GetAnisoGrad(iPoint, 0*nDim+jDim)
+                                                         +alfa/mut*varAdjTur->GetAnisoGrad(iPoint, 1*nDim+jDim));
+    }
+    TmpWeights[iDim+1] += factor;
+  }
 
-  // //--- Density weight
-  // for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] -= u[iDim]*TmpWeights[iDim+1];
-  // TmpWeights[0] -= e*TmpWeights[nVarFlo-1];
+  //--- k and omega weights
+  factor = 0.0;
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      iVar = iDim+1;
+      factor += (taut[iDim][jDim]+(2./3.)*r*k*delta[iDim][jDim])/mut
+              * (varAdjFlo->GetAnisoGrad(iPoint, iVar*nDim+jDim)
+              + u[jDim]*varAdjFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim));
+    }
+    factor += cp/Prt*gradT[iDim]*varAdjFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim);
+    factor += sigmak*gradk[iDim]*varAdjTur->GetAnisoGrad(iPoint, 0*nDim+iDim)
+            + sigmaomega*gradomega[iDim]*varAdjTur->GetAnisoGrad(iPoint, 1*nDim+iDim);
+  }
 
-  // //--- Add TmpWeights to weights, then reset for second-order terms
-  // for (iVar = 0; iVar < nVarFlo; ++iVar) weights[iVar] += TmpWeights[iVar];
-  // fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
+  TmpWeights[nVarFlo+0] += 1./omega*factor;
+  TmpWeights[nVarFlo+1] += -k/pow(omega,2.)*factor;
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetAnisoGrad(iPoint, 1*nDim+iDim);
+    TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetAnisoGrad(iPoint, 1*nDim+iDim);
+  }
 
-  // //--- Second-order terms (error due to gradients)
-  // if(nDim == 3) {
-  //   const unsigned short rui = 1*nMetr, rvi = 2*nMetr, rwi = 3*nMetr, rei = 4*nMetr,
-  //                        xxi = 0, xyi = 1, xzi = 2, yyi = 3, yzi = 4, zzi = 5;
-  //   TmpWeights[1] -= (mu+mut)/(3.*r)*(4.*varAdjFlo->GetAnisoHess(iPoint, rui+xxi)
-  //                                    +3.*varAdjFlo->GetAnisoHess(iPoint, rui+yyi)
-  //                                    +3.*varAdjFlo->GetAnisoHess(iPoint, rui+zzi)
-  //                                    +varAdjFlo->GetAnisoHess(iPoint, rvi+xyi)
-  //                                    +varAdjFlo->GetAnisoHess(iPoint, rwi+xzi)
-  //                                    +4.*u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-  //                                    +3.*u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-  //                                    +3.*u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+zzi)
-  //                                    +u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+xyi)
-  //                                    +u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+xzi))
-  //                  - (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-  //                                           +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-  //                                           +varAdjFlo->GetAnisoHess(iPoint, rei+zzi)); // Hrhou
-  //   TmpWeights[2] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetAnisoHess(iPoint, rui+xxi)
-  //                                    +4.*varAdjFlo->GetAnisoHess(iPoint, rui+yyi)
-  //                                    +3.*varAdjFlo->GetAnisoHess(iPoint, rui+zzi)
-  //                                    +varAdjFlo->GetAnisoHess(iPoint, rvi+xyi)
-  //                                    +varAdjFlo->GetAnisoHess(iPoint, rwi+yzi)
-  //                                    +3.*u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-  //                                    +4.*u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-  //                                    +3.*u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+zzi)
-  //                                    +u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+xyi)
-  //                                    +u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+yzi))
-  //                  - (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-  //                                           +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-  //                                           +varAdjFlo->GetAnisoHess(iPoint, rei+zzi)); // Hrhov
-  //   TmpWeights[3] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetAnisoHess(iPoint, rui+xxi)
-  //                                    +3.*varAdjFlo->GetAnisoHess(iPoint, rui+yyi)
-  //                                    +4.*varAdjFlo->GetAnisoHess(iPoint, rui+zzi)
-  //                                    +varAdjFlo->GetAnisoHess(iPoint, rvi+xzi)
-  //                                    +varAdjFlo->GetAnisoHess(iPoint, rwi+yzi)
-  //                                    +3.*u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-  //                                    +3.*u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-  //                                    +4.*u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+zzi)
-  //                                    +u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+xzi)
-  //                                    +u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+yzi))
-  //                  - (lam+lamt)/(r*cv)*u[2]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-  //                                           +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-  //                                           +varAdjFlo->GetAnisoHess(iPoint, rei+zzi)); // Hrhow
-  //   TmpWeights[4] -= (lam+lamt)/(r*cv)*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-  //                                      +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-  //                                      +varAdjFlo->GetAnisoHess(iPoint, rei+zzi)); // Hrhoe
-  //   TmpWeights[0] -= u[0]*TmpWeights[1]+u[1]*TmpWeights[2]+u[2]*TmpWeights[3]+e*TmpWeights[4]; // Hrho
-  // }
-  // else {
-  //   const unsigned short rui = 1*nMetr, rvi = 2*nMetr, rei = 3*nMetr,
-  //                        xxi = 0, xyi = 1, yyi = 2;
-  //   TmpWeights[1] -= (mu+mut)/(3.*r)*(4.*varAdjFlo->GetAnisoHess(iPoint, rui+xxi)
-  //                                    +3.*varAdjFlo->GetAnisoHess(iPoint, rui+yyi)
-  //                                    +varAdjFlo->GetAnisoHess(iPoint, rvi+xyi)
-  //                                    +4.*u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-  //                                    +3.*u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-  //                                    +u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+xyi))
-  //                  - (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-  //                                           +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)); // Hrhou
-  //   TmpWeights[2] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetAnisoHess(iPoint, rui+xxi)
-  //                                    +4.*varAdjFlo->GetAnisoHess(iPoint, rui+yyi)
-  //                                    +varAdjFlo->GetAnisoHess(iPoint, rvi+xyi)
-  //                                    +3.*u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-  //                                    +4.*u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-  //                                    +u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+xyi))
-  //                  - (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-  //                                           +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)); // Hrhov
-  //   TmpWeights[3] -= (lam+lamt)/(r*cv)*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-  //                                      +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)); // Hrhoe
-  //   TmpWeights[0] -= u[0]*TmpWeights[1]+u[1]*TmpWeights[2]+e*TmpWeights[3]; // Hrho
-  // }
+  //--- Density weight
+  for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] -= u[iDim]*TmpWeights[iDim+1];
+  TmpWeights[0] -= k*TmpWeights[nVarFlo+0] + omega*TmpWeights[nVarFlo+1]
+                 + k/omega*factor;
 
-  // //--- Add TmpWeights to weights
-  // for (iVar = 0; iVar < nVarFlo; ++iVar) weights[iVar] += TmpWeights[iVar];
+  //--- Add TmpWeights to weights, then reset for second-order terms
+  for (iVar = 0; iVar < nVarFlo+nVarTur; ++iVar) weights[iVar] += TmpWeights[iVar];
+  fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
+
+  //--- Second-order terms (error due to gradients)
+  if(nDim == 3) {
+    const unsigned short rki = 0*nMetr, romegai = 1*nMetr, xxi = 0, yyi = 3, zzi = 5;
+    TmpWeights[nVarFlo+0] -= (mu+sigmak*mut)*(varAdjTur->GetAnisoHess(iPoint, rki+xxi)
+                                             +varAdjTur->GetAnisoHess(iPoint, rki+yyi)
+                                             +varAdjTur->GetAnisoHess(iPoint, rki+zzi)); // Hk
+    TmpWeights[nVarFlo+1] -= (mu+sigmaomega*mut)*(varAdjTur->GetAnisoHess(iPoint, romegai+xxi)
+                                                 +varAdjTur->GetAnisoHess(iPoint, romegai+yyi)
+                                                 +varAdjTur->GetAnisoHess(iPoint, romegai+zzi)); // Homega
+
+  }
+  else {
+    const unsigned short rki = 1*nMetr, romegai = 2*nMetr, xxi = 0, yyi = 2;
+    TmpWeights[nVarFlo+0] -= (mu+sigmak*mut)*(varAdjTur->GetAnisoHess(iPoint, rki+xxi)
+                                             +varAdjTur->GetAnisoHess(iPoint, rki+yyi)); // Hk
+    TmpWeights[nVarFlo+1] -= (mu+sigmaomega*mut)*(varAdjTur->GetAnisoHess(iPoint, romegai+xxi)
+                                                 +varAdjTur->GetAnisoHess(iPoint, romegai+yyi)); // Homega
+  }
+  TmpWeights[0] -= k*TmpWeights[nVarFlo+0]+omega*TmpWeights[nVarFlo+1];
+
+  //--- Add TmpWeights to weights
+  weights[0]         += TmpWeights[0];
+  weights[nVarFlo+0] += TmpWeights[nVarFlo+0];
+  weights[nVarFlo+1] += TmpWeights[nVarFlo+1];
+
+  //--- Zeroth-order terms (due to production and dissipation)
+  weights[0]         += -betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
+                      - beta*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);
+  weights[nVarFlo+0] += betastar*omega*varAdjTur->GetSolution(iPoint,0)
+                      + (2./3.)*divu*varAdjTur->GetSolution(iPoint,0);
+  weights[nVarFlo+1] += betastar*k*varAdjTur->GetSolution(iPoint,0)
+                      + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1)
+                      + (2./3.)*alfa*divu*varAdjTur->GetSolution(iPoint,1);
 
 }
