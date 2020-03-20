@@ -93,7 +93,7 @@ public:
    * \brief Get the primitive variables for all points.
    * \return Reference to primitives.
    */
-  inline const MatrixType& GetPrimitive(void) const { return Primitive; }
+  inline const MatrixType& GetPrimitive(void) const final { return Primitive; }
 
   /*!
    * \brief Get the primitive variables.
