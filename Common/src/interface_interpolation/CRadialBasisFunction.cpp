@@ -50,9 +50,13 @@ CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, con
 }
 
 void CRadialBasisFunction::PrintStatistics() const {
-  if (rank == MASTER_NODE)
-    cout << "Min / avg / max number of RBF donors per target point: "
-         << MinDonors << " / " << AvgDonors << " / " << MaxDonors << endl;
+  if (rank == MASTER_NODE) {
+    cout.precision(3);
+    cout << " Min/avg/max number of RBF donors per target point: "
+         << MinDonors << "/" << AvgDonors << "/" << MaxDonors
+         << "\n Interpolation matrix is " << Density << "% dense." << endl;
+    cout.unsetf(ios::floatfield);
+  }
 }
 
 su2double CRadialBasisFunction::Get_RadialBasisValue(ENUM_RADIALBASIS type, const su2double radius, const su2double dist)
@@ -128,8 +132,8 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
     Determine_ArraySize(false, markDonor, markTarget, nVertexDonor, nDim);
 
     /*--- Compute total number of donor vertices. ---*/
-    auto nGlobalVertexDonor = accumulate(Buffer_Receive_nVertex_Donor,
-                              Buffer_Receive_nVertex_Donor+nProcessor, 0ul);
+    const auto nGlobalVertexDonor = accumulate(Buffer_Receive_nVertex_Donor,
+                                    Buffer_Receive_nVertex_Donor+nProcessor, 0ul);
 
     /*--- Gather coordinates and global point indices. ---*/
     Buffer_Send_Coord = new su2double [ MaxLocalVertex_Donor * nDim ];
@@ -194,7 +198,8 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
 
   /*--- Final loop over interface markers to compute the interpolation coefficients. ---*/
 
-  unsigned long totalTargetPoints = 0, totalDonorPoints = 0;
+  /*--- Initialize variables for interpolation statistics. ---*/
+  unsigned long totalTargetPoints = 0, totalDonorPoints = 0, denseSize = 0;
   MinDonors = 1<<30; MaxDonors = 0;
 
   for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
@@ -266,6 +271,7 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
     }
     nVertexTarget = targetVertices.size();
     totalTargetPoints += nVertexTarget;
+    denseSize += nVertexTarget*nGlobalVertexDonor;
 
     /*--- Distribute target slabs over the threads in the rank for processing. ---*/
 
@@ -277,6 +283,7 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
     su2passivematrix funcMat(targetSlabSize, 1+nPolynomial+nGlobalVertexDonor);
     su2passivematrix interpMat(targetSlabSize, nGlobalVertexDonor);
 
+    /*--- Thread-local variables for statistics. ---*/
     unsigned long minDonors = 1<<30, maxDonors = 0, totalDonors = 0;
 
     SU2_OMP_FOR_DYN(1)
@@ -370,20 +377,29 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
 
   } // end loop over interface markers
 
-  /*--- Final reduction of interpolation statistics. ---*/
+  /*--- Final reduction of interpolation statistics and basic sanity checks. ---*/
   auto Reduce = [](SU2_MPI::Op op, unsigned long &val) {
     auto tmp = val;
-    SU2_MPI::Reduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, op, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, op, MPI_COMM_WORLD);
   };
   Reduce(MPI_SUM, totalTargetPoints);
   Reduce(MPI_SUM, totalDonorPoints);
+  Reduce(MPI_SUM, denseSize);
   Reduce(MPI_MIN, MinDonors);
   Reduce(MPI_MAX, MaxDonors);
-  AvgDonors = passivedouble(totalDonorPoints) / totalTargetPoints;
+
+  if (totalTargetPoints == 0)
+    SU2_MPI::Error("Somehow there are no target interpolation points.", CURRENT_FUNCTION);
+
   if (MinDonors == 0)
     SU2_MPI::Error("One or more target points have no donors, either:\n"
+                   " - The interface surfaces are not in contact.\n"
                    " - The RBF radius is too small.\n"
                    " - The pruning tolerance is too aggressive.", CURRENT_FUNCTION);
+
+  AvgDonors = totalDonorPoints / totalTargetPoints;
+  Density = totalDonorPoints / (0.01*denseSize);
+
 }
 
 void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool usePolynomial,
@@ -392,14 +408,14 @@ void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool us
 
   const su2double interfaceCoordTol = 1e6 * numeric_limits<passivedouble>::epsilon();
 
-  const auto nVertexDonor = coords.rows();
+  const int nVertexDonor = coords.rows();
   const int nDim = coords.cols();
 
   /*--- Populate interpolation kernel. ---*/
   CSymmetricMatrix global_M(nVertexDonor);
 
-  for (auto iVertex = 0ul; iVertex < nVertexDonor; ++iVertex)
-    for (auto jVertex = iVertex; jVertex < nVertexDonor; ++jVertex)
+  for (int iVertex = 0; iVertex < nVertexDonor; ++iVertex)
+    for (int jVertex = iVertex; jVertex < nVertexDonor; ++jVertex)
       global_M(iVertex, jVertex) = SU2_TYPE::GetValue(Get_RadialBasisValue(type, radius,
                                    PointsDistance(nDim, coords[iVertex], coords[jVertex])));
 
@@ -413,7 +429,7 @@ void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool us
     /*--- Fill P matrix (P for points, with an extra top row of ones). ---*/
     su2passivematrix P(1+nDim, nVertexDonor);
 
-    for (auto iVertex = 0ul; iVertex < nVertexDonor; iVertex++) {
+    for (int iVertex = 0; iVertex < nVertexDonor; iVertex++) {
       P(0, iVertex) = 1.0;
       for (int iDim = 0; iDim < nDim; ++iDim)
         P(1+iDim, iVertex) = SU2_TYPE::GetValue(coords(iVertex, iDim));
@@ -422,44 +438,47 @@ void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool us
     /*--- Check if points lie on a plane and remove one coordinate from P if so. ---*/
     nPolynomial = CheckPolynomialTerms(interfaceCoordTol, keepPolynomialRow, P);
 
-    /*--- Compute Mp = (P * M^-1 * P^T)^-1 ---*/
+    /*--- Compute Q = P * M^-1 ---*/
+    su2passivematrix Q;
+    global_M.MatMatMult('R', P, Q);
+
+    /*--- Compute Mp = (Q * P^T)^-1 ---*/
     CSymmetricMatrix Mp(nPolynomial+1);
 
-    su2passivematrix tmp;
-    global_M.MatMatMult('R', P, tmp); // tmp = P * M^-1
-
-    for (int i = 0; i <= nPolynomial; ++i) // Mp = tmp * P
+    for (int i = 0; i <= nPolynomial; ++i)
       for (int j = i; j <= nPolynomial; ++j) {
         Mp(i,j) = 0.0;
-        for (auto k = 0ul; k < nVertexDonor; ++k) Mp(i,j) += tmp(i,k) * P(j,k);
+        for (int k = 0; k < nVertexDonor; ++k)
+          Mp(i,j) += Q(i,k) * P(j,k);
       }
-    Mp.Invert(false); // Mp = Mp^-1
+    Mp.Invert(false);
 
-    /*--- Compute M_p * P * M^-1, the top part of C_inv_trunc. ---*/
-    Mp.MatMatMult('L', P, tmp);
+    /*--- Compute M_p * Q, the top part of C_inv_trunc. ---*/
     su2passivematrix C_inv_top;
-    global_M.MatMatMult('R', tmp, C_inv_top);
+    Mp.MatMatMult('L', Q, C_inv_top);
 
-    /*--- Compute tmp = (I - P^T * M_p * P * M^-1), part of the bottom part of
-     C_inv_trunc. Note that most of the product is known from the top part. ---*/
-    tmp.resize(nVertexDonor, nVertexDonor);
+    /*--- Compute M^-1 - Q^T * C_inv_top, the bottom (main) part of C_inv_trunc. ---*/
+    su2passivematrix C_inv_bot = global_M.StealData();
+#ifdef HAVE_LAPACK
+    /*--- Order of gemm arguments swapped due to row-major storage. ---*/
+    const char opa = 'N', opb = 'T';
+    const int M = nVertexDonor, N = nVertexDonor, K = nPolynomial+1;
+    // lda = C_inv_top.cols() = M; ldb = Q.cols() = M; ldc = C_inv_bot.cols() = M;
+    const passivedouble alpha = -1.0, beta = 1.0;
+    DGEMM(&opa, &opb, &M, &N, &K, &alpha, C_inv_top[0], &M, Q[0], &M, &beta, C_inv_bot[0], &M);
+#else // naive product
+    for (int i = 0; i < nVertexDonor; ++i)
+      for (int j = 0; j < nVertexDonor; ++j)
+        for (int k = 0; k <= nPolynomial; ++k)
+          C_inv_bot(i,j) -= Q(k,i) * C_inv_top(k,j);
+#endif
 
-    for (auto i = 0ul; i < nVertexDonor; ++i) {
-      for (auto j = 0ul; j < nVertexDonor; ++j) {
-        tmp(i,j) = 0.0;
-        for (int k = 0; k <= nPolynomial; ++k) tmp(i,j) -= P(k,i) * C_inv_top(k,j);
-      }
-      tmp(i,i) += 1.0; // identity part
-    }
-
-    /*--- Compute M^-1 * (I - P^T * M_p * P * M^-1), finalize bottom of C_inv_trunc. ---*/
-    global_M.MatMatMult('L', tmp, C_inv_trunc);
-
-    /*--- Merge top and bottom of C_inv_trunc. ---*/
-    tmp = move(C_inv_trunc);
+    /*--- Merge top and bottom of C_inv_trunc. More intrusive memory
+     *    management, or separate handling of top and bottom, would
+     *    avoid these copies (and associated temporary vars). ---*/
     C_inv_trunc.resize(1+nPolynomial+nVertexDonor, nVertexDonor);
     memcpy(C_inv_trunc[0], C_inv_top.data(), C_inv_top.size()*sizeof(passivedouble));
-    memcpy(C_inv_trunc[1+nPolynomial], tmp.data(), tmp.size()*sizeof(passivedouble));
+    memcpy(C_inv_trunc[1+nPolynomial], C_inv_bot.data(), C_inv_bot.size()*sizeof(passivedouble));
   }
   else {
     /*--- No polynomial term used in the interpolation, C_inv_trunc = M^-1. ---*/
