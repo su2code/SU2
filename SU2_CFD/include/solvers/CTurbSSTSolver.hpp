@@ -96,6 +96,35 @@ public:
                       unsigned short iMesh) override;
 
   /*!
+   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
+   *        and stores the result in the <i>Gradient_Primitive</i> variable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetPrimitive_Gradient_GG(CGeometry *geometry,
+                                CConfig *config,
+                                bool reconstruction = false) final;
+
+  /*!
+   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
+   *        and stores the result in the <i>Gradient_Primitive</i> variable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetPrimitive_Gradient_LS(CGeometry *geometry,
+                                CConfig *config,
+                                bool reconstruction = false) final;
+
+  /*!
+   * \brief Compute the limiter of the primitive variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) final;
+
+  /*!
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
