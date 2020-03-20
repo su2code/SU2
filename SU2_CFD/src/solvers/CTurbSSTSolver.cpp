@@ -306,11 +306,14 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long iPoint;
+  unsigned short iVar;
 
   bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
 
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    for (iVar = 0; iVar < nVar; iVar++) nodes->SetSolution(iPoint, iVar, nodes->GetConservative(iPoint, iVar)/solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint,0));
 
     /*--- Initialize the residual vector ---*/
 
@@ -396,6 +399,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     zeta  = min(1.0/omega, a1/(StrainMag*F2));
     muT   = max(rho*kine*zeta,0.0);
     nodes->SetmuT(iPoint,muT);
+
+    nodes->SetConservative(iPoint, 0, rho*kine);
+    nodes->SetConservative(iPoint, 1, rho*omega);
 
   }
 

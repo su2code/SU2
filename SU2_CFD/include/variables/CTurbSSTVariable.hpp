@@ -44,6 +44,8 @@ protected:
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
 
+  MatrixType Conservative; /*!< \brief Conservative form of the solution. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -86,4 +88,20 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   inline su2double GetCrossDiff(unsigned long iPoint) const override { return CDkw(iPoint); }
+
+  /*!
+   * \brief Set the value of the solution, one variable.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] solution - Value of the solution for the index <i>iVar</i>.
+   */
+  inline void SetConservative(unsigned long iPoint, unsigned long iVar, su2double solution) { Conservative(iPoint,iVar) = solution; }
+
+  /*!
+   * \brief Get the solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \return Value of the solution for the index <i>iVar</i>.
+   */
+  virtual su2double GetConservative(unsigned long iPoint, unsigned long iVar) const { return Conservative(iPoint,iVar); }
 };

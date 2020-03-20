@@ -32,10 +32,14 @@
 CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint, unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config)
   : CTurbVariable(npoint, ndim, nvar, config) {
 
+  Conservative.resize(nPoint, nVar) = su2double(0.0);
+
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
     Solution(iPoint,0) = kine;
     Solution(iPoint,1) = omega;
+    Conservative(iPoint,0) = mut*omega;
+    Conservative(iPoint,1) = mut*omega*omega/kine;
   }
 
   Solution_Old = Solution;

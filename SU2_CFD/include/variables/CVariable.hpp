@@ -184,6 +184,14 @@ public:
   inline void SetSolution(unsigned long iPoint, unsigned long iVar, su2double solution) { Solution(iPoint,iVar) = solution; }
 
   /*!
+   * \brief Set the value of the solution, one variable.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] solution - Value of the solution for the index <i>iVar</i>.
+   */
+  virtual void SetConservative(unsigned long iPoint, unsigned long iVar, su2double solution) { }
+
+  /*!
    * \brief Set the value of the source term, all variables.
    * \param[in] iPoint - Point index.
    * \param[in] solution - Solution of the problem.
@@ -241,6 +249,14 @@ public:
    * \return Value of the solution for the index <i>iVar</i>.
    */
   inline su2double GetSolution(unsigned long iPoint, unsigned long iVar) const { return Solution(iPoint,iVar); }
+
+  /*!
+   * \brief Get the solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \return Value of the solution for the index <i>iVar</i>.
+   */
+  virtual su2double GetConservative(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
    * \brief Get the old solution of the problem (Runge-Kutta method)

@@ -4118,7 +4118,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config_container - The particular config.
    */
-  inline virtual void RegisterConservativeSolution(CGeometry *geometry_container, CConfig *config, CSolver **solver) { }
+  inline virtual void RegisterConservativeSolution(CGeometry *geometry_container, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -4132,7 +4132,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config_container - The particular config.
    */
-  inline virtual void RegisterConservativeOutput(CGeometry *geometry_container, CConfig *config, CSolver **solver) { }
+  inline virtual void RegisterConservativeOutput(CGeometry *geometry_container, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
