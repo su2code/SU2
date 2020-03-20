@@ -32,17 +32,17 @@
 CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint, unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config)
   : CTurbVariable(npoint, ndim, nvar, config) {
 
-  Conservative.resize(nPoint, nVar) = su2double(0.0);
+  Primitive.resize(nPoint, nVar) = su2double(0.0);
 
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
-    Solution(iPoint,0) = kine;
-    Solution(iPoint,1) = omega;
-    Conservative(iPoint,0) = mut*omega;
-    Conservative(iPoint,1) = mut*omega*omega/kine;
+    Primitive(iPoint,0) = kine;
+    Primitive(iPoint,1) = omega;
+    Solution(iPoint,0) = mut*omega;
+    Solution(iPoint,1) = mut*omega*omega/kine;
   }
 
-  Solution_Old = Solution;
+  Primitive_Old = Primitive;
 
   sigma_om2 = constants[3];
   beta_star = constants[6];
@@ -61,7 +61,7 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   AD::StartPreacc();
   AD::SetPreaccIn(val_viscosity);  AD::SetPreaccIn(val_dist);
   AD::SetPreaccIn(val_density);
-  AD::SetPreaccIn(Solution[iPoint], nVar);
+  AD::SetPreaccIn(Primitive[iPoint], nVar);
   AD::SetPreaccIn(Gradient[iPoint], nVar, nDim);
 
   /*--- Cross diffusion ---*/
@@ -69,16 +69,16 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   CDkw(iPoint) = 0.0;
   for (unsigned long iDim = 0; iDim < nDim; iDim++)
     CDkw(iPoint) += Gradient(iPoint,0,iDim)*Gradient(iPoint,1,iDim);
-  CDkw(iPoint) *= 2.0*val_density*sigma_om2/Solution(iPoint,1);
+  CDkw(iPoint) *= 2.0*val_density*sigma_om2/Primitive(iPoint,1);
   // CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -20.0));
   // CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -10.0));
 
   /*--- F1 ---*/
 
-  arg2A = sqrt(Solution(iPoint,0))/(beta_star*Solution(iPoint,1)*val_dist+EPS*EPS);
-  arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Solution(iPoint,1)+EPS*EPS);
+  arg2A = sqrt(Primitive(iPoint,0))/(beta_star*Primitive(iPoint,1)*val_dist+EPS*EPS);
+  arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Primitive(iPoint,1)+EPS*EPS);
   arg2 = max(arg2A, arg2B);
-  arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution(iPoint,0) / (max(CDkw(iPoint),pow(10.0,-10.0))*val_dist*val_dist+EPS*EPS));
+  arg1 = min(arg2, 4.0*val_density*sigma_om2*Primitive(iPoint,0) / (max(CDkw(iPoint),pow(10.0,-10.0))*val_dist*val_dist+EPS*EPS));
   F1(iPoint) = tanh(pow(arg1, 4.0));
 
   /*--- F2 ---*/
@@ -91,7 +91,7 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
 
 }
 
-void CTurbSSTVariable::RegisterConservativeSolution(bool input, bool push_index) {
+void CTurbSSTVariable::RegisterConservativePrimitive(bool input, bool push_index) {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     for(unsigned long iVar=0; iVar<nVar; ++iVar) {
       if(input) {
@@ -112,15 +112,15 @@ void CTurbSSTVariable::RegisterConservativeSolution(bool input, bool push_index)
   }
 }
 
-void CTurbSSTVariable::RegisterConservativeSolution_time_n() {
+void CTurbSSTVariable::RegisterConservativePrimitive_time_n() {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n(iPoint, iVar));
+      AD::RegisterInput(Primitive_time_n(iPoint, iVar));
 }
 
-void CTurbSSTVariable::RegisterConservativeSolution_time_n1() {
+void CTurbSSTVariable::RegisterConservativePrimitive_time_n1() {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n1(iPoint, iVar));
+      AD::RegisterInput(Primitive_time_n1(iPoint, iVar));
 
 }

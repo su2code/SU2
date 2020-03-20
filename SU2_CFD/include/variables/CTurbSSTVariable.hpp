@@ -44,7 +44,7 @@ protected:
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
 
-  MatrixType Conservative; /*!< \brief Conservative form of the solution. */
+  MatrixType Primitive; /*!< \brief Primitive form of the solution. */
 
 public:
   /*!
@@ -90,20 +90,41 @@ public:
   inline su2double GetCrossDiff(unsigned long iPoint) const override { return CDkw(iPoint); }
 
   /*!
-   * \brief Set the value of the solution, one variable.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution - Value of the solution for the index <i>iVar</i>.
+   * \brief Get the primitive variables for all points.
+   * \return Reference to primitives.
    */
-  inline void SetConservative(unsigned long iPoint, unsigned long iVar, su2double solution) { Conservative(iPoint,iVar) = solution; }
+  inline const MatrixType& GetPrimitive(void) const { return Primitive; }
 
   /*!
-   * \brief Get the solution.
-   * \param[in] iPoint - Point index.
+   * \brief Get the primitive variables.
    * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
+   * \return Value of the primitive variable for the index <i>iVar</i>.
    */
-  virtual su2double GetConservative(unsigned long iPoint, unsigned long iVar) const { return Conservative(iPoint,iVar); }
+  inline su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const final { return Primitive(iPoint,iVar); }
+
+  /*!
+   * \brief Set the value of the primitive variables.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iVar - Index of the variable.
+   * \return Set the value of the primitive variable for the index <i>iVar</i>.
+   */
+  inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) final { Primitive(iPoint,iVar) = val_prim; }
+
+  /*!
+   * \brief Set the value of the primitive variables.
+   * \param[in] val_prim - Primitive variables.
+   * \return Set the value of the primitive variable for the index <i>iVar</i>.
+   */
+  inline void SetPrimitive(unsigned long iPoint, const su2double *val_prim) final {
+    for (unsigned long iVar = 0; iVar < nPrimVar; iVar++)
+      Primitive(iPoint,iVar) = val_prim[iVar];
+  }
+
+  /*!
+   * \brief Get the primitive variables of the problem.
+   * \return Pointer to the primitive variable vector.
+   */
+  inline su2double *GetPrimitive(unsigned long iPoint) final {return Primitive[iPoint]; }
 
   /*!
    * \brief Register the variables in the solution array as input/output variable.

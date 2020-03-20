@@ -93,7 +93,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     /*--- Define some auxiliary vector related with the solution ---*/
 
     Solution = new su2double[nVar];
-    Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
+    Primitive = new su2double[nVar];
+    Primitive_i = new su2double[nVar]; Primitive_j = new su2double[nVar];
 
     /*--- Define some auxiliary vector related with the geometry ---*/
 
@@ -313,8 +314,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
-    // for (iVar = 0; iVar < nVar; iVar++) nodes->SetSolution(iPoint, iVar, nodes->GetConservative(iPoint, iVar)/solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint,0));
-
     /*--- Initialize the residual vector ---*/
 
     LinSysRes.SetBlock_Zero(iPoint);
@@ -329,16 +328,16 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   if (config->GetReconstructionGradientRequired()) {
     if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetSolution_Gradient_GG(geometry, config, true);
+      SetPrimitive_Gradient_GG(geometry, config, true);
     if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
+      SetPrimitive_Gradient_LS(geometry, config, true);
     if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
+      SetPrimitive_Gradient_LS(geometry, config, true);
   }
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
 
-  if (limiter_turb) SetSolution_Limiter(geometry, config);
+  if (limiter_turb) SetPrimitive_Limiter(geometry, config);
 
 }
 
@@ -350,10 +349,10 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Compute mean flow and turbulence gradients ---*/
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    SetSolution_Gradient_GG(geometry, config);
+    SetPrimitive_Gradient_GG(geometry, config);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    SetSolution_Gradient_LS(geometry, config);
+    SetPrimitive_Gradient_LS(geometry, config);
   }
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -391,13 +390,23 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     F2 = nodes->GetF2blending(iPoint);
 
-    // nodes->SetSolution(iPoint, 0, nodes->GetConservative(iPoint, 0)/rho);
-    // nodes->SetSolution(iPoint, 1, nodes->GetConservative(iPoint, 1)/rho);
+    /*--- Set primitive variables ---*/
+    su2double rhokine  = nodes->GetSolution(iPoint, 0);
+    su2double rhoomega = nodes->GetSolution(iPoint, 1);
+
+    if((rhokine < 0.) || (rhoomega < 0.)) {
+      rhokine  = nodes->GetSolution_Old(iPoint, 0);
+      rhoomega = nodes->GetSolution_Old(iPoint, 1);
+      nodes->SetSolution(iPoint, 0, rhokine);
+      nodes->SetSolution(iPoint, 1, rhoomega);
+    }
 
     /*--- Compute the eddy viscosity ---*/
 
-    kine  = nodes->GetSolution(iPoint,0);
-    omega = nodes->GetSolution(iPoint,1);
+    kine  = rhokine/rho;
+    omega = rhoomega/rho;
+    // kine  = nodes->GetPrimitive(iPoint,0);
+    // omega = nodes->GetPrimitive(iPoint,1);
     // zeta  = min(1.0/omega, a1/(VorticityMag*F2));
     zeta  = min(1.0/omega, a1/(StrainMag*F2));
     muT   = max(rho*kine*zeta,0.0);
@@ -406,6 +415,49 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   }
 
 }
+
+//--- This is hacky, fix later
+void CTurbSSTSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
+
+  const auto& primitives = nodes->GetPrimitive();
+  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
+
+  computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
+                             *config, primitives, 0, nVar, gradient);
+}
+
+void CTurbSSTSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
+
+  /*--- Set a flag for unweighted or weighted least-squares. ---*/
+  bool weighted;
+
+  if (reconstruction)
+    weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
+  else
+    weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
+
+  const auto& primitives = nodes->GetPrimitive();
+  auto& rmatrix = nodes->GetRmatrix();
+  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
+  PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
+
+  computeGradientsLeastSquares(this, SOLUTION_GRADIENT, kindPeriodicComm, *geometry, *config,
+                               weighted, primitives, 0, nVar, gradient, rmatrix);
+}
+
+void CTurbSSTSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
+
+  auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit_Flow());
+  const auto& primitives = nodes->GetPrimitive();
+  const auto& gradient = nodes->GetGradient_Reconstruction();
+  auto& primMin = nodes->GetSolution_Min();
+  auto& primMax = nodes->GetSolution_Max();
+  auto& limiter = nodes->GetLimiter();
+
+  computeLimiters(kindLimiter, this, SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2,
+            *geometry, *config, 0, nVar, primitives, gradient, primMin, primMax, limiter);
+}
+//--- End hacky bit
 
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
 
@@ -423,7 +475,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
-    numerics->SetTurbVar(nodes->GetSolution(iPoint), NULL);
+    numerics->SetTurbVar(nodes->GetPrimitive(iPoint), NULL);
     numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), NULL);
 
     /*--- Set volume ---*/
@@ -498,8 +550,10 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       beta_1 = constants[4];
 
+      // Solution[0] = 0.0;
+      // Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
       Solution[0] = 0.0;
-      Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
+      Solution[1] = 60.0*laminar_viscosity/(beta_1*distance*distance);
 
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
@@ -546,8 +600,10 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 
       beta_1 = constants[4];
 
+      // Solution[0] = 0.0;
+      // Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
       Solution[0] = 0.0;
-      Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
+      Solution[1] = 60.0*laminar_viscosity/(beta_1*distance*distance);
 
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
@@ -594,12 +650,12 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-      Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
+      Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
-      Solution_j[0] = kine_Inf;
-      Solution_j[1] = omega_Inf;
+      Primitive_j[0] = kine_Inf;
+      Primitive_j[1] = omega_Inf;
 
-      conv_numerics->SetTurbVar(Solution_i, Solution_j);
+      conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
@@ -671,14 +727,14 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
        values for the turbulent state at the inflow. ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
+        Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
       /*--- Load the inlet turbulence variables (uniform by default). ---*/
 
-      Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
-      Solution_j[1] = Inlet_TurbVars[val_marker][iVertex][1];
+      Primitive_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
+      Primitive_j[1] = Inlet_TurbVars[val_marker][iVertex][1];
 
-      conv_numerics->SetTurbVar(Solution_i, Solution_j);
+      conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
       /*--- Set various other quantities in the solver class ---*/
 
@@ -708,7 +764,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       //
       //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       //
-      //     visc_numerics->SetTurbVar(Solution_i, Solution_j);
+      //     visc_numerics->SetTurbVar(Primitive_i, Primitive_j);
       //      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
       //
       //      /*--- Menter's first blending function ---*/
@@ -766,14 +822,14 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
       /*--- Set the turbulent variables. Here we use a Neumann BC such
        that the turbulent variable is copied from the interior of the
        domain to the outlet before computing the residual.
-       Solution_i --> TurbVar_internal,
-       Solution_j --> TurbVar_outlet ---*/
+       Primitive_i --> TurbVar_internal,
+       Primitive_j --> TurbVar_outlet ---*/
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
-        Solution_j[iVar] = nodes->GetSolution(iPoint,iVar);
+        Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
+        Primitive_j[iVar] = nodes->GetPrimitive(iPoint,iVar);
       }
-      conv_numerics->SetTurbVar(Solution_i, Solution_j);
+      conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
       /*--- Set Normal (negate for outward convention) ---*/
 
@@ -806,7 +862,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 //
 //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 //
-//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+//      visc_numerics->SetTurbVar(Primitive_i, Primitive_j);
 //      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 //
 //      /*--- Menter's first blending function ---*/
@@ -882,12 +938,12 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
+        Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
-      Solution_j[0]= extAverageKine;
-      Solution_j[1]= extAverageOmega;
+      Primitive_j[0]= extAverageKine;
+      Primitive_j[1]= extAverageOmega;
 
-      conv_numerics->SetTurbVar(Solution_i, Solution_j);
+      conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
       /*--- Set various other quantities in the solver class ---*/
       conv_numerics->SetNormal(Normal);
@@ -911,7 +967,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       visc_numerics->SetPrimitive(V_domain, V_inlet);
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+      visc_numerics->SetTurbVar(Primitive_i, Primitive_j);
       visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Menter's first blending function ---*/
@@ -1004,15 +1060,15 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
+        Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
       /*--- Set the turbulent variable states. Use average span-wise values
              values for the turbulent state at the inflow. ---*/
 
-      Solution_j[0]= kine_b;
-      Solution_j[1]= omega_b;
+      Primitive_j[0]= kine_b;
+      Primitive_j[1]= omega_b;
 
-      conv_numerics->SetTurbVar(Solution_i, Solution_j);
+      conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
       /*--- Set various other quantities in the solver class ---*/
       conv_numerics->SetNormal(Normal);
@@ -1036,7 +1092,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       visc_numerics->SetPrimitive(V_domain, V_inlet);
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+      visc_numerics->SetTurbVar(Primitive_i, Primitive_j);
       visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Menter's first blending function ---*/
@@ -1113,13 +1169,13 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
             conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
 
             /*--- Set the turbulent variable states ---*/
-            Solution_i[0] = nodes->GetSolution(iPoint,0);
-            Solution_i[1] = nodes->GetSolution(iPoint,1);
+            Primitive_i[0] = nodes->GetPrimitive(iPoint,0);
+            Primitive_i[1] = nodes->GetPrimitive(iPoint,1);
 
-            Solution_j[0] = GetSlidingState(iMarker, iVertex, 0, jVertex);
-            Solution_j[1] = GetSlidingState(iMarker, iVertex, 1, jVertex);
+            Primitive_j[0] = GetSlidingState(iMarker, iVertex, 0, jVertex);
+            Primitive_j[1] = GetSlidingState(iMarker, iVertex, 1, jVertex);
 
-            conv_numerics->SetTurbVar(Solution_i, Solution_j);
+            conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
             /*--- Set the normal vector ---*/
 
@@ -1154,7 +1210,7 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
           /*--- Turbulent variables and its gradients  ---*/
 
-          visc_numerics->SetTurbVar(Solution_i, Solution_j);
+          visc_numerics->SetTurbVar(Primitive_i, Primitive_j);
           visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
           /*--- Compute and update residual ---*/

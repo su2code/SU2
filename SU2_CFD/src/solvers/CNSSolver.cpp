@@ -1097,7 +1097,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
 
     if (turb_model != NONE) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
 
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
         DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
@@ -1378,8 +1378,8 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     /*--- Turbulent kinetic energy ---*/
 
     if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-      numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                     solver_container[TURB_SOL]->GetNodes()->GetSolution(jPoint,0));
+      numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                     solver_container[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0));
 
     /*--- Wall shear stress values (wall functions) ---*/
 
@@ -2160,7 +2160,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
         for (iDim = 0; iDim < nDim; iDim++) {
           for (jDim = 0; jDim < nDim; jDim++) {
             tau[iDim][jDim] = total_viscosity*( Grad_Vel[jDim][iDim]+Grad_Vel[iDim][jDim] ) - TWO3*total_viscosity*div_vel*delta[iDim][jDim];
-            if (sst) tau[iDim][jDim] -= TWO3*Density*solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1)*delta[iDim][jDim];
+            if (sst) tau[iDim][jDim] -= TWO3*Density*solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0)*delta[iDim][jDim];
           }
         }
 
