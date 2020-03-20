@@ -5481,12 +5481,16 @@ void CSolver::ConvectiveMetric(CSolver          **solver,
                                CConfig           *config,
                                unsigned long     iPoint,
                                vector<su2double> &weights) {
-  CSolver *solFlo    = solver[FLOW_SOL],
-          *solTur    = solver[TURB_SOL],
-          *solAdjFlo = solver[ADJFLOW_SOL],
-          *solAdjTur = solver[ADJTURB_SOL];
+  CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
+            *varTur    = solver[TURB_SOL]->GetNodes(),
+            *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
+            *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
 
-  bool turb = (config->GetKind_Turb_Model() != NONE);
+  const bool turb = (config->GetKind_Turb_Model() != NONE);
+  const bool sst  = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
+
+  unsigned short iVar, jVar, iDim;
+  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   vector<vector<su2double> > A(nDim+2, vector<su2double>(nDim+2, 0.0)),
                              B(nDim+2, vector<su2double>(nDim+2, 0.0)),
@@ -5496,12 +5500,12 @@ void CSolver::ConvectiveMetric(CSolver          **solver,
   su2double r, u, v, w, e, 
             v2, g;
 
-  r = solFlo->GetNodes()->GetDensity(iPoint);
-  u = solFlo->GetNodes()->GetVelocity(iPoint, 0);
-  v = solFlo->GetNodes()->GetVelocity(iPoint, 1);
-  if (nDim == 3) w = solFlo->GetNodes()->GetVelocity(iPoint, 2);
+  r = varFlo->GetDensity(iPoint);
+  u = varFlo->GetVelocity(iPoint, 0);
+  v = varFlo->GetVelocity(iPoint, 1);
+  if (nDim == 3) w = varFlo->GetVelocity(iPoint, 2);
   else           w = 0.;
-  e = solFlo->GetNodes()->GetEnergy(iPoint);
+  e = varFlo->GetEnergy(iPoint);
 
   v2 = u*u+v*v+w*w;
 
@@ -5538,14 +5542,15 @@ void CSolver::ConvectiveMetric(CSolver          **solver,
     C[3][0] = 1.; C[3][1] = u; C[3][2] = v; C[3][3] = (3.-g)*w; C[3][4] = g*e-(g-1.)/2.*(v2+2*w*w);
     C[4][3] = (g-1.); C[4][4] = g*w;
   }
-  for (unsigned short jVar = 0; jVar < solFlo->GetnVar(); ++jVar) {
-    for (unsigned short iVar = 0; iVar < solFlo->GetnVar(); ++iVar) {
+
+  for (jVar = 0; jVar < solFlo->GetnVar(); ++jVar) {
+    for (iVar = 0; iVar < solFlo->GetnVar(); ++iVar) {
       const unsigned short i = iVar*nDim;
-      const su2double adjx = solAdjFlo->GetNodes()->GetAnisoGrad(iPoint, i+0),
-                      adjy = solAdjFlo->GetNodes()->GetAnisoGrad(iPoint, i+1);
+      const su2double adjx = varAdjFlo->GetAnisoGrad(iPoint, i+0),
+                      adjy = varAdjFlo->GetAnisoGrad(iPoint, i+1);
       weights[jVar] -= A[jVar][iVar]*adjx + B[jVar][iVar]*adjy;
       if(nDim == 3) {
-        const su2double adjz = solAdjFlo->GetNodes()->GetAnisoGrad(iPoint, i+2);
+        const su2double adjz = varAdjFlo->GetAnisoGrad(iPoint, i+2);
         weights[jVar] -= C[jVar][iVar]*adjz;
       }
     }
@@ -5553,7 +5558,22 @@ void CSolver::ConvectiveMetric(CSolver          **solver,
 
   //--- Turbulent terms
   if(turb) {
-
+    if (sst) {
+      nVarTurb = 2;
+      for (iVar = 0; iVar < nVarTurb; ++iVar){
+        const unsigned short i = iVar*nDim;
+        const su2double adjx = varAdjTur->GetAnisoGrad(iPoint, i+0),
+                        adjy = varAdjTur->GetAnisoGrad(iPoint, i+1);
+        weights[nVarFlo+iVar] -= u*adjx + v*adjy;å
+        if (nDim == 3) {
+          const su2double adjz = varAdjTur->GetAnisoGrad(iPoint, i+2);
+          weights[nVarFlo+iVar] -= w*adjz;
+        }
+      }
+    }
+    else {
+      //--- TODO: Code SA
+    }
   }
 
 }
@@ -5568,11 +5588,12 @@ void CSolver::ViscousMetric(CSolver          **solver,
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
             *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
 
-  bool turb = (config->GetKind_Turb_Model() != NONE);
-  bool sst  = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
+  const bool turb = (config->GetKind_Turb_Model() != NONE);
+  const bool sst  = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
 
-  unsigned short iDim, jDim;
-  unsigned short nMetr = 3*(nDim-1);
+  unsigned short iDim, jDim, iVar, jVar;
+  const unsigned short nMetr = 3*(nDim-1);
+  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   //--- First-order terms (error due to viscosity)
   su2double r, u[3], e, k, omega,
@@ -5620,6 +5641,9 @@ void CSolver::ViscousMetric(CSolver          **solver,
       gradk[iDim]     = varTur->GetGradient(iPoint, 0, iDim);
       gradomega[iDim] = varTur->GetGradient(iPoint, 1, iDim);
     }
+    else {
+      //--- TODO: Code SA
+    }
   }
 
   divu = 0.0; for (iDim = 0 ; iDim < nDim; ++iDim) divu += gradu[iDim][iDim];
@@ -5638,10 +5662,9 @@ void CSolver::ViscousMetric(CSolver          **solver,
   }
 
   su2double factor = 0.0;
-  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
-      const unsigned short iVar = iDim+1;
+      iVar = iDim+1;
       if(turb) {
         factor += (tau[iDim][jDim]+(2./3.)*r*k*delta[iDim][jDim])/(mu+mut)
                 * (varFlo->GetAnisoGrad(iPoint, iVar*nDim+jDim)
@@ -5680,7 +5703,7 @@ void CSolver::ViscousMetric(CSolver          **solver,
   TmpWeights[0] -= e*TmpWeights[nVarFlo-1];
 
   //--- Add TmpWeights to weights, then reset for second-order terms
-  for (unsigned short iVar = 0; iVar < nVarFlo; ++iVar) weights[iVar] += TmpWeights[iVar];
+  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[iVar] += TmpWeights[iVar];
   fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
 
   //--- Second-order terms (error due to gradients)
@@ -5756,7 +5779,7 @@ void CSolver::ViscousMetric(CSolver          **solver,
   }
 
   //--- Add TmpWeights to weights
-  for (unsigned short iVar = 0; iVar < nVarFlo; ++iVar) weights[iVar] += TmpWeights[iVar];
+  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[iVar] += TmpWeights[iVar];
 
 }
 
@@ -5765,8 +5788,8 @@ void CSolver::SumWeightedHessians(CSolver          **solver,
                                   CConfig           *config,
                                   unsigned long     iPoint,
                                   vector<su2double> &weights) {
-  CSolver *solFlo = solver[FLOW_SOL],
-          *solTur = solver[TURB_SOL];
+  CVariable *varFlo = solver[FLOW_SOL]->GetNodes(),
+            *varTur = solver[TURB_SOL]->GetNodes();
 
   unsigned short nMetr = 3*(nDim-1);
 
@@ -5777,9 +5800,9 @@ void CSolver::SumWeightedHessians(CSolver          **solver,
 
     for (unsigned short im = 0; im < nMetr; ++im) {
       const unsigned short ih = iVar*nMetr + im;  
-      const su2double hess = solFlo->GetNodes()->GetAnisoHess(iPoint, ih);
+      const su2double hess = varFlo->GetAnisoHess(iPoint, ih);
       const su2double part = abs(weights[iVar])*hess;
-      solFlo->GetNodes()->AddAnisoMetr(iPoint, im, part);
+      varFlo->AddAnisoMetr(iPoint, im, part);
     }
   }
 
