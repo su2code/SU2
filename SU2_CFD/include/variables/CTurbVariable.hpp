@@ -108,10 +108,29 @@ public:
   inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
 
   /*!
-   * \brief Get the primitive variables for all points.
-   * \return Reference to primitives.
+   * \brief A virtual member.
    */
-  virtual inline const MatrixType& GetPrimitive(void) const { return 0; }
+  virtual inline const MatrixType& GetPrimitive(void) const { return nullptr; }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) {}
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual void SetPrimitive(unsigned long iPoint, const su2double *val_prim) {}
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double *GetPrimitive(unsigned long iPoint) { return nullptr; }
 
 };
 
