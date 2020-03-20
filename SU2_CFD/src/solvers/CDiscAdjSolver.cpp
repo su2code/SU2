@@ -272,7 +272,7 @@ void CDiscAdjSolver::RegisterConservativeSolution(CGeometry *geometry, CConfig *
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
-  direct_solver->GetNodes()->RegisterConservativeSolution(input, push_index, solver[FLOW_SOL]->GetNodes());
+  direct_solver->GetNodes()->RegisterConservativeSolution(solver[FLOW_SOL]->GetNodes(), input, push_index);
 
   if (time_n_needed)
     direct_solver->GetNodes()->RegisterConservativeSolution_time_n(solver[FLOW_SOL]->GetNodes());
@@ -393,7 +393,7 @@ void CDiscAdjSolver::RegisterConservativeOutput(CGeometry *geometry, CConfig *co
 
   /*--- Register variables as output of the solver iteration ---*/
 
-  direct_solver->GetNodes()->RegisterConservativeSolution(input, push_index, solver[FLOW_SOL]->GetNodes());
+  direct_solver->GetNodes()->RegisterConservativeSolution(solver[FLOW_SOL]->GetNodes(), input, push_index);
 }
 
 void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
