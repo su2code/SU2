@@ -42,6 +42,10 @@ private:
   kine_Inf,              /*!< \brief Free-stream turbulent kinetic energy. */
   omega_Inf;             /*!< \brief Free-stream specific dissipation. */
 
+  su2double *Primitive,    /*!< \brief Auxiliary nPrimVar vector. */
+  *Primitive_i,            /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
+  *Primitive_j;            /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
+
 public:
   /*!
    * \brief Constructor of the class.
