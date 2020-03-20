@@ -2831,6 +2831,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
   int  err_count = 0;  // How many errors have we found in the config file
   int max_err_count = 30; // Maximum number of errors to print before stopping
+  int line_count = 1;
 
   map<string, bool> included_options;
 
@@ -2845,13 +2846,34 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
       throw(1);
     }
 
+    PrintingToolbox::trim(text_line);
+
+
+    /*--- Check if there is a line continuation character at the end of the current line.
+     * If yes, read until there is a line without one or a comment. If there is a statement after a cont. char
+     * throw an error. ---*/
+
+    while (text_line.back() == '\\'){
+      string tmp;
+      getline (case_file, tmp);
+      line_count++;
+      if (tmp.find_first_of('=') != string::npos){
+        errorString.append("Line " + to_string(line_count)  + ": Statement found after continuation character.\n");
+      }
+      PrintingToolbox::trim(tmp);
+      if (tmp.front() != '%'){
+        text_line = PrintingToolbox::split(text_line, '\\')[0];
+        text_line += " " + tmp;
+      }
+    }
+
     if (TokenizeString(text_line, option_name, option_value)) {
 
       /*--- See if it's a python option ---*/
 
       if (option_map.find(option_name) == option_map.end()) {
           string newString;
-          newString.append(option_name);
+          newString.append("Line " + to_string(line_count)  + " " + option_name);
           newString.append(": invalid option name");
           newString.append(". Check current SU2 options in config_template.cfg.");
           newString.append("\n");
@@ -2878,7 +2900,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
       if (included_options.find(option_name) != included_options.end()) {
         string newString;
-        newString.append(option_name);
+        newString.append("Line " + to_string(line_count)  + " " + option_name);
         newString.append(": option appears twice");
         newString.append("\n");
         errorString.append(newString);
@@ -2901,6 +2923,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
         err_count++;
       }
     }
+    line_count++;
   }
 
   /*--- See if there were any errors parsing the config file ---*/
