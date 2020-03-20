@@ -50,13 +50,16 @@ CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, con
 }
 
 void CRadialBasisFunction::PrintStatistics() const {
-  if (rank == MASTER_NODE) {
-    cout.precision(3);
-    cout << " Min/avg/max number of RBF donors per target point: "
-         << MinDonors << "/" << AvgDonors << "/" << MaxDonors
-         << "\n Interpolation matrix is " << Density << "% dense." << endl;
-    cout.unsetf(ios::floatfield);
-  }
+  if (rank != MASTER_NODE) return;
+  cout.precision(3);
+  cout << " Min/avg/max number of RBF donors per target point: "
+       << MinDonors << "/" << AvgDonors << "/" << MaxDonors << "\n"
+       << " Avg/max correction factor after pruning: " << AvgCorrection << "/" << MaxCorrection;
+  if (MaxCorrection < 1.1 || AvgCorrection < 1.02) cout << " (ok)\n";
+  else if (MaxCorrection < 2.0 && AvgCorrection < 1.05) cout << " (warning)\n";
+  else cout << " <<< WARNING >>>\n";
+  cout << " Interpolation matrix is " << Density << "% dense." << endl;
+  cout.unsetf(ios::floatfield);
 }
 
 su2double CRadialBasisFunction::Get_RadialBasisValue(ENUM_RADIALBASIS type, const su2double radius, const su2double dist)
@@ -200,7 +203,7 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
 
   /*--- Initialize variables for interpolation statistics. ---*/
   unsigned long totalTargetPoints = 0, totalDonorPoints = 0, denseSize = 0;
-  MinDonors = 1<<30; MaxDonors = 0;
+  MinDonors = 1<<30; MaxDonors = 0; MaxCorrection = 0.0; AvgCorrection = 0.0;
 
   for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
 
@@ -212,7 +215,7 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
     /*--- Setup target information. ---*/
     const int markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt+1);
     unsigned long nVertexTarget = 0;
-    if(markTarget != -1) nVertexTarget = target_geometry->GetnVertex(markTarget);
+    if (markTarget != -1) nVertexTarget = target_geometry->GetnVertex(markTarget);
 
     /*--- Set references to donor information. ---*/
     auto& donorCoord = donorCoordinates[iMarkerInt];
@@ -285,6 +288,7 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
 
     /*--- Thread-local variables for statistics. ---*/
     unsigned long minDonors = 1<<30, maxDonors = 0, totalDonors = 0;
+    passivedouble sumCorr = 0.0, maxCorr = 0.0;
 
     SU2_OMP_FOR_DYN(1)
     for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; iVertexTarget += targetSlabSize) {
@@ -341,10 +345,14 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
         auto targetVertex = targetVertices[iVertexTarget+k];
 
         /*--- Prune small coefficients. ---*/
-        auto nnz = PruneSmallCoefficients(SU2_TYPE::GetValue(pruneTol), interpMat.cols(), interpMat[k]);
+        auto info = PruneSmallCoefficients(SU2_TYPE::GetValue(pruneTol), interpMat.cols(), interpMat[k]);
+        auto nnz = info.first;
         totalDonors += nnz;
         minDonors = min(minDonors, nnz);
         maxDonors = max(maxDonors, nnz);
+        auto corr = fabs(info.second-1.0); // far from 1 either way is bad;
+        sumCorr += corr;
+        maxCorr = max(maxCorr, corr);
 
         /*--- Allocate and set donor information for this target point. ---*/
         targetVertex->Allocate_DonorInfo(nnz);
@@ -366,6 +374,8 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
       totalDonorPoints += totalDonors;
       MinDonors = min(MinDonors, minDonors);
       MaxDonors = max(MaxDonors, maxDonors);
+      AvgCorrection += sumCorr;
+      MaxCorrection = max(MaxCorrection, maxCorr);
     }
     } // end SU2_OMP_PARALLEL
 
@@ -387,7 +397,11 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
   Reduce(MPI_SUM, denseSize);
   Reduce(MPI_MIN, MinDonors);
   Reduce(MPI_MAX, MaxDonors);
-
+#ifdef HAVE_MPI
+  passivedouble tmp1 = AvgCorrection, tmp2 = MaxCorrection;
+  MPI_Allreduce(&tmp1, &AvgCorrection, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&tmp2, &MaxCorrection, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#endif
   if (totalTargetPoints == 0)
     SU2_MPI::Error("Somehow there are no target interpolation points.", CURRENT_FUNCTION);
 
@@ -397,6 +411,8 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
                    " - The RBF radius is too small.\n"
                    " - The pruning tolerance is too aggressive.", CURRENT_FUNCTION);
 
+  MaxCorrection += 1.0; // put back the reference "1"
+  AvgCorrection = AvgCorrection / totalTargetPoints + 1.0;
   AvgDonors = totalDonorPoints / totalTargetPoints;
   Density = totalDonorPoints / (0.01*denseSize);
 

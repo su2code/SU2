@@ -38,7 +38,7 @@ class CRadialBasisFunction final : public CInterpolator {
                 "This class relies on row major storage throughout.");
 private:
   unsigned long MinDonors = 0, AvgDonors = 0, MaxDonors = 0;
-  passivedouble Density = 0.0;
+  passivedouble Density = 0.0, AvgCorrection = 0.0, MaxCorrection = 0.0;
 
 public:
   /*!
@@ -99,22 +99,23 @@ public:
    */
   static int CheckPolynomialTerms(su2double max_diff_tol, vector<int>& keep_row, su2passivematrix &P);
 
+private:
   /*!
    * \brief Helper function, prunes (by setting to zero) small interpolation coefficients,
    * i.e. <= tolerance*max(abs(coeffs)). The vector is re-scaled such that sum(coeffs)==1.
    * \param[in] tolerance - Relative pruning tolerance.
    * \param[in] size - Size of the coefficient vector.
    * \param[in,out] coeffs - Iterator to start of vector of interpolation coefficients.
-   * \return Number of non-zero coefficients after pruning.
+   * \return Number of non-zero coefficients after pruning and correction factor.
    */
-  template<class ForwardIt, typename Int, typename Float>
-  static Int PruneSmallCoefficients(Float tolerance, Int size, ForwardIt coeffs) {
+  template<typename Float, typename Int, class ForwardIt>
+  static pair<Int,Float> PruneSmallCoefficients(Float tolerance, Int size, ForwardIt coeffs) {
 
     /*--- Determine the pruning threshold. ---*/
     Float thresh = 0.0;
     auto end = coeffs;
     for (Int i = 0; i < size; ++i)
-      thresh = max(thresh, fabs(*(++end)));
+      thresh = max(thresh, fabs(*(end++)));
     thresh *= tolerance;
 
     /*--- Prune and count non-zeros. ---*/
@@ -130,9 +131,9 @@ public:
 
     /*--- Correct remaining coefficients, sum must be 1 for conservation. ---*/
     Float correction = 1.0 / coeffSum;
-    for (auto it = coeffs; it != end; ++it) *it *= correction;
+    while (coeffs != end) *(coeffs++) *= correction;
 
-    return numNonZeros;
+    return make_pair(numNonZeros, correction);
   }
 
 };
