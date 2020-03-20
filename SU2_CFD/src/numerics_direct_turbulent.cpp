@@ -1195,25 +1195,13 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
 
-  unsigned short iDim, jDim;
+  unsigned short iDim;
   su2double alfa_blended, beta_blended;
   su2double diverg, pk, pw, zeta;
-  // su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
-  //                               Vorticity_i[1]*Vorticity_i[1] +
-  //                               Vorticity_i[2]*Vorticity_i[2]);
+  su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
+                                Vorticity_i[1]*Vorticity_i[1] +
+                                Vorticity_i[2]*Vorticity_i[2]);
 
-  // su2double StrainMag = 0.0;
-  // for (iDim = 0; iDim < nDim; iDim++) {
-  //   StrainMag += pow(PrimVar_Grad_i[iDim+1][iDim], 2.0);
-  // }
-  // StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[1][1] + PrimVar_Grad_i[2][0]), 2);
-
-  // if (nDim == 3) {
-  //   StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[1][2] + PrimVar_Grad_i[3][0]), 2);
-  //   StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[2][2] + PrimVar_Grad_i[3][1]), 2);
-  // }
-  // StrainMag = sqrt(2.0*StrainMag);
-  
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6);
 
@@ -1228,16 +1216,16 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     Laminar_Viscosity_i = V_i[nDim+5];
     Eddy_Viscosity_i = V_i[nDim+6];
   }
-  
-  val_residual[0] = 0.0;        val_residual[1] = 0.0;
-  val_Jacobian_i[0][0] = 0.0;    val_Jacobian_i[0][1] = 0.0;
-  val_Jacobian_i[1][0] = 0.0;    val_Jacobian_i[1][1] = 0.0;
-  
+
+  val_residual[0] = 0.0;       val_residual[1] = 0.0;
+  val_Jacobian_i[0][0] = 0.0;  val_Jacobian_i[0][1] = 0.0;
+  val_Jacobian_i[1][0] = 0.0;  val_Jacobian_i[1][1] = 0.0;
+
   /*--- Computation of blended constants for the source terms---*/
-  
+
   alfa_blended = F1_i*alfa_1 + (1.0 - F1_i)*alfa_2;
   beta_blended = F1_i*beta_1 + (1.0 - F1_i)*beta_2;
-  
+
   if (dist_i > 1e-10) {
 
    /*--- Production ---*/
@@ -1245,7 +1233,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    diverg = 0.0;
    for (iDim = 0; iDim < nDim; iDim++)
      diverg += PrimVar_Grad_i[iDim+1][iDim];
-   
+
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
    if (using_uq){
@@ -1253,31 +1241,27 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
      SetPerturbedRSM(TurbVar_i[0], config);
      SetPerturbedStrainMag(TurbVar_i[0]);
      pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
-     - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+          - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
    }
    else {
      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
    }
 
 
-   // pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
-   pk = min(pk,10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
+   pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
    pk = max(pk,0.0);
 
-   zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
-   // zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
+   zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
    if (using_uq){
-    pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
+     pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
    }
    else {
-     // pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
+     pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
    }
-   // pw = min(pw,10.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
-   // pw = alfa_blended*Density_i*max(pw,0.0);
-   pw = alfa_blended*Density_i*pk/Eddy_Viscosity_i;
+   pw = alfa_blended*Density_i*max(pw,0.0);
 
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
@@ -1293,11 +1277,6 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
      pk = max(pk, sust_k);
      pw = max(pw, sust_w);
    }
-
-   /*--- Hellsten curvature correction ---*/
-   // const su2double R   = VorticityMag/StrainMag*(VorticityMag/StrainMag - 1.0);
-   // const su2double Crc = 1.4;
-   // const su2double F4  = 1.0/(1.0+Crc*R);
 
    /*--- Add the production terms to the residuals. ---*/
 
@@ -1315,16 +1294,12 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
    /*--- Implicit part ---*/
 
-   // val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;
-   // val_Jacobian_i[0][1] = -beta_star*TurbVar_i[0]*Volume;
-   // val_Jacobian_i[1][0] = 0.0;
-   // val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
-   val_Jacobian_i[0][0] += -beta_star*TurbVar_i[1]*Volume;
-   val_Jacobian_i[0][1] += -beta_star*TurbVar_i[0]*Volume;
-   val_Jacobian_i[1][0] += 0.0;
-   val_Jacobian_i[1][1] += -2.0*beta_blended*TurbVar_i[1]*Volume;
+   val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;
+   val_Jacobian_i[0][1] = -beta_star*TurbVar_i[0]*Volume;
+   val_Jacobian_i[1][0] = 0.0;
+   val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
   }
-  
+
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
 
