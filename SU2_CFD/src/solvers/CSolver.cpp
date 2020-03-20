@@ -5586,8 +5586,8 @@ void CSolver::ViscousMetric(CSolver          **solver,
   if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
   e = varFlo->GetEnergy(iPoint);
   if(sst) {
-    k     = varTur->GetSolution(iPoint, 0);
-    omega = varTur->GetSolution(iPoint, 1);
+    k     = varTur->GetPrimitive(iPoint, 0);
+    omega = varTur->GetPrimitive(iPoint, 1);
   }
 
   T   = varFlo->GetTemperature(iPoint);
