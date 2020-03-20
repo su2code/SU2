@@ -1500,7 +1500,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver          **solver,
 
   }
   else {
-    const unsigned short rki = 1*nMetr, romegai = 2*nMetr, xxi = 0, yyi = 2;
+    const unsigned short rki = 0*nMetr, romegai = 1*nMetr, xxi = 0, yyi = 2;
     TmpWeights[nVarFlo+0] -= (mu+sigmak*mut)*(varAdjTur->GetAnisoHess(iPoint, rki+xxi)
                                              +varAdjTur->GetAnisoHess(iPoint, rki+yyi)); // Hk
     TmpWeights[nVarFlo+1] -= (mu+sigmaomega*mut)*(varAdjTur->GetAnisoHess(iPoint, romegai+xxi)
