@@ -28,6 +28,9 @@
 
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../include/variables/CTurbSSTVariable.hpp"
+#include "../../include/gradients/computeGradientsGreenGauss.hpp"
+#include "../../include/gradients/computeGradientsLeastSquares.hpp"
+#include "../../include/limiters/computeLimiters.hpp"
 
 CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
 
