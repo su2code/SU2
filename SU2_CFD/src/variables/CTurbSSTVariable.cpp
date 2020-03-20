@@ -42,7 +42,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
     Solution(iPoint,1) = mut*omega*omega/kine;
   }
 
-  Primitive_Old = Primitive;
+  Solution_Old = Solution;
 
   sigma_om2 = constants[3];
   beta_star = constants[6];
@@ -92,35 +92,35 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
 }
 
 void CTurbSSTVariable::RegisterConservativePrimitive(bool input, bool push_index) {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
-      if(input) {
-        if(push_index) {
-          AD::RegisterInput(Conservative(iPoint,iVar));
-        }
-        else {
-          AD::RegisterInput(Conservative(iPoint,iVar), false);
-          AD::SetIndex(AD_InputIndex(iPoint,iVar), Conservative(iPoint,iVar));
-        }
-      }
-      else {
-        AD::RegisterOutput(Conservative(iPoint,iVar));
-        if(!push_index)
-          AD::SetIndex(AD_OutputIndex(iPoint,iVar), Conservative(iPoint,iVar));
-      }
-    }
-  }
+  // for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+  //   for(unsigned long iVar=0; iVar<nVar; ++iVar) {
+  //     if(input) {
+  //       if(push_index) {
+  //         AD::RegisterInput(Conservative(iPoint,iVar));
+  //       }
+  //       else {
+  //         AD::RegisterInput(Conservative(iPoint,iVar), false);
+  //         AD::SetIndex(AD_InputIndex(iPoint,iVar), Conservative(iPoint,iVar));
+  //       }
+  //     }
+  //     else {
+  //       AD::RegisterOutput(Conservative(iPoint,iVar));
+  //       if(!push_index)
+  //         AD::SetIndex(AD_OutputIndex(iPoint,iVar), Conservative(iPoint,iVar));
+  //     }
+  //   }
+  // }
 }
 
 void CTurbSSTVariable::RegisterConservativePrimitive_time_n() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Primitive_time_n(iPoint, iVar));
+  // for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+  //   for(unsigned long iVar=0; iVar<nVar; ++iVar)
+  //     AD::RegisterInput(Primitive_time_n(iPoint, iVar));
 }
 
 void CTurbSSTVariable::RegisterConservativePrimitive_time_n1() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Primitive_time_n1(iPoint, iVar));
+  // for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+  //   for(unsigned long iVar=0; iVar<nVar; ++iVar)
+  //     AD::RegisterInput(Primitive_time_n1(iPoint, iVar));
 
 }

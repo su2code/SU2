@@ -151,7 +151,7 @@ public:
    */
   inline void AddConservative(unsigned long iPoint, unsigned long iVar, su2double solution,
                               su2double lowerlimit, su2double upperlimit) { 
-    su2double cons_new = Conservative(iPoint, iVar) + solution;
-    Conservative(iPoint,iVar) = min(max(cons_new, lowerlimit), upperlimit);
+    // su2double cons_new = Conservative(iPoint, iVar) + solution;
+    // Conservative(iPoint,iVar) = min(max(cons_new, lowerlimit), upperlimit);
   }
 };
