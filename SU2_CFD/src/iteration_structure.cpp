@@ -2356,7 +2356,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver, CGeometry ****ge
     }
     
     if (turbulent && !frozen_visc) {
-      if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+      if ((config[iZone]->GetKind_Turb_Model() == SST) || (config[iZone]->GetKind_Turb_Model() == SST_SUST))
         solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterConservativeSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
       else
         solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
@@ -2486,7 +2486,7 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver, CGeometry ****g
   
   }
   if (turbulent && !frozen_visc){
-    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+    if ((config[iZone]->GetKind_Turb_Model() == SST) || (config[iZone]->GetKind_Turb_Model() == SST_SUST))
       solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterConservativeOutput(geometry[iZone][iInst][MESH_0],
                                                                             config[iZone]);
     else

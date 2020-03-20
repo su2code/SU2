@@ -104,7 +104,7 @@ public:
    * \param[in] geometry_container - The geometry container holding all grid levels.
    * \param[in] config_container - The particular config.
    */
-  void RegisterConservativeSolution(CGeometry *geometry, CConfig *config, CSolver **solver) override;
+  void RegisterConservativeSolution(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -122,7 +122,7 @@ public:
    * \param[in] geometry_container - The geometry container holding all grid levels.
    * \param[in] config_container - The particular config.
    */
-  void RegisterConservativeOutput(CGeometry *geometry, CConfig *config, CSolver **solver) override;
+  void RegisterConservativeOutput(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Sets the adjoint values of the output of the flow (+turb.) iteration
