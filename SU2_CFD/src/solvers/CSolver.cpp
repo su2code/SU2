@@ -5692,7 +5692,7 @@ void CSolver::ViscousMetric(CSolver          **solver,
   if(nDim == 3) weights[3] += u[2]*factor;
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
-      TmpWeights[iDim+1] += 1./r*tau[iDim][jDim]*varAdjlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+jDim);
+      TmpWeights[iDim+1] += 1./r*tau[iDim][jDim]*varAdjFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+jDim);
     }
   }
 
