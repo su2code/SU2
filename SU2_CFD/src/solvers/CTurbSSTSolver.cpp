@@ -309,11 +309,14 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
 
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long iPoint;
+  unsigned long iPoint, ErrorCounter = 0;
   unsigned short iVar;
 
   bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
 
+  /*--- Set the primitive variables ---*/
+
+  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
@@ -393,21 +396,14 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     F2 = nodes->GetF2blending(iPoint);
 
-    /*--- Set primitive variables ---*/
-    su2double rhokine  = nodes->GetSolution(iPoint, 0);
-    su2double rhoomega = nodes->GetSolution(iPoint, 1);
-
-    if((rhokine < 0.) || (rhoomega < 0.)) {
-      rhokine  = nodes->GetSolution_Old(iPoint, 0);
-      rhoomega = nodes->GetSolution_Old(iPoint, 1);
-      nodes->SetSolution(iPoint, 0, rhokine);
-      nodes->SetSolution(iPoint, 1, rhoomega);
-    }
-
     /*--- Compute the eddy viscosity ---*/
+
+    const su2double rhokine  = nodes->GetSolution(iPoint,0);
+    const su2double rhoomega = nodes->GetSolution(iPoint,1);
 
     kine  = rhokine/rho;
     omega = rhoomega/rho;
+
     // kine  = nodes->GetPrimitive(iPoint,0);
     // omega = nodes->GetPrimitive(iPoint,1);
     // zeta  = min(1.0/omega, a1/(VorticityMag*F2));
@@ -417,6 +413,30 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
   }
 
+}
+
+unsigned long CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
+
+  unsigned long iPoint, nonPhysicalPoints = 0;
+  bool physical = true;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    su2double rhokine  = nodes->GetSolution(iPoint, 0);
+    su2double rhoomega = nodes->GetSolution(iPoint, 1);
+
+    if((rhokine < 0.) || (rhoomega < 0.)) {
+      rhokine  = nodes->GetSolution_Old(iPoint, 0);
+      rhoomega = nodes->GetSolution_Old(iPoint, 1);
+      nodes->SetSolution(iPoint, 0, rhokine);
+      nodes->SetSolution(iPoint, 1, rhoomega);
+
+      nonPhysicalPoints++;
+    }
+
+  }
+
+  return nonPhysicalPoints;
 }
 
 //--- This is hacky, fix later
