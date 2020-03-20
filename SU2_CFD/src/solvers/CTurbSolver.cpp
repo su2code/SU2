@@ -433,7 +433,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
           for (iVar = 0; iVar < nVar; iVar++) {
             // nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
-            nodes->AddConservative(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint]);
+            nodes->AddConservative(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint], lowerlimit[iVar], upperlimit[iVar]);
           }
 
         }

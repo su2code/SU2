@@ -128,7 +128,9 @@ public:
    * \param[in] iVar - Number of the variable.
    * \param[in] solution - Value that we want to add to the solution.
    */
-  inline void AddConservative(unsigned long iPoint, unsigned long iVar, su2double solution) { 
-    Conservative(iPoint, iVar) += solution;
+  inline void AddConservative(unsigned long iPoint, unsigned long iVar, su2double solution,
+                              su2double lowerlimit, su2double upperlimit) { 
+    su2double cons_new = Conservative(iPoint, iVar) + solution;
+    Conservative(iPoint,iVar) = min(max(cons_new, lowerlimit), upperlimit);
   }
 };
