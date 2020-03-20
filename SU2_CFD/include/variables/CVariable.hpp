@@ -2736,7 +2736,7 @@ public:
    * \param[in] input - input or output variables.
    * \param[in] push_index - boolean whether we want to push the index or save it in a member variable.
    */
-  void RegisterConservativeSolution(bool input, bool push_index = true, CVariable *flowvar);
+  void RegisterConservativeSolution(CVariable *flowvar, bool input, bool push_index = true);
 
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.

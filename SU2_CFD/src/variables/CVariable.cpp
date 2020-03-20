@@ -123,7 +123,7 @@ void CVariable::RegisterSolution(bool input, bool push_index) {
   }
 }
 
-void CVariable::RegisterConservativeSolution(bool input, bool push_index, CVariable *flowvar) {
+void CVariable::RegisterConservativeSolution(CVariable *flowvar, bool input, bool push_index) {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     const su2double density = flowvar->GetSolution(iPoint, 0);
     for(unsigned long iVar=0; iVar<nVar; ++iVar) {
