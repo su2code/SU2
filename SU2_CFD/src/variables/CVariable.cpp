@@ -123,14 +123,48 @@ void CVariable::RegisterSolution(bool input, bool push_index) {
   }
 }
 
-void CVariable::RegisterSolution_time_n() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n(iPoint,iVar));
+void CVariable::RegisterConservativeSolution(bool input, bool push_index, CVariable *flowvar) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    const su2double density = flowvar->GetSolution(iPoint, 0);
+    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
+      su2double cons_sol = Solution(iPoint, iVar)*density;
+      if(input) {
+        if(push_index) {
+          AD::RegisterInput(cons_sol);
+        }
+        else {
+          AD::RegisterInput(cons_sol, false);
+          AD::SetIndex(AD_InputIndex(iPoint,iVar), cons_sol);
+        }
+        Solution(iPoint, iVar) = cons_sol/density;
+      }
+      else {
+        AD::RegisterOutput(cons_sol);
+        if(!push_index)
+          AD::SetIndex(AD_OutputIndex(iPoint,iVar), cons_sol);
+      }
+    }
+  }
 }
 
-void CVariable::RegisterSolution_time_n1() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n1(iPoint,iVar));
+void CVariable::RegisterConservativeSolution_time_n(CVariable *flowvar) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    const su2double density = flowvar->GetSolution_time_n(iPoint, 0);
+    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
+      su2double cons_sol = Solution_time_n(iPoint, iVar)*density;
+      AD::RegisterInput(cons_sol);
+      Solution_time_n(iPoint, iVar) = cons_sol/density;
+    }
+  }
+}
+
+void CVariable::RegisterConservativeSolution_time_n1(CVariable *flowvar) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    const su2double density = flowvar->GetSolution_time_n1(iPoint, 0);
+    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
+      su2double cons_sol = Solution_time_n1(iPoint, iVar)*density;
+      AD::RegisterInput(cons_sol);
+      Solution_time_n1(iPoint, iVar) = cons_sol/density;
+    }
+  }
 }

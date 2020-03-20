@@ -263,6 +263,24 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
     direct_solver->GetNodes()->RegisterSolution_time_n1();
 }
 
+void CDiscAdjSolver::RegisterConservativeSolution(CGeometry *geometry, CConfig *config, CSolver **solver) {
+
+  bool time_n1_needed = (config->GetTime_Marching() == DT_STEPPING_2ND);
+  bool time_n_needed  = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
+  bool input          = true;
+  bool push_index     = !config->GetMultizone_Problem();
+
+  /*--- Register solution at all necessary time instances and other variables on the tape ---*/
+
+  direct_solver->GetNodes()->RegisterConservativeSolution(input, push_index, solver[FLOW_SOL]->GetNodes());
+
+  if (time_n_needed)
+    direct_solver->GetNodes()->RegisterConservativeSolution_time_n(solver[FLOW_SOL]->GetNodes());
+
+  if (time_n1_needed)
+    direct_solver->GetNodes()->RegisterConservativeSolution_time_n1(solver[FLOW_SOL]->GetNodes());
+}
+
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
 
   /*--- Register farfield values as input ---*/
@@ -366,6 +384,16 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   /*--- Register variables as output of the solver iteration ---*/
 
   direct_solver->GetNodes()->RegisterSolution(input, push_index);
+}
+
+void CDiscAdjSolver::RegisterConservativeOutput(CGeometry *geometry, CConfig *config, CSolver **solver) {
+
+  bool input        = false;
+  bool push_index   = !config->GetMultizone_Problem();
+
+  /*--- Register variables as output of the solver iteration ---*/
+
+  direct_solver->GetNodes()->RegisterConservativeSolution(input, push_index, solver[FLOW_SOL]->GetNodes());
 }
 
 void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {

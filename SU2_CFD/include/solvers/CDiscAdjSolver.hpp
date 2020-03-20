@@ -100,12 +100,29 @@ public:
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
+   *        Registers all necessary variables on the tape. Called while tape is active.
+   * \param[in] geometry_container - The geometry container holding all grid levels.
+   * \param[in] config_container - The particular config.
+   */
+  void RegisterConservativeSolution(CGeometry *geometry, CConfig *config, CSolver **solver) override;
+
+  /*!
+   * \brief Performs the preprocessing of the adjoint AD-based solver.
    *        Registers all necessary variables that are output variables on the tape.
    *        Called while tape is active.
    * \param[in] geometry_container - The geometry container holding all grid levels.
    * \param[in] config_container - The particular config.
    */
   void RegisterOutput(CGeometry *geometry, CConfig *config) override;
+
+  /*!
+   * \brief Performs the preprocessing of the adjoint AD-based solver.
+   *        Registers all necessary variables that are output variables on the tape.
+   *        Called while tape is active.
+   * \param[in] geometry_container - The geometry container holding all grid levels.
+   * \param[in] config_container - The particular config.
+   */
+  void RegisterConservativeOutput(CGeometry *geometry, CConfig *config, CSolver **solver) override;
 
   /*!
    * \brief Sets the adjoint values of the output of the flow (+turb.) iteration
