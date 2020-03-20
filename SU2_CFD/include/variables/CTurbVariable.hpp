@@ -107,5 +107,11 @@ public:
    */
   inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
 
+  /*!
+   * \brief Get the primitive variables for all points.
+   * \return Reference to primitives.
+   */
+  virtual inline const MatrixType& GetPrimitive(void) const { return 0; }
+
 };
 
