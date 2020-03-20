@@ -91,7 +91,7 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
 
 }
 
-void CTurbSSTVariable::RegisterConservativePrimitive(bool input, bool push_index) {
+void CTurbSSTVariable::RegisterConservativeSolution(bool input, bool push_index) {
   // for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
   //   for(unsigned long iVar=0; iVar<nVar; ++iVar) {
   //     if(input) {
@@ -112,13 +112,13 @@ void CTurbSSTVariable::RegisterConservativePrimitive(bool input, bool push_index
   // }
 }
 
-void CTurbSSTVariable::RegisterConservativePrimitive_time_n() {
+void CTurbSSTVariable::RegisterConservativeSolution_time_n() {
   // for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
   //   for(unsigned long iVar=0; iVar<nVar; ++iVar)
   //     AD::RegisterInput(Primitive_time_n(iPoint, iVar));
 }
 
-void CTurbSSTVariable::RegisterConservativePrimitive_time_n1() {
+void CTurbSSTVariable::RegisterConservativeSolution_time_n1() {
   // for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
   //   for(unsigned long iVar=0; iVar<nVar; ++iVar)
   //     AD::RegisterInput(Primitive_time_n1(iPoint, iVar));
