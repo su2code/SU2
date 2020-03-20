@@ -516,25 +516,25 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
 
       }
     }
-    // else if (sst_model) {
+    else if (sst_model) {
 
-    //   /* We impose a limit on the maximum percentage that the
-    //    turbulent variables can change over a nonlinear iteration. */
+      /* We impose a limit on the maximum percentage that the
+       turbulent variables can change over a nonlinear iteration. */
 
-    //   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    //     const unsigned long index = iPoint*nVar + iVar;
-    //     su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, iVar)+EPS);
-    //     if (ratio > allowableRatio) {
-    //       localUnderRelaxation = min(allowableRatio, localUnderRelaxation);
-    //     }
-    //     // if (ratio > allowableIncrease) {
-    //     //   localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
-    //     // } else if (ratio < allowableDecrease) {
-    //     //   localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
-    //     // }
-    //   }
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        const unsigned long index = iPoint*nVar + iVar;
+        su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, iVar)+EPS);
+        if (ratio > allowableRatio) {
+          localUnderRelaxation = min(allowableRatio, localUnderRelaxation);
+        }
+        // if (ratio > allowableIncrease) {
+        //   localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
+        // } else if (ratio < allowableDecrease) {
+        //   localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
+        // }
+      }
 
-    // }
+    }
 
     /* Choose the minimum factor between mean flow and turbulence. */
 
