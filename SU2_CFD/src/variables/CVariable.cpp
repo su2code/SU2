@@ -139,8 +139,8 @@ void CVariable::RegisterConservativeSolution(CVariable *flowvar, bool input, boo
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     su2double density = flowvar->GetSolution(iPoint, 0);
     for(unsigned long iVar=0; iVar<nVar; ++iVar) {
-      su2double cons_sol = Solution(iPoint, iVar)*density;
       if(input) {
+        su2double cons_sol = Solution(iPoint, iVar)*SU2_TYPE::GetValue(density);
         if(push_index) {
           AD::RegisterInput(cons_sol);
         }
@@ -151,6 +151,7 @@ void CVariable::RegisterConservativeSolution(CVariable *flowvar, bool input, boo
         Solution(iPoint, iVar) = cons_sol/density;
       }
       else {
+        su2double cons_sol = Solution(iPoint, iVar)*density;
         AD::RegisterOutput(cons_sol);
         if(!push_index)
           AD::SetIndex(AD_OutputIndex(iPoint,iVar), cons_sol);
