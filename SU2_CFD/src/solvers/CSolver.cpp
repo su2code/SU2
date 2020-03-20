@@ -5543,8 +5543,8 @@ void CSolver::ConvectiveMetric(CSolver          **solver,
     C[4][3] = (g-1.); C[4][4] = g*w;
   }
 
-  for (jVar = 0; jVar < solFlo->GetnVar(); ++jVar) {
-    for (iVar = 0; iVar < solFlo->GetnVar(); ++iVar) {
+  for (jVar = 0; jVar < nVarFlo; ++jVar) {
+    for (iVar = 0; iVar < nVarFlo; ++iVar) {
       const unsigned short i = iVar*nDim;
       const su2double adjx = varAdjFlo->GetAnisoGrad(iPoint, i+0),
                       adjy = varAdjFlo->GetAnisoGrad(iPoint, i+1);
@@ -5558,9 +5558,9 @@ void CSolver::ConvectiveMetric(CSolver          **solver,
 
   //--- Turbulent terms
   if(turb) {
+    const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
     if (sst) {
-      nVarTurb = 2;
-      for (iVar = 0; iVar < nVarTurb; ++iVar){
+      for (iVar = 0; iVar < nVarTur; ++iVar){
         const unsigned short i = iVar*nDim;
         const su2double adjx = varAdjTur->GetAnisoGrad(iPoint, i+0),
                         adjy = varAdjTur->GetAnisoGrad(iPoint, i+1);
@@ -5791,14 +5791,16 @@ void CSolver::SumWeightedHessians(CSolver          **solver,
   CVariable *varFlo = solver[FLOW_SOL]->GetNodes(),
             *varTur = solver[TURB_SOL]->GetNodes();
 
-  unsigned short nMetr = 3*(nDim-1);
+  unsigned short iVar, im;
+  const unsigned short nMetr = 3*(nDim-1);
+  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
-  bool turb = (config->GetKind_Turb_Model() != NONE);
+  const bool turb = (config->GetKind_Turb_Model() != NONE);
 
   //--- Mean flow variables
-  for (unsigned short iVar = 0; iVar < solFlo->GetnVar(); ++iVar) {
+  for (iVar = 0; iVar < nVarFlo; ++iVar) {
 
-    for (unsigned short im = 0; im < nMetr; ++im) {
+    for (im = 0; im < nMetr; ++im) {
       const unsigned short ih = iVar*nMetr + im;  
       const su2double hess = varFlo->GetAnisoHess(iPoint, ih);
       const su2double part = abs(weights[iVar])*hess;
@@ -5808,6 +5810,16 @@ void CSolver::SumWeightedHessians(CSolver          **solver,
 
   //--- Turbulent variables
   if(turb) {
+    const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
+    for (iVar = 0; iVar < nVarTur; ++iVar) {
+
+    for (im = 0; im < nMetr; ++im) {
+      const unsigned short ih = iVar*nMetr + im;  
+      const su2double hess = varTur->GetAnisoHess(iPoint, ih);
+      const su2double part = abs(weights[nVarFlo+iVar])*hess;
+      varFlo->AddAnisoMetr(iPoint, im, part);
+    }
+  }
 
   }
 }
