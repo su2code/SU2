@@ -137,7 +137,7 @@ void CVariable::RegisterSolution_time_n1() {
 
 void CVariable::RegisterConservativeSolution(CVariable *flowvar, bool input, bool push_index) {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    const su2double density = flowvar->GetSolution(iPoint, 0);
+    su2double density = flowvar->GetSolution(iPoint, 0);
     for(unsigned long iVar=0; iVar<nVar; ++iVar) {
       su2double cons_sol = Solution(iPoint, iVar)*density;
       if(input) {
