@@ -367,6 +367,10 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     }
 
+    rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    nodes->SetPrimitive(iPoint, 0, rhokine/rho);
+    nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
+
   }
 
   /*--- Compute mean flow and turbulence gradients ---*/
@@ -450,6 +454,10 @@ unsigned long CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container,
 
       nonPhysicalPoints++;
     }
+
+    rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    nodes->SetPrimitive(iPoint, 0, rhokine/rho);
+    nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
 
   }
 
