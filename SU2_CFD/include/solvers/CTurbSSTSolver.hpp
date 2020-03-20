@@ -353,4 +353,15 @@ public:
    */
   inline su2double GetOmega_Inf(void) const override { return omega_Inf; }
 
+  /*!
+   * \brief Compute the turbulent terms of the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of current node.
+   * \param[in] weights - Weights of each Hessian in the metric.
+   */
+  void TurbulentMetric(CSolver **solver, CGeometry *geometry, CConfig *config, 
+                       unsigned long iPoint, vector<su2double> &weights) { }
+
 };

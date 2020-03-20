@@ -5466,6 +5466,7 @@ void CSolver::ComputeMetric(CSolver   **solver,
     ViscousMetric(solver, geometry, config, iPoint, HessianWeights);
 
     //--- Turbulent terms
+    if (turb) solver[TURB_SOL]->TurbulentMetric(solver, geometry, config, iPoint, HessianWeights);
 
     //--- Add Hessians
     SumWeightedHessians(solver, geometry, config, iPoint, HessianWeights);
@@ -5667,19 +5668,19 @@ void CSolver::ViscousMetric(CSolver          **solver,
       iVar = iDim+1;
       if(turb) {
         factor += (tau[iDim][jDim]+(2./3.)*r*k*delta[iDim][jDim])/(mu+mut)
-                * (varFlo->GetAnisoGrad(iPoint, iVar*nDim+jDim)
-                + u[jDim]*varFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim));
+                * (varAdjFlo->GetAnisoGrad(iPoint, iVar*nDim+jDim)
+                + u[jDim]*varAdjFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim));
       }
       else {
         factor += tau[iDim][jDim]/(mu+mut)
-                * (varFlo->GetAnisoGrad(iPoint, iVar*nDim+iDim)
-                + u[jDim]*varFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim));
+                * (varAdjFlo->GetAnisoGrad(iPoint, iVar*nDim+iDim)
+                + u[jDim]*varAdjFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim));
       }
     }
-    factor += cp/Pr*gradT[iDim]*varFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim);
+    factor += cp/Pr*gradT[iDim]*varAdjFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim);
     if (sst) {
-      factor += gradk[iDim]*varTur->GetAnisoGrad(iPoint, 0*nDim+iDim)
-              + gradomega[iDim]*varTur->GetAnisoGrad(iPoint, 1*nDim+iDim);
+      factor += gradk[iDim]*varAdjTur->GetAnisoGrad(iPoint, 0*nDim+iDim)
+              + gradomega[iDim]*varAdjTur->GetAnisoGrad(iPoint, 1*nDim+iDim);
     }
   }
   factor *= dmudT;
@@ -5691,7 +5692,7 @@ void CSolver::ViscousMetric(CSolver          **solver,
   if(nDim == 3) weights[3] += u[2]*factor;
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
-      TmpWeights[iDim+1] += 1./r*tau[iDim][jDim]*varFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+jDim);
+      TmpWeights[iDim+1] += 1./r*tau[iDim][jDim]*varAdjlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+jDim);
     }
   }
 
