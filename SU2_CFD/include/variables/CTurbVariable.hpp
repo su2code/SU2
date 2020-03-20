@@ -110,7 +110,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual inline const MatrixType& GetPrimitive(void) const { return nullptr; }
+  virtual inline const MatrixType& GetPrimitive(void) const { return 0; }
 
   /*!
    * \brief A virtual member.
