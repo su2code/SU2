@@ -121,4 +121,14 @@ public:
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
   void RegisterConservativeSolution_time_n1();
+
+  /*!
+   * \brief Add a value to the solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Number of the variable.
+   * \param[in] solution - Value that we want to add to the solution.
+   */
+  inline void AddConservative(unsigned long iPoint, unsigned long iVar, su2double solution) { 
+    Conservative(iPoint, iVar) += solution;
+  }
 };
