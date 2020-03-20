@@ -156,13 +156,13 @@ void CVariable::RegisterConservativeSolution(bool input, bool push_index) {
   }
 }
 
-void CVariable::RegisterSolution_time_n() {
+void CVariable::RegisterConservativeSolution_time_n() {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for(unsigned long iVar=0; iVar<nVar; ++iVar)
       AD::RegisterInput(Solution_time_n(iPoint, iVar));
 }
 
-void CVariable::RegisterSolution_time_n1() {
+void CVariable::RegisterConservativeSolution_time_n1() {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for(unsigned long iVar=0; iVar<nVar; ++iVar)
       AD::RegisterInput(Solution_time_n1(iPoint, iVar));
