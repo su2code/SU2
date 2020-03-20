@@ -5813,14 +5813,13 @@ void CSolver::SumWeightedHessians(CSolver          **solver,
     const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
     for (iVar = 0; iVar < nVarTur; ++iVar) {
 
-    for (im = 0; im < nMetr; ++im) {
-      const unsigned short ih = iVar*nMetr + im;  
-      const su2double hess = varTur->GetAnisoHess(iPoint, ih);
-      const su2double part = abs(weights[nVarFlo+iVar])*hess;
-      varFlo->AddAnisoMetr(iPoint, im, part);
+      for (im = 0; im < nMetr; ++im) {
+        const unsigned short ih = iVar*nMetr + im;  
+        const su2double hess = varTur->GetAnisoHess(iPoint, ih);
+        const su2double part = abs(weights[nVarFlo+iVar])*hess;
+        varFlo->AddAnisoMetr(iPoint, im, part);
+      }
     }
-  }
-
   }
 }
 
