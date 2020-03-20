@@ -350,11 +350,24 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
   su2double rho = 0.0, mu = 0.0, dist, omega, kine, F2, muT, zeta;
   su2double a1 = constants[7];
-  unsigned long iPoint, ErrorCounter = 0;
+  unsigned long iPoint;
 
   /*--- Set the primitive variables ---*/
 
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    su2double rhokine  = nodes->GetSolution(iPoint, 0);
+    su2double rhoomega = nodes->GetSolution(iPoint, 1);
+
+    if((rhokine < 0.) || (rhoomega < 0.)) {
+      rhokine  = nodes->GetSolution_Old(iPoint, 0);
+      rhoomega = nodes->GetSolution_Old(iPoint, 1);
+      nodes->SetSolution(iPoint, 0, rhokine);
+      nodes->SetSolution(iPoint, 1, rhoomega);
+
+    }
+
+  }
 
   /*--- Compute mean flow and turbulence gradients ---*/
 
