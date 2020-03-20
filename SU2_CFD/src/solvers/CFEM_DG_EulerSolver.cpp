@@ -160,7 +160,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   if( compressible ) nVar = nDim + 2;
   else               nVar = nDim + 1;
-
+  geometry->countPerPoint = nVar;
+  
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
         geometrical information for the FEM DG solver. ---*/
   CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
@@ -3515,7 +3516,8 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
 #ifdef CODI_FORWARD_TYPE
             Jac[var+j*nVar] = resDOF[j].getGradient();
 #else
-            Jac[var+j*nVar] = 0.0;   /* This is to avoid a compiler warning. */
+            Jac[var+j*nVar] = var+j*nVar+nVar2*(nNonZeroEntries[i] + ind);   /* This is to avoid a compiler warning. */
+            // Jac[var+j*nVar] = 0.0;   /* This is to avoid a compiler warning. */
 #endif
           }
         }
@@ -7289,7 +7291,7 @@ typedef Eigen::Triplet<double> T;
 void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                CConfig *config) {
 
-#ifdef CODI_FORWARD_TYPE
+// #ifdef CODI_FORWARD_TYPE
 
   unsigned long nDOFsLocOwned_allranks[size];
   SU2_MPI::Allgather(&nDOFsLocOwned, 1, MPI_UNSIGNED_LONG, &nDOFsLocOwned_allranks, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
@@ -7332,8 +7334,13 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
 
     for (unsigned int i = 0; i < nDOFsLocOwned*nVar; ++i)
     {
+#ifdef CODI_FORWARD_TYPE
       Res_global(i) = (double)VecResDOFs[i].getValue();
       Sol_global(i) = (double)VecSolDOFs[i].getValue();
+#else
+      Res_global(i) = VecResDOFs[i];
+      Sol_global(i) = VecSolDOFs[i];
+#endif
       if (Res_global(i) != Res_global(i)) {
         SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
       }
@@ -7356,7 +7363,11 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
       for (unsigned int iVar = 0; iVar<nVar; ++iVar) {
         ResRatio = max(ResRatio, ResRMSinitial[iVar]/GetRes_RMS(iVar));
       }
+#ifdef CODI_FORWARD_TYPE
       ResRatio = min(ResRatio.getValue(), 1e10);
+#else
+      ResRatio = min(ResRatio, 1e10);
+#endif
     }
     if (rank == MASTER_NODE) {
       cout << "ResRatio = " << ResRatio << endl;
@@ -7371,31 +7382,38 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
         for (unsigned int j = 0; j < nDOFs; ++j) {
           for (unsigned int k = 0; k < nDOFs; ++k) {
             for (unsigned int iVar = 0; iVar<nVar; ++iVar) {
+#ifdef CODI_FORWARD_TYPE
               tripletList_massMatrix.push_back(T(offset+j*nVar+iVar,
               offset+k*nVar+iVar+nDOFsLocOwned_acc_allranks[rank]*nVar,
               (1/(ResRatio*Min_Delta_Time)*volElem[l].massMatrix[j*nDOFs+k]).getValue()));
+#else
+              tripletList_massMatrix.push_back(T(offset+j*nVar+iVar,
+              offset+k*nVar+iVar+nDOFsLocOwned_acc_allranks[rank]*nVar,
+              (1/(ResRatio*Min_Delta_Time)*volElem[l].massMatrix[j*nDOFs+k])));
+#endif
             }
           }
         }
     }
     MassMatrix_global.setFromTriplets(tripletList_massMatrix.begin(),tripletList_massMatrix.end());
 
+    // add Mass Matrix
     for (unsigned long l = 0; l < nVolElemOwned; ++l) {
 
       const unsigned long nDOFs  = volElem[l].nDOFsSol;
       const unsigned long offset = volElem[l].offsetDOFsSolLocal;
 
       for (unsigned int j = 0; j < nDOFs; ++j) {
-          for (unsigned int k = 0; k < nDOFs; ++k) {
+        for (unsigned int k = 0; k < nDOFs; ++k) {
 
-            unsigned long block_i = offset + j;
-            unsigned long block_j = offset + k + nDOFsLocOwned_acc_allranks[rank];
-            // std::cout << "block_i =" << block_i << ", block_j =" << block_j << std::endl;
-            auto v = 1.0/(ResRatio*Min_Delta_Time)*volElem[l].massMatrix[j*nDOFs + k];
-            Jacobian_DG.AddBlockDiag(block_i, block_j, v);
-            MassMatrix_local.AddBlockDiag(offset+j, offset+k, v);
-          }
+          unsigned long block_i = offset + j;
+          unsigned long block_j = offset + k + nDOFsLocOwned_acc_allranks[rank];
+          // std::cout << "block_i =" << block_i << ", block_j =" << block_j << std::endl;
+          auto v = 1.0/(ResRatio*Min_Delta_Time)*volElem[l].massMatrix[j*nDOFs + k];
+          Jacobian_DG.AddBlockDiag(block_i, block_j, v);
+          MassMatrix_local.AddBlockDiag(offset+j, offset+k, v);
         }
+      }
     }
 
     // std::cout << "MassMatrix_global = " << MassMatrix_global.rows() << " x " << MassMatrix_global.cols() << " with nonzeros " << MassMatrix_global.nonZeros() << std::endl;
@@ -7416,9 +7434,9 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
 
 
     // std::cout << "Starting the linear solver" << std::endl;
-    // Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>> Linear_solver;
-    // Linear_solver.compute(Jacobian_global);
-    // Eigen::VectorXd mSol_delta = Linear_solver.solve(-Res_global);
+    Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>> Linear_solver;
+    Linear_solver.compute(Jacobian_global);
+    Eigen::VectorXd mSol_delta = Linear_solver.solve(-Res_global);
     // std::cout << "Finished the linear solver" << std::endl;
     
     /*--- Solve the linear system using the SuperLU linear solver ---*/
@@ -7641,9 +7659,9 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   // // std::cout << "SuperLU::superlu_gridexit(&grid);" << std::endl;
   // SuperLU::superlu_gridexit(&grid);
 
-#else
-  std::cout << "Implicit DG solver requires AD support(forward)" << std::endl;
-#endif
+// #else
+//   std::cout << "Implicit DG solver requires AD support(forward)" << std::endl;
+// #endif
 }
 
 void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,

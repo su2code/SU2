@@ -217,8 +217,13 @@ protected:
   vector<vector<unsigned long> > nonZeroEntriesJacobian; /*!< \brief The ID's of the DOFs for the
                                                                      non-zero entries of the Jacobian
                                                                      for the locally owned DOFs. */
+
+  vector<unsigned long> nonZeroEntriesJacobian_flat;
+
   vector<passivedouble> SpatialJacobian;    /*!< \brief Vector containing the Spatial Jacobian used for implicit schemes. */
 
+  CSysMatrix<passivedouble> Jacobian_DG;
+  
   CSysMatrix<su2double> MassMatrix_local;
 
   vector<unsigned long> MassMatrix_col_ind;
@@ -227,7 +232,9 @@ protected:
 
   vector<unsigned long> nNonZeroEntries;
 
-  vector<unsigned long> nonZeroEntriesJacobian_flat;
+  vector<unsigned long> Jacobian_DG_col_ind;
+
+  vector<unsigned long> Jacobian_DG_row_ptr;
 
   vector<su2double> ResRMSinitial;       /*!< \brief Vector containing the initial RMS residuals used for implicit schemes. */
 

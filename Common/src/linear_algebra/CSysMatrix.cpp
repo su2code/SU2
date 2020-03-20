@@ -33,7 +33,9 @@
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
 #include <cmath>
-
+#include <Eigen/Sparse>
+#include <unsupported/Eigen/SparseExtra>
+#ifdef CODI_FORWARD_TYPE
 namespace SuperLU
 {
 #ifdef __cplusplus
@@ -45,6 +47,7 @@ namespace SuperLU
   }
 #endif
 }
+#endif
 
 template<class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix(void) {
@@ -1439,34 +1442,61 @@ void CSysMatrix<su2double>::ComputePastixPreconditioner(const CSysVector<su2doub
 }
 #endif
 
-/*--- Explicit instantiations ---*/
-template class CSysMatrix<su2double>;
-template void  CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-template void  CSysMatrix<su2double>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
-
-#ifdef CODI_REVERSE_TYPE
-template class CSysMatrix<passivedouble>;
-template void  CSysMatrix<passivedouble>::InitiateComms(const CSysVector<passivedouble>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<passivedouble>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<passivedouble>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
-template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const passivedouble*, CSysVector<passivedouble>&);
-template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-template void  CSysMatrix<passivedouble>::MatrixMatrixAddition(passivedouble, const CSysMatrix<passivedouble>&);
-template void  CSysMatrix<passivedouble>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
-#endif
-
 template<class ScalarType>
-template<class OtherType>
-void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<OtherType> & LinSysRes,
-                                              CSysVector<OtherType> & LinSysSol, CGeometry *geometry, CConfig *config,
+// template<class OtherType>
+void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<ScalarType> & LinSysRes,
+                                              CSysVector<ScalarType> & LinSysSol, CGeometry *geometry, CConfig *config,
                                               const int* nDOFsLocOwned_acc_allranks_counts,
                                               const int* nDOFsLocOwned_acc_allranks_displs, 
                                               const unsigned long nDOFsGlobal,
-                                              CSysVector<OtherType> & LinSysSol_tmp) const {
+                                              CSysVector<ScalarType> & LinSysSol_tmp) const {
 
+    CSysVector<passivedouble> LinSysSol_tmp_passivedouble;
+    LinSysSol_tmp_passivedouble.Initialize(nDOFsGlobal, nPointDomain, nVar, nullptr);
+    LinSysSol_tmp.PassiveCopy(LinSysSol_tmp_passivedouble);
+
+    
+    passivedouble matrix_passivedouble[nnz];
+
+    int col_ind_CSR[nnz];
+    int row_ptr_CSR[nDOFsGlobal*nVar+1];
+    row_ptr_CSR[0] = 0;
+//     for (unsigned long i = 0; i < nnz; ++i) {
+// #ifdef CODI_FORWARD_TYPE
+//       matrix_passivedouble[i] = matrix[i].getValue();
+// #else
+//       matrix_passivedouble[i] = matrix[i];
+// #endif
+//     }
+
+    // col_ind_CSR = 
+    for (unsigned long i = 0; i < nDOFsGlobal; ++i) {
+      for (int i_row = i*nVar; i_row < (i+1)*nVar; ++i_row)
+        row_ptr_CSR[i_row+1] = row_ptr_CSR[i_row] + (row_ptr[i+1] - row_ptr[i])*nVar;
+      for (unsigned long j = row_ptr[i]; j < row_ptr[i+1]; ++j){
+        unsigned long block_index = col_ind[j];
+        unsigned long block_offset = j;
+        unsigned long CSR_offset = (row_ptr[i+1]-row_ptr[i]);
+        std::cout << "block_index = " << block_index << ", offset = " << block_offset << ", CSR_offset = " << CSR_offset << std::endl;
+        for (int i_row = 0; i_row < nVar; ++i_row) {
+          for (int i_col = 0; i_col < nVar; ++i_col) {
+            unsigned long LHS = row_ptr[i]*nVar*nVar + (i_row*CSR_offset + j-row_ptr[i])*nVar + i_col;
+            unsigned long RHS = block_offset*nVar*nVar + i_row*nVar + i_col;
+            std::cout << "LHS = " << LHS << ", RHS = " << RHS << std::endl;
+            col_ind_CSR[LHS] = block_index*nVar + i_col;
+            matrix_passivedouble[LHS] = matrix[RHS];
+          }
+        }
+      }
+    }
+
+    Eigen::Map<Eigen::SparseMatrix<double, Eigen::RowMajor>> Jacobian_CSR(nDOFsGlobal*nVar, nDOFsGlobal*nVar, nnz, &row_ptr_CSR[0], &col_ind_CSR[0], &matrix_passivedouble[0]);
+    std::string Jacobian_name;
+    Jacobian_name = "Jacobian_CSR" + to_string(rank) + ".mtx";
+    Eigen::saveMarket(Jacobian_CSR, Jacobian_name);
+
+
+#ifdef CODI_FORWARD_TYPE
     /* SUPERLU STUFF */
     SuperLU::superlu_dist_options_t options;
     SuperLU::SuperLUStat_t stat;
@@ -1497,10 +1527,10 @@ void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<OtherType> & Lin
     PStatInit(&stat);
 
     SuperLU::dCreate_CompRowLoc_Matrix_dist(&A, nDOFsGlobal*nVar, nDOFsGlobal*nVar, nnz, 
-      nDOFsLocOwned_acc_allranks_counts[rank], nDOFsLocOwned_acc_allranks_displs[rank], matrix, col_ind, 
-      row_ptr, SuperLU::SLU_NR_loc, SuperLU::SLU_D, SuperLU::SLU_GE);
+      nDOFsLocOwned_acc_allranks_counts[rank], nDOFsLocOwned_acc_allranks_displs[rank], matrix_passivedouble, reinterpret_cast<int*>(const_cast<unsigned long*>(col_ind)), 
+      reinterpret_cast<int*>(const_cast<unsigned long*>(row_ptr)), SuperLU::SLU_NR_loc, SuperLU::SLU_D, SuperLU::SLU_GE);
 
-    // SuperLU::dPrint_CompRowLoc_Matrix_dist(&A);
+    SuperLU::dPrint_CompRowLoc_Matrix_dist(&A);
 
     // Eigen::VectorXd mSol_delta(nDOFsLocOwned*nVar);
     // for (unsigned long i = 0; i < nDOFsLocOwned*nVar; ++i) {
@@ -1512,10 +1542,14 @@ void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<OtherType> & Lin
     // {
     //   Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
     // }
+    
+    
 
-    SuperLU::pdgssvx(&options, &A, &ScalePermstruct, LinSysSol_tmp.GetBlock(0), nDOFsLocOwned_acc_allranks_counts[rank], 1, &grid,
+    SuperLU::pdgssvx(&options, &A, &ScalePermstruct, LinSysSol_tmp_passivedouble.GetBlock(0), nDOFsLocOwned_acc_allranks_counts[rank], 1, &grid,
       &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
+    LinSysSol_tmp_passivedouble.PassiveCopy(LinSysSol_tmp);
+    
     // if (rank == MASTER_NODE)
     // {
     //   Timer_end = su2double(clock())/su2double(CLOCKS_PER_SEC);
@@ -1585,5 +1619,24 @@ void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<OtherType> & Lin
     }
     // std::cout << "SuperLU::superlu_gridexit(&grid);" << std::endl;
     SuperLU::superlu_gridexit(&grid);
-
+#endif
 }
+
+/*--- Explicit instantiations ---*/
+template class CSysMatrix<su2double>;
+template void  CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void  CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void  CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
+template void  CSysMatrix<su2double>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
+
+#ifdef CODI_REVERSE_TYPE
+template class CSysMatrix<passivedouble>;
+template void  CSysMatrix<passivedouble>::InitiateComms(const CSysVector<passivedouble>&, CGeometry*, CConfig*, unsigned short) const;
+template void  CSysMatrix<passivedouble>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<passivedouble>&, CGeometry*, CConfig*, unsigned short) const;
+template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
+template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const passivedouble*, CSysVector<passivedouble>&);
+template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
+template void  CSysMatrix<passivedouble>::MatrixMatrixAddition(passivedouble, const CSysMatrix<passivedouble>&);
+template void  CSysMatrix<passivedouble>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
+#endif

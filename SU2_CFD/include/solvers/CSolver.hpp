@@ -172,8 +172,6 @@ public:
   CSysMatrix<su2double> Jacobian;
   CSysSolve<su2double>  System;
 #endif
-  
-  CSysMatrix<passivedouble> Jacobian_DG;
 
   CSysMatrix<su2double> StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
 

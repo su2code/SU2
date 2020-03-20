@@ -767,13 +767,13 @@ public:
   void ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
                                    CGeometry *geometry, CConfig *config) const;
 
-  template<class OtherType>
-  void SuperLU_LinSolver(const CSysVector<OtherType> & LinSysRes,
-                        CSysVector<OtherType> & LinSysSol, CGeometry *geometry, CConfig *config,
+  // template <class OtherType>
+  void SuperLU_LinSolver(const CSysVector<ScalarType> & LinSysRes,
+                        CSysVector<ScalarType> & LinSysSol, CGeometry *geometry, CConfig *config,
                         const int* nDOFsLocOwned_acc_allranks_counts,
                         const int* nDOFsLocOwned_acc_allranks_displs, 
                         const unsigned long nDOFsGlobal,
-                        CSysVector<OtherType> & LinSysSol_tmp) const;
+                        CSysVector<ScalarType> & LinSysSol_tmp) const;
 
 };
 
