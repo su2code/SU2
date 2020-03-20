@@ -234,7 +234,7 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
     if (sst) {
-      numerics->SetTurbVar(nodes->GetPrimtive(iPoint), nodes->GetPrimitive(jPoint));
+      numerics->SetTurbVar(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
     }
     else {
       numerics->SetTurbVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
