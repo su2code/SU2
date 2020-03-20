@@ -455,7 +455,7 @@ unsigned long CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container,
       nonPhysicalPoints++;
     }
 
-    rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     nodes->SetPrimitive(iPoint, 0, rhokine/rho);
     nodes->SetPrimitive(iPoint, 1, rhoomega/rho);
 
