@@ -89,37 +89,3 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   AD::EndPreacc();
 
 }
-
-void CTurbSSTVariable::RegisterConservativeSolution(bool input, bool push_index) {
-  // for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-  //   for(unsigned long iVar=0; iVar<nVar; ++iVar) {
-  //     if(input) {
-  //       if(push_index) {
-  //         AD::RegisterInput(Conservative(iPoint,iVar));
-  //       }
-  //       else {
-  //         AD::RegisterInput(Conservative(iPoint,iVar), false);
-  //         AD::SetIndex(AD_InputIndex(iPoint,iVar), Conservative(iPoint,iVar));
-  //       }
-  //     }
-  //     else {
-  //       AD::RegisterOutput(Conservative(iPoint,iVar));
-  //       if(!push_index)
-  //         AD::SetIndex(AD_OutputIndex(iPoint,iVar), Conservative(iPoint,iVar));
-  //     }
-  //   }
-  // }
-}
-
-void CTurbSSTVariable::RegisterConservativeSolution_time_n() {
-  // for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-  //   for(unsigned long iVar=0; iVar<nVar; ++iVar)
-  //     AD::RegisterInput(Primitive_time_n(iPoint, iVar));
-}
-
-void CTurbSSTVariable::RegisterConservativeSolution_time_n1() {
-  // for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-  //   for(unsigned long iVar=0; iVar<nVar; ++iVar)
-  //     AD::RegisterInput(Primitive_time_n1(iPoint, iVar));
-
-}
