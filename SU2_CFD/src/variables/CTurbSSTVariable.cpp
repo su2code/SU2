@@ -122,3 +122,5 @@ void CTurbSSTVariable::RegisterConservativeSolution_time_n1() {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for(unsigned long iVar=0; iVar<nVar; ++iVar)
       AD::RegisterInput(Solution_time_n1(iPoint, iVar));
+
+}
