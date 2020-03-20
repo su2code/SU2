@@ -391,6 +391,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     F2 = nodes->GetF2blending(iPoint);
 
+    nodes->SetSolution(iPoint, 0, nodes->GetConservative(iPoint, 0)/rho);
+    nodes->SetSolution(iPoint, 1, nodes->GetConservative(iPoint, 1)/rho);
+
     /*--- Compute the eddy viscosity ---*/
 
     kine  = nodes->GetSolution(iPoint,0);
@@ -399,9 +402,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     zeta  = min(1.0/omega, a1/(StrainMag*F2));
     muT   = max(rho*kine*zeta,0.0);
     nodes->SetmuT(iPoint,muT);
-
-    nodes->SetConservative(iPoint, 0, rho*kine);
-    nodes->SetConservative(iPoint, 1, rho*omega);
 
   }
 
