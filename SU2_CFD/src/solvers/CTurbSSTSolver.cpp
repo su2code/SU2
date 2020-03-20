@@ -313,7 +313,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
-    for (iVar = 0; iVar < nVar; iVar++) nodes->SetSolution(iPoint, iVar, nodes->GetConservative(iPoint, iVar)/solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint,0));
+    // for (iVar = 0; iVar < nVar; iVar++) nodes->SetSolution(iPoint, iVar, nodes->GetConservative(iPoint, iVar)/solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint,0));
 
     /*--- Initialize the residual vector ---*/
 
