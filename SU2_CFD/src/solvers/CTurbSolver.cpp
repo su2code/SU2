@@ -94,6 +94,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
   bool muscl         = config->GetMUSCL_Turb();
   bool limiter       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
+  bool sst           = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -111,8 +112,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
     /*--- Turbulent variables w/o reconstruction ---*/
 
-    Turb_i = nodes->GetSolution(iPoint);
-    Turb_j = nodes->GetSolution(jPoint);
+    if (sst) {
+      Turb_i = nodes->GetPrimitive(iPoint);
+      Turb_j = nodes->GetPrimitive(jPoint);
+    }
+    else {
+      Turb_i = nodes->GetSolution(iPoint);
+      Turb_j = nodes->GetSolution(jPoint);
+    }
     numerics->SetTurbVar(Turb_i, Turb_j);
 
     /*--- Grid Movement ---*/
@@ -204,6 +211,8 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   unsigned long iEdge, iPoint, jPoint;
 
+  bool sst = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
+
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge ---*/
@@ -224,7 +233,12 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-    numerics->SetTurbVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
+    if (sst) {
+      numerics->SetTurbVar(nodes->GetPrimtive(iPoint), nodes->GetPrimitive(jPoint));
+    }
+    else {
+      numerics->SetTurbVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
+    }
     numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
 
     /*--- Menter's first blending function (only SST)---*/
@@ -509,7 +523,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         const unsigned long index = iPoint*nVar + iVar;
-        su2double ratio = fabs(LinSysSol[index])/(nodes->GetConservative(iPoint, iVar)+EPS);
+        su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, iVar)+EPS);
         if (ratio > allowableRatio) {
           localUnderRelaxation = min(allowableRatio, localUnderRelaxation);
         }
