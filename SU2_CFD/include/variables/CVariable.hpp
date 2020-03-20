@@ -508,7 +508,7 @@ public:
    * \param[in] solution - Value that we want to add to the solution.
    */
   virtual void AddConservative(unsigned long iPoint, unsigned long iVar, su2double solution,
-                               su2double lowerlimit, su2double upperlimit) { }
+                               su2double val_density, su2double lowerlimit, su2double upperlimit) { }
 
   /*!
    * \brief Get the entire solution of the problem.

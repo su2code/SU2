@@ -487,7 +487,7 @@ void CTurbSSTSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *conf
 
 void CTurbSSTSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 
-  auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit_Flow());
+  auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit());
   const auto& primitives = nodes->GetPrimitive();
   const auto& gradient = nodes->GetGradient_Reconstruction();
   auto& primMin = nodes->GetSolution_Min();

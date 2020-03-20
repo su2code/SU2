@@ -150,8 +150,8 @@ public:
    * \param[in] solution - Value that we want to add to the solution.
    */
   inline void AddConservative(unsigned long iPoint, unsigned long iVar, su2double solution,
-                              su2double lowerlimit, su2double upperlimit) { 
-    // su2double cons_new = Conservative(iPoint, iVar) + solution;
-    // Conservative(iPoint,iVar) = min(max(cons_new, lowerlimit), upperlimit);
+                              su2double val_density, su2double lowerlimit, su2double upperlimit) { 
+    su2double val_new = (Solution_Old(iPoint,iVar) + solution)/val_density;
+    Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit)*val_density;
   }
 };
