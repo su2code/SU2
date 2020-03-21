@@ -96,6 +96,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     /*--- Define some auxiliary vector related with the solution ---*/
 
     Solution = new su2double[nVar];
+    Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
     Primitive = new su2double[nVar];
     Primitive_i = new su2double[nVar]; Primitive_j = new su2double[nVar];
 
