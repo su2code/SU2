@@ -937,8 +937,8 @@ def main():
     unst_deforming_naca0012           = TestCase('unst_deforming_naca0012')
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform.cfg"
-    unst_deforming_naca0012.test_iter = 1
-    unst_deforming_naca0012.test_vals = [ -6.910285, -7.233256, -7.273257, -6.366622] #last 4 columns
+    unst_deforming_naca0012.test_iter = 5
+    unst_deforming_naca0012.test_vals = [ -3.669625, -3.818858, -3.729946, -3.155637] #last 4 columns
     unst_deforming_naca0012.su2_exec  = "SU2_CFD"
     unst_deforming_naca0012.timeout   = 1600
     unst_deforming_naca0012.tol       = 0.00001
