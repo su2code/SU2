@@ -5441,7 +5441,7 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
               const unsigned short i = iVar*nMetr;
               for(iMetr = 0; iMetr < nMetr; iMetr++) {
                 // base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]/su2double(counter));
-                base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]*distsum;
+                base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]*distsum);
               }// iMetr
             }// iVar
           }// if counter
