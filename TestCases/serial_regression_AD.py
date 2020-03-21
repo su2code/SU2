@@ -205,6 +205,18 @@ def main():
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
 
+    # deforming pitching NACA0012
+    unst_deforming_naca0012           = TestCase('unst_deforming_naca0012')
+    unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
+    unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform_ad.cfg"
+    unst_deforming_naca0012.test_iter = 1
+    unst_deforming_naca0012.test_vals = [ -3.743594, -3.546465, 1.0917e+03, 3.3439e-06] #last 4 columns
+    unst_deforming_naca0012.su2_exec  = "SU2_CFD_AD"
+    unst_deforming_naca0012.timeout   = 1600
+    unst_deforming_naca0012.tol       = 0.00001
+    unst_deforming_naca0012.unsteady  = True
+    test_list.append(unst_deforming_naca0012)
+
     ###################################
     ### Structural Adjoint          ###
     ###################################
