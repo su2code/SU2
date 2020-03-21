@@ -2262,9 +2262,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   if (config[val_iZone]->AddRadiation()){
     solver[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],  config[val_iZone] , MESH_0, 0, RUNTIME_ADJRAD_SYS, false);
   }
-  if (config[val_iZone]->GetDeform_Mesh()) {
-    solver[val_iZone][val_iInst][MESH_0][ADJMESH_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],  config[val_iZone] , MESH_0, 0, RUNTIME_ADJFLOW_SYS, false);
-  }
+
 }
 
 

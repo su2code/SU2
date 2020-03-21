@@ -35,14 +35,6 @@ CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(unsigned long npoint, unsig
   nDim = ndim;
 
   VertexMap.Reset(nPoint);
-
-  if (config->GetTime_Domain()) {
-    DualTime_Derivative.resize(nPoint,nDim) = su2double(0.0);
-    DualTime_Derivative_n.resize(nPoint,nDim) = su2double(0.0);
-
-    Solution_time_n.resize(nPoint,nDim) = su2double(0.0);
-    Solution_time_n1.resize(nPoint,nDim) = su2double(0.0);
-  }
 }
 
 void CDiscAdjMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
