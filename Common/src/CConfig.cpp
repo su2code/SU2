@@ -7078,7 +7078,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 bool CConfig::TokenizeString(string & str, string & option_name,
                              vector<string> & option_value) {
-  const string delimiters(" (){}:,\t\n\v\f\r");
+  const string delimiters(" ():,\t\n\v\f\r");
   // check for comments or empty string
   string::size_type pos, last_pos;
   pos = str.find_first_of("%");
@@ -7139,14 +7139,20 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   // now fill the option value vector
   option_value.clear();
   last_pos = value_part.find_first_not_of(delimiters, 0);
-  pos = value_part.find_first_of(delimiters, last_pos);
+  if (value_part[last_pos] != '{')
+    pos = value_part.find_first_of(delimiters, last_pos);
+  else
+    pos = value_part.find_first_of('}', last_pos) + 1;
   while (string::npos != pos || string::npos != last_pos) {
     // add token to the vector<string>
     option_value.push_back(value_part.substr(last_pos, pos - last_pos));
     // skip delimiters
     last_pos = value_part.find_first_not_of(delimiters, pos);
     // find next "non-delimiter"
-    pos = value_part.find_first_of(delimiters, last_pos);
+    if (value_part[last_pos] != '{')
+      pos = value_part.find_first_of(delimiters, last_pos);
+    else
+      pos = value_part.find_first_of('}', last_pos) + 1;
   }
   if (option_value.size() == 0) {
     cerr << "Error in TokenizeString(): "
