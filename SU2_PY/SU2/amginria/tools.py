@@ -8,7 +8,7 @@ import sys
 
 # --- Prescribed mesh complexities, i.e. desired mesh sizes
 def get_mesh_sizes(config):
-    return config['PYADAP_SIZES'].strip('()').split(",")
+    return config['PYADAP_COMPLEXITY'].strip('()').split(",")
     
 # --- Use the python interface to amg (YES)? Or the exe (NO)?
 def get_python_amg(config):

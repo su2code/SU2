@@ -48,11 +48,11 @@ def amg ( config , kind='' ):
         
     #--- Check config options related to mesh adaptation
     
-    adap_options = ['PYADAP_SIZES', 'PYADAP_SUBITE', 'PYADAP_SENSOR', \
+    adap_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', 'PYADAP_SENSOR', \
     'PYADAP_BACK', 'PYADAP_HMAX', 'PYADAP_HMIN', 'PYADAP_HGRAD', \
     'PYADAP_RESIDUAL_REDUCTION', 'PYADAP_FLOW_ITER', 'PYADAP_ADJ_ITER', 'PYADAP_CFL', \
     'PYADAP_INV_VOL', 'PYADAP_SOURCE','PYADAP_PYTHON']
-    required_options = ['PYADAP_SIZES', 'PYADAP_SUBITE', \
+    required_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', \
     'PYADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME', \
     'PYADAP_INV_VOL', 'PYADAP_ORTHO']
     

@@ -2829,7 +2829,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("ADAP_SOURCE_TERM", Adap_Source, false);
 
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_COMPLEXITIES");
+  addPythonOption("PYADAP_COMPLEXITY");
   
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("PYADAP_SUBITE");
