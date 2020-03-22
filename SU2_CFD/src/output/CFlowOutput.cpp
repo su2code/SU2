@@ -77,33 +77,33 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
   }
 
   /// DESCRIPTION: Average mass flow
-  AddHistoryOutputPerSurface("AVG_MASSFLOW",             "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_MASSFLOW",             "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average mass flow on a marker", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Mach number
-  AddHistoryOutputPerSurface("AVG_MACH",                 "Avg_Mach",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_MACH",                 "Avg_Mach",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average mach number on a marker", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Temperature
-  AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average temperature on a marker",HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Pressure
-  AddHistoryOutputPerSurface("AVG_PRESS",                "Avg_Press",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_PRESS",                "Avg_Press",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average pressure on a marker", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Density
-  AddHistoryOutputPerSurface("AVG_DENSITY",              "Avg_Density",               ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_DENSITY",              "Avg_Density",               ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average density on a marker", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Enthalpy
-  AddHistoryOutputPerSurface("AVG_ENTHALPY",             "Avg_Enthalpy",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_ENTHALPY",             "Avg_Enthalpy",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average enthalpy on a marker",HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average velocity in normal direction of the surface
-  AddHistoryOutputPerSurface("AVG_NORMALVEL",            "Avg_NormalVel",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_NORMALVEL",            "Avg_NormalVel",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average normal velocity on a marker",HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Flow uniformity
-  AddHistoryOutputPerSurface("UNIFORMITY",               "Uniformity",                ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("UNIFORMITY",               "Uniformity",                ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Flow uniformity on a marker", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary strength
-  AddHistoryOutputPerSurface("SECONDARY_STRENGTH",       "Secondary_Strength",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SECONDARY_STRENGTH",       "Secondary_Strength",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Secondary strength on a marker", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Momentum distortion
-  AddHistoryOutputPerSurface("MOMENTUM_DISTORTION",      "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENTUM_DISTORTION",      "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Momentum distortion on a marker", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary over uniformity
-  AddHistoryOutputPerSurface("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Secondary over uniformity on a marker", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average total temperature
-  AddHistoryOutputPerSurface("AVG_TOTALTEMP",            "Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_TOTALTEMP",            "Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average total temperature on a marker", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average total pressure
-  AddHistoryOutputPerSurface("AVG_TOTALPRESS",           "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_TOTALPRESS",           "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average total pressure a marker", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Pressure drop
-  AddHistoryOutputPerSurface("PRESSURE_DROP",            "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("PRESSURE_DROP",            "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Pressure drop on a marker", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
 }
@@ -706,33 +706,33 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
   }
   /// DESCRIPTION: Drag coefficient
-  AddHistoryOutputPerSurface("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Lift coefficient
-  AddHistoryOutputPerSurface("LIFT",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("LIFT",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Sideforce coefficient
-  AddHistoryOutputPerSurface("SIDEFORCE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SIDEFORCE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the x-axis
-  AddHistoryOutputPerSurface("MOMENT-X",   "CMx",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT-X",   "CMx",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the y-axis
-  AddHistoryOutputPerSurface("MOMENT-Y",   "CMy",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT-Y",   "CMy",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the z-axis
-  AddHistoryOutputPerSurface("MOMENT-Z",   "CMz",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT-Z",   "CMz",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Force in x direction
-  AddHistoryOutputPerSurface("FORCE-X",    "CFx",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE-X",    "CFx",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Force in y direction
-  AddHistoryOutputPerSurface("FORCE-Y",    "CFy",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE-Y",    "CFy",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Force in z direction
-  AddHistoryOutputPerSurface("FORCE-Z",    "CFz",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE-Z",    "CFz",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Lift-to-drag ratio
-  AddHistoryOutputPerSurface("EFFICIENCY", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("EFFICIENCY", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   if (config->GetAeroelastic_Simulation()){
     /// BEGIN_GROUP: AEROELASTIC, DESCRIPTION: Aeroelastic plunge, pitch
     /// DESCRIPTION: Aeroelastic plunge
-    AddHistoryOutputPerSurface("PLUNGE", "plunge", ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+    AddHistoryOutputPerSurface("PLUNGE", "plunge", ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
     /// DESCRIPTION: Aeroelastic pitch
-    AddHistoryOutputPerSurface("PITCH",  "pitch",  ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+    AddHistoryOutputPerSurface("PITCH",  "pitch",  ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
     /// END_GROUP
   }
   /// DESCRIPTION: Angle of attack
