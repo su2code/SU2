@@ -147,7 +147,7 @@ def amg ( config , kind='' ):
             config_cfd.RESTART_FILENAME           = current_solution
             config_cfd.ERROR_ESTIMATE             = 'NO'
             config_cfd.MATH_PROBLEM               = 'DIRECT'
-            config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
+            # config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
             
             SU2_CFD(config_cfd)
                         
@@ -208,7 +208,7 @@ def amg ( config , kind='' ):
         config_cfd.ADAP_HMAX                  = config.PYADAP_HMAX
         config_cfd.ADAP_HMIN                  = config.PYADAP_HMIN
         config_cfd.ADAP_COMPLEXITY            = int(mesh_sizes[0])
-        config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
+        # config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
 
         #--- Run an adjoint if the adjoint solution file doesn't exist
         solution_adj_ini = config_cfd.SOLUTION_ADJ_FILENAME           
@@ -475,9 +475,9 @@ def amg ( config , kind='' ):
                 config_cfd.MATH_PROBLEM      = 'DIRECT'
                 config_cfd.RESTART_SOL       = 'YES'
 
-                if ('ADAP_SHIFT_NORMAL_NEIGHBOR' in config):
-                    config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'YES'
-                    config_cfd.RESTART_SOL                = 'NO'
+                # if ('ADAP_SHIFT_NORMAL_NEIGHBOR' in config):
+                #     config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'YES'
+                #     config_cfd.RESTART_SOL                = 'NO'
                 
                 # config_cfd.RESIDUAL_REDUCTION = float(adap_res[iSiz])
                 config_cfd.ITER               = int(adap_flow_iter[iSiz])
@@ -488,9 +488,9 @@ def amg ( config , kind='' ):
                 
                 SU2_CFD(config_cfd)
 
-                if ('ADAP_SHIFT_NORMAL_NEIGHBOR' in config):
-                    os.rename('volume.su2', current_mesh)
-                    config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
+                # if ('ADAP_SHIFT_NORMAL_NEIGHBOR' in config):
+                #     os.rename('volume.su2', current_mesh)
+                #     config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
                 
                 if not os.path.exists(current_solution) :
                     raise RuntimeError , "\n##ERROR : SU2_CFD Failed.\n"

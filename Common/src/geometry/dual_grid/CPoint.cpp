@@ -251,13 +251,13 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   }
 
   /*--- If shifting normal neighbors for RANS adaptation ---*/
-  if ((config->GetKind_Turb_Model() != NONE) && 
-      (config->GetBool_Adap_Normal_Neighbor())) {
-    Coord_Old = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim ++) {
-      Coord_Old[iDim] = Coord[iDim];
-    }
-  }
+  // if ((config->GetKind_Turb_Model() != NONE) && 
+  //     (config->GetBool_Adap_Normal_Neighbor())) {
+  //   Coord_Old = new su2double[nDim];
+  //   for (iDim = 0; iDim < nDim; iDim ++) {
+  //     Coord_Old[iDim] = Coord[iDim];
+  //   }
+  // }
 
   /*--- Intialize the value of the curvature ---*/
   Curvature = 0.0;
@@ -377,13 +377,13 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   }
 
   /*--- If shifting normal neighbors for RANS adaptation ---*/
-  if ((config->GetKind_Turb_Model() != NONE) && 
-      (config->GetBool_Adap_Normal_Neighbor())) {
-    Coord_Old = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim ++) {
-      Coord_Old[iDim] = Coord[iDim];
-    }
-  }
+  // if ((config->GetKind_Turb_Model() != NONE) && 
+  //     (config->GetBool_Adap_Normal_Neighbor())) {
+  //   Coord_Old = new su2double[nDim];
+  //   for (iDim = 0; iDim < nDim; iDim ++) {
+  //     Coord_Old[iDim] = Coord[iDim];
+  //   }
+  // }
 
   /*--- Intialize the value of the curvature ---*/
   Curvature = 0.0;

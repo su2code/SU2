@@ -854,19 +854,19 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
   geometry[MESH_0]->FindNormal_Neighbor(config);
 
-  /*--- Shift normal neighbor if needed for RANS adaptation ---*/
-  if ((config->GetKind_Turb_Model() != NONE) && 
-      (config->GetBool_Adap_Normal_Neighbor())) {
-    if (rank == MASTER_NODE) cout << "Shifting the closest normal neighbors to the surfaces." << endl;
-    geometry[MESH_0]->ShiftNormal_Neighbor(config);
-    geometry[MESH_0]->PreprocessP2PComms(geometry[MESH_0], config);
-    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
-    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
-    geometry[MESH_0]->FindNormal_Neighbor(config);
-    geometry[MESH_0]->SetCoord_CG();
-    geometry[MESH_0]->SetControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-  }
+  // /*--- Shift normal neighbor if needed for RANS adaptation ---*/
+  // if ((config->GetKind_Turb_Model() != NONE) && 
+  //     (config->GetBool_Adap_Normal_Neighbor())) {
+  //   if (rank == MASTER_NODE) cout << "Shifting the closest normal neighbors to the surfaces." << endl;
+  //   geometry[MESH_0]->ShiftNormal_Neighbor(config);
+  //   geometry[MESH_0]->PreprocessP2PComms(geometry[MESH_0], config);
+  //   geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+  //   geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+  //   geometry[MESH_0]->FindNormal_Neighbor(config);
+  //   geometry[MESH_0]->SetCoord_CG();
+  //   geometry[MESH_0]->SetControlVolume(config, UPDATE);
+  //   geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+  // }
 
   /*--- Store the global to local mapping. ---*/
 
@@ -961,12 +961,15 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   /*--- Create the data structure for MPI point-to-point communications. ---*/
 
-  if ((config->GetKind_Turb_Model() == NONE) || 
-      (!config->GetBool_Adap_Normal_Neighbor()))
-    geometry[MESH_0]->PreprocessP2PComms(geometry[MESH_0], config);
-  
-  for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+  for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
     geometry[iMGlevel]->PreprocessP2PComms(geometry[iMGlevel], config);
+
+  // if ((config->GetKind_Turb_Model() == NONE) || 
+  //     (!config->GetBool_Adap_Normal_Neighbor()))
+  //   geometry[MESH_0]->PreprocessP2PComms(geometry[MESH_0], config);
+
+  // for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+  //   geometry[iMGlevel]->PreprocessP2PComms(geometry[iMGlevel], config);
 
 
   /*--- Perform a few preprocessing routines and communications. ---*/
