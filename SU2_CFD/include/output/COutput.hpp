@@ -427,16 +427,17 @@ protected:
    * \param[in] format - The screen printing format (::ScreenOutputFormat).
    * \param[in] groupname - The name of the group this field belongs to.
    * \param[in] marker_names - A list of markers. For every marker in this list a new field is created with "field_name + _marker_names[i]".
+   * \param[in] description - A description of the field.
    * \param[in] field_type - The type of the field (::HistoryFieldType).
    */
   inline void AddHistoryOutputPerSurface(string name, string field_name, ScreenOutputFormat format,
-                                         string groupname, vector<string> marker_names,
+                                         string groupname, vector<string> marker_names, string description,
                                          HistoryFieldType field_type = HistoryFieldType::DEFAULT){
     if (marker_names.size() != 0){
       for (unsigned short i = 0; i < marker_names.size(); i++){
         historyFieldsAll.AddItem(name + "@" + marker_names[i],
                                  HistoryOutputField(field_name + "@" + marker_names[i],
-                                                    format, groupname + "@" + marker_names[i], field_type, ""));
+                                                    format, groupname + "@" + marker_names[i], field_type, description));
       }
     }
   }
