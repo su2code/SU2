@@ -5890,6 +5890,9 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
             const su2double scale = eigyplusmax/eigmax_i;
             for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= scale;
             CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+            base_nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
+            base_nodes->SetAnisoMetr(iPoint, 1, A[0][1]);
+            base_nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
           } // if eigyplusmax
         } // if Viscous_Wall
       } // for iMarker
@@ -6030,6 +6033,12 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
             const su2double scale = eigyplusmax/eigmax_i;
             for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= scale;
             CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+            base_nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
+            base_nodes->SetAnisoMetr(iPoint, 1, A[0][1]);
+            base_nodes->SetAnisoMetr(iPoint, 2, A[0][2]);
+            base_nodes->SetAnisoMetr(iPoint, 3, A[1][1]);
+            base_nodes->SetAnisoMetr(iPoint, 4, A[1][2]);
+            base_nodes->SetAnisoMetr(iPoint, 5, A[2][2]);
           } // if eigyplusmax
         } // if Viscous_Wall
       } // for iMarker
