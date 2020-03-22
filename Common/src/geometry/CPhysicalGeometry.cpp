@@ -9962,20 +9962,22 @@ void CPhysicalGeometry::ShiftNormal_Neighbor(CConfig *config) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 
         iPoint = vertex[iMarker][iVertex]->GetNode();
-        jPoint = vertex[iMarker][iVertex]->GetNormal_Neighbor();
-        Normal = vertex[iMarker][iVertex]->GetNormal();
-        Coord_Old = node[jPoint]->GetCoord_Old();
+        if (geometry->node[iPoint]->GetDomain()) {
+          jPoint = vertex[iMarker][iVertex]->GetNormal_Neighbor();
+          Normal = vertex[iMarker][iVertex]->GetNormal();
+          Coord_Old = node[jPoint]->GetCoord_Old();
 
-        scalar_prod = 0.0;
-        norm_Normal = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          diff_coord = Coord_Old[iDim]-node[iPoint]->GetCoord(iDim);
-          scalar_prod += diff_coord*Normal[iDim];
-          norm_Normal += Normal[iDim]*Normal[iDim];
-        }
-        norm_Normal = sqrt(norm_Normal);
-        for (iDim = 0; iDim < nDim; iDim++) {
-          node[jPoint]->SetCoord(iDim, scalar_prod*Normal[iDim]/norm_Normal+node[iPoint]->GetCoord(iDim));
+          scalar_prod = 0.0;
+          norm_Normal = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            diff_coord = Coord_Old[iDim]-node[iPoint]->GetCoord(iDim);
+            scalar_prod += diff_coord*Normal[iDim];
+            norm_Normal += Normal[iDim]*Normal[iDim];
+          }
+          norm_Normal = sqrt(norm_Normal);
+          for (iDim = 0; iDim < nDim; iDim++) {
+            node[jPoint]->SetCoord(iDim, scalar_prod*Normal[iDim]/norm_Normal+node[iPoint]->GetCoord(iDim));
+          }
         }
       }
     }
