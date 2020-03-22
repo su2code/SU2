@@ -9950,7 +9950,7 @@ void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
 }
 
 void CPhysicalGeometry::ShiftNormal_Neighbor(CConfig *config) {
-  su2double scalar_prod, diff_coord, *Normal;
+  su2double scalar_prod, norm_Normal, diff_coord, *Normal;
   unsigned long Point_Normal, jPoint;
   unsigned short iNeigh, iMarker, iDim;
   unsigned long iPoint, iVertex;
@@ -9969,9 +9969,10 @@ void CPhysicalGeometry::ShiftNormal_Neighbor(CConfig *config) {
         for (iDim = 0; iDim < nDim; iDim++) {
           diff_coord = node[jPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
           scalar_prod += diff_coord*Normal[iDim];
+          norm_Normal += Normal[iDim]*Normal[iDim];
         }
         for (iDim = 0; iDim < nDim; iDim++) {
-          node[jPoint]->SetCoord(iDim, scalar_prod*Normal[iDim]+node[iPoint]->GetCoord(iDim));
+          node[jPoint]->SetCoord(iDim, scalar_prod*Normal[iDim]/norm_Normal+node[iPoint]->GetCoord(iDim));
         }
       }
     }
