@@ -8,7 +8,7 @@ import sys
 
 # --- Prescribed mesh complexities, i.e. desired mesh sizes
 def get_mesh_sizes(config):
-    return config['ADAP_SIZES'].strip('()').split(",")
+    return config['PYADAP_SIZES'].strip('()').split(",")
     
 # --- Use the python interface to amg (YES)? Or the exe (NO)?
 def get_python_amg(config):
@@ -26,14 +26,14 @@ def get_python_amg(config):
 
 # --- How many sub-iterations per mesh complexity
 def get_sub_iterations(config):
-    return config['ADAP_SUBITE'].strip('()').split(",")
+    return config['PYADAP_SUBITE'].strip('()').split(",")
 
 # --- What residual reduction for each complexity level
 def get_residual_reduction(config):
-    if 'ADAP_RESIDUAL_REDUCTION' in config:
-        return config['ADAP_RESIDUAL_REDUCTION'].strip('()').split(",")
+    if 'PYADAP_RESIDUAL_REDUCTION' in config:
+        return config['PYADAP_RESIDUAL_REDUCTION'].strip('()').split(",")
     else:
-        nRes = len(config['ADAP_SIZES'].strip('()').split(","))
+        nRes = len(config['PYADAP_SIZES'].strip('()').split(","))
         res = []
         for i in range(nRes):
             res.append(config['RESIDUAL_REDUCTION'])      
@@ -41,30 +41,30 @@ def get_residual_reduction(config):
         
 # --- How many SU2 solver iterations for each complexity level
 def get_adj_iter(config):
-    if 'ADAP_ADJ_ITER' in config:
-        return config['ADAP_ADJ_ITER'].strip('()').split(",")
+    if 'PYADAP_ADJ_ITER' in config:
+        return config['PYADAP_ADJ_ITER'].strip('()').split(",")
     else:
-        nExt_iter = len(config['ADAP_SIZES'].strip('()').split(","))
+        nExt_iter = len(config['PYADAP_SIZES'].strip('()').split(","))
         ext_iter = []
         for i in range(nExt_iter):
             ext_iter.append(config['ITER'])        
         return ext_iter
 
 def get_flow_iter(config):
-    if 'ADAP_FLOW_ITER' in config:
-        return config['ADAP_FLOW_ITER'].strip('()').split(",")
+    if 'PYADAP_FLOW_ITER' in config:
+        return config['PYADAP_FLOW_ITER'].strip('()').split(",")
     else:
-        nExt_iter = len(config['ADAP_SIZES'].strip('()').split(","))
+        nExt_iter = len(config['PYADAP_SIZES'].strip('()').split(","))
         flow_iter = []
         for i in range(nExt_iter):
             flow_iter.append(config['ITER'])        
         return flow_iter
 
 def get_cfl(config):
-    if 'ADAP_CFL' in config:
-        return config['ADAP_CFL'].strip('()').split(",")
+    if 'PYADAP_CFL' in config:
+        return config['PYADAP_CFL'].strip('()').split(",")
     else:
-        ncfl = len(config['ADAP_SIZES'].strip('()').split(","))
+        ncfl = len(config['PYADAP_SIZES'].strip('()').split(","))
         cfl = []
         for i in range(ncfl):
             cfl.append(config['CFL_NUMBER'])        

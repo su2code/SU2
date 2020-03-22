@@ -48,13 +48,13 @@ def amg ( config , kind='' ):
         
     #--- Check config options related to mesh adaptation
     
-    adap_options = ['ADAP_SIZES', 'ADAP_SUBITE', 'ADAP_SENSOR', \
-    'ADAP_BACK', 'ADAP_HMAX', 'ADAP_HMIN', 'ADAP_HGRAD', \
-    'ADAP_RESIDUAL_REDUCTION', 'ADAP_FLOW_ITER', 'ADAP_ADJ_ITER', 'ADAP_CFL', \
-    'ADAP_INV_VOL', 'ADAP_SOURCE','ADAP_PYTHON']
-    required_options = ['ADAP_SIZES', 'ADAP_SUBITE', \
-    'ADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME', \
-    'ADAP_INV_VOL', 'ADAP_ORTHO']
+    adap_options = ['PYADAP_SIZES', 'PYADAP_SUBITE', 'PYADAP_SENSOR', \
+    'PYADAP_BACK', 'PYADAP_HMAX', 'PYADAP_HMIN', 'PYADAP_HGRAD', \
+    'PYADAP_RESIDUAL_REDUCTION', 'PYADAP_FLOW_ITER', 'PYADAP_ADJ_ITER', 'PYADAP_CFL', \
+    'PYADAP_INV_VOL', 'PYADAP_SOURCE','PYADAP_PYTHON']
+    required_options = ['PYADAP_SIZES', 'PYADAP_SUBITE', \
+    'PYADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME', \
+    'PYADAP_INV_VOL', 'PYADAP_ORTHO']
     
     if not all (opt in config for opt in required_options):
         err = '\n\n## ERROR : Missing options: \n'
@@ -77,11 +77,11 @@ def amg ( config , kind='' ):
     adap_cfl       = su2amg.get_cfl(config)
     # adap_res       = su2amg.get_residual_reduction(config)
 
-    adap_sensor = config.ADAP_SENSOR
+    adap_sensor = config.PYADAP_SENSOR
     sensor_avail = ['MACH', 'PRES', 'MACH_PRES', 'GOAL']
     
     if adap_sensor not in sensor_avail:
-        raise RuntimeError , 'Unknown adaptation sensor (ADAP_SENSOR option)\n'
+        raise RuntimeError , 'Unknown adaptation sensor (PYADAP_SENSOR option)\n'
         
     if len(mesh_sizes) != len(sub_iter):
         raise RuntimeError , 'Inconsistent number of mesh sizes and sub-iterations'
@@ -159,9 +159,9 @@ def amg ( config , kind='' ):
                 config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
                 config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, ANISOTROPIC_METRIC)"
                 config_cfd.ERROR_ESTIMATE         = 'YES'
-                config_cfd.MESH_HMAX              = config.ADAP_HMAX
-                config_cfd.MESH_HMIN              = config.ADAP_HMIN
-                config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
+                config_cfd.ADAP_HMAX              = config.PYADAP_HMAX
+                config_cfd.ADAP_HMIN              = config.PYADAP_HMIN
+                config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[0])
                 SU2_CFD(config_cfd)
 
         except:
@@ -204,9 +204,9 @@ def amg ( config , kind='' ):
         config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, ANISOTROPIC_METRIC)"
         config_cfd.ERROR_ESTIMATE         = 'YES'
         config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
-        config_cfd.MESH_HMAX              = config.ADAP_HMAX
-        config_cfd.MESH_HMIN              = config.ADAP_HMIN
-        config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
+        config_cfd.ADAP_HMAX              = config.PYADAP_HMAX
+        config_cfd.ADAP_HMIN              = config.PYADAP_HMIN
+        config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[0])
 
         #--- Run an adjoint if the adjoint solution file doesn't exist
         solution_adj_ini = config_cfd.SOLUTION_ADJ_FILENAME           
@@ -248,15 +248,15 @@ def amg ( config , kind='' ):
     
     config_amg = dict()
     
-    config_amg['hgrad']       = float(config['ADAP_HGRAD'])
-    config_amg['hmax']        = float(config['ADAP_HMAX'])
-    config_amg['hmin']        = float(config['ADAP_HMIN'])
-    config_amg['Lp']          = float(config['ADAP_NORM'])
+    config_amg['hgrad']       = float(config['PYADAP_HGRAD'])
+    config_amg['hmax']        = float(config['PYADAP_HMAX'])
+    config_amg['hmin']        = float(config['PYADAP_HMIN'])
+    config_amg['Lp']          = float(config['PYADAP_NORM'])
     config_amg['mesh_in']     = 'current.meshb'
     config_amg['adap_source'] = ''
     
-    if 'ADAP_BACK' in config:
-        config_amg['adap_back'] = os.path.join(cwd,config['ADAP_BACK'])
+    if 'PYADAP_BACK' in config:
+        config_amg['adap_back'] = os.path.join(cwd,config['PYADAP_BACK'])
     else:
         config_amg['adap_back'] = config['MESH_FILENAME']
     
@@ -276,13 +276,13 @@ def amg ( config , kind='' ):
         sys.stdout.flush()
         su2amg.prepro_back_mesh(config_cfd, config_amg)
     
-    if 'ADAP_SOURCE' in config:
-        config_amg['adap_source'] = os.path.join(cwd,config['ADAP_SOURCE'])
+    if 'PYADAP_SOURCE' in config:
+        config_amg['adap_source'] = os.path.join(cwd,config['PYADAP_SOURCE'])
 
     config_amg['options'] = "-back " + config_amg['adap_back']
-    if(config['ADAP_INV_VOL'] == 'YES'):
+    if(config['PYADAP_INV_VOL'] == 'YES'):
         config_amg['options'] = config_amg['options'] + ' -inv-back'
-    if(config['ADAP_ORTHO'] == 'YES'):
+    if(config['PYADAP_ORTHO'] == 'YES'):
         config_amg['options'] = config_amg['options'] + ' -cart3d-only'
     
     #--- Start adaptive loop
@@ -496,7 +496,7 @@ def amg ( config , kind='' ):
                     config_cfd.ITER                   = int(adap_adj_iter[iSiz])
                     config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, ANISOTROPIC_METRIC)"
                     config_cfd.ERROR_ESTIMATE         = 'YES'
-                    config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[iSiz])
+                    config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
                     SU2_CFD(config_cfd)
             
             except:

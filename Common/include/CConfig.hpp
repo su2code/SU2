@@ -1127,10 +1127,11 @@ private:
   bool Wrt_Aniso_Sensor;             /*!< \brief Whether or not to write sensor files */
   bool Wrt_InriaMesh;                /*!< \brief Whether or not to write meshb files */
   su2double Adap_Norm,               /*!< \brief Lp-norm for mesh adaptation */
-            Mesh_Hmax,               /*!< \brief Maximum cell size */
-            Mesh_Hmin;               /*!< \brief Minimum cell size */
+            Adap_Hmax,               /*!< \brief Maximum cell size */
+            Adap_Hmin,               /*!< \brief Minimum cell size */
+            Adap_Max_Yplus;          /*!< \brief Maximum y-plus for RANS mesh adaptation */
   bool Adap_Source;                  /*!< \brief Whether or not to use source terms for adaptation */
-  unsigned long  Mesh_Complexity;    /*!< \brief Constraint mesh complexity */
+  unsigned long  Adap_Complexity;    /*!< \brief Constraint mesh complexity */
 
   string caseName;                 /*!< \brief Name of the current case */
 
@@ -9278,19 +9279,25 @@ public:
    * \brief Get maximum cell size
    * \return Maximum cell size
    */
-  su2double GetMesh_Hmax(void) const { return Mesh_Hmax; }
+  su2double GetAdap_Hmax(void) const { return Adap_Hmax; }
 
   /*!
    * \brief Get minimum cell size
    * \return Minimum cell size
    */
-  su2double GetMesh_Hmin(void) const { return Mesh_Hmin; }
+  su2double GetAdap_Hmin(void) const { return Adap_Hmin; }
+
+  /*!
+   * \brief Get minimum cell size
+   * \return Minimum cell size
+   */
+  su2double GetAdap_Yplus(void) const { return Adap_Max_Yplus; }
 
   /*!
    * \brief Get constraint complexity
    * \return Mesh complexity
    */
-  unsigned long GetMesh_Complexity(void) const { return Mesh_Complexity; }
+  unsigned long GetAdap_Complexity(void) const { return Adap_Complexity; }
 
   /*!
    * \brief Get whether to use source terms in adaptation

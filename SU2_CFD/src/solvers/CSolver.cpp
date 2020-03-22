@@ -5841,9 +5841,9 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
   su2double localScale = 0.0,
             globalScale = 0.0,
             p = config->GetAdap_Norm(),
-            eigmax = 1./(config->GetMesh_Hmin()*config->GetMesh_Hmin()),
-            eigmin = 1./(config->GetMesh_Hmax()*config->GetMesh_Hmax()),
-            outComplex = su2double(config->GetMesh_Complexity());  // Constraint mesh complexity
+            eigmax = 1./(config->GetAdap_Hmin()*config->GetAdap_Hmin()),
+            eigmin = 1./(config->GetAdap_Hmax()*config->GetAdap_Hmax()),
+            outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
 
   su2double localMinDensity = 1.E16, localMaxDensity = 0., localTotComplex = 0.;
   su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalTotComplex = 0.;
@@ -5955,9 +5955,9 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
   su2double localScale = 0.0,
             globalScale = 0.0,
             p = config->GetAdap_Norm(),
-            eigmax = 1./(config->GetMesh_Hmin()*config->GetMesh_Hmin()),
-            eigmin = 1./(config->GetMesh_Hmax()*config->GetMesh_Hmax()),
-            outComplex = su2double(config->GetMesh_Complexity());  // Constraint mesh complexity
+            eigmax = 1./(config->GetAdap_Hmin()*config->GetAdap_Hmin()),
+            eigmin = 1./(config->GetAdap_Hmax()*config->GetAdap_Hmax()),
+            outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
 
   su2double localMinDensity = 1.E16, localMaxDensity = 0., localTotComplex = 0.;
   su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalTotComplex = 0.;
