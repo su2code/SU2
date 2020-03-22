@@ -255,7 +255,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
       (config->GetBool_Adap_Normal_Neighbor())) {
     Coord_Old = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim ++) {
-      Coord_old[iDim] = Coord[iDim];
+      Coord_Old[iDim] = Coord[iDim];
     }
   }
 
@@ -381,7 +381,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
       (config->GetBool_Adap_Normal_Neighbor())) {
     Coord_Old = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim ++) {
-      Coord_old[iDim] = Coord[iDim];
+      Coord_Old[iDim] = Coord[iDim];
     }
   }
 
