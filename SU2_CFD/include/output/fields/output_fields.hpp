@@ -1,7 +1,9 @@
+#pragma once
 
 #include "../../../Common/include/toolboxes/CIndexedMap.hpp"
 #include "../../../Common/include/datatype_structure.hpp"
 #include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/toolboxes/CExpressionParser.hpp"
 
 /** \brief Enum to identify the screen output format. */
 enum class ScreenOutputFormat {
@@ -17,6 +19,7 @@ enum class HistoryFieldType {
   AUTO_RESIDUAL,    /*!< \brief An automatically generated residual field type */
   COEFFICIENT,      /*!< \brief User defined coefficient field type  */
   AUTO_COEFFICIENT, /*!< \brief Automatically generated coefficient field type  */
+  CUSTOM,           /*!< \brief Custom field */
   DEFAULT           /*!< \brief Default field type */
 };
 
@@ -39,6 +42,9 @@ struct HistoryOutputField {
   HistoryFieldType    fieldType = HistoryFieldType::DEFAULT;
   /*! \brief String containing the description of the field */
   std::string         description = "";
+
+  CExpressionParser expParser;
+
   /*! \brief Default constructor. */
   HistoryOutputField() = default;
   /*! \brief Constructor to initialize all members. */
@@ -46,11 +52,35 @@ struct HistoryOutputField {
                      HistoryFieldType fieldType_, std::string description_):
     fieldName(std::move(fieldName_)), value(0.0), screenFormat(screenFormat_),
     outputGroup(std::move(OutputGroup_)), fieldType(fieldType_), description(std::move(description_)){}
+
 };
 
 class COutFieldCollection final : public CIndexedMap<std::string, HistoryOutputField> {
 
+private:
+  GlobalScope outFieldScope;
+
 public:
+
+  TokenMap& GetScope() { return outFieldScope; }
+
+  void UpdateTokens(){
+
+    auto customFields = GetFieldsByType({HistoryFieldType::CUSTOM});
+
+    if (!customFields.empty()){
+      for (auto field : insertionVector){
+        if (field->second.fieldType != HistoryFieldType::CUSTOM){
+          outFieldScope[field->first] = field->second.value;
+        }
+      }
+
+      for (auto field : customFields){
+        field->second.expParser.ExecCode();
+        field->second.value = field->second.expParser.Eval(std::string("eval"));
+      }
+    }
+  }
 
   /*!
    * \brief Get fields by using a list of keys

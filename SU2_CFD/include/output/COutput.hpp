@@ -441,6 +441,23 @@ protected:
     }
   }
 
+  inline void AddCustomHistoryOutput(string name){
+
+    HistoryOutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", HistoryFieldType::CUSTOM, "");
+
+    std::string func = "function eval(){"
+                       " return " + name + "; }";
+
+    customField.expParser = CExpressionParser(&historyFieldsAll.GetScope());
+
+    customField.expParser.Compile(func);
+
+    customField.expParser.ExecCode();
+
+    historyFieldsAll.AddItem(name, customField);
+
+  }
+
   /*!
    * \brief Set the value of a history output field for a specific surface marker
    * \param[in] name - Name of the field.

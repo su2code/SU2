@@ -42,9 +42,10 @@
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
 
-
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
+
+#include <regex>
 
 COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutput(fem_output) {
 
@@ -1233,6 +1234,18 @@ void COutput::CheckHistoryOutput(){
   string requestedField;
   vector<string> FieldsToRemove;
   vector<bool> FoundField(nRequestedHistoryFields, false);
+  regex exp("\\{\\S*\\}");
+
+  /*--- Check if any of the fields is a expression ---*/
+  for (auto& field : requestedScreenFields){
+    if (regex_match(field, exp)){
+      /*--- Remove the bracket on the right ---*/
+      field.pop_back();
+      /*--- Remove the bracket on the left ---*/
+      field.erase(0,1);
+      AddCustomHistoryOutput(field);
+    }
+  }
 
   const auto& screenFields = GetHistoryFieldsAll().GetFieldsByKey(requestedScreenFields, FieldsToRemove, true);
 
@@ -1595,6 +1608,9 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     if (historyFieldsAll.FindKey("AVG_" + it->first))
       SetHistoryOutputValue("AVG_" + it->first, average);
   }
+
+  historyFieldsAll.UpdateTokens();
+
 }
 
 void COutput::Postprocess_HistoryFields(CConfig *config){
@@ -1659,6 +1675,8 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
                      ScreenOutputFormat::SCIENTIFIC, "CAUCHY", "Cauchy residual value of field set with WND_CONV_FIELD.",
                      HistoryFieldType::AUTO_COEFFICIENT);
   }
+
+  historyFieldsAll.UpdateTokens();
 
 }
 
