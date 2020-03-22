@@ -9944,7 +9944,7 @@ void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
 
               /*--- Get maximum cosine ---*/
               if (cos_alpha >= cos_max) {
-                Point_Normal = jPoint;
+                Point_Normal = kPoint;
                 cos_max = cos_alpha;
               }
             }
