@@ -33,7 +33,7 @@ def get_residual_reduction(config):
     if 'PYADAP_RESIDUAL_REDUCTION' in config:
         return config['PYADAP_RESIDUAL_REDUCTION'].strip('()').split(",")
     else:
-        nRes = len(config['PYADAP_SIZES'].strip('()').split(","))
+        nRes = len(config['PYADAP_COMPLEXITY'].strip('()').split(","))
         res = []
         for i in range(nRes):
             res.append(config['RESIDUAL_REDUCTION'])      
@@ -44,7 +44,7 @@ def get_adj_iter(config):
     if 'PYADAP_ADJ_ITER' in config:
         return config['PYADAP_ADJ_ITER'].strip('()').split(",")
     else:
-        nExt_iter = len(config['PYADAP_SIZES'].strip('()').split(","))
+        nExt_iter = len(config['PYADAP_COMPLEXITY'].strip('()').split(","))
         ext_iter = []
         for i in range(nExt_iter):
             ext_iter.append(config['ITER'])        
@@ -54,7 +54,7 @@ def get_flow_iter(config):
     if 'PYADAP_FLOW_ITER' in config:
         return config['PYADAP_FLOW_ITER'].strip('()').split(",")
     else:
-        nExt_iter = len(config['PYADAP_SIZES'].strip('()').split(","))
+        nExt_iter = len(config['PYADAP_COMPLEXITY'].strip('()').split(","))
         flow_iter = []
         for i in range(nExt_iter):
             flow_iter.append(config['ITER'])        
@@ -64,7 +64,7 @@ def get_cfl(config):
     if 'PYADAP_CFL' in config:
         return config['PYADAP_CFL'].strip('()').split(",")
     else:
-        ncfl = len(config['PYADAP_SIZES'].strip('()').split(","))
+        ncfl = len(config['PYADAP_COMPLEXITY'].strip('()').split(","))
         cfl = []
         for i in range(ncfl):
             cfl.append(config['CFL_NUMBER'])        
