@@ -5918,9 +5918,9 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
       for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
         if((geometry->node[iPoint]->GetVertex(iMarker) >= 0) &&
            (config->GetViscous_Wall(iMarker))) {
-          const su2double hmin_i = min(EigVal[0],EigVal[1]);
-          if(yplusHmax < hmin_i) {
-            const su2double scale = yplusHmax/hmin_i;
+          const su2double eigmin_i = min(EigVal[0],EigVal[1]);
+          if(yplusHmax < eigmin_i) {
+            const su2double scale = pow(yplusHmax,2.)/eigmin_i;
             for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= scale;
           } // if yplusHmax
         } // if Viscous_Wall
@@ -6062,9 +6062,9 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
       for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
         if((geometry->node[iPoint]->GetVertex(iMarker) >= 0) &&
            (config->GetViscous_Wall(iMarker))) {
-          const su2double hmin_i = min(min(EigVal[0],EigVal[1]),EigVal[2]);
-          if(yplusHmax < hmin_i) {
-            const su2double scale = yplusHmax/hmin_i;
+          const su2double eigmin_i = min(EigVal[0],EigVal[1]);
+          if(yplusHmax < eigmin_i) {
+            const su2double scale = pow(yplusHmax,2.)/eigmin_i;
             for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= scale;
           } // if yplusHmax
         } // if Viscous_Wall
