@@ -9957,9 +9957,7 @@ void CPhysicalGeometry::ShiftNormal_Neighbor(CConfig *config) {
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY ) {
+    if (config->GetViscous_Wall(iMarker)) {
 
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 
