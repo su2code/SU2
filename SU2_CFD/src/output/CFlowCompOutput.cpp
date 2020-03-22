@@ -410,7 +410,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Anisotropic metric
-  if(config->GetError_Estimate()) {
+  if(config->GetBool_Error_Estimate()) {
     if (nDim == 2){
       AddVolumeOutput("ANISO_GRADRHO_X", "Aniso_GradRho_x", "ANISOTROPIC_GRADIENT", "x-component of the density gradient");
       AddVolumeOutput("ANISO_GRADRHO_Y", "Aniso_GradRho_y", "ANISOTROPIC_GRADIENT", "y-component of the density gradient");
@@ -572,7 +572,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
   }
 
-  if(config->GetError_Estimate()) {
+  if(config->GetBool_Error_Estimate()) {
     if (nDim == 2){
       SetVolumeOutputValue("ANISO_GRADRHO_X", iPoint, Node_Flow->GetAnisoGrad(iPoint, 0));
       SetVolumeOutputValue("ANISO_GRADRHO_Y", iPoint, Node_Flow->GetAnisoGrad(iPoint, 1));
