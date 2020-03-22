@@ -859,6 +859,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
       (config->GetBool_Adap_Normal_Neighbor())) {
     if (rank == MASTER_NODE) cout << "Shifting the closest normal neighbors to the surfaces." << endl;
     geometry[MESH_0]->ShiftNormal_Neighbor(config);
+    geometry[MESH_0]->PreprocessP2PComms(geometry[MESH_0], config);
     geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
     geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
     geometry[MESH_0]->FindNormal_Neighbor(config);
