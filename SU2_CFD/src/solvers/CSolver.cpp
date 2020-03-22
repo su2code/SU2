@@ -5880,6 +5880,21 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
+    //--- set viscous wall spacing
+    if(turb && geometry->node[iPoint]->GetSolidBoundary()) {
+      for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
+        if((geometry->node[iPoint]->GetVertex(iMarker) >= 0) &&
+           (config->GetViscous_Wall(iMarker))) {
+          const su2double eigmax_i = max(EigVal[0],EigVal[1]);
+          if(eigyplusmax > eigmax_i) {
+            const su2double scale = eigyplusmax/eigmax_i;
+            for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= scale;
+            CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+          } // if eigyplusmax
+        } // if Viscous_Wall
+      } // for iMarker
+    } // if turb
+
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
     localScale += pow(abs(EigVal[0]*EigVal[1]),p/(2.*p+nDim))*Vol;
@@ -5908,20 +5923,6 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
     }
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
-
-    //--- set viscous wall spacing
-    if(turb && geometry->node[iPoint]->GetSolidBoundary()) {
-      for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
-        if((geometry->node[iPoint]->GetVertex(iMarker) >= 0) &&
-           (config->GetViscous_Wall(iMarker))) {
-          const su2double eigmax_i = max(EigVal[0],EigVal[1]);
-          if(eigyplusmax > eigmax_i) {
-            const su2double scale = eigyplusmax/eigmax_i;
-            for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= scale;
-          } // if eigyplusmax
-        } // if Viscous_Wall
-      } // for iMarker
-    } // if turb
 
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
 
@@ -6019,6 +6020,21 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
+    //--- set viscous wall spacing
+    if(turb && geometry->node[iPoint]->GetSolidBoundary()) {
+      for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
+        if((geometry->node[iPoint]->GetVertex(iMarker) >= 0) &&
+           (config->GetViscous_Wall(iMarker))) {
+          const su2double eigmax_i = max(max(EigVal[0],EigVal[1]),EigVal[2]);
+          if(eigyplusmax > eigmax_i) {
+            const su2double scale = eigyplusmax/eigmax_i;
+            for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= scale;
+            CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+          } // if eigyplusmax
+        } // if Viscous_Wall
+      } // for iMarker
+    } // if turb
+
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
     localScale += pow(abs(EigVal[0]*EigVal[1]*EigVal[2]),p/(2.*p+nDim))*Vol;
@@ -6052,20 +6068,6 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
     }
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
-
-    //--- set viscous wall spacing
-    if(turb && geometry->node[iPoint]->GetSolidBoundary()) {
-      for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
-        if((geometry->node[iPoint]->GetVertex(iMarker) >= 0) &&
-           (config->GetViscous_Wall(iMarker))) {
-          const su2double eigmax_i = max(max(EigVal[0],EigVal[1]),EigVal[2]);
-          if(eigyplusmax > eigmax_i) {
-            const su2double scale = eigyplusmax/eigmax_i;
-            for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= scale;
-          } // if eigyplusmax
-        } // if Viscous_Wall
-      } // for iMarker
-    } // if turb
 
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
 
