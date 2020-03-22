@@ -51,7 +51,7 @@ def amg ( config , kind='' ):
     adap_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', 'PYADAP_SENSOR', \
     'PYADAP_BACK', 'PYADAP_HMAX', 'PYADAP_HMIN', 'PYADAP_HGRAD', \
     'PYADAP_RESIDUAL_REDUCTION', 'PYADAP_FLOW_ITER', 'PYADAP_ADJ_ITER', 'PYADAP_CFL', \
-    'PYADAP_INV_VOL', 'PYADAP_SOURCE','PYADAP_PYTHON']
+    'PYADAP_INV_VOL', 'PYADAP_PYTHON']
     required_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', \
     'PYADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME', \
     'PYADAP_INV_VOL', 'PYADAP_ORTHO']
@@ -251,7 +251,7 @@ def amg ( config , kind='' ):
     config_amg['hgrad']       = float(config['PYADAP_HGRAD'])
     config_amg['hmax']        = float(config['PYADAP_HMAX'])
     config_amg['hmin']        = float(config['PYADAP_HMIN'])
-    config_amg['Lp']          = float(config['PYADAP_NORM'])
+    config_amg['Lp']          = float(config['ADAP_NORM'])
     config_amg['mesh_in']     = 'current.meshb'
     config_amg['adap_source'] = ''
     

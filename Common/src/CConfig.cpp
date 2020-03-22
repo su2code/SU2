@@ -2825,9 +2825,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Constraint mesh complexity */
   addUnsignedLongOption("ADAP_COMPLEXITY", Adap_Complexity, 10000);
 
-  /* DESCRIPTION: Whether to include source term Hessian to determine anisotropy */
-  addBoolOption("ADAP_SOURCE_TERM", Adap_Source, false);
-
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("PYADAP_COMPLEXITY");
   

@@ -1130,7 +1130,6 @@ private:
             Adap_Hmax,               /*!< \brief Maximum cell size */
             Adap_Hmin,               /*!< \brief Minimum cell size */
             Adap_Max_Yplus;          /*!< \brief Maximum y-plus for RANS mesh adaptation */
-  bool Adap_Source;                  /*!< \brief Whether or not to use source terms for adaptation */
   unsigned long  Adap_Complexity;    /*!< \brief Constraint mesh complexity */
 
   string caseName;                 /*!< \brief Name of the current case */
@@ -9299,8 +9298,4 @@ public:
    */
   unsigned long GetAdap_Complexity(void) const { return Adap_Complexity; }
 
-  /*!
-   * \brief Get whether to use source terms in adaptation
-   */
-  bool GetAdap_Source(void) const { return Adap_Source; }
 };
