@@ -143,10 +143,11 @@ def amg ( config , kind='' ):
             current_mesh     = config['MESH_FILENAME']
             current_solution = "ini_restart_flow.csv"
             
-            config_cfd.CONV_FILENAME    = "ini_history"
-            config_cfd.RESTART_FILENAME = current_solution
-            config_cfd.ERROR_ESTIMATE   = 'NO'
-            config_cfd.MATH_PROBLEM     = 'DIRECT'
+            config_cfd.CONV_FILENAME              = "ini_history"
+            config_cfd.RESTART_FILENAME           = current_solution
+            config_cfd.ERROR_ESTIMATE             = 'NO'
+            config_cfd.MATH_PROBLEM               = 'DIRECT'
+            config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
             
             SU2_CFD(config_cfd)
                         
@@ -197,16 +198,17 @@ def amg ( config , kind='' ):
         current_solution     = "ini_restart_flow.csv"
         current_adj_solution = "ini_restart_adj.csv"
 
-        config_cfd.RESTART_FILENAME       = current_solution
-        config_cfd.RESTART_ADJ_FILENAME   = current_adj_solution
-        config_cfd.SOLUTION_FILENAME      = '../' + config['SOLUTION_FILENAME']
-        config_cfd.SOLUTION_ADJ_FILENAME  = '../' + config['SOLUTION_ADJ_FILENAME']
-        config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, ANISOTROPIC_METRIC)"
-        config_cfd.ERROR_ESTIMATE         = 'YES'
-        config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
-        config_cfd.ADAP_HMAX              = config.PYADAP_HMAX
-        config_cfd.ADAP_HMIN              = config.PYADAP_HMIN
-        config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[0])
+        config_cfd.RESTART_FILENAME           = current_solution
+        config_cfd.RESTART_ADJ_FILENAME       = current_adj_solution
+        config_cfd.SOLUTION_FILENAME          = '../' + config['SOLUTION_FILENAME']
+        config_cfd.SOLUTION_ADJ_FILENAME      = '../' + config['SOLUTION_ADJ_FILENAME']
+        config_cfd.VOLUME_OUTPUT              = "(COORDINATES, SOLUTION, PRIMITIVE, ANISOTROPIC_METRIC)"
+        config_cfd.ERROR_ESTIMATE             = 'YES'
+        config_cfd.MATH_PROBLEM               = 'DISCRETE_ADJOINT'
+        config_cfd.ADAP_HMAX                  = config.PYADAP_HMAX
+        config_cfd.ADAP_HMIN                  = config.PYADAP_HMIN
+        config_cfd.ADAP_COMPLEXITY            = int(mesh_sizes[0])
+        config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
 
         #--- Run an adjoint if the adjoint solution file doesn't exist
         solution_adj_ini = config_cfd.SOLUTION_ADJ_FILENAME           
