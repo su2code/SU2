@@ -150,6 +150,8 @@ elif get_option('enable-openblas')
 
 endif
 
+subdir('externals/cparse')
+
 # compile common library
 subdir('Common/src')
 # compile SU2_CFD executable
