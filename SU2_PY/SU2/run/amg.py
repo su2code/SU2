@@ -477,6 +477,7 @@ def amg ( config , kind='' ):
 
                 if ('ADAP_SHIFT_NORMAL_NEIGHBOR' in config):
                     config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'YES'
+                    config_cfd.RESTART_SOL                = 'NO'
                 
                 # config_cfd.RESIDUAL_REDUCTION = float(adap_res[iSiz])
                 config_cfd.ITER               = int(adap_flow_iter[iSiz])
@@ -489,7 +490,7 @@ def amg ( config , kind='' ):
 
                 if ('ADAP_SHIFT_NORMAL_NEIGHBOR' in config):
                     os.rename('volume.su2', current_mesh)
-                    config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'YES'
+                    config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
                 
                 if not os.path.exists(current_solution) :
                     raise RuntimeError , "\n##ERROR : SU2_CFD Failed.\n"
