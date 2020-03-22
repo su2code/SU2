@@ -1122,7 +1122,8 @@ private:
   unsigned short pastix_verb_lvl;  /*!< \brief Verbosity level for PaStiX */
   unsigned short pastix_fill_lvl;  /*!< \brief Fill level for PaStiX ILU */
 
-  bool error_estimate;               /*!< \brief Determines if error estimation is taking place */
+  bool Bool_Error_Estimate,          /*!< \brief Determines if error estimation is taking place */
+       Bool_Adap_Normal_Neighbor;    /*!< \brief Determines if normal neighbors should be shifted */
   unsigned short Kind_Aniso_Sensor;  /*!< \brief Sensor used for anistropy */
   bool Wrt_Aniso_Sensor;             /*!< \brief Whether or not to write sensor files */
   bool Wrt_InriaMesh;                /*!< \brief Whether or not to write meshb files */
@@ -9255,7 +9256,13 @@ public:
    * \brief Check if error estimation is being carried out
    * \return <code>TRUE<\code> if error estimation is taking place
   */
-  bool GetError_Estimate(void) const { return error_estimate; }
+  bool GetBool_Error_Estimate(void) const { return Bool_Error_Estimate; }
+
+  /*!
+   * \brief Check if normal neighbors should be shifted
+   * \return <code>TRUE<\code> if normal neighbors should be shifted
+  */
+  bool GetBool_Adap_Normal_Neighbor(void) const { return Bool_Adap_Normal_Neighbor; }
 
   /*!
    * \brief Check if Inria format sensor files should be written

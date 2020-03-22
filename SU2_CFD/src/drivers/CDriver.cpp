@@ -854,6 +854,18 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
   geometry[MESH_0]->FindNormal_Neighbor(config);
 
+  /*--- Shift normal neighbor if needed for RANS adaptation ---*/
+  if ((config->GetKind_Turb_Model() != NONE) && 
+      (config->GetBool_Adap_Normal_Neighbor())) {
+    if (rank == MASTER_NODE) cout << "Shifting the closest normal neighbors to the surfaces." << endl;
+    geometry[MESH_0]->ShiftNormal_Neighbor(config);
+    geometry[MESH_0]->FindNormal_Neighbor(config);
+    geometry[MESH_0]->SetCoord_CG();
+    geometry[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetMaxLength(config);
+  }
+
   /*--- Store the global to local mapping. ---*/
 
   if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;

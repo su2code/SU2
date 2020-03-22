@@ -798,6 +798,19 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
 
     }
 
+    /*--- If shifting normal neighbors, make sure new mesh is written ---*/
+    if ((config->GetKind_Turb_Model() != NONE) && 
+      (config->GetBool_Adap_Normal_Neighbor())) {
+      bool mesh = true;
+      for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++){
+        if (VolumeFiles[iFile] == MESH) {
+          mesh = false;
+          break;
+        }
+      }
+      if (mesh) WriteToFile(config, geometry, MESH);
+    }
+
     if (rank == MASTER_NODE && nVolumeFiles != 0){
       fileWritingTable->PrintFooter();
       headerNeeded = true;

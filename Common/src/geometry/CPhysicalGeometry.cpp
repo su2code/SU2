@@ -9949,6 +9949,37 @@ void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
   }
 }
 
+void CPhysicalGeometry::ShiftNormal_Neighbor(CConfig *config) {
+  su2double scalar_prod, diff_coord, *Normal;
+  unsigned long Point_Normal, jPoint;
+  unsigned short iNeigh, iMarker, iDim;
+  unsigned long iPoint, iVertex;
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY ) {
+
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+
+        iPoint = vertex[iMarker][iVertex]->GetNode();
+        jPoint = vertex[iMarker][iVertex]->GetNormal_Neighbor();
+        Normal = vertex[iMarker][iVertex]->GetNormal();
+
+        scalar_prod = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          diff_coord = node[jPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
+          scalar_prod += diff_coord*Normal[iDim];
+        }
+        for (iDim = 0; iDim < nDim; iDim++) {
+          node[jPoint]->SetCoord(iDim, scalar_prod*Normal[iDim]+node[iPoint]->GetCoord(iDim));
+        }
+      }
+    }
+  }
+}
+
 void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   unsigned short iMarker, icommas;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;

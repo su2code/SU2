@@ -650,6 +650,12 @@ public:
   void FindNormal_Neighbor(CConfig *config) override;
 
   /*!
+   * \brief Shift and store the coordinates of the closest neighbor to a vertex.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ShiftNormal_Neighbor(CConfig *config) override;
+
+  /*!
    * \brief Read the sensitivity from an input file.
    * \param[in] config - Definition of the particular problem.
    */
