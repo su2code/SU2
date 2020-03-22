@@ -5909,10 +5909,6 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
-
-    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
-
     //--- set viscous wall spacing
     if(turb && geometry->node[iPoint]->GetSolidBoundary()) {
       for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
@@ -5926,6 +5922,10 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
         } // if Viscous_Wall
       } // for iMarker
     } // if turb
+
+    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
+
+    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
@@ -6053,10 +6053,6 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
-
-    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
-
     //--- set viscous wall spacing
     if(turb && geometry->node[iPoint]->GetSolidBoundary()) {
       for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
@@ -6070,6 +6066,10 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
         } // if Viscous_Wall
       } // for iMarker
     } // if turb
+
+    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
+
+    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
