@@ -5839,14 +5839,19 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
                 nPointDomain = geometry->GetnPointDomain();
 
   su2double localScale = 0.0,
-            globalScale = 0.0,
-            p = config->GetAdap_Norm(),
-            eigmax = 1./(config->GetAdap_Hmin()*config->GetAdap_Hmin()),
-            eigmin = 1./(config->GetAdap_Hmax()*config->GetAdap_Hmax()),
-            outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
+            globalScale = 0.0;
 
   su2double localMinDensity = 1.E16, localMaxDensity = 0., localTotComplex = 0.;
   su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalTotComplex = 0.;
+  
+  const su2double p = config->GetAdap_Norm(),
+                  eigmax = 1./(config->GetAdap_Hmin()*config->GetAdap_Hmin()),
+                  eigmin = 1./(config->GetAdap_Hmax()*config->GetAdap_Hmax()),
+                  outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
+
+  const su2double yplusHmax = GetYPlusHmax(config);
+
+  const bool turb = (config->GetKind_Turb_Model() != NONE);
 
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
@@ -5908,6 +5913,20 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
 
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
 
+    //--- set viscous wall spacing
+    if(turb && geometry->node[iPoint]->GetSolidBoundary()) {
+      for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
+        if((geometry->node[iPoint]->GetVertex(iMarker) >= 0) &&
+           (config->GetViscous_Wall(iMarker))) {
+          const su2double hmin_i = min(EigVal[0],EigVal[1]);
+          if(yplusHmax < hmin_i) {
+            const su2double scale = yplusHmax/hmin_i;
+            for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= scale;
+          } // if yplusHmax
+        } // if Viscous_Wall
+      } // for iMarker
+    } // if turb
+
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
     base_nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
@@ -5950,17 +5969,23 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
 
 void CSolver::NormalizeMetric3(CGeometry *geometry,
                                CConfig   *config) {
-  unsigned long iPoint, nPointDomain = geometry->GetnPointDomain();
+  unsigned long iPoint, 
+                nPointDomain = geometry->GetnPointDomain();
 
   su2double localScale = 0.0,
-            globalScale = 0.0,
-            p = config->GetAdap_Norm(),
-            eigmax = 1./(config->GetAdap_Hmin()*config->GetAdap_Hmin()),
-            eigmin = 1./(config->GetAdap_Hmax()*config->GetAdap_Hmax()),
-            outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
+            globalScale = 0.0;
 
   su2double localMinDensity = 1.E16, localMaxDensity = 0., localTotComplex = 0.;
   su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalTotComplex = 0.;
+  
+  const su2double p = config->GetAdap_Norm(),
+                  eigmax = 1./(config->GetAdap_Hmin()*config->GetAdap_Hmin()),
+                  eigmin = 1./(config->GetAdap_Hmax()*config->GetAdap_Hmax()),
+                  outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
+
+  const su2double yplusHmax = GetYPlusHmax(config);
+
+  const bool turb = (config->GetKind_Turb_Model() != NONE);
 
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
@@ -6032,6 +6057,20 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
 
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
 
+    //--- set viscous wall spacing
+    if(turb && geometry->node[iPoint]->GetSolidBoundary()) {
+      for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
+        if((geometry->node[iPoint]->GetVertex(iMarker) >= 0) &&
+           (config->GetViscous_Wall(iMarker))) {
+          const su2double hmin_i = min(min(EigVal[0],EigVal[1]),EigVal[2]);
+          if(yplusHmax < hmin_i) {
+            const su2double scale = yplusHmax/hmin_i;
+            for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= scale;
+          } // if yplusHmax
+        } // if Viscous_Wall
+      } // for iMarker
+    } // if turb
+
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
     //--- store lower triangle to be consistent with AMG
@@ -6074,4 +6113,17 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
   delete [] A;
   delete [] EigVec;
   delete [] EigVal;
+}
+
+su2double CSolver::GetYPlusHmax(CConfig *config) {
+  const su2double Re    = config->GetReynolds();
+  const su2double Cf    = 0.026/pow(Re,1./7.);
+  const su2double rho   = config->GetDensity_FreeStreamND();
+  const su2double U2    = config->GetModVel_FreeStreamND();
+  const su2double tauw  = Cf*rho*U2/2.;
+  const su2double Uf    = sqrt(tauw/rho);
+  const su2double mu    = config->GetViscosity_FreeStreamND();
+  const su2double yplus = config->GetAdap_Max_Yplus();
+  const su2double ds    = yplus*mu/(Uf*rho);
+  return ds;
 }

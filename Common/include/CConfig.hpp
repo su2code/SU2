@@ -9291,7 +9291,7 @@ public:
    * \brief Get minimum cell size
    * \return Minimum cell size
    */
-  su2double GetAdap_Yplus(void) const { return Adap_Max_Yplus; }
+  su2double GetAdap_Max_Yplus(void) const { return Adap_Max_Yplus; }
 
   /*!
    * \brief Get constraint complexity
