@@ -9962,7 +9962,7 @@ void CPhysicalGeometry::ShiftNormal_Neighbor(CConfig *config) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 
         iPoint = vertex[iMarker][iVertex]->GetNode();
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (node[iPoint]->GetDomain()) {
           jPoint = vertex[iMarker][iVertex]->GetNormal_Neighbor();
           Normal = vertex[iMarker][iVertex]->GetNormal();
           Coord_Old = node[jPoint]->GetCoord_Old();
