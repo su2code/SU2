@@ -961,7 +961,11 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   /*--- Create the data structure for MPI point-to-point communications. ---*/
 
-  for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+  if ((config->GetKind_Turb_Model() == NONE) || 
+      (!config->GetBool_Adap_Normal_Neighbor()))
+    geometry[MESH_0]->PreprocessP2PComms(geometry[MESH_0], config);
+  
+  for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
     geometry[iMGlevel]->PreprocessP2PComms(geometry[iMGlevel], config);
 
 
