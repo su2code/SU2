@@ -56,7 +56,7 @@ if get_option('enable-directdiff')
   commonDD = static_library('SU2CommonDD',
                             common_src,
                             install : false, 
-                            dependencies : [su2_deps, cparse_depAD, codi_dep],
+                            dependencies : [su2_deps, cparse_depDD, codi_dep],
                             cpp_args: [default_warning_flags, su2_cpp_args, codi_for_args])
 
   commonDD_dep = declare_dependency(link_with: commonDD, 
