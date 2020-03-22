@@ -5849,7 +5849,7 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
                   eigmin = 1./(pow(config->GetAdap_Hmax(),2.0)),
                   outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
 
-  const su2double eigyplusmax = 1./(pow(GetYPlusHmax(config),2.);
+  const su2double eigyplusmax = 1./(pow(GetYPlusHmax(config),2.));
 
   const bool turb = (config->GetKind_Turb_Model() != NONE);
 
@@ -5983,7 +5983,7 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
                   eigmin = 1./(pow(config->GetAdap_Hmax(),2.0)),
                   outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
 
-  const su2double eigyplusmax = 1./(pow(GetYPlusHmax(config),2.);
+  const su2double eigyplusmax = 1./(pow(GetYPlusHmax(config),2.));
 
   const bool turb = (config->GetKind_Turb_Model() != NONE);
 
