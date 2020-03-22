@@ -9966,6 +9966,7 @@ void CPhysicalGeometry::ShiftNormal_Neighbor(CConfig *config) {
         Normal = vertex[iMarker][iVertex]->GetNormal();
 
         scalar_prod = 0.0;
+        norm_Normal = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           diff_coord = node[jPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
           scalar_prod += diff_coord*Normal[iDim];
