@@ -200,6 +200,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   kine_Inf  = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
   omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
 
+  /*--- BCM: Testing Spalart/Rumsey floor value for external flows ---*/
+  omega_Inf = floor(5.0*VelMag/config->GetLength_Reynolds());
+
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   muT_Inf = rhoInf*kine_Inf/omega_Inf;
 
