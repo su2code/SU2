@@ -601,8 +601,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       su2double U_Tau = sqrt(Tau_Wall / Density_Wall);
 
       su2double eddy_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(jPoint);
-      su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
-      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
+      su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0) + EPS*EPS);
+      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance + EPS);
       su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
       
       Solution[0] = Omega * eddy_viscosity;
