@@ -2482,9 +2482,13 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
   Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
+  /*--- BCM: Testing Spalart/Rumsey floor value for external flows ---*/
+  Omega_FreeStream = max(Omega_FreeStream, 5.0*ModVel_FreeStream/config->GetLength_Reynolds());
   config->SetOmega_FreeStream(Omega_FreeStream);
 
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
+  /*--- BCM: Testing Spalart/Rumsey floor value for external flows ---*/
+  Omega_FreeStreamND = max(Omega_FreeStreamND, 5.0*ModVel_FreeStreamND/config->GetLength_Reynolds());
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
