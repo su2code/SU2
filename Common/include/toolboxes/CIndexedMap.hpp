@@ -47,7 +47,7 @@ public:
    * \param[in] key - The key that should be checked
    * \return <TRUE> then when the key could be found, otherwise <FALSE>
    */
-  bool FindKey(const Key& key) const {
+  bool CheckKey(const Key& key) const {
     return (map.count(key) > 0);
   }
 
@@ -65,7 +65,7 @@ public:
    * \param[in] key - The key value
    * \return The item associated with the specified key
    */
-  const Item& GetItem(const Key& key) const {
+  const Item& GetItemByKey(const Key& key) const {
     return map.at(key);
   }
 
@@ -74,7 +74,7 @@ public:
    * \param[in] i - The position of the item
    * \return The item at the specified position
    */
-  const Item& GetItem(const int i) const {
+  const Item& GetItemByIndex(const int i) const {
     return insertionVector[i]->second;
   }
 
@@ -84,23 +84,14 @@ public:
    * \return The item associated with the specified key
    */
   const Item& operator[](const Key& key) const {
-    return GetItem(key);
-  }
-
-  /*!
-   * \brief Get the key at a specific position using the bracket operator
-   * \param[in] i - The position of the key
-   * \return The key at the requested position
-   */
-  const Item& operator[](const int i) const {
-    return GetItem(i);
+    return GetItemByKey(key);
   }
 
   /*!
    * \brief Get references to all key/item pairs
    * \return vector containing iterator references to all key/item pairs
    */
-  InsertionVector GetReferencesAll() const {
+  const InsertionVector& GetReferencesAll() const {
     return insertionVector;
   }
 
@@ -113,9 +104,9 @@ public:
    */
   template<typename P, typename F>
   static InsertionVector GetReferences(const std::vector<P> &propertyList,
-                                std::vector<P>& notFound,
-                                const InsertionVector& refVector,
-                                const F &f) {
+                                       std::vector<P>& notFound,
+                                       const InsertionVector& refVector,
+                                       const F &f) {
     InsertionVector references;
     notFound.clear();
     bool found = false;

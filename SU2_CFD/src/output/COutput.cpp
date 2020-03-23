@@ -815,14 +815,14 @@ void COutput::PrintConvergenceSummary(){
 
   const auto& convFieldRef = historyFieldsAll.GetFieldsByKey(convFields);
 
-  for (auto field : COutFieldCollection::GetFieldsByType({HistoryFieldType::COEFFICIENT}, convFieldRef)){
+  for (const auto& field : COutFieldCollection::GetFieldsByType({HistoryFieldType::COEFFICIENT}, convFieldRef)){
     ConvSummary << field->second.fieldName
                 << field->second.value
                 << " < " + PrintingToolbox::to_string(cauchyEps)
                 << (field->second.value < cauchyEps ? "Yes" : "No");
   }
 
-  for (auto field : COutFieldCollection::GetFieldsByType({HistoryFieldType::RESIDUAL,
+  for (const auto& field : COutFieldCollection::GetFieldsByType({HistoryFieldType::RESIDUAL,
                                                          HistoryFieldType::AUTO_RESIDUAL}, convFieldRef)){
     ConvSummary << field->second.fieldName
                 << field->second.value
@@ -845,7 +845,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
     const string &convField = convFields[iField_Conv];
 
-    if (GetHistoryFieldsAll().FindKey(convField)){
+    if (GetHistoryFieldsAll().CheckKey(convField)){
 
       const HistoryOutputField& outField = historyFieldsAll[convField];
 
@@ -958,7 +958,7 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
   if(TimeIteration == 0){
     for (unsigned short iField_Conv = 0; iField_Conv < wndConvFields.size(); iField_Conv++){
       const string WndConv_Field= wndConvFields[iField_Conv];
-      if (GetHistoryFieldsAll().FindKey(WndConv_Field)){
+      if (GetHistoryFieldsAll().CheckKey(WndConv_Field)){
         SetHistoryOutputValue("CAUCHY_"+ WndConv_Field, 1.0);
       }
     }
@@ -971,7 +971,7 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
       bool fieldConverged = false;
       const string WndConv_Field= wndConvFields[iField_Conv];
 
-      if (GetHistoryFieldsAll().FindKey(WndConv_Field)){
+      if (GetHistoryFieldsAll().CheckKey(WndConv_Field)){
         su2double monitor = historyFieldsAll[WndConv_Field].value;
 
         /*--- Cauchy based convergence criteria ---*/
@@ -1030,7 +1030,7 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
 
   const auto& historyFields = historyFieldsAll.GetFieldsByKey(requestedHistoryFields, true);
 
-  for (auto field : historyFields){
+  for (const auto& field : historyFields){
     if (field->second.screenFormat == ScreenOutputFormat::INTEGER){
       width = std::max((int)field->second.fieldName.size()+2, 10);
     } else {
@@ -1053,7 +1053,7 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
 
   const auto& historyFields = GetHistoryFieldsAll().GetFieldsByKey(requestedHistoryFields, true);
 
-  for (auto field : historyFields){
+  for (const auto& field : historyFields){
     (*historyFileTable) << field->second.value;
   }
 
@@ -1075,7 +1075,7 @@ void COutput::SetScreen_Output(CConfig *config) {
 
   const auto& historyFields = GetHistoryFieldsAll().GetFieldsByKey(requestedScreenFields, true);
 
-  for (auto field : historyFields) {
+  for (const auto& field : historyFields) {
     stringstream out;
     switch (field->second.screenFormat) {
       case ScreenOutputFormat::INTEGER:
@@ -1251,7 +1251,7 @@ void COutput::CheckHistoryOutput(){
 
   /*--- Add fields to the screen output table--- */
 
-  for (auto field : screenFields){
+  for (const auto& field : screenFields){
     convergenceTable->AddColumn(field->second.fieldName, fieldWidth);
   }
 
@@ -1576,7 +1576,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
   map<string, pair<su2double, int> > Average;
   map<string, int> Count;
 
-  for (auto field : historyFieldsAll.GetFieldsByType({HistoryFieldType::RESIDUAL})){
+  for (const auto& field : historyFieldsAll.GetFieldsByType({HistoryFieldType::RESIDUAL})){
     if (SetInit_Residuals(config) || (field->second.value > initialResiduals[field->first])) {
       initialResiduals[field->first] = field->second.value;
     }
@@ -1585,7 +1585,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     Average[field->second.outputGroup].second++;
   }
 
-  for (auto field : historyFieldsAll.GetFieldsByType({HistoryFieldType::COEFFICIENT})){
+  for (const auto& field : historyFieldsAll.GetFieldsByType({HistoryFieldType::COEFFICIENT})){
     if (SetUpdate_Averages(config)){
       if (config->GetTime_Domain()){
         windowedTimeAverages[field->first].addValue(field->second.value, config->GetTimeIter(), config->GetStartWindowIteration());
@@ -1605,7 +1605,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     const su2double& value = it->second.first;
     const int& count = it->second.second;
     const su2double average = value/count;
-    if (historyFieldsAll.FindKey("AVG_" + it->first))
+    if (historyFieldsAll.CheckKey("AVG_" + it->first))
       SetHistoryOutputValue("AVG_" + it->first, average);
   }
 
@@ -1618,7 +1618,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   map<string, bool> Average;
   map<string, string> AverageGroupName = {{"BGS_RES", "bgs"},{"RMS_RES","rms"},{"MAX_RES", "max"}};
 
-  for (auto field : historyFieldsAll.GetFieldsByType({HistoryFieldType::RESIDUAL})){
+  for (const auto& field : historyFieldsAll.GetFieldsByType({HistoryFieldType::RESIDUAL})){
     AddHistoryOutput("REL_" + field->first, "rel" + field->second.fieldName, field->second.screenFormat,
                      "REL_" + field->second.outputGroup,  "Relative residual.", HistoryFieldType::AUTO_RESIDUAL);
     Average[field->second.outputGroup] = true;
@@ -1643,7 +1643,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   }
 
   if (config->GetDirectDiff()){
-    for (auto field : coefficentFields){
+    for (const auto& field : coefficentFields){
       AddHistoryOutput("D_" + field->first, "d[" + field->second.fieldName + "]",
                        field->second.screenFormat, "D_" + field->second.outputGroup,
                        "Derivative value (DIRECT_DIFF=YES)", HistoryFieldType::AUTO_COEFFICIENT);
@@ -1651,7 +1651,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   }
 
   if (config->GetTime_Domain() && config->GetDirectDiff()){
-    for (auto field : coefficentFields){
+    for (const auto& field : coefficentFields){
       AddHistoryOutput("D_TAVG_" + field->first, "dtavg[" + field->second.fieldName + "]",
                        field->second.screenFormat, "D_TAVG_" + field->second.outputGroup,
                        "Derivative of the time averaged value (DIRECT_DIFF=YES)", HistoryFieldType::AUTO_COEFFICIENT);
@@ -1662,7 +1662,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
 
   const auto& convergenceFields = COutFieldCollection::GetFieldsByType({HistoryFieldType::COEFFICIENT},
                                                                        historyFieldsAll.GetFieldsByKey(convFields));
-  for (auto field : convergenceFields){
+  for (const auto& field : convergenceFields){
     AddHistoryOutput("CAUCHY_" + field->first, "Cauchy["  + field->second.fieldName + "]",
                      ScreenOutputFormat::SCIENTIFIC, "CAUCHY", "Cauchy residual value of field set with CONV_FIELD.",
                      HistoryFieldType::AUTO_COEFFICIENT);
@@ -1670,7 +1670,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
 
   const auto& wndConvergenceFields = historyFieldsAll.GetFieldsByKey(wndConvFields);
 
-  for (auto field : wndConvergenceFields){
+  for (const auto& field : wndConvergenceFields){
     AddHistoryOutput("CAUCHY_" + field->first, "Cauchy["  + field->second.fieldName + "]",
                      ScreenOutputFormat::SCIENTIFIC, "CAUCHY", "Cauchy residual value of field set with WND_CONV_FIELD.",
                      HistoryFieldType::AUTO_COEFFICIENT);
@@ -1881,7 +1881,7 @@ void COutput::PrintHistoryFields(){
 
     unsigned short NameSize = 0, GroupSize = 0, DescrSize = 0;
 
-    for (auto field : historyFieldsAll.GetReferencesAll()){
+    for (const auto& field : historyFieldsAll.GetReferencesAll()){
       if (field->second.description != ""){
         if (field->first.size() > NameSize){
           NameSize =field->first.size();
@@ -1905,7 +1905,7 @@ void COutput::PrintHistoryFields(){
 
     HistoryFieldTable.PrintHeader();
 
-    for (auto field : historyFieldsAll.GetReferencesAll()){
+    for (const auto& field : historyFieldsAll.GetReferencesAll()){
 
       if (field->second.fieldType == HistoryFieldType::DEFAULT
           || field->second.fieldType == HistoryFieldType::COEFFICIENT
@@ -1946,7 +1946,7 @@ void COutput::PrintHistoryFields(){
 
     std::map<string, bool> GroupVisited;
 
-    for (auto field : historyFieldsAll.GetReferencesAll()){
+    for (const auto& field : historyFieldsAll.GetReferencesAll()){
 
       if ((field->second.fieldType == HistoryFieldType::AUTO_COEFFICIENT ||
            field->second.fieldType == HistoryFieldType::AUTO_RESIDUAL) && (GroupVisited.count(field->second.outputGroup) == 0)){

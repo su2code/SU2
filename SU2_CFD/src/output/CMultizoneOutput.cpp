@@ -94,7 +94,7 @@ void CMultizoneOutput::LoadMultizoneHistoryData(COutput **output, CConfig **conf
 
     const COutFieldCollection& ZoneHistoryFields = output[iZone]->GetHistoryFieldsAll();
 
-    for (auto field : ZoneHistoryFields.GetReferencesAll()){
+    for (const auto& field : ZoneHistoryFields.GetReferencesAll()){
       if (field->first != "TIME_ITER" &&  field->first != "OUTER_ITER"){
         name   = field->first + "[" + PrintingToolbox::to_string(iZone) + "]";
         SetHistoryOutputValue(name, field->second.value);
@@ -114,7 +114,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig
 
     const COutFieldCollection& ZoneHistoryFields = output[iZone]->GetHistoryFieldsAll();
 
-    for (auto field : ZoneHistoryFields.GetReferencesAll()){
+    for (const auto& field : ZoneHistoryFields.GetReferencesAll()){
       if (field->first != "TIME_ITER" &&  field->first != "OUTER_ITER"){
         name   = field->first + "[" + PrintingToolbox::to_string(iZone) + "]";
         header = field->second.fieldName + "[" + PrintingToolbox::to_string(iZone) + "]";

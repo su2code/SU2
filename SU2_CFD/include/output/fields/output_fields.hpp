@@ -69,13 +69,13 @@ public:
     auto customFields = GetFieldsByType({HistoryFieldType::CUSTOM});
 
     if (!customFields.empty()){
-      for (auto field : insertionVector){
+      for (const auto& field : insertionVector){
         if (field->second.fieldType != HistoryFieldType::CUSTOM){
           outFieldScope[field->first] = field->second.value;
         }
       }
 
-      for (auto field : customFields){
+      for (const auto& field : customFields){
         field->second.expParser.ExecCode();
         field->second.value = field->second.expParser.Eval(std::string("eval"));
       }
