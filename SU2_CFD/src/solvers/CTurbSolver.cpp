@@ -455,7 +455,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             su2double muLamInf  = config->GetViscosity_FreeStreamND(),
                       viscRatio = config->GetTurb2LamViscRatio_FreeStream(),
                       k         = nodes->GetSolution(iPoint, 0);
-            nodes->SetSolution(iPoint, 1, density*kine_Inf/(muLamInf*viscRatio));
+            nodes->SetSolution(iPoint, 1, density*k/(muLamInf*viscRatio));
           }
 
         }
