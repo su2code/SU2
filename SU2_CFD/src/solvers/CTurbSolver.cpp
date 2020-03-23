@@ -457,10 +457,16 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             nodes->AddConservative(iPoint, 1, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+1], density, lowerlimit[1], upperlimit[1]);
           }
           else{
-            su2double muLamInf  = config->GetViscosity_FreeStreamND(),
-                      viscRatio = config->GetTurb2LamViscRatio_FreeStream(),
-                      k         = nodes->GetSolution(iPoint, 0);
-            nodes->SetSolution(iPoint, 1, density*k/(muLamInf*viscRatio));
+            for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
+              if((geometry->node[iPoint]->GetVertex(iMarker) >= 0) &&
+                 (config->GetViscous_Wall(iMarker))) {
+                /*--- Set omega if not part of a viscous wall ---*/
+                su2double muLamInf  = config->GetViscosity_FreeStreamND(),
+                          viscRatio = config->GetTurb2LamViscRatio_FreeStream(),
+                          k         = nodes->GetSolution(iPoint, 0);
+                nodes->SetSolution(iPoint, 1, density*k/(muLamInf*viscRatio));
+              }
+            }
           }
 
         }
