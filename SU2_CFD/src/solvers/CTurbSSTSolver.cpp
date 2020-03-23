@@ -198,7 +198,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   VelMag = sqrt(VelMag);
 
   kine_Inf  = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
-  omega_Inf = rhoInf*kine_Inf/(muLamInf*min(1.1,viscRatio));
+  omega_Inf = rhoInf*kine_Inf/(muLamInf*min(0.9,viscRatio));
 
   /*--- BCM: Testing Spalart/Rumsey floor value for external flows ---*/
   kine_Inf  = min(kine_Inf, VelMag*VelMag*1e-6);
