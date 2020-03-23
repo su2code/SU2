@@ -594,6 +594,24 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         Jacobian.DeleteValsRowi(total_index);
       }
 
+      su2double eddy_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity();
+      su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
+      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
+      su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
+      
+      Solution[0] = Omega * eddy_viscosity;
+      Solution[1] = density*Omega;
+
+      node[jPoint]->SetSolution_Old(Solution);
+      node[jPoint]->SetSolution(Solution);
+      LinSysRes.SetBlock_Zero(jPoint);
+      
+      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = jPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+
     }
   }
 
