@@ -594,13 +594,13 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         Jacobian.DeleteValsRowi(total_index);
       }
 
-      su2double Density_Wall  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-      su2double Tau_Wall      = solver_container[FLOW_SOL]->node[iPoint]->GetTauWall();
+      su2double Density_Wall  = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      su2double Tau_Wall      = solver_container[FLOW_SOL]->GetNodes()->GetTauWall(iPoint);
       
-      su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+      su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
       su2double U_Tau = sqrt(Tau_Wall / Density_Wall);
 
-      su2double eddy_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity();
+      su2double eddy_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(jPoint);
       su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
       su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
       su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
@@ -608,8 +608,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       Solution[0] = Omega * eddy_viscosity;
       Solution[1] = density*Omega;
 
-      node[jPoint]->SetSolution_Old(Solution);
-      node[jPoint]->SetSolution(Solution);
+      nodes->SetSolution_Old(jPoint,Solution);
+      nodes->SetSolution(jPoint,Solution);
       LinSysRes.SetBlock_Zero(jPoint);
       
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
