@@ -92,7 +92,7 @@ void CMultizoneOutput::LoadMultizoneHistoryData(COutput **output, CConfig **conf
 
   for (iZone = 0; iZone < nZone; iZone++){
 
-    const COutFieldCollection& ZoneHistoryFields = output[iZone]->GetHistoryFieldsAll();
+    const HistoryOutFieldCollection& ZoneHistoryFields = output[iZone]->GetHistoryFieldsAll();
 
     for (const auto& field : ZoneHistoryFields.GetReferencesAll()){
       if (field->first != "TIME_ITER" &&  field->first != "OUTER_ITER"){
@@ -112,7 +112,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig
 
   for (iZone = 0; iZone < nZone; iZone++){
 
-    const COutFieldCollection& ZoneHistoryFields = output[iZone]->GetHistoryFieldsAll();
+    const HistoryOutFieldCollection& ZoneHistoryFields = output[iZone]->GetHistoryFieldsAll();
 
     for (const auto& field : ZoneHistoryFields.GetReferencesAll()){
       if (field->first != "TIME_ITER" &&  field->first != "OUTER_ITER"){

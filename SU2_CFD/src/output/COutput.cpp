@@ -815,15 +815,15 @@ void COutput::PrintConvergenceSummary(){
 
   const auto& convFieldRef = historyFieldsAll.GetFieldsByKey(convFields);
 
-  for (const auto& field : COutFieldCollection::GetFieldsByType({HistoryFieldType::COEFFICIENT}, convFieldRef)){
+  for (const auto& field : HistoryOutFieldCollection::GetFieldsByType({FieldType::COEFFICIENT}, convFieldRef)){
     ConvSummary << field->second.fieldName
                 << field->second.value
                 << " < " + PrintingToolbox::to_string(cauchyEps)
                 << (field->second.value < cauchyEps ? "Yes" : "No");
   }
 
-  for (const auto& field : COutFieldCollection::GetFieldsByType({HistoryFieldType::RESIDUAL,
-                                                         HistoryFieldType::AUTO_RESIDUAL}, convFieldRef)){
+  for (const auto& field : HistoryOutFieldCollection::GetFieldsByType({FieldType::RESIDUAL,
+                                                                      FieldType::AUTO_RESIDUAL}, convFieldRef)){
     ConvSummary << field->second.fieldName
                 << field->second.value
                 << " < " + PrintingToolbox::to_string(minLogResidual)
@@ -853,7 +853,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
       /*--- Cauchy based convergence criteria ---*/
 
-      if (outField.fieldType == HistoryFieldType::COEFFICIENT) {
+      if (outField.fieldType == FieldType::COEFFICIENT) {
 
         if (Iteration == 0){
           for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++){
@@ -894,8 +894,8 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
       /*--- Residual based convergence criteria ---*/
 
-      if (outField.fieldType == HistoryFieldType::RESIDUAL ||
-          outField.fieldType == HistoryFieldType::AUTO_RESIDUAL) {
+      if (outField.fieldType == FieldType::RESIDUAL ||
+          outField.fieldType == FieldType::AUTO_RESIDUAL) {
 
         /*--- Check the convergence ---*/
 
@@ -976,7 +976,7 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
 
         /*--- Cauchy based convergence criteria ---*/
 
-        if (historyFieldsAll[WndConv_Field].fieldType == HistoryFieldType::AUTO_COEFFICIENT) { //TAVG values are AUTO_COEFF
+        if (historyFieldsAll[WndConv_Field].fieldType == FieldType::AUTO_COEFFICIENT) { //TAVG values are AUTO_COEFF
           if (TimeIteration == config->GetStartWindowIteration()){
             for (iCounter = 0; iCounter < nWndCauchy_Elems; iCounter++){
               WndCauchy_Serie[iField_Conv][iCounter] = 0.0;
@@ -1255,7 +1255,7 @@ void COutput::CheckHistoryOutput(){
     convergenceTable->AddColumn(field->second.fieldName, fieldWidth);
   }
 
-  requestedScreenFields = COutFieldCollection::GetKeys(screenFields);
+  requestedScreenFields = HistoryOutFieldCollection::GetKeys(screenFields);
   nRequestedScreenFields = requestedScreenFields.size();
 
   printInfo(requestedScreenFields, "Monitoring fields on screen: ");
@@ -1266,19 +1266,19 @@ void COutput::CheckHistoryOutput(){
 
   const auto& historyFields = GetHistoryFieldsAll().GetFieldsByKey(requestedHistoryFields, FieldsToRemove, true);
 
-  requestedHistoryFields = COutFieldCollection::GetKeys(historyFields);
+  requestedHistoryFields = HistoryOutFieldCollection::GetKeys(historyFields);
   nRequestedHistoryFields = requestedHistoryFields.size();
 
   const auto& convergenceFields = GetHistoryFieldsAll().GetFieldsByKey(convFields, FieldsToRemove);
 
-  convFields = COutFieldCollection::GetKeys(convergenceFields);
+  convFields = HistoryOutFieldCollection::GetKeys(convergenceFields);
 
   printInfo(convFields, "Convergence monitoring fields: ");
   printInfo(FieldsToRemove, "Fields ignored: ");
 
   const auto& timeConvergenceFields = GetHistoryFieldsAll().GetFieldsByKey(wndConvFields, FieldsToRemove);
 
-  wndConvFields = COutFieldCollection::GetKeys(timeConvergenceFields);
+  wndConvFields = HistoryOutFieldCollection::GetKeys(timeConvergenceFields);
   printInfo(wndConvFields, "Time Convergence monitoring fields: ");
   printInfo(FieldsToRemove, "Fields ignored: ");
 
@@ -1313,33 +1313,37 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   vector<string> FieldsToRemove;
 
 
+  regex exp("\\{\\S*\\}");
+
+  /*--- Check if any of the fields is a expression ---*/
+  for (auto& field : requestedVolumeFields){
+    if (regex_match(field, exp)){
+      /*--- Remove the bracket on the right ---*/
+      field.pop_back();
+      /*--- Remove the bracket on the left ---*/
+      field.erase(0,1);
+      AddCustomVolumeOutput(field);
+    }
+  }
+
   /*--- Loop through all fields defined in the corresponding SetVolumeOutputFields().
  * If it is also defined in the config (either as part of a group or a single field), the field
  * object gets an offset so that we know where to find the data in the Local_Data() array.
  *  Note that the default offset is -1. An index !=-1 defines this field as part of the output. ---*/
 
-  for (unsigned short iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++){
-
-    const string &fieldReference = volumeOutput_List[iField_Output];
-    if (volumeOutput_Map.count(fieldReference) > 0){
-      VolumeOutputField &Field = volumeOutput_Map.at(fieldReference);
-
-      /*--- Loop through all fields specified in the config ---*/
-
-      for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
-
-        RequestedField = requestedVolumeFields[iReqField];
-
-        if (((RequestedField == Field.outputGroup) || (RequestedField == fieldReference)) && (Field.offset == -1)){
-          Field.offset = nVolumeFields;
-          volumeFieldNames.push_back(Field.fieldName);
-          nVolumeFields++;
-
-          FoundField[iReqField] = true;
-        }
+  for (const auto& field : volumeFieldsAll.GetReferencesAll()){
+    for (unsigned int iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
+      const string& RequestedField = requestedVolumeFields[iReqField];
+      if (((RequestedField == field->second.outputGroup) || (RequestedField == field->first))
+          && (field->second.offset == -1)){
+        field->second.offset = nVolumeFields;
+        volumeFieldNames.push_back(field->second.fieldName);
+        nVolumeFields++;
+        FoundField[iReqField] = true;
       }
     }
   }
+
 
   for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
     if (!FoundField[iReqField]){
@@ -1427,6 +1431,16 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
       LoadVolumeData(config, geometry, solver, iPoint);
 
+      for (const auto& field : volumeFieldsAll.GetReferencesAll()){
+        if (field->second.fieldType != FieldType::CUSTOM)
+          (*field->second.tokenRef) = volumeDataSorter->GetUnsorted_Data(iPoint, field->second.offset);
+      }
+
+      for (const auto& field : volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM})){
+
+        SetVolumeOutputValue(field->first, iPoint, field->second.tokenRef->asFunc()->exec(volumeFieldsAll.GetScope()).asDouble());
+
+      }
     }
 
     /*--- Reset the offset cache and index --- */
@@ -1467,8 +1481,8 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
      * calls of this routine since the order of calls is
      * the same for every value of iPoint --- */
 
-    if (volumeOutput_Map.count(name) > 0){
-      const short Offset = volumeOutput_Map.at(name).offset;
+    if (volumeFieldsAll.CheckKey(name)){
+      const short Offset = volumeFieldsAll[name].offset;
       fieldIndexCache.push_back(Offset);
       if (Offset != -1){
         volumeDataSorter->SetUnsorted_Data(iPoint, Offset, value);
@@ -1499,8 +1513,8 @@ su2double COutput::GetVolumeOutputValue(string name, unsigned long iPoint){
      * calls of this routine since the order of calls is
      * the same for every value of iPoint --- */
 
-    if (volumeOutput_Map.count(name) > 0){
-      const short Offset = volumeOutput_Map.at(name).offset;
+    if (volumeFieldsAll.CheckKey(name)){
+      const short Offset = volumeFieldsAll[name].offset;
       fieldGetIndexCache.push_back(Offset);
       if (Offset != -1){
         return volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
@@ -1535,8 +1549,8 @@ void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2doub
      * calls of this routine since the order of calls is
      * the same for every value of iPoint --- */
 
-    if (volumeOutput_Map.count(name) > 0){
-      const short Offset = volumeOutput_Map.at(name).offset;
+    if (volumeFieldsAll.CheckKey(name)){
+      const short Offset = volumeFieldsAll[name].offset;
       fieldIndexCache.push_back(Offset);
       if (Offset != -1){
 
@@ -1576,7 +1590,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
   map<string, pair<su2double, int> > Average;
   map<string, int> Count;
 
-  for (const auto& field : historyFieldsAll.GetFieldsByType({HistoryFieldType::RESIDUAL})){
+  for (const auto& field : historyFieldsAll.GetFieldsByType({FieldType::RESIDUAL})){
     if (SetInit_Residuals(config) || (field->second.value > initialResiduals[field->first])) {
       initialResiduals[field->first] = field->second.value;
     }
@@ -1585,7 +1599,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     Average[field->second.outputGroup].second++;
   }
 
-  for (const auto& field : historyFieldsAll.GetFieldsByType({HistoryFieldType::COEFFICIENT})){
+  for (const auto& field : historyFieldsAll.GetFieldsByType({FieldType::COEFFICIENT})){
     if (SetUpdate_Averages(config)){
       if (config->GetTime_Domain()){
         windowedTimeAverages[field->first].addValue(field->second.value, config->GetTimeIter(), config->GetStartWindowIteration());
@@ -1618,9 +1632,9 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   map<string, bool> Average;
   map<string, string> AverageGroupName = {{"BGS_RES", "bgs"},{"RMS_RES","rms"},{"MAX_RES", "max"}};
 
-  for (const auto& field : historyFieldsAll.GetFieldsByType({HistoryFieldType::RESIDUAL})){
+  for (const auto& field : historyFieldsAll.GetFieldsByType({FieldType::RESIDUAL})){
     AddHistoryOutput("REL_" + field->first, "rel" + field->second.fieldName, field->second.screenFormat,
-                     "REL_" + field->second.outputGroup,  "Relative residual.", HistoryFieldType::AUTO_RESIDUAL);
+                     "REL_" + field->second.outputGroup,  "Relative residual.", FieldType::AUTO_RESIDUAL);
     Average[field->second.outputGroup] = true;
   }
 
@@ -1628,17 +1642,17 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   for (it = Average.begin(); it != Average.end(); it++){
     if (AverageGroupName.count(it->first) > 0) {
       AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", ScreenOutputFormat::FIXED,
-          "AVG_" + it->first , "Average residual over all solution variables.", HistoryFieldType::AUTO_RESIDUAL);
+          "AVG_" + it->first , "Average residual over all solution variables.", FieldType::AUTO_RESIDUAL);
     }
   }
 
-  const auto& coefficentFields = historyFieldsAll.GetFieldsByType({HistoryFieldType::COEFFICIENT});
+  const auto& coefficentFields = historyFieldsAll.GetFieldsByType({FieldType::COEFFICIENT});
 
   if (config->GetTime_Domain()){
     for (auto field : coefficentFields){
       AddHistoryOutput("TAVG_"   + field->first, "tavg["  + field->second.fieldName + "]",
                        field->second.screenFormat, "TAVG_"   + field->second.outputGroup, "Time averaged values.",
-                       HistoryFieldType::AUTO_COEFFICIENT);
+                       FieldType::AUTO_COEFFICIENT);
     }
   }
 
@@ -1646,7 +1660,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
     for (const auto& field : coefficentFields){
       AddHistoryOutput("D_" + field->first, "d[" + field->second.fieldName + "]",
                        field->second.screenFormat, "D_" + field->second.outputGroup,
-                       "Derivative value (DIRECT_DIFF=YES)", HistoryFieldType::AUTO_COEFFICIENT);
+                       "Derivative value (DIRECT_DIFF=YES)", FieldType::AUTO_COEFFICIENT);
     }
   }
 
@@ -1654,18 +1668,18 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
     for (const auto& field : coefficentFields){
       AddHistoryOutput("D_TAVG_" + field->first, "dtavg[" + field->second.fieldName + "]",
                        field->second.screenFormat, "D_TAVG_" + field->second.outputGroup,
-                       "Derivative of the time averaged value (DIRECT_DIFF=YES)", HistoryFieldType::AUTO_COEFFICIENT);
+                       "Derivative of the time averaged value (DIRECT_DIFF=YES)", FieldType::AUTO_COEFFICIENT);
     }
   }
 
   /*--- Filter convergence fields which are coefficients ---*/
 
-  const auto& convergenceFields = COutFieldCollection::GetFieldsByType({HistoryFieldType::COEFFICIENT},
+  const auto& convergenceFields = HistoryOutFieldCollection::GetFieldsByType({FieldType::COEFFICIENT},
                                                                        historyFieldsAll.GetFieldsByKey(convFields));
   for (const auto& field : convergenceFields){
     AddHistoryOutput("CAUCHY_" + field->first, "Cauchy["  + field->second.fieldName + "]",
                      ScreenOutputFormat::SCIENTIFIC, "CAUCHY", "Cauchy residual value of field set with CONV_FIELD.",
-                     HistoryFieldType::AUTO_COEFFICIENT);
+                     FieldType::AUTO_COEFFICIENT);
   }
 
   const auto& wndConvergenceFields = historyFieldsAll.GetFieldsByKey(wndConvFields);
@@ -1673,7 +1687,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   for (const auto& field : wndConvergenceFields){
     AddHistoryOutput("CAUCHY_" + field->first, "Cauchy["  + field->second.fieldName + "]",
                      ScreenOutputFormat::SCIENTIFIC, "CAUCHY", "Cauchy residual value of field set with WND_CONV_FIELD.",
-                     HistoryFieldType::AUTO_COEFFICIENT);
+                     FieldType::AUTO_COEFFICIENT);
   }
 
   historyFieldsAll.UpdateTokens();
@@ -1907,15 +1921,15 @@ void COutput::PrintHistoryFields(){
 
     for (const auto& field : historyFieldsAll.GetReferencesAll()){
 
-      if (field->second.fieldType == HistoryFieldType::DEFAULT
-          || field->second.fieldType == HistoryFieldType::COEFFICIENT
-          || field->second.fieldType == HistoryFieldType::RESIDUAL){
+      if (field->second.fieldType == FieldType::DEFAULT
+          || field->second.fieldType == FieldType::COEFFICIENT
+          || field->second.fieldType == FieldType::RESIDUAL){
         string type;
         switch (field->second.fieldType) {
-          case HistoryFieldType::COEFFICIENT:
+          case FieldType::COEFFICIENT:
             type = "C";
             break;
-          case HistoryFieldType::RESIDUAL:
+          case FieldType::RESIDUAL:
             type = "R";
             break;
           default:
@@ -1948,14 +1962,14 @@ void COutput::PrintHistoryFields(){
 
     for (const auto& field : historyFieldsAll.GetReferencesAll()){
 
-      if ((field->second.fieldType == HistoryFieldType::AUTO_COEFFICIENT ||
-           field->second.fieldType == HistoryFieldType::AUTO_RESIDUAL) && (GroupVisited.count(field->second.outputGroup) == 0)){
+      if ((field->second.fieldType == FieldType::AUTO_COEFFICIENT ||
+           field->second.fieldType == FieldType::AUTO_RESIDUAL) && (GroupVisited.count(field->second.outputGroup) == 0)){
         string type;
         switch (field->second.fieldType) {
-          case HistoryFieldType::AUTO_COEFFICIENT:
+          case FieldType::AUTO_COEFFICIENT:
             type = "AC";
             break;
-          case HistoryFieldType::AUTO_RESIDUAL:
+          case FieldType::AUTO_RESIDUAL:
             type = "AR";
             break;
           default:
@@ -1983,19 +1997,16 @@ void COutput::PrintVolumeFields(){
 
     unsigned short NameSize = 0, GroupSize = 0, DescrSize = 0;
 
-    for (unsigned short iField = 0; iField < volumeOutput_List.size(); iField++){
-
-      VolumeOutputField &Field = volumeOutput_Map.at(volumeOutput_List[iField]);
-
-      if (Field.description != ""){
-        if (volumeOutput_List[iField].size() > NameSize){
-          NameSize = volumeOutput_List[iField].size();
+    for (const auto& field : volumeFieldsAll.GetReferencesAll()){
+      if (field->second.description != ""){
+        if (field->first.size() > NameSize){
+          NameSize = field->first.size();
         }
-        if (Field.outputGroup.size() > GroupSize){
-          GroupSize = Field.outputGroup.size();
+        if (field->second.outputGroup.size() > GroupSize){
+          GroupSize = field->second.outputGroup.size();
         }
-        if (Field.description.size() > DescrSize){
-          DescrSize = Field.description.size();
+        if (field->second.description.size() > DescrSize){
+          DescrSize = field->second.description.size();
         }
       }
     }
@@ -2009,15 +2020,13 @@ void COutput::PrintVolumeFields(){
 
     VolumeFieldTable.PrintHeader();
 
-    for (unsigned short iField = 0; iField < volumeOutput_List.size(); iField++){
-
-      VolumeOutputField &Field = volumeOutput_Map.at(volumeOutput_List[iField]);
-
-      if (Field.description != "")
-        VolumeFieldTable << volumeOutput_List[iField] << Field.outputGroup << Field.description;
-
+    for (const auto& field : volumeFieldsAll.GetReferencesAll()){
+      if (field->second.description != ""){
+        VolumeFieldTable << field->first << field->second.outputGroup << field->second.description;
+      }
     }
-
     VolumeFieldTable.PrintFooter();
   }
 }
+
+

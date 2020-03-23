@@ -82,7 +82,7 @@ protected:
   char char_histfile[200];  /*! \brief Temporary variable to store the history filename */
   ofstream histFile;        /*! \brief Output file stream for the history */
 
-  COutFieldCollection historyFieldsAll;
+  HistoryOutFieldCollection historyFieldsAll;
 
   /*! \brief Requested history field names in the config file. */
   std::vector<string> requestedHistoryFields;
@@ -106,22 +106,19 @@ protected:
   //! Structure to store the value initial residuals for relative residual computation
   std::map<string, su2double> initialResiduals;
 
-   /*----------------------------- Volume output ----------------------------*/
+  /*----------------------------- Volume output ----------------------------*/
 
-   CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
-   CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
+  CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
+  CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
 
-   vector<string> volumeFieldNames;     //!< Vector containing the volume field names
-   unsigned short nVolumeFields;        /*!< \brief Number of fields in the volume output */
+  vector<string> volumeFieldNames;     //!< Vector containing the volume field names
+  unsigned short nVolumeFields;        /*!< \brief Number of fields in the volume output */
 
-   string volumeFilename,               //!< Volume output filename
-   surfaceFilename,                     //!< Surface output filename
-   restartFilename;                     //!< Restart output filename
+  string volumeFilename,               //!< Volume output filename
+  surfaceFilename,                     //!< Surface output filename
+  restartFilename;                     //!< Restart output filename
 
-  /*! \brief Associative map to access data stored in the volume output fields by a string identifier. */
-  std::map<string, VolumeOutputField >          volumeOutput_Map;
-  /*! \brief Vector that contains the keys of the ::volumeOutput_Map in the order of their insertion. */
-  std::vector<string>                           volumeOutput_List;
+  VolumeOutFieldCollection volumeFieldsAll;
 
   /*! \brief Vector to cache the positions of the field in the data array */
   std::vector<short>                            fieldIndexCache;
@@ -292,7 +289,7 @@ public:
     curInnerIter = InnerIter;
   }
 
-  const COutFieldCollection& GetHistoryFieldsAll(){
+  const HistoryOutFieldCollection& GetHistoryFieldsAll(){
     return historyFieldsAll;
   }
 
@@ -407,8 +404,10 @@ protected:
    */
   inline void AddHistoryOutput(string name, string field_name, ScreenOutputFormat format,
                                string groupname, string description,
-                               HistoryFieldType field_type = HistoryFieldType::DEFAULT ){
-    historyFieldsAll.AddItem(name, HistoryOutputField(field_name, format, groupname, field_type, description));
+                               FieldType field_type = FieldType::DEFAULT ){
+    HistoryOutputField newField(field_name, format, groupname, field_type, description);
+    newField.tokenRef = &historyFieldsAll.GetScope()[field_name];
+    historyFieldsAll.AddItem(name, newField);
   }
 
   /*!
@@ -417,7 +416,7 @@ protected:
    * \param[in] value - The new value of this field.
    */
   inline void SetHistoryOutputValue(string name, su2double value){
-    historyFieldsAll.SetValue(name, value);
+    historyFieldsAll.SetValueByKey(name, value);
   }
 
   /*!
@@ -432,7 +431,7 @@ protected:
    */
   inline void AddHistoryOutputPerSurface(string name, string field_name, ScreenOutputFormat format,
                                          string groupname, vector<string> marker_names, string description,
-                                         HistoryFieldType field_type = HistoryFieldType::DEFAULT){
+                                         FieldType field_type = FieldType::DEFAULT){
     if (marker_names.size() != 0){
       for (unsigned short i = 0; i < marker_names.size(); i++){
         historyFieldsAll.AddItem(name + "@" + marker_names[i],
@@ -444,7 +443,7 @@ protected:
 
   inline void AddCustomHistoryOutput(string name){
 
-    HistoryOutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", HistoryFieldType::CUSTOM, "");
+    HistoryOutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", FieldType::CUSTOM, "");
 
     std::string func = "function eval(){"
                        " return " + name + "; }";
@@ -455,7 +454,28 @@ protected:
 
     customField.expParser.ExecCode();
 
+    customField.tokenRef = &historyFieldsAll.GetScope()["eval"];
+
     historyFieldsAll.AddItem(name, customField);
+
+  }
+
+  inline void AddCustomVolumeOutput(string name){
+
+    VolumeOutputField customField (name, -1, "CUSTOM", "");
+    std::string func = "function eval(){"
+                       " return " + name + "; }";
+
+    customField.fieldType = FieldType::CUSTOM;
+    customField.expParser = CExpressionParser(&volumeFieldsAll.GetScope());
+
+    customField.expParser.Compile(func);
+
+    customField.expParser.ExecCode();
+
+    customField.tokenRef = &volumeFieldsAll.GetScope()["eval"];
+
+    volumeFieldsAll.AddItem(name, customField);
 
   }
 
@@ -477,8 +497,9 @@ protected:
    * \param[in] description - Description of the volume field.
    */
   inline void AddVolumeOutput(string name, string field_name, string groupname, string description){
-    volumeOutput_Map[name] = VolumeOutputField(field_name, -1, groupname, description);
-    volumeOutput_List.push_back(name);
+    VolumeOutputField newField(field_name, -1, groupname, description);
+    newField.tokenRef = &volumeFieldsAll.GetScope()[name];
+    volumeFieldsAll.AddItem(name, newField);
   }
 
 
