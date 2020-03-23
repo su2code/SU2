@@ -935,7 +935,7 @@ void CConfig::SetPointersNull(void) {
   Kind_SurfaceMovement = NULL;
   LocationStations   = NULL;
   Motion_Origin     = NULL;
-  Translation_Rate       = NULL;
+  Translation_Rate  = NULL;
   Rotation_Rate     = NULL;
   Pitching_Omega    = NULL;
   Pitching_Ampl     = NULL;
@@ -943,7 +943,7 @@ void CConfig::SetPointersNull(void) {
   Plunging_Omega    = NULL;
   Plunging_Ampl     = NULL;
   MarkerMotion_Origin     = NULL;
-  MarkerTranslation_Rate       = NULL;
+  MarkerTranslation_Rate  = NULL;
   MarkerRotation_Rate     = NULL;
   MarkerPitching_Omega    = NULL;
   MarkerPitching_Ampl     = NULL;
@@ -3827,11 +3827,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Set number of TurboPerformance markers ---*/
   if(GetGrid_Movement() && RampRotatingFrame && !DiscreteAdjoint){
-      FinalRotation_Rate_Z = Rotation_Rate[2];
-      if(abs(FinalRotation_Rate_Z) > 0.0){
-        Rotation_Rate[2] = RampRotatingFrame_Coeff[0];
-      }
-
+    FinalRotation_Rate_Z = Rotation_Rate[2];
+    if(abs(FinalRotation_Rate_Z) > 0.0){
+      Rotation_Rate[2] = RampRotatingFrame_Coeff[0];
+    }
   }
 
   if(RampOutletPressure && !DiscreteAdjoint){
