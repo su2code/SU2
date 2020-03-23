@@ -1423,6 +1423,9 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
   } else {
 
+    const auto& customFieldRef = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM});
+    const auto& fieldRef = volumeFieldsAll.GetReferencesAll();
+
     for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 
       /*--- Load the volume data into the data sorter. --- */
@@ -1431,15 +1434,17 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
       LoadVolumeData(config, geometry, solver, iPoint);
 
-      for (const auto& field : volumeFieldsAll.GetReferencesAll()){
-        if (field->second.fieldType != FieldType::CUSTOM)
-          (*field->second.tokenRef) = volumeDataSorter->GetUnsorted_Data(iPoint, field->second.offset);
-      }
+      if (!customFieldRef.empty()){
+        for (const auto& field :fieldRef){
+          if ((field->second.fieldType != FieldType::CUSTOM) && (field->second.offset != -1))
+            (*field->second.tokenRef) = volumeDataSorter->GetUnsorted_Data(iPoint, field->second.offset);
+        }
 
-      for (const auto& field : volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM})){
+        for (const auto& field : volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM})){
 
-        SetVolumeOutputValue(field->first, iPoint, field->second.tokenRef->asFunc()->exec(volumeFieldsAll.GetScope()).asDouble());
+          SetVolumeOutputValue(field->first, iPoint, field->second.tokenRef->asFunc()->exec(volumeFieldsAll.GetScope()).asDouble());
 
+        }
       }
     }
 
