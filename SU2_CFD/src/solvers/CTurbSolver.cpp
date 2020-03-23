@@ -445,12 +445,17 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
           }
 
-          for (iVar = 0; iVar < nVar; iVar++) {
-            // nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
-            // nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], lowerlimit[iVar], upperlimit[iVar]);
-            nodes->AddConservative(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], density, lowerlimit[iVar], upperlimit[iVar]);
-            // nodes->SetSolution(iPoint, iVar, nodes->GetConservative(iPoint, iVar)/density);
-          }
+          nodes->AddConservative(iPoint, 0, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+0], density, lowerlimit[iVar], upperlimit[iVar]);
+          if ((config->GetInnerIter() > 0) &&
+              log10(solver_container[FLOW_SOL]->GetRes_RMS(0)/(solver_container[FLOW_SOL]->GetRes_RMS_Init(0) < -3.)
+            nodes->AddConservative(iPoint, 1, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+1], density, lowerlimit[iVar], upperlimit[iVar]);
+
+          // for (iVar = 0; iVar < nVar; iVar++) {
+          //   // nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+          //   // nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], lowerlimit[iVar], upperlimit[iVar]);
+          //   nodes->AddConservative(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar], density, lowerlimit[iVar], upperlimit[iVar]);
+          //   // nodes->SetSolution(iPoint, iVar, nodes->GetConservative(iPoint, iVar)/density);
+          // }
 
         }
 
