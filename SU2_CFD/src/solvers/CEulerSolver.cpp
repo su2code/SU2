@@ -2476,9 +2476,13 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
 
   Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
+  /*--- BCM: Testing Spalart/Rumsey floor value for external flows ---*/
+  Tke_FreeStream  = min(Tke_FreeStream, ModVel_FreeStream*ModVel_FreeStream*1e-6);
   config->SetTke_FreeStream(Tke_FreeStream);
 
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
+  /*--- BCM: Testing Spalart/Rumsey floor value for external flows ---*/
+  Tke_FreeStreamND  = min(Tke_FreeStreamND, ModVel_FreeStreamND*ModVel_FreeStreamND*1e-6);
   config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
   Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
