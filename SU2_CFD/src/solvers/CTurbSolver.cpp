@@ -461,7 +461,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
               if((geometry->node[iPoint]->GetVertex(iMarker) >= 0) &&
                  (config->GetViscous_Wall(iMarker))) {
                 /*--- Set omega if not part of a viscous wall ---*/
-                su2double muLam     = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+                su2double muLam     = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint),
                           viscRatio = config->GetTurb2LamViscRatio_FreeStream(),
                           k         = nodes->GetSolution(iPoint, 0);
                 nodes->SetSolution(iPoint, 1, density*k/(muLam*viscRatio));
