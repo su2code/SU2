@@ -2160,7 +2160,6 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
         for (iDim = 0; iDim < nDim; iDim++) {
           for (jDim = 0; jDim < nDim; jDim++) {
             tau[iDim][jDim] = total_viscosity*( Grad_Vel[jDim][iDim]+Grad_Vel[iDim][jDim] ) - TWO3*total_viscosity*div_vel*delta[iDim][jDim];
-            if (sst) tau[iDim][jDim] -= TWO3*Density*solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0)*delta[iDim][jDim];
           }
         }
 
