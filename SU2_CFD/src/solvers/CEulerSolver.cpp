@@ -2487,7 +2487,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   /*--- BCM: Testing Spalart/Rumsey floor value for external flows ---*/
   Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*min(0.9,config->GetTurb2LamViscRatio_FreeStream()));
-  Omega_FreeStream = max(max(Omega_FreeStream, 5.0*ModVel_FreeStream/config->GetLength_Reynolds()), Density_FreeStream;
+  Omega_FreeStream = max(Omega_FreeStream, 5.0*ModVel_FreeStream/config->GetLength_Reynolds());
   config->SetOmega_FreeStream(Omega_FreeStream);
 
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*min(0.9,config->GetTurb2LamViscRatio_FreeStream()));
