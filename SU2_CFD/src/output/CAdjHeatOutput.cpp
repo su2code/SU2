@@ -89,20 +89,20 @@ void CAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables.
   /// DESCRIPTION: Root-mean square residual of the adjoint Pressure.
-  AddHistoryOutput("RMS_ADJ_TEMPERATURE",    "rms[A_T]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("RMS_ADJ_TEMPERATURE",    "rms[A_T]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", FieldType::RESIDUAL);
   /// END_GROUP
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables.
   /// DESCRIPTION: Maximum residual of the adjoint Pressure.
-  AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint temperature.", FieldType::RESIDUAL);
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables.
   /// DESCRIPTION: Maximum residual of the adjoint Pressure.
-  AddHistoryOutput("BGS_ADJ_TEMPERATURE",    "bgs[A_T]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("BGS_ADJ_TEMPERATURE",    "bgs[A_T]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", FieldType::RESIDUAL);
 
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.
   /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
-  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.", FieldType::COEFFICIENT);
   /// END_GROUP
 
 }
@@ -127,10 +127,10 @@ void CAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 void CAdjHeatOutput::SetVolumeOutputFields(CConfig *config){
 
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
+  AddVolumeOutput("COORD_X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD_Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+    AddVolumeOutput("COORD_Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
 
   /// BEGIN_GROUP: CONSERVATIVE, DESCRIPTION: The conservative variables of the adjoint solver.
@@ -146,12 +146,12 @@ void CAdjHeatOutput::SetVolumeOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
   /// DESCRIPTION: Sensitivity x-component.
-  AddVolumeOutput("SENSITIVITY-X", "Sensitivity_x", "SENSITIVITY", "x-component of the sensitivity vector");
+  AddVolumeOutput("SENSITIVITY_X", "Sensitivity_x", "SENSITIVITY", "x-component of the sensitivity vector");
   /// DESCRIPTION: Sensitivity y-component.
-  AddVolumeOutput("SENSITIVITY-Y", "Sensitivity_y", "SENSITIVITY", "y-component of the sensitivity vector");
+  AddVolumeOutput("SENSITIVITY_Y", "Sensitivity_y", "SENSITIVITY", "y-component of the sensitivity vector");
   if (nDim == 3)
     /// DESCRIPTION: Sensitivity z-component.
-    AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_z", "SENSITIVITY", "z-component of the sensitivity vector");
+    AddVolumeOutput("SENSITIVITY_Z", "Sensitivity_z", "SENSITIVITY", "z-component of the sensitivity vector");
   /// DESCRIPTION: Sensitivity in normal direction.
   AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY", "sensitivity in normal direction");
   /// END_GROUP
@@ -164,20 +164,20 @@ void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   CPoint*    Node_Geo     = geometry->node[iPoint];
 
 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD_X", iPoint,  Node_Geo->GetCoord(0));
+  SetVolumeOutputValue("COORD_Y", iPoint,  Node_Geo->GetCoord(1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD_Z", iPoint, Node_Geo->GetCoord(2));
 
   SetVolumeOutputValue("ADJ_TEMPERATURE",    iPoint, Node_AdjHeat->GetSolution(iPoint, 0));
 
   // Residuals
   SetVolumeOutputValue("RES_ADJ_TEMPERATURE", iPoint, Node_AdjHeat->GetSolution(iPoint, 0) - Node_AdjHeat->GetSolution_Old(iPoint, 0));
 
-  SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 0));
-  SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 1));
+  SetVolumeOutputValue("SENSITIVITY_X", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 0));
+  SetVolumeOutputValue("SENSITIVITY_Y", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 2));
+    SetVolumeOutputValue("SENSITIVITY_Z", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 2));
 
 }
 

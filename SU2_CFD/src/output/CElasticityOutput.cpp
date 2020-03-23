@@ -143,17 +143,17 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
   // Residuals
 
-  AddHistoryOutput("RMS_UTOL",   "rms[U]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("RMS_RTOL",   "rms[R]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("RMS_ETOL",   "rms[E]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("RMS_UTOL",   "rms[U]", ScreenOutputFormat::FIXED,  "RMS_RES", "", FieldType::RESIDUAL);
+  AddHistoryOutput("RMS_RTOL",   "rms[R]", ScreenOutputFormat::FIXED,  "RMS_RES", "", FieldType::RESIDUAL);
+  AddHistoryOutput("RMS_ETOL",   "rms[E]", ScreenOutputFormat::FIXED,  "RMS_RES", "", FieldType::RESIDUAL);
 
-  AddHistoryOutput("RMS_DISP_X", "rms[DispX]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("RMS_DISP_X", "rms[DispX]", ScreenOutputFormat::FIXED,  "RMS_RES", "", FieldType::RESIDUAL);
+  AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", ScreenOutputFormat::FIXED,  "RMS_RES", "", FieldType::RESIDUAL);
+  AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", ScreenOutputFormat::FIXED,  "RMS_RES", "", FieldType::RESIDUAL);
 
-  AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", ScreenOutputFormat::FIXED,  "BGS_RES", "", FieldType::RESIDUAL);
+  AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", ScreenOutputFormat::FIXED,  "BGS_RES", "", FieldType::RESIDUAL);
+  AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", ScreenOutputFormat::FIXED,  "BGS_RES", "", FieldType::RESIDUAL);
 
   AddHistoryOutput("VMS",            "VonMises", ScreenOutputFormat::SCIENTIFIC, "", "VMS");
   AddHistoryOutput("LOAD_INCREMENT", "Load[%]",  ScreenOutputFormat::PERCENT, "", "LOAD_INCREMENT");
@@ -166,23 +166,23 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   CVariable* Node_Struc = solver[FEA_SOL]->GetNodes();
   CPoint*    Node_Geo  = geometry->node[iPoint];
 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD_X", iPoint,  Node_Geo->GetCoord(0));
+  SetVolumeOutputValue("COORD_Y", iPoint,  Node_Geo->GetCoord(1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD_Z", iPoint, Node_Geo->GetCoord(2));
 
-  SetVolumeOutputValue("DISPLACEMENT-X", iPoint, Node_Struc->GetSolution(iPoint, 0));
-  SetVolumeOutputValue("DISPLACEMENT-Y", iPoint, Node_Struc->GetSolution(iPoint, 1));
-  if (nDim == 3) SetVolumeOutputValue("DISPLACEMENT-Z", iPoint, Node_Struc->GetSolution(iPoint, 2));
+  SetVolumeOutputValue("DISPLACEMENT_X", iPoint, Node_Struc->GetSolution(iPoint, 0));
+  SetVolumeOutputValue("DISPLACEMENT_Y", iPoint, Node_Struc->GetSolution(iPoint, 1));
+  if (nDim == 3) SetVolumeOutputValue("DISPLACEMENT_Z", iPoint, Node_Struc->GetSolution(iPoint, 2));
 
   if(dynamic){
-    SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Struc->GetSolution_Vel(iPoint, 0));
-    SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Struc->GetSolution_Vel(iPoint, 1));
-    if (nDim == 3) SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Struc->GetSolution_Vel(iPoint, 2));
+    SetVolumeOutputValue("VELOCITY_X", iPoint, Node_Struc->GetSolution_Vel(iPoint, 0));
+    SetVolumeOutputValue("VELOCITY_Y", iPoint, Node_Struc->GetSolution_Vel(iPoint, 1));
+    if (nDim == 3) SetVolumeOutputValue("VELOCITY_Z", iPoint, Node_Struc->GetSolution_Vel(iPoint, 2));
 
-    SetVolumeOutputValue("ACCELERATION-X", iPoint, Node_Struc->GetSolution_Accel(iPoint, 0));
-    SetVolumeOutputValue("ACCELERATION-Y", iPoint, Node_Struc->GetSolution_Accel(iPoint, 1));
-    if (nDim == 3) SetVolumeOutputValue("ACCELERATION-Z", iPoint, Node_Struc->GetSolution_Accel(iPoint, 2));
+    SetVolumeOutputValue("ACCELERATION_X", iPoint, Node_Struc->GetSolution_Accel(iPoint, 0));
+    SetVolumeOutputValue("ACCELERATION_Y", iPoint, Node_Struc->GetSolution_Accel(iPoint, 1));
+    if (nDim == 3) SetVolumeOutputValue("ACCELERATION_Z", iPoint, Node_Struc->GetSolution_Accel(iPoint, 2));
   }
 
   SetVolumeOutputValue("STRESS-XX", iPoint, Node_Struc->GetStress_FEM(iPoint)[0]);
@@ -200,23 +200,23 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
 void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
 
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
+  AddVolumeOutput("COORD_X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD_Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+    AddVolumeOutput("COORD_Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
-  AddVolumeOutput("DISPLACEMENT-X",    "Displacement_x", "SOLUTION", "x-component of the displacement vector");
-  AddVolumeOutput("DISPLACEMENT-Y",    "Displacement_y", "SOLUTION", "y-component of the displacement vector");
-  if (nDim == 3) AddVolumeOutput("DISPLACEMENT-Z", "Displacement_z", "SOLUTION", "z-component of the displacement vector");
+  AddVolumeOutput("DISPLACEMENT_X",    "Displacement_x", "SOLUTION", "x-component of the displacement vector");
+  AddVolumeOutput("DISPLACEMENT_Y",    "Displacement_y", "SOLUTION", "y-component of the displacement vector");
+  if (nDim == 3) AddVolumeOutput("DISPLACEMENT_Z", "Displacement_z", "SOLUTION", "z-component of the displacement vector");
 
   if(dynamic){
-    AddVolumeOutput("VELOCITY-X",    "Velocity_x", "VELOCITY", "x-component of the velocity vector");
-    AddVolumeOutput("VELOCITY-Y",    "Velocity_y", "VELOCITY", "y-component of the velocity vector");
-    if (nDim == 3) AddVolumeOutput("VELOCITY-Z", "Velocity_z", "VELOCITY", "z-component of the velocity vector");
+    AddVolumeOutput("VELOCITY_X",    "Velocity_x", "VELOCITY", "x-component of the velocity vector");
+    AddVolumeOutput("VELOCITY_Y",    "Velocity_y", "VELOCITY", "y-component of the velocity vector");
+    if (nDim == 3) AddVolumeOutput("VELOCITY_Z", "Velocity_z", "VELOCITY", "z-component of the velocity vector");
 
-    AddVolumeOutput("ACCELERATION-X",    "Acceleration_x", "ACCELERATION", "x-component of the acceleration vector");
-    AddVolumeOutput("ACCELERATION-Y",    "Acceleration_y", "ACCELERATION", "y-component of the acceleration vector");
-    if (nDim == 3) AddVolumeOutput("ACCELERATION-Z", "Acceleration_z", "ACCELERATION", "z-component of the acceleration vector");
+    AddVolumeOutput("ACCELERATION_X",    "Acceleration_x", "ACCELERATION", "x-component of the acceleration vector");
+    AddVolumeOutput("ACCELERATION_Y",    "Acceleration_y", "ACCELERATION", "y-component of the acceleration vector");
+    if (nDim == 3) AddVolumeOutput("ACCELERATION_Z", "Acceleration_z", "ACCELERATION", "z-component of the acceleration vector");
   }
 
   AddVolumeOutput("STRESS-XX",    "Sxx", "STRESS", "x-component of the normal stress vector");

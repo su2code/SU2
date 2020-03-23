@@ -40,33 +40,33 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
 
 
   /// DESCRIPTION: Average mass flow
-  AddHistoryOutput("AVG_MASSFLOW",             "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mass flow on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("AVG_MASSFLOW",             "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mass flow on all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average Mach number
-  AddHistoryOutput("AVG_MACH",                 "Avg_Mach",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mach number on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("AVG_MACH",                 "Avg_Mach",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mach number on all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average Temperature
-  AddHistoryOutput("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average temperature on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average temperature on all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average Pressure
-  AddHistoryOutput("AVG_PRESS",                "Avg_Press",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average pressure on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("AVG_PRESS",                "Avg_Press",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average pressure on all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average Density
-  AddHistoryOutput("AVG_DENSITY",              "Avg_Density",               ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average density on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("AVG_DENSITY",              "Avg_Density",               ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average density on all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average Enthalpy
-  AddHistoryOutput("AVG_ENTHALPY",             "Avg_Enthalpy",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average enthalpy on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("AVG_ENTHALPY",             "Avg_Enthalpy",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average enthalpy on all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average velocity in normal direction of the surface
-  AddHistoryOutput("AVG_NORMALVEL",            "Avg_NormalVel",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average normal velocity on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("AVG_NORMALVEL",            "Avg_NormalVel",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average normal velocity on all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// DESCRIPTION: Flow uniformity
-  AddHistoryOutput("UNIFORMITY",               "Uniformity",                ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total flow uniformity on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("UNIFORMITY",               "Uniformity",                ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total flow uniformity on all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary strength
-  AddHistoryOutput("SECONDARY_STRENGTH",       "Secondary_Strength",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total secondary strength on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SECONDARY_STRENGTH",       "Secondary_Strength",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total secondary strength on all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// DESCRIPTION: Momentum distortion
-  AddHistoryOutput("MOMENTUM_DISTORTION",      "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total momentum distortion on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("MOMENTUM_DISTORTION",      "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total momentum distortion on all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary over uniformity
-  AddHistoryOutput("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total secondary over uniformity on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total secondary over uniformity on all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average total temperature
-  AddHistoryOutput("AVG_TOTALTEMP",            "Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total temperature all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("AVG_TOTALTEMP",            "Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total temperature all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average total pressure
-  AddHistoryOutput("AVG_TOTALPRESS",           "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total pressure on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("AVG_TOTALPRESS",           "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total pressure on all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// DESCRIPTION: Pressure drop
-  AddHistoryOutput("PRESSURE_DROP",            "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total pressure drop on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("PRESSURE_DROP",            "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total pressure drop on all markers set in MARKER_ANALYZE", FieldType::COEFFICIENT);
   /// END_GROUP
 
 
@@ -77,33 +77,33 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
   }
 
   /// DESCRIPTION: Average mass flow
-  AddHistoryOutputPerSurface("AVG_MASSFLOW",             "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average mass flow on a marker", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_MASSFLOW",             "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average mass flow on a marker", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average Mach number
-  AddHistoryOutputPerSurface("AVG_MACH",                 "Avg_Mach",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average mach number on a marker", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_MACH",                 "Avg_Mach",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average mach number on a marker", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average Temperature
-  AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average temperature on a marker",HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average temperature on a marker",FieldType::COEFFICIENT);
   /// DESCRIPTION: Average Pressure
-  AddHistoryOutputPerSurface("AVG_PRESS",                "Avg_Press",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average pressure on a marker", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_PRESS",                "Avg_Press",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average pressure on a marker", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average Density
-  AddHistoryOutputPerSurface("AVG_DENSITY",              "Avg_Density",               ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average density on a marker", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_DENSITY",              "Avg_Density",               ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average density on a marker", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average Enthalpy
-  AddHistoryOutputPerSurface("AVG_ENTHALPY",             "Avg_Enthalpy",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average enthalpy on a marker",HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_ENTHALPY",             "Avg_Enthalpy",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average enthalpy on a marker",FieldType::COEFFICIENT);
   /// DESCRIPTION: Average velocity in normal direction of the surface
-  AddHistoryOutputPerSurface("AVG_NORMALVEL",            "Avg_NormalVel",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average normal velocity on a marker",HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_NORMALVEL",            "Avg_NormalVel",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average normal velocity on a marker",FieldType::COEFFICIENT);
   /// DESCRIPTION: Flow uniformity
-  AddHistoryOutputPerSurface("UNIFORMITY",               "Uniformity",                ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Flow uniformity on a marker", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("UNIFORMITY",               "Uniformity",                ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Flow uniformity on a marker", FieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary strength
-  AddHistoryOutputPerSurface("SECONDARY_STRENGTH",       "Secondary_Strength",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Secondary strength on a marker", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SECONDARY_STRENGTH",       "Secondary_Strength",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Secondary strength on a marker", FieldType::COEFFICIENT);
   /// DESCRIPTION: Momentum distortion
-  AddHistoryOutputPerSurface("MOMENTUM_DISTORTION",      "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Momentum distortion on a marker", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENTUM_DISTORTION",      "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Momentum distortion on a marker", FieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary over uniformity
-  AddHistoryOutputPerSurface("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Secondary over uniformity on a marker", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Secondary over uniformity on a marker", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average total temperature
-  AddHistoryOutputPerSurface("AVG_TOTALTEMP",            "Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average total temperature on a marker", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_TOTALTEMP",            "Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average total temperature on a marker", FieldType::COEFFICIENT);
   /// DESCRIPTION: Average total pressure
-  AddHistoryOutputPerSurface("AVG_TOTALPRESS",           "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average total pressure a marker", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_TOTALPRESS",           "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Average total pressure a marker", FieldType::COEFFICIENT);
   /// DESCRIPTION: Pressure drop
-  AddHistoryOutputPerSurface("PRESSURE_DROP",            "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Pressure drop on a marker", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("PRESSURE_DROP",            "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", Marker_Analyze, "Pressure drop on a marker", FieldType::COEFFICIENT);
   /// END_GROUP
 
 }
@@ -679,25 +679,25 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
 
   /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.
   /// DESCRIPTION: Drag coefficient
-  AddHistoryOutput("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total drag coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total drag coefficient on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
   /// DESCRIPTION: Lift coefficient
-  AddHistoryOutput("LIFT",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total lift coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("LIFT",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total lift coefficient on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
   /// DESCRIPTION: Sideforce coefficient
-  AddHistoryOutput("SIDEFORCE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total sideforce coefficient on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SIDEFORCE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total sideforce coefficient on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the x-axis
-  AddHistoryOutput("MOMENT-X",   "CMx",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum x-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("MOMENT_X",   "CMx",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum x-component on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the y-axis
-  AddHistoryOutput("MOMENT-Y",   "CMy",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum y-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("MOMENT_Y",   "CMy",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum y-component on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the z-axis
-  AddHistoryOutput("MOMENT-Z",   "CMz",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum z-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("MOMENT_Z",   "CMz",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total momentum z-component on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
   /// DESCRIPTION: Force in x direction
-  AddHistoryOutput("FORCE-X",    "CFx",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force x-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("FORCE_X",    "CFx",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force x-component on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
   /// DESCRIPTION: Force in y direction
-  AddHistoryOutput("FORCE-Y",    "CFy",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force y-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("FORCE_Y",    "CFy",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force y-component on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
   /// DESCRIPTION: Force in z direction
-  AddHistoryOutput("FORCE-Z",    "CFz",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force z-component on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("FORCE_Z",    "CFz",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total force z-component on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
   /// DESCRIPTION: Lift-to-drag ratio
-  AddHistoryOutput("EFFICIENCY", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF", "Total lift-to-drag ratio on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("EFFICIENCY", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF", "Total lift-to-drag ratio on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
   /// END_GROUP
 
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Aerodynamic coefficients and forces per surface.
@@ -706,33 +706,33 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
   }
   /// DESCRIPTION: Drag coefficient
-  AddHistoryOutputPerSurface("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
   /// DESCRIPTION: Lift coefficient
-  AddHistoryOutputPerSurface("LIFT",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("LIFT",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
   /// DESCRIPTION: Sideforce coefficient
-  AddHistoryOutputPerSurface("SIDEFORCE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SIDEFORCE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the x-axis
-  AddHistoryOutputPerSurface("MOMENT-X",   "CMx",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT_X",   "CMx",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the y-axis
-  AddHistoryOutputPerSurface("MOMENT-Y",   "CMy",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT_Y",   "CMy",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the z-axis
-  AddHistoryOutputPerSurface("MOMENT-Z",   "CMz",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT_Z",   "CMz",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
   /// DESCRIPTION: Force in x direction
-  AddHistoryOutputPerSurface("FORCE-X",    "CFx",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE_X",    "CFx",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
   /// DESCRIPTION: Force in y direction
-  AddHistoryOutputPerSurface("FORCE-Y",    "CFy",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE_Y",    "CFy",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
   /// DESCRIPTION: Force in z direction
-  AddHistoryOutputPerSurface("FORCE-Z",    "CFz",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE_Z",    "CFz",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
   /// DESCRIPTION: Lift-to-drag ratio
-  AddHistoryOutputPerSurface("EFFICIENCY", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("EFFICIENCY", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
   /// END_GROUP
 
   if (config->GetAeroelastic_Simulation()){
     /// BEGIN_GROUP: AEROELASTIC, DESCRIPTION: Aeroelastic plunge, pitch
     /// DESCRIPTION: Aeroelastic plunge
-    AddHistoryOutputPerSurface("PLUNGE", "plunge", ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutputPerSurface("PLUNGE", "plunge", ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, "", FieldType::COEFFICIENT);
     /// DESCRIPTION: Aeroelastic pitch
-    AddHistoryOutputPerSurface("PITCH",  "pitch",  ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, "", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutputPerSurface("PITCH",  "pitch",  ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, "", FieldType::COEFFICIENT);
     /// END_GROUP
   }
   /// DESCRIPTION: Angle of attack
@@ -746,14 +746,14 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
   if (nDim == 3)
     SetHistoryOutputValue("SIDEFORCE", flow_solver->GetTotal_CSF());
   if (nDim == 3){
-    SetHistoryOutputValue("MOMENT-X", flow_solver->GetTotal_CMx());
-    SetHistoryOutputValue("MOMENT-Y", flow_solver->GetTotal_CMy());
+    SetHistoryOutputValue("MOMENT_X", flow_solver->GetTotal_CMx());
+    SetHistoryOutputValue("MOMENT_Y", flow_solver->GetTotal_CMy());
   }
-  SetHistoryOutputValue("MOMENT-Z", flow_solver->GetTotal_CMz());
-  SetHistoryOutputValue("FORCE-X", flow_solver->GetTotal_CFx());
-  SetHistoryOutputValue("FORCE-Y", flow_solver->GetTotal_CFy());
+  SetHistoryOutputValue("MOMENT_Z", flow_solver->GetTotal_CMz());
+  SetHistoryOutputValue("FORCE_X", flow_solver->GetTotal_CFx());
+  SetHistoryOutputValue("FORCE_Y", flow_solver->GetTotal_CFy());
   if (nDim == 3)
-    SetHistoryOutputValue("FORCE-Z", flow_solver->GetTotal_CFz());
+    SetHistoryOutputValue("FORCE_Z", flow_solver->GetTotal_CFz());
   SetHistoryOutputValue("EFFICIENCY", flow_solver->GetTotal_CEff());
 
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -765,14 +765,14 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
     if (nDim == 3)
       SetHistoryOutputPerSurfaceValue("SIDEFORCE", flow_solver->GetSurface_CSF(iMarker_Monitoring), markerName);
     if (nDim == 3){
-      SetHistoryOutputPerSurfaceValue("MOMENT-X", flow_solver->GetSurface_CMx(iMarker_Monitoring), markerName);
-      SetHistoryOutputPerSurfaceValue("MOMENT-Y", flow_solver->GetSurface_CMy(iMarker_Monitoring), markerName);
+      SetHistoryOutputPerSurfaceValue("MOMENT_X", flow_solver->GetSurface_CMx(iMarker_Monitoring), markerName);
+      SetHistoryOutputPerSurfaceValue("MOMENT_Y", flow_solver->GetSurface_CMy(iMarker_Monitoring), markerName);
     }
-    SetHistoryOutputPerSurfaceValue("MOMENT-Z", flow_solver->GetSurface_CMz(iMarker_Monitoring), markerName);
-    SetHistoryOutputPerSurfaceValue("FORCE-X", flow_solver->GetSurface_CFx(iMarker_Monitoring), markerName);
-    SetHistoryOutputPerSurfaceValue("FORCE-Y", flow_solver->GetSurface_CFy(iMarker_Monitoring), markerName);
+    SetHistoryOutputPerSurfaceValue("MOMENT_Z", flow_solver->GetSurface_CMz(iMarker_Monitoring), markerName);
+    SetHistoryOutputPerSurfaceValue("FORCE_X", flow_solver->GetSurface_CFx(iMarker_Monitoring), markerName);
+    SetHistoryOutputPerSurfaceValue("FORCE_Y", flow_solver->GetSurface_CFy(iMarker_Monitoring), markerName);
     if (nDim == 3)
-      SetHistoryOutputPerSurfaceValue("FORCE-Z", flow_solver->GetSurface_CFz(iMarker_Monitoring), markerName);
+      SetHistoryOutputPerSurfaceValue("FORCE_Z", flow_solver->GetSurface_CFz(iMarker_Monitoring), markerName);
 
     SetHistoryOutputPerSurfaceValue("EFFICIENCY", flow_solver->GetSurface_CEff(iMarker_Monitoring), markerName);
     if (config->GetAeroelastic_Simulation()){
@@ -2862,10 +2862,10 @@ bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool f
 
 void CFlowOutput::SetTimeAveragedFields(){
   AddVolumeOutput("MEAN_DENSITY", "MeanDensity", "TIME_AVERAGE", "Mean density");
-  AddVolumeOutput("MEAN_VELOCITY-X", "MeanVelocity_x", "TIME_AVERAGE", "Mean velocity x-component");
-  AddVolumeOutput("MEAN_VELOCITY-Y", "MeanVelocity_y", "TIME_AVERAGE", "Mean velocity y-component");
+  AddVolumeOutput("MEAN_VELOCITY_X", "MeanVelocity_x", "TIME_AVERAGE", "Mean velocity x-component");
+  AddVolumeOutput("MEAN_VELOCITY_Y", "MeanVelocity_y", "TIME_AVERAGE", "Mean velocity y-component");
   if (nDim == 3)
-    AddVolumeOutput("MEAN_VELOCITY-Z", "MeanVelocity_z", "TIME_AVERAGE", "Mean velocity z-component");
+    AddVolumeOutput("MEAN_VELOCITY_Z", "MeanVelocity_z", "TIME_AVERAGE", "Mean velocity z-component");
 
   AddVolumeOutput("MEAN_PRESSURE", "MeanPressure", "TIME_AVERAGE", "Mean pressure");
   AddVolumeOutput("RMS_U",   "RMS[u]", "TIME_AVERAGE", "RMS u");
@@ -2888,10 +2888,10 @@ void CFlowOutput::SetTimeAveragedFields(){
 
 void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flow){
   SetAvgVolumeOutputValue("MEAN_DENSITY", iPoint, Node_Flow->GetDensity(iPoint));
-  SetAvgVolumeOutputValue("MEAN_VELOCITY-X", iPoint, Node_Flow->GetVelocity(iPoint,0));
-  SetAvgVolumeOutputValue("MEAN_VELOCITY-Y", iPoint, Node_Flow->GetVelocity(iPoint,1));
+  SetAvgVolumeOutputValue("MEAN_VELOCITY_X", iPoint, Node_Flow->GetVelocity(iPoint,0));
+  SetAvgVolumeOutputValue("MEAN_VELOCITY_Y", iPoint, Node_Flow->GetVelocity(iPoint,1));
   if (nDim == 3)
-    SetAvgVolumeOutputValue("MEAN_VELOCITY-Z", iPoint, Node_Flow->GetVelocity(iPoint,2));
+    SetAvgVolumeOutputValue("MEAN_VELOCITY_Z", iPoint, Node_Flow->GetVelocity(iPoint,2));
 
   SetAvgVolumeOutputValue("MEAN_PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
 
@@ -2905,9 +2905,9 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flo
     SetAvgVolumeOutputValue("RMS_UW", iPoint,  Node_Flow->GetVelocity(iPoint,2) * Node_Flow->GetVelocity(iPoint,0));
   }
 
-  const su2double umean  = GetVolumeOutputValue("MEAN_VELOCITY-X", iPoint);
+  const su2double umean  = GetVolumeOutputValue("MEAN_VELOCITY_X", iPoint);
   const su2double uumean = GetVolumeOutputValue("RMS_U", iPoint);
-  const su2double vmean  = GetVolumeOutputValue("MEAN_VELOCITY-Y", iPoint);
+  const su2double vmean  = GetVolumeOutputValue("MEAN_VELOCITY_Y", iPoint);
   const su2double vvmean = GetVolumeOutputValue("RMS_V", iPoint);
   const su2double uvmean = GetVolumeOutputValue("RMS_UV", iPoint);
   const su2double pmean  = GetVolumeOutputValue("MEAN_PRESSURE", iPoint);
@@ -2918,7 +2918,7 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flo
   SetVolumeOutputValue("UVPRIME", iPoint, -(umean*vmean - uvmean));
   SetVolumeOutputValue("PPRIME",  iPoint, -(pmean*pmean - ppmean));
   if (nDim == 3){
-    const su2double wmean  = GetVolumeOutputValue("MEAN_VELOCITY-Z", iPoint);
+    const su2double wmean  = GetVolumeOutputValue("MEAN_VELOCITY_Z", iPoint);
     const su2double wwmean = GetVolumeOutputValue("RMS_W", iPoint);
     const su2double uwmean = GetVolumeOutputValue("RMS_UW", iPoint);
     const su2double vwmean = GetVolumeOutputValue("RMS_VW", iPoint);

@@ -51,10 +51,10 @@ CMeshOutput::~CMeshOutput(void) {}
 void CMeshOutput::SetVolumeOutputFields(CConfig *config){
 
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
+  AddVolumeOutput("COORD_X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD_Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+    AddVolumeOutput("COORD_Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
 
 }
@@ -63,9 +63,9 @@ void CMeshOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
 
   CPoint*    Node_Geo  = geometry->node[iPoint];
 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD_X", iPoint,  Node_Geo->GetCoord(0));
+  SetVolumeOutputValue("COORD_Y", iPoint,  Node_Geo->GetCoord(1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD_Z", iPoint, Node_Geo->GetCoord(2));
 
 }

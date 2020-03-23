@@ -51,8 +51,8 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
     if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
     requestedScreenFields.emplace_back("INNER_ITER");
     requestedScreenFields.emplace_back("RMS_PRESSURE");
-    requestedScreenFields.emplace_back("RMS_VELOCITY-X");
-    requestedScreenFields.emplace_back("RMS_VELOCITY-Y");
+    requestedScreenFields.emplace_back("RMS_VELOCITY_X");
+    requestedScreenFields.emplace_back("RMS_VELOCITY_Y");
     nRequestedScreenFields = requestedScreenFields.size();
   }
 
@@ -93,28 +93,28 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
   /// DESCRIPTION: Root-mean square residual of the pressure.
-  AddHistoryOutput("RMS_PRESSURE",   "rms[P]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the pressure.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("RMS_PRESSURE",   "rms[P]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the pressure.", FieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the velocity x-component.
-  AddHistoryOutput("RMS_VELOCITY-X", "rms[U]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity x-component.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("RMS_VELOCITY_X", "rms[U]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity x-component.", FieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the velocity y-component.
-  AddHistoryOutput("RMS_VELOCITY-Y", "rms[V]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity y-component.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("RMS_VELOCITY_Y", "rms[V]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity y-component.", FieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the velocity z-component.
-  if (nDim == 3) AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("RMS_VELOCITY_Z", "rms[W]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity z-component.", FieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
+  if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", FieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the radiative energy (P1 model).
-  if (config->AddRadiation()) AddHistoryOutput("RMS_RAD_ENERGY", "rms[E_Rad]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the radiative energy.", HistoryFieldType::RESIDUAL);
+  if (config->AddRadiation()) AddHistoryOutput("RMS_RAD_ENERGY", "rms[E_Rad]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the radiative energy.", FieldType::RESIDUAL);
 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
-    AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", FieldType::RESIDUAL);
     break;
   case SST: case SST_SUST:
     /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).
-    AddHistoryOutput("RMS_TKE", "rms[k]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("RMS_TKE", "rms[k]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", FieldType::RESIDUAL);
     /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).
-    AddHistoryOutput("RMS_DISSIPATION",    "rms[w]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("RMS_DISSIPATION",    "rms[w]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", FieldType::RESIDUAL);
     break;
   default: break;
   }
@@ -122,28 +122,28 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
   /// DESCRIPTION: Maximum residual of the pressure.
-  AddHistoryOutput("MAX_PRESSURE",   "max[P]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the pressure.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("MAX_PRESSURE",   "max[P]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the pressure.", FieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity x-component.
-  AddHistoryOutput("MAX_VELOCITY-X", "max[U]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the velocity x-component.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("MAX_VELOCITY_X", "max[U]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the velocity x-component.", FieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity y-component.
-  AddHistoryOutput("MAX_VELOCITY-Y", "max[V]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the velocity y-component.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("MAX_VELOCITY_Y", "max[V]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the velocity y-component.", FieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity z-component.
   if (nDim == 3)
-    AddHistoryOutput("MAX_VELOCITY-Z", "max[W]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("MAX_VELOCITY_Z", "max[W]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the velocity z-component.", FieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
   if (heat || weakly_coupled_heat)
-    AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Root-mean square residual of the temperature.", FieldType::RESIDUAL);
 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", FieldType::RESIDUAL);
     break;
   case SST: case SST_SUST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
-    AddHistoryOutput("MAX_TKE", "max[k]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("MAX_TKE", "max[k]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", FieldType::RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).
-    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", FieldType::RESIDUAL);
     break;
   default: break;
   }
@@ -151,30 +151,30 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block-gauss seidel residuals of the SOLUTION variables.
   /// DESCRIPTION: Maximum residual of the pressure.
-  AddHistoryOutput("BGS_PRESSURE",   "bgs[P]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the pressure.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("BGS_PRESSURE",   "bgs[P]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the pressure.", FieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity x-component.
-  AddHistoryOutput("BGS_VELOCITY-X", "bgs[U]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the velocity x-component.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("BGS_VELOCITY_X", "bgs[U]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the velocity x-component.", FieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity y-component.
-  AddHistoryOutput("BGS_VELOCITY-Y", "bgs[V]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the velocity y-component.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("BGS_VELOCITY_Y", "bgs[V]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the velocity y-component.", FieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity z-component.
   if (nDim == 3)
-    AddHistoryOutput("BGS_VELOCITY-Z", "bgs[W]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("BGS_VELOCITY_Z", "bgs[W]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the velocity z-component.", FieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
   if (heat || weakly_coupled_heat)
-    AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", FieldType::RESIDUAL);
   /// DESCRIPTION: Multizone residual of the radiative energy (P1 model).
-  if (config->AddRadiation()) AddHistoryOutput("BGS_RAD_ENERGY", "bgs[E_Rad]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the radiative energy.", HistoryFieldType::RESIDUAL);
+  if (config->AddRadiation()) AddHistoryOutput("BGS_RAD_ENERGY", "bgs[E_Rad]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the radiative energy.", FieldType::RESIDUAL);
 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).", FieldType::RESIDUAL);
     break;
   case SST: case SST_SUST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
-    AddHistoryOutput("BGS_TKE", "bgs[k]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("BGS_TKE", "bgs[k]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).", FieldType::RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).
-    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", FieldType::RESIDUAL);
     break;
   default: break;
   }
@@ -182,11 +182,11 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
   /// DESCRIPTION: Total heatflux
-  AddHistoryOutput("HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", FieldType::COEFFICIENT);
   /// DESCRIPTION: Maximal heatflux
-  AddHistoryOutput("HEATFLUX_MAX", "maxHF",    ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("HEATFLUX_MAX", "maxHF",    ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", FieldType::COEFFICIENT);
   /// DESCRIPTION: Temperature
-  AddHistoryOutput("TEMPERATURE", "Temp", ScreenOutputFormat::SCIENTIFIC, "HEAT",  "Total avg. temperature on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("TEMPERATURE", "Temp", ScreenOutputFormat::SCIENTIFIC, "HEAT",  "Total avg. temperature on all surfaces set with MARKER_MONITORING.", FieldType::COEFFICIENT);
   /// END_GROUP
 
   /// DESCRIPTION: Angle of attack
@@ -228,9 +228,9 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   CSolver* mesh_solver = solver[MESH_SOL];
 
   SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
-  SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
-  SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
-  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(3)));
+  SetHistoryOutputValue("RMS_VELOCITY_X", log10(flow_solver->GetRes_RMS(1)));
+  SetHistoryOutputValue("RMS_VELOCITY_Y", log10(flow_solver->GetRes_RMS(2)));
+  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY_Z", log10(flow_solver->GetRes_RMS(3)));
 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -247,9 +247,9 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
 
   SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
-  SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
-  SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
-  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
+  SetHistoryOutputValue("MAX_VELOCITY_X", log10(flow_solver->GetRes_Max(1)));
+  SetHistoryOutputValue("MAX_VELOCITY_Y", log10(flow_solver->GetRes_Max(2)));
+  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY_Z", log10(flow_solver->GetRes_Max(3)));
 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -263,9 +263,9 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   if (multiZone){
     SetHistoryOutputValue("BGS_PRESSURE", log10(flow_solver->GetRes_BGS(0)));
-    SetHistoryOutputValue("BGS_VELOCITY-X", log10(flow_solver->GetRes_BGS(1)));
-    SetHistoryOutputValue("BGS_VELOCITY-Y", log10(flow_solver->GetRes_BGS(2)));
-    if (nDim == 3) SetHistoryOutputValue("BGS_VELOCITY-Z", log10(flow_solver->GetRes_BGS(3)));
+    SetHistoryOutputValue("BGS_VELOCITY_X", log10(flow_solver->GetRes_BGS(1)));
+    SetHistoryOutputValue("BGS_VELOCITY_Y", log10(flow_solver->GetRes_BGS(2)));
+    if (nDim == 3) SetHistoryOutputValue("BGS_VELOCITY_Z", log10(flow_solver->GetRes_BGS(3)));
 
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -337,17 +337,17 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
+  AddVolumeOutput("COORD_X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD_Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+    AddVolumeOutput("COORD_Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
   // SOLUTION variables
   AddVolumeOutput("PRESSURE",   "Pressure",   "SOLUTION", "Pressure");
-  AddVolumeOutput("VELOCITY-X", "Velocity_x", "SOLUTION", "x-component of the velocity vector");
-  AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
+  AddVolumeOutput("VELOCITY_X", "Velocity_x", "SOLUTION", "x-component of the velocity vector");
+  AddVolumeOutput("VELOCITY_Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3)
-    AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
+    AddVolumeOutput("VELOCITY_Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
   if (heat || weakly_coupled_heat)
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
 
@@ -366,14 +366,14 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
   // Radiation variables
   if (config->AddRadiation())
-    AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "SOLUTION", "Radiative Energy");
+    AddVolumeOutput("P1_RAD", "Radiative_Energy(P1)", "SOLUTION", "Radiative Energy");
 
   // Grid velocity
   if (config->GetGrid_Movement()){
-    AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
-    AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY", "y-component of the grid velocity vector");
+    AddVolumeOutput("GRID_VELOCITY_X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
+    AddVolumeOutput("GRID_VELOCITY_Y", "Grid_Velocity_y", "GRID_VELOCITY", "y-component of the grid velocity vector");
     if (nDim == 3 )
-      AddVolumeOutput("GRID_VELOCITY-Z", "Grid_Velocity_z", "GRID_VELOCITY", "z-component of the grid velocity vector");
+      AddVolumeOutput("GRID_VELOCITY_Z", "Grid_Velocity_z", "GRID_VELOCITY", "z-component of the grid velocity vector");
   }
 
   // Primitive variables
@@ -383,10 +383,10 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (config->GetKind_Solver() == INC_RANS || config->GetKind_Solver() == INC_NAVIER_STOKES){
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
 
-    AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
-    AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
+    AddVolumeOutput("SKIN_FRICTION_X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
+    AddVolumeOutput("SKIN_FRICTION_Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
     if (nDim == 3)
-      AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
+      AddVolumeOutput("SKIN_FRICTION_Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
 
     AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
     AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
@@ -403,10 +403,10 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
   //Residuals
   AddVolumeOutput("RES_PRESSURE", "Residual_Pressure", "RESIDUAL", "Residual of the pressure");
-  AddVolumeOutput("RES_VELOCITY-X", "Residual_Velocity_x", "RESIDUAL", "Residual of the x-velocity component");
-  AddVolumeOutput("RES_VELOCITY-Y", "Residual_Velocity_y", "RESIDUAL", "Residual of the y-velocity component");
+  AddVolumeOutput("RES_VELOCITY_X", "Residual_Velocity_x", "RESIDUAL", "Residual of the x-velocity component");
+  AddVolumeOutput("RES_VELOCITY_Y", "Residual_Velocity_y", "RESIDUAL", "Residual of the y-velocity component");
   if (nDim == 3)
-    AddVolumeOutput("RES_VELOCITY-Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
+    AddVolumeOutput("RES_VELOCITY_Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
   AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
 
   switch(config->GetKind_Turb_Model()){
@@ -424,10 +424,10 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
   // Limiter values
   AddVolumeOutput("LIMITER_PRESSURE", "Limiter_Pressure", "LIMITER", "Limiter value of the pressure");
-  AddVolumeOutput("LIMITER_VELOCITY-X", "Limiter_Velocity_x", "LIMITER", "Limiter value of the x-velocity");
-  AddVolumeOutput("LIMITER_VELOCITY-Y", "Limiter_Velocity_y", "LIMITER", "Limiter value of the y-velocity");
+  AddVolumeOutput("LIMITER_VELOCITY_X", "Limiter_Velocity_x", "LIMITER", "Limiter value of the x-velocity");
+  AddVolumeOutput("LIMITER_VELOCITY_Y", "Limiter_Velocity_y", "LIMITER", "Limiter value of the y-velocity");
   if (nDim == 3)
-    AddVolumeOutput("LIMITER_VELOCITY-Z", "Limiter_Velocity_z", "LIMITER", "Limiter value of the z-velocity");
+    AddVolumeOutput("LIMITER_VELOCITY_Z", "Limiter_Velocity_z", "LIMITER", "Limiter value of the z-velocity");
   AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
 
   switch(config->GetKind_Turb_Model()){
@@ -480,16 +480,16 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   CPoint*    Node_Geo  = geometry->node[iPoint];
 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD_X", iPoint,  Node_Geo->GetCoord(0));
+  SetVolumeOutputValue("COORD_Y", iPoint,  Node_Geo->GetCoord(1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD_Z", iPoint, Node_Geo->GetCoord(2));
 
   SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
-  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
-  SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
+  SetVolumeOutputValue("VELOCITY_X", iPoint, Node_Flow->GetSolution(iPoint, 1));
+  SetVolumeOutputValue("VELOCITY_Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
   if (nDim == 3){
-    SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
+    SetVolumeOutputValue("VELOCITY_Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
     if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, 4));
   } else {
     if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, 3));
@@ -512,14 +512,14 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   // Radiation solver
   if (config->AddRadiation()){
     Node_Rad = solver[RAD_SOL]->GetNodes();
-    SetVolumeOutputValue("P1-RAD", iPoint, Node_Rad->GetSolution(iPoint,0));
+    SetVolumeOutputValue("P1_RAD", iPoint, Node_Rad->GetSolution(iPoint,0));
   }
 
   if (config->GetGrid_Movement()){
-    SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel()[0]);
-    SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel()[1]);
+    SetVolumeOutputValue("GRID_VELOCITY_X", iPoint, Node_Geo->GetGridVel()[0]);
+    SetVolumeOutputValue("GRID_VELOCITY_Y", iPoint, Node_Geo->GetGridVel()[1]);
     if (nDim == 3)
-      SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel()[2]);
+      SetVolumeOutputValue("GRID_VELOCITY_Z", iPoint, Node_Geo->GetGridVel()[2]);
   }
 
   su2double VelMag = 0.0;
@@ -543,10 +543,10 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
 
   SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
-  SetVolumeOutputValue("RES_VELOCITY-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
-  SetVolumeOutputValue("RES_VELOCITY-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
+  SetVolumeOutputValue("RES_VELOCITY_X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
+  SetVolumeOutputValue("RES_VELOCITY_Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
   if (nDim == 3){
-    SetVolumeOutputValue("RES_VELOCITY-Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
+    SetVolumeOutputValue("RES_VELOCITY_Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
     SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 4));
   } else {
     SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
@@ -566,10 +566,10 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
 
   SetVolumeOutputValue("LIMITER_PRESSURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 0));
-  SetVolumeOutputValue("LIMITER_VELOCITY-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
-  SetVolumeOutputValue("LIMITER_VELOCITY-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));
+  SetVolumeOutputValue("LIMITER_VELOCITY_X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
+  SetVolumeOutputValue("LIMITER_VELOCITY_Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));
   if (nDim == 3){
-    SetVolumeOutputValue("LIMITER_VELOCITY-Z", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
+    SetVolumeOutputValue("LIMITER_VELOCITY_Z", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
     SetVolumeOutputValue("LIMITER_TEMPERATURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 4));
   } else {
     SetVolumeOutputValue("LIMITER_TEMPERATURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
@@ -610,10 +610,10 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 void CFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
 
   if ((config->GetKind_Solver() == INC_NAVIER_STOKES) || (config->GetKind_Solver()  == INC_RANS)) {
-    SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
-    SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
+    SetVolumeOutputValue("SKIN_FRICTION_X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
+    SetVolumeOutputValue("SKIN_FRICTION_Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
     if (nDim == 3)
-      SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
+      SetVolumeOutputValue("SKIN_FRICTION_Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
 
     if (weakly_coupled_heat)
       SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[HEAT_SOL]->GetHeatFlux(iMarker, iVertex));

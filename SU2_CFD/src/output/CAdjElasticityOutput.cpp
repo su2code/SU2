@@ -93,9 +93,9 @@ CAdjElasticityOutput::~CAdjElasticityOutput(void) {}
 void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
   // Residuals
-  AddHistoryOutput("ADJOINT_DISP_X", "rms[Ux_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the X displacements.", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("ADJOINT_DISP_Y", "rms[Uy_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the Y displacements.", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("ADJOINT_DISP_Z", "rms[Uz_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the Z displacements.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("ADJOINT_DISP_X", "rms[Ux_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the X displacements.", FieldType::RESIDUAL);
+  AddHistoryOutput("ADJOINT_DISP_Y", "rms[Uy_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the Y displacements.", FieldType::RESIDUAL);
+  AddHistoryOutput("ADJOINT_DISP_Z", "rms[Uz_adj]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of the Z displacements.", FieldType::RESIDUAL);
 
   //Sensitivities
   AddHistoryOutput("SENS_E", "Sens[E]",  ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "");
@@ -134,48 +134,48 @@ void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, 
   CVariable* Node_Struc = solver[ADJFEA_SOL]->GetNodes();
   CPoint*    Node_Geo  = geometry->node[iPoint];
 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD_X", iPoint,  Node_Geo->GetCoord(0));
+  SetVolumeOutputValue("COORD_Y", iPoint,  Node_Geo->GetCoord(1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD_Z", iPoint, Node_Geo->GetCoord(2));
 
-  SetVolumeOutputValue("ADJOINT-X", iPoint, Node_Struc->GetSolution(iPoint, 0));
-  SetVolumeOutputValue("ADJOINT-Y", iPoint, Node_Struc->GetSolution(iPoint, 1));
+  SetVolumeOutputValue("ADJOINT_X", iPoint, Node_Struc->GetSolution(iPoint, 0));
+  SetVolumeOutputValue("ADJOINT_Y", iPoint, Node_Struc->GetSolution(iPoint, 1));
   if (nVar_FEM == 3)
-    SetVolumeOutputValue("ADJOINT-Z", iPoint, Node_Struc->GetSolution(iPoint, 2));
+    SetVolumeOutputValue("ADJOINT_Z", iPoint, Node_Struc->GetSolution(iPoint, 2));
 
-  SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_Struc->GetSensitivity(iPoint, 0));
-  SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_Struc->GetSensitivity(iPoint, 1));
+  SetVolumeOutputValue("SENSITIVITY_X", iPoint, Node_Struc->GetSensitivity(iPoint, 0));
+  SetVolumeOutputValue("SENSITIVITY_Y", iPoint, Node_Struc->GetSensitivity(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_Struc->GetSensitivity(iPoint, 2));
+    SetVolumeOutputValue("SENSITIVITY_Z", iPoint, Node_Struc->GetSensitivity(iPoint, 2));
 }
 
 void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
 
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
+  AddVolumeOutput("COORD_X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD_Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+    AddVolumeOutput("COORD_Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
   /// BEGIN_GROUP: SOLUTION, DESCRIPTION: Adjoint variables of the current objective function.
   /// DESCRIPTION: Adjoint x-component.
-  AddVolumeOutput("ADJOINT-X", "Adjoint_x", "SOLUTION", "adjoint of displacement in the x direction");
+  AddVolumeOutput("ADJOINT_X", "Adjoint_x", "SOLUTION", "adjoint of displacement in the x direction");
   /// DESCRIPTION: Adjoint y-component.
-  AddVolumeOutput("ADJOINT-Y", "Adjoint_y", "SOLUTION", "adjoint of displacement in the y direction");
+  AddVolumeOutput("ADJOINT_Y", "Adjoint_y", "SOLUTION", "adjoint of displacement in the y direction");
   if (nVar_FEM == 3)
     /// DESCRIPTION: Adjoint z-component.
-    AddVolumeOutput("ADJOINT-Z", "Adjoint_z", "SOLUTION", "adjoint of displacement in the z direction");
+    AddVolumeOutput("ADJOINT_Z", "Adjoint_z", "SOLUTION", "adjoint of displacement in the z direction");
   /// END_GROUP
 
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
   /// DESCRIPTION: Sensitivity x-component.
-  AddVolumeOutput("SENSITIVITY-X", "Sensitivity_x", "SENSITIVITY", "geometric sensitivity in the x direction");
+  AddVolumeOutput("SENSITIVITY_X", "Sensitivity_x", "SENSITIVITY", "geometric sensitivity in the x direction");
   /// DESCRIPTION: Sensitivity y-component.
-  AddVolumeOutput("SENSITIVITY-Y", "Sensitivity_y", "SENSITIVITY", "geometric sensitivity  in the y direction");
+  AddVolumeOutput("SENSITIVITY_Y", "Sensitivity_y", "SENSITIVITY", "geometric sensitivity  in the y direction");
   if (nDim == 3)
     /// DESCRIPTION: Sensitivity z-component.
-    AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_z", "SENSITIVITY", "geometric sensitivity  in the z direction");
+    AddVolumeOutput("SENSITIVITY_Z", "Sensitivity_z", "SENSITIVITY", "geometric sensitivity  in the z direction");
   /// END_GROUP
 
 }
