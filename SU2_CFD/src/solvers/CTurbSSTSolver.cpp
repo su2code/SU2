@@ -198,14 +198,14 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   VelMag = sqrt(VelMag);
 
   kine_Inf  = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
-  omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
+  omega_Inf = rhoInf*kine_Inf/(muLamInf*min(1.1,viscRatio));
 
   /*--- BCM: Testing Spalart/Rumsey floor value for external flows ---*/
   kine_Inf  = min(kine_Inf, VelMag*VelMag*1e-6);
   omega_Inf = max(omega_Inf, 5.0*VelMag/config->GetLength_Reynolds());
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
-  muT_Inf = rhoInf*kine_Inf/omega_Inf;
+  muT_Inf = rhoInf*kine_Inf/omega_Inf;  
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
