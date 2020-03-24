@@ -375,7 +375,7 @@ inline void CNumerics::SetNormal(su2double *val_normal) { Normal = val_normal; }
 
 inline void CNumerics::SetVolume(su2double val_volume) { Volume = val_volume; }
 
-inline void CNumerics::SetPartialVolume(su2double *val_vol_i, su2double val_vol_j) {
+inline void CNumerics::SetPartialVolume(su2double val_vol_i, su2double val_vol_j) {
   PartialVolume_i = val_vol_i;
   PartialVolume_j = val_vol_j;
 }

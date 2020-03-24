@@ -689,6 +689,13 @@ public:
    * \param[in] val_volume Volume of the control volume.
    */
   void SetVolume(su2double val_volume);
+
+  /*!
+   * \brief Set the value of the volume of the partial control volume.
+   * \param[in] val_vol_i - Volume of the partial control volume for node i.
+   * \param[in] val_vol_j - Volume of the partial control volume for node j.
+   */
+  void SetPartialVolume(su2double val_vol_i, su2double val_vol_j);
   
   /*!
    * \brief Retrieves the value of the species density in the primitive variable vector.
