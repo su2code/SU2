@@ -725,7 +725,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       conv_numerics->SetNormal(Normal);
 
       /*--- Set partial control volume ---*/
-      const unsigned long iEdge = geometry->FindEdge(iPoint,Point_Normal);
+      const unsigned long iEdge = geometry->FindEdge(iPoint,geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor());
       conv_numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
                                       geometry->edge[iEdge]->GetPartialVolume(1));
 
