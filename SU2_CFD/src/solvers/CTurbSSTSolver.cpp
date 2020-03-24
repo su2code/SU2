@@ -549,8 +549,12 @@ void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_conta
 void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, jPoint, iVertex, total_index;
-  unsigned short iDim, iVar;
+  unsigned short iDim, jDim, iVar;
   su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
+  su2double Tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
+            Delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
+            TauElem[3] = {0.0,0.0,0.0}, TauNormal, TauTangent[3] = {0.0,0.0,0.0},
+            UnitNormal[3] = {0.0,0.0,0.0},
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -592,9 +596,48 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       }
 
       su2double Density_Wall  = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-      su2double Tau_Wall      = solver_container[FLOW_SOL]->GetNodes()->GetTauWall(iPoint);
       
       su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+
+      su2double *GradPrimVar = nodes->GetGradient_Primitive(iPoint);
+
+      su2double *Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+      su2double Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+
+      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+
+      su2double divu = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) divu += GradPrimVar[iDim+1][iDim];
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0 ; jDim < nDim; jDim++) {
+          Tau[iDim][jDim] = Lam_Visc_Wall*(  GradPrimVar[jDim+1][iDim]
+                                           + GradPrimVar[iDim+1][jDim]) -
+          TWO3*Lam_Visc_Wall*div_vel*delta[iDim][jDim];
+        }
+        TauElem[iDim] = 0.0;
+        for (jDim = 0; jDim < nDim; jDim++)
+          TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+      }
+
+      /*--- Compute wall shear stress as the magnitude of the wall-tangential
+       component of the shear stress tensor---*/
+
+      TauNormal = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        TauNormal += TauElem[iDim] * UnitNormal[iDim];
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+
+      su2double Tau_Wall = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Tau_Wall += TauTangent[iDim]*TauTangent[iDim];
+      Tau_Wall = sqrt(Tau_Wall);
+
       su2double U_Tau = sqrt(Tau_Wall / Density_Wall);
 
       // if (Density_Wall * U_Tau * distance / Lam_Visc_Wall >= 5.0) {
