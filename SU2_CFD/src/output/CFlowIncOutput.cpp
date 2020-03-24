@@ -189,8 +189,6 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("TEMPERATURE", "Temp", ScreenOutputFormat::SCIENTIFIC, "HEAT",  "Total avg. temperature on all surfaces set with MARKER_MONITORING.", FieldType::COEFFICIENT);
   /// END_GROUP
 
-  /// DESCRIPTION: Angle of attack
-  AddHistoryOutput("AOA",         "AoA",                      ScreenOutputFormat::SCIENTIFIC,"AOA", "Angle of attack");
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");

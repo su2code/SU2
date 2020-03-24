@@ -107,6 +107,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig
 
   unsigned short iZone;
   string name, header, group;
+  FieldType type;
 
   /*--- Set the fields ---*/
 
@@ -119,7 +120,19 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig
         name   = field->first + "[" + PrintingToolbox::to_string(iZone) + "]";
         header = field->second.fieldName + "[" + PrintingToolbox::to_string(iZone) + "]";
         group  = field->second.outputGroup + "[" + PrintingToolbox::to_string(iZone) + "]";
-        AddHistoryOutput(name, header, field->second.screenFormat, group, "", field->second.fieldType );
+
+        switch(field->second.fieldType){
+          case FieldType::RESIDUAL:
+            type = FieldType::AUTO_RESIDUAL;
+            break;
+          case FieldType::COEFFICIENT:
+            type = FieldType::AUTO_COEFFICIENT;
+            break;
+          default:
+            type = field->second.fieldType;
+        }
+
+        AddHistoryOutput(name, header, field->second.screenFormat, group, "", type );
       }
     }
   }
