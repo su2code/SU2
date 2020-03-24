@@ -4584,6 +4584,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(PartialVolume_i); AD::SetPreaccIn(PartialVolume_j);
 
   unsigned short iVar, jVar, iDim;
 
@@ -4857,6 +4858,7 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(PartialVolume_i); AD::SetPreaccIn(PartialVolume_j);
 
   unsigned short iVar, jVar, iDim;
 

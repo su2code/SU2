@@ -163,6 +163,7 @@ void CAvgGrad_Scalar::ComputeResidual(su2double *val_residual,
     AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_j ,nVar);
   }
   ExtraADPreaccIn();
+  AD::SetPreaccIn(PartialVolume_i); AD::SetPreaccIn(PartialVolume_j);
 
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6); AD::SetPreaccIn(V_j, nDim+6);
