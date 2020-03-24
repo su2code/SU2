@@ -198,11 +198,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   VelMag = sqrt(VelMag);
 
   kine_Inf  = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
-  omega_Inf = rhoInf*kine_Inf/(muLamInf*min(0.9,viscRatio));
-
-  // /*--- BCM: Testing Spalart/Rumsey floor value for external flows ---*/
-  // kine_Inf  = min(kine_Inf, VelMag*VelMag*1e-6);
-  // omega_Inf = max(omega_Inf, 5.0*VelMag/config->GetLength_Reynolds());
+  omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   muT_Inf = rhoInf*kine_Inf/omega_Inf;  
@@ -564,13 +560,13 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- distance to closest neighbor ---*/
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      // distance = 0.0;
-      // for (iDim = 0; iDim < nDim; iDim++) {
-      //   distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*
-      //   (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
-      // }
-      // distance = sqrt(distance);
-      distance = geometry->node[jPoint]->GetWall_Distance();
+      distance = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*
+        (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+      }
+      distance = sqrt(distance);
+      // distance = geometry->node[jPoint]->GetWall_Distance();
 
       /*--- Set wall values ---*/
 
@@ -582,7 +578,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       // Solution[0] = 0.0;
       // Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
       Solution[0] = 0.0;
-      Solution[1] = 60.0*laminar_viscosity/(beta_1*distance*distance);
+      Solution[1] = 60.0*laminar_viscosity/(beta_1*distance*distance+EPS*EPS);
 
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
@@ -595,19 +591,19 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         Jacobian.DeleteValsRowi(total_index);
       }
 
-      su2double Density_Wall  = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-      su2double Tau_Wall      = solver_container[FLOW_SOL]->GetNodes()->GetTauWall(iPoint);
+      // su2double Density_Wall  = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      // su2double Tau_Wall      = solver_container[FLOW_SOL]->GetNodes()->GetTauWall(iPoint);
       
-      su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-      su2double U_Tau = sqrt(Tau_Wall / Density_Wall);
+      // su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+      // su2double U_Tau = sqrt(Tau_Wall / Density_Wall);
 
-      su2double eddy_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(jPoint);
-      su2double Omega_i = 6. * Lam_Visc_Wall / (beta_1 * Density_Wall * pow(distance, 2.0) + EPS*EPS);
-      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance + EPS);
-      su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
+      // su2double eddy_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(jPoint);
+      // su2double Omega_i = 6. * Lam_Visc_Wall / (beta_1 * Density_Wall * pow(distance, 2.0) + EPS*EPS);
+      // su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance + EPS);
+      // su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
       
-      Solution[0] = Omega * eddy_viscosity;
-      Solution[1] = density*Omega;
+      // Solution[0] = Omega * eddy_viscosity;
+      // Solution[1] = density*Omega;
 
       // nodes->SetSolution_Old(jPoint,1,Solution[1]);
       // nodes->SetSolution(jPoint,1,Solution[1]);
@@ -617,15 +613,15 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       // total_index = jPoint*nVar+1;
       // Jacobian.DeleteValsRowi(total_index);
 
-      nodes->SetSolution_Old(jPoint,Solution);
-      nodes->SetSolution(jPoint,Solution);
-      LinSysRes.SetBlock_Zero(jPoint);
+      // // nodes->SetSolution_Old(jPoint,Solution);
+      // // nodes->SetSolution(jPoint,Solution);
+      // // LinSysRes.SetBlock_Zero(jPoint);
       
-      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = jPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
-      }
+      // // /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---/*
+      // // for (iVar = 0; iVar < nVar; iVar++) {
+      // //   total_index = jPoint*nVar+iVar;
+      // //   Jacobian.DeleteValsRowi(total_index);
+      // // }
 
     }
   }
