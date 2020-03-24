@@ -599,7 +599,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       
       su2double LamViscWall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-      su2double *GradPrimVar = nodes->GetGradient_Primitive(iPoint);
+      su2double **GradPrimVar = nodes->GetGradient_Primitive(iPoint);
 
       su2double *Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
