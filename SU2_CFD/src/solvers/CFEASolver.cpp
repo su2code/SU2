@@ -97,8 +97,9 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
     element_container[iTerm] = new CElement* [MAX_FE_KINDS*omp_get_max_threads()]();
 
   topol_filter_applied = false;
-
   element_based = false;
+  initial_calc = true;
+
 }
 
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
@@ -112,8 +113,8 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- A priori we don't have an element-based input file (most of the applications will be like this) ---*/
   element_based = false;
-
   topol_filter_applied = false;
+  initial_calc = true;
 
   nElement      = geometry->GetnElem();
   nDim          = geometry->GetnDim();
@@ -751,25 +752,14 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics,
                                unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
-  bool dynamic = config->GetTime_Domain();
-  bool first_iter = (config->GetInnerIter() == 0);
-
-  /*--- Initial calculation, different logic for restarted simulations. ---*/
-  bool initial_calc = false;
-  if (config->GetRestart())
-    initial_calc = (config->GetTimeIter() == config->GetRestart_Iter()) && first_iter;
-  else
-    initial_calc = (config->GetTimeIter() == 0) && first_iter;
-
-  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
-
-  bool body_forces = config->GetDeadLoad();
-
-  bool fsi = config->GetFSI_Simulation();
-  bool consistent_interpolation = (!config->GetConservativeInterpolation() ||
-                                  (config->GetKindInterpolation() == WEIGHTED_AVERAGE));
-
-  bool topology_mode = config->GetTopology_Optimization();
+  const bool dynamic = config->GetTime_Domain();
+  const bool first_iter = (config->GetInnerIter() == 0);
+  const bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
+  const bool body_forces = config->GetDeadLoad();
+  const bool fsi = config->GetFSI_Simulation();
+  const bool consistent_interpolation = (!config->GetConservativeInterpolation() ||
+                                        (config->GetKindInterpolation() == WEIGHTED_AVERAGE));
+  const bool topology_mode = config->GetTopology_Optimization();
 
   /*
    * For topology optimization we apply a filter on the design density field to avoid
@@ -802,7 +792,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    *
    * Only initialized once, at the first iteration of the first time step.
    */
-  if (body_forces && initial_calc)
+  if (body_forces && (initial_calc || disc_adj_fem))
     Compute_DeadLoad(geometry, numerics, config);
 
   /*--- Clear the linear system solution. ---*/
@@ -818,6 +808,9 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * FSI loads (computed upstream) need to be integrated if a nonconservative interpolation scheme is in use
    */
   if (fsi && first_iter && consistent_interpolation) Integrate_FSI_Loads(geometry,config);
+
+  /*--- Next call to Preprocessing will not be "initial_calc" and linear operations will not be repeated. ---*/
+  initial_calc = false;
 
 }
 

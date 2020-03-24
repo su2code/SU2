@@ -87,6 +87,7 @@ protected:
 
   bool element_based;          /*!< \brief Bool to determine if an element-based file is used. */
   bool topol_filter_applied;   /*!< \brief True if density filtering has been performed. */
+  bool initial_calc = true;    /*!< \brief Becomes false after first call to Preprocessing. */
 
   unsigned long nElement;      /*!< \brief Number of elements. */
 
