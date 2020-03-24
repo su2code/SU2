@@ -195,8 +195,11 @@ void CAvgGrad_Scalar::ComputeResidual(su2double *val_residual,
     Proj_Mean_GradTurbVar_Normal[iVar] = 0.0;
     Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] +
-                                          TurbVar_Grad_j[iVar][iDim]);
+      // Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] +
+      //                                     TurbVar_Grad_j[iVar][iDim]);
+      Mean_GradTurbVar[iVar][iDim] = (TurbVar_Grad_i[iVar][iDim]*PartialVolume_i +
+                                      TurbVar_Grad_j[iVar][iDim]*PartialVolume_j)/
+                                     (PartialVolume_i+PartialVolume_j);
       Proj_Mean_GradTurbVar_Normal[iVar] += Mean_GradTurbVar[iVar][iDim] *
                                             Normal[iDim];
       if (correct_gradient)
@@ -1144,8 +1147,10 @@ void CAvgGrad_TurbSST::FinishResidualCalc(su2double *val_residual, su2double **J
   diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i;
   diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j;
   
-  diff_kine  = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
-  diff_omega = 0.5*(diff_i_omega + diff_j_omega);
+  // diff_kine  = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
+  // diff_omega = 0.5*(diff_i_omega + diff_j_omega);
+  diff_kine  = (diff_i_kine*PartialVolume_i + diff_j_kine*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);    // Could instead use weighted average!
+  diff_omega = (diff_i_omega*PartialVolume_i + diff_j_omega*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
   
   val_residual[0] = diff_kine*Proj_Mean_GradTurbVar[0];
   val_residual[1] = diff_omega*Proj_Mean_GradTurbVar[1];

@@ -37,8 +37,10 @@
 class CEdge final : public CDualGrid {
 private:
   su2double *Coord_CG;      /*!< \brief Center-of-gravity of the element. */
-  unsigned long *Nodes;   /*!< \brief Vector to store the global nodes of an element. */
+  unsigned long *Nodes;     /*!< \brief Vector to store the global nodes of an element. */
   su2double *Normal;        /*!< \brief Normal al elemento y coordenadas de su centro de gravedad. */
+  su2double *PartialVolume; /*!< \brief Portion of CV belonging to node for each edge. */
+
 
 public:
 
@@ -142,6 +144,7 @@ public:
   inline void SetZeroValues(void) override {
     for (unsigned short iDim = 0; iDim < nDim; iDim ++)
       Normal[iDim] = 0.0;
+    SetPartialVolume(0,0.0)
   }
 
   /*!
@@ -174,5 +177,23 @@ public:
    *        definition of the function in all the derived classes).
    */
   inline void SetCoord(const su2double *val_coord) override { }
+
+  /*!
+   * \brief Get area or volume of the partial control volume.
+   * \return Area or volume of the control volume.
+   */
+  inline su2double GetPartialVolume(unsigned short val_Point) const { return PartialVolume[val_Point]; }
+
+  /*!
+   * \brief Adds some area or volume of the partial CV.
+   * \param[in] val_Volume - Local volume to be added to the total one.
+   */
+  inline void AddPartialVolume(su2double val_Volume, unsigned short val_Point) { PartialVolume[val_Point] += val_Volume; }
+
+  /*!
+   * \brief Set the volume of the partial control volume.
+   * \param[in] val_Volume - Local volume to be added to the total one.
+   */
+  inline void SetPartialVolume(su2double val_Volume, unsigned short val_Point) { PartialVolume[val_Point] = val_Volume; }
 
 };

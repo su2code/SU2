@@ -226,6 +226,10 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
                        geometry->node[jPoint]->GetCoord());
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
+    /*--- Set partial control volume ---*/
+    numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
+                               geometry->edge[iEdge]->GetPartialVolume(1));
+
     /*--- Conservative variables w/o reconstruction ---*/
 
     numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint),

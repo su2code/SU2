@@ -4459,7 +4459,9 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
                                        su2double **val_Proj_Jac_Tensor_j) {
 
   const su2double Density = val_Mean_PrimVar[nDim+2];
-  const su2double factor = 0.5/Density;
+  // const su2double factor = 0.5/Density;
+  const su2double factor_i = PartialVolume_i/(Density*(PartialVolume_i+PartialVolume_j));
+  const su2double factor_j = PartialVolume_j/(Density*(PartialVolume_i+PartialVolume_j));
 
   if (nDim == 2) {
 
@@ -4488,12 +4490,18 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
 
     const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] + 
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2];
-    val_Proj_Jac_Tensor_i[3][0] -= factor*proj_viscousflux_vel;
-    val_Proj_Jac_Tensor_j[3][0] -= factor*proj_viscousflux_vel;
-    val_Proj_Jac_Tensor_i[3][1] += factor*val_Proj_Visc_Flux[1];
-    val_Proj_Jac_Tensor_j[3][1] += factor*val_Proj_Visc_Flux[1];
-    val_Proj_Jac_Tensor_i[3][2] += factor*val_Proj_Visc_Flux[2];
-    val_Proj_Jac_Tensor_j[3][2] += factor*val_Proj_Visc_Flux[2];
+    // val_Proj_Jac_Tensor_i[3][0] -= factor*proj_viscousflux_vel;
+    // val_Proj_Jac_Tensor_j[3][0] -= factor*proj_viscousflux_vel;
+    // val_Proj_Jac_Tensor_i[3][1] += factor*val_Proj_Visc_Flux[1];
+    // val_Proj_Jac_Tensor_j[3][1] += factor*val_Proj_Visc_Flux[1];
+    // val_Proj_Jac_Tensor_i[3][2] += factor*val_Proj_Visc_Flux[2];
+    // val_Proj_Jac_Tensor_j[3][2] += factor*val_Proj_Visc_Flux[2];
+    val_Proj_Jac_Tensor_i[3][0] -= factor_i*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_j[3][0] -= factor_j*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_i[3][1] += factor_i*val_Proj_Visc_Flux[1];
+    val_Proj_Jac_Tensor_j[3][1] += factor_j*val_Proj_Visc_Flux[1];
+    val_Proj_Jac_Tensor_i[3][2] += factor_i*val_Proj_Visc_Flux[2];
+    val_Proj_Jac_Tensor_j[3][2] += factor_j*val_Proj_Visc_Flux[2];
     
     
   } else {
@@ -4534,14 +4542,22 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] + 
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2] +
                                           val_Proj_Visc_Flux[3]*val_Mean_PrimVar[3];
-    val_Proj_Jac_Tensor_i[4][0] -= factor*proj_viscousflux_vel;
-    val_Proj_Jac_Tensor_j[4][0] -= factor*proj_viscousflux_vel;
-    val_Proj_Jac_Tensor_i[4][1] += factor*val_Proj_Visc_Flux[1];
-    val_Proj_Jac_Tensor_j[4][1] += factor*val_Proj_Visc_Flux[1];
-    val_Proj_Jac_Tensor_i[4][2] += factor*val_Proj_Visc_Flux[2];
-    val_Proj_Jac_Tensor_j[4][2] += factor*val_Proj_Visc_Flux[2];
-    val_Proj_Jac_Tensor_i[4][3] += factor*val_Proj_Visc_Flux[3];
-    val_Proj_Jac_Tensor_j[4][3] += factor*val_Proj_Visc_Flux[3];
+    // val_Proj_Jac_Tensor_i[4][0] -= factor*proj_viscousflux_vel;
+    // val_Proj_Jac_Tensor_j[4][0] -= factor*proj_viscousflux_vel;
+    // val_Proj_Jac_Tensor_i[4][1] += factor*val_Proj_Visc_Flux[1];
+    // val_Proj_Jac_Tensor_j[4][1] += factor*val_Proj_Visc_Flux[1];
+    // val_Proj_Jac_Tensor_i[4][2] += factor*val_Proj_Visc_Flux[2];
+    // val_Proj_Jac_Tensor_j[4][2] += factor*val_Proj_Visc_Flux[2];
+    // val_Proj_Jac_Tensor_i[4][3] += factor*val_Proj_Visc_Flux[3];
+    // val_Proj_Jac_Tensor_j[4][3] += factor*val_Proj_Visc_Flux[3];
+    val_Proj_Jac_Tensor_i[4][0] -= factor_i*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_j[4][0] -= factor_j*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_i[4][1] += factor_i*val_Proj_Visc_Flux[1];
+    val_Proj_Jac_Tensor_j[4][1] += factor_j*val_Proj_Visc_Flux[1];
+    val_Proj_Jac_Tensor_i[4][2] += factor_i*val_Proj_Visc_Flux[2];
+    val_Proj_Jac_Tensor_j[4][2] += factor_j*val_Proj_Visc_Flux[2];
+    val_Proj_Jac_Tensor_i[4][3] += factor_i*val_Proj_Visc_Flux[3];
+    val_Proj_Jac_Tensor_j[4][3] += factor_j*val_Proj_Visc_Flux[3];
 
   }
 
@@ -4584,7 +4600,8 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   for (iVar = 0; iVar < nPrimVar; iVar++) {
     PrimVar_i[iVar] = V_i[iVar];
     PrimVar_j[iVar] = V_j[iVar];
-    Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
+    // Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
+    Mean_PrimVar[iVar] = (PrimVar_i[iVar]*PartialVolume_i+PrimVar_j[iVar]*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
   }
   
 
@@ -4603,15 +4620,20 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Mean Viscosities and turbulent kinetic energy---*/
   
-  Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
-  Mean_Eddy_Viscosity = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
-  Mean_turb_ke = 0.5*(turb_ke_i + turb_ke_j);
+  // Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
+  // Mean_Eddy_Viscosity = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
+  // Mean_turb_ke = 0.5*(turb_ke_i + turb_ke_j);
+  Mean_Laminar_Viscosity = (Laminar_Viscosity_i*PartialVolume_i + Laminar_Viscosity_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
+  Mean_Eddy_Viscosity = (Eddy_Viscosity_i*PartialVolume_i + Eddy_Viscosity_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
+  Mean_turb_ke = (turb_ke_i*PartialVolume_i + turb_ke_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
   
   /*--- Mean gradient approximation ---*/
 
   for (iVar = 0; iVar < nDim+1; iVar++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
+      // Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
+      Mean_GradPrimVar[iVar][iDim] = (PrimVar_Grad_i[iVar][iDim]*PartialVolume_i + PrimVar_Grad_j[iVar][iDim]*PartialVolume_j)/
+                                     (PartialVolume_i+PartialVolume_j);
     }
   }
 
@@ -4624,7 +4646,11 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   /*--- Wall shear stress values (wall functions) ---*/
   
-  if (TauWall_i > 0.0 && TauWall_j > 0.0) Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
+  // if (TauWall_i > 0.0 && TauWall_j > 0.0) Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
+  // else if (TauWall_i > 0.0) Mean_TauWall = TauWall_i;
+  // else if (TauWall_j > 0.0) Mean_TauWall = TauWall_j;
+  // else Mean_TauWall = -1.0;
+  if (TauWall_i > 0.0 && TauWall_j > 0.0) Mean_TauWall = (TauWall_i*PartialVolume_i + TauWall_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
   else if (TauWall_i > 0.0) Mean_TauWall = TauWall_i;
   else if (TauWall_j > 0.0) Mean_TauWall = TauWall_j;
   else Mean_TauWall = -1.0;
@@ -4849,7 +4875,8 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
   for (iVar = 0; iVar < nPrimVar; iVar++) {
     PrimVar_i[iVar] = V_i[iVar];
     PrimVar_j[iVar] = V_j[iVar];
-    Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
+    // Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
+    Mean_PrimVar[iVar] = (PrimVar_i[iVar]*PartialVolume_i+PrimVar_j[iVar]*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
   }
 
   /*--- Compute vector going from iPoint to jPoint ---*/
@@ -4870,22 +4897,30 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
   /*--- Mean secondary variables ---*/
   
   for (iVar = 0; iVar < 2; iVar++) {
-    Mean_SecVar[iVar] = 0.5*(S_i[iVar+2]+S_j[iVar+2]);
+    // Mean_SecVar[iVar] = 0.5*(S_i[iVar+2]+S_j[iVar+2]);
+    Mean_SecVar[iVar] = (S_i[iVar+2]*PartialVolume_i+S_j[iVar+2]*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
   }
   
   /*--- Mean Viscosities and turbulent kinetic energy---*/
   
-  Mean_Laminar_Viscosity    = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
-  Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
-  Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
-  Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
-  Mean_Cp                   = 0.5*(Cp_i + Cp_j);
+  // Mean_Laminar_Viscosity    = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
+  // Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
+  // Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
+  // Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
+  // Mean_Cp                   = 0.5*(Cp_i + Cp_j);
+  Mean_Laminar_Viscosity    = (Laminar_Viscosity_i*PartialVolume_i + Laminar_Viscosity_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
+  Mean_Eddy_Viscosity       = (Eddy_Viscosity_i*PartialVolume_i + Eddy_Viscosity_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
+  Mean_turb_ke              = (turb_ke_i*PartialVolume_i + turb_ke_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
+  Mean_Thermal_Conductivity = (Thermal_Conductivity_i*PartialVolume_i + Thermal_Conductivity_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
+  Mean_Cp                   = (Cp_i*PartialVolume_i + Cp_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
 
   /*--- Mean gradient approximation ---*/
   
   for (iVar = 0; iVar < nDim+1; iVar++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
+      // Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
+      Mean_GradPrimVar[iVar][iDim] = (PrimVar_Grad_i[iVar][iDim]*PartialVolume_i + PrimVar_Grad_j[iVar][iDim]*PartialVolume_j)/
+                                     (PartialVolume_i+PartialVolume_j);
     }
   }
 

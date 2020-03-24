@@ -50,6 +50,10 @@ CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short 
   Nodes[0] = val_iPoint;
   Nodes[1] = val_jPoint;
 
+  /*--- BCM: partial CV for flux calcs ---*/
+  PartialVolume = NULL;
+  PartialVolume = new su2double[2];
+
 }
 
 CEdge::~CEdge() {

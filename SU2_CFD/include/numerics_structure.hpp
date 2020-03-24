@@ -256,6 +256,8 @@ public:
   su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
   su2double *Eig_Val, *Barycentric_Coord, *New_Coord;
 
+  su2double PartialVolume_i, PartialVolume_j;
+
   /*!
    * \brief Constructor of the class.
    */

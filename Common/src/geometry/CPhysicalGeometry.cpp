@@ -8849,8 +8849,10 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
             else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG);
             Area = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
             node[face_iPoint]->AddVolume(Area); my_DomainVolume +=Area;
+            edge[iEdge]->AddPartialVolume(Area,0);
             Area = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
             node[face_jPoint]->AddVolume(Area); my_DomainVolume +=Area;
+            edge[iEdge]->AddPartialVolume(Area,1);
             break;
           case 3:
             /*--- Three dimensional problem ---*/
@@ -8858,8 +8860,10 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
             else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
             Volume = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
             node[face_iPoint]->AddVolume(Volume); my_DomainVolume +=Volume;
+            edge[iEdge]->AddPartialVolume(Volume,0);
             Volume = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
             node[face_jPoint]->AddVolume(Volume); my_DomainVolume +=Volume;
+            edge[iEdge]->AddPartialVolume(Volume,1);
             break;
         }
       }

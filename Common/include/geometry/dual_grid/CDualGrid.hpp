@@ -118,4 +118,19 @@ public:
    * \param[in] val_face_normal - Normal vector to be added.
    */
   virtual void AddNormal(const su2double *val_face_normal) = 0;
+
+  /*!
+   * \brief A pure virtual member.
+   */
+  virtual su2double GetPartialVolume(unsigned short val_Point) const = 0.0;
+
+  /*!
+   * \brief A pure virtual member.
+   */
+  virtual void AddPartialVolume(su2double val_Volume, unsigned short val_Point) = 0;
+
+  /*!
+   * \brief A pure virtual member.
+   */
+  virtual void SetPartialVolume(su2double val_Volume, unsigned short val_Point) = 0;
 };

@@ -7839,6 +7839,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                                 geometry->node[Point_Normal]->GetCoord());
 
+        /*--- Set partial control volume ---*/
+        iEdge = geometry->FindEdge(iPoint,Point_Normal);
+        visc_numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
+                                        geometry->edge[iEdge]->GetPartialVolume(1));
+
         /*--- Primitive variables, and gradient ---*/
 
         visc_numerics->SetPrimitive(V_domain, V_infty);
