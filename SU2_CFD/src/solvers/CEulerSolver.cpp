@@ -7840,7 +7840,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
                                 geometry->node[Point_Normal]->GetCoord());
 
         /*--- Set partial control volume ---*/
-        iEdge = geometry->FindEdge(iPoint,Point_Normal);
+        const unsigned long iEdge = geometry->FindEdge(iPoint,Point_Normal);
         visc_numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
                                         geometry->edge[iEdge]->GetPartialVolume(1));
 
