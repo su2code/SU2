@@ -3,6 +3,7 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include "../mpi_structure.hpp"
 
 /*! The CIndexedMap combines a associative map and
  * and a sequentially indexed container. This allows access to items using a
@@ -39,7 +40,13 @@ public:
    * \param[in] item - The item that should be stored
    */
   void AddItem(const Key& key, const Item& item){
+    bool success;
+    typename Map::iterator iter;
+    std::tie(iter, success) = map.insert({key, item});
     insertionVector.emplace_back(map.insert({key, item}).first);
+    if (!success){
+      SU2_MPI::Error(std::string("Key with name ") + key + std::string(" already exists"), CURRENT_FUNCTION);
+    }
   }
 
   /*!
@@ -93,6 +100,15 @@ public:
    */
   const InsertionVector& GetReferencesAll() const {
     return insertionVector;
+  }
+
+  int GetIndex(const Key& key){
+    int index;
+    for (index = 0; index < insertionVector.size(); index++){
+      if (insertionVector[index]->first == key){
+        return index;
+      }
+    }
   }
 
   /*!

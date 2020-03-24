@@ -406,7 +406,7 @@ protected:
                                string groupname, string description,
                                FieldType field_type = FieldType::DEFAULT ){
     HistoryOutputField newField(field_name, format, groupname, field_type, description);
-    newField.tokenRef = &historyFieldsAll.GetScope()[field_name];
+    newField.tokenRef = &historyFieldsAll.GetScope()[name];
     historyFieldsAll.AddItem(name, newField);
   }
 
@@ -434,9 +434,9 @@ protected:
                                          FieldType field_type = FieldType::DEFAULT){
     if (marker_names.size() != 0){
       for (unsigned short i = 0; i < marker_names.size(); i++){
-        historyFieldsAll.AddItem(name + "@" + marker_names[i],
-                                 HistoryOutputField(field_name + "@" + marker_names[i],
-                                                    format, groupname + "@" + marker_names[i], field_type, description));
+        AddHistoryOutput(name + "@" + marker_names[i],
+                         field_name + "@" + marker_names[i],
+                         format, groupname + "@" + marker_names[i], description, field_type);
       }
     }
   }
@@ -449,13 +449,7 @@ protected:
                        " return " + name + "; }";
 
     customField.expParser = CExpressionParser(&historyFieldsAll.GetScope());
-
-    customField.expParser.Compile(func);
-
-    customField.expParser.ExecCode();
-
-    customField.tokenRef = &historyFieldsAll.GetScope()["eval"];
-
+    customField.expParser.CompileAndExec(func, "eval");
     historyFieldsAll.AddItem(name, customField);
 
   }
@@ -468,13 +462,7 @@ protected:
 
     customField.fieldType = FieldType::CUSTOM;
     customField.expParser = CExpressionParser(&volumeFieldsAll.GetScope());
-
-    customField.expParser.Compile(func);
-
-    customField.expParser.ExecCode();
-
-    customField.tokenRef = &volumeFieldsAll.GetScope()["eval"];
-
+    customField.expParser.CompileAndExec(func, "eval");
     volumeFieldsAll.AddItem(name, customField);
 
   }
@@ -502,6 +490,7 @@ protected:
     volumeFieldsAll.AddItem(name, newField);
   }
 
+  void WriteToDataSorter(unsigned long iPoint);
 
   /*!
    * \brief Set the value of a volume output field

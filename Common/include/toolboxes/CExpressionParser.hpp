@@ -11,22 +11,26 @@ private:
   BlockStatement code;
   const TokenMap* scope;
   const char* rest;
+  std::string name;
+  const packToken* tokenRef;
 
 public:
   CExpressionParser() : scope(nullptr) {}
 
   CExpressionParser(const TokenMap* scope_) : scope(scope_){}
 
-  void Compile(const std::string& codeAsString){
+  void CompileAndExec(const std::string& codeAsString, const std::string& funcName){
+    name = funcName;
     code.compile(codeAsString.c_str(), &rest, *scope);
+    code.exec(*scope);
+    tokenRef = scope->find(name);
   }
-
 
   void ExecCode(){
     code.exec(*scope);
   }
 
-  su2double Eval( const std::string& name){
-    return (*scope).find(name)->asFunc()->exec(*scope).asDouble();
+  su2double Eval(){
+    return tokenRef->asFunc()->exec(*scope).asDouble();
   }
 };

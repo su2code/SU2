@@ -1424,7 +1424,6 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
   } else {
 
     const auto& customFieldRef = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM});
-    const auto& fieldRef = volumeFieldsAll.GetReferencesAll();
 
     for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 
@@ -1435,17 +1434,15 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
       LoadVolumeData(config, geometry, solver, iPoint);
 
       if (!customFieldRef.empty()){
-        for (const auto& field :fieldRef){
-          if ((field->second.fieldType != FieldType::CUSTOM) && (field->second.offset != -1))
-            (*field->second.tokenRef) = volumeDataSorter->GetUnsorted_Data(iPoint, field->second.offset);
-        }
 
-        for (const auto& field : volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM})){
+        volumeFieldsAll.UpdateTokens();
 
-          SetVolumeOutputValue(field->first, iPoint, field->second.tokenRef->asFunc()->exec(volumeFieldsAll.GetScope()).asDouble());
+        volumeFieldsAll.EvalFields(customFieldRef);
 
-        }
       }
+
+      WriteToDataSorter(iPoint);
+
     }
 
     /*--- Reset the offset cache and index --- */
@@ -1478,6 +1475,14 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
   }
 }
 
+ void COutput::WriteToDataSorter(unsigned long iPoint){
+  for (const auto& field : volumeFieldsAll.GetReferencesAll()){
+    if (field->second.offset != -1){
+      volumeDataSorter->SetUnsorted_Data(iPoint, field->second.offset, field->second.value);
+    }
+  }
+}
+
 void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double value){
 
   if (buildFieldIndexCache){
@@ -1487,11 +1492,8 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
      * the same for every value of iPoint --- */
 
     if (volumeFieldsAll.CheckKey(name)){
-      const short Offset = volumeFieldsAll[name].offset;
-      fieldIndexCache.push_back(Offset);
-      if (Offset != -1){
-        volumeDataSorter->SetUnsorted_Data(iPoint, Offset, value);
-      }
+      fieldIndexCache.push_back(volumeFieldsAll.GetIndex(name));
+      volumeFieldsAll.SetValueByIndex(fieldIndexCache.back(), value);
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
     }
@@ -1499,15 +1501,12 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
 
     /*--- Use the offset cache for the access ---*/
 
-    const short Offset = fieldIndexCache[cachePosition++];
-    if (Offset != -1){
-      volumeDataSorter->SetUnsorted_Data(iPoint, Offset, value);
-    }
+    const int index = fieldIndexCache[cachePosition++];
+    volumeFieldsAll.SetValueByIndex(index, value);
     if (cachePosition == fieldIndexCache.size()){
       cachePosition = 0;
     }
   }
-
 }
 
 su2double COutput::GetVolumeOutputValue(string name, unsigned long iPoint){
@@ -1519,11 +1518,8 @@ su2double COutput::GetVolumeOutputValue(string name, unsigned long iPoint){
      * the same for every value of iPoint --- */
 
     if (volumeFieldsAll.CheckKey(name)){
-      const short Offset = volumeFieldsAll[name].offset;
-      fieldGetIndexCache.push_back(Offset);
-      if (Offset != -1){
-        return volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
-      }
+      fieldGetIndexCache.push_back(volumeFieldsAll.GetIndex(name));
+      return volumeFieldsAll.GetItemByIndex(fieldGetIndexCache.back()).value;
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
     }
@@ -1531,14 +1527,12 @@ su2double COutput::GetVolumeOutputValue(string name, unsigned long iPoint){
 
     /*--- Use the offset cache for the access ---*/
 
-    const short Offset = fieldGetIndexCache[curGetFieldIndex++];
+    const short index = fieldGetIndexCache[curGetFieldIndex++];
 
     if (curGetFieldIndex == fieldGetIndexCache.size()){
       curGetFieldIndex = 0;
     }
-    if (Offset != -1){
-      return volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
-    }
+    return volumeFieldsAll.GetItemByIndex(index).value;
   }
 
   return 0.0;
@@ -1555,15 +1549,13 @@ void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2doub
      * the same for every value of iPoint --- */
 
     if (volumeFieldsAll.CheckKey(name)){
-      const short Offset = volumeFieldsAll[name].offset;
-      fieldIndexCache.push_back(Offset);
-      if (Offset != -1){
 
-        const su2double old_value = volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
-        const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
+      const int index = volumeFieldsAll.GetIndex(name);
+      fieldIndexCache.push_back(index);
+      const su2double old_value = volumeFieldsAll.GetItemByIndex(index).value;
+      const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
+      volumeFieldsAll.SetValueByIndex(fieldIndexCache.back(), new_value);
 
-        volumeDataSorter->SetUnsorted_Data(iPoint, Offset, new_value);
-      }
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
     }
@@ -1571,14 +1563,12 @@ void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2doub
 
     /*--- Use the offset cache for the access ---*/
 
-    const short Offset = fieldIndexCache[cachePosition++];
-    if (Offset != -1){
+    const int index = fieldIndexCache[cachePosition++];
 
-      const su2double old_value = volumeDataSorter->GetUnsorted_Data(iPoint, Offset);
-      const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
+    const su2double old_value = volumeFieldsAll.GetItemByIndex(index).value;
+    const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
+    volumeFieldsAll.SetValueByIndex(fieldIndexCache.back(), new_value);
 
-      volumeDataSorter->SetUnsorted_Data(iPoint, Offset, new_value);
-    }
     if (cachePosition == fieldIndexCache.size()){
       cachePosition = 0;
     }
@@ -1629,7 +1619,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
   }
 
   historyFieldsAll.UpdateTokens();
-
+  historyFieldsAll.EvalFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
 }
 
 void COutput::Postprocess_HistoryFields(CConfig *config){
@@ -1696,7 +1686,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   }
 
   historyFieldsAll.UpdateTokens();
-
+  historyFieldsAll.EvalFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
 }
 
 bool COutput::WriteScreen_Header(CConfig *config) {

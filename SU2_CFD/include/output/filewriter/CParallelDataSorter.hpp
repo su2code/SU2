@@ -312,6 +312,10 @@ public:
     return connSend[Index[iPoint] + iField];
   }
 
+  const su2double* GetUnsorted_Data(unsigned long iPoint) const {
+    return &connSend[Index[iPoint]];
+  }
+
   /*!
    * \brief Get the Processor ID a Point belongs to.
    * \param[in] iPoint - global renumbered ID of the point

@@ -35,6 +35,8 @@ public:
   std::string         description = "";
   /*! \brief The field type*/
   FieldType    fieldType = FieldType::DEFAULT;
+  /*! \brief The value of the field. */
+  su2double           value = 0.0;
 
   CExpressionParser expParser;
 
@@ -44,7 +46,7 @@ public:
 
   COutputField(std::string fieldName_, FieldType type_, std::string OutputGroup_, std::string description_)
     : fieldName(std::move(fieldName_)), outputGroup(std::move(OutputGroup_)),  description(std::move(description_)),
-      fieldType(type_)
+      fieldType(type_), value(0.0)
   {}
 };
 
@@ -56,8 +58,7 @@ public:
 class HistoryOutputField final : public COutputField {
 public:
 
-  /*! \brief The value of the field. */
-  su2double           value = 0.0;
+
   /*! \brief The format that is used to print this value to screen. */
   ScreenOutputFormat  screenFormat = ScreenOutputFormat::FIXED;
 
@@ -66,7 +67,7 @@ public:
   /*! \brief Constructor to initialize all members. */
   HistoryOutputField(std::string fieldName_, ScreenOutputFormat screenFormat_, std::string OutputGroup_,
                      FieldType fieldType_, std::string description_): COutputField(fieldName_, fieldType_, OutputGroup_, description_),
-     value(0.0), screenFormat(screenFormat_)
+     screenFormat(screenFormat_)
     {}
 
 };
@@ -103,6 +104,7 @@ public:
 protected:
   GlobalScope outFieldScope;
   using CurrentType::insertionVector;
+  using CurrentType::map;
 
 private:
 
@@ -228,30 +230,6 @@ public:
     return CurrentType::GetReferences(type, dummy, insertionVector, findFieldWithType);
   }
 
-};
-
-
-class HistoryOutFieldCollection final : public COutFieldCollection<HistoryOutputField>{
-
-public:
-  void UpdateTokens(){
-
-    auto customFields = GetFieldsByType({FieldType::CUSTOM});
-
-    if (!customFields.empty()){
-      for (const auto& field : insertionVector){
-        if (field->second.fieldType != FieldType::CUSTOM){
-          outFieldScope[field->first] = field->second.value;
-        }
-      }
-
-      for (const auto& field : customFields){
-        field->second.expParser.ExecCode();
-        field->second.value = field->second.expParser.Eval(std::string("eval"));
-      }
-    }
-  }
-
   /*!
    * \brief Set the value of specific field by using its key
    * \param[in] key   - The key of the field
@@ -270,15 +248,28 @@ public:
     insertionVector[i]->second.value = value;
   }
 
+  void UpdateTokens(){
+    for (const auto& field : insertionVector){
+      if (field->second.fieldType != FieldType::CUSTOM){
+        (*field->second.tokenRef) = field->second.value;
+      }
+    }
+  }
+
+  void EvalFields(const InsertionVector& customFields){
+    for (const auto& field : customFields){
+      field->second.value = field->second.expParser.Eval();
+    }
+  }
+
+};
+
+
+class HistoryOutFieldCollection final : public COutFieldCollection<HistoryOutputField>{
+
 };
 
 class VolumeOutFieldCollection final : public COutFieldCollection<VolumeOutputField>{
-
-
-public:
-  void UpdateTokens(){
-
-  }
 
 };
 
