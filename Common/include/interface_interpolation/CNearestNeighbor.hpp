@@ -35,6 +35,9 @@
  * by using a kd-tree.
  */
 class CNearestNeighbor final : public CInterpolator {
+private:
+  su2double AvgDistance = 0.0, MaxDistance = 0.0;
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -50,5 +53,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_TransferCoeff(const CConfig* const* config) override;
+
+  /*!
+   * \brief Print interpolation statistics.
+   */
+  void PrintStatistics(void) const override;
 
 };

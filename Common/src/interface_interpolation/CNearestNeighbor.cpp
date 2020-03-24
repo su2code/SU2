@@ -45,11 +45,17 @@ CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, const CConf
   Set_TransferCoeff(config);
 }
 
+void CNearestNeighbor::PrintStatistics() const {
+  if (rank != MASTER_NODE) return;
+  cout << " Avg/max distance to closest donor point: " << AvgDistance << "/" << MaxDistance << endl;
+}
+
 void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
 
   /*--- Desired number of donor points. ---*/
   const auto nDonor = max<unsigned long>(config[donorZone]->GetNumNearestNeighbors(), 1);
 
+  /*--- Epsilon used to avoid division by zero. ---*/
   const su2double eps = numeric_limits<passivedouble>::epsilon();
 
   const int nProcessor = size;
@@ -61,6 +67,9 @@ void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
   vector<vector<DonorInfo> > DonorInfoVec(omp_get_max_threads());
 
   /*--- Cycle over nMarkersInt interface to determine communication pattern. ---*/
+
+  AvgDistance = MaxDistance = 0.0;
+  unsigned long totalTargetPoints = 0;
 
   for (unsigned short iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
 
@@ -98,6 +107,9 @@ void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
     auto& donorInfo = DonorInfoVec[omp_get_thread_num()];
     donorInfo.resize(nPossibleDonor);
 
+    su2double avgDist = 0.0, maxDist = 0.0;
+    unsigned long numTarget = 0;
+
     SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget,2*omp_get_max_threads()))
     for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; iVertexTarget++) {
 
@@ -126,6 +138,12 @@ void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
       partial_sort(donorInfo.begin(), donorInfo.begin()+nDonor, donorInfo.end(),
                    [](const DonorInfo& a, const DonorInfo& b){return a.dist < b.dist;});
 
+      /*--- Update stats. ---*/
+      numTarget += 1;
+      su2double d = sqrt(donorInfo[0].dist);
+      avgDist += d;
+      maxDist = max(maxDist, d);
+
       /*--- Compute interpolation numerators and denominator. ---*/
       su2double denom = 0.0;
       for (auto iDonor = 0ul; iDonor < nDonor; ++iDonor) {
@@ -142,6 +160,12 @@ void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
         target_vertex->SetDonorCoeff(iDonor, donorInfo[iDonor].dist/denom);
       }
     }
+    SU2_OMP_CRITICAL
+    {
+      totalTargetPoints += numTarget;
+      AvgDistance += avgDist;
+      MaxDistance = max(MaxDistance, maxDist);
+    }
     } // end SU2_OMP_PARALLEL
 
     delete[] Buffer_Send_Coord;
@@ -153,5 +177,12 @@ void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
   }
 
   delete[] Buffer_Receive_nVertex_Donor;
+
+  unsigned long tmp = totalTargetPoints;
+  SU2_MPI::Allreduce(&tmp, &totalTargetPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  su2double tmp1 = AvgDistance, tmp2 = MaxDistance;
+  SU2_MPI::Allreduce(&tmp1, &AvgDistance, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&tmp2, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  AvgDistance /= totalTargetPoints;
 
 }
