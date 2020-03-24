@@ -62,6 +62,8 @@ CEdge::~CEdge() {
   if (Normal   != NULL) delete[] Normal;
   if (Nodes    != NULL) delete[] Nodes;
 
+  if (PartialVolume != NULL) delete[] PartialVolume;
+
 }
 
 void CEdge::SetCoord_CG(su2double **val_coord) {

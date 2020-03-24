@@ -131,7 +131,7 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
     //   for (jVar = 0; jVar < nVar; jVar++)
     //     val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
     GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, PartialVolume_i/(PartialVolume_i+PartialVolume_j), val_Jacobian_i);
-    GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, PartialVolume_j/(PartialVolume_i+PartialVolume_j), val_Jacobian_i);
+    GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, PartialVolume_j/(PartialVolume_i+PartialVolume_j), val_Jacobian_j);
   }
 
   /*--- Adjustment due to grid motion ---*/
