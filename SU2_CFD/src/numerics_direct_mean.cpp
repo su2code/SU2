@@ -100,12 +100,18 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   
   /*--- Compute mean values of the variables ---*/
   
-  MeanDensity = 0.5*(Density_i+Density_j);
-  MeanPressure = 0.5*(Pressure_i+Pressure_j);
-  MeanEnthalpy = 0.5*(Enthalpy_i+Enthalpy_j);
+  // MeanDensity = 0.5*(Density_i+Density_j);
+  // MeanPressure = 0.5*(Pressure_i+Pressure_j);
+  // MeanEnthalpy = 0.5*(Enthalpy_i+Enthalpy_j);
+  // for (iDim = 0; iDim < nDim; iDim++)
+  //   MeanVelocity[iDim] =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
+  // MeanEnergy = 0.5*(Energy_i+Energy_j);
+  MeanDensity = (Density_i*PartialVolume_i+Density_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
+  MeanPressure = (Pressure_i*PartialVolume_i+Pressure_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
+  MeanEnthalpy = (Enthalpy_i*PartialVolume_i+Enthalpy_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
   for (iDim = 0; iDim < nDim; iDim++)
-    MeanVelocity[iDim] =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
-  MeanEnergy = 0.5*(Energy_i+Energy_j);
+    MeanVelocity[iDim] =  (Velocity_i*PartialVolume_i+Velocity_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
+  MeanEnergy = (Energy_i*PartialVolume_i+Energy_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
   
   /*--- Get projected flux tensor ---*/
   
@@ -119,10 +125,12 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
 
   if (implicit) {
-    GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, 0.5, val_Jacobian_i);
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
+    // GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, 0.5, val_Jacobian_i);
+    // for (iVar = 0; iVar < nVar; iVar++)
+    //   for (jVar = 0; jVar < nVar; jVar++)
+    //     val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
+    GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, PartialVolume_i/(PartialVolume_i+PartialVolume_j), val_Jacobian_i);
+    GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, PartialVolume_j/(PartialVolume_i+PartialVolume_j), val_Jacobian_i);
   }
 
   /*--- Adjustment due to grid motion ---*/
@@ -162,7 +170,8 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   
   Local_Lambda_i = (fabs(ProjVelocity_i)+SoundSpeed_i*Area);
   Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
-  MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
+  // MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
+  MeanLambda = (Local_Lambda_i*PartialVolume_i+Local_Lambda_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
   
   Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
   Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);

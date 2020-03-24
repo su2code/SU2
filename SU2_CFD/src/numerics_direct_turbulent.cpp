@@ -73,14 +73,16 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
       Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
-      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
+      // q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
+      q_ij += (Velocity_i[iDim]*PartialVolume_i+Velocity_j[iDim]*PartialVolume_j)/(PartialVolume_i+PartialVolume_j)*Normal[iDim];
     }
   }
   else {
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_i[iDim] = V_i[iDim+1];
       Velocity_j[iDim] = V_j[iDim+1];
-      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
+      // q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
+      q_ij += (Velocity_i[iDim]*PartialVolume_i+Velocity_j[iDim]*PartialVolume_j)/(PartialVolume_i+PartialVolume_j)*Normal[iDim];
     }
   }
 
