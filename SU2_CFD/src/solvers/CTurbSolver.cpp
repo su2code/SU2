@@ -105,8 +105,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
     /*--- Set partial control volume ---*/
-    conv_numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
-                                    geometry->edge[iEdge]->GetPartialVolume(1));
+    numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
+                               geometry->edge[iEdge]->GetPartialVolume(1));
 
     /*--- Primitive variables w/o reconstruction ---*/
 
