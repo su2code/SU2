@@ -110,7 +110,7 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   MeanPressure = (Pressure_i*PartialVolume_i+Pressure_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
   MeanEnthalpy = (Enthalpy_i*PartialVolume_i+Enthalpy_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
   for (iDim = 0; iDim < nDim; iDim++)
-    MeanVelocity[iDim] =  (Velocity_i*PartialVolume_i+Velocity_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
+    MeanVelocity[iDim] =  (Velocity_i[iDim]*PartialVolume_i+Velocity_j[iDim]*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
   MeanEnergy = (Energy_i*PartialVolume_i+Energy_j*PartialVolume_j)/(PartialVolume_i+PartialVolume_j);
   
   /*--- Get projected flux tensor ---*/
