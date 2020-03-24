@@ -122,7 +122,7 @@ public:
   /*!
    * \brief A pure virtual member.
    */
-  virtual su2double GetPartialVolume(unsigned short val_Point) const = 0.0;
+  virtual su2double GetPartialVolume(unsigned short val_Point) const = 0;
 
   /*!
    * \brief A pure virtual member.
