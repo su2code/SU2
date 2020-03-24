@@ -3303,9 +3303,9 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
 
-    // /*--- Set partial control volume ---*/
-    // numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
-    //                            geometry->edge[iEdge]->GetPartialVolume(1));
+    /*--- Set partial control volume ---*/
+    numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
+                               geometry->edge[iEdge]->GetPartialVolume(1));
 
     /*--- Set primitive variables w/o reconstruction ---*/
 
@@ -3377,9 +3377,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-    // /*--- Set partial control volume ---*/
-    // numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
-    //                            geometry->edge[iEdge]->GetPartialVolume(1));
+    /*--- Set partial control volume ---*/
+    numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
+                               geometry->edge[iEdge]->GetPartialVolume(1));
 
     /*--- Roe Turkel preconditioning ---*/
 
@@ -7671,10 +7671,10 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      // /*--- Set partial control volume ---*/
-      // const unsigned long iEdge = geometry->FindEdge(iPoint,Point_Normal);
-      // conv_numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
-      //                                 geometry->edge[iEdge]->GetPartialVolume(1));
+      /*--- Set partial control volume ---*/
+      const unsigned long iEdge = geometry->FindEdge(iPoint,Point_Normal);
+      conv_numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
+                                      geometry->edge[iEdge]->GetPartialVolume(1));
 
       /*--- Retrieve solution at the farfield boundary node ---*/
       V_domain = nodes->GetPrimitive(iPoint);
@@ -7853,8 +7853,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
                                 geometry->node[Point_Normal]->GetCoord());
 
         /*--- Set partial control volume ---*/
-        // visc_numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
-                                        // geometry->edge[iEdge]->GetPartialVolume(1));
+        visc_numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
+                                        geometry->edge[iEdge]->GetPartialVolume(1));
 
         /*--- Primitive variables, and gradient ---*/
 

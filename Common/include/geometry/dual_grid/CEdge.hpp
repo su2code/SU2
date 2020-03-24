@@ -144,7 +144,6 @@ public:
   inline void SetZeroValues(void) override {
     for (unsigned short iDim = 0; iDim < nDim; iDim ++)
       Normal[iDim] = 0.0;
-    SetPartialVolume(0,0.0);
   }
 
   /*!

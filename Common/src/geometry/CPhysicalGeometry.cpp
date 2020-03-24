@@ -8796,6 +8796,11 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
       node[iPoint]->SetVolume (0.0);
   }
 
+  for (iEdge = 0; iEdge < (long)nEdge; iEdge++) {
+    edge[iEdge]->SetPartialVolume(0.0,0);
+    edge[iEdge]->SetPartialVolume(0.0,1);
+  }
+
   Coord_Edge_CG = new su2double [nDim];
   Coord_FaceElem_CG = new su2double [nDim];
   Coord_Elem_CG = new su2double [nDim];

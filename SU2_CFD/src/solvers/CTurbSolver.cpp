@@ -104,9 +104,9 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     jPoint = geometry->edge[iEdge]->GetNode(1);
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-    // /*--- Set partial control volume ---*/
-    // numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
-    //                            geometry->edge[iEdge]->GetPartialVolume(1));
+    /*--- Set partial control volume ---*/
+    numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
+                               geometry->edge[iEdge]->GetPartialVolume(1));
 
     /*--- Primitive variables w/o reconstruction ---*/
 
@@ -230,9 +230,9 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
                        geometry->node[jPoint]->GetCoord());
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-    // /*--- Set partial control volume ---*/
-    // numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
-    //                            geometry->edge[iEdge]->GetPartialVolume(1));
+    /*--- Set partial control volume ---*/
+    numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
+                               geometry->edge[iEdge]->GetPartialVolume(1));
 
     /*--- Conservative variables w/o reconstruction ---*/
 
