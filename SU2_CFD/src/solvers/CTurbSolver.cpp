@@ -96,6 +96,13 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   const bool muscl = config->GetMUSCL_Turb();
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
 
+  /*--- Only reconstruct flow variables if MUSCL is on for flow (requires upwind) and turbulence. ---*/
+  const bool musclFlow = config->GetMUSCL_Flow() && muscl &&
+                        (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND);
+  /*--- Only consider flow limiters for cell-based limiters, edge-based would need to be recomputed. ---*/
+  const bool limiterFlow = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
+                           (config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE);
+
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   /*--- Pick one numerics object per thread. ---*/
@@ -125,14 +132,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
     /*--- Primitive variables w/o reconstruction ---*/
 
-    auto V_i = flowNodes->GetPrimitive(iPoint);
-    auto V_j = flowNodes->GetPrimitive(jPoint);
+    const auto V_i = flowNodes->GetPrimitive(iPoint);
+    const auto V_j = flowNodes->GetPrimitive(jPoint);
     numerics->SetPrimitive(V_i, V_j);
 
     /*--- Turbulent variables w/o reconstruction ---*/
 
-    auto Turb_i = nodes->GetSolution(iPoint);
-    auto Turb_j = nodes->GetSolution(jPoint);
+    const auto Turb_i = nodes->GetSolution(iPoint);
+    const auto Turb_j = nodes->GetSolution(jPoint);
     numerics->SetTurbVar(Turb_i, Turb_j);
 
     /*--- Grid Movement ---*/
@@ -141,75 +148,72 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                            geometry->node[jPoint]->GetGridVel());
 
-    if (muscl) {
-      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+    if (muscl || musclFlow) {
+      const su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
-      auto Coord_i = geometry->node[iPoint]->GetCoord();
-      auto Coord_j = geometry->node[jPoint]->GetCoord();
-
-      /*--- Reconstruct flow variables. ---*/
+      const auto Coord_i = geometry->node[iPoint]->GetCoord();
+      const auto Coord_j = geometry->node[jPoint]->GetCoord();
 
       su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
       }
 
-      /*--- Mean flow primitive variables using gradient reconstruction and limiters ---*/
+      if (musclFlow) {
+        /*--- Reconstruct mean flow primitive variables. ---*/
 
-      auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
-      auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
+        auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
+        auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
 
-      if (limiter) {
-        Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
-        Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
-      }
-
-      for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-        su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+        if (limiterFlow) {
+          Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
+          Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
         }
-        if (limiter) {
-          flowPrimVar_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          flowPrimVar_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-        }
-        else {
+
+        for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+          su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+            Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          }
+          if (limiterFlow) {
+            Project_Grad_i *= Limiter_i[iVar];
+            Project_Grad_j *= Limiter_j[iVar];
+          }
           flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
           flowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
         }
+
+        numerics->SetPrimitive(flowPrimVar_i, flowPrimVar_j);
       }
 
-      numerics->SetPrimitive(flowPrimVar_i, flowPrimVar_j);
+      if (muscl) {
+        /*--- Reconstruct turbulence variables. ---*/
 
-      /*--- Reconstruct turbulence variables. ---*/
+        auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+        auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-      Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
-      Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
-
-      if (limiter) {
-        Limiter_i = nodes->GetLimiter(iPoint);
-        Limiter_j = nodes->GetLimiter(jPoint);
-      }
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-        su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
-        }
         if (limiter) {
-          solution_i[iVar] = Turb_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          solution_j[iVar] = Turb_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+          Limiter_i = nodes->GetLimiter(iPoint);
+          Limiter_j = nodes->GetLimiter(jPoint);
         }
-        else {
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+          su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+            Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          }
+          if (limiter) {
+            Project_Grad_i *= Limiter_i[iVar];
+            Project_Grad_j *= Limiter_j[iVar];
+          }
           solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
           solution_j[iVar] = Turb_j[iVar] + Project_Grad_j;
         }
+
+        numerics->SetTurbVar(solution_i, solution_j);
       }
-
-      numerics->SetTurbVar(solution_i, solution_j);
-
     }
 
     /*--- Update convective residual value ---*/
