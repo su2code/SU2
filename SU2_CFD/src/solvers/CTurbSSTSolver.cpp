@@ -554,7 +554,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   su2double Tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
             Delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
             TauElem[3] = {0.0,0.0,0.0}, TauNormal, TauTangent[3] = {0.0,0.0,0.0},
-            UnitNormal[3] = {0.0,0.0,0.0},
+            UnitNormal[3] = {0.0,0.0,0.0};
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
