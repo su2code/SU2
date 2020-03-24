@@ -595,9 +595,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         Jacobian.DeleteValsRowi(total_index);
       }
 
-      su2double Density_Wall  = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      su2double DensityWall  = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
       
-      su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+      su2double LamViscWall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
       su2double *GradPrimVar = nodes->GetGradient_Primitive(iPoint);
 
@@ -609,14 +609,14 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
 
-      su2double divu = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) divu += GradPrimVar[iDim+1][iDim];
+      su2double DivVel = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) DivVel += GradPrimVar[iDim+1][iDim];
 
       for (iDim = 0; iDim < nDim; iDim++) {
         for (jDim = 0 ; jDim < nDim; jDim++) {
-          Tau[iDim][jDim] = Lam_Visc_Wall*(  GradPrimVar[jDim+1][iDim]
-                                           + GradPrimVar[iDim+1][jDim]) -
-          TWO3*Lam_Visc_Wall*div_vel*delta[iDim][jDim];
+          Tau[iDim][jDim] = LamViscWall*(  GradPrimVar[jDim+1][iDim]
+                                         + GradPrimVar[iDim+1][jDim] ) -
+          TWO3*LamViscWall*DivVel*Delta[iDim][jDim];
         }
         TauElem[iDim] = 0.0;
         for (jDim = 0; jDim < nDim; jDim++)
@@ -633,17 +633,17 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       for (iDim = 0; iDim < nDim; iDim++)
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
 
-      su2double Tau_Wall = 0.0;
+      su2double TauWall = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        Tau_Wall += TauTangent[iDim]*TauTangent[iDim];
-      Tau_Wall = sqrt(Tau_Wall);
+        TauWall += TauTangent[iDim]*TauTangent[iDim];
+      TauWall = sqrt(TauWall);
 
-      su2double U_Tau = sqrt(Tau_Wall / Density_Wall);
+      su2double U_Tau = sqrt(TauWall / DensityWall);
 
       // if (Density_Wall * U_Tau * distance / Lam_Visc_Wall >= 5.0) {
 
         su2double eddy_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(jPoint);
-        su2double Omega_i = 6. * Lam_Visc_Wall / (beta_1 * Density_Wall * pow(distance, 2.0) + EPS*EPS);
+        su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0) + EPS*EPS);
         su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance + EPS);
         su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
         
