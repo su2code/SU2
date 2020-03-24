@@ -62,7 +62,7 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
-  AD::SetPreaccIn(PartialVolume_i); AD::SetPreaccIn(GridVel_j);
+  AD::SetPreaccIn(PartialVolume_i); AD::SetPreaccIn(PartialVolume_j);
   ExtraADPreaccIn();
 
   Density_i = V_i[nDim+2];
