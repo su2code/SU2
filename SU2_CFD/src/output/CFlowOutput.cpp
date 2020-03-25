@@ -705,10 +705,11 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
   }
-  /// DESCRIPTION: Drag coefficient
-  AddHistoryOutputPerSurface("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
+
   /// DESCRIPTION: Lift coefficient
   AddHistoryOutputPerSurface("LIFT",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
+  /// DESCRIPTION: Drag coefficient
+  AddHistoryOutputPerSurface("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
   /// DESCRIPTION: Sideforce coefficient
   AddHistoryOutputPerSurface("SIDEFORCE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF", Marker_Monitoring, "", FieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the x-axis

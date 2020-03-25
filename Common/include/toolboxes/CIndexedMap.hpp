@@ -139,6 +139,7 @@ public:
           references.push_back(mapIndex);
           found[i] = true;
         }
+        i++;
       }
     }
     for (unsigned int i = 0; i < found.size(); i++){

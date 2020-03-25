@@ -183,14 +183,14 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.
   /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
   AddHistoryOutput("SENS_GEO",   "Sens_Geo",   ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.", FieldType::COEFFICIENT);
-  /// DESCRIPTION: Sensitivity of the objective function with respect to the angle of attack (only for compressible solver).
-  AddHistoryOutput("SENS_AOA",   "Sens_AoA",   ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the angle of attack (only for compressible solver).", FieldType::COEFFICIENT);
   /// DESCRIPTION: Sensitivity of the objective function with respect to the Mach number (only of compressible solver).
   AddHistoryOutput("SENS_MACH",  "Sens_Mach",  ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the Mach number (only of compressible solver).", FieldType::COEFFICIENT);
   /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field pressure.
   AddHistoryOutput("SENS_PRESS", "Sens_Press", ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the far-field pressure.", FieldType::COEFFICIENT);
   /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field temperature.
   AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the far-field temperature.", FieldType::COEFFICIENT);
+  /// DESCRIPTION: Sensitivity of the objective function with respect to the angle of attack (only for compressible solver).
+  AddHistoryOutput("SENS_AOA",   "Sens_AoA",   ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the angle of attack (only for compressible solver).", FieldType::COEFFICIENT);
   /// END_GROUP
 
 }
