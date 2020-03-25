@@ -9938,7 +9938,7 @@ void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
           jPoint = node[iPoint]->GetPoint(iNeigh);
           for (jNeigh = 0; jNeigh < node[jPoint]->GetnPoint(); jNeigh++) {
             kPoint = node[jPoint]->GetPoint(jNeigh);
-            if (!geometry->node[kPoint]->GetSolidBoundary()) {
+            if (!node[kPoint]->GetSolidBoundary()) {
               scalar_prod = 0.0; norm_vect = 0.0; norm_Normal = 0.0;
               for (iDim = 0; iDim < nDim; iDim++) {
                 diff_coord = node[kPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
