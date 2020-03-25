@@ -1236,18 +1236,25 @@ void COutput::CheckHistoryOutput(){
   vector<bool> FoundField(nRequestedHistoryFields, false);
   regex exp("\\{\\S*\\}");
 
-  /*--- Check if any of the fields is a expression ---*/
-  for (auto& field : requestedScreenFields){
-    if (regex_match(field, exp)){
-      /*--- Remove the bracket on the right ---*/
-      field.pop_back();
-      /*--- Remove the bracket on the left ---*/
-      field.erase(0,1);
-      AddCustomHistoryOutput(field);
+  auto addCustomFields = [&](std::vector<string>& fields){
+    /*--- Check if any of the fields is a expression ---*/
+    for (auto& field : fields){
+      if (regex_match(field, exp)){
+        /*--- Remove the bracket on the right ---*/
+        field.pop_back();
+        /*--- Remove the bracket on the left ---*/
+        field.erase(0,1);
+        /*--- Make sure that the expression is not already there ---*/
+        if (!historyFieldsAll.CheckKey(field))
+          AddCustomHistoryOutput(field);
+      }
     }
-  }
+  };
 
-  const auto& screenFields = GetHistoryFieldsAll().GetFieldsByKey(requestedScreenFields, FieldsToRemove, true);
+  addCustomFields(requestedScreenFields);
+  addCustomFields(requestedHistoryFields);
+
+  const auto& screenFields = GetHistoryFieldsAll().GetFieldsByKey(requestedScreenFields, FieldsToRemove);
 
   /*--- Add fields to the screen output table--- */
 
@@ -1264,9 +1271,11 @@ void COutput::CheckHistoryOutput(){
 
   printInfo(FieldsToRemove, "Fields ignored: ");
 
-  const auto& historyFields = GetHistoryFieldsAll().GetFieldsByKey(requestedHistoryFields, FieldsToRemove, true);
+  const auto& histFieldsWithName = GetHistoryFieldsAll().GetFieldsByKey(requestedHistoryFields);
+  const auto& histFieldsWithGroup = GetHistoryFieldsAll().GetFieldsByGroup(requestedHistoryFields);
 
-  requestedHistoryFields = HistoryOutFieldCollection::GetKeys(historyFields);
+  requestedHistoryFields =
+      HistoryOutFieldCollection::GetKeys(HistoryOutFieldCollection::Combine(histFieldsWithGroup, histFieldsWithName));
   nRequestedHistoryFields = requestedHistoryFields.size();
 
   const auto& convergenceFields = GetHistoryFieldsAll().GetFieldsByKey(convFields, FieldsToRemove);
@@ -1437,7 +1446,7 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
         volumeFieldsAll.UpdateTokens();
 
-        volumeFieldsAll.EvalFields(customFieldRef);
+        volumeFieldsAll.EvalCustomFields(customFieldRef);
 
       }
 
@@ -1474,7 +1483,7 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
               volumeFieldsAll.UpdateTokens();
 
-              volumeFieldsAll.EvalFields(customFieldRef);
+              volumeFieldsAll.EvalCustomFields(customFieldRef);
 
             }
             WriteToDataSorter(iPoint);
@@ -1629,7 +1638,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
   }
 
   historyFieldsAll.UpdateTokens();
-  historyFieldsAll.EvalFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
+  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
 }
 
 void COutput::Postprocess_HistoryFields(CConfig *config){
@@ -1696,7 +1705,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   }
 
   historyFieldsAll.UpdateTokens();
-  historyFieldsAll.EvalFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
+  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
 }
 
 bool COutput::WriteScreen_Header(CConfig *config) {

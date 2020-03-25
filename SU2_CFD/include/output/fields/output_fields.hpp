@@ -108,13 +108,42 @@ protected:
 
 private:
 
+  /*!
+   * \brief Check if an iterator position matches a field type
+   * \param type - The field type to check
+   * \param mapIndex - The iterator position
+   * \return <TRUE> if iterator position is of specified type
+   */
   static bool findFieldWithType(const FieldType& type, const typename Map::iterator& mapIndex){
     return (mapIndex->second.fieldType == type);
   }
 
+  /*!
+   * \brief Check if an iterator position matches a group
+   * \param group - The name of the group
+   * \param mapIndex - The iterator position
+   * \return <TRUE> if iterator position is in specified group
+   */
+  static bool findFieldWithGroup(const std::string& group, const typename Map::iterator& mapIndex){
+    return (mapIndex->second.outputGroup == group);
+  }
+
+  /*!
+   * \brief Check if an iterator position matches a certain key
+   * \param name - The name of the key
+   * \param mapIndex - The iterator position
+   * \return <TRUE> if iterator position has specified name
+   */
+  static bool findFieldWithName(const std::string& key, const typename Map::iterator& mapIndex){
+    return (mapIndex->first == key);
+  }
 
 public:
 
+  /*!
+   * \brief Get the reference to the expression scope
+   * \return Reference to the expression scope
+   */
   TokenMap& GetScope() { return outFieldScope; }
 
   /*!
@@ -122,14 +151,10 @@ public:
    * \param[in] fieldKey   - A vector of keys
    * \param[out] notFound  - Vector containing a list of keys that have not been found
    * \param[in] refVector  - Vector containing references to entries of an indexed map
-   * \param[in] searchGroup - Boolean indicating whether also group names should be also included in the search
    * \return Vector containing references to the entries with the specified keys and/or group names
    */
   static InsertionVector GetFieldsByKey(const KeyVector& fieldKey, KeyVector& notFound,
-                                        const InsertionVector& refVector, bool searchGroup = false) {
-    auto findFieldWithName = [&searchGroup](const KeyType& key, const typename Map::iterator& mapIndex){
-      return (key == mapIndex->first || (searchGroup && (key == mapIndex->second.outputGroup)));
-    };
+                                        const InsertionVector& refVector) {
     return GetReferences(fieldKey, notFound, refVector, findFieldWithName);
   }
 
@@ -137,26 +162,20 @@ public:
    * \brief Get fields by using a list of keys
    * \param[in] fieldKey   - A vector of keys
    * \param[in] refVector  - Vector containing references to entries of an indexed map
-   * \param[in] searchGroup - Boolean indicating whether also group names should be also included in the search
    * \return Vector containing references to the entries with the specified keys and/or group names
    */
-  static InsertionVector GetFieldsByKey(const KeyVector& fieldKey, const InsertionVector& refVector,
-                                        bool searchGroup = false) {
+  static InsertionVector GetFieldsByKey(const KeyVector& fieldKey, const InsertionVector& refVector) {
     KeyVector dummy;
-    return GetFieldsByKey(fieldKey, dummy, refVector, searchGroup);
+    return GetFieldsByKey(fieldKey, dummy, refVector);
   }
 
   /*!
    * \brief Get fields by using a list of keys
    * \param[in] fieldKey   - A vector of keys
    * \param[out] notFound  - Vector containing a list of keys that have not been found
-   * \param[in] searchGroup - Boolean indicating whether also group names should be also included in the search
    * \return Vector containing references to the entries with the specified keys and/or group names
    */
-  InsertionVector GetFieldsByKey(const KeyVector& fieldKey, KeyVector& notFound, bool searchGroup = false) const {
-    auto findFieldWithName = [&searchGroup](const KeyType& key, const typename Map::iterator& mapIndex){
-      return (key == mapIndex->first || (searchGroup && (key == mapIndex->second.outputGroup)));
-    };
+  InsertionVector GetFieldsByKey(const KeyVector& fieldKey, KeyVector& notFound) const {
     return CurrentType::GetReferences(fieldKey, notFound, insertionVector, findFieldWithName);
   }
 
@@ -168,7 +187,7 @@ public:
    */
   InsertionVector GetFieldsByKey(const KeyVector& fieldKey, bool searchGroup = false) const {
     KeyVector dummy;
-    return GetFieldsByKey(fieldKey, dummy, searchGroup);
+    return GetFieldsByKey(fieldKey, dummy);
   }
 
   /*!
@@ -179,10 +198,7 @@ public:
    * \return Vector containing references to the entries with the specified group names
    */
   static InsertionVector GetFieldsByGroup(const std::vector<std::string>& groupList,
-                                          std::vector<std::string>& notFound, const InsertionVector& refVector){
-    auto findFieldWithGroup = [](const std::string& group, const typename Map::iterator& mapIndex){
-      return (group == mapIndex->second.outputGroup);
-    };
+                                          std::vector<std::string>& notFound, const InsertionVector& refVector) {
     return CurrentType::GetReferences(groupList, notFound, refVector, findFieldWithGroup);
   }
 
@@ -192,10 +208,7 @@ public:
    * \param[out] notFound  - Vector containing a list of group names that have not been found
    * \return Vector containing references to the entries with the specified group names
    */
-  InsertionVector GetFieldsByGroup(const std::vector<std::string>& groupList, std::vector<std::string>& notFound){
-    auto findFieldWithGroup = [](const std::string& group, const typename Map::iterator& mapIndex){
-      return (group == mapIndex->second.outputGroup);
-    };
+  InsertionVector GetFieldsByGroup(const std::vector<std::string>& groupList, std::vector<std::string>& notFound) const {
     return CurrentType::GetReferences(groupList, notFound, insertionVector, findFieldWithGroup);
   }
 
@@ -204,7 +217,7 @@ public:
    * \param[in] groupList  - A vector of group names
    * \return Vector containing references to the entries with the specified group names
    */
-  InsertionVector GetFieldsByGroup(const std::vector<std::string>& groupList){
+  InsertionVector GetFieldsByGroup(const std::vector<std::string>& groupList) const {
     std::vector<std::string> dummy;
     return GetFieldsByGroup(groupList, dummy);
   }
@@ -215,7 +228,7 @@ public:
    * \param[in] refVector  - Vector containing references to entries of an indexed map
    * \return Vector containing references to the entries with the specified field types
    */
-  static InsertionVector GetFieldsByType(const std::vector<FieldType>& type, const InsertionVector& refVector){
+  static InsertionVector GetFieldsByType(const std::vector<FieldType>& type, const InsertionVector& refVector) {
     std::vector<FieldType> dummy;
     return CurrentType::GetReferences(type, dummy, refVector, findFieldWithType);
   }
@@ -248,6 +261,10 @@ public:
     insertionVector[i]->second.value = value;
   }
 
+  /*!
+   * \brief Update the values of all variables in the scope so
+   *  that they are available when evaluation custom expressions
+   */
   void UpdateTokens(){
     for (const auto& field : insertionVector){
       if (field->second.fieldType != FieldType::CUSTOM){
@@ -256,7 +273,11 @@ public:
     }
   }
 
-  void EvalFields(const InsertionVector& customFields){
+  /*!
+   * \brief Evaluate the custom fields by evaluating the corresponding expression.
+   * \param customFields - References to the custom fields
+   */
+  void EvalCustomFields(const InsertionVector& customFields){
     for (const auto& field : customFields){
       field->second.value = field->second.expParser.Eval();
     }
@@ -264,12 +285,14 @@ public:
 
 };
 
+/*!
+ * \brief Typedef for a collection of history fields
+ */
+typedef COutFieldCollection<HistoryOutputField> HistoryOutFieldCollection;
 
-class HistoryOutFieldCollection final : public COutFieldCollection<HistoryOutputField>{
+/*!
+ * \brief Typedef for a collection of volume fields
+ */
+typedef COutFieldCollection<VolumeOutputField> VolumeOutFieldCollection;
 
-};
-
-class VolumeOutFieldCollection final : public COutFieldCollection<VolumeOutputField>{
-
-};
 

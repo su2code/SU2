@@ -102,6 +102,11 @@ public:
     return insertionVector;
   }
 
+  /*!
+   * \brief Get the index of a certain key
+   * \param[in] key - The key
+   * \return The index of the item with a certain key
+   */
   int GetIndex(const Key& key){
     int index;
     for (index = 0; index < insertionVector.size(); index++){
@@ -109,6 +114,7 @@ public:
         return index;
       }
     }
+    return -1;
   }
 
   /*!
@@ -125,16 +131,20 @@ public:
                                        const F &f) {
     InsertionVector references;
     notFound.clear();
-    bool found = false;
-    for (auto prop : propertyList){
-      found = false;
-      for (auto mapIndex : refVector){
+    std::vector<bool> found(propertyList.size(), false);
+    for (const auto& mapIndex : refVector){
+      int i = 0;
+      for (const auto& prop : propertyList){
         if (f(prop, mapIndex)){
           references.push_back(mapIndex);
-          found = true;
+          found[i] = true;
         }
       }
-      if (!found) notFound.push_back(prop);
+    }
+    for (unsigned int i = 0; i < found.size(); i++){
+      if (!found[i]){
+        notFound.push_back(propertyList[i]);
+      }
     }
     return references;
   }
@@ -150,5 +160,24 @@ public:
       keyList.push_back(mapIndex->first);
     }
     return keyList;
+  }
+
+  /*!
+   * \brief Combine two insertionVectors into one and remove duplicates.
+   * \param[in] vecOne - The first vector for the combination
+   * \param[in] vecTwo - The second vector for the combination
+   * \return The combined vector
+   */
+  static InsertionVector Combine(const InsertionVector& vecOne, const InsertionVector& vecTwo){
+    InsertionVector newVector;
+    for (const auto& field : vecOne){
+      newVector.push_back(field);
+    }
+    for (const auto& field: vecTwo){
+      if (std::find(newVector.begin(), newVector.end(), field) == newVector.end()){
+        newVector.push_back(field);
+      }
+    }
+    return newVector;
   }
 };
