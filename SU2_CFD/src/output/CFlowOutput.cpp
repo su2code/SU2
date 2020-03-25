@@ -678,10 +678,10 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
 
   /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.
-  /// DESCRIPTION: Drag coefficient
-  AddHistoryOutput("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total drag coefficient on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
   /// DESCRIPTION: Lift coefficient
   AddHistoryOutput("LIFT",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total lift coefficient on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
+  /// DESCRIPTION: Drag coefficient
+  AddHistoryOutput("DRAG",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF", "Total drag coefficient on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
   /// DESCRIPTION: Sideforce coefficient
   AddHistoryOutput("SIDEFORCE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF", "Total sideforce coefficient on all surfaces set with MARKER_MONITORING", FieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the x-axis
