@@ -71,32 +71,20 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ****geometry, CSolve
 void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver **solver_container,
                                                    CNumerics **numerics, CConfig *config,
                                                    unsigned short RunTime_EqSystem) {
-  bool dynamic = config->GetTime_Domain();
   bool first_iter = (config->GetInnerIter() == 0);
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
   unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA();
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   CSolver* solver = solver_container[MainSolver];
 
-  /*--- Initial calculation, different logic for restarted simulations. ---*/
-  bool initial_calc = false;
-  if (config->GetRestart())
-    initial_calc = (config->GetTimeIter() == config->GetRestart_Iter()) && first_iter;
-  else
-    initial_calc = (config->GetTimeIter() == 0) && first_iter;
+  /*--- Mass Matrix was computed during preprocessing, see notes therein. ---*/
 
-  /*--- Mass Matrix computed during preprocessing, see notes therein. ---*/
-
-  /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed. ---*/
-  /*--- This is done only once, at the beginning of the calculation. From then on, K is constant. ---*/
-  /*--- For correct differentiation of dynamic cases the matrix needs to be computed every time. ---*/
-  if (linear_analysis && (dynamic || initial_calc))
+  if (linear_analysis) {
+    /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed. ---*/
     solver->Compute_StiffMatrix(geometry, numerics, config);
-
-  if (nonlinear_analysis) {
-
+  }
+  else {
     /*--- If the analysis is nonlinear the stress terms also need to be computed. ---*/
     /*--- For full Newton-Raphson the stiffness matrix and the nodal term are updated every time. ---*/
     if (IterativeScheme == NEWTON_RAPHSON) {
@@ -111,7 +99,6 @@ void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver 
       else
         solver->Compute_NodalStressRes(geometry, numerics, config);
     }
-
   }
 
   /*--- Apply the NATURAL BOUNDARY CONDITIONS (loads). ---*/
