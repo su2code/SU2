@@ -8784,7 +8784,6 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   unsigned long face_iPoint = 0, face_jPoint = 0, iPoint, iElem;
   long iEdge;
   unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
-  su2double *Coord_Edge_CG, *Coord_FaceElem_CG, *Coord_Elem_CG, *Coord_FaceiPoint, *Coord_FacejPoint, Area,
   Volume, DomainVolume, my_DomainVolume, *NormalFace = NULL;
   bool change_face_orientation;
 
@@ -9919,6 +9918,8 @@ void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
   unsigned long Point_Normal, jPoint;
   unsigned short iNeigh, iMarker, iDim;
   unsigned long iPoint, iVertex;
+  unsigned short jNeigh;
+  unsigned long kPoint;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -9935,27 +9936,32 @@ void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
         Point_Normal = 0; cos_max = -1.0;
         for (iNeigh = 0; iNeigh < node[iPoint]->GetnPoint(); iNeigh++) {
           jPoint = node[iPoint]->GetPoint(iNeigh);
-          scalar_prod = 0.0; norm_vect = 0.0; norm_Normal = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            diff_coord = node[jPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
-            scalar_prod += diff_coord*Normal[iDim];
-            norm_vect += diff_coord*diff_coord;
-            norm_Normal += Normal[iDim]*Normal[iDim];
-          }
-          norm_vect = sqrt(norm_vect);
-          norm_Normal = sqrt(norm_Normal);
-          cos_alpha = scalar_prod/(norm_vect*norm_Normal);
+          for (jNeigh = 0; jNeigh < node[jPoint]->GetnPoint(); jNeigh++) {
+            kPoint = node[jPoint]->GetPoint(jNeigh);
+            if (!geometry->node[kPoint]->GetSolidBoundary()) {
+              scalar_prod = 0.0; norm_vect = 0.0; norm_Normal = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++) {
+                diff_coord = node[kPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
+                scalar_prod += diff_coord*Normal[iDim];
+                norm_vect += diff_coord*diff_coord;
+                norm_Normal += Normal[iDim]*Normal[iDim];
+              }
+              norm_vect = sqrt(norm_vect);
+              norm_Normal = sqrt(norm_Normal);
+              cos_alpha = scalar_prod/(norm_vect*norm_Normal);
 
-          /*--- Get maximum cosine ---*/
-          if (cos_alpha >= cos_max) {
-            Point_Normal = jPoint;
-            cos_max = cos_alpha;
-          }
-        }
+              /*--- Get maximum cosine ---*/
+              if (cos_alpha >= cos_max) {
+                Point_Normal = kPoint;
+                cos_max = cos_alpha;
+              } // if cos(alpha)
+            } // !SolidBoundary
+          } // jNeigh
+        } // iNeigh
         vertex[iMarker][iVertex]->SetNormal_Neighbor(Point_Normal);
-      }
-    }
-  }
+      } // iVertex
+    } // KindBC
+  } // iMarker
 }
 
 void CPhysicalGeometry::ShiftNormal_Neighbor(CConfig *config) {
