@@ -569,7 +569,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       distance = 0.0;
       Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*Normal[iDim]
+        distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*Normal[iDim]*
         (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*Normal[iDim];
         Area += Normal[iDim]*Normal[iDim];
       }
