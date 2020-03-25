@@ -1466,8 +1466,18 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
             buildFieldIndexCache = fieldIndexCache.empty();
 
+            LoadVolumeData(config, geometry, solver, iPoint);
+
             LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
 
+            if (!customFieldRef.empty()){
+
+              volumeFieldsAll.UpdateTokens();
+
+              volumeFieldsAll.EvalFields(customFieldRef);
+
+            }
+            WriteToDataSorter(iPoint);
           }
         }
       }
