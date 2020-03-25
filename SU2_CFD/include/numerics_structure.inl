@@ -402,7 +402,12 @@ inline void CSourcePieceWise_TurbSST::SetF2blending(su2double val_F2_i, su2doubl
 inline void CSourcePieceWise_TurbSST::SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {
   CDkw_i = val_CDkw_i;
   CDkw_j = val_CDkw_j;
-}      
+}
+
+inline void CSourcePieceWise_TurbSST::SetDivTurbVar(su2double *val_DivTurbVar_i, su2double *val_DivTurbVar_j) {
+  DivTurbVar_i = val_DivTurbVar_i;
+  DivTurbVar_j = val_DivTurbVar_j;
+}
 
 inline void CSourcePieceWise_TurbSA::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
 

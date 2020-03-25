@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file numerics_structure.hpp
  * \brief Headers of the main subroutines for the dumerical definition of the problem.
  *        The subroutines and functions are in the <i>numerics_structure.cpp</i>,
@@ -490,6 +490,13 @@ public:
    * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {/* empty */};
+  
+  /*!
+   * \brief Set the divergene of the turbulent variables for the SST model.
+   * \param[in] val_DivTurbVar_i - Value of the divergence of turbulent variables at point i.
+   * \param[in] val_DivTurbVar_j - Value of the divergence of turbulent variables at point j.
+   */
+  virtual void SetDivTurbVar(su2double *val_DivTurbVar_i, su2double *val_DivTurbVar_j) {/* empty */};
   
   /*!
    * \brief Set the gradient of the auxiliary variables.
@@ -4714,6 +4721,8 @@ private:
   su2double CDkw_i, CDkw_j;
 
   su2double kAmb, omegaAmb;
+  
+  su2double *DivTurbVar_i, *DivTurbVar_j;
  
   bool incompressible;
   bool sustaining_terms;
@@ -4754,6 +4763,13 @@ public:
    * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j);
+  
+  /*!
+   * \brief Set the divergene of the turbulent variables for the SST model.
+   * \param[in] val_DivTurbVar_i - Value of the divergence of turbulent variables at point i.
+   * \param[in] val_DivTurbVar_j - Value of the divergence of turbulent variables at point j.
+   */
+  virtual void SetDivTurbVar(su2double *val_DivTurbVar_i, su2double *val_DivTurbVar_j);
   
   /*!
    * \brief Residual for source term integration.

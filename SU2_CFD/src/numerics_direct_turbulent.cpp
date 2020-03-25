@@ -1260,6 +1260,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    pk = max(pk,0.0);
 
    zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
+//    zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
@@ -1306,6 +1307,15 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    val_Jacobian_i[0][1] = -beta_star*TurbVar_i[0]*Volume;
    val_Jacobian_i[1][0] = 0.0;
    val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
+    
+   /*--- Production ---*/
+   val_Jacobian_i[0][0] += (1./TurbVar_i[1]*StrainMag_i*StrainMag_i-2./3.)*Volume;
+   val_Jacobian_i[1][1] += -2./3.*alfa_blended*Volume;
+
+   /*--- Cross diffusion ---*/
+    
+   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVar_i[1]/TurbVar_i[1];
+   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVar_i[0]/TurbVar_i[1];
   }
 
   AD::SetPreaccOut(val_residual, nVar);
