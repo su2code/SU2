@@ -1465,16 +1465,18 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
         su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance + EPS);
         su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
         
-        // Solution[0] = Omega * eddy_viscosity;
+        Solution[0] = Omega * eddy_viscosity;
         Solution[1] = density*Omega;
 
-        nodes->SetSolution_Old(jPoint,1,Solution[1]);
-        nodes->SetSolution(jPoint,1,Solution[1]);
-        LinSysRes.SetBlock_Zero(jPoint,1);
-        
-        /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-        total_index = jPoint*nVar+1;
-        Jacobian.DeleteValsRowi(total_index);
+        for (iVar = 0; iVar < nVar; iVar++) {
+          nodes->SetSolution_Old(jPoint,iVar,Solution[iVar]);
+          nodes->SetSolution(jPoint,iVar,Solution[iVar]);
+          LinSysRes.SetBlock_Zero(jPoint,iVar);
+          
+          /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+          total_index = jPoint*nVar+iVar;
+          Jacobian.DeleteValsRowi(total_index);
+        }
       }
     }
   }
