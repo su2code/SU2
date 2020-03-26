@@ -5636,12 +5636,20 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
       for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
         const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
         if (node[jPoint]->GetSolidBoundary()) {
-          node[iPoint]->SetBool_Wall_Neighbor(true);
-          node[iPoint]->SetWall_Marker(markerID);
-          node[iPoint]->SetWall_Element(elemID);
-          node[iPoint]->SetWall_Interpolation_Weights(weights);
-          break;
+          for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+            if (config->GetViscous_Wall(iMarker)) {
+              const long jVertex = node[jPoint]->GetVertex(iMarker);
+              if (jVertex != -1) {
+                node[iPoint]->SetBool_Wall_Neighbor(true);
+                node[iPoint]->SetWall_Marker(markerID);
+                node[iPoint]->SetWall_Element(elemID);
+                node[iPoint]->SetWall_Interpolation_Weights(weights);
+                break;
+              }
+            }
+          }
         }
+        if (node[iPoint]->GetBool_Wall_Neighbor()) break;
       }
     }
   }
