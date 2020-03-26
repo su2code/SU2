@@ -84,7 +84,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.230578, 0.678810, 0.181780, -0.000018] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-2.230573, 0.696562, 0.181780, -0.000018] #last 4 columns
     discadj_rans_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001

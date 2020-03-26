@@ -80,6 +80,19 @@ inline void omp_set_num_threads(int) { }
  */
 inline constexpr int omp_get_thread_num(void) {return 0;}
 
+/*!
+ * \brief Dummy lock type and associated functions.
+ */
+struct omp_lock_t {};
+struct DummyVectorOfLocks {
+  omp_lock_t l;
+  inline omp_lock_t& operator[](int) {return l;}
+};
+inline void omp_init_lock(omp_lock_t*){}
+inline void omp_set_lock(omp_lock_t*){}
+inline void omp_unset_lock(omp_lock_t*){}
+inline void omp_destroy_lock(omp_lock_t*){}
+
 #endif
 
 /*--- Convenience macros (do not use excessive nesting of macros). ---*/
@@ -106,6 +119,14 @@ inline constexpr int omp_get_thread_num(void) {return 0;}
 inline constexpr size_t roundUpDiv(size_t numerator, size_t denominator)
 {
   return (numerator+denominator-1)/denominator;
+}
+
+/*!
+ * \brief Round up to next multiple.
+ */
+inline constexpr size_t nextMultiple(size_t argument, size_t multiple)
+{
+  return roundUpDiv(argument, multiple) * multiple;
 }
 
 /*!
