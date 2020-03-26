@@ -1378,7 +1378,7 @@ void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,   unsigned short val_marker) {
   
   unsigned long iPoint, jPoint, kPoint, iVertex, kVertex, iElem, total_index;
-  unsigned short iDim, jDim, iVar, kNode;
+  unsigned short iDim, jDim, iVar, jNode, kNode;
   su2double distance, density = 0.0, laminar_viscosity = 0.0, eddy_viscosity = 0.0, beta_1 = constants[4];;
   su2double Tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
             Delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
@@ -1389,7 +1389,9 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
-    for (jPoint = 0; jPoint < geometry->node[iPoint]->GetnPoint(); jPoint++) {
+    for (jNode = 0; jNode < geometry->node[iPoint]->GetnPoint(); jNode++) {
+      
+      jPoint = geometry->node[iPoint]->GetPoint(jNode);
 
       /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
       if ((geometry->node[jPoint]->GetDomain()) && (geometry->node[jPoint]->GetBool_Wall_Neighbor())) {
