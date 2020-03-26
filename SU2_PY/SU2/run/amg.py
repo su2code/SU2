@@ -273,10 +273,10 @@ def amg ( config , kind='' ):
         su2amg._amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
         config_amg['adap_back'] = "amg_back.meshb"
 
-    if dim == 2:
-        sys.stdout.write("\nPreprocessing background mesh.\n")
-        sys.stdout.flush()
-        su2amg.prepro_back_mesh(config_cfd, config_amg)
+    # if dim == 2:
+    #     sys.stdout.write("\nPreprocessing background mesh.\n")
+    #     sys.stdout.flush()
+    #     su2amg.prepro_back_mesh(config_cfd, config_amg)
     
     if 'PYADAP_SOURCE' in config:
         config_amg['adap_source'] = os.path.join(cwd,config['PYADAP_SOURCE'])
