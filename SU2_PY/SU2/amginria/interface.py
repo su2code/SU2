@@ -95,7 +95,7 @@ def prepro_back_mesh(config_cfd, config_amg):
         sys.stdout.write("Flipping triangles in background surface mesh.\n")
         sys.stdout.flush()
 
-        NbrTri = len(mesh_bak['Triangles'])/4
+        NbrTri = len(mesh_bak['Triangles'])
         Tri = np.reshape(mesh_bak['Triangles'],(NbrTri, 4)).astype(int)
         for i in range(NbrTri):
             tmp = Tri[i][1]
