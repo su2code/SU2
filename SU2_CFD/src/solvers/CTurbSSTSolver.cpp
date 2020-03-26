@@ -1377,9 +1377,9 @@ void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 
 void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,   unsigned short val_marker) {
   
-  unsigned long iPoint, jPoint, kPoint, iVertex, iElem, total_index;
+  unsigned long iPoint, jPoint, kPoint, iVertex, total_index;
   unsigned short iDim, jDim, iVar, jNode, kNode;
-  long kVertex;
+  long iElem, kVertex;
   su2double distance, density = 0.0, laminar_viscosity = 0.0, eddy_viscosity = 0.0, beta_1 = constants[4];;
   su2double Tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
             Delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
@@ -1387,16 +1387,18 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
             UnitNormal[3] = {0.0,0.0,0.0}, Area;
   su2double *weights;
 
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
-    for (jNode = 0; jNode < geometry->node[iPoint]->GetnPoint(); jNode++) {
-      
-      jPoint = geometry->node[iPoint]->GetPoint(jNode);
+//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//
+//    for (jNode = 0; jNode < geometry->node[iPoint]->GetnPoint(); jNode++) {
+//
+//      jPoint = geometry->node[iPoint]->GetPoint(jNode);
 
+  for (jPoint = 0; jPoint < geometry->GetnPointDomain(); jPoint++) {
       /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
       if ((geometry->node[jPoint]->GetDomain()) &&
           (geometry->node[jPoint]->GetBool_Wall_Neighbor()) &&
+          (geometry->node[jPoint]->GetWall_Marker() != -1) &&
           (geometry->node[jPoint]->GetWall_Marker() == val_marker)) {
         
         iElem = geometry->node[jPoint]->GetWall_Element();
@@ -1483,7 +1485,7 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
           Jacobian.DeleteValsRowi(total_index);
         }
       }
-    }
+//    }
   }
   
 }
