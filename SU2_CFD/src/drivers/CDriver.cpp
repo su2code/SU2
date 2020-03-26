@@ -2671,8 +2671,10 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
           if (rank == MASTER_NODE) cout << "flow tractions. " << endl;
         }
         else if (structural_donor && fluid_target) {
-          if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] == nullptr)
-            SU2_MPI::Error("Mesh deformation was not correctly specified for the fluid zone.", CURRENT_FUNCTION);
+          if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] == nullptr) {
+            SU2_MPI::Error("Mesh deformation was not correctly specified for the fluid zone.\n"
+                           "Use DEFORM_MESH=YES, and setup MARKER_DEFORM_MESH=(...)", CURRENT_FUNCTION);
+          }
           interface_types[donorZone][targetZone] = BOUNDARY_DISPLACEMENTS;
           nVarTransfer = 0;
           interface[donorZone][targetZone] = new CDisplacementsInterface(nVar, nVarTransfer, config[donorZone]);

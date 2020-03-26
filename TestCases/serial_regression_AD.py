@@ -270,8 +270,8 @@ def main():
     discadj_fsi           = TestCase('discadj_fsi')
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
-    discadj_fsi.test_iter = 3000
-    discadj_fsi.test_vals = [0.958848,-0.157601,2.726147,1.798362] #last 4 columns
+    discadj_fsi.test_iter = 6
+    discadj_fsi.test_vals = [6, -1.572702, -3.084381, 4.3990e-04, -1.0631] #last 5 columns
     discadj_fsi.su2_exec  = "SU2_CFD_AD"
     discadj_fsi.timeout   = 1600
     discadj_fsi.tol       = 0.00001
