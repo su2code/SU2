@@ -1377,7 +1377,7 @@ void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 
 void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,   unsigned short val_marker) {
   
-  unsigned long iPoint, jPoint, kPoint, iVertex, iElem, total_index;
+  unsigned long iPoint, jPoint, kPoint, iVertex, kVertex, iElem, total_index;
   unsigned short iDim, jDim, iVar, kNode;
   su2double distance, density = 0.0, laminar_viscosity = 0.0, eddy_viscosity = 0.0, beta_1 = constants[4];;
   su2double Tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
@@ -1411,6 +1411,7 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
         for (kNode = 0; kNode < geometry->bound[val_marker][iElem]->GetnNodes(); kNode++) {
 
           kPoint = geometry->bound[val_marker][iElem]->GetNode(kNode);
+          kVertex = geometry->node[kPoint]->GetVertex(val_marker);
           
           /*--- Set wall values ---*/
 
@@ -1418,7 +1419,7 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
           su2double LamViscWall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
 
           su2double **GradPrimVar = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(kPoint);
-          su2double *Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+          su2double *Normal = geometry->vertex[val_marker][kVertex]->GetNormal();
           
           Area = 0.;
           for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
