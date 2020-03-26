@@ -2586,15 +2586,15 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
         /*--- On the target side ---*/
         nMarkerTarget = config[targetZone]->GetnMarker_All();
 
-      for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
+        for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
 
-          /*--- If the tag GetMarker_All_ZoneInterface(iMarker) equals the index we are looping at ---*/
-        if ( config[targetZone]->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
-            /*--- We have identified the identifier for the interface marker ---*/
-            markTarget = iMarkerTarget;
+            /*--- If the tag GetMarker_All_ZoneInterface(iMarker) equals the index we are looping at ---*/
+          if ( config[targetZone]->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
+              /*--- We have identified the identifier for the interface marker ---*/
+              markTarget = iMarkerTarget;
 
-            break;
-        }
+              break;
+          }
         }
 
 #ifdef HAVE_MPI
@@ -2602,36 +2602,34 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
       Donor_check  = -1;
       Target_check = -1;
 
-        /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because
-         * of the partition or because the zone does not include it ---*/
+      /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because
+       * of the partition or because the zone does not include it ---*/
 
-        SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
       if (rank == MASTER_NODE) {
         for (iRank = 0; iRank < nProcessor; iRank++) {
           if( Buffer_Recv_mark[iRank] != -1 ) {
-              Donor_check = Buffer_Recv_mark[iRank];
-
-              break;
-            }
+            Donor_check = Buffer_Recv_mark[iRank];
+            break;
           }
         }
+      }
 
-        SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-        SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
       if (rank == MASTER_NODE){
         for (iRank = 0; iRank < nProcessor; iRank++){
           if( Buffer_Recv_mark[iRank] != -1 ){
-              Target_check = Buffer_Recv_mark[iRank];
-
-              break;
-            }
+            Target_check = Buffer_Recv_mark[iRank];
+            break;
           }
         }
+      }
 
-        SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
 #else
       Donor_check  = markDonor;
@@ -2704,39 +2702,39 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
         /*--- Match Zones ---*/
       if (rank == MASTER_NODE) cout << "Setting coupling ";
 
-          bool conservative_interp = config[donorZone]->GetConservativeInterpolation();
+      bool conservative_interp = config[donorZone]->GetConservativeInterpolation();
 
-          /*--- Conditions for conservative interpolation are not met, we cannot fallback on the consistent approach
-                because CFlowTractionInterface relies on the information in config to be correct. ---*/
-          if ( conservative_interp && targetZone == 0 && structural_target )
-            SU2_MPI::Error("Conservative interpolation assumes the structural model mesh is evaluated second, "
-                           "somehow this has not happened.",CURRENT_FUNCTION);
+      /*--- Conditions for conservative interpolation are not met, we cannot fallback on the consistent approach
+            because CFlowTractionInterface relies on the information in config to be correct. ---*/
+      if ( conservative_interp && targetZone == 0 && structural_target )
+        SU2_MPI::Error("Conservative interpolation assumes the structural model mesh is evaluated second, "
+                       "somehow this has not happened.",CURRENT_FUNCTION);
 
-        switch (config[donorZone]->GetKindInterpolation()) {
+      switch (config[donorZone]->GetKindInterpolation()) {
 
-          case NEAREST_NEIGHBOR:
-            if ( conservative_interp && targetZone > 0 && structural_target ) {
-              interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
-              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
-                                               "from opposite mesh." << endl;
-            }
-            else {
+        case NEAREST_NEIGHBOR:
+          if ( conservative_interp && targetZone > 0 && structural_target ) {
+            interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
+            if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
+                                             "from opposite mesh." << endl;
+          }
+          else {
             interpolation[donorZone][targetZone] = new CNearestNeighbor(geometry, config, donorZone, targetZone);
             if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
-            }
-            break;
+          }
+          break;
 
-          case ISOPARAMETRIC:
-            if ( conservative_interp && targetZone > 0 && structural_target ) {
-              interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
-              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
-                                               "from opposite mesh." << endl;
-            }
-            else {
+        case ISOPARAMETRIC:
+          if ( conservative_interp && targetZone > 0 && structural_target ) {
+            interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
+            if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
+                                             "from opposite mesh." << endl;
+          }
+          else {
             interpolation[donorZone][targetZone] = new CIsoparametric(geometry, config, donorZone, targetZone);
             if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
-            }
-            break;
+          }
+          break;
 
         case WEIGHTED_AVERAGE:
           interpolation[donorZone][targetZone] = new CSlidingMesh(geometry, config, donorZone, targetZone);
@@ -2744,19 +2742,19 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
           break;
 
-          case RADIAL_BASIS_FUNCTION:
-            if ( conservative_interp && targetZone > 0 && structural_target ) {
-                interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
-                if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
-                                                 "from opposite mesh." << endl;
-              }
-              else {
-                interpolation[donorZone][targetZone] = new CRadialBasisFunction(geometry, config,
-                                                                                donorZone, targetZone);
-                if (rank == MASTER_NODE) cout << "using a radial basis function approach." << endl;
-              }
-            break;
-            }
+        case RADIAL_BASIS_FUNCTION:
+          if ( conservative_interp && targetZone > 0 && structural_target ) {
+              interpolation[donorZone][targetZone] = new CMirror(geometry, config, donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients "
+                                               "from opposite mesh." << endl;
+          }
+          else {
+            interpolation[donorZone][targetZone] = new CRadialBasisFunction(geometry, config,
+                                                                            donorZone, targetZone);
+            if (rank == MASTER_NODE) cout << "using a radial basis function approach." << endl;
+          }
+        break;
+      }
 
         /*--- Initialize the appropriate transfer strategy ---*/
       if (rank == MASTER_NODE) cout << "Transferring ";
