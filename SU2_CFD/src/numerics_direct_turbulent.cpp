@@ -1202,7 +1202,6 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
-  AD::SetPreaccIn(DivTurbVarGrad_i, nVar);
 
   unsigned short iDim;
   su2double alfa_blended, beta_blended;
