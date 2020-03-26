@@ -1377,8 +1377,9 @@ void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 
 void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,   unsigned short val_marker) {
   
-  unsigned long iPoint, jPoint, kPoint, iVertex, kVertex, iElem, total_index;
+  unsigned long iPoint, jPoint, kPoint, iVertex, iElem, total_index;
   unsigned short iDim, jDim, iVar, jNode, kNode;
+  long kVertex;
   su2double distance, density = 0.0, laminar_viscosity = 0.0, eddy_viscosity = 0.0, beta_1 = constants[4];;
   su2double Tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
             Delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},

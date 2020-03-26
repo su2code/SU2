@@ -5635,13 +5635,13 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
       node[iPoint]->SetWall_Marker(-1);
       node[iPoint]->SetWall_Element(-1);
       node[iPoint]->SetBool_Wall_Neighbor(false);
-      if (!node[iPoint]->GetSolidBoundary()) {
+      if (node[iPoint]->GetDomain() && !node[iPoint]->GetSolidBoundary()) {
         for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
           const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
-          if (node[jPoint]->GetSolidBoundary()) {
-            for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-              if (config->GetViscous_Wall(iMarker)) {
-                const long jVertex = node[jPoint]->GetVertex(iMarker);
+          if (node[jPoint]->GetDomain() && node[jPoint]->GetSolidBoundary()) {
+//            for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+//              if (config->GetViscous_Wall(markerID)) {
+                const long jVertex = node[jPoint]->GetVertex(markerID);
                 if (jVertex != -1) {
                   node[iPoint]->SetBool_Wall_Neighbor(true);
                   node[iPoint]->SetWall_Marker(markerID);
@@ -5649,12 +5649,12 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
                   node[iPoint]->SetWall_Interpolation_Weights(weights);
                   break;
                 } // if jVertex
-              } // if iMarker Viscous Wall
-            } // iMarker
-          } // if jPoint Solid Boundary
+//              } // if iMarker Viscous Wall
+//            } // iMarker
+          } // if jPoint Domain && Solid Boundary
           if (node[iPoint]->GetBool_Wall_Neighbor()) break;
         } // iNode
-      } // if iPoint !Solid Boundary
+      } // if iPoint Domain && !Solid Boundary
     }
   }
 
