@@ -56,9 +56,6 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     Geometry_Direct.resize(nPoint,nDim) = su2double(0.0);
     Solution_Geometry.resize(nPoint,nDim) = su2double(1e-16);
     Solution_Geometry_Old.resize(nPoint,nDim) = su2double(0.0);
-    Cross_Term_Derivative.resize(nPoint,nVar) = su2double(0.0);
-    Geometry_CrossTerm_Derivative.resize(nPoint,nDim) = su2double(0.0);
-    Geometry_CrossTerm_Derivative_Flow.resize(nPoint,nDim) = su2double(0.0);
 
     Solution_BGS.resize(nPoint,nVar) = su2double(0.0);
     Solution_Geometry_BGS_k.resize(nPoint,nDim) = su2double(0.0);

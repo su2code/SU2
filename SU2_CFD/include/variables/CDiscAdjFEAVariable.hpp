@@ -60,9 +60,6 @@ protected:
   MatrixType Solution_Direct_Vel;
   MatrixType Solution_Direct_Accel;
 
-  MatrixType Cross_Term_Derivative;
-  MatrixType Geometry_CrossTerm_Derivative;
-
   MatrixType Solution_BGS;
 
   /*!
@@ -239,35 +236,6 @@ public:
    * \brief Set the value of the old velocity (Structural Analysis - adjoint).
    */
   void Set_OldSolution_Vel() final;
-
-  /*!
-   * \brief Set the contribution of crossed terms into the derivative.
-   */
-  inline void SetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) final {
-    Cross_Term_Derivative(iPoint,iVar) = der;
-  }
-
-  /*!
-   * \brief Get the contribution of crossed terms into the derivative.
-   */
-  inline su2double GetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar) const final { return Cross_Term_Derivative(iPoint,iVar); }
-
-  /*!
-   * \brief A virtual member. Get the geometry solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline su2double GetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iVar) const final {
-    return Geometry_CrossTerm_Derivative(iPoint,iVar);
-  }
-
-  /*!
-   * \brief A virtual member. Set the value of the mesh solution (adjoint).
-   * \param[in] der - cross term derivative.
-   */
-  inline void SetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) final {
-    Geometry_CrossTerm_Derivative(iPoint,iVar) = der;
-  }
 
   /*!
    * \brief Set the value of the adjoint solution in the current BGS subiteration.

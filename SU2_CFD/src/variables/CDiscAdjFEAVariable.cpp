@@ -43,9 +43,6 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
       Solution(iPoint,iVar) = disp[iVar];
 
   if (fsi) {
-    Cross_Term_Derivative.resize(nPoint,nDim) = su2double(0.0);
-    Geometry_CrossTerm_Derivative.resize(nPoint,nDim) = su2double(0.0);
-
     Solution_BGS.resize(nPoint,nDim) = su2double(0.0);
   }
 

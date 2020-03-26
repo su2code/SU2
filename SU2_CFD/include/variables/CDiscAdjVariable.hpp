@@ -42,10 +42,6 @@ private:
   MatrixType DualTime_Derivative;
   MatrixType DualTime_Derivative_n;
 
-  MatrixType Cross_Term_Derivative;
-  MatrixType Geometry_CrossTerm_Derivative;
-  MatrixType Geometry_CrossTerm_Derivative_Flow;
-
   MatrixType Solution_Geometry;
   MatrixType Solution_Geometry_Old;
   MatrixType Geometry_Direct;
@@ -144,40 +140,6 @@ public:
   }
 
   /*!
-   * \brief A virtual member. Get the geometry solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline su2double GetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iVar) const override {
-    return Geometry_CrossTerm_Derivative(iPoint,iVar);
-  }
-
-  /*!
-   * \brief A virtual member. Set the value of the mesh solution (adjoint).
-   * \param[in] der - cross term derivative.
-   */
-  inline void SetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iDim, su2double der) override {
-    Geometry_CrossTerm_Derivative(iPoint,iDim) = der;
-  }
-
-  /*!
-   * \brief Get the mesh cross term derivative from the flow solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline su2double GetGeometry_CrossTerm_Derivative_Flow(unsigned long iPoint, unsigned long iVar) const override {
-    return Geometry_CrossTerm_Derivative_Flow(iPoint,iVar);
-  }
-
-  /*!
-   * \brief Set the value of the mesh cross term derivative from the flow solution (adjoint).
-   * \param[in] der - cross term derivative.
-   */
-  inline void SetGeometry_CrossTerm_Derivative_Flow(unsigned long iPoint, unsigned long iDim, su2double der) override {
-    Geometry_CrossTerm_Derivative_Flow(iPoint,iDim) = der;
-  }
-
-  /*!
    * \brief Set the value of the mesh solution (adjoint).
    */
   void Set_OldSolution_Geometry() override;
@@ -202,19 +164,5 @@ public:
    * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
    */
   inline su2double Get_BGSSolution(unsigned long iPoint, unsigned long iDim) const override { return Solution_BGS(iPoint,iDim);}
-
-  /*!
-   * \brief Set the contribution of crossed terms into the derivative.
-   */
-  inline void SetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) override {
-    Cross_Term_Derivative(iPoint,iVar) = der;
-  }
-
-  /*!
-   * \brief Get the contribution of crossed terms into the derivative.
-   */
-  inline su2double GetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar) const override {
-    return Cross_Term_Derivative(iPoint,iVar);
-  }
 
 };

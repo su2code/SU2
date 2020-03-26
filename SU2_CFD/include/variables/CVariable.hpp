@@ -2099,32 +2099,6 @@ public:
   inline virtual void SetSolution_Geometry(unsigned long iPoint, unsigned long iVar, su2double solution_geometry) {}
 
   /*!
-   * \brief A virtual member. Get the geometry solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline virtual su2double GetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member. Set the value of the mesh solution (adjoint).
-   * \param[in] solution - Solution of the problem (acceleration).
-   */
-  inline virtual void SetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iDim, su2double der) {}
-
-  /*!
-   * \brief A virtual member. Get the geometry solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline virtual su2double GetGeometry_CrossTerm_Derivative_Flow(unsigned long iPoint, unsigned long iVar) const { return 0.0;}
-
-  /*!
-   * \brief A virtual member. Set the value of the mesh solution (adjoint).
-   * \param[in] solution - Solution of the problem (acceleration).
-   */
-  inline virtual void SetGeometry_CrossTerm_Derivative_Flow(unsigned long iPoint, unsigned long iDim, su2double der) {}
-
-  /*!
    * \brief A virtual member. Set the value of the old geometry solution (adjoint).
    */
   inline virtual void Set_OldSolution_Geometry() {}
@@ -2170,17 +2144,6 @@ public:
    * \param[out] val_solution - old adjoint solution for coordinate iDim
    */
   inline virtual su2double Get_BGSSolution(unsigned long iPoint, unsigned long iDim) const {return 0.0;}
-
-  /*!
-   * \brief  A virtual member. Set the contribution of crossed terms into the derivative.
-   */
-  inline virtual void SetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) {}
-
-  /*!
-   * \brief  A virtual member. Get the contribution of crossed terms into the derivative.
-   * \return The contribution of crossed terms into the derivative.
-   */
-  inline virtual su2double GetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Set the direct velocity solution for the adjoint solver.
