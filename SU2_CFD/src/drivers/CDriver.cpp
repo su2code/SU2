@@ -247,15 +247,6 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
   PythonInterface_Preprocessing(config_container, geometry_container, solver_container);
 
-  /*--- Open the FSI convergence history file ---*/
-
-//  if (fsi){
-//      if (rank == MASTER_NODE) cout << endl <<"Opening FSI history file." << endl;
-//      unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
-//      output_container->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
-//                                config_container, integration_container, 0,
-//                                ZONE_FLOW, ZONE_STRUCT, true);
-//  }
 
   /*--- Preprocessing time is reported now, but not included in the next compute portion. ---*/
 
