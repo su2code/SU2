@@ -1310,6 +1310,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     
    /*--- Production ---*/
    val_Jacobian_i[0][0] += (1./TurbVar_i[1]*StrainMag_i*StrainMag_i-2./3.*diverg)*Volume;
+   val_Jacobian_i[0][1] += -(TurbVar_i[0]/pow(TurbVar_i[1],2.0)*StrainMag_i*StrainMag_i)*Volume;
    val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
 
    /*--- Cross diffusion ---*/
