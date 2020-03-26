@@ -564,7 +564,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   }
   
-  delete [] DivTurbVarGrad;
+//  delete [] DivTurbVarGrad;
 
 }
 
