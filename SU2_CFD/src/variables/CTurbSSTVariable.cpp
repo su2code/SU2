@@ -51,7 +51,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 }
 
 void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_viscosity,
-                                       su2double val_dist, su2double val_density) {
+                                       su2double val_dist, su2double val_density, bool transitionLM) {
   su2double arg2, arg2A, arg2B, arg1;
 
   AD::StartPreacc();
@@ -75,6 +75,18 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   arg2 = max(arg2A, arg2B);
   arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution(iPoint,0) / (CDkw(iPoint)*val_dist*val_dist+EPS*EPS));
   F1(iPoint) = tanh(pow(arg1, 4.0));
+  
+  /*--- Modification for the F1 blending function when the Langtry-Menter
+        transition model is used. ---*/
+
+  if ( transitionLM ) {
+    const su2double Rey  = val_density*val_dist*sqrt(Solution(iPoint,0))/(120.0*val_viscosity);
+    const su2double val4 = Rey*Rey*Rey*Rey;
+    const su2double val8 = val4*val4;
+    const su2double F3   = exp(-val8);
+
+    F1(iPoint) = max(F1(iPoint), F3);
+  }
 
   /*--- F2 ---*/
 

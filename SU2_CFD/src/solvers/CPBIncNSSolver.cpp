@@ -889,7 +889,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 						
   su2double *Normal, Area, Vol, Length, Mean_ProjVel = 0.0, Mean_Vel, Mean_Density,
   Mean_BetaInc2 = 4.1, Lambda, Local_Delta_Time, Mean_DensityInc, GradVel, Lambda1, 
-  Mean_LaminarVisc, Mean_EddyVisc, Local_Delta_Time_Visc, K_v = 0.25, ProjVel_i, ProjVel_j,
+  Mean_LaminarVisc, Mean_EddyVisc, Local_Delta_Time_Visc, K_v = 0.125, ProjVel_i, ProjVel_j,
   Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, RefProjFlux, MinRefProjFlux;
 
   unsigned long iEdge, iVertex, iPoint, jPoint;
@@ -936,6 +936,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 		Mean_ProjVel += Mean_Density*Mean_Vel*Normal[iVar];
     }
     RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
+    //RefProjFlux = sqrt(Mean_BetaInc2*Area*Area);
     MinRefProjFlux = max(RefProjFlux, MinRefProjFlux);
     
     /*--- Adjustment for grid movement ---*/
@@ -993,7 +994,8 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 		  Mean_Vel = nodes->GetVelocity(iPoint,iVar);
 		  Mean_ProjVel += Mean_Density*Mean_Vel*Normal[iVar];
       }
-      RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);    
+      RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
+      //RefProjFlux = sqrt(Mean_BetaInc2*Area*Area);
 
       MinRefProjFlux = max(RefProjFlux, MinRefProjFlux);
       
@@ -1370,7 +1372,7 @@ unsigned long iVertex, iPoint, iPointNormal;
 
         FrictionVel = sqrt(fabs(WallShearStress)/Density);
         YPlus[iMarker][iVertex] = WallDistMod*FrictionVel/(Viscosity/Density);
-
+        
         /*--- Note that y+, and heat are computed at the
          halo cells (for visualization purposes), but not the forces ---*/
 

@@ -54,6 +54,10 @@ CSourceBase_TurbSA::CSourceBase_TurbSA(unsigned short val_nDim,
    *    having to dynamically allocate. ---*/
 
   Jacobian_i = &Jacobian_Buffer;
+  
+  /*--- Set the default value for the intermittency, which corresponds
+        to no transition modeling. ---*/
+  intermittency = 1.0;
 
 }
 
@@ -62,7 +66,7 @@ CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim,
                                                  const CConfig* config) :
                          CSourceBase_TurbSA(val_nDim, val_nVar, config) {
 
-  transition = (config->GetKind_Trans_Model() == BC);
+  transition_BC = (config->GetKind_Trans_Model() == BC);
 }
 
 CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig* config) {
@@ -106,7 +110,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
 
   gamma_BC = 0.0;
   vmag = 0.0;
-  tu   = config->GetTurbulenceIntensity_FreeStream();
+  //tu   = config->GetTurbulenceIntensity_FreeStream();
+  tu   = 100.0*config->GetTurbulenceIntensity_FreeStream();  // Turbulence intensity in percent.
   rey  = config->GetReynolds();
 
   if (nDim==2) {
@@ -183,7 +188,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
     /*-------------------------------- e^N model --------------------------------*/
 
     
-    if (transition) {
+    if (transition_BC) {
 
 //    BC model constants
       chi_1 = 0.002;
@@ -203,11 +208,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
       term_exponential = (term1 + term2);
       gamma_BC = 1.0 - exp(-term_exponential);
 
-      Production = gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
+      //Production = gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
+      intermittency = gamma_BC;
     }
-    else {
-      Production = cb1*Shat*TurbVar_i[0]*Volume;
-    }
+    //else {
+      //Production = cb1*Shat*TurbVar_i[0]*Volume;
+    //}
+    Production = cb1*Shat*TurbVar_i[0]*Volume;
 
     /*--- Destruction term ---*/
 
@@ -239,12 +246,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
     else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
 
-    if (transition) {
+    /*if (transition) {
       Jacobian_i[0] += gamma_BC*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
     }
     else {
       Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
-    }
+    }*/
+    Jacobian_i[0] += intermittency*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
 
     /*--- Implicit part, destruction term ---*/
 
@@ -894,6 +902,12 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
   if (dist_i > 1e-10) {
 
+   /*--- Compute the intermittency for the destruction term of
+          the kinetic energy. Only when a transition model is used
+          this value can differ from 1.0. ---*/
+
+    const su2double gammaEffDestr = min(max(gammaEff_i, 0.1), 1.0);
+   
    /*--- Production ---*/
 
    diverg = 0.0;
@@ -915,7 +929,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
 
    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
-   pk = max(pk,0.0);
+   pk = gammaEff_i*max(pk,0.0);
 
    zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
 
@@ -937,7 +951,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
          intensity. ---*/
 
    if ( sustaining_terms ) {
-     const su2double sust_k = beta_star*Density_i*kAmb*omegaAmb;
+     const su2double sust_k = gammaEff_i*beta_star*Density_i*kAmb*omegaAmb;
      const su2double sust_w = beta_blended*Density_i*omegaAmb*omegaAmb;
 
      pk = max(pk, sust_k);
@@ -951,7 +965,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
    /*--- Dissipation ---*/
 
-   Residual[0] -= beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
+   //Residual[0] -= beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
+   Residual[0] -= gammaEffDestr*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
    Residual[1] -= beta_blended*Density_i*TurbVar_i[1]*TurbVar_i[1]*Volume;
 
    /*--- Cross diffusion ---*/
@@ -960,8 +975,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
    /*--- Implicit part ---*/
 
-   Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;
-   Jacobian_i[0][1] = -beta_star*TurbVar_i[0]*Volume;
+   Jacobian_i[0][0] = -gammaEffDestr*beta_star*TurbVar_i[1]*Volume;
+   Jacobian_i[0][1] = -gammaEffDestr*beta_star*TurbVar_i[0]*Volume;
    Jacobian_i[1][0] = 0.0;
    Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
   }

@@ -905,6 +905,21 @@ static const MapType<string, ENUM_SGS_MODEL> SGS_Model_Map = {
   MakePair("VREMAN",       VREMAN)
 };
 
+/*!
+ * \brief types of crossflow instability models of the LM transition model.
+ */
+enum ENUM_LM_CROSS_FLOW_MODEL {
+  NO_CROSS_FLOW_MODEL        = 0,
+  LANGTRY_GENERAL_CROSS_FLOW = 1,
+  GRABE_WING_ONLY_CROSS_FLOW = 2,
+  GRABE_GENERAL_CROSS_FLOW   = 3
+};
+static const MapType<string, ENUM_LM_CROSS_FLOW_MODEL> LM_CrossFlow_Model_Map = {
+MakePair("NONE",                       NO_CROSS_FLOW_MODEL)
+MakePair("LANGTRY_GENERAL_CROSS_FLOW", LANGTRY_GENERAL_CROSS_FLOW)
+MakePair("GRABE_WING_ONLY_CROSS_FLOW", GRABE_WING_ONLY_CROSS_FLOW)
+MakePair("GRABE_GENERAL_CROSS_FLOW",   GRABE_GENERAL_CROSS_FLOW)
+};
 
 /*!
  * \brief Types of window (weight) functions for cost functional

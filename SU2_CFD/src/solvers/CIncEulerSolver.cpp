@@ -3526,6 +3526,8 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   SetIterLinSolver(IterLinSol);
 
   /*--- Update solution (system written in terms of increments) ---*/
+  
+  ComputeUnderRelaxationFactor(solver_container, config);
 
   if (!adjoint) {
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {

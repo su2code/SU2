@@ -90,6 +90,7 @@ CSolver** CSolverFactory::createSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
       solver[FLOW_SOL] = createSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[HEAT_SOL] = createSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
       solver[TURB_SOL] = createSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
+      solver[TRANS_SOL] = createSubSolver(SUB_SOLVER_TYPE::TRANSITION, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]  = createSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       solver[POISSON_SOL]  = createSubSolver(SUB_SOLVER_TYPE::POISSON_EQUATION, solver, geometry, config, iMGLevel);
       break;

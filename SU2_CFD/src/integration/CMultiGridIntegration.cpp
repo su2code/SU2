@@ -773,7 +773,7 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
                                             unsigned long Iteration,
                                             unsigned short iZone,
                                             unsigned short iInst) {
-  unsigned short iPreSmooth, iPostSmooth, iRKStep, iRKLimit = 1;
+  unsigned short iPreSmooth, iPostSmooth, iRKStep, iRKLimit = 1, iCorr, nCorr = 1;
     
   bool startup_multigrid = (config[iZone]->GetRestart_Flow() && (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (Iteration == 0));
   //bool piso = true;
@@ -837,21 +837,19 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
 		CurrentGridIteration(geometry, solver, numerics, config,
                   iMesh, RUNTIME_FLOW_SYS,
                   Iteration, iZone, iInst);
-		
+
 		config[iZone]->SetKind_TimeIntScheme(EULER_IMPLICIT);
 
 		/*--- Set source term for pressure correction equation based on current flow solution ---*/
 		solver[iZone][iInst][iMesh][FLOW_SOL]->SetMomCoeff(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], false, iMesh);
-     
+
 		solver[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], iMesh);
-		 
+
 		/*--- Solve the poisson equation (pressure correction) ---*/
 		config[iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS);
-		 
-		CurrentGridIteration(geometry, solver, numerics, config,
-                  iMesh, RUNTIME_POISSON_SYS,
-                  Iteration, iZone, iInst);
-         
+
+        CurrentGridIteration(geometry, solver, numerics, config, iMesh, RUNTIME_POISSON_SYS,Iteration, iZone, iInst);
+
         /*--- Correct pressure and velocities ---*/
         solver[iZone][iInst][iMesh][FLOW_SOL]->Flow_Correction(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone]); 
 	}

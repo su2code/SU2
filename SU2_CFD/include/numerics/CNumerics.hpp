@@ -476,6 +476,13 @@ public:
   virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {/* empty */};
 
   /*!
+   * \brief Set the value of the effective intermittency for a turbulence model.
+   * \param[in] val_gammaEff_i - Value of the effective intermittency at point i.
+   * \param[in] val_gammaEff_j - Value of the effective intermittency at point j.
+   */
+  virtual void SetGammaEff(su2double val_gammaEff_i, su2double val_gammaEff_j) {/* empty */};
+  
+  /*!
    * \brief Set the gradient of the auxiliary variables.
    * \param[in] val_auxvargrad_i - Gradient of the auxiliary variable at point i.
    * \param[in] val_auxvargrad_j - Gradient of the auxiliary variable at point j.

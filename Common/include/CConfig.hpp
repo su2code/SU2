@@ -564,7 +564,9 @@ private:
   Kind_Inlet, *Kind_Inc_Inlet,
   *Kind_Inc_Outlet,
   *Kind_Data_Riemann,
-  *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
+  *Kind_Data_Giles,                /*!< \brief Kind of inlet boundary treatment. */
+  Kind_LM_CrossFlowModel;          /*!< \brief Crossflow instability model for the LM transition model. */
+  su2double SurfaceRoughnessHeight;/*!< \brief Surface roughness height for the crossflow term in the LM model. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
   su2double Inc_Inlet_Damping;     /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
@@ -4251,6 +4253,18 @@ public:
    * \return Kind of the transion model.
    */
   unsigned short GetKind_Trans_Model(void) const { return Kind_Trans_Model; }
+  
+  /*!
+   * \brief Get the kind of the cross flow model for the LM transition model.
+   * \return Kind of the LM cross flow model.
+   */
+  unsigned short GetKind_LM_CrossFlowModel(void) const { return Kind_LM_CrossFlowModel; }
+
+  /*!
+   * \brief Get the value of the surface roughness height.
+   * \return Value of the surface roughness height.
+   */
+  su2double GetSurfaceRoughnessHeight(void) const {return SurfaceRoughnessHeight; }
 
   /*!
    * \brief Get the kind of the subgrid scale model.

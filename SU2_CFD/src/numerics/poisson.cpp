@@ -150,12 +150,10 @@ CNumerics::ResidualType<> CAvgGradCorrected_Poisson::ComputeResidual(const CConf
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradPoissonVar_Edge[iVar] = 0.0;
     Proj_Mean_GradPoissonVar_Kappa[iVar] = 0.0;
-    
-
     for (iDim = 0; iDim < nDim; iDim++) {
-		Mean_GradPoissonVar[iVar][iDim] = 0.5*(ConsVar_Grad_i[iVar][iDim] + ConsVar_Grad_j[iVar][iDim]);
-		Proj_Mean_GradPoissonVar_Kappa[iVar] += Mean_GradPoissonVar[iVar][iDim]*MomCoeffxNormal[iDim];
-		Proj_Mean_GradPoissonVar_Edge[iVar] += Mean_GradPoissonVar[iVar][iDim]*Edge_Vector[iDim];
+      Mean_GradPoissonVar[iVar][iDim] = 0.5*(ConsVar_Grad_i[iVar][iDim] + ConsVar_Grad_j[iVar][iDim]);
+      Proj_Mean_GradPoissonVar_Kappa[iVar] += Mean_GradPoissonVar[iVar][iDim]*MomCoeffxNormal[iDim];
+      Proj_Mean_GradPoissonVar_Edge[iVar] += Mean_GradPoissonVar[iVar][iDim]*Edge_Vector[iDim];
     }
     Proj_Mean_GradPoissonVar_Corrected[iVar] = Proj_Mean_GradPoissonVar_Kappa[iVar];
     Proj_Mean_GradPoissonVar_Corrected[iVar] -= Proj_Mean_GradPoissonVar_Edge[iVar]*proj_vector_ij -

@@ -131,7 +131,7 @@ private:
   su2double dfv1, dfv2, dShat;
   su2double dr, dg, dfw;
   unsigned short iDim;
-  bool transition;
+  bool transition_BC;
 
 public:
   /*!
@@ -310,6 +310,7 @@ private:
   a1;
 
   su2double CDkw_i, CDkw_j;
+  su2double gammaEff_i, gammaEff_j;
 
   su2double kAmb, omegaAmb;
 
@@ -384,6 +385,16 @@ public:
     CDkw_j = val_CDkw_j;
   }
 
+  /*!
+   * \brief Set the value of the effective intermittency for a turbulence model.
+   * \param[in] val_gammaEff_i - Value of the effective intermittency at point i.
+   * \param[in] val_gammaEff_j - Value of the effective intermittency at point j.
+   */
+  inline void SetGammaEff(su2double val_gammaEff_i, su2double val_gammaEff_j) {
+    gammaEff_i = val_gammaEff_i;
+    gammaEff_j = val_gammaEff_j;
+  }
+  
   /*!
    * \brief Residual for source term integration.
    * \param[in] config - Definition of the particular problem.

@@ -1101,7 +1101,11 @@ void CConfig::SetConfig_Options() {
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
-
+  /*!\brief KIND_LM_CROSSFLOWMODEL \n DESCRIPTION: Specify cross flow model for LM transition model OPTIONS: see \link LM_CrossFlow_Model_Map \endlink \n DEFAULT: NO_CROSS_FLOW_MODEL \ingroup Config*/
+  addEnumOption("KIND_LM_CROSSFLOWMODEL", Kind_LM_CrossFlowModel, LM_CrossFlow_Model_Map, NO_CROSS_FLOW_MODEL);
+  /*!\brief SURFACE ROUGHNESS HEIGHT \n DESCRIPTION: Surface roughness height in m. (3.3e-6 (painted surface) ) \ingroup Config*/
+  addDoubleOption("SURFACE_ROUGHNESS_HEIGHT", SurfaceRoughnessHeight, 3.3e-6);
+  
   /*!\brief KIND_SGS_MODEL \n DESCRIPTION: Specify subgrid scale model OPTIONS: see \link SGS_Model_Map \endlink \n DEFAULT: NO_SGS_MODEL \ingroup Config*/
   addEnumOption("KIND_SGS_MODEL", Kind_SGS_Model, SGS_Model_Map, NO_SGS_MODEL);
 
@@ -1279,7 +1283,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
   /* DESCRIPTION:  */
-  addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
+  addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.0005);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
   /* DESCRIPTION:  */
@@ -1673,7 +1677,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Max iterations of the linear solver for the FVM flow solver in PB system. */
   addUnsignedLongOption("LINEAR_SOLVER_ITER_FLOW", Linear_Solver_Iter_Flow, 10);
   /* DESCRIPTION: Max iterations of the linear solver for the poisson solver in PB system. */
-  addUnsignedLongOption("LINEAR_SOLVER_ITER_POISSON", Linear_Solver_Iter_Poisson, 30);
+  addUnsignedLongOption("LINEAR_SOLVER_ITER_POISSON", Linear_Solver_Iter_Poisson, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
@@ -1683,7 +1687,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Relaxation factor for iterative linear smoothers (SMOOTHER_ILU/JACOBI/LU-SGS/LINELET) */
   addDoubleOption("LINEAR_SOLVER_SMOOTHER_RELAXATION", Linear_Solver_Smoother_Relaxation, 1.0);
   /* DESCRIPTION: Relaxation of the pressure based flow corrections */
-  addDoubleOption("RELAXATION_FACTOR_PBFLOW", Relaxation_Factor_PBFlow, 0.3);
+  addDoubleOption("RELAXATION_FACTOR_PBFLOW", Relaxation_Factor_PBFlow, 0.5);
   /* DESCRIPTION: Relaxation of the Rhie Chow interpolation contribution in pressure based flow. */
   addDoubleOption("RELAXATION_FACTOR_RHIECHOW", RCFactor, 0.5);
   /* DESCRIPTION: Relaxation of the flow equations solver for the implicit formulation */

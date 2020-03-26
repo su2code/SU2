@@ -78,6 +78,8 @@ protected:
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
+  
+  bool transitionSolver; /*!< \brief Whether or not the solver is actually a transition solver. */
 
 public:
 
@@ -225,7 +227,7 @@ public:
    */
   void ImplicitEuler_Iteration(CGeometry *geometry,
                                CSolver **solver_container,
-                               CConfig *config) override;
+                               CConfig *config) final;
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
    * \param[in] geometry - Geometric definition of the problem.
@@ -261,7 +263,7 @@ public:
                    CSolver ***solver,
                    CConfig *config,
                    int val_iter,
-                   bool val_update_geo) final;
+                   bool val_update_geo) override;
 
  /*!
   * \brief Get the outer state for fluid interface nodes.

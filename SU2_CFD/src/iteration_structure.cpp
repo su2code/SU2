@@ -1144,6 +1144,14 @@ void CPBFluidIteration::Iterate(COutput *output,
     
     config[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS);
     integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, RUNTIME_TURB_SYS, val_iZone, val_iInst);
+    
+    /*--- Solve transition model ---*/
+
+    if (config[val_iZone]->GetKind_Trans_Model() == LM) {
+      config[val_iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS);
+      integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics,
+                                                                        config, RUNTIME_TRANS_SYS, val_iZone, val_iInst);
+    }
   }
   
 

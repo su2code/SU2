@@ -303,6 +303,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
                                     CConfig *config, unsigned short iMesh) {
 
   const su2double a1 = constants[7];
+  const bool transitionLM = (config->GetKind_Trans_Model() == LM);
 
   /*--- Compute turbulence gradients. ---*/
 
@@ -328,7 +329,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
                                   Vorticity[1]*Vorticity[1] +
                                   Vorticity[2]*Vorticity[2]);
 
-    nodes->SetBlendingFunc(iPoint, mu, dist, rho);
+    nodes->SetBlendingFunc(iPoint, mu, dist, rho, transitionLM);
 
     su2double F2 = nodes->GetF2blending(iPoint);
 
@@ -349,6 +350,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  const bool transitionLM = (config->GetKind_Trans_Model() == LM);
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -396,6 +398,11 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Cross diffusion ---*/
 
     numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint),0.0);
+    
+    /*--- Intermittency ---*/
+    su2double gammaEff = 1.0;
+    if ( transitionLM ) gammaEff = solver_container[TRANS_SOL]->GetNodes()->GetGammaEff(iPoint);
+    numerics->SetGammaEff(gammaEff, 0.0);
 
     /*--- Compute the source term ---*/
 

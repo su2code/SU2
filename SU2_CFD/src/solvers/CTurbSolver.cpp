@@ -46,6 +46,8 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
+  
+  transitionSolver = false;
 
 #ifdef HAVE_OMP
   /*--- Get the edge coloring. ---*/
@@ -414,7 +416,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     su2double Delta = Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
     if (pressure_based) Delta = Vol/(config->GetCFLRedCoeff_Turb()*flowNodes->GetDelta_Time(iPoint));
     Jacobian.AddVal2Diag(iPoint, Delta);
-
+    
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -498,6 +500,24 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
         }
         break;
 
+    }
+    if (transitionSolver) {
+      
+      //SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+        su2double density = flowNodes->GetDensity(iPoint);
+        su2double density_old = density;
+
+        if (compressible)
+          density_old = flowNodes->GetSolution_Old(iPoint,0);
+
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          nodes->AddConservativeSolution(iPoint, iVar,
+                    nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
+                    density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+        }
+      }
     }
   }
 

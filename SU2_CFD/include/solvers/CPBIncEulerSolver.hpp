@@ -214,6 +214,7 @@ protected:
   su2double ResMassFlux;
   
   su2double *FaceVelocity;
+  su2double *FaceVelocityCorrec;
   
   unsigned long PRef_Point;    /*!< \brief Store the index of reference cell for pressure */
   bool PRef_Check;             /*!< \brief To check if a reference pressure cell is necessary */
@@ -423,14 +424,6 @@ public:
                                        bool Output);
 
   /*!
-   * \brief Compute a pressure sensor switch.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -609,6 +602,13 @@ public:
                                CSolver **solver_container,
                                CConfig *config) final;
 
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config) final;
+  
   /*!
    * \brief Provide the non dimensional lift coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.

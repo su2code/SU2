@@ -61,7 +61,8 @@ public:
   /*!
    * \brief ________________.
    */
-  inline su2double GetIntermittency(unsigned long iPoint) const override { return Solution(iPoint,0); }
+  //inline su2double GetIntermittency(unsigned long iPoint) const override { return Solution(iPoint,0); }
+  inline su2double GetGammaEff(unsigned long iPoint) const override { return max(Solution(iPoint,0), gamma_sep(iPoint)); }
 
   /*!
    * \brief ________________.

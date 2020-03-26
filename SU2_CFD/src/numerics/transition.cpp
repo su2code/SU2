@@ -24,726 +24,653 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
+ 
 #include "../../include/numerics/transition.hpp"
-
-CUpwLin_TransLM::CUpwLin_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-
-  implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
-
+ 
+CUpwSca_TransLM::CUpwSca_TransLM(unsigned short val_nDim,
+                                 unsigned short val_nVar,
+                                 CConfig *config)
+ : CUpwScalar(val_nDim, val_nVar, config) {
 }
 
-CUpwLin_TransLM::~CUpwLin_TransLM(void) {
-  delete [] Velocity_i;
-  delete [] Velocity_j;
+void CUpwSca_TransLM::ExtraADPreaccIn() {
+
+  AD::SetPreaccIn(V_i, nDim+3);
+  AD::SetPreaccIn(V_j, nDim+3);
 }
 
-void CUpwLin_TransLM::ComputeResidual (su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CUpwSca_TransLM::FinishResidualCalc(const CConfig *config) {
 
-
-  Density_i = U_i[0];
-  Density_j = U_j[0];
-
-  q_ij = 0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = U_i[iDim+1]/Density_i;
-    Velocity_j[iDim] = U_j[iDim+1]/Density_j;
-    q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-  }
-
-  a0 = 0.5*(q_ij+fabs(q_ij));
-  a1 = 0.5*(q_ij-fabs(q_ij));
-  val_residual[0] = a0*TransVar_i[0]+a1*TransVar_j[0];
-  val_residual[1] = a0*TransVar_i[1]+a1*TransVar_j[1];
-  //  cout << "Velicity x: " << Velocity_i[0] << ", " << Velocity_j[0] << endl;
-  //  cout << "Velicity y: " << Velocity_i[1] << ", " << Velocity_j[1] << endl;
-  //  cout << "val_resid: " << val_residual[0] << ", " << val_residual[1] << endl;
-
+  Flux[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0];
+  Flux[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1];
 
   if (implicit) {
-    val_Jacobian_i[0][0] = a0;
-    val_Jacobian_i[1][1] = a0;
+    Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;
+    Jacobian_i[1][0] = 0.0;    Jacobian_i[1][1] = a0;
+
+    Jacobian_j[0][0] = a1;    Jacobian_j[0][1] = 0.0;
+    Jacobian_j[1][0] = 0.0;    Jacobian_j[1][1] = a1;
   }
 }
 
-CUpwSca_TransLM::CUpwSca_TransLM(unsigned short val_nDim, unsigned short val_nVar,
-                                 CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CAvgGrad_TransLM::CAvgGrad_TransLM(unsigned short val_nDim,
+                                   unsigned short val_nVar,
+                                   const su2double *constants, bool correct_grad,
+                                   CConfig *config)
+ : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
+  sigma_intermittency = constants[6];
+  sigma_Re_theta      = constants[7];
 }
 
-CUpwSca_TransLM::~CUpwSca_TransLM(void) {
-  delete [] Velocity_i;
-  delete [] Velocity_j;
-}
+void CAvgGrad_TransLM::ExtraADPreaccIn() { }
 
-void CUpwSca_TransLM::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CAvgGrad_TransLM::FinishResidualCalc(const CConfig *config) {
 
-  q_ij = 0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    q_ij += 0.5*(U_i[iDim]+U_j[iDim])*Normal[iDim];
-  }
+  /*--- Compute mean effective viscosity for both equations. ---*/
+  const su2double diff_i_int   =  Laminar_Viscosity_i + Eddy_Viscosity_i /sigma_intermittency;
+  const su2double diff_j_int   =  Laminar_Viscosity_j + Eddy_Viscosity_j /sigma_intermittency;
+  const su2double diff_i_theta = (Laminar_Viscosity_i + Eddy_Viscosity_i)*sigma_Re_theta;
+  const su2double diff_j_theta = (Laminar_Viscosity_j + Eddy_Viscosity_j)*sigma_Re_theta;
 
-  a0 = 0.5*(q_ij+fabs(q_ij));
-  a1 = 0.5*(q_ij-fabs(q_ij));
-  val_residual[0] = a0*TransVar_i[0]+a1*TransVar_j[0];
-  val_residual[1] = a0*TransVar_i[1]+a1*TransVar_j[1];
+  const su2double diff_int   = 0.5*(diff_i_int   + diff_j_int);   // Could instead use weighted average!
+  const su2double diff_theta = 0.5*(diff_i_theta + diff_j_theta);
 
+  /*--- Compute the values of the residuals on this edge. */
+  Flux[0] = diff_int  *Proj_Mean_GradTurbVar[0];
+  Flux[1] = diff_theta*Proj_Mean_GradTurbVar[1];
+
+  /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   if (implicit) {
-    val_Jacobian_i[0][0] = a0;
-    val_Jacobian_j[0][0] = a1;
-    val_Jacobian_i[1][1] = a0;
-    val_Jacobian_j[1][1] = a1;
+    Jacobian_i[0][0] = -diff_int*proj_vector_ij/Density_i;
+    Jacobian_i[0][1] =  0.0;
+    Jacobian_i[1][0] =  0.0;
+    Jacobian_i[1][1] = -diff_theta*proj_vector_ij/Density_i;
 
-    /*--- Zero out off-diagonal terms just in case ---*/
-    val_Jacobian_i[0][1] = 0;
-    val_Jacobian_j[0][1] = 0;
-    val_Jacobian_i[1][0] = 0;
-    val_Jacobian_j[1][0] = 0;
+    Jacobian_j[0][0] = diff_int*proj_vector_ij/Density_j;
+    Jacobian_j[0][1] = 0.0;
+    Jacobian_j[1][0] = 0.0;
+    Jacobian_j[1][1] = diff_theta*proj_vector_ij/Density_j;
   }
-
 }
 
-CAvgGrad_TransLM::CAvgGrad_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  unsigned short iVar;
+CSourcePieceWise_TransLM::CSourcePieceWise_TransLM(unsigned short val_nDim,
+                                                   unsigned short val_nVar,
+                                                   const su2double* constants,
+                                                   CConfig *config)
+ : CNumerics(val_nDim, val_nVar, config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
+  /*--- Initialize the constants for the cross flow instability models to 
+        avoid compiler warnings. ---*/
+  C_crossflow = Flength_CF = C_Fonset1_CF = CHe_max = 0.0;
 
-  sigma = 2./3.;
+  /*--- Store the closure constants of the LM model in a more readable way.
+        First the constants of the base line model. ---*/
+  ca1     = constants[0];
+  ca2     = constants[1];
+  ce1     = constants[2];
+  ce2     = constants[3];
+  cthetat = constants[4];
 
-  Edge_Vector = new su2double [nDim];
-  Proj_Mean_GradTransVar_Kappa = new su2double [nVar];
-  Proj_Mean_GradTransVar_Edge = new su2double [nVar];
-  Mean_GradTransVar = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradTransVar[iVar] = new su2double [nDim];
-}
+  /*--- The constants for the model of the cross flow instabilities. ---*/
+  switch( config->GetKind_LM_CrossFlowModel() ) {
+    case LANGTRY_GENERAL_CROSS_FLOW:
+      C_crossflow = constants[8];
+      break;
 
-CAvgGrad_TransLM::~CAvgGrad_TransLM(void) {
+    case GRABE_WING_ONLY_CROSS_FLOW:
+      Flength_CF   = constants[8];
+      C_Fonset1_CF = constants[9];
+      break;
 
-  unsigned short iVar;
-
-  delete [] Edge_Vector;
-  delete [] Proj_Mean_GradTransVar_Kappa;
-  delete [] Proj_Mean_GradTransVar_Edge;
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] Mean_GradTransVar[iVar];
-  delete [] Mean_GradTransVar;
-}
-
-void CAvgGrad_TransLM::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
- /*--- This section is commented out on 04/11/2016
-       after review of the static scan ---*/
- // su2double *Density_Grad_i      = new su2double[nDim];
- // su2double *Density_Grad_j      = new su2double[nDim];
- // su2double *Conservative_Grad_i = new su2double[nDim];
- // su2double *Conservative_Grad_j = new su2double[nDim];
- // su2double *Primitive_Grad_i    = new su2double[nDim];
- // su2double *Primitive_Grad_j    = new su2double[nDim];
- //
- // /*--- Intermediate values for combining viscosities ---*/
- // su2double Inter_Viscosity_i, Inter_Viscosity_j, REth_Viscosity_i, REth_Viscosity_j, Inter_Viscosity_Mean, REth_Viscosity_Mean;
- //
- // /*--- Model constants---*/
- // su2double sigmaf       = 1.0;
- // su2double sigma_thetat = 2.0;
- //
- // /*--- Get density ---*/
- // Density_i = U_i[0];
- // Density_j = U_j[0];
- //
- // /*--- Construct combinations of viscosity ---*/
- // Inter_Viscosity_i    = (Laminar_Viscosity_i+Eddy_Viscosity_i/sigmaf);
- // Inter_Viscosity_j    = (Laminar_Viscosity_j+Eddy_Viscosity_j/sigmaf);
- // Inter_Viscosity_Mean = 0.5*(Inter_Viscosity_i+Inter_Viscosity_j);
- // REth_Viscosity_i     = sigma_thetat*(Laminar_Viscosity_i+Eddy_Viscosity_i);
- // REth_Viscosity_j     = sigma_thetat*(Laminar_Viscosity_j+Eddy_Viscosity_j);
- // REth_Viscosity_Mean  = 0.5*(REth_Viscosity_i+REth_Viscosity_j);
- //
-  ///*--- Compute vector going from iPoint to jPoint ---*/
-  //dist_ij_2 = 0; proj_vector_ij = 0;
-  //for (iDim = 0; iDim < nDim; iDim++) {
-  //  Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-  //  dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-  //  proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-  //}
-  //proj_vector_ij = proj_vector_ij/dist_ij_2; // to normalize vectors
- //
-  ///*--- Mean gradient approximation ---*/
-  //for (iVar = 0; iVar < nVar; iVar++) {
-  //  Proj_Mean_GradTransVar_Kappa[iVar] = 0.0;
-  //  // Proj_Mean_GradTransVar_Edge[iVar] = 0.0;
-  //  for (iDim = 0; iDim < nDim; iDim++) {
- //
- //     /* -- Compute primitive grad using chain rule -- */
- //     Density_Grad_i[iDim]      = ConsVar_Grad_i[0][iDim];
- //     Density_Grad_j[iDim]      = ConsVar_Grad_j[0][iDim];
- //     Conservative_Grad_i[iDim] = TransVar_Grad_i[iVar][iDim];
- //     Conservative_Grad_j[iDim] = TransVar_Grad_j[iVar][iDim];
- //     Primitive_Grad_i[iDim]    = 1./Density_i*(Conservative_Grad_i[iDim]-TransVar_i[iVar]*Density_Grad_i[iDim]);
- //     Primitive_Grad_j[iDim]    = 1./Density_j*(Conservative_Grad_j[iDim]-TransVar_j[iVar]*Density_Grad_j[iDim]);
- //
- //     /*--- Compute the average primitive gradient and project it in the normal direction ---*/
- //     Mean_GradTransVar[iVar][iDim] = 0.5*(Primitive_Grad_i[iDim] + Primitive_Grad_j[iDim]);
-  //    Proj_Mean_GradTransVar_Kappa[iVar] += Mean_GradTransVar[iVar][iDim]*Normal[iDim];
-  //  }
-  //}
- //
-  //val_residual[0] = Inter_Viscosity_Mean*Proj_Mean_GradTransVar_Kappa[0];
-  //val_residual[1] = REth_Viscosity_Mean*Proj_Mean_GradTransVar_Kappa[1];
- //
-  ///*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-  //if (implicit) {
-  //  Jacobian_i[0][0] = (0.5*Proj_Mean_GradTransVar_Kappa[0]-Inter_Viscosity_Mean*proj_vector_ij);
-  //  Jacobian_j[0][0] = (0.5*Proj_Mean_GradTransVar_Kappa[0]+Inter_Viscosity_Mean*proj_vector_ij);
-  //  Jacobian_i[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]-REth_Viscosity_Mean*proj_vector_ij);
-  //  Jacobian_j[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]+REth_Viscosity_Mean*proj_vector_ij);
-  //}
- //
- // /*--- Free locally allocated memory. For efficiency, these arrays
- //  should really be allocated/deallocated in the constructor/destructor. ---*/
- // delete [] Density_Grad_i;
- // delete [] Density_Grad_j;
- // delete [] Conservative_Grad_i;
- // delete [] Conservative_Grad_j;
- // delete [] Primitive_Grad_i;
- // delete [] Primitive_Grad_j;
- //
-}
-
-CAvgGradCorrected_TransLM::CAvgGradCorrected_TransLM(unsigned short val_nDim, unsigned short val_nVar,
-                                                     CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-
-  unsigned short iVar;
-
-  implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
-  sigma = 2./3.;
-
-  Edge_Vector = new su2double [nDim];
-  Proj_Mean_GradTurbVar_Kappa = new su2double [nVar];
-  Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
-  Proj_Mean_GradTurbVar_Corrected = new su2double [nVar];
-  Mean_GradTurbVar = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradTurbVar[iVar] = new su2double [nDim];
-}
-
-CAvgGradCorrected_TransLM::~CAvgGradCorrected_TransLM(void) {
-
-  unsigned short iVar;
-
-  delete [] Edge_Vector;
-  delete [] Proj_Mean_GradTurbVar_Kappa;
-  delete [] Proj_Mean_GradTurbVar_Edge;
-  delete [] Proj_Mean_GradTurbVar_Corrected;
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] Mean_GradTurbVar[iVar];
-  delete [] Mean_GradTurbVar;
-}
-
-void CAvgGradCorrected_TransLM::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
-
-  //  switch (config->GetKind_Turb_Model()) {
-  //  case SA :
-  //    /*--- Compute mean effective viscosity ---*/
-  //    nu_i = Laminar_Viscosity_i/U_i[0];
-  //    nu_j = Laminar_Viscosity_j/U_j[0];
-  //    nu_e = 0.5*(nu_i+nu_j+TurbVar_i[0]+TurbVar_j[0]);
-  //
-  //    /*--- Compute vector going from iPoint to jPoint ---*/
-  //    dist_ij_2 = 0; proj_vector_ij = 0;
-  //    for (iDim = 0; iDim < nDim; iDim++) {
-  //      Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-  //      dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-  //      proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-  //    }
-  //    proj_vector_ij = proj_vector_ij/dist_ij_2;
-  //
-  //    /*--- Mean gradient approximation. Projection of the mean gradient
-  //       in the direction of the edge ---*/
-  //    for (iVar = 0; iVar < nVar; iVar++) {
-  //      Proj_Mean_GradTurbVar_Kappa[iVar] = 0.0;
-  //      Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
-  //      for (iDim = 0; iDim < nDim; iDim++) {
-  //        Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] + TurbVar_Grad_j[iVar][iDim]);
-  //        Proj_Mean_GradTurbVar_Kappa[iVar] += Mean_GradTurbVar[iVar][iDim]*Normal[iDim];
-  //        Proj_Mean_GradTurbVar_Edge[iVar] += Mean_GradTurbVar[iVar][iDim]*Edge_Vector[iDim];
-  //      }
-  //      Proj_Mean_GradTurbVar_Corrected[iVar] = Proj_Mean_GradTurbVar_Kappa[iVar];
-  //      Proj_Mean_GradTurbVar_Corrected[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
-  //          (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
-  //    }
-  //
-  //    val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Corrected[0]/sigma;
-  //
-  //    /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-  //    if (implicit) {
-  //      Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]-nu_e*proj_vector_ij)/sigma;
-  //      Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]+nu_e*proj_vector_ij)/sigma;
-  //    }
-  //    break;
-  //
-  //  }
-}
-
-CSourcePieceWise_TransLM::CSourcePieceWise_TransLM(unsigned short val_nDim, unsigned short val_nVar,
-                                                   CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
-  /*--- Spalart-Allmaras closure constants ---*/
-  cv1_3 = pow(7.1,3.0);
-  k2 = pow(0.41,2.0);
-  cb1 = 0.1355;
-  cw2 = 0.3;
-  cw3_6 = pow(2.0,6.0);
-  sigma = 2./3.;
-  cb2 = 0.622;
-  cw1 = cb1/k2+(1+cb2)/sigma;
-
-  /*-- Gamma-theta closure constants --*/
-  c_e1    = 1.0;
-  c_a1    = 2.0;
-  c_e2    = 50.0;
-  c_a2    = 0.06;
-  sigmaf  = 1.0;
-  s1      = 2.0;
-  c_theta = 0.03;
-  sigmat  = 2.0;
-
-  /*-- Correlation constants --*/
-  flen_global  = 12.0;
-  alpha_global = 0.85;
-
-  /*-- For debugging -AA --*/
-  debugme = 0;
+    case GRABE_GENERAL_CROSS_FLOW:
+      Flength_CF   = constants[8];
+      C_Fonset1_CF = constants[9];
+      CHe_max      = constants[10];
+      break;
+  }
 }
 
 CSourcePieceWise_TransLM::~CSourcePieceWise_TransLM(void) { }
 
-void CSourcePieceWise_TransLM::ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i,
-                                                       su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep) {
-  //************************************************//
-  // Please do not delete //SU2_CPP2C comment lines //
-  //************************************************//
+su2double CSourcePieceWise_TransLM::GetREth(const su2double var_tu) {
 
-  //SU2_CPP2C START CSourcePieceWise_TransLM::ComputeResidual_TransLM
-  //SU2_CPP2C CALL_LIST START
-  //SU2_CPP2C INVARS *TransVar_i
-  //SU2_CPP2C OUTVARS *val_residual
-  //SU2_CPP2C VARS DOUBLE *U_i **PrimVar_Grad_i Laminar_Viscosity_i Eddy_Viscosity_i dist_i
-  //SU2_CPP2C VARS DOUBLE SCALAR c_a1 c_e1 c_a2 c_e2 c_theta alpha_global flen_global
-  //SU2_CPP2C CALL_LIST END
+  const su2double tu = 100.0*var_tu; // Turbulence intensity in percents.
 
-  //SU2_CPP2C DEFINE nDim
-
-  //SU2_CPP2C DECL_LIST START
-  //SU2_CPP2C VARS DOUBLE SCALAR Vorticity
-  //SU2_CPP2C DECL_LIST END
-
-  /*-- Local intermediate variables --*/
-  su2double rey_tc, flen, re_v, strain, f_onset1, f_onset2, f_onset3, f_onset, f_turb, tu;
-
-  su2double prod, des;
-  su2double f_lambda, re_theta = 0.0, re_theta_lim, r_t;
-  su2double Velocity_Mag = 0.0, du_ds, theta, lambda, time_scale, var1, f_theta;
-  su2double f_reattach;
-  su2double dU_dx, dU_dy, dU_dz = 0.0;
-
-  //SU2_CPP2C COMMENT START
-  su2double val_residuald[2], TransVar_id[2];
-
-  //SU2_CPP2C COMMENT END
-
-  val_residual[0] = 0.0;
-  val_residual[1] = 0.0;
-
-  //SU2_CPP2C COMMENT START
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  if (implicit) {
-    val_Jacobian_i[0][0] = 0.0;
-    val_Jacobian_i[1][0] = 0.0;
-    val_Jacobian_i[0][1] = 0.0;
-    val_Jacobian_i[1][1] = 0.0;
-  }
-  //SU2_CPP2C COMMENT END
-
-  /* -- These lines included just so Tapenade doesn't complain --*/
-//  rey  = 0.0;
-//  mach = 0.0;
-//  tu   = 0.0;
-  //SU2_CPP2C COMMENT START
-  /* -- These lines must be manually reinserted into the differentiated routine! --*/
-//  rey  = config->GetReynolds();
-//  mach = config->GetMach();
-  tu   = config->GetTurbulenceIntensity_FreeStream();
-  //SU2_CPP2C COMMENT END
-
-  /*--- Compute vorticity and strain (TODO: Update for 3D) ---*/
-  Vorticity = fabs(PrimVar_Grad_i[1][1]-PrimVar_Grad_i[2][0]);
-
-  /*-- Strain = sqrt(2*Sij*Sij) --*/
-  strain = sqrt(2.*(    PrimVar_Grad_i[1][0]*PrimVar_Grad_i[1][0]
-                    +  0.5*pow(PrimVar_Grad_i[1][1]+PrimVar_Grad_i[2][0],2)
-                    +  PrimVar_Grad_i[2][1]*PrimVar_Grad_i[2][1]  ));
-
-  /*-- Note: no incompressible for now! --*/
-
-  if (dist_i > 0.0) {   // Only operate away from wall
-
-    /*-- Intermittency eq.: --*/
-
-    rey_tc = (4.45*pow(tu,3) - 5.7*pow(tu,2) + 1.37*tu + 0.585)*TransVar_i[1];
-    flen   = 0.171*pow(tu,2) - 0.0083*tu + 0.0306;
-
-    re_v   = U_i[0]*pow(dist_i,2.)/Laminar_Viscosity_i*strain;  // Vorticity Reynolds number
-
-    /*-- f_onset controls transition onset location --*/
-    r_t      = Eddy_Viscosity_i/Laminar_Viscosity_i;
-    f_onset1 = re_v / (2.193*rey_tc);
-    f_onset2 = min(max(f_onset1, pow(f_onset1,4.)), 2.);
-    f_onset3 = max(1. - pow(0.4*r_t,3),0.);
-    f_onset  = max(f_onset2 - f_onset3, 0.);
-
-    f_turb = exp(-pow(0.25*r_t,4));  // Medida eq. 10
-
-    prod = flen*c_a1*U_i[0]*strain*sqrt(f_onset*TransVar_i[0]);
-    prod = prod*(1. - c_e1*TransVar_i[0]);
-
-    des = c_a2*U_i[0]*Vorticity*TransVar_i[0]*f_turb;
-    des = des*(c_e2*TransVar_i[0] - 1.);
-
-    val_residual[0] = prod - des;
-
-    /*-- REtheta eq: --*/
-    if (nDim==2) {
-      Velocity_Mag = sqrt(U_i[1]*U_i[1]+U_i[2]*U_i[2])/U_i[0];
-    } else if (nDim==3) {
-      Velocity_Mag = sqrt(U_i[1]*U_i[1]+U_i[2]*U_i[2]+U_i[3]*U_i[3])/U_i[0];
-    }
-
-    /*-- Gradient of velocity magnitude ---*/
-    dU_dx = 0.5*Velocity_Mag*( 2*U_i[1]/U_i[0]*PrimVar_Grad_i[1][0]
-                              +2*U_i[2]/U_i[0]*PrimVar_Grad_i[2][0]);
-    if (nDim==3)
-      dU_dx += 0.5*Velocity_Mag*( 2*U_i[3]/U_i[0]*PrimVar_Grad_i[3][0]);
-
-    dU_dy = 0.5*Velocity_Mag*( 2*U_i[1]/U_i[0]*PrimVar_Grad_i[1][1]
-                              +2*U_i[2]/U_i[0]*PrimVar_Grad_i[2][1]);
-    if (nDim==3)
-      dU_dy += 0.5*Velocity_Mag*( 2*U_i[3]/U_i[0]*PrimVar_Grad_i[3][1]);
-
-    if (nDim==3)
-      dU_dz = 0.5*Velocity_Mag*( 2*U_i[1]/U_i[0]*PrimVar_Grad_i[1][2]
-                                +2*U_i[2]/U_i[0]*PrimVar_Grad_i[2][2]
-                                +2*U_i[3]/U_i[0]*PrimVar_Grad_i[3][2]);
-
-    du_ds = U_i[1]/(U_i[0]*Velocity_Mag) * dU_dx +  // Streamwise velocity derivative
-    U_i[2]/(U_i[0]*Velocity_Mag) * dU_dy;
-    if (nDim==3)
-      du_ds += U_i[3]/(U_i[0]*Velocity_Mag) * dU_dz;
-
-    re_theta_lim = 20.;
-
-    /*-- Fixed-point iterations to solve REth correlation --*/
-    f_lambda = 1.;
-    for (int iter=0; iter<10; iter++) {
-      if (tu <= 1.3) {
-        re_theta = f_lambda * (1173.51-589.428*tu+0.2196/(tu*tu));
-      } else {
-        re_theta = 331.5 * f_lambda*pow(tu-0.5658,-0.671);
-      }
-      re_theta = max(re_theta, re_theta_lim);
-
-      theta  = re_theta * Laminar_Viscosity_i / (U_i[0]*Velocity_Mag);
-
-      lambda = U_i[0]*theta*theta*du_ds / Laminar_Viscosity_i;
-      lambda = min(max(-0.1, lambda),0.1);
-
-      if (lambda<=0.0) {
-        f_lambda = 1. - (-12.986*lambda - 123.66*lambda*lambda -
-                         405.689*lambda*lambda*lambda)*exp(-pow(2./3*tu,1.5));
-      } else {
-        f_lambda = 1. + 0.275*(1.-exp(-35.*lambda))*exp(-2.*tu);
-      }
-    }
-
-    /*-- Calculate blending function f_theta --*/
-    time_scale = 500.0*Laminar_Viscosity_i/(U_i[0]*Velocity_Mag*Velocity_Mag);
-
-    // Deactivated the f_wake parameter...
-    //theta_bl   = TransVar_i[1]*Laminar_Viscosity_i / (U_i[0]*Velocity_Mag);
-    //delta_bl   = 7.5*theta_bl;
-    //delta      = 50.0*Vorticity*dist_i/Velocity_Mag*delta_bl + 1e-20;
-    //
-    //f_wake = 1.;
-
-    var1 = (TransVar_i[0]-1./c_e2)/(1.0-1./c_e2);
-    var1 = 1. - pow(var1,2);
-
-    //f_theta = min(max(f_wake*exp(-pow(dist_i/delta,4)), var1),1.0);
-    f_theta = min(var1,1.0);
-
-    val_residual[1] = c_theta*U_i[0]/time_scale *  (1.-f_theta) * (re_theta-TransVar_i[1]);
-
-    //SU2_CPP2C COMMENT START
-    cout << "val_res0: "  << val_residual[0]      << endl;
-    cout << "val_res1: "  << val_residual[1]      << endl;
-    cout << "dist_i: "    << dist_i               << endl;
-    cout << "re_v: "      << re_v                 << endl;
-    cout << "c_a1: "      << c_a1                 << endl;
-    cout << "strain: "    << strain               << endl;
-    cout << "primgrad10: "<< PrimVar_Grad_i[1][0] << endl;
-    cout << "primgrad11: "<< PrimVar_Grad_i[1][1] << endl;
-    cout << "primgrad20: "<< PrimVar_Grad_i[2][0] << endl;
-    cout << "primgrad21: "<< PrimVar_Grad_i[2][1] << endl;
-    cout << "f_onset: "   << f_onset              << endl;
-    cout << "TransVar0: " << TransVar_i[0]        << endl;
-    cout << "prod: "      << prod                 << endl;
-    cout << "c_a2: "      << c_a2                 << endl;
-    cout << "Vorticity: " << Vorticity            << endl;
-    cout << "f_turb: "    << f_turb               << endl;
-    cout << "des: "       << des                  << endl;
-    cout << "du_ds: "     << du_ds                << endl;
-    cout << "r_t:    "    << r_t                  << endl;
-    cout << "rey_tc: "    << rey_tc               << endl;
-    cout << "re_theta: "  << re_theta             << endl;
-
-    /*-- Calculate term for separation correction --*/
-    f_reattach = exp(-pow(0.05*r_t,4));
-    gamma_sep = s1*max(0., re_v/(3.235*rey_tc)-1.)*f_reattach;
-    gamma_sep = min(gamma_sep,2.0)*f_theta;
-
-    /*--- Implicit part ---*/
-    TransVar_id[0] = 1.0; TransVar_id[1] = 0.0;
-    CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(TransVar_i, TransVar_id, val_residual, val_residuald, config);
-    val_Jacobian_i[0][0] = val_residuald[0];
-    val_Jacobian_i[1][0] = val_residuald[1];
-
-    TransVar_id[0] = 0.0; TransVar_id[1] = 1.0;
-    CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(TransVar_i, TransVar_id, val_residual, val_residuald, config);
-    val_Jacobian_i[0][1] = val_residuald[0];
-    val_Jacobian_i[1][1] = val_residuald[1];
-
-    //SU2_CPP2C COMMENT END
-  }
-  //SU2_CPP2C END CSourcePieceWise_TransLM::ComputeResidual_TransLM
+  if (tu <= 1.3)
+    return (1173.9967604078363 - 589.428*tu + 0.2196/(tu*tu)); // Modified the original value of 1173.51 to get better continuity at tu=1.3.
+  else
+    return (331.5*pow(tu-0.5658, -0.671));
 }
 
+su2double CSourcePieceWise_TransLM::GetREth_crit(const su2double var_Re_theta) {
 
-void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(su2double *TransVar_i, su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config)
-{
-  su2double rey_tc, flen, re_v, strain, f_onset1, f_onset2, f_onset3, f_onset,
-  f_turb, tu;
-  su2double rey_tcd, f_onset1d, f_onset2d, f_onsetd;
-  su2double prod, des;
-  su2double prodd, desd;
-  su2double f_lambda, re_theta = 0.0, re_theta_lim, r_t;
-  su2double Velocity_Mag = 0.0, du_ds, theta, lambda, time_scale,
-  var1, f_theta;
-  su2double var1d, f_thetad;
-  su2double dU_dx, dU_dy, dU_dz = 0.0;
-  su2double result1;
-  su2double result1d;
-  su2double arg1;
-  su2double arg1d;
-  su2double result2;
-  su2double x2;
-  su2double x1;
-  su2double x1d;
-  su2double y1;
-  su2double y1d;
-  val_residuald[0] = 0.0;
-  val_residual[0] = 0.0;
-  val_residuald[1] = 0.0;
-  val_residual[1] = 0.0;
-  /* -- These lines included just so Tapenade doesn't complain --*/
-//  rey = 0.0;
-//  mach = 0.0;
-//  tu = 0.0;
-//  rey  = config->GetReynolds();
-//  mach = config->GetMach();
-  tu   = config->GetTurbulenceIntensity_FreeStream();
-  /*--- Compute vorticity and strain (TODO: Update for 3D) ---*/
-  Vorticity = fabs(PrimVar_Grad_i[1][1] - PrimVar_Grad_i[2][0]);
-  /*-- Strain = sqrt(2*Sij*Sij) --*/
-  result1 = pow(PrimVar_Grad_i[1][1] + PrimVar_Grad_i[2][0], 2);
-  arg1 = 2.*(PrimVar_Grad_i[1][0]*PrimVar_Grad_i[1][0]+0.5*result1+
-             PrimVar_Grad_i[2][1]*PrimVar_Grad_i[2][1]);
-  strain = sqrt(arg1);
-  /*-- Note: no incompressible for now! --*/
-  if (dist_i > 0.0) {
-    /*-- Intermittency eq.: --*/
-    // Only operate away from wall
-    result1 = pow(tu, 3);
-    result2 = pow(tu, 2);
-    rey_tcd = (4.45*result1-5.7*result2+1.37*tu+0.585)*TransVar_id[1];
-    rey_tc = (4.45*result1-5.7*result2+1.37*tu+0.585)*TransVar_i[1];
-    result1 = pow(tu, 2);
-    flen = 0.171*result1 - 0.0083*tu + 0.0306;
-    result1 = pow(dist_i, 2.);
-    re_v = U_i[0]*result1/Laminar_Viscosity_i*strain;
-    /*-- f_onset controls transition onset location --*/
-    // Vorticity Reynolds number
-    r_t = Eddy_Viscosity_i/Laminar_Viscosity_i;
-    f_onset1d = -(re_v*2.193*rey_tcd/(2.193*rey_tc*(2.193*rey_tc)));
-    f_onset1 = re_v/(2.193*rey_tc);
-    y1 = pow(f_onset1, 4.);
-    y1d = 4.*f_onset1d*pow(f_onset1, 3);
-    if (f_onset1 < y1) {
-      x1d = y1d;
-      x1 = y1;
-    } else {
-      x1d = f_onset1d;
-      x1 = f_onset1;
-    }
-    if (x1 > 2.) {
-      f_onset2 = 2.;
-      f_onset2d = 0.0;
-    } else {
-      f_onset2d = x1d;
-      f_onset2 = x1;
-    }
-    result1 = pow(0.4*r_t, 3);
-    x2 = 1. - result1;
-    if (x2 < 0.)
-      f_onset3 = 0.;
-    else
-      f_onset3 = x2;
-    if (f_onset2 - f_onset3 < 0.) {
-      f_onset = 0.;
-      f_onsetd = 0.0;
-    } else {
-      f_onsetd = f_onset2d;
-      f_onset = f_onset2 - f_onset3;
-    }
-    result1 = pow(0.25*r_t, 4);
-    f_turb = exp(-result1);
-    // Medida eq. 10
-    arg1d = f_onsetd*TransVar_i[0] + f_onset*TransVar_id[0];
-    arg1 = f_onset*TransVar_i[0];
-    //result1d = (arg1 == 0.0 ? 0.0 : arg1d/(2.0*sqrt(arg1)));
-    if (arg1 == 0) { result1d = 0.0; } else result1d = arg1d/(2.0*sqrt(arg1));
-    result1 = sqrt(arg1);
-    prodd = flen*c_a1*U_i[0]*strain*result1d;
-    prod = flen*c_a1*U_i[0]*strain*result1;
-    prodd = prodd*(1.-c_e1*TransVar_i[0]) - prod*c_e1*TransVar_id[0];
-    prod = prod*(1.-c_e1*TransVar_i[0]);
-    desd = c_a2*U_i[0]*Vorticity*f_turb*TransVar_id[0];
-    des = c_a2*U_i[0]*Vorticity*TransVar_i[0]*f_turb;
-    desd = desd*(c_e2*TransVar_i[0]-1.) + des*c_e2*TransVar_id[0];
-    des = des*(c_e2*TransVar_i[0]-1.);
-    val_residuald[0] = prodd - desd;
-    val_residual[0] = prod - des;
-    /*-- REtheta eq: --*/
-    if (nDim == 2) {
-      arg1 = U_i[1]*U_i[1] + U_i[2]*U_i[2];
-      result1 = sqrt(arg1);
-      Velocity_Mag = result1/U_i[0];
-    } else
-      if (nDim == 3) {
-        arg1 = U_i[1]*U_i[1] + U_i[2]*U_i[2] + U_i[3]*U_i[3];
-        result1 = sqrt(arg1);
-        Velocity_Mag = result1/U_i[0];
+  su2double Recrit;
+
+  /* Menter correlation, also mentioned at https://turbmodels.larc.nasa.gov/langtrymenter_4eqn.html.
+     The coefficients are slightly altered to have a better continuity at the interface. */
+  if(var_Re_theta <= 1870.0) {
+
+    /* Quartic expression is used. Define the constants. */
+    const su2double a0 = -3.96035;
+    const su2double a1 =  1.0120656;
+    const su2double a2 = -8.68230e-4;
+    const su2double a3 =  6.96506e-7;
+    const su2double a4 = -1.74105e-10;
+
+    /* Compute the value of Recrit. */
+    const su2double val1 = var_Re_theta;
+    const su2double val2 = val1*val1;
+    const su2double val3 = val1*val2;
+    const su2double val4 = val2*val2;
+
+    Recrit = a0 + a1*val1 + a2*val2 + a3*val3 + a4*val4;
+
+  } else {
+
+    /* Use correlation valid for Re_theta larger than 1870.0. */
+    Recrit = var_Re_theta - (591.926884931 + 0.482*(var_Re_theta-1870.0));
+  }
+
+  /* Malan correlation. */
+  // Recrit = min(0.615*var_Re_theta+61.5, var_Re_theta);
+
+  /* Return the value of Recrit. */
+  return Recrit;
+}
+
+su2double CSourcePieceWise_TransLM::GetFlength(const su2double var_Re_theta) {
+
+  su2double Flength;
+
+  /* Menter correlation, also mentioned at https://turbmodels.larc.nasa.gov/langtrymenter_4eqn.html.
+     The coefficients are slightly changed to have a better continuity at the interfaces. */
+  if(var_Re_theta < 400.0) {
+    Flength = 39.825535395 - 1.1927e-2*var_Re_theta - 1.32567e-4*var_Re_theta*var_Re_theta;
+  }
+  else if(var_Re_theta < 596.0) {
+    Flength = 263.408015395 - 1.23939*var_Re_theta + 1.94548e-3*var_Re_theta*var_Re_theta
+            - 1.01695e-6*var_Re_theta*var_Re_theta*var_Re_theta;
+  }
+  else if(var_Re_theta < 1200.0) {
+    Flength = 0.5 - 3.0e-4*(var_Re_theta - 596.0);
+  }
+  else {
+    Flength = 0.3188;
+  }
+  
+  /* Malan correlation. */
+  /* const su2double tmp1 = 7.168 - 0.01173*var_Re_theta;
+     const su2double tmp2 = exp(tmp1) + 0.5;
+     Flength = min(tmp2, 300.0);
+  */
+
+  /* Return the value of Flength. */
+  return Flength;
+}
+
+void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
+                                               su2double **val_Jacobian_i,
+                                               su2double **val_Jacobian_j,
+                                               CConfig   *config) {
+
+  /*--- Determine whether a Spalart-Allmaras type turbulence model is used. ---*/
+  const unsigned short turbModel = config->GetKind_Turb_Model();
+  const bool SA_turb  = (turbModel == SA) || (turbModel == SA_NEG) || (turbModel == SA_E) ||
+                        (turbModel == SA_COMP) || (turbModel == SA_E_COMP);
+
+  const bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
+  su2double rho, p;
+  /*--- Minimum and maximum value of lamt. The recommended values are -0.1 and
+        0.1, see https://turbmodels.larc.nasa.gov/langtrymenter_4eqn.html. ---*/
+  //const su2double lamt_min = -0.15;
+  //const su2double lamt_max =  0.25;
+  const su2double lamt_min = -0.1;
+  const su2double lamt_max =  0.1;
+
+  /*--- Minimum and maximum value of the turbulence intensity. The recommended
+        value for the minimum is 0.00027, see
+        see https://turbmodels.larc.nasa.gov/langtrymenter_4eqn.html. ---*/
+  const su2double turbIntensity_min = 0.00027;
+  const su2double turbIntensity_max = 1.0;
+
+  /*--- Maximum number of iterations in the Newton algorithms. ---*/
+  const unsigned short maxIt = 25;
+
+  /*--- Get the infinity state, which is needed for some of the
+        cross flow instability models. ---*/
+  const su2double Density_Inf   = config->GetDensity_FreeStreamND();
+  const su2double Pressure_Inf  = config->GetPressure_FreeStreamND();
+  const su2double *Velocity_Inf = config->GetVelocity_FreeStreamND();
+
+  /*--- Get the specific heat ratio. ---*/
+  const su2double Gamma = config->GetGamma();
+  const su2double Gamma_Minus_One = Gamma - 1.0;
+
+  /*--- More readable storage of some variables. ---*/
+  if (!pressure_based) {
+    rho    = V_i[nDim+2];
+    p      = V_i[nDim+1];
+  } else {
+    rho    = V_i[nDim+1];
+    p      = V_i[0];
+  }
+  const su2double *vel   = V_i + 1;
+  const su2double muLam  = Laminar_Viscosity_i;
+  const su2double muTurb = Eddy_Viscosity_i;
+  const su2double S      = StrainMag_i;
+  const su2double Vort   = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1]
+                         +      Vorticity_i[2]*Vorticity_i[2]);
+  const su2double dist   = dist_i;
+
+  const su2double kine  = SA_turb ? 0.0 : TurbVar_i[0];
+  const su2double omega = SA_turb ? 1.0 : TurbVar_i[1];
+
+  const su2double intermittency = TransVar_i[0];
+  const su2double Re_theta      = TransVar_i[1];
+
+  /*--- Compute the length scale squared of this cell, which is simply
+        the square of the nDim root of the volume. ---*/
+  const su2double lenScale2 = (nDim == 2) ? Volume : pow(Volume, 2.0/3.0);
+
+  /*--- Compute the velocity magnitude, velocity magnitude squared
+        of the free-stream and helicity. ---*/
+  su2double vel2 = 0.0, velInf2 = 0.0, helicity = 0.0;
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    vel2     += vel[iDim]*vel[iDim];
+    helicity += vel[iDim]*Vorticity_i[iDim];
+    velInf2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+  }
+
+  vel2 = max(vel2, 1.e-25);
+  const su2double velMag = sqrt(vel2);
+
+  /*--- Compute the turbulence intensity. For Spalart-Allmaras type turbulence
+        models the turbulence intensity of the free-stream is taken. For numerical
+        robustness, the turbulence intensity is clipped within practical limits. ---*/
+  su2double turbIntensity         = sqrt(2.0*kine/(3.0*vel2));
+  if(dist < 1.e-10) turbIntensity = 0.0;
+  if( SA_turb ) turbIntensity     = config->GetTurbulenceIntensity_FreeStream();
+
+  turbIntensity = min(max(turbIntensity, turbIntensity_min), turbIntensity_max);
+
+  /*--- Compute the value of dUds, which is the acceleration of the
+        total velocity along streamwise direction. ---*/
+  su2double dUds = 0.0;
+  for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+    for(unsigned short jDim=0; jDim<nDim; ++jDim)
+      dUds += vel[iDim]*vel[jDim]*PrimVar_Grad_i[iDim+1][jDim];
+  }
+  dUds /= vel2;
+
+  /*--- Computation of the equilibrium value of Re_theta. As the equation
+        for Re_theta_eq is an implicit equation, an iterative algorithm is
+        needed to compute it. ---*/
+  const su2double Re_theta_far = GetREth(turbIntensity);
+  const su2double termLam      = muLam*dUds/(rho*vel2);
+
+  su2double Re_theta_eq = Re_theta_far; /* Initial guess. */
+
+  if(dUds <= 0.0) {
+
+    /*--- Negative value of dUds implies a negative value of lambda_theta
+          and a different correlation must be taken than for positive values,
+          see https://turbmodels.larc.nasa.gov/langtrymenter_4eqn.html. ---*/
+    const su2double val    = 100.0*turbIntensity/1.5;
+    const su2double TITerm = exp(-val*sqrt(val));
+
+    /* Constants in the correlation for lambda_theta. */
+    const su2double a1 =  12.986*TITerm;
+    const su2double a2 = 123.66 *TITerm;
+    const su2double a3 = 405.689*TITerm;
+
+    /* Determine the lower limit of Re_theta_eq, which corresponds
+       lambda_theta = lamt_min. */
+    su2double lamt  = lamt_min;
+    su2double lamt2 = lamt*lamt;
+    su2double lamt3 = lamt*lamt2;
+    su2double F     = 1.0 + a1*lamt + a2*lamt2 + a3*lamt3;
+    su2double dF;
+
+    const su2double Re_theta_low = Re_theta_far*F;
+
+    /*--- Newton algorithm to compute Re_theta_eq. ---*/
+    unsigned short iter;
+    su2double deltaReOld = 1.0;
+    for(iter=0; iter<maxIt; ++iter) {
+
+      /* Value of lamt. For stability this term is clipped. */
+      lamt = Re_theta_eq*Re_theta_eq*termLam;
+      if(lamt < lamt_min) {
+        lamt        = lamt_min;
+        Re_theta_eq = Re_theta_low;
       }
-    /*-- Gradient of velocity magnitude ---*/
-    dU_dx = 0.5*Velocity_Mag*(2*U_i[1]/U_i[0]*PrimVar_Grad_i[1][0]+2*U_i[2
-                                                                         ]/U_i[0]*PrimVar_Grad_i[2][0]);
-    if (nDim == 3)
-      dU_dx += 0.5*Velocity_Mag*(2*U_i[3]/U_i[0]*PrimVar_Grad_i[3][0]);
-    dU_dy = 0.5*Velocity_Mag*(2*U_i[1]/U_i[0]*PrimVar_Grad_i[1][1]+2*U_i[2
-                                                                         ]/U_i[0]*PrimVar_Grad_i[2][1]);
-    if (nDim == 3)
-      dU_dy += 0.5*Velocity_Mag*(2*U_i[3]/U_i[0]*PrimVar_Grad_i[3][1]);
-    if (nDim == 3)
-      dU_dz = 0.5*Velocity_Mag*(2*U_i[1]/U_i[0]*PrimVar_Grad_i[1][2]+2*
-                                U_i[2]/U_i[0]*PrimVar_Grad_i[2][2]+2*U_i[3]/U_i[0]*
-                                PrimVar_Grad_i[3][2]);
-    du_ds = U_i[1]/(U_i[0]*Velocity_Mag)*dU_dx + U_i[2]/(U_i[0]*
-                                                         Velocity_Mag)*dU_dy;
-    // Streamwise velocity derivative
-    if (nDim == 3)
-      du_ds += U_i[3]/(U_i[0]*Velocity_Mag)*dU_dz;
-    re_theta_lim = 20.;
-    /*-- Fixed-point iterations to solve REth correlation --*/
-    f_lambda = 1.;
-    {
-      su2double x3;
-      for (int iter = 0; iter < 10; ++iter) {
-        if (tu <= 1.3)
-          re_theta = f_lambda*(1173.51-589.428*tu+0.2196/(tu*tu));
-        else {
-          result1 = pow(tu - 0.5658, -0.671);
-          re_theta = 331.5*f_lambda*result1;
+
+      /* Compute the value of the function F(lamt) and its derivative
+         w.r.t. lamt. */
+      lamt2 = lamt*lamt;
+      lamt3 = lamt*lamt2;
+      F     = 1.0 + a1*lamt + a2*lamt2 + a3*lamt3;
+      dF    = a1 + 2.0*a2*lamt + 3.0*a3*lamt2;
+
+      /* Compute the function for which the root must be determined
+         as well as its derivative w.r.t. Re_theta_eq. */
+      const su2double G  = Re_theta_eq - Re_theta_far*F;
+      const su2double dG = 1.0 - Re_theta_far*dF*2.0*Re_theta_eq*termLam;
+
+      /* Update the value of Re_theta_eq. Store the old value, because
+         the new value may need to be clipped. */
+      const su2double Re_theta_eq_Old = Re_theta_eq;
+      Re_theta_eq -= G/dG;
+
+      /* Clip Re_theta_eq for stability and determine the actual change. */
+      Re_theta_eq = max(min(Re_theta_eq, Re_theta_far), Re_theta_low);
+
+      const su2double deltaRe = fabs(Re_theta_eq - Re_theta_eq_Old);
+
+      /* Exit criterion, which takes finite precision into account. */
+      if((deltaRe <= 1.e-2) && (deltaRe >= deltaReOld)) break;
+      deltaReOld = deltaRe;
+    }
+
+    /* Terminate if the Newton algorithm did not converge. */
+    if(iter == maxIt)
+      SU2_MPI::Error("Newton did not converge for Re_theta_eq", CURRENT_FUNCTION);
+  }
+  else {
+
+    /*--- Positive value of dUds implies a positive value of lambda_theta
+          and a different correlation must be taken than for negative values,
+          see https://turbmodels.larc.nasa.gov/langtrymenter_4eqn.html. ---*/
+    const su2double val    = 100.0*turbIntensity/0.5;
+    const su2double TITerm = exp(-val);
+
+    /* Constants in the correlation for lambda_theta. */
+    const su2double a1 =   0.275*TITerm;
+    const su2double a2 = -35.0;
+
+    /* Determine the upper limit of Re_theta_eq, which corresponds
+       lambda_theta = lamt_max. */
+    su2double lamt = lamt_max;
+    su2double valExp = exp(a2*lamt);
+    su2double F      = 1.0 + a1*(1.0 - valExp);
+    su2double dF;
+
+    const su2double Re_theta_upp = Re_theta_far*F;
+
+    /*--- Newton algorithm to compute Re_theta_eq. ---*/
+    unsigned short iter;
+    su2double deltaReOld = 1.0;
+    for(iter=0; iter<maxIt; ++iter) {
+
+      /* Value of lamt. For stability this term is clipped. */
+      lamt = Re_theta_eq*Re_theta_eq*termLam;
+      if(lamt > lamt_max) {
+        lamt = lamt_max;
+        Re_theta_eq = Re_theta_upp;
+      }
+
+      /* Compute the value of the function F(lamt) and its derivative
+         w.r.t. lamt. */
+      valExp = exp(a2*lamt);
+      F      = 1.0 + a1*(1.0 - valExp);
+      dF     = -a1*a2*valExp;
+
+      /* Compute the function for which the root must be determined
+         as well as its derivative w.r.t. Re_theta_eq. */
+      const su2double G  = Re_theta_eq - Re_theta_far*F;
+      const su2double dG = 1.0 - Re_theta_far*dF*2.0*Re_theta_eq*termLam;
+
+      /* Update the value of Re_theta_eq. Store the old value, because
+         the new value may need to be clipped. */
+      const su2double Re_theta_eq_Old = Re_theta_eq;
+      Re_theta_eq -= G/dG;
+
+      /* Clip Re_theta_eq for stability and determine the actual change. */
+      Re_theta_eq = max(min(Re_theta_eq, Re_theta_upp), Re_theta_far);
+
+      const su2double deltaRe = fabs(Re_theta_eq - Re_theta_eq_Old);
+
+      /* Exit criterion, which takes finite precision into account. */
+      if((deltaRe <= 1.e-2) && (deltaRe >= deltaReOld)) break;
+      deltaReOld = deltaRe;
+    }
+
+    /* Terminate if the Newton algorithm did not converge. */
+    if(iter == maxIt)
+      SU2_MPI::Error("Newton did not converge for Re_theta_eq", CURRENT_FUNCTION);
+  }
+
+  /*--- Compute the other Reynolds numbers that appear in the formulation. ---*/
+  const su2double Rev           = rho*S*dist*dist/muLam;
+  const su2double Re_theta_crit = GetREth_crit(Re_theta);
+  const su2double Re_omega      = rho*omega*dist*dist/muLam;
+
+  /*--- Compute the value of Fonset. ---*/
+  const su2double RT = SA_turb ? muTurb/muLam : rho*kine/(muLam*omega);
+
+  const su2double Fonset1 = Rev/(2.193*Re_theta_crit);
+  su2double       tmp     = Fonset1*Fonset1*Fonset1*Fonset1;
+  const su2double Fonset2 = min(max(Fonset1,tmp), 2.0);
+  tmp                     = 1.0 - 0.064*RT*RT*RT;          // 2.5^(-3) = 0.064.
+  const su2double Fonset3 = max(tmp, 0.0);
+  const su2double Fonset  = max(Fonset2-Fonset3, 0.0);
+
+  /*--- Compute the value of Fturb. ---*/
+  const su2double Fturb = exp(-0.00390625*RT*RT*RT*RT);       // 4^(-4) = 0.00390625.
+
+  /*--- Compute the values of Fsublayer and Fwake. When a
+        Spalart-Allmaras type model is used, these value
+        are set to be zero and one, respectively. ---*/
+  tmp                       = 2.5e-5*Re_omega*Re_omega;
+  const su2double Fsublayer = SA_turb ? 0.0 : exp(-tmp);
+  tmp                       = 1.e-10*Re_omega*Re_omega;
+  const su2double Fwake     = SA_turb ? 1.0 : exp(-tmp);
+
+  /*--- Compute the empirical correlation for Flength, which
+        controls the length of the transition region. It is,
+        possibly, corrected by Fsublayer. ---*/
+  const su2double Flength = (1.0-Fsublayer)*GetFlength(Re_theta)
+                          + 40.0*Fsublayer;
+
+  /*--- Compute the value of Ftheta_t. */
+  tmp                  = rho*vel2/(375.0*Vort*muLam*Re_theta);
+  const su2double val1 = Fwake*exp(-tmp*tmp*tmp*tmp);
+  const su2double val2 = (ce2*intermittency-1.0)/(ce2-1.0);
+  const su2double val3 = 1.0 - val2*val2;
+
+  const su2double Ftheta_t = min(max(val1,val3),1.0);
+
+  /*--- Compute time scale for the source terms of the Re_theta equation.
+        Note that this time scale is limited to improve robustness for
+        high Reynolds number flows. ---*/
+  const su2double timeScale1 = 500.0*muLam/(rho*vel2);
+  const su2double timeScale2 = rho*lenScale2/(muLam + muTurb);
+  const su2double timeScale  = min(timeScale1, timeScale2);
+
+  /*-- Initialize the terms that appear in the production and destruction
+       terms of the intermittency and Re_theta equations. These terms may
+       be modified, depending on the model to account for the cross flow
+       instabilities. ---*/
+  su2double termPInter = Flength*sqrt(intermittency*Fonset);
+  su2double D_SCF      = 0.0;
+  su2double Jac_D_SCF  = 0.0;
+
+  /*--- Determine the model for the cross flow instabilities and modify
+        termPInter and termDscfReTheta accordingly. ---*/
+  switch( config->GetKind_LM_CrossFlowModel() ) {
+
+    case LANGTRY_GENERAL_CROSS_FLOW: {
+
+      /*--- Cross flow model of Langtry. Only add the term for
+            points away from the boundary. ---*/
+      if(dist > 1.e-10) { 
+
+        /*--- First compute the non-dimensional cross flow strength
+              as well as the cross flow shift terms. ---*/
+        const su2double Hcf      = dist*fabs(helicity)/velMag;
+        const su2double muRatio  = muTurb/muLam;
+        const su2double dHcf     = 0.1066 - Hcf*(1.0 + min(muRatio, 0.4));
+        const su2double dHcfPlus = max( dHcf, 0.0);
+        const su2double dHcfMin  = max(-dHcf, 0.0);
+        const su2double fHShift  = 6200.0*dHcfPlus + 50000.0*dHcfPlus*dHcfPlus
+                               - 75.0*tanh(80.0*dHcfMin);
+
+        /*--- Determine the coefficients in the equation for theta_t
+              for the cross flow Reynolds number Re_SCF.  This equation
+              looks like a1*theta_t + a2*log(theta_t) + a3 = 0.  ---*/
+        const su2double hRoughness = config->GetSurfaceRoughnessHeight();
+
+        const su2double a1 = -rho*velMag/(0.82*muLam);
+        const su2double a2 =  35.088;
+        const su2double a3 = 319.51 - a2*log(hRoughness) + fHShift;
+
+        /*--- Newton algorithm to compute the value of theta_t. ---*/
+        su2double theta_t = (3.0*a2 - a3)/a1;
+
+        unsigned short iter;
+        su2double deltaRe_SCF_Old = 1.0, Re_SCF = -a1*theta_t;
+        for(iter=0; iter<maxIt; ++iter) {
+
+          /*--- Compute the value of the function and the derivative
+                for which the root must be computed. ---*/
+          const su2double  F = a1*theta_t + a2*log(theta_t) + a3;
+          const su2double dF = a1 + a2/theta_t;
+
+          /*--- Store the old value of the Reynolds number based
+                on theta_t and compute the new value of theta_t.
+                Make sure it is positive. Afterwared compute the
+                corresponding Reynolds number. ---*/
+          const su2double Re_SCF_Old = Re_SCF;
+
+          theta_t -= F/dF;
+          theta_t  = max(theta_t, 1.e-15);
+          Re_SCF   = -a1*theta_t;
+
+          /* Exit criterion, which takes finite precision into account. */
+          const su2double deltaRe_SCF = fabs(Re_SCF - Re_SCF_Old);
+          if((deltaRe_SCF <= 1.e-2) && (deltaRe_SCF >= deltaRe_SCF_Old)) break;
+          deltaRe_SCF_Old = deltaRe_SCF;
         }
-        if (re_theta < re_theta_lim) re_theta = re_theta_lim;
-        theta = re_theta*Laminar_Viscosity_i/(U_i[0]*Velocity_Mag);
-        lambda = U_i[0]*theta*theta*du_ds/Laminar_Viscosity_i;
-        if (-0.1 < lambda)
-          x3 = lambda;
-        else
-          x3 = -0.1;
-        if (x3 > 0.1)
-          lambda = 0.1;
-        else
-          lambda = x3;
-        if (lambda <= 0.0) {
-          result1 = pow(2./3*tu, 1.5);
-          f_lambda = 1. - (-12.986*lambda-123.66*lambda*lambda-405.689
-                           *lambda*lambda*lambda)*exp(-result1);
-        } else
-          f_lambda = 1. + 0.275*(1.-exp(-35.*lambda))*exp(-2.*tu);
+
+        /* Terminate if the Newton algorithm did not converge. */
+        if(iter == maxIt)
+          SU2_MPI::Error("Newton did not converge for Re_SCF", CURRENT_FUNCTION);
+
+        /*--- Determine whether Re_SCF is less than Re_theta. Only in that
+              case the cross flow term must be added. ---*/
+        if(Re_SCF < Re_theta) {
+
+          /*--- Compute the values of D_SCF and Jac_D_SCF, where the latter is
+                the derivative of D_SCF w.r.t. rho*Re_theta. ---*/
+          const su2double Ftheta_t2 = min(val1, 1.0);
+
+          Jac_D_SCF = cthetat*C_crossflow*Ftheta_t2/timeScale;
+          D_SCF     = Jac_D_SCF*rho*(Re_SCF - Re_theta);
+        }
       }
+
+      break;
     }
-    /*-- Calculate blending function f_theta --*/
-    time_scale = 500.0*Laminar_Viscosity_i/(U_i[0]*Velocity_Mag*
-                                            Velocity_Mag);
-    // Deactivated the f_wake parameter...
-    //theta_bl   = TransVar_i[1]*Laminar_Viscosity_i / (U_i[0]*Velocity_Mag);
-    //delta_bl   = 7.5*theta_bl;
-    //delta      = 50.0*Vorticity*dist_i/Velocity_Mag*delta_bl + 1e-20;
-    //
-    //f_wake = 1.;
-    var1d = TransVar_id[0]/(1.0-1./c_e2);
-    var1 = (TransVar_i[0]-1./c_e2)/(1.0-1./c_e2);
-    result1 = pow(var1, 2.0);
-    result1d = 2.0*var1d*pow(var1, 1.0);
-    var1d = -result1d;
-    var1 = 1. - result1;
-    if (var1 > 1.0) {
-      f_theta = 1.0;
-      f_thetad = 0.0;
-    } else {
-      f_thetad = var1d;
-      f_theta = var1;
+
+    case GRABE_WING_ONLY_CROSS_FLOW: {
+
+      /*--- Cross flow model of Grabe, which is only valid for
+            wing geometries. ---*/
+
+      break;
     }
-    val_residuald[1] = c_theta*U_i[0]*(-(f_thetad*(re_theta-TransVar_i[1])
-                                         )-(1.-f_theta)*TransVar_id[1])/time_scale;
-    val_residual[1] = c_theta*U_i[0]/time_scale*(1.-f_theta)*(re_theta-
-                                                              TransVar_i[1]);
-  } else
-    *val_residuald = 0.0;
+
+    case GRABE_GENERAL_CROSS_FLOW: {
+
+      /*--- General cross flow model of Grabe.
+            Compute the helicity Reynolds number. ---*/
+      const su2double Re_helicity = rho*dist*dist*helicity/(muLam*velMag);
+
+      /*--- Compute the velocity at the edge of the boundary layer. Here it is
+            assumed that the isentropic relation for total pressure is valid in
+            the outer flow and the pressure is constant through the boundary
+            layer. Note that this relation is not valid when motion is present. ---*/
+      const su2double pRatio = p/Pressure_Inf;
+      tmp  = 1.0 - pow(pRatio,(Gamma_Minus_One/Gamma));
+      tmp *= 2.0*Gamma*Pressure_Inf/(Gamma_Minus_One*Density_Inf);
+      tmp += velInf2;
+
+      su2double uEdge = sqrt(max(tmp,0.0));
+      uEdge = max(uEdge, 0.01*velMag);
+
+      /*--- Compute the dot product of the velocity and the pressure gradient.
+            Store this in duEdgeDs, because later on this value is transformed
+            to the gradient of uEdge in the direction of the streamline. ---*/
+      su2double duEdgeDs = 0.0;
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        duEdgeDs += vel[iDim]*PrimVar_Grad_i[nDim+1][iDim];
+
+      /*--- Multiply the dot product of velocity and pressure gradient with
+            the appropriate variables to obtain the gradient of the edge
+            velocity in the direction of the streamline. ---*/
+      tmp = pow(pRatio, 1.0/Gamma);
+      duEdgeDs *= -1.0/(tmp*Density_Inf*uEdge*velMag);
+
+      /*--- Compute the length scale that represents the momentum thickness
+            where the helicity Reynolds number reaches its maximum value
+            in the boundary layer and the modified pressure gradient parameter
+            that is needed to compute the shape factor H12. ---*/
+      const su2double lenHelMax = 2.0*dist/(15.0*CHe_max);
+      const su2double lamPlus   = rho*lenHelMax*lenHelMax*duEdgeDs/muLam;
+
+      /*--- Compute the empirical correlation for the helicity Reynolds number
+            at transition onset. ---*/
+      const su2double lamPlus2 = lamPlus*lamPlus;
+      const su2double lamPlus3 = lamPlus*lamPlus2;
+      const su2double lamPlus4 = lamPlus*lamPlus3;
+
+      tmp = -8838.4*lamPlus4 + 1105.1*lamPlus3 - 67.962*lamPlus2 + 17.574*lamPlus + 2.0593;
+      const su2double H12 = 4.02923 - sqrt(max(tmp,0.0));
+
+      tmp = -456.83*H12 + 1332.7;
+      const su2double Re_helicity_onset = max(tmp, 150.0);
+
+      /*--- Compute the value of Fonset_CF. ---*/
+      const su2double Fonset1_CF = Re_helicity/(C_Fonset1_CF*Re_helicity_onset);
+
+      tmp = Fonset1_CF*Fonset1_CF*Fonset1_CF*Fonset1_CF;
+      const su2double Fonset2_CF = min(max(Fonset1_CF,tmp), 2.0);
+
+      tmp = 1.0 - 0.125*RT*RT*RT;
+      const su2double Fonset3_CF = max(tmp, 0.0);
+
+      tmp = Fonset2_CF - Fonset3_CF;
+      const su2double Fonset_CF = max(tmp, 0.0);
+
+      /*--- Modify the value of termPInter to account for cross flow
+            instabilities. ---*/
+      termPInter += Flength_CF*sqrt(intermittency*Fonset_CF);
+
+      break;
+    }
+  }
+
+  /*--- Compute the production and destruction term of the intermittency
+        equation. ---*/
+  const su2double Pintermittency = termPInter*ca1*rho*S*(1.0 - ce1*intermittency);
+  const su2double Eintermittency = ca2*rho*Vort*Fturb
+                                 * intermittency*(ce2*intermittency - 1.0);
+
+  /*--- Compute the production/destruction term of the Re_theta equation. ---*/
+  const su2double PRe_theta = cthetat*rho*(Re_theta_eq - Re_theta)
+                            * (1.0 - Ftheta_t)/timeScale;
+
+  /*--- Compute the source terms and the approximate Jacobians for
+        both equations. ---*/
+  val_residual[0] = Volume*(Pintermittency - Eintermittency);
+  val_residual[1] = Volume*(PRe_theta + D_SCF);
+
+  val_Jacobian_i[0][0] = -Volume*(2.0*ca2*ce2*Vort*intermittency*Fturb
+                       +          ca1*ce1*S*termPInter);
+  val_Jacobian_i[0][1] =  0.0;
+  val_Jacobian_i[1][0] =  0.0;
+  val_Jacobian_i[1][1] = -Volume*(cthetat/timeScale + Jac_D_SCF);
 }

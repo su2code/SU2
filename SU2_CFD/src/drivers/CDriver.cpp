@@ -2086,7 +2086,10 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
-
+    
+    /*--- Get the constants for the Langtry-Menter transition model. */
+    const su2double *constants = solver[MESH_0][TRANS_SOL]->GetConstants();
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case NO_UPWIND:
@@ -2106,18 +2109,19 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGradCorrected_TransLM(nDim, nVar_Trans, config);
+      numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransLM(nDim, nVar_Trans, constants, true, config);
     }
 
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      numerics[iMGlevel][TRANS_SOL][source_first_term] = new CSourcePieceWise_TransLM(nDim, nVar_Trans, config);
+      numerics[iMGlevel][TRANS_SOL][source_first_term] = new CSourcePieceWise_TransLM(nDim, nVar_Trans, constants, config);
       numerics[iMGlevel][TRANS_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Trans, config);
     }
 
     /*--- Definition of the boundary condition method ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwLin_TransLM(nDim, nVar_Trans, config);
+      numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwSca_TransLM(nDim, nVar_Trans, config);
+      numerics[iMGlevel][TRANS_SOL][visc_bound_term] = new CAvgGrad_TransLM(nDim, nVar_Trans, constants, false, config);
     }
   }
 

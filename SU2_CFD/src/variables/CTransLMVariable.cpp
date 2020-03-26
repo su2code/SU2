@@ -28,7 +28,7 @@
 
 #include "../../include/variables/CTransLMVariable.hpp"
 
-
+/* develop version
 CTransLMVariable::CTransLMVariable(su2double intermittency, su2double REth, unsigned long npoint, unsigned long ndim,
                                    unsigned long nvar, CConfig *config) : CTurbVariable(npoint, ndim, nvar, config) {
 
@@ -42,4 +42,40 @@ CTransLMVariable::CTransLMVariable(su2double intermittency, su2double REth, unsi
     Set_BGSSolution_k();
 
   gamma_sep.resize(nPoint);
+}*/
+
+// LM branch modified
+//CTransLMVariable::CTransLMVariable(void) : CTurbVariable() {}
+
+CTransLMVariable::CTransLMVariable(const su2double      val_intermittency,
+                                   const su2double      val_REth,
+                                   const unsigned long val_nPoint,
+                                   const unsigned long val_nDim,
+                                   const unsigned long val_nvar,
+                                   CConfig              *config)
+: CTurbVariable(val_nPoint, val_nDim, val_nvar, config) {
+
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  
+  gamma_sep.resize(nPoint) = val_intermittency;
+  /* Initialization of variables */
+  for (unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+  {
+    Solution(iPoint,0) = val_intermittency; Solution_Old(iPoint,0) = val_intermittency;
+    Solution(iPoint,1) = val_REth;          Solution_Old(iPoint,1) = val_REth;
+  }
+  /* Initialize gamma_sep to the intermittency. */
+  //gamma_sep.resize(nPoint);//= val_intermittency;
+  
+  muT.resize(nPoint) = su2double(0.0);
+
+  /*--- Allocate and initialize solution for the dual time strategy ---*/
+  if (dual_time) {
+    for (unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+    {
+      Solution_time_n(iPoint,0)  = val_intermittency; Solution_time_n(iPoint,0)  = val_REth;
+      Solution_time_n1(iPoint,1) = val_intermittency; Solution_time_n1(iPoint,1) = val_REth;
+    }
+  }
 }

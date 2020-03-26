@@ -503,6 +503,13 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
 	/*--- Read the volume ---*/
     Vol = geometry->node[iPoint]->GetVolume();
+    
+    su2double *diag = Jacobian.GetBlock(iPoint, iPoint);
+    
+    for (iVar = 0; iVar < nVar; iVar++)
+      diag[(nVar+1)*iVar] = diag[(nVar+1)*iVar]/1.0;
+    
+    Jacobian.SetBlock(iPoint, iPoint, diag);
 
 	/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -529,6 +536,7 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       nodes->AddSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
+      //nodes->AddSolution(iPoint, iVar, config->GetRelaxation_Factor_PBFlow()*LinSysSol[iPoint*nVar+iVar]);
      }
   }
 
