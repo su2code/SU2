@@ -586,6 +586,16 @@ void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config){
 
 void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config){
 
+  if (config->GetSurface_Movement(DEFORMING)) {
+    if (rank == MASTER_NODE)
+      cout << endl << " Updating surface positions." << endl;
+
+    Surface_Translating(geometry, config, config->GetTimeIter());
+    Surface_Plunging(geometry, config, config->GetTimeIter());
+    Surface_Pitching(geometry, config, config->GetTimeIter());
+    Surface_Rotating(geometry, config, config->GetTimeIter());
+  }
+
   unsigned short iMarker;
 
   /*--- Impose zero displacements of all non-moving surfaces (also at nodes in multiple moving/non-moving boundaries). ---*/
@@ -837,8 +847,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config,
-                                        unsigned long iter, unsigned short iZone) {
+void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigned long iter) {
 
   su2double deltaT, time_new, time_old, Lref, *Coord;
   su2double Center[3], VarCoord[3], Omega[3], Ampl[3], Phase[3];
@@ -987,8 +996,8 @@ void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config,
 
 }
 
-void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config,
-                                        unsigned long iter, unsigned short iZone) {
+void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigned long iter) {
+
   su2double deltaT, time_new, time_old, Lref, *Coord;
   su2double VarCoordAbs[3] = {0.0, 0.0, 0.0};
   su2double Center[3] = {0.0,0.0,0.0}, VarCoord[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0},
@@ -1210,8 +1219,8 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config,
   }
 }
 
-void CMeshSolver::Surface_Plunging(CGeometry *geometry, CConfig *config,
-                                        unsigned long iter, unsigned short iZone) {
+void CMeshSolver::Surface_Plunging(CGeometry *geometry, CConfig *config, unsigned long iter) {
+
   su2double deltaT, time_new, time_old, Lref;
   su2double Center[3] = {0.0, 0.0, 0.0}, VarCoord[3], Omega[3], Ampl[3];
   su2double VarCoordAbs[3] = {0.0, 0.0, 0.0};
@@ -1330,8 +1339,8 @@ void CMeshSolver::Surface_Plunging(CGeometry *geometry, CConfig *config,
   }
 }
 
-void CMeshSolver::Surface_Translating(CGeometry *geometry, CConfig *config,
-                                        unsigned long iter, unsigned short iZone) {
+void CMeshSolver::Surface_Translating(CGeometry *geometry, CConfig *config, unsigned long iter) {
+
   su2double deltaT, time_new, time_old;
   su2double Center[3] = {0.0,0.0,0.0}, VarCoord[3] = {0.0,0.0,0.0};
   su2double VarCoordAbs[3] = {0.0, 0.0, 0.0};
