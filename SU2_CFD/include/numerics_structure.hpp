@@ -493,10 +493,10 @@ public:
   
   /*!
    * \brief Set the divergene of the turbulent variables for the SST model.
-   * \param[in] val_DivTurbVar_i - Value of the divergence of turbulent variables at point i.
-   * \param[in] val_DivTurbVar_j - Value of the divergence of turbulent variables at point j.
+   * \param[in] val_DivTurbVarGrad_i - Value of the divergence of turbulent variables at point i.
+   * \param[in] val_DivTurbVarGrad_j - Value of the divergence of turbulent variables at point j.
    */
-  virtual void SetDivTurbVar(su2double *val_DivTurbVar_i, su2double *val_DivTurbVar_j) {/* empty */};
+  virtual void SetDivTurbVarGrad(su2double *val_DivTurbVarGrad_i, su2double *val_DivTurbVarGrad_j) {/* empty */};
   
   /*!
    * \brief Set the gradient of the auxiliary variables.
@@ -4722,7 +4722,7 @@ private:
 
   su2double kAmb, omegaAmb;
   
-  su2double *DivTurbVar_i, *DivTurbVar_j;
+  su2double *DivTurbVarGrad_i, *DivTurbVarGrad_j;
  
   bool incompressible;
   bool sustaining_terms;
@@ -4766,10 +4766,10 @@ public:
   
   /*!
    * \brief Set the divergene of the turbulent variables for the SST model.
-   * \param[in] val_DivTurbVar_i - Value of the divergence of turbulent variables at point i.
+   * \param[in] val_DivTurbVarGra_i - Value of the divergence of turbulent variables at point i.
    * \param[in] val_DivTurbVar_j - Value of the divergence of turbulent variables at point j.
    */
-  virtual void SetDivTurbVar(su2double *val_DivTurbVar_i, su2double *val_DivTurbVar_j);
+  virtual void SetDivTurbVarGrad(su2double *val_DivTurbVarGrad_i, su2double *val_DivTurbVarGrad_j);
   
   /*!
    * \brief Residual for source term integration.

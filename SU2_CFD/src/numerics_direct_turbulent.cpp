@@ -1202,6 +1202,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+  AD::SetPreaccIn(DivTurbVarGrad_i, nVar);
 
   unsigned short iDim;
   su2double alfa_blended, beta_blended;
@@ -1314,8 +1315,8 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
    /*--- Cross diffusion ---*/
     
-   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVar_i[1]/TurbVar_i[1];
-   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVar_i[0]/TurbVar_i[1];
+   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[1]/TurbVar_i[1];
+   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[0]/TurbVar_i[1];
   }
 
   AD::SetPreaccOut(val_residual, nVar);
