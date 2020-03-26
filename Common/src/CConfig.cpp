@@ -1118,8 +1118,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief WEAKLY_COUPLED_HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
 
-  addBoolOption("ADJ_FSI", FSI_Problem, NO);
-
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
@@ -1701,9 +1699,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Preconditioner for the discrete adjoint Krylov linear solvers */
   addEnumOption("DISCADJ_LIN_PREC", Kind_DiscAdj_Linear_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Linear solver for the discete adjoint systems */
-  addEnumOption("FSI_DISCADJ_LIN_SOLVER_STRUC", Kind_DiscAdj_Linear_Solver_FSI_Struc, Linear_Solver_Map, CONJUGATE_GRADIENT);
-  /* DESCRIPTION: Preconditioner for the discrete adjoint Krylov linear solvers */
-  addEnumOption("FSI_DISCADJ_LIN_PREC_STRUC", Kind_DiscAdj_Linear_Prec_FSI_Struc, Linear_Solver_Prec_Map, JACOBI);
 
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
@@ -2394,27 +2389,6 @@ void CConfig::SetConfig_Options() {
   /* CONFIG_CATEGORY: FSI solver */
   /*--- Options related to the FSI solver ---*/
 
-  /*!\brief PHYSICAL_PROBLEM_FLUID_FSI
-   *  DESCRIPTION: Physical governing equations \n
-   *  Options: NONE (default),EULER, NAVIER_STOKES, RANS,
-   *  \ingroup Config*/
-  addEnumOption("FSI_FLUID_PROBLEM", Kind_Solver_Fluid_FSI, FSI_Fluid_Solver_Map, NO_SOLVER_FFSI);
-
-  /*!\brief PHYSICAL_PROBLEM_STRUCTURAL_FSI
-   *  DESCRIPTION: Physical governing equations \n
-   *  Options: NONE (default), FEM_ELASTICITY
-   *  \ingroup Config*/
-  addEnumOption("FSI_STRUCTURAL_PROBLEM", Kind_Solver_Struc_FSI, FSI_Struc_Solver_Map, NO_SOLVER_SFSI);
-
-  /* DESCRIPTION: Linear solver for the structural side on FSI problems */
-  addEnumOption("FSI_LINEAR_SOLVER_STRUC", Kind_Linear_Solver_FSI_Struc, Linear_Solver_Map, FGMRES);
-  /* DESCRIPTION: Preconditioner for the Krylov linear solvers */
-  addEnumOption("FSI_LINEAR_SOLVER_PREC_STRUC", Kind_Linear_Solver_Prec_FSI_Struc, Linear_Solver_Prec_Map, ILU);
-  /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
-  addUnsignedLongOption("FSI_LINEAR_SOLVER_ITER_STRUC", Linear_Solver_Iter_FSI_Struc, 500);
-  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
-  addDoubleOption("FSI_LINEAR_SOLVER_ERROR_STRUC", Linear_Solver_Error_FSI_Struc, 1E-6);
-
   /* DESCRIPTION: ID of the region we want to compute the sensitivities using direct differentiation */
   addUnsignedShortOption("FEA_ID_DIRECTDIFF", nID_DV, 0);
 
@@ -2498,8 +2472,6 @@ void CConfig::SetConfig_Options() {
 
   addBoolOption("PRINT_INLET_INTERPOLATED_DATA", PrintInlet_InterpolatedData, false);
 
-  /* DESCRIPTION: Maximum number of FSI iterations */
-  addUnsignedShortOption("FSI_ITER", nIterFSI, 1);
   /* DESCRIPTION: Number of FSI iterations during which a ramp is applied */
   addUnsignedShortOption("RAMP_FSI_ITER", nIterFSI_Ramp, 2);
   /* DESCRIPTION: Aitken's static relaxation factor */
@@ -5559,14 +5531,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"----------------- Physical Case Definition ( Zone "  << iZone << " ) -------------------" << endl;
   if (val_software == SU2_CFD) {
-  if (FSI_Problem) {
+    if (FSI_Problem)
      cout << "Fluid-Structure Interaction." << endl;
-  }
 
-  if (DiscreteAdjoint) {
-     cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
+    if (DiscreteAdjoint) {
+     cout <<"Discrete Adjoint equations using Algorithmic Differentiation\n";
      cout <<"based on the physical case: ";
-  }
+    }
     switch (Kind_Solver) {
       case EULER:     case DISC_ADJ_EULER:
       case INC_EULER: case DISC_ADJ_INC_EULER:

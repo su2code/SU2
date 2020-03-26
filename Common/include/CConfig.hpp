@@ -475,15 +475,11 @@ private:
   Kind_Deform_Linear_Solver,             /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver. */
   Kind_Linear_Solver,                    /*!< \brief Numerical solver for the implicit scheme. */
-  Kind_Linear_Solver_FSI_Struc,          /*!< \brief Numerical solver for the structural part in FSI problems. */
   Kind_Linear_Solver_Prec,               /*!< \brief Preconditioner of the linear solver. */
-  Kind_Linear_Solver_Prec_FSI_Struc,     /*!< \brief Preconditioner of the linear solver for the structural part in FSI problems. */
   Kind_AdjTurb_Linear_Solver,            /*!< \brief Numerical solver for the turbulent adjoint implicit scheme. */
   Kind_AdjTurb_Linear_Prec,              /*!< \brief Preconditioner of the turbulent adjoint linear solver. */
   Kind_DiscAdj_Linear_Solver,            /*!< \brief Linear solver for the discrete adjoint system. */
   Kind_DiscAdj_Linear_Prec,              /*!< \brief Preconditioner of the discrete adjoint linear solver. */
-  Kind_DiscAdj_Linear_Solver_FSI_Struc,  /*!< \brief Linear solver for the discrete adjoint system in the structural side of FSI problems. */
-  Kind_DiscAdj_Linear_Prec_FSI_Struc,    /*!< \brief Preconditioner of the discrete adjoint linear solver in the structural side of FSI problems. */
   Kind_SlopeLimit,              /*!< \brief Global slope limiter. */
   Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
@@ -525,8 +521,6 @@ private:
   Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_DG_Shock,            /*!< \brief Shock capturing method for the FEM DG solver. */
   Kind_Matrix_Coloring,         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
-  Kind_Solver_Fluid_FSI,        /*!< \brief Kind of solver for the fluid in FSI applications. */
-  Kind_Solver_Struc_FSI,        /*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,         /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   Kind_CHT_Coupling;            /*!< \brief Kind of coupling method used at CHT interfaces. */
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
@@ -568,11 +562,9 @@ private:
   bool Inc_Inlet_UseNormal;        /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
   su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
-  su2double Linear_Solver_Error_FSI_Struc;       /*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
   su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;       /*!< \brief Max iterations of the linear solver for the implicit formulation. */
-  unsigned long Linear_Solver_Iter_FSI_Struc;    /*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
   unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
@@ -890,7 +882,6 @@ private:
   string RefGeom_FEMFileName;           /*!< \brief File name for reference geometry. */
   unsigned short RefGeom_FileFormat;    /*!< \brief Mesh input format. */
   unsigned short Kind_2DElasForm;       /*!< \brief Kind of bidimensional elasticity solver. */
-  unsigned short nIterFSI;              /*!< \brief Number of maximum number of subiterations in a FSI problem. */
   unsigned short nIterFSI_Ramp;         /*!< \brief Number of FSI subiterations during which a ramp is applied. */
   unsigned short iInst;                 /*!< \brief Current instance value */
   su2double AitkenStatRelax;      /*!< \brief Aitken's relaxation factor (if set as static) */
@@ -8395,18 +8386,6 @@ public:
   bool GetFull_Tape(void) const { return FullTape; }
 
   /*!
-   * \brief Get the indicator whether we want to benchmark the MPI performance of FSI problems
-   * \return The value for checking
-   */
-  bool CheckFSI_MPI(void);
-
-  /*!
-   * \brief Get the number of fluid subiterations roblems.
-   * \return Number of FSI subiters.
-   */
-  unsigned short GetnIterFSI(void) const { return nIterFSI; }
-
-  /*!
    * \brief Get the number of subiterations while a ramp is applied.
    * \return Number of FSI subiters.
    */
@@ -8658,12 +8637,6 @@ public:
   bool GetFSI_Simulation(void) const { return FSI_Problem || (nMarker_Fluid_Load > 0); }
 
   /*!
-   * \brief Set that the simulation we are running is a FSI simulation
-   * \param[in] FSI_sim - boolean that determines is FSI_Problem is true/false.
-   */
-  void SetFSI_Simulation(bool FSI_sim) { FSI_Problem = FSI_sim; }
-
-  /*!
    * \brief Set that the simulation we are running is a multizone simulation
    * \param[in] MZ_problem - boolean that determines is Multizone_Problem is true/false.
    */
@@ -8675,10 +8648,10 @@ public:
    */
   bool GetMultizone_Problem(void) const { return Multizone_Problem; }
 
-   /*!
-    * \brief Get the ID for the FEA region that we want to compute the gradient for using direct differentiation
-    * \return ID
-    */
+  /*!
+   * \brief Get the ID for the FEA region that we want to compute the gradient for using direct differentiation
+   * \return ID
+   */
   unsigned short GetnID_DV(void) const { return nID_DV; }
 
   /*!
@@ -8732,7 +8705,7 @@ public:
 
   /*!
    * \brief Function to make available the multiplication factor theta of the
-            symmetrizing terms in the DG discretization of the viscous terms.
+   *        symmetrizing terms in the DG discretization of the viscous terms.
    * \return The specified factor for the DG discretization.
    */
   su2double GetTheta_Interior_Penalty_DGFEM(void) const { return Theta_Interior_Penalty_DGFEM; }
@@ -8759,7 +8732,7 @@ public:
 
   /*!
    * \brief Function to make available whether or not only the exact Jacobian
-            of the spatial discretization must be computed.
+   *        of the spatial discretization must be computed.
    * \return The boolean whether or not the Jacobian must be computed.
    */
   bool GetJacobian_Spatial_Discretization_Only(void) const { return Jacobian_Spatial_Discretization_Only; }
@@ -8802,17 +8775,17 @@ public:
   /*!
    * \brief Get the kind of inlet face interpolation function to use.
    */
-  inline unsigned short GetKindInletInterpolationFunction(void) const {return Kind_InletInterpolationFunction;}
+  inline unsigned short GetKindInletInterpolationFunction(void) const { return Kind_InletInterpolationFunction; }
 
   /*!
    * \brief Get the kind of inlet face interpolation data type.
    */
-  inline unsigned short GetKindInletInterpolationType (void) const  {return Kind_Inlet_InterpolationType;}
+  inline unsigned short GetKindInletInterpolationType (void) const  { return Kind_Inlet_InterpolationType; }
 
   /*!
    * \brief Get whether to print inlet interpolated data or not.
    */
-  bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData;}
+  bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData; }
 
   /*!
    * \brief Get information about using UQ methodology
