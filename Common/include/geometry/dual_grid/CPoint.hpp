@@ -66,8 +66,8 @@ private:
   bool Move;                          /*!< \brief This flag indicates if the point is going to be move in the grid deformation process. */
   unsigned long color;                /*!< \brief Color of the point in the partitioning strategy. */
   su2double Wall_Distance;            /*!< \brief Distance to the nearest wall. */
-  unsigned short Wall_Marker;         /*!< \brief Marker of the nearest wall. */
-  unsigned long Wall_Element;         /*!< \brief Index of the nearest wall element. */
+  short Wall_Marker;                  /*!< \brief Marker of the nearest wall. */
+  long Wall_Element;                  /*!< \brief Index of the nearest wall element. */
   bool Bool_Wall_Neighbor;            /*!< \brief Whether this node neighbors a solid boundary. */
   su2double Wall_Interp_Weights[8];   /*!<\brief Interpolation weights at nearest wall element. */
   su2double SharpEdge_Distance;       /*!< \brief Distance to a sharp edge. */
@@ -135,13 +135,13 @@ public:
    * \brief Set the index of the marker of the nearest wall.
    * \param[in] val_marker - Index of the marker.
    */
-  inline void SetWall_Marker(unsigned short val_marker) { Wall_Marker = val_marker; }
+  inline void SetWall_Marker(short val_marker) { Wall_Marker = val_marker; }
   
   /*!
    * \brief Set the index of the nearest wall element.
    * \param[in] val_element - Index of the element.
    */
-  inline void SetWall_Element(unsigned long val_element) { Wall_Element = val_element; }
+  inline void SetWall_Element(long val_element) { Wall_Element = val_element; }
   
   /*!
    * \brief Set whether the node neighbors a solid wall.
@@ -172,12 +172,12 @@ public:
   /*!
    * \brief Get the index of the marker of the nearest wall.
    */
-  inline unsigned short GetWall_Marker(void) { return Wall_Marker; }
+  inline short GetWall_Marker(void) { return Wall_Marker; }
   
   /*!
    * \brief Get the index of the nearest wall element.
    */
-  inline unsigned long GetWall_Element(void) { return Wall_Element; }
+  inline long GetWall_Element(void) { return Wall_Element; }
   
   /*!
    * \brief Get whether the node neighbors a solid wall.

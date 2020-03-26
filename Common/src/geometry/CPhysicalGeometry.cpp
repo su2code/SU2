@@ -5632,6 +5632,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
       
       /*--- BCM: Set nearest element and marker. These will be used
        for wall functions ---*/
+      node[iPoint]->SetWall_Marker(-1);
+      node[iPoint]->SetWall_Element(-1);
       node[iPoint]->SetBool_Wall_Neighbor(false);
       if (!node[iPoint]->GetSolidBoundary()) {
         for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
