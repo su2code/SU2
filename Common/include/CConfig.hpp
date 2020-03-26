@@ -5574,7 +5574,7 @@ public:
    * \return <code>TRUE</code> if there is a grid movement; otherwise <code>FALSE</code>.
    */
   bool GetGrid_Movement(void) const {
-    return (Kind_GridMovement != NO_MOVEMENT) || ((nKind_SurfaceMovement > 0) && !GetSurface_Movement(FLUID_STRUCTURE_STATIC));
+    return (Kind_GridMovement != NO_MOVEMENT) || (nKind_SurfaceMovement > 0);
   }
 
   /*!

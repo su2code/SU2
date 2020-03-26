@@ -648,14 +648,12 @@ enum ENUM_SURFACEMOVEMENT {
   FLUID_STRUCTURE = 5,           /*!< \brief Fluid structure deformation. */
   EXTERNAL = 6,                  /*!< \brief Simulation with external motion. */
   EXTERNAL_ROTATION = 7,         /*!< \brief Simulation with external rotation motion. */
-  FLUID_STRUCTURE_STATIC = 8     /*!< \brief Fluid structure deformation with no grid velocity. */
 };
 static const MapType<string, ENUM_SURFACEMOVEMENT> SurfaceMovement_Map = {
   MakePair("DEFORMING", DEFORMING)
   MakePair("MOVING_WALL", MOVING_WALL)
   MakePair("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
   MakePair("AEROELASTIC", AEROELASTIC)
-  MakePair("FLUID_STRUCTURE_STATIC", FLUID_STRUCTURE_STATIC)
   MakePair("FLUID_STRUCTURE", FLUID_STRUCTURE)
   MakePair("EXTERNAL", EXTERNAL)
   MakePair("EXTERNAL_ROTATION", EXTERNAL_ROTATION)

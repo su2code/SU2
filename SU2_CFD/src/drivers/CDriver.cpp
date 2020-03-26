@@ -2454,8 +2454,7 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
    flows on dynamic meshes, including rigid mesh transformations, dynamically
    deforming meshes, and preprocessing of harmonic balance. ---*/
 
-  if (!fem_solver && (config->GetGrid_Movement() ||
-                      (config->GetDirectDiff() == D_DESIGN)) && !config->GetSurface_Movement(FLUID_STRUCTURE_STATIC)) {
+  if (!fem_solver && (config->GetGrid_Movement() || (config->GetDirectDiff() == D_DESIGN))) {
     if (rank == MASTER_NODE)
       cout << "Setting dynamic mesh structure for zone "<< iZone + 1<<"." << endl;
     grid_movement = new CVolumetricMovement(geometry[MESH_0], config);
@@ -2494,14 +2493,6 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
          (config->GetKind_Solver() == INC_RANS) ||
          (config->GetKind_Solver() == DISC_ADJ_INC_RANS))
       geometry[MESH_0]->ComputeWall_Distance(config);
-  }
-
-
-  if (config->GetSurface_Movement(FLUID_STRUCTURE_STATIC)){
-    if (rank == MASTER_NODE)
-      cout << "Setting moving mesh structure for FSI problems." << endl;
-    /*--- Instantiate the container for the grid movement structure ---*/
-    grid_movement = new CElasticityMovement(geometry[MESH_0], config);
   }
 
 }
@@ -2799,7 +2790,7 @@ void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CS
         break;
     }
 
-    if ((config->GetnMarker_Moving() > 0) && !config->GetSurface_Movement(FLUID_STRUCTURE_STATIC)) {
+    if (config->GetnMarker_Moving() > 0) {
 
       /*--- Fixed wall velocities: set the grid velocities only one time
        before the first iteration flow solver. ---*/

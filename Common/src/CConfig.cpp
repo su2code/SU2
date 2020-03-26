@@ -3572,11 +3572,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  if (nKind_SurfaceMovement > 1 && (GetSurface_Movement(FLUID_STRUCTURE) || GetSurface_Movement(FLUID_STRUCTURE_STATIC))){
+  if ((nKind_SurfaceMovement > 1) && GetSurface_Movement(FLUID_STRUCTURE)) {
     SU2_MPI::Error("FSI in combination with moving surfaces is currently not supported.", CURRENT_FUNCTION);
   }
 
-  if (nKind_SurfaceMovement != nMarker_Moving && !(GetSurface_Movement(FLUID_STRUCTURE) || GetSurface_Movement(FLUID_STRUCTURE_STATIC))){
+  if ((nKind_SurfaceMovement != nMarker_Moving) && !GetSurface_Movement(FLUID_STRUCTURE)) {
     SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
   }
 
@@ -8420,7 +8420,6 @@ bool CConfig::GetVolumetric_Movement(){
       GetSurface_Movement(DEFORMING) ||
       GetSurface_Movement(AEROELASTIC_RIGID_MOTION)||
       GetSurface_Movement(FLUID_STRUCTURE) ||
-      GetSurface_Movement(FLUID_STRUCTURE_STATIC) ||
       GetSurface_Movement(EXTERNAL) ||
       GetSurface_Movement(EXTERNAL_ROTATION)){
     volumetric_movement = true;

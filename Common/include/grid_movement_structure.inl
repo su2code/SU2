@@ -216,10 +216,6 @@ inline void CVolumetricMovement::SetVolume_Deformation_Elas(CGeometry *geometry,
 
 inline void CVolumetricMovement::Boundary_Dependencies(CGeometry **geometry, CConfig *config) {  }
 
-inline void CElasticityMovement::Set_nIterMesh(unsigned long val_nIterMesh) { nIterMesh = val_nIterMesh; }
-
-inline unsigned long CElasticityMovement::Get_nIterMesh() { return nIterMesh; }
-
 inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned short iDV) {
   for (unsigned short iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
     if (FFDBox[iFFDBox]->GetTag() == config->GetFFDTag(iDV)) { return true;}
