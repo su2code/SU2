@@ -490,7 +490,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   unsigned long iPoint;
   unsigned long iEdge, jPoint;
   unsigned short iNeigh, iDim;
-  su2double *DivTurbVarGrad = new su2double[2], *Normal;
+//  su2double *DivTurbVarGrad = new su2double[2], *Normal;
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -535,23 +535,23 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Divergence of turbulent variable gradients ---*/
     
-    DivTurbVarGrad[0] = DivTurbVarGrad[1] = 0.;
-    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-      iEdge = geometry->FindEdge(iPoint,jPoint);
-      Normal = geometry->edge[iEdge]->GetNormal();
-      for (iDim = 0; iDim < nDim; iDim++) {
-        if (iPoint < jPoint) {
-          DivTurbVarGrad[0] += nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
-          DivTurbVarGrad[1] += nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
-        }
-        else {
-          DivTurbVarGrad[0] -= nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
-          DivTurbVarGrad[1] -= nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
-        }
-      }
-    }
-    numerics->SetDivTurbVarGrad(DivTurbVarGrad, NULL);
+//    DivTurbVarGrad[0] = DivTurbVarGrad[1] = 0.;
+//    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+//      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+//      iEdge = geometry->FindEdge(iPoint,jPoint);
+//      Normal = geometry->edge[iEdge]->GetNormal();
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        if (iPoint < jPoint) {
+//          DivTurbVarGrad[0] += nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
+//          DivTurbVarGrad[1] += nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
+//        }
+//        else {
+//          DivTurbVarGrad[0] -= nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
+//          DivTurbVarGrad[1] -= nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
+//        }
+//      }
+//    }
+//    numerics->SetDivTurbVarGrad(DivTurbVarGrad, NULL);
 
     /*--- Compute the source term ---*/
 
@@ -576,12 +576,8 @@ void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_conta
 void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, jPoint, iVertex, total_index;
-  unsigned short iDim, jDim, iVar;
+  unsigned short iDim, iVar;
   su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
-  su2double Tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
-            Delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
-            TauElem[3] = {0.0,0.0,0.0}, TauNormal, TauTangent[3] = {0.0,0.0,0.0},
-            UnitNormal[3] = {0.0,0.0,0.0}, Area;
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -589,22 +585,14 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->node[iPoint]->GetDomain()) {
 
-      su2double *Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-
       /*--- distance to closest neighbor ---*/
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       distance = 0.0;
-      Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*
         (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
-        // distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*Normal[iDim]*
-        // (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*Normal[iDim];
-        // Area += Normal[iDim]*Normal[iDim];
       }
       distance = sqrt(distance);
-      // distance = geometry->node[jPoint]->GetWall_Distance();
-      // distance = sqrt(distance/Area);
 
       /*--- Set wall values ---*/
 
@@ -628,77 +616,11 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
-
-      // su2double DensityWall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-      // su2double LamViscWall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-
-      // su2double **GradPrimVar = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
-
-      // for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-
-      // su2double DivVel = 0.0;
-      // for (iDim = 0; iDim < nDim; iDim++) DivVel += GradPrimVar[iDim+1][iDim];
-
-      // for (iDim = 0; iDim < nDim; iDim++) {
-      //   for (jDim = 0 ; jDim < nDim; jDim++) {
-      //     Tau[iDim][jDim] = LamViscWall*(  GradPrimVar[jDim+1][iDim]
-      //                                    + GradPrimVar[iDim+1][jDim] ) -
-      //     TWO3*LamViscWall*DivVel*Delta[iDim][jDim];
-      //   }
-      //   TauElem[iDim] = 0.0;
-      //   for (jDim = 0; jDim < nDim; jDim++)
-      //     TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
-      // }
-
-      // /*--- Compute wall shear stress as the magnitude of the wall-tangential
-      //  component of the shear stress tensor---*/
-
-      // TauNormal = 0.0;
-      // for (iDim = 0; iDim < nDim; iDim++)
-      //   TauNormal += TauElem[iDim] * UnitNormal[iDim];
-
-      // for (iDim = 0; iDim < nDim; iDim++)
-      //   TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-
-      // su2double TauWall = 0.0;
-      // for (iDim = 0; iDim < nDim; iDim++)
-      //   TauWall += TauTangent[iDim]*TauTangent[iDim];
-      // TauWall = sqrt(TauWall);
-
-      // su2double U_Tau = sqrt(TauWall / DensityWall);
-
-      // // if (Density_Wall * U_Tau * distance / Lam_Visc_Wall >= 5.0) {
-
-      //   su2double eddy_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(jPoint);
-      //   su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0) + EPS*EPS);
-      //   su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance + EPS);
-      //   su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
-        
-      //   // Solution[0] = Omega * eddy_viscosity;
-      //   Solution[1] = density*Omega;
-
-      //   nodes->SetSolution_Old(jPoint,1,Solution[1]);
-      //   nodes->SetSolution(jPoint,1,Solution[1]);
-      //   LinSysRes.SetBlock_Zero(jPoint,1);
-        
-      //   /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      //   total_index = jPoint*nVar+1;
-      //   Jacobian.DeleteValsRowi(total_index);
-
-        // nodes->SetSolution_Old(jPoint,Solution);
-        // nodes->SetSolution(jPoint,Solution);
-        // LinSysRes.SetBlock_Zero(jPoint);
-        
-        // /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-        // for (iVar = 0; iVar < nVar; iVar++) {
-        //   total_index = jPoint*nVar+iVar;
-        //   Jacobian.DeleteValsRowi(total_index);
-        // }
-      // }
-
     }
   }
-
+  
+  /*--- Use wall function to set omega off the wall ---*/
+  Correct_Omega_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
 void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
@@ -1451,6 +1373,111 @@ void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
     Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
   }
 
+}
+
+void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,   unsigned short val_marker) {
+  
+  unsigned long iPoint, jPoint, kPoint, iVertex, iElem, total_index;
+  unsigned short iDim, jDim, iVar, kNode;
+  su2double distance, density = 0.0, laminar_viscosity = 0.0, eddy_viscosity = 0.0, beta_1 = constants[4];;
+  su2double Tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
+            Delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
+            TauElem[3] = {0.0,0.0,0.0}, TauNormal, TauTangent[3] = {0.0,0.0,0.0},
+            UnitNormal[3] = {0.0,0.0,0.0}, Area;
+  su2double *weights;
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    for (jPoint = 0; jPoint < geometry->node[iPoint]->GetnPoint(); jPoint++) {
+
+      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      if ((geometry->node[jPoint]->GetDomain()) && (geometry->node[jPoint]->GetBool_Wall_Neighbor())) {
+        
+        iElem = geometry->node[jPoint]->GetWall_Element();
+        
+        density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
+        laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
+        eddy_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(jPoint);
+        
+        weights = geometry->node[jPoint]->GetWall_Interpolation_Weights();
+       
+        su2double DensityWallItp = 0.;
+        su2double LamViscWallItp = 0.;
+        su2double TauWallItp = 0.0;
+        
+        distance = geometry->node[jPoint]->GetWall_Distance();
+        
+        for (kNode = 0; kNode < geometry->bound[val_marker][iElem]->GetnNodes(); kNode++) {
+
+          kPoint = geometry->bound[val_marker][iElem]->GetNode(kNode);
+          
+          /*--- Set wall values ---*/
+
+          su2double DensityWall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(kPoint);
+          su2double LamViscWall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
+
+          su2double **GradPrimVar = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(kPoint);
+          su2double *Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+          
+          Area = 0.;
+          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+
+          su2double DivVel = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) DivVel += GradPrimVar[iDim+1][iDim];
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            for (jDim = 0 ; jDim < nDim; jDim++) {
+              Tau[iDim][jDim] = LamViscWall*(  GradPrimVar[jDim+1][iDim]
+                                             + GradPrimVar[iDim+1][jDim] ) -
+              TWO3*LamViscWall*DivVel*Delta[iDim][jDim];
+            }
+            TauElem[iDim] = 0.0;
+            for (jDim = 0; jDim < nDim; jDim++)
+              TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+          }
+
+          /*--- Compute wall shear stress as the magnitude of the wall-tangential
+           component of the shear stress tensor---*/
+
+          TauNormal = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            TauNormal += TauElem[iDim] * UnitNormal[iDim];
+
+          for (iDim = 0; iDim < nDim; iDim++)
+            TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+
+          su2double TauWall = 0.;
+          for (iDim = 0; iDim < nDim; iDim++)
+            TauWall += TauTangent[iDim]*TauTangent[iDim];
+          TauWall = sqrt(TauWall);
+          
+          DensityWallItp += DensityWall*weights[kNode];
+          LamViscWallItp += LamViscWall*weights[kNode];
+          TauWallItp     += TauWall*weights[kNode];
+        }
+        
+        su2double U_Tau = sqrt(TauWallItp / DensityWallItp);
+
+        su2double Omega_i = 6. * LamViscWallItp / (beta_1 * DensityWallItp * pow(distance, 2.0) + EPS*EPS);
+        su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance + EPS);
+        su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
+        
+        // Solution[0] = Omega * eddy_viscosity;
+        Solution[1] = density*Omega;
+
+        nodes->SetSolution_Old(jPoint,1,Solution[1]);
+        nodes->SetSolution(jPoint,1,Solution[1]);
+        LinSysRes.SetBlock_Zero(jPoint,1);
+        
+        /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+        total_index = jPoint*nVar+1;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+    }
+  }
+  
 }
 
 void CTurbSSTSolver::TurbulentMetric(CSolver          **solver,

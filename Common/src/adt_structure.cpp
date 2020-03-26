@@ -789,7 +789,8 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
                                             su2double       &dist,
                                             unsigned short  &markerID,
                                             unsigned long   &elemID,
-                                            int             &rankID) {
+                                            int             &rankID,
+                                            su2double       *weightsInterpol) {
 
   AD_BEGIN_PASSIVE
 
@@ -958,7 +959,8 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
     const unsigned long ii = BBoxTargets[i].boundingBoxID;
 
     su2double dist2Elem;
-    Dist2ToElement(ii, coor, dist2Elem);
+    su2double weights[8];
+    Dist2ToElement(ii, coor, dist2Elem, weights);
     if(dist2Elem <= dist) {
       jj       = ii;
       dist     = dist2Elem;
@@ -972,8 +974,10 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
 
   /* At the moment the square of the distance is stored in dist. Compute
      the correct value. */
-  Dist2ToElement(jj, coor, dist);
+  su2double weights[8];
+  Dist2ToElement(jj, coor, dist, weights);
   dist = sqrt(dist);
+  memcpy(weightsInterpol, weights, 8*sizeof(su2double));
 }
 
 bool CADTElemClass::CoorInElement(const unsigned long elemID,
@@ -1000,7 +1004,8 @@ bool CADTElemClass::CoorInElement(const unsigned long elemID,
 
 void CADTElemClass::Dist2ToElement(const unsigned long elemID,
                                    const su2double     *coor,
-                                   su2double           &dist2Elem) {
+                                   su2double           &dist2Elem,
+                                   su2double           *weightsInterpol) {
 
   /*--- Make a distinction between the element types. ---*/
   switch( elemVTK_Type[elemID] ) {
@@ -1015,7 +1020,7 @@ void CADTElemClass::Dist2ToElement(const unsigned long elemID,
       i0 = nDim*elemConns[i0]; i1 = nDim*elemConns[i1];
 
       /*--- Call the function Dist2ToLine to do the actual work. ---*/
-      Dist2ToLine(i0, i1, coor, dist2Elem);
+      Dist2ToLine(i0, i1, coor, dist2Elem, weightsInterpol);
 
       break;
     }
@@ -1037,12 +1042,26 @@ void CADTElemClass::Dist2ToElement(const unsigned long elemID,
             false is returned and the distance to each of the lines of the
             triangle is computed and the minimum is taken. ---*/
       su2double r, s;
-      if( !Dist2ToTriangle(i0, i1, i2, coor, dist2Elem, r, s) ) {
-        Dist2ToLine(i0, i1, coor, dist2Elem);
+      if( !Dist2ToTriangle(i0, i1, i2, coor, dist2Elem, r, s, weightsInterpol) ) {
+        Dist2ToLine(i0, i1, coor, dist2Elem, weightsInterpol);
+        weightsInterpol[2] = 0.0;
 
-        su2double dist2Line;
-        Dist2ToLine(i1, i2, coor, dist2Line); dist2Elem = min(dist2Elem, dist2Line);
-        Dist2ToLine(i2, i0, coor, dist2Line); dist2Elem = min(dist2Elem, dist2Line);
+        su2double dist2Line, weightsLine[2];
+        Dist2ToLine(i1, i2, coor, dist2Line, weightsLine);
+        if(dist2Line < dist2Elem) {
+          dist2Elem = dist2Line;
+          weightsInterpol[0] = 0.0;
+          weightsInterpol[1] = weightsLine[0];
+          weightsInterpol[2] = weightsLine[1];
+        }
+
+        Dist2ToLine(i2, i0, coor, dist2Line, weightsLine);
+        if(dist2Line < dist2Elem) {
+          dist2Elem = dist2Line;
+          weightsInterpol[0] = weightsLine[1];
+          weightsInterpol[1] = 0.0;
+          weightsInterpol[2] = weightsLine[0];
+        }
       }
 
       break;
@@ -1066,13 +1085,38 @@ void CADTElemClass::Dist2ToElement(const unsigned long elemID,
             quadrilateral, false is returned and the distance to each of the lines
             of the quadrilateral is computed and the minimum is taken. ---*/
       su2double r, s;
-      if( !Dist2ToQuadrilateral(i0, i1, i2, i3, coor, r, s, dist2Elem) ) {
-        Dist2ToLine(i0, i1, coor, dist2Elem);
+      if( !Dist2ToQuadrilateral(i0, i1, i2, i3, coor, r, s, dist2Elem,
+                                weightsInterpol) ) {
 
-        su2double dist2Line;
-        Dist2ToLine(i1, i2, coor, dist2Line); dist2Elem = min(dist2Elem, dist2Line);
-        Dist2ToLine(i2, i3, coor, dist2Line); dist2Elem = min(dist2Elem, dist2Line);
-        Dist2ToLine(i3, i0, coor, dist2Line); dist2Elem = min(dist2Elem, dist2Line);
+        /* The projection is outside the quadrilatral. Hence it suffices
+           to check the distance to the surrounding lines of the quad. */
+        Dist2ToLine(i0, i1, coor, dist2Elem, weightsInterpol);
+        weightsInterpol[2] = weightsInterpol[3] = 0.0;
+
+        su2double dist2Line, weightsLine[2];
+        Dist2ToLine(i1, i2, coor, dist2Line, weightsLine);
+        if(dist2Line < dist2Elem) {
+          dist2Elem = dist2Line;
+          weightsInterpol[0] = weightsInterpol[3] = 0.0;
+          weightsInterpol[1] = weightsLine[0];
+          weightsInterpol[2] = weightsLine[1];
+        }
+
+        Dist2ToLine(i2, i3, coor, dist2Line, weightsLine);
+        if(dist2Line < dist2Elem) {
+          dist2Elem = dist2Line;
+          weightsInterpol[0] = weightsInterpol[1] = 0.0;
+          weightsInterpol[2] = weightsLine[0];
+          weightsInterpol[3] = weightsLine[1];
+        }
+
+        Dist2ToLine(i3, i0, coor, dist2Line, weightsLine);
+        if(dist2Line < dist2Elem) {
+          dist2Elem = dist2Line;
+          weightsInterpol[1] = weightsInterpol[2] = 0.0;
+          weightsInterpol[3] = weightsLine[0];
+          weightsInterpol[0] = weightsLine[1];
+        }
       }
 
       break;
@@ -2320,7 +2364,8 @@ bool CADTElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3],
 void CADTElemClass::Dist2ToLine(const unsigned long i0,
                                 const unsigned long i1,
                                 const su2double     *coor,
-                                su2double           &dist2Line) {
+                                su2double           &dist2Line,
+                                su2double           *weightsInterpol) {
 
   /*--- The line is parametrized by X = X0 + (r+1)*(X1-X0)/2, -1 <= r <= 1.
         As a consequence the minimum distance is found where the expression
@@ -2351,6 +2396,10 @@ void CADTElemClass::Dist2ToLine(const unsigned long i0,
     const su2double ds = V0[k] - r*V1[k];
     dist2Line += ds*ds;
   }
+  
+  /*--- Determine the interpolation weights. */
+  weightsInterpol[0] = 0.5*(1.0-r);
+  weightsInterpol[1] = 0.5*(1.0+r);
 }
 
 bool CADTElemClass::Dist2ToTriangle(const unsigned long i0,
@@ -2359,7 +2408,8 @@ bool CADTElemClass::Dist2ToTriangle(const unsigned long i0,
                                     const su2double     *coor,
                                     su2double           &dist2Tria,
                                     su2double           &r,
-                                    su2double           &s) {
+                                    su2double           &s,
+                                    su2double           *weightsInterpol) {
 
   /*--- The triangle is parametrized by X = X0 + (r+1)*(X1-X0)/2 + (s+1)*(X2-X0)/2,
         r, s >= -1, r+s <= 0. As a consequence the minimum distance is found where
@@ -2389,6 +2439,11 @@ bool CADTElemClass::Dist2ToTriangle(const unsigned long i0,
 
   r = detInv*(dotV0V1*dotV2V2 - dotV0V2*dotV1V2);
   s = detInv*(dotV0V2*dotV1V1 - dotV0V1*dotV1V2);
+  
+  /*--- Determine the interpolation weights. ---*/
+  weightsInterpol[0] = -0.5*(r + s);
+  weightsInterpol[1] =  0.5*(r + 1.0);
+  weightsInterpol[2] =  0.5*(s + 1.0);
 
   /*--- Check if the projection is inside the triangle. ---*/
   if((r >= paramLowerBound) && (s >= paramLowerBound) && ((r+s) <= tolInsideElem)) {
@@ -2416,7 +2471,8 @@ bool CADTElemClass::Dist2ToQuadrilateral(const unsigned long i0,
                                          const su2double     *coor,
                                          su2double           &r,
                                          su2double           &s,
-                                         su2double           &dist2Quad) {
+                                         su2double           &dist2Quad,
+                                         su2double           *weightsInterpol) {
 
   /* Definition of the maximum number of iterations in the iterative solver
      and the tolerance level. */
@@ -2598,6 +2654,12 @@ bool CADTElemClass::Dist2ToQuadrilateral(const unsigned long i0,
     const su2double ds = V0[k] - r*V1[k] - s*V2[k] - r*s*V3[k];
     dist2Quad += ds*ds;
   }
+  
+  /*--- Determine the interpolation weights. ---*/
+  weightsInterpol[0] = 0.25*(1.0-r)*(1.0-s);
+  weightsInterpol[1] = 0.25*(1.0+r)*(1.0-s);
+  weightsInterpol[2] = 0.25*(1.0+r)*(1.0+s);
+  weightsInterpol[3] = 0.25*(1.0-r)*(1.0+s);
 
   return true;
 }

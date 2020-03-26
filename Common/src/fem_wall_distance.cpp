@@ -162,7 +162,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
         unsigned long  elemID;
         int            rankID;
         su2double      dist;
-        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+        su2double      weights[8];
+        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID, weights);
 
         volElem[l].wallDistance[i] = dist;
       }
@@ -202,7 +203,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
         unsigned long  elemID;
         int            rankID;
         su2double      dist;
-        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+        su2double      weights[8];
+        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID, weights);
 
         volElem[l].wallDistanceSolDOFs[i] = dist;
       }
@@ -242,7 +244,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
         unsigned long  elemID;
         int            rankID;
         su2double      dist;
-        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+        su2double      weights[8];
+        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID, weights);
 
         matchingFaces[l].wallDistance[i] = dist;
       }
@@ -296,7 +299,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
             unsigned long  elemID;
             int            rankID;
             su2double      dist;
-            WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+            su2double      weights[8];
+            WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID, weights);
 
             surfElem[l].wallDistance[i] = dist;
           }

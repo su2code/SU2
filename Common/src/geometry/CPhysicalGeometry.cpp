@@ -5624,10 +5624,25 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
       unsigned long  elemID;
       int            rankID;
       su2double      dist;
+      su2double      weights[8];
 
       WallADT.DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
-                                   elemID, rankID);
+                                   elemID, rankID, weights);
       node[iPoint]->SetWall_Distance(dist);
+      
+      /*--- BCM: Set nearest element and marker. These will be used
+       for wall functions ---*/
+      node[iPoint]->SetBool_Wall_Neighbor(false);
+      for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
+        const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
+        if (node[jPoint]->GetSolidBoundary()) {
+          node[iPoint]->SetBool_Wall_Neighbor(true);
+          node[iPoint]->SetWall_Marker(markerID);
+          node[iPoint]->SetWall_Element(elemID);
+          node[iPoint]->SetWall_Interpolation_Weights(weights);
+          break;
+        }
+      }
     }
   }
 

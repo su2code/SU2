@@ -410,7 +410,8 @@ public:
                                su2double       &dist,
                                unsigned short  &markerID,
                                unsigned long   &elemID,
-                               int             &rankID);
+                               int             &rankID,
+                               su2double       *weightsInterpol);
 private:
 
   /*!
@@ -586,7 +587,8 @@ private:
    */
   void Dist2ToElement(const unsigned long elemID,
                       const su2double     *coor,
-                      su2double           &dist2Elem);
+                      su2double           &dist2Elem,
+                      su2double           *weightsInterpol);
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear line element.
@@ -600,7 +602,8 @@ private:
   void Dist2ToLine(const unsigned long i0,
                    const unsigned long i1,
                    const su2double     *coor,
-                   su2double           &dist2Line);
+                   su2double           &dist2Line,
+                   su2double           *weightsInterpol);
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear quadrilateral element if the projection is inside the quad.
@@ -626,7 +629,8 @@ private:
                             const su2double     *coor,
                             su2double           &r,
                             su2double           &s,
-                            su2double           &dist2Quad);
+                            su2double           &dist2Quad,
+                            su2double           *weightsInterpol);
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear triangular element if the projection is inside the triangle.
@@ -648,7 +652,8 @@ private:
                        const su2double     *coor,
                        su2double           &dist2Tria,
                        su2double           &r,
-                       su2double           &s);
+                       su2double           &s,
+                       su2double           *weightsInterpol);
   /*!
    * \brief Default constructor of the class, disabled.
    */
