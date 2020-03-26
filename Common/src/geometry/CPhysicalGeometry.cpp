@@ -5633,24 +5633,26 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
       /*--- BCM: Set nearest element and marker. These will be used
        for wall functions ---*/
       node[iPoint]->SetBool_Wall_Neighbor(false);
-      for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
-        const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
-        if (node[jPoint]->GetSolidBoundary()) {
-          for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-            if (config->GetViscous_Wall(iMarker)) {
-              const long jVertex = node[jPoint]->GetVertex(iMarker);
-              if (jVertex != -1) {
-                node[iPoint]->SetBool_Wall_Neighbor(true);
-                node[iPoint]->SetWall_Marker(markerID);
-                node[iPoint]->SetWall_Element(elemID);
-                node[iPoint]->SetWall_Interpolation_Weights(weights);
-                break;
-              }
-            }
-          }
-        }
-        if (node[iPoint]->GetBool_Wall_Neighbor()) break;
-      }
+      if (!node[iPoint]->GetSolidBoundary()) {
+        for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
+          const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
+          if (node[jPoint]->GetSolidBoundary()) {
+            for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+              if (config->GetViscous_Wall(iMarker)) {
+                const long jVertex = node[jPoint]->GetVertex(iMarker);
+                if (jVertex != -1) {
+                  node[iPoint]->SetBool_Wall_Neighbor(true);
+                  node[iPoint]->SetWall_Marker(markerID);
+                  node[iPoint]->SetWall_Element(elemID);
+                  node[iPoint]->SetWall_Interpolation_Weights(weights);
+                  break;
+                } // if jVertex
+              } // if iMarker Viscous Wall
+            } // iMarker
+          } // if jPoint Solid Boundary
+          if (node[iPoint]->GetBool_Wall_Neighbor()) break;
+        } // iNode
+      } // if iPoint !Solid Boundary
     }
   }
 
