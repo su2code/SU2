@@ -100,7 +100,6 @@ int main(int argc, char *argv[]) {
 
   CConfig* config = new CConfig(config_file_name, SU2_CFD);
   unsigned short nZone = config->GetnZone();
-  bool fsi = config->GetFSI_Simulation();
   bool turbo = config->GetBoolTurbomachinery();
 
   /*--- First, given the basic information about the number of zones and the
@@ -131,7 +130,7 @@ int main(int argc, char *argv[]) {
     }
 
   }
-  else if (multizone && !turbo && !fsi) {
+  else if (multizone && !turbo) {
 
     /*--- Generic multizone problems. ---*/
     if (disc_adj) {
@@ -146,18 +145,6 @@ int main(int argc, char *argv[]) {
 
     /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
     driver = new CHBDriver(config_file_name, nZone, MPICommunicator);
-
-  }
-  else if (fsi && disc_adj) {
-
-    /*--- Discrete adjoint FSI problem with the legacy driver. ---*/
-    if (config->GetTime_Domain())
-      SU2_MPI::Error("There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
-
-    if (nZone != 2)
-      SU2_MPI::Error("The legacy discrete adjoint FSI driver only works for two-zone problems. ", CURRENT_FUNCTION);
-
-    driver = new CDiscAdjFSIDriver(config_file_name, nZone, MPICommunicator);
 
   }
   else if (turbo) {
