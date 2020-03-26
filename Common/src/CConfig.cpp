@@ -9794,7 +9794,7 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
   }
 
   /*--- If the problem has FSI properties ---*/
-  if (fluid_zone && structural_zone) FSI_Problem = true;
+  FSI_Problem = fluid_zone && structural_zone;
 
   Multizone_Residual = true;
 
