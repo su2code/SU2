@@ -617,24 +617,10 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
       targetSolver = HEAT_SOL;
       break;
     }
-    case STRUCTURAL_DISPLACEMENTS_LEGACY:
-    {
-      donorSolver  = FEA_SOL;
-      targetSolver = FLOW_SOL;
-      UpdateMesh = true;
-      break;
-    }
     case BOUNDARY_DISPLACEMENTS:
     {
       donorSolver  = FEA_SOL;
       targetSolver = MESH_SOL;
-      UpdateMesh = true;
-      break;
-    }
-    case STRUCTURAL_DISPLACEMENTS_DISC_ADJ:
-    {
-      donorSolver  = FEA_SOL;
-      targetSolver = FLOW_SOL;
       UpdateMesh = true;
       break;
     }

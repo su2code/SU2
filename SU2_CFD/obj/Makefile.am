@@ -163,8 +163,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/interfaces/fsi/CDisplacementsInterface.cpp \
   ../src/interfaces/fsi/CFlowTractionInterface.cpp \
   ../src/interfaces/fsi/CDiscAdjFlowTractionInterface.cpp \
-  ../src/interfaces/fsi/CDisplacementsInterfaceLegacy.cpp \
-  ../src/interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.cpp \
   ../src/transport_model.cpp \
   ../src/variables/CFEABoundVariable.cpp \
   ../src/variables/CRadVariable.cpp \

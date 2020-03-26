@@ -51,8 +51,6 @@
 #include "../../include/interfaces/fsi/CDisplacementsInterface.hpp"
 #include "../../include/interfaces/fsi/CFlowTractionInterface.hpp"
 #include "../../include/interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
-#include "../../include/interfaces/fsi/CDisplacementsInterfaceLegacy.hpp"
-#include "../../include/interfaces/fsi/CDiscAdjDisplacementsInterfaceLegacy.hpp"
 
 #include "../../include/numerics/template.hpp"
 #include "../../include/numerics/transition.hpp"
@@ -2682,27 +2680,12 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
           if (rank == MASTER_NODE) cout << "flow tractions. " << endl;
         }
         else if (structural_donor && fluid_target) {
-          /*--- If we are using the new mesh solver, we transfer the total boundary displacements (not incremental) --*/
-          if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] != NULL) {
-            interface_types[donorZone][targetZone] = BOUNDARY_DISPLACEMENTS;
-            nVarTransfer = 0;
-            interface[donorZone][targetZone] = new CDisplacementsInterface(nVar, nVarTransfer, config[donorZone]);
-            if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver. " << endl;
-          }
-          /*--- We keep the legacy method temporarily until FSI-adjoint has been adapted ---*/
-          /// TODO: LEGACY CLEANUP remove the "else" part and every class and enum referenced there,
-          ///       add a check above to make sure MESH_SOL has been instantiated.
-          else {
-            nVarTransfer = 0;
-            if(!discrete_adjoint) {
-              interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_LEGACY;
-              interface[donorZone][targetZone] = new CDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
-            } else {
-              interface_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_DISC_ADJ;
-              interface[donorZone][targetZone] = new CDiscAdjDisplacementsInterfaceLegacy(nVar, nVarTransfer, config[donorZone]);
-            }
-            if (rank == MASTER_NODE) cout << "structural displacements (legacy). " << endl;
-          }
+          if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] == nullptr)
+            SU2_MPI::Error("Mesh deformation was not correctly specified for the fluid zone.", CURRENT_FUNCTION);
+          interface_types[donorZone][targetZone] = BOUNDARY_DISPLACEMENTS;
+          nVarTransfer = 0;
+          interface[donorZone][targetZone] = new CDisplacementsInterface(nVar, nVarTransfer, config[donorZone]);
+          if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver. " << endl;
         }
         else if (fluid_donor && fluid_target) {
           interface_types[donorZone][targetZone] = SLIDING_INTERFACE;
