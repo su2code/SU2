@@ -1202,6 +1202,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+  AD::SetPreaccIn(Vorticity_i, 3);
 
   unsigned short iDim;
   su2double alfa_blended, beta_blended;
@@ -1308,15 +1309,15 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    val_Jacobian_i[1][0] = 0.0;
    val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
     
-//   /*--- Production ---*/
-//   val_Jacobian_i[0][0] += (1./TurbVar_i[1]*StrainMag_i*StrainMag_i-2./3.*diverg)*Volume;
-//   val_Jacobian_i[0][1] += -(TurbVar_i[0]/pow(TurbVar_i[1],2.0)*StrainMag_i*StrainMag_i)*Volume;
-//   val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
-//
-//   /*--- Cross diffusion ---*/
-//
-//   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[1]/TurbVar_i[1];
-//   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[0]/TurbVar_i[1];
+   /*--- Production ---*/
+   val_Jacobian_i[0][0] += (1./TurbVar_i[1]*StrainMag_i*StrainMag_i-2./3.*diverg)*Volume;
+   val_Jacobian_i[0][1] += -(TurbVar_i[0]/pow(TurbVar_i[1],2.0)*StrainMag_i*StrainMag_i)*Volume;
+   val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
+
+   /*--- Cross diffusion ---*/
+
+   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[1]/TurbVar_i[1];
+   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[0]/TurbVar_i[1];
   }
 
   AD::SetPreaccOut(val_residual, nVar);
