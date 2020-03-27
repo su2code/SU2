@@ -444,7 +444,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
         if ((config->GetDiscrete_Adjoint()) ||
               ((config->GetInnerIter() > 0) &&
-               (log10(solver_container[FLOW_SOL]->GetRes_RMS(0)/solver_container[FLOW_SOL]->GetRes_RMS_Init(0)) < -3.))) {
+               (log10(solver_container[FLOW_SOL]->GetRes_RMS(0)/solver_container[FLOW_SOL]->GetRes_RMS_Init(0)) < -1.))) {
           UpdateKOmega = true;
         }
 
@@ -459,11 +459,11 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
           }
 
-          nodes->AddConservative(iPoint, 0, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+0], density, lowerlimit[0], upperlimit[0]);
-
-//           if (UpdateKOmega) {
-            nodes->AddConservative(iPoint, 1, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+1], density, lowerlimit[1], upperlimit[1]);
-//           }
+          if (UpdateKOmega) {
+            for (iVar = 0; iVar < nVar; iVar++)
+              nodes->AddConservative(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar],
+                                     density, lowerlimit[iVar], upperlimit[iVar]);
+          }
           // else{
           //   bool vw = false;
           //   for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
