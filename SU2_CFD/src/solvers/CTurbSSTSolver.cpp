@@ -1583,7 +1583,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
   
   /*-- Allocate our communication memory. Note that the "ElemSend" arrays
    correspond to the wall element indices we sent out. The variables
-   being sent thus correspond to "ElemRecv" arrays. ---*/
+   being sent back thus correspond to "ElemRecv" arrays. ---*/
 
   su2double *bufDSend = new su2double[countPerElem*nElemRecv[size]];
   for (iRecv = 0; iRecv < countPerElem*nElemRecv[size]; iRecv++)
@@ -1817,7 +1817,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
     else {
       /*--- Wait for the non-blocking sends to complete. ---*/
       
-      for (iRecv = 0; iRecv < nRecv; iSend++)
+      for (iRecv = 0; iRecv < nRecv; iRecv++)
         SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
       
       /*--- Wait for the non-blocking recvs to complete. ---*/
