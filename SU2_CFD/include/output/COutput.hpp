@@ -39,7 +39,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
-#include "fields/output_fields.hpp"
+#include "fields/COutFieldCollection.hpp"
 
 class CGeometry;
 class CSolver;
@@ -364,6 +364,27 @@ public:
    */
   void WriteToFile(CConfig *config, CGeometry *geomery, unsigned short format, string fileName = "");
 
+  inline void AddCustomHistoryOutput(string name){
+
+    HistoryOutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", FieldType::CUSTOM, "");
+
+    string rawName = name;
+    rawName.pop_back();
+    rawName.erase(0,1);
+
+    string funcName = rawName;
+    replace_if(funcName.begin(),funcName.end(),::ispunct,'_');
+
+    funcName += to_string(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}).size());
+    std::string func = "function " + funcName + "(){"
+                       " return " + rawName + "; }";
+
+    customField.expParser = CExpressionParser(&historyFieldsAll.GetScope());
+    customField.expParser.CompileAndExec(func, funcName);
+
+    historyFieldsAll.AddItem(name, customField);
+  }
+
 protected:
 
   /*----------------------------- Protected member functions ----------------------------*/
@@ -441,28 +462,26 @@ protected:
     }
   }
 
-  inline void AddCustomHistoryOutput(string name){
 
-    HistoryOutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", FieldType::CUSTOM, "");
-
-    std::string func = "function eval(){"
-                       " return " + name + "; }";
-
-    customField.expParser = CExpressionParser(&historyFieldsAll.GetScope());
-    customField.expParser.CompileAndExec(func, "eval");
-    historyFieldsAll.AddItem(name, customField);
-
-  }
 
   inline void AddCustomVolumeOutput(string name){
 
     VolumeOutputField customField (name, -1, "CUSTOM", "");
-    std::string func = "function eval(){"
-                       " return " + name + "; }";
+
+    string rawName = name;
+    rawName.pop_back();
+    rawName.erase(0,1);
+
+    string funcName = rawName;
+    replace_if(funcName.begin(),funcName.end(),::ispunct,'_');
+
+    funcName += to_string(volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM}).size());
+    std::string func = "function " + funcName + "(){"
+                       " return " + rawName + "; }";
 
     customField.fieldType = FieldType::CUSTOM;
     customField.expParser = CExpressionParser(&volumeFieldsAll.GetScope());
-    customField.expParser.CompileAndExec(func, "eval");
+    customField.expParser.CompileAndExec(func, funcName);
     volumeFieldsAll.AddItem(name, customField);
 
   }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "shunting-yard.h"
+#include "shunting-yard-exceptions.h"
 #include "statement.h"
 #include "block.h"
 #include "../datatype_structure.hpp"

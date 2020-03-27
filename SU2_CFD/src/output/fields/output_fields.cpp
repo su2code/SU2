@@ -1,4 +1,4 @@
-#include "../../../include/output/fields/output_fields.hpp"
+#include "../../../include/output/fields/COutFieldCollection.hpp"
 
 #define STATIC_CPARSE_STARTUP
 #include "./builtin-features.inc"

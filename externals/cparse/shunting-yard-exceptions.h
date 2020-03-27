@@ -18,8 +18,8 @@ class msg_exception : public std::exception {
   }
 };
 
-struct bad_cast : public msg_exception {
-  bad_cast(const std::string& msg) : msg_exception(msg) {}
+struct bad_cast_ : public msg_exception {
+  bad_cast_(const std::string& msg) : msg_exception(msg) {}
 };
 
 struct syntax_error : public msg_exception {

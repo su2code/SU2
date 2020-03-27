@@ -1028,9 +1028,11 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
   stringstream out;
   int width = 20;
 
-  const auto& historyFields = historyFieldsAll.GetFieldsByKey(requestedHistoryFields, true);
+  const auto& histFieldsWithName  = GetHistoryFieldsAll().GetFieldsByKey(requestedHistoryFields);
+  const auto& histFieldsWithGroup = GetHistoryFieldsAll().GetFieldsByGroup(requestedHistoryFields);
+  const auto& histFields          = HistoryOutFieldCollection::Combine(histFieldsWithGroup, histFieldsWithName);
 
-  for (const auto& field : historyFields){
+  for (const auto& field : histFields){
     if (field->second.screenFormat == ScreenOutputFormat::INTEGER){
       width = std::max((int)field->second.fieldName.size()+2, 10);
     } else {
@@ -1051,9 +1053,11 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
 
   stringstream out;
 
-  const auto& historyFields = GetHistoryFieldsAll().GetFieldsByKey(requestedHistoryFields, true);
+  const auto& histFieldsWithName  = GetHistoryFieldsAll().GetFieldsByKey(requestedHistoryFields);
+  const auto& histFieldsWithGroup = GetHistoryFieldsAll().GetFieldsByGroup(requestedHistoryFields);
+  const auto& histFields          = HistoryOutFieldCollection::Combine(histFieldsWithGroup, histFieldsWithName);
 
-  for (const auto& field : historyFields){
+  for (const auto& field : histFields){
     (*historyFileTable) << field->second.value;
   }
 
@@ -1073,9 +1077,9 @@ void COutput::SetScreen_Output(CConfig *config) {
 
   string RequestedField;
 
-  const auto& historyFields = GetHistoryFieldsAll().GetFieldsByKey(requestedScreenFields, true);
+  const auto& histFieldsWithName  = GetHistoryFieldsAll().GetFieldsByKey(requestedScreenFields);
 
-  for (const auto& field : historyFields) {
+  for (const auto& field : histFieldsWithName) {
     stringstream out;
     switch (field->second.screenFormat) {
       case ScreenOutputFormat::INTEGER:
@@ -1238,12 +1242,8 @@ void COutput::CheckHistoryOutput(){
 
   auto addCustomFields = [&](std::vector<string>& fields){
     /*--- Check if any of the fields is a expression ---*/
-    for (auto& field : fields){
+    for (const auto& field : fields){
       if (regex_match(field, exp)){
-        /*--- Remove the bracket on the right ---*/
-        field.pop_back();
-        /*--- Remove the bracket on the left ---*/
-        field.erase(0,1);
         /*--- Make sure that the expression is not already there ---*/
         if (!historyFieldsAll.CheckKey(field))
           AddCustomHistoryOutput(field);
@@ -1291,6 +1291,9 @@ void COutput::CheckHistoryOutput(){
   printInfo(wndConvFields, "Time Convergence monitoring fields: ");
   printInfo(FieldsToRemove, "Fields ignored: ");
 
+  historyFieldsAll.UpdateTokens();
+  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
+
 }
 
 void COutput::PreprocessVolumeOutput(CConfig *config){
@@ -1321,16 +1324,11 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   std::vector<bool> FoundField(nRequestedVolumeFields, false);
   vector<string> FieldsToRemove;
 
-
   regex exp("\\{\\S*\\}");
 
   /*--- Check if any of the fields is a expression ---*/
   for (auto& field : requestedVolumeFields){
     if (regex_match(field, exp)){
-      /*--- Remove the bracket on the right ---*/
-      field.pop_back();
-      /*--- Remove the bracket on the left ---*/
-      field.erase(0,1);
       AddCustomVolumeOutput(field);
     }
   }
@@ -1390,6 +1388,10 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
     }
     cout << endl;
   }
+
+  volumeFieldsAll.UpdateTokens();
+  volumeFieldsAll.EvalCustomFields(volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
+
 }
 
 void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver** solver){
@@ -1403,6 +1405,8 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
   fieldIndexCache.clear();
   curGetFieldIndex = 0;
   fieldGetIndexCache.clear();
+
+  const auto& customFieldRef = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM});
 
   if (femOutput){
 
@@ -1425,14 +1429,22 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
         LoadVolumeDataFEM(config, geometry, solver, l, jPoint, j);
 
+        if (!customFieldRef.empty()){
+
+          volumeFieldsAll.UpdateTokens();
+
+          volumeFieldsAll.EvalCustomFields(customFieldRef);
+
+        }
+
+        WriteToDataSorter(jPoint);
+
         jPoint++;
 
       }
     }
 
   } else {
-
-    const auto& customFieldRef = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM});
 
     for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 
@@ -1703,9 +1715,6 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
                      ScreenOutputFormat::SCIENTIFIC, "CAUCHY", "Cauchy residual value of field set with WND_CONV_FIELD.",
                      FieldType::AUTO_COEFFICIENT);
   }
-
-  historyFieldsAll.UpdateTokens();
-  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
 }
 
 bool COutput::WriteScreen_Header(CConfig *config) {
