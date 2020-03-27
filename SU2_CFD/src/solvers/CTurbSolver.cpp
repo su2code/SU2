@@ -459,11 +459,11 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
           }
 
-          if (UpdateKOmega) {
+//          if (UpdateKOmega) {
             for (iVar = 0; iVar < nVar; iVar++)
               nodes->AddConservative(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar],
                                      density, lowerlimit[iVar], upperlimit[iVar]);
-          }
+//          }
           // else{
           //   bool vw = false;
           //   for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
