@@ -1611,7 +1611,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
 
   /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
   
-  SU2_MPI::Request *sendReq, *recvReq;
+  SU2_MPI::Request *sendReq = NULL, *recvReq = NULL;
 
   if (nSend > 0) {
     sendReq = new SU2_MPI::Request[nSend];
@@ -1637,9 +1637,8 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
         if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
           const unsigned short RankID = geometry->node[iPoint]->GetWall_Rank();
-          if ((nElemSend[RankID+1] > nElemSend[RankID]) && (RankID != rank)) {
+          if (RankID != rank) {
             offset = nElemSend[RankID]+ProcCounter[RankID];
-            nElem = nElemSend[iProc+1] - nElemSend[iProc];
             bufLSend[offset] = geometry->node[iPoint]->GetWall_Element();
             bufSSend[offset] = geometry->node[iPoint]->GetWall_Marker();
             ProcCounter[RankID]++;
@@ -1836,7 +1835,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
     if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
       const unsigned short RankID = geometry->node[iPoint]->GetWall_Rank();
       if ((nElemSend[RankID+1] > nElemSend[RankID]) && (RankID != rank)) {
-        nElem = nElemSend[iProc+1] - nElemSend[iProc];
+        nElem = nElemSend[RankID+1] - nElemSend[RankID];
         for (unsigned long iElem = 0; iElem < nElem; iElem++) {
           offset = nElemSend[RankID]+iElem;
           const unsigned long ElemID = bufLSend[offset];
