@@ -520,6 +520,18 @@ void CConfig::addWallFunctionOption(const string &name, unsigned short &list_siz
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+void CConfig::addThicknessConstraintOption(const string &name, vector<string> & val_filenames, 
+                                           unsigned short & val_nFile,
+                                           vector<unsigned short> & val_nMarkers,
+                                           vector<vector<string>> & val_markers,
+                                           vector<string> & val_directions){
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionThicknessConstraint(name, val_filenames, val_nFile,
+                                                    val_nMarkers, val_markers, val_directions);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
 void CConfig::addPythonOption(const string name) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
@@ -2636,6 +2648,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Preaccumulation in the AD mode. */
   addBoolOption("PREACC", AD_Preaccumulation, YES);
+
+  /*!\brief THICKNESS_CONSTRAINT \n DESCRIPTION: Input option for a thickness constraints (w/ extension) \n DEFAULT: thickness.dat \ingroup Config*/
+  addThicknessConstraintOption("THICKNESS_CONSTRAINT", thickness_filenames, thickness_nFile, thickness_nMarkers, thickness_markers, thickness_directions);
 
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/

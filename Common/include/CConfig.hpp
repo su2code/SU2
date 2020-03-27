@@ -229,6 +229,8 @@ private:
   string Inlet_Filename;        /*!< \brief Filename specifying an inlet profile. */
   su2double Inlet_Matching_Tol; /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
 
+  string Thickness_Constraint_Filename;  /*!< \brief Filename specifying thickness constraint locations and values. */
+
   string *Marker_Euler,           /*!< \brief Euler wall markers. */
   *Marker_FarField,               /*!< \brief Far field markers. */
   *Marker_Custom,
@@ -1149,6 +1151,12 @@ private:
   unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
+  vector<string> thickness_filenames;
+  unsigned short thickness_nFile;
+  vector<unsigned short> thickness_nMarkers;
+  vector<vector<string>> thickness_markers;
+  vector<string> thickness_directions;
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -1270,6 +1278,12 @@ private:
   void addWallFunctionOption(const string &name,               unsigned short &list_size,
                              string* &string_field,            unsigned short* &val_Kind_WF,
                              unsigned short** &val_IntInfo_WF, su2double** &val_DoubleInfo_WF);
+
+  void addThicknessConstraintOption(const string &name, vector<string> & filenames_field, 
+                                    unsigned short & nFile_field,
+                                    vector<unsigned short> & nMarkers_field,
+                                    vector<vector<string>> & markers_field,
+                                    vector<string> & directions_field);
 
   void addPythonOption(const string name);
 
@@ -9342,5 +9356,29 @@ public:
    * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
    */
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
+
+  /*!
+   * \brief Get name of the input files for thickness evaluations
+   * \return vector of strings containing names of csv files defining thickness evaluation locations
+   */
+  vector<string> GetThickness_Constraint_FileNames(void) const { return thickness_filenames; }
+
+  /*!
+   * \brief Get directions for thickness evaluations for each file
+   * \return vector of strings containing direction definitions
+   */
+  vector<string> GetThickness_Constraint_Directions(void) const { return thickness_directions; }
+
+  /*!
+   * \brief Get number of markers associated with each thickness file
+   * \return vector of numbers of markers associated with each thickness file
+   */
+  vector<unsigned short> GetThickness_Constraint_nMarkers(void) const { return thickness_nMarkers; }
+
+  /*!
+   * \brief Get names of markers associated with each thickness file
+   * \return 2D vector of names of markers associated with each thickness file
+   */
+  vector<vector<string>> GetThickness_Constraint_Markers(void) const { return thickness_markers; }
 
 };
