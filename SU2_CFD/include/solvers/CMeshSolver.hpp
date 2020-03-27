@@ -48,12 +48,6 @@ protected:
   su2double MinDistance;
   su2double MaxDistance;
 
-  su2double E;                  /*!< \brief Young's modulus of elasticity. */
-  su2double Nu;                 /*!< \brief Poisson's ratio. */
-
-  su2double Mu;                 /*!< \brief Lame's coeficient. */
-  su2double Lambda;             /*!< \brief Lame's coeficient. */
-
   vector<CMeshElement> element; /*!< \brief Vector which stores element information for each problem. */
 
   /*!

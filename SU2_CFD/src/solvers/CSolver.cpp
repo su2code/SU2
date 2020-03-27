@@ -2219,7 +2219,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
           case UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)
-              base_nodes->SetUndivided_Laplacian(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+              base_nodes->SetUnd_Lapl(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
           case SOLUTION_LIMITER:
             for (iVar = 0; iVar < nVar; iVar++)
