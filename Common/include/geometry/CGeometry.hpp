@@ -1656,5 +1656,15 @@ public:
    */
   inline unsigned long GetElementColorGroupSize(void) const { return elemColorGroupSize; }
 
-};
+  /*!
+   * \brief Read thickness constraint definition in csv file
+   * \return 2D vector containing locations and values of thickness constraints
+   */
+  vector<vector<su2double>> ReadThicknessConstraints(string filename);
 
+  /*!
+   * \brief Get thickness of 
+   * \return 2D vector containing locations and values of thickness constraints
+   */
+  vector<vector<su2double>> CalculateThickness2D(CConfig *config);
+};

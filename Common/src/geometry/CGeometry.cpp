@@ -4104,3 +4104,133 @@ const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
   }
   return elemColoring;
 }
+
+vector<vector<su2double>> CGeometry::ReadThicknessConstraints(string filename){
+  vector<vector<su2double>> vals;
+  ifstream thicc(filename);
+  int i = 0;
+  if(thicc){
+    string line;
+    while (getline(thicc, line)){
+      stringstream sep(line);
+      string field;
+      vals.push_back({});
+      while (getline(sep,field,',')){
+        vals[i].push_back(stod(field));
+      }
+      i++;
+    }
+  }
+  return vals;
+
+}
+
+vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config){
+  unsigned short iFile, iMarker, iLoc, iM, dim, dir;
+  unsigned long iElem, iPoint, jPoint;
+  su2double loc_val;
+  vector<string> filenames = config->GetThickness_Constraint_FileNames();
+  vector<string> directions = config->GetThickness_Constraint_Directions();
+  vector<vector<string>> markers = config->GetThickness_Constraint_Markers();
+  vector <su2double> points;
+  vector<vector<su2double>> thickness;
+  thickness.resize(filenames.size(),{});
+  ofstream thickness_file;
+
+  for (iFile = 0; iFile < filenames.size(); iFile++){
+    vector<vector<su2double>> locs; 
+    locs = ReadThicknessConstraints(filenames[iFile]);
+    thickness[iFile].resize(locs.size(),0.0);
+    if (directions[iFile].compare("x") == 0){
+      dim = 1;
+      dir = 0;
+    }
+    else if (directions[iFile].compare("y") == 0){
+      dim = 0;
+      dir = 1;
+    }
+    else {
+      SU2_MPI::Error("Z direction specified for 2D problem", CURRENT_FUNCTION);
+    }
+    // switch (directions[iFile]) {
+    //   case "x":   dim = 1; dir = 0; break;
+    //   case "y":   dim = 0; dir = 1; break;
+    //   default:  SU2_MPI::Error("Z direction specified for 2D problem", CURRENT_FUNCTION); break;
+    // }
+
+    for (iLoc = 0; iLoc < locs.size(); iLoc++){
+      points.clear();
+      loc_val = locs[iLoc][0];
+      for(iM = 0; iM < markers[iFile].size(); iM++){
+        iMarker = config->GetMarker_CfgFile_TagBound(markers[iFile][iM]);
+        for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+          iPoint = bound[iMarker][iElem]->GetNode(0);
+          jPoint = bound[iMarker][iElem]->GetNode(1);
+          bool inElem = (node[iPoint]->GetCoord(dim) < loc_val && loc_val < node[jPoint]->GetCoord(dim)) ||
+                        (node[jPoint]->GetCoord(dim) < loc_val && loc_val < node[iPoint]->GetCoord(dim));
+          if (inElem) {
+            su2double p = node[iPoint]->GetCoord(dir) + (loc_val - node[iPoint]->GetCoord(dim)) * 
+                          (node[jPoint]->GetCoord(dir) - node[iPoint]->GetCoord(dir)) / 
+                          (node[jPoint]->GetCoord(dim) - node[iPoint]->GetCoord(dim));
+            points.push_back(p);
+          }
+        }
+      }
+      if (points.size() == 1) {
+        SU2_MPI::Error(string("For file ") + to_string(iFile) + string(", Location ") + to_string(iLoc) +
+                       string(", geometry is only intersected once"), CURRENT_FUNCTION);
+      }
+      else if (points.size() == 2){
+        thickness[iFile][iLoc] = abs(points[0]-points[1]);
+      }
+      else if (points.size() > 2){
+        SU2_MPI::Error(string("For file ") + to_string(iFile) + string(", Location ") + to_string(iLoc) +
+                       string(", geometry is intersected more than twice"), CURRENT_FUNCTION);
+      }
+    }
+  }
+  for (iFile = 0; iFile < filenames.size(); iFile++){
+    vector<vector<su2double>> locs; 
+    locs = ReadThicknessConstraints(filenames[iFile]);
+    if (config->GetTabular_FileFormat() == TAB_CSV) {
+      string fn = "thickness_" + to_string(iFile) + ".csv";
+      thickness_file.open(fn, ios::out);
+      if (config->GetSystemMeasurements() == US){
+        if (directions[iFile].compare("x") == 0)
+          thickness_file << "\"y (in)\",\"Thickness (in)\"" << endl;
+        else
+          thickness_file << "\"x (in)\",\"Thickness (in)\"" << endl;
+      }
+      else{
+        if (directions[iFile].compare("x") == 0)
+          thickness_file << "\"y (m)\",\"Thickness (m)\"" << endl;
+        else
+          thickness_file << "\"x (m)\",\"Thickness (m)\"" << endl;
+      }
+    }
+    else {
+      string fn = "thickness_" + to_string(iFile) + ".dat";
+      thickness_file.open(fn, ios::out);
+      thickness_file << "TITLE = \"Thickness values\"" << endl;
+
+      if (config->GetSystemMeasurements() == US){
+        if (directions[iFile].compare("x") == 0)
+          thickness_file << "VARIABLES = \"y (in)\",\"Thickness (in)\"" << endl;
+        else
+          thickness_file << "VARIABLES = \"x (in)\",\"Thickness (in)\"" << endl;
+      }
+      else{
+        if (directions[iFile].compare("x") == 0)
+          thickness_file << "VARIABLES = \"y (m)\",\"Thickness (m)\"" << endl;
+        else
+          thickness_file << "VARIABLES = \"x (m)\",\"Thickness (m)\"" << endl;
+      }
+      thickness_file << "ZONE T= \"Thicknesses\"" << endl;
+    }
+    for (iLoc = 0; iLoc < locs.size(); iLoc++){
+      thickness_file << locs[iLoc][0] << ", " << thickness[iFile][iLoc]/2 << endl;
+    }
+    thickness_file.close();
+  }
+  return thickness;
+}
