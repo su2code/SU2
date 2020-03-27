@@ -1383,6 +1383,9 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
             TauElem[3] = {0.0,0.0,0.0}, TauNormal, TauTangent[3] = {0.0,0.0,0.0},
             UnitNormal[3] = {0.0,0.0,0.0}, Area;
   su2double *weights;
+  
+  /*--- Set TauWall_WF ---*/
+  solver_container[FLOW_SOL]->SetTauWall_WF(geometry, solver_container, config);
 
   for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -1414,41 +1417,43 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
         const su2double DensityWall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(kPoint);
         const su2double LamViscWall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
 
-        su2double **GradPrimVar = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(kPoint);
-        su2double *Normal = geometry->vertex[val_marker][kVertex]->GetNormal();
+//        su2double **GradPrimVar = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(kPoint);
+//        su2double *Normal = geometry->vertex[val_marker][kVertex]->GetNormal();
+//
+//        Area = 0.;
+//        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+//        for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+//
+//        su2double DivVel = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++) DivVel += GradPrimVar[iDim+1][iDim];
+//
+//        for (iDim = 0; iDim < nDim; iDim++) {
+//          for (jDim = 0 ; jDim < nDim; jDim++) {
+//            Tau[iDim][jDim] = LamViscWall*(  GradPrimVar[jDim+1][iDim]
+//                                           + GradPrimVar[iDim+1][jDim] ) -
+//            TWO3*LamViscWall*DivVel*Delta[iDim][jDim];
+//          }
+//          TauElem[iDim] = 0.0;
+//          for (jDim = 0; jDim < nDim; jDim++)
+//            TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+//        }
+//
+//        /*--- Compute wall shear stress as the magnitude of the wall-tangential
+//         component of the shear stress tensor---*/
+//
+//        TauNormal = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          TauNormal += TauElem[iDim] * UnitNormal[iDim];
+//
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+//
+//        su2double TauWall = 0.;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          TauWall += TauTangent[iDim]*TauTangent[iDim];
+//        TauWall = sqrt(TauWall);
         
-        Area = 0.;
-        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-        for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-
-        su2double DivVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) DivVel += GradPrimVar[iDim+1][iDim];
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0 ; jDim < nDim; jDim++) {
-            Tau[iDim][jDim] = LamViscWall*(  GradPrimVar[jDim+1][iDim]
-                                           + GradPrimVar[iDim+1][jDim] ) -
-            TWO3*LamViscWall*DivVel*Delta[iDim][jDim];
-          }
-          TauElem[iDim] = 0.0;
-          for (jDim = 0; jDim < nDim; jDim++)
-            TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
-        }
-
-        /*--- Compute wall shear stress as the magnitude of the wall-tangential
-         component of the shear stress tensor---*/
-
-        TauNormal = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          TauNormal += TauElem[iDim] * UnitNormal[iDim];
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-
-        su2double TauWall = 0.;
-        for (iDim = 0; iDim < nDim; iDim++)
-          TauWall += TauTangent[iDim]*TauTangent[iDim];
-        TauWall = sqrt(TauWall);
+        TauWall = solver_container[FLOW_SOL]->GetNodes()->GetTauWall(kPoint);
         
         DensityWallItp += DensityWall*weights[kNode];
         LamViscWallItp += LamViscWall*weights[kNode];
