@@ -1265,13 +1265,14 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
-   if (using_uq){
-     pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
-   }
-   else {
-     pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
-   }
-   pw = alfa_blended*Density_i*max(pw,0.0);
+//   if (using_uq){
+//     pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
+//   }
+//   else {
+//     pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
+//   }
+//   pw = alfa_blended*Density_i*max(pw,0.0);
+    pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
 
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
