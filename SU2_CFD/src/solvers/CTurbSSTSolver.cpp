@@ -1718,7 +1718,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
           case COMM_TYPE_DOUBLE:
             SU2_MPI::Irecv(&(static_cast<su2double*>(bufDRecv)[offset]),
                            count, MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
-                           &(recvReq[iMessage]));
+                           &(sendReq[iMessage]));
             break;
           case COMM_TYPE_UNSIGNED_LONG:
             SU2_MPI::Irecv(&(static_cast<unsigned long*>(bufLRecv)[offset]),
@@ -1777,7 +1777,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
           case COMM_TYPE_DOUBLE:
             SU2_MPI::Isend(&(static_cast<su2double*>(bufDSend)[offset]),
                            count, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
-                           &(sendReq[iMessage]));
+                           &(recvReq[iMessage]));
             break;
           case COMM_TYPE_UNSIGNED_LONG:
             SU2_MPI::Isend(&(static_cast<unsigned long*>(bufLSend)[offset]),
@@ -1806,12 +1806,18 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
     /*--- Wait for the non-blocking sends to complete. ---*/
     
     for (iSend = 0; iSend < nSend; iSend++)
-      SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
+      if (commType != COMM_TYPE_DOUBLE)
+        SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
+      else
+        SU2_MPI::Waitany(nSend, recvReq, &ind, &status);
     
     /*--- Wait for the non-blocking recvs to complete. ---*/
     
     for (iRecv = 0; iRecv < nRecv; iRecv++)
-      SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
+      if (commType != COMM_TYPE_DOUBLE)
+        SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
+      else
+        SU2_MPI::Waitany(nRecv, sendReq, &ind, &status);
   }
   
   delete [] sendReq;
