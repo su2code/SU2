@@ -1561,7 +1561,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
 
   /*--- Communicate the number of points to be sent/recv'd amongst
    all processors. After this communication, each proc knows how
-   many cells it will recv to each other processor. ---*/
+   many cells it will recv from each other processor. ---*/
 
   SU2_MPI::Alltoall(&(nElemSend[1]), 1, MPI_INT,
                     &(nElemRecv[1]), 1, MPI_INT, MPI_COMM_WORLD);
@@ -1585,28 +1585,28 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
    correspond to the wall element indices we sent out. The variables
    being sent thus correspond to "ElemRecv" arrays. ---*/
 
-  su2double *bufDSend = new su2double[countPerElem*nElemRecv[nRecv]];
-  for (iRecv = 0; iRecv < countPerElem*nElemRecv[nRecv]; iRecv++)
+  su2double *bufDSend = new su2double[countPerElem*nElemRecv[size]];
+  for (iRecv = 0; iRecv < countPerElem*nElemRecv[size]; iRecv++)
     bufDSend[iRecv] = 0.0;
 
-  su2double *bufDRecv = new su2double[countPerElem*nElemSend[nSend]];
-  for (iSend = 0; iSend < countPerElem*nElemSend[nSend]; iSend++)
+  su2double *bufDRecv = new su2double[countPerElem*nElemSend[size]];
+  for (iSend = 0; iSend < countPerElem*nElemSend[size]; iSend++)
     bufDRecv[iSend] = 0.0;
   
-  unsigned long *bufLSend = new unsigned long[nElemSend[nSend]];
-  for (iSend = 0; iSend < nElemSend[nSend]; iSend++)
+  unsigned long *bufLSend = new unsigned long[nElemSend[size]];
+  for (iSend = 0; iSend < nElemSend[size]; iSend++)
     bufLSend[iSend] = 0;
 
-  unsigned long *bufLRecv = new unsigned long[nElemRecv[nRecv]];
-  for (iRecv = 0; iRecv < nElemRecv[nRecv]; iRecv++)
+  unsigned long *bufLRecv = new unsigned long[nElemRecv[size]];
+  for (iRecv = 0; iRecv < nElemRecv[size]; iRecv++)
     bufLRecv[iRecv] = 0;
   
-  unsigned short *bufSSend = new unsigned short[nElemSend[nSend]];
-  for (iSend = 0; iSend < nElemSend[nSend]; iSend++)
+  unsigned short *bufSSend = new unsigned short[nElemSend[size]];
+  for (iSend = 0; iSend < nElemSend[size]; iSend++)
     bufSSend[iSend] = 0;
 
-  unsigned short *bufSRecv = new unsigned short[nElemRecv[nRecv]];
-  for (iRecv = 0; iRecv < nElemRecv[nRecv]; iRecv++)
+  unsigned short *bufSRecv = new unsigned short[nElemRecv[size]];
+  for (iRecv = 0; iRecv < nElemRecv[size]; iRecv++)
     bufSRecv[iRecv] = 0;
 
   /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
