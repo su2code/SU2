@@ -1631,7 +1631,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
     if (i == 0) {
       commType = COMM_TYPE_UNSIGNED_LONG;
       countPerElem = 1;
-      unsigned long *ProcCounter = new unsigned long[size];
+      unsigned long ProcCounter[size];
       for (iProc = 0; iProc < size; iProc++) ProcCounter[iProc] = 0;
       
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1645,7 +1645,6 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
           }
         }
       }
-      delete [] ProcCounter;
     }
     
     /*--- Markers ---*/
@@ -1799,31 +1798,33 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
       }
     }
     
-    int ind;
-    SU2_MPI::Status status;
+    SU2_MPI::Waitall(nSend, sendReq, MPI_STATUS_IGNORE);
     
-    if (commType != COMM_TYPE_DOUBLE) {
-      /*--- Wait for the non-blocking sends to complete. ---*/
-      
-      for (iSend = 0; iSend < nSend; iSend++)
-        SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
-      
-      /*--- Wait for the non-blocking recvs to complete. ---*/
-      
-      for (iRecv = 0; iRecv < nRecv; iRecv++)
-        SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
-    }
-    else {
-      /*--- Wait for the non-blocking sends to complete. ---*/
-      
-      for (iRecv = 0; iRecv < nRecv; iRecv++)
-        SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
-      
-      /*--- Wait for the non-blocking recvs to complete. ---*/
-      
-      for (iSend = 0; iSend < nSend; iSend++)
-        SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
-    }
+//    int ind;
+//    SU2_MPI::Status status;
+//    
+//    if (commType != COMM_TYPE_DOUBLE) {
+//      /*--- Wait for the non-blocking sends to complete. ---*/
+//      
+//      for (iSend = 0; iSend < nSend; iSend++)
+//        SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
+//      
+//      /*--- Wait for the non-blocking recvs to complete. ---*/
+//      
+//      for (iRecv = 0; iRecv < nRecv; iRecv++)
+//        SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
+//    }
+//    else {
+//      /*--- Wait for the non-blocking sends to complete. ---*/
+//      
+//      for (iRecv = 0; iRecv < nRecv; iRecv++)
+//        SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
+//      
+//      /*--- Wait for the non-blocking recvs to complete. ---*/
+//      
+//      for (iSend = 0; iSend < nSend; iSend++)
+//        SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
+//    }
   }
   
   delete [] sendReq;
