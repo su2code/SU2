@@ -1691,7 +1691,9 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
        not communicate with ourselves or post recv's for zero length
        messages to keep overhead down. ---*/
       
-      if ((nElemRecv[iProc+1] > nElemRecv[iProc]) && (iProc != rank)) {
+      if ((((nElemRecv[iProc+1] > nElemRecv[iProc]) && (commType != COMM_TYPE_DOUBLE)) ||
+           ((nElemSend[iProc+1] > nElemSend[iProc]) && (commType == COMM_TYPE_DOUBLE))) &&
+          (iProc != rank)) {
         
         /*--- Compute our location in the recv buffer. ---*/
         
@@ -1701,7 +1703,8 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
         /*--- Take advantage of cumulative storage format to get the number
          of elems that we need to recv. ---*/
         
-        nElem = nElemRecv[iProc+1] - nElemRecv[iProc];
+        if (commType == COMM_TYPE_DOUBLE) nElem = nElemSend[iProc+1] - nElemSend[iProc];
+        else                              nElem = nElemRecv[iProc+1] - nElemRecv[iProc];
         
         /*--- Total count can include multiple pieces of data per element. ---*/
         
@@ -1747,7 +1750,9 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
        not communicate with ourselves or post sends for zero length
        messages to keep overhead down. ---*/
       
-      if ((nElemSend[iProc+1] > nElemSend[iProc]) && (iProc != rank)) {
+      if ((((nElemSend[iProc+1] > nElemSend[iProc]) && (commType != COMM_TYPE_DOUBLE)) ||
+           ((nElemRecv[iProc+1] > nElemRecv[iProc]) && (commType == COMM_TYPE_DOUBLE))) &&
+          (iProc != rank)) {
         
         /*--- Compute our location in the send buffer. ---*/
         
@@ -1757,7 +1762,8 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
         /*--- Take advantage of cumulative storage format to get the number
          of elems that we need to send. ---*/
         
-        nElem = nElemSend[iProc+1] - nElemSend[iProc];
+        if (commType == COMM_TYPE_DOUBLE) nElem = nElemRecv[iProc+1] - nElemRecv[iProc];
+        else                              nElem = nElemSend[iProc+1] - nElemSend[iProc];
         
         /*--- Total count can include multiple pieces of data per element. ---*/
         
