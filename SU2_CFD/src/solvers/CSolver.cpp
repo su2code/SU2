@@ -5486,7 +5486,7 @@ void CSolver::ComputeMetric(CSolver   **solver,
 
 }
 
-void CSolver::ConvectiveMetric(CSolver          **solver,
+void CSolver::ConvectiveMetric(CSolver           **solver,
                                CGeometry         *geometry,
                                CConfig           *config,
                                unsigned long     iPoint,
@@ -5499,7 +5499,7 @@ void CSolver::ConvectiveMetric(CSolver          **solver,
   const bool turb = (config->GetKind_Turb_Model() != NONE);
   const bool sst  = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
 
-  unsigned short iVar, jVar, iDim;
+  unsigned short iVar, jVar;
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   vector<vector<su2double> > A(nDim+2, vector<su2double>(nDim+2, 0.0)),
@@ -5588,7 +5588,7 @@ void CSolver::ConvectiveMetric(CSolver          **solver,
 
 }
 
-void CSolver::ViscousMetric(CSolver          **solver,
+void CSolver::ViscousMetric(CSolver           **solver,
                             CGeometry         *geometry,
                             CConfig           *config,
                             unsigned long     iPoint,
@@ -5601,7 +5601,7 @@ void CSolver::ViscousMetric(CSolver          **solver,
   const bool turb = (config->GetKind_Turb_Model() != NONE);
   const bool sst  = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
 
-  unsigned short iDim, jDim, iVar, jVar;
+  unsigned short iDim, jDim, iVar;
   const unsigned short nMetr = 3*(nDim-1);
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
@@ -5793,7 +5793,7 @@ void CSolver::ViscousMetric(CSolver          **solver,
 
 }
 
-void CSolver::SumWeightedHessians(CSolver          **solver,
+void CSolver::SumWeightedHessians(CSolver           **solver,
                                   CGeometry         *geometry,
                                   CConfig           *config,
                                   unsigned long     iPoint,

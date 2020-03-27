@@ -66,10 +66,11 @@ private:
   bool Move;                          /*!< \brief This flag indicates if the point is going to be move in the grid deformation process. */
   unsigned long color;                /*!< \brief Color of the point in the partitioning strategy. */
   su2double Wall_Distance;            /*!< \brief Distance to the nearest wall. */
-  short Wall_Marker;                  /*!< \brief Marker of the nearest wall. */
+  short Wall_Rank;                    /*!< \brief Rank of the nearest wall element. */
+  short Wall_Marker;                  /*!< \brief Marker of the nearest wall element. */
   long Wall_Element;                  /*!< \brief Index of the nearest wall element. */
   bool Bool_Wall_Neighbor;            /*!< \brief Whether this node neighbors a solid boundary. */
-  su2double Wall_Interp_Weights[8];   /*!<\brief Interpolation weights at nearest wall element. */
+  su2double Wall_Interp_Weights[4];   /*!<\brief Interpolation weights at nearest wall element. */
   su2double SharpEdge_Distance;       /*!< \brief Distance to a sharp edge. */
   su2double Curvature;                /*!< \brief Value of the surface curvature (SU2_GEO). */
   unsigned long GlobalIndex;          /*!< \brief Global index in the parallel simulation. */
@@ -132,7 +133,13 @@ public:
   inline void SetWall_Distance(su2double val_distance) { Wall_Distance = val_distance; }
   
   /*!
-   * \brief Set the index of the marker of the nearest wall.
+   * \brief Set the index of the rank of the nearest wall element.
+   * \param[in] val_rank - Index of the rank.
+   */
+  inline void SetWall_Rank(short val_rank) { Wall_Rank = val_rank; }
+  
+  /*!
+   * \brief Set the index of the marker of the nearest wall. element
    * \param[in] val_marker - Index of the marker.
    */
   inline void SetWall_Marker(short val_marker) { Wall_Marker = val_marker; }
@@ -154,7 +161,7 @@ public:
    * \param[in] val_weights - interpolation weights at nearest wall element.
    */
   inline void SetWall_Interpolation_Weights(su2double *val_weights) {
-    for(unsigned short i = 0; i < 8; ++i) Wall_Interp_Weights[i] = val_weights[i];
+    for(unsigned short i = 0; i < 4; ++i) Wall_Interp_Weights[i] = val_weights[i];
   }
 
   /*!
@@ -170,7 +177,12 @@ public:
   inline su2double GetWall_Distance(void) const { return Wall_Distance; }
   
   /*!
-   * \brief Get the index of the marker of the nearest wall.
+   * \brief Get the index of the rank of the nearest wall element.
+   */
+  inline short GetWall_Rank(void) { return Wall_Rank; }
+  
+  /*!
+   * \brief Get the index of the marker of the nearest wall element.
    */
   inline short GetWall_Marker(void) { return Wall_Marker; }
   

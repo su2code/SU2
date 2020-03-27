@@ -959,7 +959,7 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
     const unsigned long ii = BBoxTargets[i].boundingBoxID;
 
     su2double dist2Elem;
-    su2double weights[8];
+    su2double weights[4];
     Dist2ToElement(ii, coor, dist2Elem, weights);
     if(dist2Elem <= dist) {
       jj       = ii;
@@ -974,10 +974,10 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
 
   /* At the moment the square of the distance is stored in dist. Compute
      the correct value. */
-  su2double weights[8];
+  su2double weights[4];
   Dist2ToElement(jj, coor, dist, weights);
   dist = sqrt(dist);
-  memcpy(weightsInterpol, weights, 8*sizeof(su2double));
+  memcpy(weightsInterpol, weights, 4*sizeof(su2double));
 }
 
 bool CADTElemClass::CoorInElement(const unsigned long elemID,

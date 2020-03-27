@@ -141,6 +141,8 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
   Wall_Distance = 0.0;
   
+  /*--- Initialize values for WF interpolation ---*/
+  Wall_Rank = -1;
   Wall_Marker = -1;
   Wall_Element = -1;
   Bool_Wall_Neighbor = false;
@@ -269,6 +271,8 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   /*--- Intialize the value of the periodic volume. ---*/
   Periodic_Volume = 0.0;
   
+  /*--- Initialize values for WF interpolation ---*/
+  Wall_Rank = -1;
   Wall_Marker = -1;
   Wall_Element = -1;
   Bool_Wall_Neighbor = false;
@@ -399,6 +403,8 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   /*--- Intialize the value of the periodic volume. ---*/
   Periodic_Volume = 0.0;
   
+  /*--- Initialize values for WF interpolation ---*/
+  Wall_Rank = -1;
   Wall_Marker = -1;
   Wall_Element = -1;
   Bool_Wall_Neighbor = false;

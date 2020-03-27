@@ -322,7 +322,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetGradient_L2Proj2(CGeometry *geometry, CConfig *config);
+  void SetGradient_L2Proj2(CGeometry *geometry,
+                           CConfig   *config);
 
   /*!
    * \brief Compute the Hessian using a L2 Projection method (2D),
@@ -330,7 +331,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetHessian_L2Proj2(CGeometry *geometry, CConfig *config);
+  void SetHessian_L2Proj2(CGeometry *geometry,
+                          CConfig   *config);
 
   /*!
    * \brief Compute the gradient using a L2 Projection method (3D),
@@ -338,7 +340,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetGradient_L2Proj3(CGeometry *geometry, CConfig *config);
+  void SetGradient_L2Proj3(CGeometry *geometry,
+                           CConfig   *config);
 
   /*!
    * \brief Compute the Hessian using a L2 Projection method (3D),
@@ -346,12 +349,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetHessian_L2Proj3(CGeometry *geometry, CConfig *config);
+  void SetHessian_L2Proj3(CGeometry *geometry,
+                          CConfig   *config);
 
   /*!
    * \brief Apply a correction to the boundary Hessian using the volume Hessian.
    */
-  void CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config);
+  void CorrectBoundAnisoHess(CGeometry *geometry,
+                             CConfig   *config);
 
   /*!
    * \brief Compute the goal-oriented metric.
@@ -359,7 +364,9 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeMetric(CSolver **solver, CGeometry *geometry, CConfig *config);
+  void ComputeMetric(CSolver   **solver,
+                     CGeometry *geometry,
+                     CConfig   *config);
 
   /*!
    * \brief Compute the convective terms of the goal-oriented metric.
@@ -369,8 +376,11 @@ public:
    * \param[in] iPoint - Index of current node.
    * \param[in] weights - Weights of each Hessian in the metric.
    */
-  void ConvectiveMetric(CSolver **solver, CGeometry *geometry, CConfig *config, 
-                        unsigned long iPoint, vector<su2double> &weights);
+  void ConvectiveMetric(CSolver           **solver,
+                        CGeometry         *geometry,
+                        CConfig           *config,
+                        unsigned long     iPoint,
+                        vector<su2double> &weights);
 
   /*!
    * \brief Compute the viscous terms of the goal-oriented metric.
@@ -380,8 +390,11 @@ public:
    * \param[in] iPoint - Index of current node.
    * \param[in] weights - Weights of each Hessian in the metric.
    */
-  void ViscousMetric(CSolver **solver, CGeometry *geometry, CConfig *config, 
-                     unsigned long iPoint, vector<su2double> &weights);
+  void ViscousMetric(CSolver           **solver,
+                     CGeometry         *geometry,
+                     CConfig           *config,
+                     unsigned long     iPoint,
+                     vector<su2double> &weights);
 
   /*!
    * \brief Compute the turbulent terms of the goal-oriented metric.
@@ -391,8 +404,11 @@ public:
    * \param[in] iPoint - Index of current node.
    * \param[in] weights - Weights of each Hessian in the metric.
    */
-  virtual void TurbulentMetric(CSolver **solver, CGeometry *geometry, CConfig *config, 
-                               unsigned long iPoint, vector<su2double> &weights) { }
+  virtual void TurbulentMetric(CSolver           **solver,
+                               CGeometry         *geometry,
+                               CConfig           *config,
+                               unsigned long     iPoint,
+                               vector<su2double> &weights) { }
 
   /*!
    * \brief Sum up the weighted Hessians to obtain the goal-oriented metric.
@@ -402,22 +418,27 @@ public:
    * \param[in] iPoint - Index of current node.
    * \param[in] weights - Weights of each Hessian in the metric.
    */
-  void SumWeightedHessians(CSolver **solver, CGeometry *geometry, CConfig *config, 
-                           unsigned long iPoint, vector<su2double> &weights);
+  void SumWeightedHessians(CSolver           **solver,
+                           CGeometry         *geometry,
+                           CConfig           *config,
+                           unsigned long     iPoint,
+                           vector<su2double> &weights);
 
   /*!
    * \brief Perform an Lp-norm normalization of the metric (2D).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void NormalizeMetric2(CGeometry *geometry, CConfig *config);
+  void NormalizeMetric2(CGeometry *geometry,
+                        CConfig   *config);
 
   /*!
    * \brief Perform an Lp-norm normalization of the metric (3D).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void NormalizeMetric3(CGeometry *geometry, CConfig *config);
+  void NormalizeMetric3(CGeometry *geometry,
+                        CConfig   *config);
 
   /*!
    * \brief Get the maximum wall spacing based on y-plus.

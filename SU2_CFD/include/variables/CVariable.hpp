@@ -509,6 +509,18 @@ public:
    */
   virtual void AddConservative(unsigned long iPoint, unsigned long iVar, su2double solution,
                                su2double val_density, su2double lowerlimit, su2double upperlimit) { }
+  
+  virtual void InitializeWallSolution(unsigned long nWallElem) { }
+  
+  virtual inline void SetWallMap(unsigned long iPoint, long index) { }
+  
+  virtual inline void SetWallDensity(unsigned long iPoint, unsigned short jNode, su2double density) { }
+  
+  virtual inline void SetWallLamVisc(unsigned long iPoint, unsigned short jNode, su2double lamvisc) { }
+  
+  virtual inline su2double GetWallDensity(unsigned long iPoint, unsigned short jNode) { return 0.; }
+  
+  virtual inline su2double GetWallLamVisc(unsigned long iPoint, unsigned short jNode) { return 0.; }
 
   /*!
    * \brief Get the entire solution of the problem.

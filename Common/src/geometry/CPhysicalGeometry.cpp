@@ -5624,7 +5624,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
       unsigned long  elemID;
       int            rankID;
       su2double      dist;
-      su2double      weights[8];
+      su2double      weights[4];
 
       WallADT.DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
                                    elemID, rankID, weights);
@@ -5632,19 +5632,6 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
       
       /*--- BCM: Set nearest element and marker. These will be used
        for wall functions ---*/
-//      node[iPoint]->SetWall_Marker(-1);
-//      node[iPoint]->SetWall_Element(-1);
-//      node[iPoint]->SetBool_Wall_Neighbor(false);
-//      if (node[iPoint]->GetDomain() && !node[iPoint]->GetSolidBoundary()) {
-//        for (unsigned short iNode = 0; iNode < bound[markerID][elemID]->GetnNodes(); iNode++) {
-//          if (iPoint == bound[markerID][elemID]->GetNode(iNode)) {
-//            node[iPoint]->SetBool_Wall_Neighbor(true);
-//            node[iPoint]->SetWall_Marker(markerID);
-//            node[iPoint]->SetWall_Element(elemID);
-//            node[iPoint]->SetWall_Interpolation_Weights(weights);
-//          }
-//        }
-//      }
       if (!node[iPoint]->GetSolidBoundary()) {
         for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
           const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
@@ -5654,6 +5641,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
                 const long jVertex = node[jPoint]->GetVertex(iMarker);
                 if (jVertex != -1) {
                   node[iPoint]->SetBool_Wall_Neighbor(true);
+                  node[iPoint]->SetWall_Rank(rankID);
                   node[iPoint]->SetWall_Marker(markerID);
                   node[iPoint]->SetWall_Element(elemID);
                   node[iPoint]->SetWall_Interpolation_Weights(weights);
@@ -5661,10 +5649,10 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
                 } // if jVertex
               } // if iMarker Viscous Wall
             } // iMarker
-          } // if jPoint Domain && Solid Boundary
+          } // if jPoint Solid Boundary
           if (node[iPoint]->GetBool_Wall_Neighbor()) break;
         } // iNode
-      } // if iPoint Domain && !Solid Boundary
+      } // if iPoint !Solid Boundary
     }
   }
 

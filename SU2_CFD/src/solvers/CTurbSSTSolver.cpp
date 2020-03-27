@@ -1372,20 +1372,28 @@ void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 
 }
 
-void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,   unsigned short val_marker) {
+void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
+                                      CSolver        **solver,
+                                      CNumerics      *conv_numerics,
+                                      CNumerics      *visc_numerics,
+                                      CConfig        *config,
+                                      unsigned short val_marker) {
   
   unsigned long jPoint, kPoint, total_index;
   unsigned short iDim, jDim, iVar, kNode;
   long iElem, kVertex;
-  su2double distance, density = 0.0, laminar_viscosity = 0.0, eddy_viscosity = 0.0, beta_1 = constants[4];;
+  su2double distance, density = 0.0, laminar_viscosity = 0.0, eddy_viscosity = 0.0, k = 0.0, beta_1 = constants[4];;
   su2double Tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
             Delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
             TauElem[3] = {0.0,0.0,0.0}, TauNormal, TauTangent[3] = {0.0,0.0,0.0},
             UnitNormal[3] = {0.0,0.0,0.0}, Area;
   su2double *weights;
   
+  /*--- Communicate values needed for WF ---*/
+  WF_Comms(geometry, solver, config);
+  
   /*--- Set TauWall_WF ---*/
-  solver_container[FLOW_SOL]->SetTauWall_WF(geometry, solver_container, config);
+//  solver[FLOW_SOL]->SetTauWall_WF(geometry, solver, config);
 
   for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -1395,78 +1403,93 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
       
       iElem = geometry->node[jPoint]->GetWall_Element();
       
-      density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-      laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
-      eddy_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(jPoint);
+      density = solver[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
+      laminar_viscosity = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
+      eddy_viscosity = solver[FLOW_SOL]->GetNodes()->GetEddyViscosity(jPoint);
+      k = nodes->GetPrimitive(jPoint, 0);
       
       weights = geometry->node[jPoint]->GetWall_Interpolation_Weights();
      
-      su2double DensityWallItp = 0.;
-      su2double LamViscWallItp = 0.;
-      su2double TauWallItp = 0.0;
+//      su2double DensityWallItp = 0.;
+//      su2double LamViscWallItp = 0.;
+//      su2double TauWallItp = 0.0;
       
       distance = geometry->node[jPoint]->GetWall_Distance();
       
+      su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance + EPS);
+      su2double Omega = 0.0;
+      
       for (kNode = 0; kNode < geometry->bound[val_marker][iElem]->GetnNodes(); kNode++) {
-
-        kPoint = geometry->bound[val_marker][iElem]->GetNode(kNode);
-        kVertex = geometry->node[kPoint]->GetVertex(val_marker);
         
-        /*--- Set wall values ---*/
+        const su2double DensityWall = nodes->GetWallDensity(jPoint, kNode);
+        const su2double LamViscWall = nodes->GetWallLamVisc(jPoint, kNode);
 
-        const su2double DensityWall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(kPoint);
-        const su2double LamViscWall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
-
-        su2double **GradPrimVar = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(kPoint);
-        su2double *Normal = geometry->vertex[val_marker][kVertex]->GetNormal();
-
-        Area = 0.;
-        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-        for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-
-        su2double DivVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) DivVel += GradPrimVar[iDim+1][iDim];
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0 ; jDim < nDim; jDim++) {
-            Tau[iDim][jDim] = LamViscWall*(  GradPrimVar[jDim+1][iDim]
-                                           + GradPrimVar[iDim+1][jDim] ) -
-            TWO3*LamViscWall*DivVel*Delta[iDim][jDim];
-          }
-          TauElem[iDim] = 0.0;
-          for (jDim = 0; jDim < nDim; jDim++)
-            TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
-        }
-
-        /*--- Compute wall shear stress as the magnitude of the wall-tangential
-         component of the shear stress tensor---*/
-
-        TauNormal = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          TauNormal += TauElem[iDim] * UnitNormal[iDim];
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-
-        su2double TauWall = 0.;
-        for (iDim = 0; iDim < nDim; iDim++)
-          TauWall += TauTangent[iDim]*TauTangent[iDim];
-        TauWall = sqrt(TauWall);
+//        kPoint = geometry->bound[val_marker][iElem]->GetNode(kNode);
+//        kVertex = geometry->node[kPoint]->GetVertex(val_marker);
+//
+//        /*--- Set wall values ---*/
+//
+//        const su2double DensityWall = solver[FLOW_SOL]->GetNodes()->GetDensity(kPoint);
+//        const su2double LamViscWall = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
+//
+//        su2double **GradPrimVar = solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(kPoint);
+//        su2double *Normal = geometry->vertex[val_marker][kVertex]->GetNormal();
+//
+//        Area = 0.;
+//        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+//        for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+//
+//        su2double DivVel = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++) DivVel += GradPrimVar[iDim+1][iDim];
+//
+//        for (iDim = 0; iDim < nDim; iDim++) {
+//          for (jDim = 0 ; jDim < nDim; jDim++) {
+//            Tau[iDim][jDim] = LamViscWall*(  GradPrimVar[jDim+1][iDim]
+//                                           + GradPrimVar[iDim+1][jDim] ) -
+//            TWO3*LamViscWall*DivVel*Delta[iDim][jDim];
+//          }
+//          TauElem[iDim] = 0.0;
+//          for (jDim = 0; jDim < nDim; jDim++)
+//            TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+//        }
+//
+//        /*--- Compute wall shear stress as the magnitude of the wall-tangential
+//         component of the shear stress tensor---*/
+//
+//        TauNormal = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          TauNormal += TauElem[iDim] * UnitNormal[iDim];
+//
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+//
+//        su2double TauWall = 0.;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          TauWall += TauTangent[iDim]*TauTangent[iDim];
+//        TauWall = sqrt(TauWall);
+//
+////        const su2double TauWall = solver[FLOW_SOL]->GetNodes()->GetTauWall(kPoint);
+//
+////        DensityWallItp += DensityWall*weights[kNode];
+////        LamViscWallItp += LamViscWall*weights[kNode];
+////        TauWallItp     += TauWall*weights[kNode];
+//        DensityWallItp = DensityWall;
+//        LamViscWallItp = LamViscWall;
+//        TauWallItp     = TauWall;
         
-//        const su2double TauWall = solver_container[FLOW_SOL]->GetNodes()->GetTauWall(kPoint);
+//        su2double U_Tau = sqrt(TauWallItp / DensityWallItp);
         
-        DensityWallItp += DensityWall*weights[kNode];
-        LamViscWallItp += LamViscWall*weights[kNode];
-        TauWallItp     += TauWall*weights[kNode];
+        su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0) + EPS*EPS);
+        Omega += sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.))*weights[kNode];
       }
       
-      su2double U_Tau = sqrt(TauWallItp / DensityWallItp);
-      su2double k     = nodes->GetPrimitive(jPoint, 0);
-
-      su2double Omega_i = 6. * LamViscWallItp / (beta_1 * DensityWallItp * pow(distance, 2.0) + EPS*EPS);
-//      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance + EPS);
-      su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance + EPS);
-      su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
+//      su2double U_Tau = sqrt(TauWallItp / DensityWallItp);
+//      su2double k     = nodes->GetPrimitive(jPoint, 0);
+//
+//      su2double Omega_i = 6. * LamViscWallItp / (beta_1 * DensityWallItp * pow(distance, 2.0) + EPS*EPS);
+////      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance + EPS);
+//      su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance + EPS);
+//      su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
       
 //      Solution[0] = Omega * eddy_viscosity;
       Solution[1] = density*Omega;
@@ -1486,7 +1509,374 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
   
 }
 
-void CTurbSSTSolver::TurbulentMetric(CSolver          **solver,
+void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
+                              CSolver   **solver,
+                              CConfig   *config) {
+  
+  unsigned long iPoint;
+  unsigned long counter = 0;
+  
+  /*--- Initialize the wall index map and solution matrices on the first iteration. ---*/
+  if (config->GetInnerIter() == 0) {
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+        nodes->SetWallMap(iPoint,counter);
+        counter++;
+      }
+    }
+    nodes->InitializeWallSolution(counter);
+    counter = 0;
+  }
+  
+#ifdef HAVE_MPI
+  
+  /*--- Begin the communication. ---*/
+  
+  /*--- Local variables. ---*/
+
+  int iRank, iSend, iRecv;
+  
+  unsigned short countPerElem = 8;
+  
+  int *nElemSend = new int[size+1]; nElemSend[0] = 0;
+  int *nElemRecv = new int[size+1]; nElemRecv[0] = 0;
+
+  for (iRank = 0; iRank < size; iRank++) {
+    nElemSend[iRank] = 0; nElemRecv[iRank] = 0;
+  }
+  nElemSend[size] = 0; nElemRecv[size] = 0;
+
+  /*--- Loop through all of our nodes and track our sends with each rank. ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+
+      /*--- Get the source rank and number of points to send. ---*/
+
+      iRank = geometry->node[iPoint]->GetWall_Rank();
+      nElemSend[iRank+1]++;
+
+    }
+  }
+
+  /*--- Communicate the number of points to be sent/recv'd amongst
+   all processors. After this communication, each proc knows how
+   many cells it will recv to each other processor. ---*/
+
+  SU2_MPI::Alltoall(&(nElemSend[1]), 1, MPI_INT,
+                    &(nElemRecv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+
+  /*--- Prepare to send connectivities. First check how many
+   messages we will be sending and receiving. Here we also put
+   the counters into cumulative storage format to make the
+   communications simpler. ---*/
+  
+  unsigned short nSend = 0, nRecv = 0;
+
+  for (iRank = 0; iRank < size; iRank++) {
+    if ((iRank != rank) && (nElemSend[iRank+1] > 0)) nSend++;
+    if ((iRank != rank) && (nElemRecv[iRank+1] > 0)) nRecv++;
+
+    nElemSend[iRank+1] += nElemSend[iRank];
+    nElemRecv[iRank+1] += nElemRecv[iRank];
+  }
+  
+  /*-- Allocate our communication memory. Note that the "ElemSend" arrays
+   correspond to the wall element indices we sent out. The variables
+   being sent thus correspond to "ElemRecv" arrays. ---*/
+
+  su2double *bufDSend = new su2double[countPerElem*nElemRecv[nRecv]];
+  for (iRecv = 0; iRecv < countPerElem*nElemRecv[nRecv]; iRecv++)
+    bufDSend[iRecv] = 0.0;
+
+  su2double *bufDRecv = new su2double[countPerElem*nElemSend[nSend]];
+  for (iSend = 0; iSend < countPerElem*nElemSend[nSend]; iSend++)
+    bufDRecv[iSend] = 0.0;
+  
+  unsigned long *bufLSend = new unsigned long[nElemSend[nSend]];
+  for (iSend = 0; iSend < nElemSend[nSend]; iSend++)
+    bufLSend[iSend] = 0;
+
+  unsigned long *bufLRecv = new unsigned long[nElemRecv[nRecv]];
+  for (iRecv = 0; iRecv < nElemRecv[nRecv]; iRecv++)
+    bufLRecv[iRecv] = 0;
+  
+  unsigned short *bufSSend = new unsigned short[nElemSend[nSend]];
+  for (iSend = 0; iSend < nElemSend[nSend]; iSend++)
+    bufSSend[iSend] = 0;
+
+  unsigned short *bufSRecv = new unsigned short[nElemRecv[nRecv]];
+  for (iRecv = 0; iRecv < nElemRecv[nRecv]; iRecv++)
+    bufSRecv[iRecv] = 0;
+
+  /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
+  
+  SU2_MPI::Request *sendReq, *recvReq;
+
+  if (nSend > 0) {
+    sendReq = new SU2_MPI::Request[nSend];
+  }
+  if (nRecv > 0) {
+    recvReq = new SU2_MPI::Request[nRecv];
+  }
+  
+  /*--- Local variables ---*/
+  
+  int iMessage, iProc, offset, nElem, count, source, dest, tag;
+  unsigned short commType;
+  
+  for (unsigned short i = 0; i < 3; i++) {
+    
+    /*--- Elements ---*/
+    if (i == 0) {
+      commType = COMM_TYPE_UNSIGNED_LONG;
+      countPerElem = 1;
+      unsigned long *ProcCounter = new unsigned long[size];
+      for (iProc = 0; iProc < size; iProc++) ProcCounter[iProc] = 0;
+      
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+          const unsigned short RankID = geometry->node[iPoint]->GetWall_Rank();
+          if ((nElemSend[RankID+1] > nElemSend[RankID]) && (RankID != rank)) {
+            offset = nElemSend[RankID]+ProcCounter[RankID];
+            nElem = nElemSend[iProc+1] - nElemSend[iProc];
+            bufLSend[offset] = geometry->node[iPoint]->GetWall_Element();
+            bufSSend[offset] = geometry->node[iPoint]->GetWall_Marker();
+            ProcCounter[RankID]++;
+          }
+        }
+      }
+      delete [] ProcCounter;
+    }
+    
+    /*--- Markers ---*/
+    else if (i == 1) {
+      commType = COMM_TYPE_UNSIGNED_SHORT;
+      countPerElem = 1;
+    }
+    
+    /*--- Variables ---*/
+    else {
+      commType = COMM_TYPE_DOUBLE;
+      countPerElem = 8;
+      
+      /*--- Fill send buffers with variables based on received
+            markers and elements. ---*/
+      for (iProc = 0; iProc < size; iProc++) {
+        if ((nElemRecv[iProc+1] > nElemRecv[iProc]) && (iProc != rank)) {
+          nElem = nElemRecv[iProc+1] - nElemRecv[iProc];
+          for (unsigned long iElem = 0; iElem < nElem; iElem++) {
+            offset = countPerElem*(nElemRecv[iProc]+iElem);
+            
+            const unsigned long ElemID = bufLRecv[nElemRecv[iProc]+iElem];
+            const unsigned short MarkerID = bufSRecv[nElemRecv[iProc]+iElem];
+            const unsigned short nNodeElem = geometry->bound[MarkerID][ElemID]->GetnNodes();
+            for (unsigned short kNode = 0; kNode < nNodeElem; kNode++) {
+              const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
+              bufDSend[offset+kNode]   = solver[FLOW_SOL]->GetNodes()->GetDensity(kPoint);
+              bufDSend[offset+kNode+4] = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
+            }
+          }
+        }
+      }
+    }
+  
+    /*--- Launch the non-blocking recv's first. ---*/
+    
+    iMessage = 0;
+    
+    for (iProc = 0; iProc < size; iProc++) {
+      
+      /*--- Post recv's only if another proc is sending us data. We do
+       not communicate with ourselves or post recv's for zero length
+       messages to keep overhead down. ---*/
+      
+      if ((nElemRecv[iProc+1] > nElemRecv[iProc]) && (iProc != rank)) {
+        
+        /*--- Compute our location in the recv buffer. ---*/
+        
+        if (commType == COMM_TYPE_DOUBLE) offset = countPerElem*nElemSend[iProc];
+        else                              offset = countPerElem*nElemRecv[iProc];
+        
+        /*--- Take advantage of cumulative storage format to get the number
+         of elems that we need to recv. ---*/
+        
+        nElem = nElemRecv[iProc+1] - nElemRecv[iProc];
+        
+        /*--- Total count can include multiple pieces of data per element. ---*/
+        
+        count = countPerElem*nElem;
+        
+        /*--- Post non-blocking recv for this proc. ---*/
+        
+        source = iProc; tag = iProc + 1;
+        
+        switch (commType) {
+          case COMM_TYPE_DOUBLE:
+            SU2_MPI::Irecv(&(static_cast<su2double*>(bufDRecv)[offset]),
+                           count, MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
+                           &(recvReq[iMessage]));
+            break;
+          case COMM_TYPE_UNSIGNED_LONG:
+            SU2_MPI::Irecv(&(static_cast<unsigned long*>(bufLRecv)[offset]),
+                           count, MPI_UNSIGNED_LONG, source, tag, MPI_COMM_WORLD,
+                           &(recvReq[iMessage]));
+            break;
+          case COMM_TYPE_UNSIGNED_SHORT:
+            SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufSRecv)[offset]),
+                           count, MPI_UNSIGNED_SHORT, source, tag, MPI_COMM_WORLD,
+                           &(recvReq[iMessage]));
+            break;
+          default:
+            break;
+        }
+        
+        /*--- Increment message counter. ---*/
+        
+        iMessage++;
+        
+      }
+    }
+    
+    /*--- Launch the non-blocking sends next. ---*/
+    
+    iMessage = 0;
+    for (iProc = 0; iProc < size; iProc++) {
+      
+      /*--- Post sends only if we are sending another proc data. We do
+       not communicate with ourselves or post sends for zero length
+       messages to keep overhead down. ---*/
+      
+      if ((nElemSend[iProc+1] > nElemSend[iProc]) && (iProc != rank)) {
+        
+        /*--- Compute our location in the send buffer. ---*/
+        
+        if (commType == COMM_TYPE_DOUBLE) offset = countPerElem*nElemRecv[iProc];
+        else                              offset = countPerElem*nElemSend[iProc];
+        
+        /*--- Take advantage of cumulative storage format to get the number
+         of elems that we need to send. ---*/
+        
+        nElem = nElemSend[iProc+1] - nElemSend[iProc];
+        
+        /*--- Total count can include multiple pieces of data per element. ---*/
+        
+        count = countPerElem*nElem;
+        
+        /*--- Post non-blocking send for this proc. ---*/
+        
+        dest = iProc; tag = rank + 1;
+        
+        switch (commType) {
+          case COMM_TYPE_DOUBLE:
+            SU2_MPI::Isend(&(static_cast<su2double*>(bufDSend)[offset]),
+                           count, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
+                           &(sendReq[iMessage]));
+            break;
+          case COMM_TYPE_UNSIGNED_LONG:
+            SU2_MPI::Isend(&(static_cast<unsigned long*>(bufLSend)[offset]),
+                           count, MPI_UNSIGNED_LONG, dest, tag, MPI_COMM_WORLD,
+                           &(sendReq[iMessage]));
+            break;
+          case COMM_TYPE_UNSIGNED_SHORT:
+            SU2_MPI::Isend(&(static_cast<unsigned short*>(bufSSend)[offset]),
+                           count, MPI_UNSIGNED_SHORT, dest, tag, MPI_COMM_WORLD,
+                           &(sendReq[iMessage]));
+            break;
+          default:
+            break;
+        }
+        
+        /*--- Increment message counter. ---*/
+        
+        iMessage++;
+        
+      }
+    }
+    
+    int ind;
+    SU2_MPI::Status status;
+    
+    /*--- Wait for the non-blocking sends to complete. ---*/
+    
+    for (iSend = 0; iSend < nSend; iSend++)
+      SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
+    
+    /*--- Wait for the non-blocking recvs to complete. ---*/
+    
+    for (iRecv = 0; iRecv < nRecv; iRecv++)
+      SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
+  }
+  
+  delete [] sendReq;
+  delete [] recvReq;
+  
+  /*--- Now that the wall elements have been communicated, store them. ---*/
+  
+  counter = 0;
+  for (iProc = 0; iProc < size; iProc++) ProcCounter[iProc] = 0;
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+      const unsigned short RankID = geometry->node[iPoint]->GetWall_Rank();
+      if ((nElemSend[RankID+1] > nElemSend[RankID]) && (RankID != rank)) {
+        nElem = nElemSend[iProc+1] - nElemSend[iProc];
+        for (unsigned long iElem = 0; iElem < nElem; iElem++) {
+          offset = nElemSend[RankID]+iElem;
+          const unsigned long ElemID = bufLSend[offset];
+          const unsigned short MarkerID = bufSSend[offset];
+          if ((geometry->node[iPoint]->GetWall_Marker() == MarkerID) &&
+              (geometry->node[iPoint]->GetWall_Element() == ElemID)) {
+            for (unsigned short kNode = 0; kNode < 4; kNode++) {
+              nodes->SetWallDensity(iPoint, kNode, bufDRecv[countPerElem*offset+kNode]);
+              nodes->SetWallLamVisc(iPoint, kNode, bufDRecv[countPerElem*offset+kNode+4]);
+            }
+          }
+        }
+      }
+      else if (RankID == rank) {
+        const unsigned short MarkerID = geometry->node[iPoint]->GetWall_Marker();
+        const unsigned long ElemID = geometry->node[iPoint]->GetWall_Element();
+        for (unsigned short kNode = 0; kNode < geometry->bound[MarkerID][ElemID]->GetnNodes(); kNode++) {
+          const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
+          nodes->SetWallDensity(iPoint, kNode, solver[FLOW_SOL]->GetNodes()->GetDensity(kPoint));
+          nodes->SetWallLamVisc(iPoint, kNode, solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint));
+        }
+      }
+    }
+  }
+  
+  /*--- Free some memory. ---*/
+  
+  delete [] nElemSend;
+  delete [] nElemRecv;
+  delete [] bufLSend;
+  delete [] bufLRecv;
+  delete [] bufSSend;
+  delete [] bufSRecv;
+  delete [] bufDSend;
+  delete [] bufDRecv;
+  
+#else
+  
+  /*--- Serial mode. Just store the values. Easy game. ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+      const unsigned short MarkerID = geometry->node[iPoint]->GetWall_Marker();
+      const unsigned long ElemID = geometry->node[iPoint]->GetWall_Element();
+      for (unsigned short kNode = 0; kNode < geometry->bound[MarkerID][ElemID]->GetnNodes(); kNode++) {
+        const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
+        nodes->SetWallDensity(iPoint, kNode, solver[FLOW_SOL]->GetNodes()->GetDensity(kPoint));
+        nodes->SetWallLamVisc(iPoint, kNode, solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint));
+      }
+    }
+  }
+  
+#endif
+  
+}
+
+void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
                                      CGeometry         *geometry,
                                      CConfig           *config,
                                      unsigned long     iPoint,
