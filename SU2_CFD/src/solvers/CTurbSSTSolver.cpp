@@ -620,7 +620,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   }
   
   /*--- Use wall function to set omega off the wall ---*/
-  if(config->GetInnerIter() > 0) Correct_Omega_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  Correct_Omega_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
 void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
@@ -717,9 +717,9 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       conv_numerics->SetNormal(Normal);
 
       /*--- Set partial control volume ---*/
-      const unsigned long iEdge = geometry->FindEdge(iPoint,geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor());
-      conv_numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
-                                      geometry->edge[iEdge]->GetPartialVolume(1));
+//      const unsigned long iEdge = geometry->FindEdge(iPoint,geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor());
+//      conv_numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
+//                                      geometry->edge[iEdge]->GetPartialVolume(1));
 
       /*--- Grid Movement ---*/
 
@@ -1414,8 +1414,8 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
         
         /*--- Set wall values ---*/
 
-        su2double DensityWall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(kPoint);
-        su2double LamViscWall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
+        const su2double DensityWall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(kPoint);
+        const su2double LamViscWall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
 
         su2double **GradPrimVar = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(kPoint);
         su2double *Normal = geometry->vertex[val_marker][kVertex]->GetNormal();
