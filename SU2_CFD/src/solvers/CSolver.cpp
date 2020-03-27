@@ -4785,7 +4785,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
-  int desired_nodes = 5000; //TODO: create config file option
+  int desired_nodes = 1000; //TODO: create config file option
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   int firstrun = 0;
@@ -4806,9 +4806,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     }
   }
   unsigned long nsnaps = Phi.size();
-  unsigned long N = Phi[0].size();
-  unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil (nodes to add per loop)
-  unsigned long i, j, k, ii, imask, iVar, inode;
+  unsigned long i, j, k, ii, imask, iVar, inode, ivec;
   
   std::vector<double> PhiNodes;
   for (i = 0; i < nPointDomain; i++) {
@@ -4821,62 +4819,103 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     PhiNodes.push_back( sqrt(norm_phi) );
   }
   
-  const auto nodewithMax = std::distance(PhiNodes.begin(), std::max_element(PhiNodes.begin(), PhiNodes.end()) );
+  if (true) {
+  unsigned long nodewithMax = std::distance(PhiNodes.begin(), std::max_element(PhiNodes.begin(), PhiNodes.end()) );
   Mask.push_back(nodewithMax);
-  std::vector<double> masked_Phi;
-  PhiNodes.clear();
-
-  for (i = 1; i < nsnaps; i++) {
+  std::vector<double> masked_Phi, gappy_Phi, ubar_phibar;
+  std::vector<std::vector<double>> U, masked_U;
   
-    std::vector<std::vector<double>> U;
-    std::vector<std::vector<double>> masked_U;
-    std::vector<double> gappy_Phi;
-    for (j = 0; j < i; j++) {
-      U.push_back(Phi[j]);
+  
+
+  for (ivec = 1; ivec < nsnaps; ivec++) {
+    
+    U.push_back(Phi[ivec-1]);
+    
+    PhiNodes.clear();
+    gappy_Phi.clear();
+    masked_U.clear();
+    masked_Phi.clear();
+      
+    for (j = 0; j < ivec; j++) {
       masked_U.push_back({});
     }
-  
-    for (inode = 0; inode < nodestoAdd; inode++) {
-  
-      //TODO : double check efficiency - does order matter?
-      // loop through nodes to add masked Phi entries in correct order
-      for (imask = 0; imask < nPointDomain; imask++) {
-        if (MaskedNode(imask)) {
-          for (iVar = 0; iVar < nVar; iVar++) { masked_Phi.push_back(Phi[i][imask*nVar+iVar]); }
-  
-          for (j = 0; j < i; j++) {
-            for (iVar = 0; iVar < nVar; iVar++) { masked_U[j].push_back(U[j][imask*nVar+iVar]); }
-          }
-        }
-      }
-  
-      // compute gappy reconstruction
-      for (ii = 0; ii < nPointDomain; ii++) {
-        double norm_phi = 0.0;
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (j = 0; j < i; j++) {
-            for (k = 0; k < masked_Phi.size(); k++) {
-              gappy_Phi.push_back(U[ii*nVar+iVar][j] * masked_U[k][j] * masked_Phi[k]);
-            }
-          }
-          double diff = Phi[i][ii*nVar + iVar] - gappy_Phi[ii*nVar + iVar]
-          norm_phi += diff * diff;
-        }
-        PhiNodes.push_back( sqrt(norm_phi) );
-      }
+    
+    // loop through nodes to add masked Phi entries in correct order
+    for (imask = 0; imask < nPointDomain; imask++) {
+      if (MaskedNode(imask)) {
+        for (iVar = 0; iVar < nVar; iVar++) { masked_Phi.push_back(Phi[ivec][imask*nVar+iVar]); }
 
-    nodewithMax = std::distance(PhiNodes.begin(), std::max_element(PhiNodes.begin(), PhiNodes.end()) );
-    Mask.push_back(nodewithMax);
+        for (j = 0; j < ivec; j++) {
+          for (iVar = 0; iVar < nVar; iVar++) { masked_U[j].push_back(U[j][imask*nVar+iVar]); }
+        }
+      }
+    }
+      
+    // compute gappy reconstruction: GappyPhi = A*B*c
+    
+    for (ii = 0; ii < nPointDomain; ii++) {
+      double norm_phi = 0.0;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        
+        unsigned long total_index = ii*nVar+iVar;
+        gappy_Phi.push_back({});
+        ubar_phibar.clear();
+        
+        // B*c
+        for (j = 0; j < ivec; j++) {
+          ubar_phibar.push_back({});
+          for (k = 0; k < masked_Phi.size(); k++) {
+            ubar_phibar[j] += masked_U[j][k] * masked_Phi[k];
+          }
+        }
+        
+        // A*(B*c)
+        for (j = 0; j < ivec; j++) {
+          gappy_Phi[total_index] += U[j][total_index] * ubar_phibar[j];
+        }
+        
+        double diff = Phi[ivec][total_index] - gappy_Phi[total_index];
+        norm_phi += diff * diff;
+      }
+      
+      PhiNodes.push_back( sqrt(norm_phi) );
+    }
+    
+    unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil (nodes to add per loop)
+    
+    for (inode = 0; inode < nodestoAdd; inode++) {
+        
+      nodewithMax = std::distance(PhiNodes.begin(), std::max_element(PhiNodes.begin(), PhiNodes.end()) );
+      PhiNodes[nodewithMax] = -100000.0;
+      
+      if (MaskedNode(nodewithMax) == false) { Mask.push_back(nodewithMax); }
+      else { nodestoAdd++; }
+
+      //ofstream fs;
+      //std::string fname = "phi_vector_debug.csv";
+      //fs.open(fname);
+      //for(int i=0; i < (int)PhiNodes.size(); i++){
+      //  fs << PhiNodes[i] << "," << "\n" ;
+      //}
+      //fs.close();
+      //
+      //fname = "phi_gappy_debug.csv";
+      //fs.open(fname);
+      //for(int i=0; i < (int)gappy_Phi.size(); i++){
+      //  fs << gappy_Phi[i] << "," << "\n" ;
+      //}
+      //fs.close();
     }
   
   }
-  
+  }
   //// set mask to all even nodes for now
   //for (unsigned long i = 0; i < nPointDomain; i++) {
   //  //if (i % 2 == 0) {
+  //  if (i < 5000) {
   //    Mask.push_back(i);
   //    MaskNeighbors.push_back(i);
-  //  //}
+  //  }
   //}
   
   ofstream fs;
@@ -4899,9 +4938,7 @@ bool CSolver::MaskedNode(unsigned long iPoint) {
   //  std::cout << "Node " << iPoint << " is out of bounds. Returning false." << std::endl;
   //  return false;
   //}
-  //
-  //if (Mask[iPoint] == 1) return true;
-  //return false;
+
 
   if (std::find(Mask.begin(), Mask.end(), iPoint) != Mask.end())
     return true;
