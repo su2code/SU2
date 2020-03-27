@@ -620,7 +620,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   }
   
   /*--- Use wall function to set omega off the wall ---*/
-  Correct_Omega_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  if(config->GetInnerIter() > 0) Correct_Omega_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
 void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
