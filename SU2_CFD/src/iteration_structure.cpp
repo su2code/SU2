@@ -1304,6 +1304,18 @@ void CHeatIteration::Update(COutput *output,
   }
 }
 
+void CHeatIteration::Postprocess(COutput *output,
+                                 CIntegration ****integration,
+                                 CGeometry ****geometry,
+                                 CSolver *****solver,
+                                 CNumerics ******numerics,
+                                 CConfig **config,
+                                 CSurfaceMovement **surface_movement,
+                                 CVolumetricMovement ***grid_movement,
+                                 CFreeFormDefBox*** FFDBox,
+                                 unsigned short val_iZone,
+                                 unsigned short val_iInst) { }
+
 CFEAIteration::CFEAIteration(CConfig *config) : CIteration(config) { }
 CFEAIteration::~CFEAIteration(void) { }
 void CFEAIteration::Preprocess() { }

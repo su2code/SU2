@@ -2083,7 +2083,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         /*--- Gradient of the primitive variables ---*/
         numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), 
                                      NULL);
-        
+
       }
 
       /*--- Compute the streamwise periodic source residual ---*/
@@ -2099,7 +2099,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     if(!streamwise_periodic_temperature && energy) {
       //loop markers and find the "outlet marker"
-      
+
       //compute "outlet" area
       su2double Area_Local = 0.0, 
                 Area_Global = 0.0,
@@ -2118,13 +2118,13 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         /*--- Only "inlet"/master periodic marker ---*/
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
             config->GetMarker_All_PerBound(iMarker) == 1) {
-            
+
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
     
             if (geometry->node[iPoint]->GetDomain()) {
               geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal.data());
-    
+
               if (axisymmetric) {
                 if (geometry->node[iPoint]->GetCoord(1) != 0.0)
                   AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
@@ -2133,19 +2133,19 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
               } else {
                 AxiFactor = 1.0;
               }
-    
+
               /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
               FaceArea = 0.0;
               for (iDim = 0; iDim < nDim; iDim++) { FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2); }
               Area_Local += sqrt(FaceArea);
               FaceArea = sqrt(FaceArea);
               Temperature_Local += FaceArea * nodes->GetTemperature(iPoint);
-    
+
             } // if domain
           } // loop vertices
         } // loop periodic boundaries
       } // loop MarkerAll
-    
+
       // MPI Communication: Sum Area, Sum rho*A and divide by AreaGlobbal, sum massflwo
       SU2_MPI::Allreduce(&Area_Local, &Area_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       SU2_MPI::Allreduce(&Temperature_Local, &Temperature_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -2153,7 +2153,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       if(rank==MASTER_NODE && false) cout << "Source Res outlet area: " << Area_Global << endl << "Outlet Area Avg Temperature: " << Temperature_Global* config->GetTemperature_Ref() << endl;
 
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      
+
         /*--- Only "inlet"/donor periodic marker ---*/
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
             config->GetMarker_All_PerBound(iMarker) == 1) {

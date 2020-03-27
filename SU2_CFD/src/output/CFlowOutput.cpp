@@ -510,6 +510,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     su2double TotalPressure = Surface_TotalPressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_TOTALPRESS", TotalPressure, iMarker_Analyze);
     Tot_Surface_TotalPressure += TotalPressure;
+    config->SetSurface_TotalPressure(0, Tot_Surface_TotalPressure); //TK:: otherwise the OBJ_FUNCTION SURFACE_TOTAL_PRESSURE cannot be used in singlezonem mode
 
   }
 
