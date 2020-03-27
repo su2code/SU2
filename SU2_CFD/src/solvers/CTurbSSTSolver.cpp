@@ -1390,7 +1390,6 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
   su2double *weights;
   
   /*--- Communicate values needed for WF ---*/
-  cout << "Before WF comms" << endl;
   WF_Comms(geometry, solver, config);
   
   /*--- Set TauWall_WF ---*/
@@ -1525,7 +1524,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
         counter++;
       }
     }
-    nodes->InitializeWallSolution(counter);
+    if (counter > 0) nodes->InitializeWallSolution(counter);
     counter = 0;
   }
   
