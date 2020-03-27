@@ -91,7 +91,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-12.137879, -6.705803, 0.300000, 0.019470] #last 4 columns
+    fixedCL_naca0012.test_vals = [-12.137437, -6.705109, 0.300000, 0.019470] #last 4 columns
     fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
@@ -243,7 +243,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-12.078361, -16.147829, 1.064326, 0.019770] #last 4 columns
+    turb_naca0012_sa.test_vals = [-12.078401, -16.147829, 1.064326, 0.019770] #last 4 columns
     turb_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
@@ -792,7 +792,7 @@ def main():
     unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
     unst_inc_turb_naca0015_sa.cfg_file  = "config_incomp_turb_sa.cfg"
     unst_inc_turb_naca0015_sa.test_iter = 1
-    unst_inc_turb_naca0015_sa.test_vals = [-2.990702, -6.861616, 1.475736, 0.419771] #last 4 columns
+    unst_inc_turb_naca0015_sa.test_vals = [-2.990703, -6.865923, 1.475736, 0.419770] #last 4 columns
     unst_inc_turb_naca0015_sa.su2_exec  = "parallel_computation.py -f"
     unst_inc_turb_naca0015_sa.timeout   = 1600
     unst_inc_turb_naca0015_sa.tol       = 0.00001
@@ -976,7 +976,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.610348, -1.955395] #last 4 columns
+    bars_SST_2D.test_vals = [13.000000, -0.598555, -1.879082] #last 4 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
