@@ -1417,43 +1417,43 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
         const su2double DensityWall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(kPoint);
         const su2double LamViscWall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
 
-//        su2double **GradPrimVar = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(kPoint);
-//        su2double *Normal = geometry->vertex[val_marker][kVertex]->GetNormal();
-//
-//        Area = 0.;
-//        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-//        for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-//
-//        su2double DivVel = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++) DivVel += GradPrimVar[iDim+1][iDim];
-//
-//        for (iDim = 0; iDim < nDim; iDim++) {
-//          for (jDim = 0 ; jDim < nDim; jDim++) {
-//            Tau[iDim][jDim] = LamViscWall*(  GradPrimVar[jDim+1][iDim]
-//                                           + GradPrimVar[iDim+1][jDim] ) -
-//            TWO3*LamViscWall*DivVel*Delta[iDim][jDim];
-//          }
-//          TauElem[iDim] = 0.0;
-//          for (jDim = 0; jDim < nDim; jDim++)
-//            TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
-//        }
-//
-//        /*--- Compute wall shear stress as the magnitude of the wall-tangential
-//         component of the shear stress tensor---*/
-//
-//        TauNormal = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          TauNormal += TauElem[iDim] * UnitNormal[iDim];
-//
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-//
-//        su2double TauWall = 0.;
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          TauWall += TauTangent[iDim]*TauTangent[iDim];
-//        TauWall = sqrt(TauWall);
+        su2double **GradPrimVar = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(kPoint);
+        su2double *Normal = geometry->vertex[val_marker][kVertex]->GetNormal();
+
+        Area = 0.;
+        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+        for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+
+        su2double DivVel = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) DivVel += GradPrimVar[iDim+1][iDim];
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          for (jDim = 0 ; jDim < nDim; jDim++) {
+            Tau[iDim][jDim] = LamViscWall*(  GradPrimVar[jDim+1][iDim]
+                                           + GradPrimVar[iDim+1][jDim] ) -
+            TWO3*LamViscWall*DivVel*Delta[iDim][jDim];
+          }
+          TauElem[iDim] = 0.0;
+          for (jDim = 0; jDim < nDim; jDim++)
+            TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+        }
+
+        /*--- Compute wall shear stress as the magnitude of the wall-tangential
+         component of the shear stress tensor---*/
+
+        TauNormal = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          TauNormal += TauElem[iDim] * UnitNormal[iDim];
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+
+        su2double TauWall = 0.;
+        for (iDim = 0; iDim < nDim; iDim++)
+          TauWall += TauTangent[iDim]*TauTangent[iDim];
+        TauWall = sqrt(TauWall);
         
-        const su2double TauWall = solver_container[FLOW_SOL]->GetNodes()->GetTauWall(kPoint);
+//        const su2double TauWall = solver_container[FLOW_SOL]->GetNodes()->GetTauWall(kPoint);
         
         DensityWallItp += DensityWall*weights[kNode];
         LamViscWallItp += LamViscWall*weights[kNode];
@@ -1469,7 +1469,7 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
       Solution[0] = Omega * eddy_viscosity;
       Solution[1] = density*Omega;
 
-      for (iVar = 0; iVar < nVar; iVar++) {
+      for (iVar = 1; iVar < nVar; iVar++) {
         Solution[iVar] = min(max(Solution[iVar]/density, lowerlimit[iVar]), upperlimit[iVar])*density;
         nodes->SetSolution_Old(jPoint,iVar,Solution[iVar]);
         nodes->SetSolution(jPoint,iVar,Solution[iVar]);
