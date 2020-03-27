@@ -1813,9 +1813,6 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
   
   /*--- Now that the wall elements have been communicated, store them. ---*/
   
-  counter = 0;
-  for (iProc = 0; iProc < size; iProc++) ProcCounter[iProc] = 0;
-  
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
       const unsigned short RankID = geometry->node[iPoint]->GetWall_Rank();
