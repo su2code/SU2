@@ -1518,7 +1518,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
   
   /*--- Initialize the wall index map and solution matrices on the first iteration. ---*/
   if (config->GetInnerIter() == 0) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
         nodes->SetWallMap(iPoint,counter);
         counter++;
@@ -1548,7 +1548,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
 
   /*--- Loop through all of our nodes and track our sends with each rank. ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
 
       /*--- Get the source rank and number of points to send. ---*/
@@ -1634,7 +1634,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
       unsigned long *ProcCounter = new unsigned long[size];
       for (iProc = 0; iProc < size; iProc++) ProcCounter[iProc] = 0;
       
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
         if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
           const unsigned short RankID = geometry->node[iPoint]->GetWall_Rank();
           if ((nElemSend[RankID+1] > nElemSend[RankID]) && (RankID != rank)) {
@@ -1813,7 +1813,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
   
   /*--- Now that the wall elements have been communicated, store them. ---*/
   
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
       const unsigned short RankID = geometry->node[iPoint]->GetWall_Rank();
       if ((nElemSend[RankID+1] > nElemSend[RankID]) && (RankID != rank)) {
@@ -1857,7 +1857,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
 #else
   
   /*--- Serial mode. Just store the values. Easy game. ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
       const unsigned short MarkerID = geometry->node[iPoint]->GetWall_Marker();
       const unsigned long ElemID = geometry->node[iPoint]->GetWall_Element();
