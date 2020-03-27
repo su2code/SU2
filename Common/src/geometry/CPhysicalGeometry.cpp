@@ -5645,7 +5645,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 //          }
 //        }
 //      }
-      if (node[iPoint]->GetDomain() && !node[iPoint]->GetSolidBoundary()) {
+      if (!node[iPoint]->GetSolidBoundary()) {
         for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
           const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
           if (node[jPoint]->GetSolidBoundary()) {
