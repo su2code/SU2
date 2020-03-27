@@ -1803,21 +1803,28 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
     int ind;
     SU2_MPI::Status status;
     
-    /*--- Wait for the non-blocking sends to complete. ---*/
-    
-    for (iSend = 0; iSend < nSend; iSend++)
-      if (commType != COMM_TYPE_DOUBLE)
+    if (commType != COMM_TYPE_DOUBLE) {
+      /*--- Wait for the non-blocking sends to complete. ---*/
+      
+      for (iSend = 0; iSend < nSend; iSend++)
         SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
-      else
-        SU2_MPI::Waitany(nSend, recvReq, &ind, &status);
-    
-    /*--- Wait for the non-blocking recvs to complete. ---*/
-    
-    for (iRecv = 0; iRecv < nRecv; iRecv++)
-      if (commType != COMM_TYPE_DOUBLE)
+      
+      /*--- Wait for the non-blocking recvs to complete. ---*/
+      
+      for (iRecv = 0; iRecv < nRecv; iRecv++)
         SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
-      else
-        SU2_MPI::Waitany(nRecv, sendReq, &ind, &status);
+    }
+    else {
+      /*--- Wait for the non-blocking sends to complete. ---*/
+      
+      for (iRecv = 0; iRecv < nRecv; iSend++)
+        SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
+      
+      /*--- Wait for the non-blocking recvs to complete. ---*/
+      
+      for (iSend = 0; iSend < nSend; iSend++)
+        SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
+    }
   }
   
   delete [] sendReq;
