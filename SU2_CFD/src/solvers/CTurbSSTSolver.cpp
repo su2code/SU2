@@ -535,23 +535,23 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Divergence of turbulent variable gradients ---*/
     
-    DivTurbVarGrad[0] = DivTurbVarGrad[1] = 0.;
-    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-      iEdge = geometry->FindEdge(iPoint,jPoint);
-      Normal = geometry->edge[iEdge]->GetNormal();
-      for (iDim = 0; iDim < nDim; iDim++) {
-        if (iPoint < jPoint) {
-          DivTurbVarGrad[0] += nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
-          DivTurbVarGrad[1] += nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
-        }
-        else {
-          DivTurbVarGrad[0] -= nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
-          DivTurbVarGrad[1] -= nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
-        }
-      }
-    }
-    numerics->SetDivTurbVarGrad(DivTurbVarGrad, NULL);
+//    DivTurbVarGrad[0] = DivTurbVarGrad[1] = 0.;
+//    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+//      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+//      iEdge = geometry->FindEdge(iPoint,jPoint);
+//      Normal = geometry->edge[iEdge]->GetNormal();
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        if (iPoint < jPoint) {
+//          DivTurbVarGrad[0] += nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
+//          DivTurbVarGrad[1] += nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
+//        }
+//        else {
+//          DivTurbVarGrad[0] -= nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
+//          DivTurbVarGrad[1] -= nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
+//        }
+//      }
+//    }
+//    numerics->SetDivTurbVarGrad(DivTurbVarGrad, NULL);
 
     /*--- Compute the source term ---*/
 
@@ -577,7 +577,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
-  su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
+  su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1 = constants[4];
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -599,12 +599,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
       laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
 
-      beta_1 = constants[4];
-
-      // Solution[0] = 0.0;
-      // Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
       Solution[0] = 0.0;
       Solution[1] = 60.0*laminar_viscosity/(beta_1*distance*distance+EPS*EPS);
+      Solution[1] = min(max(Solution[1]/density, lowerlimit[1]), upperlimit[1])*density;
 
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
