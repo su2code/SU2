@@ -1800,28 +1800,32 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
     
     SU2_MPI::Waitall(nSend, sendReq, MPI_STATUS_IGNORE);
     
+    if (commType == COMM_TYPE_DOUBLE) cout << "Rank = " << rank << ", COMM_TYPE_DOUBLE" << endl;
+    else if (commType == COMM_TYPE_UNSIGNED_LONG) cout << "Rank = " << rank << ", COMM_TYPE_UNSIGNED_LONG" << endl;
+    else if (commType == COMM_TYPE_UNSIGNED_SHORT) cout << "Rank = " << rank << ", COMM_TYPE_UNSIGNED_SHORT" << endl;
+    
 //    int ind;
 //    SU2_MPI::Status status;
-//    
+//
 //    if (commType != COMM_TYPE_DOUBLE) {
 //      /*--- Wait for the non-blocking sends to complete. ---*/
-//      
+//
 //      for (iSend = 0; iSend < nSend; iSend++)
 //        SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
-//      
+//
 //      /*--- Wait for the non-blocking recvs to complete. ---*/
-//      
+//
 //      for (iRecv = 0; iRecv < nRecv; iRecv++)
 //        SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
 //    }
 //    else {
 //      /*--- Wait for the non-blocking sends to complete. ---*/
-//      
+//
 //      for (iRecv = 0; iRecv < nRecv; iRecv++)
 //        SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
-//      
+//
 //      /*--- Wait for the non-blocking recvs to complete. ---*/
-//      
+//
 //      for (iSend = 0; iSend < nSend; iSend++)
 //        SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
 //    }
@@ -1874,7 +1878,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
   delete [] bufDRecv;
   
 #else
-  
+
   /*--- Serial mode. Just store the values. Easy game. ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
@@ -1887,7 +1891,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
       }
     }
   }
-  
+
 #endif
   
 }
