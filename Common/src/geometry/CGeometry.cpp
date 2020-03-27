@@ -4126,21 +4126,45 @@ vector<vector<su2double>> CGeometry::ReadThicknessConstraints(string filename){
 }
 
 vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config){
-  unsigned short iFile, iMarker, iLoc, iM, dim, dir;
-  unsigned long iElem, iPoint, jPoint;
+  unsigned short iFile, iLoc, iM, dim, dir;
+  short iMarker;
+  unsigned long iElem, iPoint, jPoint, totalLocs = 0, iInt;
   su2double loc_val;
   vector<string> filenames = config->GetThickness_Constraint_FileNames();
   vector<string> directions = config->GetThickness_Constraint_Directions();
   vector<vector<string>> markers = config->GetThickness_Constraint_Markers();
-  vector <su2double> points;
+  vector<vector<su2double>> points;
+  vector<vector<unsigned long>> ids;
+  vector<vector<vector<su2double>>> locs;
+  vector<unsigned long> nLocs;
   vector<vector<su2double>> thickness;
-  thickness.resize(filenames.size(),{});
+  vector<su2double> Coords;
+  vector<unsigned long> Locations;
+  vector<unsigned long> ElemGlobalID;
+
+  locs.resize(filenames.size(), {});
+  nLocs.resize(filenames.size(), 0);
+  thickness.resize(filenames.size(), {});
   ofstream thickness_file;
 
+#ifdef HAVE_MPI
+  unsigned long nLocalIntersection, MaxLocalIntersection, *Buffer_Send_nIntersection, *Buffer_Receive_nIntersection, nBuffer_Coord, nBuffer_Location, nBuffer_GlobalID;
+  int nProcessor, iProcessor;
+  su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
+  unsigned long *Buffer_Send_GlobalID, *Buffer_Receive_GlobalID, *Buffer_Send_Location, *Buffer_Receive_Location;
+#endif
+
   for (iFile = 0; iFile < filenames.size(); iFile++){
-    vector<vector<su2double>> locs; 
-    locs = ReadThicknessConstraints(filenames[iFile]);
-    thickness[iFile].resize(locs.size(),0.0);
+
+    /* --- Read thickness file --- */
+    
+    locs[iFile] = ReadThicknessConstraints(filenames[iFile]);
+    nLocs[iFile] = locs[iFile].size();
+    totalLocs += nLocs[iFile];
+
+    /* --- Set dim to correspond to the dimension index that defines the location.
+            dir is set to the dimension index that is used to calculate thickness.  --- */
+
     if (directions[iFile].compare("x") == 0){
       dim = 1;
       dir = 0;
@@ -4152,85 +4176,223 @@ vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config){
     else {
       SU2_MPI::Error("Z direction specified for 2D problem", CURRENT_FUNCTION);
     }
-    // switch (directions[iFile]) {
-    //   case "x":   dim = 1; dir = 0; break;
-    //   case "y":   dim = 0; dir = 1; break;
-    //   default:  SU2_MPI::Error("Z direction specified for 2D problem", CURRENT_FUNCTION); break;
-    // }
 
-    for (iLoc = 0; iLoc < locs.size(); iLoc++){
-      points.clear();
-      loc_val = locs[iLoc][0];
+    /* --- Loop through all the locations defined in the file --- */
+
+    for (iLoc = 0; iLoc < nLocs[iFile]; iLoc++){
+
+      /* --- Store the coordinate location of thickness evaluation --- */
+
+      loc_val = locs[iFile][iLoc][0];
+
+      /* --- Loop through markers used to calculate thickness --- */
+
       for(iM = 0; iM < markers[iFile].size(); iM++){
-        iMarker = config->GetMarker_CfgFile_TagBound(markers[iFile][iM]);
+
+        /* --- Find local index of marker --- */
+
+        iMarker = config->GetMarker_All_TagBound(markers[iFile][iM]);
+        if (iMarker == -1) break; // Marker doesn't exist on current rank
+
+        /* --- Loop through all elements in marker to find intersections with thickness location --- */
+        
         for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+
+          /* --- In 2D, finding intersections is simple. Need to check if location coordinate
+                  is in between the two nodes that define the line element on a marker --- */
+
           iPoint = bound[iMarker][iElem]->GetNode(0);
           jPoint = bound[iMarker][iElem]->GetNode(1);
           bool inElem = (node[iPoint]->GetCoord(dim) < loc_val && loc_val < node[jPoint]->GetCoord(dim)) ||
                         (node[jPoint]->GetCoord(dim) < loc_val && loc_val < node[iPoint]->GetCoord(dim));
+          
           if (inElem) {
+
+            /* --- If intersection is found, calculate the exact location of intersection 
+                    using the slope of the line element --- */
+
             su2double p = node[iPoint]->GetCoord(dir) + (loc_val - node[iPoint]->GetCoord(dim)) * 
                           (node[jPoint]->GetCoord(dir) - node[iPoint]->GetCoord(dir)) / 
                           (node[jPoint]->GetCoord(dim) - node[iPoint]->GetCoord(dim));
-            points.push_back(p);
+
+            /* --- Store relevant data for MPI communications. Location index is offset by 
+                    locations of any previous files that might have been used --- */
+
+            Coords.push_back(p);
+            Locations.push_back(totalLocs - nLocs[iFile] + iLoc);
+            ElemGlobalID.push_back(bound[iMarker][iElem]->GetGlobalElemID());
           }
         }
       }
-      if (points.size() == 1) {
-        SU2_MPI::Error(string("For file ") + to_string(iFile) + string(", Location ") + to_string(iLoc) +
-                       string(", geometry is only intersected once"), CURRENT_FUNCTION);
-      }
-      else if (points.size() == 2){
-        thickness[iFile][iLoc] = abs(points[0]-points[1]);
-      }
-      else if (points.size() > 2){
-        SU2_MPI::Error(string("For file ") + to_string(iFile) + string(", Location ") + to_string(iLoc) +
-                       string(", geometry is intersected more than twice"), CURRENT_FUNCTION);
-      }
     }
   }
-  for (iFile = 0; iFile < filenames.size(); iFile++){
-    vector<vector<su2double>> locs; 
-    locs = ReadThicknessConstraints(filenames[iFile]);
-    if (config->GetTabular_FileFormat() == TAB_CSV) {
-      string fn = "thickness_" + to_string(iFile) + ".csv";
-      thickness_file.open(fn, ios::out);
-      if (config->GetSystemMeasurements() == US){
-        if (directions[iFile].compare("x") == 0)
-          thickness_file << "\"y (in)\",\"Thickness (in)\"" << endl;
-        else
-          thickness_file << "\"x (in)\",\"Thickness (in)\"" << endl;
-      }
-      else{
-        if (directions[iFile].compare("x") == 0)
-          thickness_file << "\"y (m)\",\"Thickness (m)\"" << endl;
-        else
-          thickness_file << "\"x (m)\",\"Thickness (m)\"" << endl;
-      }
-    }
-    else {
-      string fn = "thickness_" + to_string(iFile) + ".dat";
-      thickness_file.open(fn, ios::out);
-      thickness_file << "TITLE = \"Thickness values\"" << endl;
 
-      if (config->GetSystemMeasurements() == US){
-        if (directions[iFile].compare("x") == 0)
-          thickness_file << "VARIABLES = \"y (in)\",\"Thickness (in)\"" << endl;
-        else
-          thickness_file << "VARIABLES = \"x (in)\",\"Thickness (in)\"" << endl;
-      }
-      else{
-        if (directions[iFile].compare("x") == 0)
-          thickness_file << "VARIABLES = \"y (m)\",\"Thickness (m)\"" << endl;
-        else
-          thickness_file << "VARIABLES = \"x (m)\",\"Thickness (m)\"" << endl;
-      }
-      thickness_file << "ZONE T= \"Thicknesses\"" << endl;
-    }
-    for (iLoc = 0; iLoc < locs.size(); iLoc++){
-      thickness_file << locs[iLoc][0] << ", " << thickness[iFile][iLoc]/2 << endl;
-    }
-    thickness_file.close();
+  // for (iLoc = 0; iLoc < Locations.size(); iLoc++){
+  //   cout << "iLoc = " << iLoc << " Location = " << Locations[iLoc] << " Coords = " << Coords[iLoc] << " ElemGlobalID = " << ElemGlobalID[iLoc] << endl;
+  // }
+
+#ifdef HAVE_MPI
+
+  /*--- Copy the intersection coordinates and associated element IDs and thickness location to the master node ---*/
+  nLocalIntersection = 0, MaxLocalIntersection = 0;
+  nProcessor = size;
+
+  Buffer_Send_nIntersection = new unsigned long [1];
+  Buffer_Receive_nIntersection = new unsigned long [nProcessor];
+
+  nLocalIntersection = Coords.size();
+
+  Buffer_Send_nIntersection[0] = nLocalIntersection;
+
+  SU2_MPI::Allreduce(&nLocalIntersection, &MaxLocalIntersection, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_nIntersection, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nIntersection, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+  Buffer_Send_Coord    = new su2double [MaxLocalIntersection];
+  Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalIntersection];
+
+  Buffer_Send_Location    = new unsigned long [MaxLocalIntersection];
+  Buffer_Receive_Location = new unsigned long [nProcessor*MaxLocalIntersection];
+
+  Buffer_Send_GlobalID    = new unsigned long [MaxLocalIntersection];
+  Buffer_Receive_GlobalID = new unsigned long [nProcessor*MaxLocalIntersection];
+
+  nBuffer_Coord    = MaxLocalIntersection;
+  nBuffer_Location = MaxLocalIntersection;
+  nBuffer_GlobalID = MaxLocalIntersection;
+
+  for (iInt = 0; iInt < nLocalIntersection; iInt++) {
+    Buffer_Send_Coord[iInt] = Coords[iInt];
+    Buffer_Send_Location[iInt] = Locations[iInt];
+    Buffer_Send_GlobalID[iInt] = ElemGlobalID[iInt];
   }
+
+  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_Location, nBuffer_Location, MPI_UNSIGNED_LONG, Buffer_Receive_Location, nBuffer_Location, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_GlobalID, nBuffer_GlobalID, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalID, nBuffer_GlobalID, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+  /*--- Clean the vectors before adding the new intersections only to the master node ---*/
+
+  if (rank == MASTER_NODE) {
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      for (iInt = 0; iInt < Buffer_Receive_nIntersection[iProcessor]; iInt++) {
+        Coords.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalIntersection + iInt ]);
+        Locations.push_back( Buffer_Receive_Location[ iProcessor*MaxLocalIntersection + iInt ]);
+        ElemGlobalID.push_back( Buffer_Receive_GlobalID[ iProcessor*MaxLocalIntersection + iInt ]);
+      }
+    }
+  }
+
+  delete[] Buffer_Send_Coord;             delete[] Buffer_Receive_Coord;
+  delete[] Buffer_Send_Location;          delete[] Buffer_Receive_Location;
+  delete[] Buffer_Send_GlobalID;          delete[] Buffer_Receive_GlobalID;
+  delete[] Buffer_Send_nIntersection;     delete[] Buffer_Receive_nIntersection;
+
+#endif
+
+  points.resize(totalLocs, {});
+  ids.resize(totalLocs, {});
+  
+  if ((rank == MASTER_NODE) && (Coords.size() != 0)) {
+
+    /* --- Store points and IDs in a vector according to the thickness location 
+            that is associated with them --- */
+
+    for (iInt = 0; iInt < Coords.size(); iInt++){
+      points[Locations[iInt]].push_back(Coords[iInt]);
+      ids[Locations[iInt]].push_back(ElemGlobalID[iInt]);
+    }
+
+    /* --- Remove any duplicate intersection points for a location --- */
+    bool remove;
+    for (iLoc = 0; iLoc < totalLocs; iLoc++){
+      do{
+        remove = false;
+        for(iPoint = 0; iPoint < ids[iLoc].size(); iPoint++){
+          for(jPoint = iPoint+1; jPoint < ids[iLoc].size(); jPoint++){
+            if (abs(points[iLoc][iPoint] - points[iLoc][jPoint]) < 1e-6){
+              remove = true;
+              ids[iLoc].erase(ids[iLoc].begin() + jPoint);
+              points[iLoc].erase(points[iLoc].begin() + jPoint);
+              break;
+            }
+          }
+          if (remove) {
+            break;
+          }
+        }
+      } while (remove == true);
+    }
+
+    /* --- Calculate thicknesses at all locations --- */
+
+    totalLocs = 0;
+    for (iFile = 0; iFile < filenames.size(); iFile++){
+      totalLocs += nLocs[iFile];
+      thickness[iFile].resize(nLocs[iFile],0.0);
+      for (iLoc = 0; iLoc < nLocs[iFile]; iLoc++){
+
+        /* --- Each location should have 2 intersection points to calculate thickness
+                TODO: Deal with symmetry planes --- */
+
+        unsigned long ind = totalLocs - nLocs[iFile] + iLoc;
+        if (points[ind].size() == 1) {
+          SU2_MPI::Error(string("For file ") + to_string(iFile) + string(", Location ") + to_string(iLoc) +
+                         string(", geometry is only intersected once"), CURRENT_FUNCTION);
+        }
+        else if (points[ind].size() == 2){
+          thickness[iFile][iLoc] = abs(points[ind][0]-points[ind][1]);
+        }
+        else if (points[ind].size() > 2){
+          SU2_MPI::Error(string("For file ") + to_string(iFile) + string(", Location ") + to_string(iLoc) +
+                         string(", geometry is intersected more than twice"), CURRENT_FUNCTION);
+        }
+      }
+    }
+
+    /* --- Print thickness values to a file --- */
+
+    for (iFile = 0; iFile < filenames.size(); iFile++){
+      if (config->GetTabular_FileFormat() == TAB_CSV) {
+        string fn = "thickness_" + to_string(iFile) + ".csv";
+        thickness_file.open(fn, ios::out);
+        if (config->GetSystemMeasurements() == US){
+          if (directions[iFile].compare("x") == 0)
+            thickness_file << "\"y (in)\",\"Thickness (in)\"" << endl;
+          else
+            thickness_file << "\"x (in)\",\"Thickness (in)\"" << endl;
+        }
+        else{
+          if (directions[iFile].compare("x") == 0)
+            thickness_file << "\"y (m)\",\"Thickness (m)\"" << endl;
+          else
+            thickness_file << "\"x (m)\",\"Thickness (m)\"" << endl;
+        }
+      }
+      else {
+        string fn = "thickness_" + to_string(iFile) + ".dat";
+        thickness_file.open(fn, ios::out);
+        thickness_file << "TITLE = \"Thickness values\"" << endl;
+
+        if (config->GetSystemMeasurements() == US){
+          if (directions[iFile].compare("x") == 0)
+            thickness_file << "VARIABLES = \"y (in)\",\"Thickness (in)\"" << endl;
+          else
+            thickness_file << "VARIABLES = \"x (in)\",\"Thickness (in)\"" << endl;
+        }
+        else{
+          if (directions[iFile].compare("x") == 0)
+            thickness_file << "VARIABLES = \"y (m)\",\"Thickness (m)\"" << endl;
+          else
+            thickness_file << "VARIABLES = \"x (m)\",\"Thickness (m)\"" << endl;
+        }
+        thickness_file << "ZONE T= \"Thicknesses\"" << endl;
+      }
+      for (iLoc = 0; iLoc < nLocs[iFile]; iLoc++){
+        thickness_file << locs[iFile][iLoc][0] << ", " << thickness[iFile][iLoc] << endl;
+      }
+      thickness_file.close();
+    }
+  }
+ 
   return thickness;
 }
