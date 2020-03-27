@@ -1798,6 +1798,10 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
       }
     }
     
+    if (commType == COMM_TYPE_DOUBLE) cout << "Rank = " << rank << ", Before COMM_TYPE_DOUBLE" << endl;
+    else if (commType == COMM_TYPE_UNSIGNED_LONG) cout << "Rank = " << rank << ", Before COMM_TYPE_UNSIGNED_LONG" << endl;
+    else if (commType == COMM_TYPE_UNSIGNED_SHORT) cout << "Rank = " << rank << ", Before COMM_TYPE_UNSIGNED_SHORT" << endl;
+    
     SU2_MPI::Waitall(nSend, sendReq, MPI_STATUS_IGNORE);
     
     if (commType == COMM_TYPE_DOUBLE) cout << "Rank = " << rank << ", COMM_TYPE_DOUBLE" << endl;
