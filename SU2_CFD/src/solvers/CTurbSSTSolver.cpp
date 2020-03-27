@@ -1387,7 +1387,7 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
             UnitNormal[3] = {0.0,0.0,0.0}, Area;
   su2double *weights;
 
-  for (jPoint = 0; jPoint < nPoint; jPoint++) {
+  for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if ((geometry->node[jPoint]->GetBool_Wall_Neighbor()) &&
         (geometry->node[jPoint]->GetWall_Marker() != -1) &&
