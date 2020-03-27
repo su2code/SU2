@@ -226,6 +226,16 @@ int main(int argc, char *argv[]) {
   /*--- Create the point-to-point MPI communication structures. ---*/
   geometry_container[ZONE_0]->PreprocessP2PComms(geometry_container[ZONE_0], config_container[ZONE_0]);
   
+  /* --- Read Thickness constraint locations --- */
+  // string Thickness_Constraint_Filename = config->GetThickness_Constraint_FileName();
+  // vector<vector<su2double>> thicc = geometry_container[ZONE_0]->ReadThicknessConstraints(Thickness_Constraint_Filename);
+  
+  vector<vector<su2double>> thicc = geometry_container[ZONE_0]->CalculateThickness2D(config_container[ZONE_0]);
+  for (unsigned int i = 0; i < thicc.size(); i++) {
+    for (unsigned int j = 0; j < thicc[i].size(); j++)
+      cout << thicc[i][j] << " ";
+    cout << endl;
+  }
   /*--- Create plane structure ---*/
   
   if (rank == MASTER_NODE) cout << "Set plane structure." << endl;
