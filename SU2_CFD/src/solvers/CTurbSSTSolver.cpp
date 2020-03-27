@@ -1461,12 +1461,14 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
       }
       
       su2double U_Tau = sqrt(TauWallItp / DensityWallItp);
+      su2double k     = nodes->GetPrimitive(jPoint, 0);
 
       su2double Omega_i = 6. * LamViscWallItp / (beta_1 * DensityWallItp * pow(distance, 2.0) + EPS*EPS);
-      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance + EPS);
+//      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance + EPS);
+      su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance + EPS);
       su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
       
-      Solution[0] = Omega * eddy_viscosity;
+//      Solution[0] = Omega * eddy_viscosity;
       Solution[1] = density*Omega;
 
       for (iVar = 1; iVar < nVar; iVar++) {
