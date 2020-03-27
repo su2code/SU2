@@ -1468,6 +1468,7 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
       Solution[1] = density*Omega;
 
       for (iVar = 0; iVar < nVar; iVar++) {
+        Solution[iVar] = min(max(Solution[iVar]/density, lowerlimit[iVar]), upperlimit[iVar])*density;
         nodes->SetSolution_Old(jPoint,iVar,Solution[iVar]);
         nodes->SetSolution(jPoint,iVar,Solution[iVar]);
         LinSysRes.SetBlock_Zero(jPoint,iVar);
