@@ -1453,7 +1453,7 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry *geometry, CSolver **solver_cont
 //          TauWall += TauTangent[iDim]*TauTangent[iDim];
 //        TauWall = sqrt(TauWall);
         
-        TauWall = solver_container[FLOW_SOL]->GetNodes()->GetTauWall(kPoint);
+        const su2double TauWall = solver_container[FLOW_SOL]->GetNodes()->GetTauWall(kPoint);
         
         DensityWallItp += DensityWall*weights[kNode];
         LamViscWallItp += LamViscWall*weights[kNode];
