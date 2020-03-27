@@ -2146,3 +2146,168 @@ public:
     this->doubleInfo = NULL;
   }
 };
+
+class COptionThicknessConstraint : public COptionBase {
+  string name;
+  vector<string> & filenames;
+  unsigned short & nFile;
+  vector<unsigned short> & nMarkers;
+  vector<vector<string>> & markers;
+  vector<string> & directions;
+  unsigned short skip = 2; // 2 fields are skipped in the nMarker counting (filename and direction)
+
+public:
+  COptionThicknessConstraint(string val_name, vector<string> & val_filenames, 
+                             unsigned short & val_nFile,
+                             vector<unsigned short> & val_nMarkers,
+                             vector<vector<string>> & val_markers,
+                             vector<string> & val_directions) : 
+                             filenames(val_filenames), nFile(val_nFile),
+                             nMarkers(val_nMarkers), markers(val_markers),
+                             directions(val_directions) {
+    this->name = val_name;
+  }
+
+  ~COptionThicknessConstraint() {};
+
+  string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
+    if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
+      SetDefault();
+      return "";
+    }
+
+    // Not enough fields to specify filename, direction, and markers
+    if (option_value.size() <= skip){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": not enough fields. Must specify filename,\ndirection, and atleast 1 marker to apply thickness constraints.");
+      return newstring;
+    }
+
+    // Cannot have ; at the beginning or the end
+    if (option_value[0].compare(";") == 0) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": may not have beginning semicolon.");
+      return newstring;
+    }
+    if (option_value[option_value.size()-1].compare(";") == 0) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": may not have ending semicolon.");
+      return newstring;
+    }
+
+
+    // use the ";" token to determine the number of thickness constraint filenames
+    // This works because semicolon is not one of the delimiters in tokenize string
+    this->nFile = 0;
+    vector<unsigned short> semicol_pos;
+    for (unsigned short i = 0; i < static_cast<unsigned short>(option_value.size()); i++) {
+      if (option_value[i].compare(";") == 0) {
+        this->nFile++;
+
+        // Store semicolon position (used to calculate nMarkers)
+        semicol_pos.push_back(i);
+      }
+    }
+
+    // One more file than semicolon, resize all fields accordingly 
+    this->nFile++;
+    this->directions.resize(nFile,"");
+    this->filenames.resize(nFile,"");
+    this->nMarkers.resize(nFile,0);
+    this->markers.resize(nFile,{});
+
+    // fake a semicolon at the end of the list    
+    semicol_pos.push_back(option_value.size()); 
+
+    /* --- Calculate the number of markers that each file is applied too --- */
+    
+    this->nMarkers[0] = semicol_pos[0] - skip;
+
+    for (unsigned short i = 1; i < static_cast<unsigned short>(semicol_pos.size()); i++) {
+      unsigned nM = semicol_pos[i] - semicol_pos[i-1];
+      nM = nM - skip - 1; // -1 to account for semicolon position
+      this->nMarkers[i] = nM;
+    }
+
+    /* --- Sort filenames, directions, and markers that they are applied too --- */
+
+    this->filenames[0] = option_value[0];
+    this->directions[0] = option_value[1];
+    for (unsigned short i = 0; i < nMarkers[0]; i++) {
+      this->markers[0].push_back(option_value[i+skip]);
+    }
+
+    for (unsigned short i = 0; i < static_cast<unsigned short>(semicol_pos.size()-1); i++) {
+      this->filenames[i+1] = option_value[semicol_pos[i]+1];
+      this->directions[i+1] = option_value[semicol_pos[i]+2];
+      for (unsigned short j = 0; j < nMarkers[i+1]; j++) {
+        this->markers[i+1].push_back(option_value[semicol_pos[i]+skip+1+j]);
+      }
+    }
+
+    /* --- Checks for the option definition --- */
+
+    for (unsigned short i = 0; i < nFile; i++){
+      string checkDir = CheckDirection(directions[i]);
+      if (!checkDir.empty()) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(": direction specified for file number ");
+        newstring.append(to_string(i+1));
+        newstring.append(" is invalid.");
+        return newstring;
+      }
+
+      if (nMarkers[i] < 1){
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(": no markers specified for file number ");
+        newstring.append(to_string(i+1));
+        newstring.append(". Must \nspecify atleast 1 marker for each thickness constraint file.");
+        return newstring;
+      }
+    }
+
+    // Testing
+
+    // for (unsigned short i = 0; i < nFile; i++){
+    //   cout<< "Filename number " << i << " = " << filenames[i] << endl;
+    //   cout<< "Direction "<< directions[i] << endl;
+    //   cout<< "Number of associated markers = " << nMarkers[i] << endl;
+    //   cout << "Marker names = ";
+    //   for (unsigned short j = 0; j < nMarkers[i]; j++){
+    //     cout << markers[i][j] <<", ";
+    //   }
+    //   cout << endl << endl;
+    // }
+    
+
+    // Need to return something...
+    return "";
+  }
+
+  void SetDefault() {
+    this->filenames.clear();
+    this->nFile=0;
+    this->nMarkers.clear();
+    this->markers.clear();
+    this->directions.clear();
+  }
+
+private:
+
+  string CheckDirection(string &str){
+    transform(str.begin(), str.end(), str.begin(), ::tolower);
+    if (str == "x" || str == "y" || str == "z") {
+      return "";
+    }
+    else {
+      return "Invalid Direction";
+    }
+  }
+
+};
