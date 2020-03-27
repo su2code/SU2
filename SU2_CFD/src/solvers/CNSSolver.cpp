@@ -3135,8 +3135,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
 
             counter++;
             if (counter > max_iter) {
-              cout << "WARNING: Tau_Wall evaluation has not converged in solver_direct_mean.cpp" << endl;
-              cout << Tau_Wall_Old << " " << Tau_Wall << " " << diff << endl;
+//              cout << "WARNING: Tau_Wall evaluation has not converged in solver_direct_mean.cpp" << endl;
+//              cout << Tau_Wall_Old << " " << Tau_Wall << " " << diff << endl;
               break;
             }
 
