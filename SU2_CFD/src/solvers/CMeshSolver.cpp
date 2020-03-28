@@ -448,10 +448,9 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Compute the stiffness matrix. ---*/
   Compute_StiffMatrix(geometry[MESH_0], numerics, config);
 
-  /*--- Initialize vectors and clean residual. ---*/
+  /*--- Clean residual, we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL
   {
-    LinSysSol.SetValZero();
     LinSysRes.SetValZero();
   }
 
@@ -705,6 +704,13 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   /*--- Communicate the new coordinates at the halos ---*/
   geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
   geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+
+  /*--- Init the linear system solution. ---*/
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+      LinSysSol(iPoint, iDim) = nodes->GetSolution(iPoint, iDim);
+    }
+  }
 
   /*--- Recompute the edges and dual mesh control volumes in the
    domain and on the boundaries. ---*/

@@ -2768,19 +2768,6 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
   SU2_OMP_PARALLEL
   {
-  /*--- Initialize residual and solution at the ghost points ---*/
-
-  SU2_OMP(sections)
-  {
-    SU2_OMP(section)
-    for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      LinSysRes.SetBlock_Zero(iPoint);
-
-    SU2_OMP(section)
-    for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      LinSysSol.SetBlock_Zero(iPoint);
-  }
-
   /*--- Solve or smooth the linear system. ---*/
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
@@ -2789,7 +2776,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
     SetIterLinSolver(iter);
     SetResLinSolver(System.GetResidual());
   }
-  SU2_OMP_BARRIER
+  //SU2_OMP_BARRIER
 
   } // end SU2_OMP_PARALLEL
 }

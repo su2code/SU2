@@ -239,10 +239,6 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
       return 0;
     }
 
-    /*--- Set the norm to the initial initial residual value ---*/
-
-    norm0 = norm_r;
-
     /*--- Output header information including initial residual ---*/
 
     if ((monitoring) && (master)) {
@@ -398,10 +394,6 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   g[0] = beta;
 
-  /*--- Set the norm to the initial residual value ---*/
-
-  norm0 = beta;
-
   /*--- Output header information including initial residual ---*/
 
   unsigned long i = 0;
@@ -531,10 +523,6 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
       if (master) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
       return 0;
     }
-
-    /*--- Set the norm to the initial initial residual value ---*/
-
-    norm0 = norm_r;
 
     /*--- Output header information including initial residual ---*/
 
@@ -692,10 +680,6 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
       if (master) cout << "CSysSolve::Smoother_LinSolver(): system solved by initial guess." << endl;
       return 0;
     }
-
-    /*--- Set the norm to the initial initial residual value. ---*/
-
-    norm0 = norm_r;
 
     /*--- Output header information including initial residual. ---*/
 
@@ -1063,7 +1047,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
         /*--- Enforce a hard limit on total number of iterations ---*/
         unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
         IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , IterLimit, Residual, ScreenOutput, config);
-        if ( Residual < SolverTol*Norm0 ) break;
+        if ( Residual <= SolverTol*Norm0 ) break;
       }
       break;
     case PASTIX_LDLT : case PASTIX_LU:
