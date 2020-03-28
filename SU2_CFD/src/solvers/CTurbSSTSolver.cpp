@@ -1657,7 +1657,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
     
     if (nRecv > 0) {
       /*--- Variables ---*/
-      else {
+      if (i == 2) {
         commType = COMM_TYPE_DOUBLE;
         countPerElem = 8;
         
