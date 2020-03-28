@@ -1373,21 +1373,14 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
                                       CSolver        **solver,
                                       CConfig        *config) {
   
-  unsigned long jPoint, kPoint, total_index;
-  unsigned short iDim, jDim, iVar, kNode;
-  long iElem, kVertex;
-  su2double distance, density = 0.0, laminar_viscosity = 0.0, eddy_viscosity = 0.0, k = 0.0, beta_1 = constants[4];;
-  su2double Tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
-            Delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
-            TauElem[3] = {0.0,0.0,0.0}, TauNormal, TauTangent[3] = {0.0,0.0,0.0},
-            UnitNormal[3] = {0.0,0.0,0.0}, Area;
+  unsigned long jPoint, total_index;
+  unsigned short iVar, kNode;
+  long iElem;
+  su2double distance, density = 0.0, laminar_viscosity = 0.0, eddy_viscosity = 0.0, k = 0.0, beta_1 = constants[4];
   su2double *weights;
   
   /*--- Communicate values needed for WF ---*/
   WF_Comms(geometry, solver, config);
-  
-  /*--- Set TauWall_WF ---*/
-//  solver[FLOW_SOL]->SetTauWall_WF(geometry, solver, config);
 
   for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -1401,10 +1394,6 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
       k = nodes->GetPrimitive(jPoint, 0);
       
       weights = geometry->node[jPoint]->GetWall_Interpolation_Weights();
-     
-//      su2double DensityWallItp = 0.;
-//      su2double LamViscWallItp = 0.;
-//      su2double TauWallItp = 0.0;
       
       distance = geometry->node[jPoint]->GetWall_Distance();
       
@@ -1415,75 +1404,10 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
         
         const su2double DensityWall = nodes->GetWallDensity(jPoint, kNode);
         const su2double LamViscWall = nodes->GetWallLamVisc(jPoint, kNode);
-
-//        kPoint = geometry->bound[val_marker][iElem]->GetNode(kNode);
-//        kVertex = geometry->node[kPoint]->GetVertex(val_marker);
-//
-//        /*--- Set wall values ---*/
-//
-//        const su2double DensityWall = solver[FLOW_SOL]->GetNodes()->GetDensity(kPoint);
-//        const su2double LamViscWall = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
-//
-//        su2double **GradPrimVar = solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(kPoint);
-//        su2double *Normal = geometry->vertex[val_marker][kVertex]->GetNormal();
-//
-//        Area = 0.;
-//        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-//        for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-//
-//        su2double DivVel = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++) DivVel += GradPrimVar[iDim+1][iDim];
-//
-//        for (iDim = 0; iDim < nDim; iDim++) {
-//          for (jDim = 0 ; jDim < nDim; jDim++) {
-//            Tau[iDim][jDim] = LamViscWall*(  GradPrimVar[jDim+1][iDim]
-//                                           + GradPrimVar[iDim+1][jDim] ) -
-//            TWO3*LamViscWall*DivVel*Delta[iDim][jDim];
-//          }
-//          TauElem[iDim] = 0.0;
-//          for (jDim = 0; jDim < nDim; jDim++)
-//            TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
-//        }
-//
-//        /*--- Compute wall shear stress as the magnitude of the wall-tangential
-//         component of the shear stress tensor---*/
-//
-//        TauNormal = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          TauNormal += TauElem[iDim] * UnitNormal[iDim];
-//
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-//
-//        su2double TauWall = 0.;
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          TauWall += TauTangent[iDim]*TauTangent[iDim];
-//        TauWall = sqrt(TauWall);
-//
-////        const su2double TauWall = solver[FLOW_SOL]->GetNodes()->GetTauWall(kPoint);
-//
-////        DensityWallItp += DensityWall*weights[kNode];
-////        LamViscWallItp += LamViscWall*weights[kNode];
-////        TauWallItp     += TauWall*weights[kNode];
-//        DensityWallItp = DensityWall;
-//        LamViscWallItp = LamViscWall;
-//        TauWallItp     = TauWall;
         
-//        su2double U_Tau = sqrt(TauWallItp / DensityWallItp);
-        
-        su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0) + EPS*EPS);
+        const su2double Omega_i = 6. * LamViscWall / (beta_1 * DensityWall * pow(distance, 2.0) + EPS*EPS);
         Omega += sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.))*weights[kNode];
       }
-      
-//      su2double U_Tau = sqrt(TauWallItp / DensityWallItp);
-//      su2double k     = nodes->GetPrimitive(jPoint, 0);
-//
-//      su2double Omega_i = 6. * LamViscWallItp / (beta_1 * DensityWallItp * pow(distance, 2.0) + EPS*EPS);
-////      su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance + EPS);
-//      su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance + EPS);
-//      su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
-      
-//      Solution[0] = Omega * eddy_viscosity;
       Solution[1] = density*Omega;
 
       for (iVar = 1; iVar < nVar; iVar++) {
@@ -1940,7 +1864,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
   }
 
   const su2double F1 = varTur->GetF1blending(iPoint);
-  const su2double F2 = varTur->GetF2blending(iPoint);
 
   const su2double alfa        = F1*constants[8] + (1.0 - F1)*constants[9];
   const su2double sigmak      = F1*constants[0] + (1.0 - F1)*constants[1];
