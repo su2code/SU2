@@ -357,17 +357,11 @@ public:
    * \brief Compute the off-wall values of omega;
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void Correct_Omega_WF(CGeometry      *geometry,
                         CSolver        **solver,
-                        CNumerics      *conv_numerics,
-                        CNumerics      *visc_numerics,
-                        CConfig        *config,
-                        unsigned short val_marker);
+                        CConfig        *config);
   
   /*!
    * \brief Communicate values needed for wall function computation;

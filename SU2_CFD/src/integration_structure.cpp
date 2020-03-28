@@ -179,6 +179,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
     }
   
+  /*--- Use wall function to set omega off the wall ---*/
+  if((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+    solver_container[MainSolver]->Correct_Omega_WF(geometry, solver_container, config);
+  
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
    adjacent periodic markers, the repeated points will have their residuals

@@ -3503,6 +3503,16 @@ public:
    * \return Value of the Omega_Max
    */
   inline virtual su2double GetOmega_Max(void) const { return 0; }
+  
+  /*!
+   * \brief Compute the off-wall values of omega;
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void Correct_Omega_WF(CGeometry      *geometry,
+                                       CSolver        **solver,
+                                       CConfig        *config) { }
 
   /*!
    * \brief A virtual member.

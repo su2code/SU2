@@ -615,9 +615,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       }
     }
   }
-  
-  /*--- Use wall function to set omega off the wall ---*/
-  Correct_Omega_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
 void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
@@ -1374,10 +1371,7 @@ void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 
 void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
                                       CSolver        **solver,
-                                      CNumerics      *conv_numerics,
-                                      CNumerics      *visc_numerics,
-                                      CConfig        *config,
-                                      unsigned short val_marker) {
+                                      CConfig        *config) {
   
   unsigned long jPoint, kPoint, total_index;
   unsigned short iDim, jDim, iVar, kNode;
@@ -1397,9 +1391,7 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
 
   for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if ((geometry->node[jPoint]->GetBool_Wall_Neighbor()) &&
-        (geometry->node[jPoint]->GetWall_Marker() != -1) &&
-        (geometry->node[jPoint]->GetWall_Marker() == val_marker)) {
+    if (geometry->node[jPoint]->GetBool_Wall_Neighbor()) {
       
       iElem = geometry->node[jPoint]->GetWall_Element();
       
@@ -1419,7 +1411,7 @@ void CTurbSSTSolver::Correct_Omega_WF(CGeometry      *geometry,
       su2double Omega_0 = sqrt(k) / (pow(0.09,0.25) * 0.41 * distance + EPS);
       su2double Omega = 0.0;
       
-      for (kNode = 0; kNode < geometry->bound[val_marker][iElem]->GetnNodes(); kNode++) {
+      for (kNode = 0; kNode < 4; kNode++) {
         
         const su2double DensityWall = nodes->GetWallDensity(jPoint, kNode);
         const su2double LamViscWall = nodes->GetWallLamVisc(jPoint, kNode);
@@ -1548,8 +1540,6 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
 
   /*--- Loop through all of our nodes and track our sends with each rank. ---*/
   
-  cout << "Rank = " << rank << ", Before tracking sends" << endl;
-
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
 
@@ -1561,26 +1551,18 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
     }
   }
   
-  cout << "Rank = " << rank << ", After tracking sends" << endl;
-
   /*--- Communicate the number of points to be sent/recv'd amongst
    all processors. After this communication, each proc knows how
    many cells it will recv from each other processor. ---*/
   
-  cout << "Rank = " << rank << ", Before Alltoall" << endl;
-
   SU2_MPI::Alltoall(&(nElemSend[1]), 1, MPI_INT,
                     &(nElemRecv[1]), 1, MPI_INT, MPI_COMM_WORLD);
   
-  cout << "Rank = " << rank << ", After Alltoall" << endl;
-
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
    the counters into cumulative storage format to make the
    communications simpler. ---*/
-  
-  cout << "Rank = " << rank << ", Before Cumulative" << endl;
-  
+    
   unsigned short nSend = 0, nRecv = 0;
 
   for (iRank = 0; iRank < size; iRank++) {
@@ -1590,15 +1572,11 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
     nElemSend[iRank+1] += nElemSend[iRank];
     nElemRecv[iRank+1] += nElemRecv[iRank];
   }
-  
-  cout << "Rank = " << rank << ", After Cumulative" << endl;
-  
+    
   /*-- Allocate our communication memory. Note that the "ElemSend" arrays
    correspond to the wall element indices we sent out. The variables
    being sent back thus correspond to "ElemRecv" arrays. ---*/
   
-  cout << "Rank = " << rank << ", Before Init Bufs" << endl;
-
   su2double *bufDSend = new su2double[countPerElem*nElemRecv[size]];
   for (iRecv = 0; iRecv < countPerElem*nElemRecv[size]; iRecv++)
     bufDSend[iRecv] = 0.0;
@@ -1623,12 +1601,8 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
   for (iRecv = 0; iRecv < nElemRecv[size]; iRecv++)
     bufSRecv[iRecv] = 0;
   
-  cout << "Rank = " << rank << ", After Init Bufs" << endl;
-
   /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
-  
-  cout << "Rank = " << rank << ", Before Reqs" << endl;
-  
+    
   SU2_MPI::Request *sendReq = NULL, *recvReq = NULL;
 
   if (nSend > 0) {
@@ -1637,9 +1611,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
   if (nRecv > 0) {
     recvReq = new SU2_MPI::Request[nRecv];
   }
-  
-  cout << "Rank = " << rank << ", After Reqs" << endl;
-  
+    
   /*--- Local variables ---*/
   
   int iMessage, iProc, offset, nElem, count, source, dest, tag;
@@ -1647,56 +1619,52 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
   
   for (unsigned short i = 0; i < 3; i++) {
     
-    if (nSend > 0) {
-      /*--- Elements ---*/
-      if (i == 0) {
-        commType = COMM_TYPE_UNSIGNED_LONG;
-        countPerElem = 1;
-        unsigned long ProcCounter[size];
-        for (iProc = 0; iProc < size; iProc++) ProcCounter[iProc] = 0;
-        
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
-            const unsigned short RankID = geometry->node[iPoint]->GetWall_Rank();
-            if (RankID != rank) {
-              offset = nElemSend[RankID]+ProcCounter[RankID];
-              bufLSend[offset] = geometry->node[iPoint]->GetWall_Element();
-              bufSSend[offset] = geometry->node[iPoint]->GetWall_Marker();
-              ProcCounter[RankID]++;
-            }
+    /*--- Elements ---*/
+    if (i == 0) {
+      commType = COMM_TYPE_UNSIGNED_LONG;
+      countPerElem = 1;
+      unsigned long ProcCounter[size];
+      for (iProc = 0; iProc < size; iProc++) ProcCounter[iProc] = 0;
+      
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+          const unsigned short RankID = geometry->node[iPoint]->GetWall_Rank();
+          if (RankID != rank) {
+            offset = nElemSend[RankID]+ProcCounter[RankID];
+            bufLSend[offset] = geometry->node[iPoint]->GetWall_Element();
+            bufSSend[offset] = geometry->node[iPoint]->GetWall_Marker();
+            ProcCounter[RankID]++;
           }
         }
       }
-    
-      /*--- Markers ---*/
-      else if (i == 1) {
-        commType = COMM_TYPE_UNSIGNED_SHORT;
-        countPerElem = 1;
-      }
+    }
+  
+    /*--- Markers ---*/
+    else if (i == 1) {
+      commType = COMM_TYPE_UNSIGNED_SHORT;
+      countPerElem = 1;
     }
     
-    if (nRecv > 0) {
-      /*--- Variables ---*/
-      if (i == 2) {
-        commType = COMM_TYPE_DOUBLE;
-        countPerElem = 8;
-        
-        /*--- Fill send buffers with variables based on received
-              markers and elements. ---*/
-        for (iProc = 0; iProc < size; iProc++) {
-          if ((nElemRecv[iProc+1] > nElemRecv[iProc]) && (iProc != rank)) {
-            nElem = nElemRecv[iProc+1] - nElemRecv[iProc];
-            for (unsigned long iElem = 0; iElem < nElem; iElem++) {
-              offset = countPerElem*(nElemRecv[iProc]+iElem);
-              
-              const unsigned long ElemID = bufLRecv[nElemRecv[iProc]+iElem];
-              const unsigned short MarkerID = bufSRecv[nElemRecv[iProc]+iElem];
-              const unsigned short nNodeElem = geometry->bound[MarkerID][ElemID]->GetnNodes();
-              for (unsigned short kNode = 0; kNode < nNodeElem; kNode++) {
-                const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
-                bufDSend[offset+kNode]   = solver[FLOW_SOL]->GetNodes()->GetDensity(kPoint);
-                bufDSend[offset+kNode+4] = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
-              }
+    /*--- Variables ---*/
+    else if (i == 2) {
+      commType = COMM_TYPE_DOUBLE;
+      countPerElem = 8;
+      
+      /*--- Fill send buffers with variables based on received
+            markers and elements. ---*/
+      for (iProc = 0; iProc < size; iProc++) {
+        if ((nElemRecv[iProc+1] > nElemRecv[iProc]) && (iProc != rank)) {
+          nElem = nElemRecv[iProc+1] - nElemRecv[iProc];
+          for (unsigned long iElem = 0; iElem < nElem; iElem++) {
+            offset = countPerElem*(nElemRecv[iProc]+iElem);
+            
+            const unsigned long ElemID = bufLRecv[nElemRecv[iProc]+iElem];
+            const unsigned short MarkerID = bufSRecv[nElemRecv[iProc]+iElem];
+            const unsigned short nNodeElem = geometry->bound[MarkerID][ElemID]->GetnNodes();
+            for (unsigned short kNode = 0; kNode < nNodeElem; kNode++) {
+              const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
+              bufDSend[offset+kNode]   = solver[FLOW_SOL]->GetNodes()->GetDensity(kPoint);
+              bufDSend[offset+kNode+4] = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
             }
           }
         }
@@ -1821,46 +1789,24 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
         
       }
     }
+      
+    int ind;
+    SU2_MPI::Status status;
+
+    /*--- Wait for the non-blocking sends to complete. ---*/
+
+    for (iSend = 0; iSend < nSend; iSend++)
+      SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
+
+    /*--- Wait for the non-blocking recvs to complete. ---*/
+
+    for (iRecv = 0; iRecv < nRecv; iRecv++)
+      SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
     
-    if (commType == COMM_TYPE_DOUBLE) cout << "Rank = " << rank << ", Before COMM_TYPE_DOUBLE" << endl;
-    else if (commType == COMM_TYPE_UNSIGNED_LONG) cout << "Rank = " << rank << ", Before COMM_TYPE_UNSIGNED_LONG" << endl;
-    else if (commType == COMM_TYPE_UNSIGNED_SHORT) cout << "Rank = " << rank << ", Before COMM_TYPE_UNSIGNED_SHORT" << endl;
-    
-    if (nSend > 0 || nRecv > 0) SU2_MPI::Waitall(nSend, sendReq, MPI_STATUS_IGNORE);
-    
-    if (commType == COMM_TYPE_DOUBLE) cout << "Rank = " << rank << ", COMM_TYPE_DOUBLE" << endl;
-    else if (commType == COMM_TYPE_UNSIGNED_LONG) cout << "Rank = " << rank << ", COMM_TYPE_UNSIGNED_LONG" << endl;
-    else if (commType == COMM_TYPE_UNSIGNED_SHORT) cout << "Rank = " << rank << ", COMM_TYPE_UNSIGNED_SHORT" << endl;
-    
-//    int ind;
-//    SU2_MPI::Status status;
-//
-//    if (commType != COMM_TYPE_DOUBLE) {
-//      /*--- Wait for the non-blocking sends to complete. ---*/
-//
-//      for (iSend = 0; iSend < nSend; iSend++)
-//        SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
-//
-//      /*--- Wait for the non-blocking recvs to complete. ---*/
-//
-//      for (iRecv = 0; iRecv < nRecv; iRecv++)
-//        SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
-//    }
-//    else {
-//      /*--- Wait for the non-blocking sends to complete. ---*/
-//
-//      for (iRecv = 0; iRecv < nRecv; iRecv++)
-//        SU2_MPI::Waitany(nRecv, recvReq, &ind, &status);
-//
-//      /*--- Wait for the non-blocking recvs to complete. ---*/
-//
-//      for (iSend = 0; iSend < nSend; iSend++)
-//        SU2_MPI::Waitany(nSend, sendReq, &ind, &status);
-//    }
   }
   
-  delete [] sendReq;
-  delete [] recvReq;
+  if (sendReq != NULL) delete [] sendReq;
+  if (recvReq != NULL) delete [] recvReq;
   
   /*--- Now that the wall elements have been communicated, store them. ---*/
   
