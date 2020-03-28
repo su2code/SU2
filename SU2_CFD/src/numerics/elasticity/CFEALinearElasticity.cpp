@@ -366,7 +366,6 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
   case INVERSE_VOLUME:
   case SOLID_WALL_DISTANCE:
     element_based = true;
-    Nu = config->GetDeform_Coeff();
     break;
   case CONSTANT_STIFFNESS:
     element_based = false;

@@ -605,7 +605,7 @@ private:
   su2double Min_Beta_RoeTurkel,     /*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
   Max_Beta_RoeTurkel;               /*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
   unsigned long GridDef_Nonlinear_Iter;  /*!< \brief Number of nonlinear increments for grid deformation. */
-  unsigned short Deform_Stiffness_Type;  /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
+  unsigned short Deform_StiffnessType;   /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Mesh;                      /*!< \brief Determines whether the mesh will be deformed. */
   bool Deform_Output;                    /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor;       /*!< \brief Factor to multiply smallest volume for deform tolerance (0.001 default) */
@@ -613,8 +613,9 @@ private:
   su2double Deform_Limit;            /*!< \brief Deform limit */
   unsigned short FFD_Continuity;     /*!< \brief Surface continuity at the intersection with the FFD */
   unsigned short FFD_CoordSystem;    /*!< \brief Define the coordinates system */
-  su2double Deform_ElasticityMod,
-  Deform_PoissonRatio;               /*!< \brief Young's Modulus and poisson ratio for volume deformation stiffness model */
+  su2double Deform_ElasticityMod,    /*!< \brief Young's modulus for volume deformation stiffness model */
+  Deform_PoissonRatio,               /*!< \brief Poisson's ratio for volume deformation stiffness model */
+  Deform_StiffLayerSize;             /*!< \brief Size of the layer of highest stiffness for wall distance-based mesh stiffness */
   bool Visualize_Surface_Def;        /*!< \brief Flag to visualize the surface deformacion in SU2_DEF. */
   bool Visualize_Volume_Def;         /*!< \brief Flag to visualize the volume deformation in SU2_DEF. */
   bool FFD_Symmetry_Plane;           /*!< \brief FFD symmetry plane. */
@@ -4105,7 +4106,12 @@ public:
    * \brief Get the type of stiffness to impose for FEA mesh deformation.
    * \return type of stiffness to impose for FEA mesh deformation.
    */
-  unsigned short GetDeform_Stiffness_Type(void) const { return Deform_Stiffness_Type; }
+  unsigned short GetDeform_Stiffness_Type(void) const { return Deform_StiffnessType; }
+
+  /*!
+   * \brief Get the size of the layer of highest stiffness for wall distance-based mesh stiffness.
+   */
+  su2double GetDeform_StiffLayerSize(void) const { return Deform_StiffLayerSize; }
 
   /*!
    * \brief Creates a tecplot file to visualize the volume deformation deformation made by the DEF software.

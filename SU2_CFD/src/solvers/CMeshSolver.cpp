@@ -388,6 +388,8 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
 void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
 
+  if (stiffness_set) return;
+
   /*--- Use the config option as an upper bound on elasticity modulus.
    *    For RANS meshes the range of element volume or wall distance is
    *    very large and leads to an ill-conditioned stiffness matrix.
@@ -396,31 +398,46 @@ void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, 
    *    boundary conditions are essential (Dirichlet). ---*/
   const su2double maxE = config->GetDeform_ElasticityMod();
 
-  if (!stiffness_set) {
-    /*--- All threads must execute the entire loop (no worksharing),
-     *    each sets the stiffnesses for its numerics instance. ---*/
-    SU2_OMP_PARALLEL
-    {
-    CNumerics* myNumerics = numerics[FEA_TERM + omp_get_thread_num()*MAX_TERMS];
+  /*--- All threads must execute the entire loop (no worksharing),
+   *    each sets the stiffnesses for its numerics instance. ---*/
+  SU2_OMP_PARALLEL
+  {
+  CNumerics* myNumerics = numerics[FEA_TERM + omp_get_thread_num()*MAX_TERMS];
 
-    for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+  switch (config->GetDeform_Stiffness_Type()) {
 
-      su2double E = 1.0;
-
-      switch (config->GetDeform_Stiffness_Type()) {
-        /*--- Stiffness inverse of the volume of the element ---*/
-        case INVERSE_VOLUME: E = 1.0 / element[iElem].GetRef_Volume();  break;
-
-        /*--- Stiffness inverse of the distance of the element to the closest wall ---*/
-        case SOLID_WALL_DISTANCE: E = 1.0 / element[iElem].GetWallDistance(); break;
+    /*--- Stiffness inverse of the volume of the element. ---*/
+    case INVERSE_VOLUME:
+      for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+        su2double E = 1.0 / element[iElem].GetRef_Volume();
+        myNumerics->SetMeshElasticProperties(iElem, min(E,maxE));
       }
+    break;
 
-      /*--- Set the element elastic properties in the numerics container ---*/
-      myNumerics->SetMeshElasticProperties(iElem, min(E,maxE));
+    /*--- Stiffness inverse of the distance of the element to the closest wall. ---*/
+    case SOLID_WALL_DISTANCE: {
+      const su2double offset = config->GetDeform_StiffLayerSize();
+      if (fabs(offset) > 0.0) {
+        /*--- With prescribed layer of maximum stiffness (reaches max and holds). ---*/
+        su2double d0 = offset / MaxDistance;
+        su2double dmin = 1.0 / maxE;
+        su2double scale = 1.0 / (1.0 - d0);
+        for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+          su2double E = 1.0 / max(dmin, (element[iElem].GetWallDistance() - d0)*scale);
+          myNumerics->SetMeshElasticProperties(iElem, E);
+        }
+      } else {
+        /*--- Without prescribed layer of maximum stiffness (may not reach max). ---*/
+        for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+          su2double E = 1.0 / element[iElem].GetWallDistance();
+          myNumerics->SetMeshElasticProperties(iElem, min(E,maxE));
+        }
+      }
     }
-    }
-    stiffness_set = true;
+    break;
   }
+  }
+  stiffness_set = true;
 
 }
 

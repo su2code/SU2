@@ -39,8 +39,8 @@ class CGeometry;
  */
 class CInterpolator {
 protected:
-  const int rank; 	         /*!< \brief MPI Rank. */
-  const int size;       	   /*!< \brief MPI Size. */
+  const int rank;            /*!< \brief MPI Rank. */
+  const int size;            /*!< \brief MPI Size. */
   const unsigned donorZone;  /*!< \brief Index of donor zone. */
   const unsigned targetZone; /*!< \brief Index of target zone. */
 
