@@ -1547,6 +1547,8 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
   nElemSend[size] = 0; nElemRecv[size] = 0;
 
   /*--- Loop through all of our nodes and track our sends with each rank. ---*/
+  
+  cout << "Rank = " << rank << ", Before tracking sends" << endl;
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
@@ -1558,18 +1560,26 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
 
     }
   }
+  
+  cout << "Rank = " << rank << ", After tracking sends" << endl;
 
   /*--- Communicate the number of points to be sent/recv'd amongst
    all processors. After this communication, each proc knows how
    many cells it will recv from each other processor. ---*/
+  
+  cout << "Rank = " << rank << ", Before Alltoall" << endl;
 
   SU2_MPI::Alltoall(&(nElemSend[1]), 1, MPI_INT,
                     &(nElemRecv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  
+  cout << "Rank = " << rank << ", After Alltoall" << endl;
 
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
    the counters into cumulative storage format to make the
    communications simpler. ---*/
+  
+  cout << "Rank = " << rank << ", Before Cumulative" << endl;
   
   unsigned short nSend = 0, nRecv = 0;
 
@@ -1581,9 +1591,13 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
     nElemRecv[iRank+1] += nElemRecv[iRank];
   }
   
+  cout << "Rank = " << rank << ", After Cumulative" << endl;
+  
   /*-- Allocate our communication memory. Note that the "ElemSend" arrays
    correspond to the wall element indices we sent out. The variables
    being sent back thus correspond to "ElemRecv" arrays. ---*/
+  
+  cout << "Rank = " << rank << ", Before Init Bufs" << endl;
 
   su2double *bufDSend = new su2double[countPerElem*nElemRecv[size]];
   for (iRecv = 0; iRecv < countPerElem*nElemRecv[size]; iRecv++)
@@ -1608,8 +1622,12 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
   unsigned short *bufSRecv = new unsigned short[nElemRecv[size]];
   for (iRecv = 0; iRecv < nElemRecv[size]; iRecv++)
     bufSRecv[iRecv] = 0;
+  
+  cout << "Rank = " << rank << ", After Init Bufs" << endl;
 
   /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
+  
+  cout << "Rank = " << rank << ", Before Reqs" << endl;
   
   SU2_MPI::Request *sendReq = NULL, *recvReq = NULL;
 
@@ -1619,6 +1637,8 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
   if (nRecv > 0) {
     recvReq = new SU2_MPI::Request[nRecv];
   }
+  
+  cout << "Rank = " << rank << ", After Reqs" << endl;
   
   /*--- Local variables ---*/
   
