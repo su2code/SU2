@@ -1627,52 +1627,56 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
   
   for (unsigned short i = 0; i < 3; i++) {
     
-    /*--- Elements ---*/
-    if (i == 0) {
-      commType = COMM_TYPE_UNSIGNED_LONG;
-      countPerElem = 1;
-      unsigned long ProcCounter[size];
-      for (iProc = 0; iProc < size; iProc++) ProcCounter[iProc] = 0;
-      
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-        if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
-          const unsigned short RankID = geometry->node[iPoint]->GetWall_Rank();
-          if (RankID != rank) {
-            offset = nElemSend[RankID]+ProcCounter[RankID];
-            bufLSend[offset] = geometry->node[iPoint]->GetWall_Element();
-            bufSSend[offset] = geometry->node[iPoint]->GetWall_Marker();
-            ProcCounter[RankID]++;
+    if (nSend > 0) {
+      /*--- Elements ---*/
+      if (i == 0) {
+        commType = COMM_TYPE_UNSIGNED_LONG;
+        countPerElem = 1;
+        unsigned long ProcCounter[size];
+        for (iProc = 0; iProc < size; iProc++) ProcCounter[iProc] = 0;
+        
+        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+          if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+            const unsigned short RankID = geometry->node[iPoint]->GetWall_Rank();
+            if (RankID != rank) {
+              offset = nElemSend[RankID]+ProcCounter[RankID];
+              bufLSend[offset] = geometry->node[iPoint]->GetWall_Element();
+              bufSSend[offset] = geometry->node[iPoint]->GetWall_Marker();
+              ProcCounter[RankID]++;
+            }
           }
         }
       }
+    
+      /*--- Markers ---*/
+      else if (i == 1) {
+        commType = COMM_TYPE_UNSIGNED_SHORT;
+        countPerElem = 1;
+      }
     }
     
-    /*--- Markers ---*/
-    else if (i == 1) {
-      commType = COMM_TYPE_UNSIGNED_SHORT;
-      countPerElem = 1;
-    }
-    
-    /*--- Variables ---*/
-    else {
-      commType = COMM_TYPE_DOUBLE;
-      countPerElem = 8;
-      
-      /*--- Fill send buffers with variables based on received
-            markers and elements. ---*/
-      for (iProc = 0; iProc < size; iProc++) {
-        if ((nElemRecv[iProc+1] > nElemRecv[iProc]) && (iProc != rank)) {
-          nElem = nElemRecv[iProc+1] - nElemRecv[iProc];
-          for (unsigned long iElem = 0; iElem < nElem; iElem++) {
-            offset = countPerElem*(nElemRecv[iProc]+iElem);
-            
-            const unsigned long ElemID = bufLRecv[nElemRecv[iProc]+iElem];
-            const unsigned short MarkerID = bufSRecv[nElemRecv[iProc]+iElem];
-            const unsigned short nNodeElem = geometry->bound[MarkerID][ElemID]->GetnNodes();
-            for (unsigned short kNode = 0; kNode < nNodeElem; kNode++) {
-              const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
-              bufDSend[offset+kNode]   = solver[FLOW_SOL]->GetNodes()->GetDensity(kPoint);
-              bufDSend[offset+kNode+4] = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
+    if (nRecv > 0) {
+      /*--- Variables ---*/
+      else {
+        commType = COMM_TYPE_DOUBLE;
+        countPerElem = 8;
+        
+        /*--- Fill send buffers with variables based on received
+              markers and elements. ---*/
+        for (iProc = 0; iProc < size; iProc++) {
+          if ((nElemRecv[iProc+1] > nElemRecv[iProc]) && (iProc != rank)) {
+            nElem = nElemRecv[iProc+1] - nElemRecv[iProc];
+            for (unsigned long iElem = 0; iElem < nElem; iElem++) {
+              offset = countPerElem*(nElemRecv[iProc]+iElem);
+              
+              const unsigned long ElemID = bufLRecv[nElemRecv[iProc]+iElem];
+              const unsigned short MarkerID = bufSRecv[nElemRecv[iProc]+iElem];
+              const unsigned short nNodeElem = geometry->bound[MarkerID][ElemID]->GetnNodes();
+              for (unsigned short kNode = 0; kNode < nNodeElem; kNode++) {
+                const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
+                bufDSend[offset+kNode]   = solver[FLOW_SOL]->GetNodes()->GetDensity(kPoint);
+                bufDSend[offset+kNode+4] = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(kPoint);
+              }
             }
           }
         }
@@ -1802,7 +1806,7 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
     else if (commType == COMM_TYPE_UNSIGNED_LONG) cout << "Rank = " << rank << ", Before COMM_TYPE_UNSIGNED_LONG" << endl;
     else if (commType == COMM_TYPE_UNSIGNED_SHORT) cout << "Rank = " << rank << ", Before COMM_TYPE_UNSIGNED_SHORT" << endl;
     
-    SU2_MPI::Waitall(nSend, sendReq, MPI_STATUS_IGNORE);
+    if (nSend > 0 || nRecv > 0) SU2_MPI::Waitall(nSend, sendReq, MPI_STATUS_IGNORE);
     
     if (commType == COMM_TYPE_DOUBLE) cout << "Rank = " << rank << ", COMM_TYPE_DOUBLE" << endl;
     else if (commType == COMM_TYPE_UNSIGNED_LONG) cout << "Rank = " << rank << ", COMM_TYPE_UNSIGNED_LONG" << endl;
