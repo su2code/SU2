@@ -30,7 +30,8 @@ public:
   }
 
   void Compile(const std::string& codeAsString){
-    code.compile(codeAsString.c_str(), &rest, *scope);
+    std::string codeBlock = "{" + codeAsString + "}";
+    code.compile(codeBlock.c_str(), &rest, *scope);
   }
 
   void ExecCode(){
