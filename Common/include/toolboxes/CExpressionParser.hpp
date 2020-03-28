@@ -20,11 +20,17 @@ public:
 
   CExpressionParser(const TokenMap* scope_) : scope(scope_){}
 
-  void CompileAndExec(const std::string& codeAsString, const std::string& funcName){
+  bool CompileAndExec(const std::string& codeAsString, const std::string& funcName){
     name = funcName;
     code.compile(codeAsString.c_str(), &rest, *scope);
     code.exec(*scope);
     tokenRef = scope->find(name);
+    if (tokenRef) return true;
+    else return false;
+  }
+
+  void Compile(const std::string& codeAsString){
+    code.compile(codeAsString.c_str(), &rest, *scope);
   }
 
   void ExecCode(){

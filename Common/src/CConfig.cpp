@@ -4943,6 +4943,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                    CURRENT_FUNCTION);
   }
 
+  /*--- Read user defined functions --- */
+  ifstream functionFile;
+  UserFunctionCode = "";
+  functionFile.open("functions.su2x");
+  if (functionFile.is_open()){
+    string line;
+    while(!functionFile.eof()) {
+      getline(functionFile,line);
+      UserFunctionCode += line;
+    }
+    functionFile.close();
+  }
+
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {

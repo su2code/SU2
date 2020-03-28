@@ -172,6 +172,21 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
 
   headerNeeded = false;
 
+  /*--- Make functions defined in file available ---*/
+
+  std::string UserDefinedCode = config->GetUserFunctionCode();
+
+  if (!UserDefinedCode.empty()){
+
+    /*--- Compile and exec code for history and volume exression scope ---*/
+
+    CExpressionParser parserHistExp(&historyFieldsAll.GetScope());
+    parserHistExp.Compile(UserDefinedCode);
+    parserHistExp.ExecCode();
+    CExpressionParser parserVolExp = CExpressionParser(&volumeFieldsAll.GetScope());
+    parserVolExp.Compile(UserDefinedCode);
+    parserVolExp.ExecCode();
+  }
 }
 
 COutput::~COutput(void) {

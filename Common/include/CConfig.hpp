@@ -1149,6 +1149,8 @@ private:
   unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
+  string UserFunctionCode; /*!< \brief String containing the user defined function code. */
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -9343,4 +9345,11 @@ public:
    */
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
 
+  /*!
+   * \brief Return the code for the user defined functions.
+   * \return String containing the code for the user defined functions
+   */
+  string GetUserFunctionCode(){
+    return UserFunctionCode;
+  }
 };
