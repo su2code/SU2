@@ -376,8 +376,8 @@ inline void CNumerics::SetNormal(su2double *val_normal) { Normal = val_normal; }
 inline void CNumerics::SetVolume(su2double val_volume) { Volume = val_volume; }
 
 inline void CNumerics::SetPartialVolume(su2double val_vol_i, su2double val_vol_j) {
-  PartialVolume_i = val_vol_i;
-  PartialVolume_j = val_vol_j;
+  W_i = val_vol_i/(val_vol_i+val_vol_j);
+  W_j = val_vol_j/(val_vol_i+val_vol_j);
 }
 
 inline void CNumerics::SetDissipation(su2double diss_i, su2double diss_j) {
