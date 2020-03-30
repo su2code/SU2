@@ -157,6 +157,18 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   /*--- Compute the wall distance using the reference coordinates ---*/
   SetWallDistance(geometry, config);
 
+  if (size != SINGLE_NODE) {
+    vector<unsigned short> essentialMarkers;
+    /*--- Markers types covered in SetBoundaryDisplacements. ---*/
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) ||
+           (config->GetMarker_All_Deform_Mesh(iMarker) == YES)) {
+        essentialMarkers.push_back(iMarker);
+      }
+    }
+    Set_VertexEliminationSchedule(geometry, essentialMarkers);
+  }
 }
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {

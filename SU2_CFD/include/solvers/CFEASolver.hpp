@@ -91,6 +91,9 @@ protected:
 
   unsigned long nElement;      /*!< \brief Number of elements. */
 
+  /*--- Extra vertices for row/column elimination, see Set_VertexEliminationSchedule. ---*/
+  vector<unsigned long> ExtraVerticesToEliminate;
+
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use,
    * CVariable is the common denominator between the FEA and Mesh deformation variables.
@@ -146,6 +149,15 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_Prestretch(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Mitigation for an issue with Dirichlet boundary conditions and MPI,
+   * some ranks do not get enough of the markers to cover their halo points.
+   * This breaks the symmetry of the global matrix as columns are not fully eliminated.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] markers - List of essential BC markers.
+   */
+  void Set_VertexEliminationSchedule(CGeometry *geometry, const vector<unsigned short>& markers);
 
   /*!
    * \brief Compute constants for time integration.

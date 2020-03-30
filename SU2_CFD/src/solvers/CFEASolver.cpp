@@ -29,6 +29,8 @@
 #include "../../include/variables/CFEABoundVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include <algorithm>
+#include <unordered_set>
+#include <unordered_map>
 
 /*!
  * \brief Anonymous namespace with helper functions of the FEA solver.
@@ -284,9 +286,22 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- If dynamic, we also need to communicate the old solution ---*/
 
-  if(dynamic) {
+  if (dynamic) {
     InitiateComms(geometry, config, SOLUTION_FEA_OLD);
     CompleteComms(geometry, config, SOLUTION_FEA_OLD);
+  }
+
+  if (size != SINGLE_NODE) {
+    vector<unsigned short> essentialMarkers;
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      const auto kindBnd = config->GetMarker_All_KindBC(iMarker);
+      if ((kindBnd == CLAMPED_BOUNDARY) ||
+          (kindBnd == DISP_DIR_BOUNDARY) ||
+          (kindBnd == DISPLACEMENT_BOUNDARY)) {
+        essentialMarkers.push_back(iMarker);
+      }
+    }
+    Set_VertexEliminationSchedule(geometry, essentialMarkers);
   }
 
   /*--- Add the solver name (max 8 characters) ---*/
@@ -748,6 +763,56 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
 }
 
+void CFEASolver::Set_VertexEliminationSchedule(CGeometry *geometry, const vector<unsigned short>& markers) {
+
+  /*--- Store global point indices of essential BC markers. ---*/
+  vector<unsigned long> myPoints;
+
+  for (auto iMarker : markers) {
+    for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      myPoints.push_back(geometry->node[iPoint]->GetGlobalIndex());
+    }
+  }
+
+  const unordered_set<unsigned long> markerPoints(myPoints.begin(), myPoints.end());
+
+  vector<unsigned long> numPoints(size);
+  unsigned long num = myPoints.size();
+  SU2_MPI::Allgather(&num, 1, MPI_UNSIGNED_LONG, numPoints.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+  /*--- Global to local map for the halo points of the rank (not covered by the CGeometry map). ---*/
+  unordered_map<unsigned long, unsigned long> Global2Local;
+  for (auto iPoint = nPointDomain; iPoint < nPoint; ++iPoint) {
+    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+
+  /*--- Populate elimination list. ---*/
+  ExtraVerticesToEliminate.clear();
+
+  for (int i = 0; i < size; ++i) {
+    /*--- Send our point list. ---*/
+    if (rank == i) {
+      SU2_MPI::Bcast(myPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, rank, MPI_COMM_WORLD);
+      continue;
+    }
+
+    /*--- Receive point list. ---*/
+    vector<unsigned long> theirPoints(numPoints[i]);
+    SU2_MPI::Bcast(theirPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, i, MPI_COMM_WORLD);
+
+    for (auto iPointGlobal : theirPoints) {
+      /*--- Check if the rank has the point. ---*/
+      auto it = Global2Local.find(iPointGlobal);
+      if (it == Global2Local.end()) continue;
+
+      /*--- If the point is not covered by this rank's markers, mark it for elimination. ---*/
+      if (markerPoints.count(iPointGlobal) == 0)
+        ExtraVerticesToEliminate.push_back(it->second);
+    }
+  }
+
+}
 
 void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics,
                                unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
@@ -2768,6 +2833,15 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
   SU2_OMP_PARALLEL
   {
+  /*--- Enforce solution at some halo points possibly not covered by essential BC markers. ---*/
+
+  Jacobian.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+  Jacobian.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+
+  for (auto iPoint : ExtraVerticesToEliminate) {
+    Jacobian.EnforceSolutionAtNode(iPoint, LinSysSol.GetBlock(iPoint), LinSysRes);
+  }
+
   /*--- Solve or smooth the linear system. ---*/
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
