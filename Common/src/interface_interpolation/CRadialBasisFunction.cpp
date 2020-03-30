@@ -172,6 +172,22 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
     delete[] Buffer_Receive_Coord;
     delete[] Buffer_Receive_GlobalPoint;
 
+    /*--- Give an MPI-independent order to the points (required due to high condition
+     *    number of the RBF matrix, avoids diff results with diff number of ranks. ---*/
+    vector<int> order(nGlobalVertexDonor);
+    iota(order.begin(), order.end(), 0);
+    sort(order.begin(), order.end(), [&donorPoint](int i, int j){return donorPoint[i] < donorPoint[j];});
+
+    for (int i = 0; i < int(nGlobalVertexDonor); ++i) {
+      int j = order[i];
+      while (j < i) j = order[j];
+      if (i == j) continue;
+      swap(donorProc[i], donorProc[j]);
+      swap(donorPoint[i], donorPoint[j]);
+      for (int iDim = 0; iDim < nDim; ++iDim)
+        swap(donorCoord(i,iDim), donorCoord(j,iDim));
+    }
+
     /*--- Static work scheduling over ranks based on which one has less work currently. ---*/
     int iProcessor = 0;
     for (int i = 1; i < nProcessor; ++i)
