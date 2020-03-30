@@ -2125,7 +2125,7 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *co
     unsigned short iNode, iDim;
     unsigned long indexNode[4] = {0};
 
-    su2double nodeCoord[4][3] = {0.0};
+    su2double nodeCoord[4][3] = {{0.0}};
 
     bool quad = (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL);
     unsigned short nNodes = quad? 4 : nDim;
@@ -2831,8 +2831,6 @@ void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **sol
 
 void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
-  SU2_OMP_PARALLEL
-  {
   /*--- Enforce solution at some halo points possibly not covered by essential BC markers. ---*/
 
   Jacobian.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
@@ -2842,6 +2840,8 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
     Jacobian.EnforceSolutionAtNode(iPoint, LinSysSol.GetBlock(iPoint), LinSysRes);
   }
 
+  SU2_OMP_PARALLEL
+  {
   /*--- Solve or smooth the linear system. ---*/
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
@@ -2851,8 +2851,8 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
     SetResLinSolver(System.GetResidual());
   }
   //SU2_OMP_BARRIER
-
   } // end SU2_OMP_PARALLEL
+
 }
 
 
