@@ -172,16 +172,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[7] = 0.31;   //a1
   constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
   constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
-  
-  /*--- Initialize lower and upper limits---*/
-  lowerlimit = new su2double[nVar];
-  upperlimit = new su2double[nVar];
-
-  lowerlimit[0] = 1.0e-10;
-  upperlimit[0] = 1.0e10;
-
-  lowerlimit[1] = 1.0e-4;
-  upperlimit[1] = 1.0e15;
 
   /*--- Far-field flow state quantities and initialization. ---*/
   su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;
@@ -212,6 +202,19 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   InitiateComms(geometry, config, SOLUTION_EDDY);
   CompleteComms(geometry, config, SOLUTION_EDDY);
+      
+  /*--- Initialize lower and upper limits---*/
+  const su2double kine_Inf_Dim  = config->GetTke_FreeStream();
+  const su2double omega_Inf_Dim = config->GetOmega_FreeStream();
+      
+  lowerlimit = new su2double[nVar];
+  upperlimit = new su2double[nVar];
+
+  lowerlimit[0] = 1.0e-10*kine_Inf/kine_Inf_Dim;
+  upperlimit[0] = 1.0e10*kine_Inf/kine_Inf_Dim;
+
+  lowerlimit[1] = 1.0e-4*omega_Inf/omega_Inf_Dim;
+  upperlimit[1] = 1.0e15*omega_Inf/omega_Inf_Dim;
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
