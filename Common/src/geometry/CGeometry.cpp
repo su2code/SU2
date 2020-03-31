@@ -2,7 +2,7 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -4036,13 +4036,26 @@ const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(void)
   return edgeToCSRMap;
 }
 
-const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
+const su2vector<unsigned long>& CGeometry::GetTransposeSparsePatternMap(ConnectivityType type)
 {
-  if (edgeColoring.empty() && nEdge) {
+  /*--- Yes the const cast is weird but it is still better than repeating code. ---*/
+  auto& pattern = const_cast<CCompressedSparsePatternUL&>(GetSparsePattern(type));
+  pattern.buildTransposePtr();
+  return pattern.transposePtr();
+}
 
-    /*--- When not using threading, and for coarse grids, use the natural coloring. ---*/
-    if ((omp_get_max_threads() == 1) || (MGLevel != MESH_0)) {
-      edgeColoring = createNaturalColoring(nEdge);
+const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficiency)
+{
+  /*--- Check for dry run mode with dummy geometry. ---*/
+  if (nEdge==0) return edgeColoring;
+
+  /*--- Build if required. ---*/
+  if (edgeColoring.empty()) {
+
+    /*--- When not using threading use the natural coloring to reduce overhead. ---*/
+    if (omp_get_max_threads() == 1) {
+      SetNaturalEdgeColoring();
+      if (efficiency != nullptr) *efficiency = 1.0; // by definition
       return edgeColoring;
     }
 
@@ -4051,7 +4064,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
     su2vector<unsigned long> outerPtr(nEdge+1);
     su2vector<unsigned long> innerIdx(nEdge*2);
 
-    for(unsigned long iEdge = 0; iEdge < nEdge; ++iEdge) {
+    for (unsigned long iEdge = 0; iEdge < nEdge; ++iEdge) {
       outerPtr(iEdge) = 2*iEdge;
       innerIdx(iEdge*2+0) = edge[iEdge]->GetNode(0);
       innerIdx(iEdge*2+1) = edge[iEdge]->GetNode(1);
@@ -4060,23 +4073,42 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
 
     CCompressedSparsePatternUL pattern(move(outerPtr), move(innerIdx));
 
-    /*--- Color the edges, only balance sizes on coarse levels. ---*/
-    bool balanceColors = (MGLevel != MESH_0);
+    /*--- Color the edges. ---*/
+    constexpr bool balanceColors = true;
     edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
 
-    if(edgeColoring.empty())
-      SU2_MPI::Error("Edge coloring failed.", CURRENT_FUNCTION);
+    /*--- If the coloring fails use the natural coloring. This is a
+     *    "soft" failure as this "bad" coloring should be detected
+     *    downstream and a fallback strategy put in place. ---*/
+    if (edgeColoring.empty()) SetNaturalEdgeColoring();
+  }
+
+  if (efficiency != nullptr) {
+    *efficiency = coloringEfficiency(edgeColoring, omp_get_max_threads(), edgeColorGroupSize);
   }
   return edgeColoring;
 }
 
-const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
+void CGeometry::SetNaturalEdgeColoring()
 {
-  if (elemColoring.empty() && nElem) {
+  if (nEdge == 0) return;
+  edgeColoring = createNaturalColoring(nEdge);
+  /*--- In parallel, set the group size to nEdge to protect client code. ---*/
+  if (omp_get_max_threads() > 1) edgeColorGroupSize = nEdge;
+}
+
+const CCompressedSparsePatternUL& CGeometry::GetElementColoring(su2double* efficiency)
+{
+  /*--- Check for dry run mode with dummy geometry. ---*/
+  if (nElem==0) return elemColoring;
+
+  /*--- Build if required. ---*/
+  if (elemColoring.empty()) {
 
     /*--- When not using threading use the natural coloring. ---*/
     if (omp_get_max_threads() == 1) {
-      elemColoring = createNaturalColoring(nElem);
+      SetNaturalElementColoring();
+      if (efficiency != nullptr) *efficiency = 1.0; // by definition
       return elemColoring;
     }
 
@@ -4085,10 +4117,10 @@ const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
     vector<unsigned long> outerPtr(nElem+1);
     vector<unsigned long> innerIdx; innerIdx.reserve(nElem);
 
-    for(unsigned long iElem = 0; iElem < nElem; ++iElem) {
+    for (unsigned long iElem = 0; iElem < nElem; ++iElem) {
       outerPtr[iElem] = innerIdx.size();
 
-      for(unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); ++iNode) {
+      for (unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); ++iNode) {
         innerIdx.push_back(elem[iElem]->GetNode(iNode));
       }
     }
@@ -4097,10 +4129,23 @@ const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
     CCompressedSparsePatternUL pattern(outerPtr, innerIdx);
 
     /*--- Color the elements. ---*/
-    elemColoring = colorSparsePattern(pattern, elemColorGroupSize);
+    constexpr bool balanceColors = true;
+    elemColoring = colorSparsePattern(pattern, elemColorGroupSize, balanceColors);
 
-    if(elemColoring.empty())
-      SU2_MPI::Error("Element coloring failed.", CURRENT_FUNCTION);
+    /*--- Same as for the edge coloring. ---*/
+    if (elemColoring.empty()) SetNaturalElementColoring();
+  }
+
+  if (efficiency != nullptr) {
+    *efficiency = coloringEfficiency(elemColoring, omp_get_max_threads(), elemColorGroupSize);
   }
   return elemColoring;
+}
+
+void CGeometry::SetNaturalElementColoring()
+{
+  if (nElem == 0) return;
+  elemColoring = createNaturalColoring(nElem);
+  /*--- In parallel, set the group size to nElem to protect client code. ---*/
+  if (omp_get_max_threads() > 1) elemColorGroupSize = nElem;
 }

@@ -2,7 +2,7 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -240,25 +240,8 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   LinSysReact.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
-#ifdef HAVE_OMP
-  /*--- Get the element coloring. ---*/
-
-  const auto& coloring = geometry->GetElementColoring();
-
-  if (!coloring.empty()) {
-    auto nColor = coloring.getOuterSize();
-    ElemColoring.reserve(nColor);
-
-    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      ElemColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
-    }
-  }
-  ColorGroupSize = geometry->GetElementColorGroupSize();
-
-  omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
-#else
-  ElemColoring[0] = DummyGridColor<>(nElement);
-#endif
+  /*--- Initialize structures for hybrid-parallel mode. ---*/
+  HybridParallelInitialization(geometry);
 
   iElem_iDe = nullptr;
 
@@ -338,6 +321,56 @@ CFEASolver::~CFEASolver(void) {
   if (iElem_iDe != nullptr) delete [] iElem_iDe;
 
   if (nodes != nullptr) delete nodes;
+
+  if (LockStrategy) {
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      omp_destroy_lock(&UpdateLocks[iPoint]);
+  }
+}
+
+void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {
+#ifdef HAVE_OMP
+  /*--- Get the element coloring. ---*/
+
+  su2double parallelEff = 1.0;
+  const auto& coloring = geometry->GetElementColoring(&parallelEff);
+
+  /*--- If the coloring is too bad use lock-guarded accesses
+   *    to CSysMatrix/Vector in element loops instead. ---*/
+  LockStrategy = parallelEff < COLORING_EFF_THRESH;
+
+  /*--- When using locks force a single color to reduce the color loop overhead. ---*/
+  if (LockStrategy && (coloring.getOuterSize()>1))
+    geometry->SetNaturalElementColoring();
+
+  if (!coloring.empty()) {
+    /*--- We are not constrained by the color group size when using locks. ---*/
+    auto groupSize = LockStrategy? 1ul : geometry->GetElementColorGroupSize();
+    auto nColor = coloring.getOuterSize();
+    ElemColoring.reserve(nColor);
+
+    for(auto iColor = 0ul; iColor < nColor; ++iColor)
+      ElemColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor), groupSize);
+  }
+
+  su2double minEff = 1.0;
+  SU2_MPI::Reduce(&parallelEff, &minEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+
+  if (minEff < COLORING_EFF_THRESH) {
+    cout << "WARNING: The element coloring efficiency was " << minEff << ", a fallback strategy is in use.\n"
+         << "         Better performance may be possible by reducing the number of threads per rank." << endl;
+  }
+
+  if (LockStrategy) {
+    UpdateLocks.resize(nPoint);
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      omp_init_lock(&UpdateLocks[iPoint]);
+  }
+
+  omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
+#else
+  ElemColoring[0] = DummyGridColor<>(nElement);
+#endif
 }
 
 void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
@@ -829,7 +862,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
@@ -879,6 +912,8 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
         /*--- Update residual and stiffness matrix with contributions from the element. ---*/
         for (iNode = 0; iNode < nNodes; iNode++) {
 
+          if (LockStrategy) omp_set_lock(&UpdateLocks[indexNode[iNode]]);
+
           auto Ta = element->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
             LinSysRes(indexNode[iNode], iVar) -= simp_penalty*Ta[iVar];
@@ -887,6 +922,8 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
             auto Kab = element->Get_Kab(iNode, jNode);
             Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], simp_penalty, Kab);
           }
+
+          if (LockStrategy) omp_unset_lock(&UpdateLocks[indexNode[iNode]]);
         }
 
       } // end iElem loop
@@ -917,7 +954,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
@@ -986,6 +1023,8 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
         /*--- Update residual and stiffness matrix with contributions from the element. ---*/
         for (iNode = 0; iNode < nNodes; iNode++) {
 
+          if (LockStrategy) omp_set_lock(&UpdateLocks[indexNode[iNode]]);
+
           auto Ta = fea_elem->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
             LinSysRes(indexNode[iNode], iVar) -= simp_penalty*Ta[iVar];
@@ -1023,6 +1062,8 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
                 Kij[iVar*(nVar+1)] += SU2_TYPE::GetValue(simp_penalty*Ks_ab_DE);
             }
           }
+
+          if (LockStrategy) omp_unset_lock(&UpdateLocks[indexNode[iNode]]);
         }
 
       } // end iElem loop
@@ -1048,7 +1089,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, C
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
@@ -1091,6 +1132,8 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, C
         /*--- Add contributions of this element to the mass matrix. ---*/
         for (iNode = 0; iNode < nNodes; iNode++) {
 
+          if (LockStrategy) omp_set_lock(&UpdateLocks[indexNode[iNode]]);
+
           for (jNode = 0; jNode < nNodes; jNode++) {
 
             auto Mij = MassMatrix.GetBlock(indexNode[iNode], indexNode[jNode]);
@@ -1099,6 +1142,8 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, C
             for (iVar = 0; iVar < nVar; iVar++)
               Mij[iVar*(nVar+1)] += simp_penalty*Mab;
           }
+
+          if (LockStrategy) omp_unset_lock(&UpdateLocks[indexNode[iNode]]);
         }
 
       } // end iElem loop
@@ -1125,7 +1170,7 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CCon
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
@@ -1165,7 +1210,10 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CCon
 
         numerics[FEA_TERM + thread*MAX_TERMS]->Compute_Mass_Matrix(element, config);
 
-        /*--- Add contributions of this element to the mass matrix. ---*/
+        /*--- Add contributions of this element to the mass matrix.
+         * In case we need to use locks we guard the entire update. ---*/
+        if (LockStrategy) omp_set_lock(&UpdateLocks[0]);
+
         for (iNode = 0; iNode < nNodes; iNode++) {
           for (jNode = 0; jNode < nNodes; jNode++) {
 
@@ -1177,6 +1225,7 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CCon
             }
           }
         }
+        if (LockStrategy) omp_unset_lock(&UpdateLocks[0]);
 
       } // end iElem loop
 
@@ -1205,7 +1254,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
@@ -1260,9 +1309,13 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
         numerics[NUM_TERM]->Compute_NodalStress_Term(element, config);
 
         for (iNode = 0; iNode < nNodes; iNode++) {
+          if (LockStrategy) omp_set_lock(&UpdateLocks[indexNode[iNode]]);
+
           auto Ta = element->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
             LinSysRes(indexNode[iNode], iVar) -= simp_penalty*Ta[iVar];
+
+          if (LockStrategy) omp_unset_lock(&UpdateLocks[indexNode[iNode]]);
         }
 
       } // end iElem loop
@@ -1302,7 +1355,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
@@ -1359,6 +1412,8 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
           auto iPoint = indexNode[iNode];
 
+          if (LockStrategy) omp_set_lock(&UpdateLocks[iPoint]);
+
           auto Ta = element->Get_Kt_a(iNode);
           for (iVar = 0; iVar < nVar; iVar++)
             LinSysReact(iPoint,iVar) += simp_penalty*Ta[iVar];
@@ -1368,6 +1423,8 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
           for (iStress = 0; iStress < nStress; iStress++)
             nodes->AddStress_FEM(iPoint,iStress, weight*element->Get_NodalStress(iNode,iStress));
+
+          if (LockStrategy) omp_unset_lock(&UpdateLocks[iPoint]);
         }
 
       } // end iElem loop
@@ -1564,7 +1621,7 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CCo
     for(auto color : ElemColoring) {
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(roundUpDiv(OMP_MIN_SIZE, ColorGroupSize)*ColorGroupSize)
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for(auto k = 0ul; k < color.size; ++k) {
 
         auto iElem = color.indices[k];
@@ -1604,6 +1661,8 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CCo
         /*--- Add contributions of this element to the mass matrix. ---*/
         for (iNode = 0; iNode < nNodes; iNode++) {
 
+          if (LockStrategy) omp_set_lock(&UpdateLocks[indexNode[iNode]]);
+
           auto Dead_Load = element->Get_FDL_a(iNode);
 
           su2double Aux_Dead_Load[MAXNVAR];
@@ -1611,6 +1670,8 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CCo
             Aux_Dead_Load[iVar] = simp_penalty*Dead_Load[iVar];
 
           nodes->Add_BodyForces_Res(indexNode[iNode], Aux_Dead_Load);
+
+          if (LockStrategy) omp_unset_lock(&UpdateLocks[indexNode[iNode]]);
         }
 
       } // end iElem loop

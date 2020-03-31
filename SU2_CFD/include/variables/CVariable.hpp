@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1077,16 +1077,6 @@ public:
   inline virtual su2double GetSensor(unsigned long iPoint, unsigned long iSpecies) const { return 0.0; }
 
   /*!
-   * \brief Set the value of the undivided laplacian of the solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_undivided_laplacian - Value of the undivided solution for the index <i>iVar</i>.
-   */
-  inline void SetUndivided_Laplacian(unsigned long iPoint, unsigned long iVar, su2double val_undivided_laplacian) {
-    Undivided_Laplacian(iPoint,iVar) = val_undivided_laplacian;
-  }
-
-  /*!
    * \brief Add the value of the undivided laplacian of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] val_und_lapl - Value of the undivided solution.
@@ -1107,13 +1097,13 @@ public:
   }
 
   /*!
-   * \brief Subtract the value of the undivided laplacian of the solution.
+   * \brief Increment the value of the undivided laplacian of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Variable of the undivided laplacian.
    * \param[in] val_und_lapl - Value of the undivided solution.
    */
-  inline void SubtractUnd_Lapl(unsigned long iPoint, unsigned long iVar, su2double val_und_lapl) {
-    Undivided_Laplacian(iPoint, iVar) -= val_und_lapl;
+  inline void AddUnd_Lapl(unsigned long iPoint, unsigned long iVar, su2double val_und_lapl) {
+    Undivided_Laplacian(iPoint, iVar) += val_und_lapl;
   }
 
   /*!

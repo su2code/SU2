@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -468,15 +468,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
                  nLocal_Pris +
                  nLocal_Pyra);
   nLocal_Bound_Elem = nLocal_Line + nLocal_BoundTria + nLocal_BoundQuad;
-#ifndef HAVE_MPI
-  nGlobal_Elem       = nLocal_Elem;
-  nGlobal_Bound_Elem = nLocal_Bound_Elem;
-#else
+
   SU2_MPI::Allreduce(&nLocal_Elem, &nGlobal_Elem, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&nLocal_Bound_Elem, &nGlobal_Bound_Elem, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
 
   /*--- With the distribution of all points, elements, and markers based
    on the ParMETIS coloring complete, as a final step, load this data into

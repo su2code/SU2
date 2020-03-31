@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -206,6 +206,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
    *    do this since the working vectors are shared. ---*/
 
   if (!cg_ready) {
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER
     {
       auto nVar = b.GetNVar();
@@ -348,6 +349,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
    a temporary CSysVector object for the copy constructor ---*/
 
   if (!gmres_ready) {
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER
     {
       W.resize(m+1, x);
@@ -495,6 +497,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   /*--- Allocate if not allocated yet ---*/
 
   if (!bcg_ready) {
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER
     {
       auto nVar = b.GetNVar();
@@ -658,6 +661,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
    product (A_x), for the latter two this is done only on the first call to the method. ---*/
 
   if (!smooth_ready) {
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER
     {
       auto nVar = b.GetNVar();
@@ -919,7 +923,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
         /*--- Enforce a hard limit on total number of iterations ---*/
         unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
         IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, IterLimit, residual, ScreenOutput, config);
-        if ( residual < SolverTol*norm0 ) break;
+        if ( residual <= SolverTol*norm0 ) break;
       }
       break;
     case SMOOTHER:

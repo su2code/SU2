@@ -2,7 +2,7 @@
  * \file signal_processing_toolbox.cpp
  * \brief Signal processing tools
  * \author S. Schotthöfer
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@ su2double CWindowingTools::GetWndWeight(WINDOW_FUNCTION windowId, unsigned long 
     case HANN:        return HannWindow(curTimeIter, endTimeIter);
     case HANN_SQUARE: return HannSquaredWindow(curTimeIter, endTimeIter);
     case BUMP:        return BumpWindow(curTimeIter, endTimeIter);
-    default:          return 1.0;
+    default:return 1.0;
   }
 }
 su2double CWindowingTools::HannWindow(unsigned long curTimeIter, unsigned long endTimeIter) const{
@@ -58,7 +58,7 @@ su2double CWindowingTools::BumpWindow(unsigned long curTimeIter, unsigned long e
   su2double currTimeDouble = static_cast<su2double>(curTimeIter);
   su2double endTimeDouble = static_cast<su2double>(endTimeIter);
   su2double tau = currTimeDouble/endTimeDouble;
-  return 1.0/0.00702986*(exp(-1.0/(tau-tau*tau)));
+  return 1.0/0.00702986*(exp(-1/(tau-tau*tau)));
   /* 0.00702986 equals the integral of exp(-1/(tau-tau*tau)) from 0 to 1,
    * and it acts as a normalization constant */
 }
