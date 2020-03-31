@@ -1924,16 +1924,18 @@ static const MapType<string, ENUM_GEO_ANALYTIC> Geo_Analytic_Map = {
  * \brief Types of axis orientation
  */
 enum ENUM_GEO_DESCRIPTION {
-  TWOD_AIRFOIL = 0, /*!< \brief Airfoil analysis. */
-  WING = 1, 	    /*!< \brief Wing analysis. */
-  FUSELAGE = 2,     /*!< \brief Fuselage analysis. */
-  NACELLE = 3       /*!< \brief Nacelle analysis. */
+  TWOD_AIRFOIL = 0,   /*!< \brief Airfoil analysis. */
+  WING = 1,           /*!< \brief Wing analysis. */
+  FUSELAGE = 2,       /*!< \brief Fuselage analysis. */
+  NACELLE = 3,        /*!< \brief Nacelle analysis. */
+  THICKNESS = 4       /*!< \brief Calculate thicknesses at various locations. */
 };
 static const MapType<string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = {
   MakePair("AIRFOIL", TWOD_AIRFOIL)
   MakePair("WING", WING)
   MakePair("FUSELAGE", FUSELAGE)
   MakePair("NACELLE", NACELLE)
+  MakePair("THICKNESS", THICKNESS)
 };
 
 /*!
