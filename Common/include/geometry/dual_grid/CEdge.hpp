@@ -39,7 +39,7 @@ private:
   su2double *Coord_CG;      /*!< \brief Center-of-gravity of the element. */
   unsigned long *Nodes;     /*!< \brief Vector to store the global nodes of an element. */
   su2double *Normal;        /*!< \brief Normal al elemento y coordenadas de su centro de gravedad. */
-  su2double *PartialVolume; /*!< \brief Portion of CV belonging to node for each edge. */
+  su2double *EdgeWeights; /*!< \brief Portion of CV belonging to node for each edge. */
 
 
 public:
@@ -178,21 +178,15 @@ public:
   inline void SetCoord(const su2double *val_coord) override { }
 
   /*!
-   * \brief Get area or volume of the partial control volume.
-   * \return Area or volume of the control volume.
+   * \brief Get weight of the partial control volume.
+   * \return Weight of the control volume.
    */
-  inline su2double GetPartialVolume(unsigned short val_Point) const { return PartialVolume[val_Point]; }
+  inline su2double GetEdgeWeights(unsigned short val_Point) const { return EdgeWeights[val_Point]; }
 
   /*!
-   * \brief Adds some area or volume of the partial CV.
-   * \param[in] val_Volume - Local volume to be added to the total one.
+   * \brief Set the weight of the partial control volume.
+   * \param[in] val_Weight - Weight to be added to the total one.
    */
-  inline void AddPartialVolume(su2double val_Volume, unsigned short val_Point) { PartialVolume[val_Point] += val_Volume; }
-
-  /*!
-   * \brief Set the volume of the partial control volume.
-   * \param[in] val_Volume - Local volume to be added to the total one.
-   */
-  inline void SetPartialVolume(su2double val_Volume, unsigned short val_Point) { PartialVolume[val_Point] = val_Volume; }
+  inline void SetEdgeWeights(su2double val_Weight, unsigned short val_Point) { EdgeWeights[val_Point] = val_Weight; }
 
 };

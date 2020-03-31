@@ -710,11 +710,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      /*--- Set partial control volume ---*/
-      const unsigned long iEdge = geometry->FindEdge(iPoint,geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor());
-      conv_numerics->SetPartialVolume(geometry->edge[iEdge]->GetPartialVolume(0),
-                                      geometry->edge[iEdge]->GetPartialVolume(1));
-
       /*--- Grid Movement ---*/
 
       if (dynamic_grid)

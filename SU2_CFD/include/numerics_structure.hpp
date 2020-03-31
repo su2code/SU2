@@ -698,11 +698,11 @@ public:
   void SetVolume(su2double val_volume);
 
   /*!
-   * \brief Set the value of the volume of the partial control volume.
-   * \param[in] val_vol_i - Volume of the partial control volume for node i.
-   * \param[in] val_vol_j - Volume of the partial control volume for node j.
+   * \brief Set the value of the weights of the partial control volume.
+   * \param[in] val_weight_i - Weight of the partial control volume for node i.
+   * \param[in] val_weight_j - Weight of the partial control volume for node j.
    */
-  void SetPartialVolume(su2double val_vol_i, su2double val_vol_j);
+  void SetEdgeWeights(su2double val_weight_i, su2double val_weight_j);
   
   /*!
    * \brief Retrieves the value of the species density in the primitive variable vector.

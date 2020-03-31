@@ -62,7 +62,7 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
-   AD::SetPreaccIn(W_i); AD::SetPreaccIn(W_j);
+//   AD::SetPreaccIn(W_i); AD::SetPreaccIn(W_j);
   ExtraADPreaccIn();
 
   Density_i = V_i[nDim+2];
@@ -73,16 +73,16 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
       Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
-//      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-       q_ij += (Velocity_i[iDim]*W_i+Velocity_j[iDim]*W_j)*Normal[iDim];
+      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
+//       q_ij += (Velocity_i[iDim]*W_i+Velocity_j[iDim]*W_j)*Normal[iDim];
     }
   }
   else {
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_i[iDim] = V_i[iDim+1];
       Velocity_j[iDim] = V_j[iDim+1];
-//      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-       q_ij += (Velocity_i[iDim]*W_i+Velocity_j[iDim]*W_j)*Normal[iDim];
+      q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
+//       q_ij += (Velocity_i[iDim]*W_i+Velocity_j[iDim]*W_j)*Normal[iDim];
     }
   }
 
@@ -164,7 +164,7 @@ void CAvgGrad_Scalar::ComputeResidual(su2double *val_residual,
   if (correct_gradient) {
     AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_j ,nVar);
   }
-   AD::SetPreaccIn(W_i); AD::SetPreaccIn(W_j);
+//   AD::SetPreaccIn(W_i); AD::SetPreaccIn(W_j);
   ExtraADPreaccIn();
 
   if (incompressible) {
@@ -198,10 +198,10 @@ void CAvgGrad_Scalar::ComputeResidual(su2double *val_residual,
     Proj_Mean_GradTurbVar_Normal[iVar] = 0.0;
     Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-//      Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] +
-//                                          TurbVar_Grad_j[iVar][iDim]);
-       Mean_GradTurbVar[iVar][iDim] = (TurbVar_Grad_i[iVar][iDim]*W_i +
-                                       TurbVar_Grad_j[iVar][iDim]*W_j);
+      Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] +
+                                          TurbVar_Grad_j[iVar][iDim]);
+//       Mean_GradTurbVar[iVar][iDim] = (TurbVar_Grad_i[iVar][iDim]*W_i +
+//                                       TurbVar_Grad_j[iVar][iDim]*W_j);
       Proj_Mean_GradTurbVar_Normal[iVar] += Mean_GradTurbVar[iVar][iDim] *
                                             Normal[iDim];
       if (correct_gradient)
@@ -1161,10 +1161,10 @@ void CAvgGrad_TurbSST::FinishResidualCalc(su2double *val_residual, su2double **J
   diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i;
   diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j;
   
-//  diff_kine  = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
-//  diff_omega = 0.5*(diff_i_omega + diff_j_omega);
-   diff_kine  = (diff_i_kine*W_i + diff_j_kine*W_j);    // Use weighted average!
-   diff_omega = (diff_i_omega*W_i + diff_j_omega*W_j);
+  diff_kine  = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
+  diff_omega = 0.5*(diff_i_omega + diff_j_omega);
+//   diff_kine  = (diff_i_kine*W_i + diff_j_kine*W_j);    // Use weighted average!
+//   diff_omega = (diff_i_omega*W_i + diff_j_omega*W_j);
   
   val_residual[0] = diff_kine*Proj_Mean_GradTurbVar[0];
   val_residual[1] = diff_omega*Proj_Mean_GradTurbVar[1];

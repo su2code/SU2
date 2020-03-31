@@ -51,8 +51,8 @@ CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short 
   Nodes[1] = val_jPoint;
 
   /*--- BCM: partial CV for flux calcs ---*/
-  PartialVolume = NULL;
-  PartialVolume = new su2double[2];
+  EdgeWeights = NULL;
+  EdgeWeights = new su2double[2];
 
 }
 
@@ -62,7 +62,7 @@ CEdge::~CEdge() {
   if (Normal   != NULL) delete[] Normal;
   if (Nodes    != NULL) delete[] Nodes;
 
-  if (PartialVolume != NULL) delete[] PartialVolume;
+  if (EdgeWeights != NULL) delete[] EdgeWeights;
 
 }
 
