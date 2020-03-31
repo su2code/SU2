@@ -48,8 +48,8 @@ def main():
                       help="Validate the gradient using direct diff. mode", metavar="VALIDATION")
     parser.add_option("-z", "--zones", dest="nzones", default="1",
                       help="Number of Zones", metavar="ZONES")
-    parser.add_option("-m", "--mode", dest="mode", default="0",
-                      help="Determine the calculation mode \n 0: compute primal & adjoint problem & gradient (DEFAULT) \n 1: compute adjoint (with primal restart) & gradient \n 2: compute gradient (with primal and adjoint restarts)", metavar="MODE")
+    parser.add_option("-m", "--mode", dest="mode", default="all",
+                      help="Determine the calculation mode \n <all> : compute primal & adjoint problem & gradient (DEFAULT) \n <adj> : compute adjoint (with primal restart) & gradient \n <grad>: compute gradient (with primal and adjoint restarts)", metavar="MODE")
 
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
@@ -58,7 +58,7 @@ def main():
     options.nzones      = int( options.nzones )
     options.mode        = int( options.mode )
 
-    if options.mode > 2 or options.mode < 0:
+    if options.mode != "all" and options.mode != "adj" and options.mode != "grad":
         sys.exit('Infeasible input for --mode. Use --help for more information')
 
     discrete_adjoint( options.filename    ,
@@ -78,7 +78,7 @@ def discrete_adjoint( filename           ,
                       partitions  = 0    ,
                       step        = 1e-4 ,
                       nzones      = 1,
-                      mode = 0):
+                      mode = "all"):
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
@@ -94,7 +94,7 @@ def discrete_adjoint( filename           ,
     config['GRADIENT_METHOD'] = 'DISCRETE_ADJOINT'
 
     # check for existing files
-    if mode == 2:
+    if mode == "grad":
         config.RESTART_SOL = 'YES'
         state.find_files(config)
     else:
@@ -104,7 +104,7 @@ def discrete_adjoint( filename           ,
     konfig = copy.deepcopy(config)
 
     # Direct Solution
-    if mode == 0:
+    if mode == "all":
         info = SU2.run.direct(config)
         state.update(info)
         # Update konfig
@@ -120,7 +120,7 @@ def discrete_adjoint( filename           ,
     # Adjoint Solution
 
     # Run all-at-once
-    if mode == 0 or mode == 1:
+    if mode == "all" or mode == "adj":
         restart_sol_activated = False
         if konfig.get('TIME_DOMAIN','NO') == 'YES' and konfig.get('RESTART_SOL','NO') == 'YES':
             restart_sol_activated = True

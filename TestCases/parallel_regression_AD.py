@@ -371,7 +371,7 @@ def main():
     unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
     unsteady_naca0012.cfg_file  = "naca0012.cfg" 
     unsteady_naca0012.test_iter = 14
-    unsteady_naca0012.su2_exec  = "discrete_adjoint.py -m 1 -f"
+    unsteady_naca0012.su2_exec  = "discrete_adjoint.py -m adj -f"
     unsteady_naca0012.timeout   = 1600
     unsteady_naca0012.reference_file = "of_grad_cd.csv.ref"
     unsteady_naca0012.test_file = "of_grad_cd.csv"
