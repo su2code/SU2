@@ -56,7 +56,6 @@ def main():
     options.step        = float( options.step )
     options.validate    = options.validate.upper() == 'TRUE'
     options.nzones      = int( options.nzones )
-    options.mode        = int( options.mode )
 
     if options.mode != "all" and options.mode != "adj" and options.mode != "grad":
         sys.exit('Infeasible input for --mode. Use --help for more information')
