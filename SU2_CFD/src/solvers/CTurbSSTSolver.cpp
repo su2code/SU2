@@ -535,23 +535,23 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Divergence of turbulent variable gradients ---*/
     
-//    DivTurbVarGrad[0] = DivTurbVarGrad[1] = 0.;
-//    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-//      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-//      iEdge = geometry->FindEdge(iPoint,jPoint);
-//      Normal = geometry->edge[iEdge]->GetNormal();
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        if (iPoint < jPoint) {
-//          DivTurbVarGrad[0] += nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
-//          DivTurbVarGrad[1] += nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
-//        }
-//        else {
-//          DivTurbVarGrad[0] -= nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
-//          DivTurbVarGrad[1] -= nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
-//        }
-//      }
-//    }
-//    numerics->SetDivTurbVarGrad(DivTurbVarGrad, NULL);
+    DivTurbVarGrad[0] = DivTurbVarGrad[1] = 0.;
+    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      iEdge = geometry->FindEdge(iPoint,jPoint);
+      Normal = geometry->edge[iEdge]->GetNormal();
+      for (iDim = 0; iDim < nDim; iDim++) {
+        if (iPoint < jPoint) {
+          DivTurbVarGrad[0] += nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
+          DivTurbVarGrad[1] += nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
+        }
+        else {
+          DivTurbVarGrad[0] -= nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
+          DivTurbVarGrad[1] -= nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
+        }
+      }
+    }
+    numerics->SetDivTurbVarGrad(DivTurbVarGrad, NULL);
 
     /*--- Compute the source term ---*/
 
