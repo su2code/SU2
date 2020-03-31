@@ -48,6 +48,10 @@ template<class T> class CPreconditioner;
 
 using namespace std;
 
+/*--- Relative tolerance, target residual is tol*||b-Ax||,
+ *    Absolute tolerance, target residual is tol*||b||. ---*/
+enum class LinearToleranceType {RELATIVE, ABSOLUTE};
+
 /*!
  * \class CSysSolve
  * \brief Class for solving linear systems using classical and Krylov-subspace iterative methods
@@ -97,6 +101,8 @@ private:
   VectorType  LinSysRes_tmp;        /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
   VectorType* LinSysSol_ptr;        /*!< \brief Pointer to appropriate LinSysSol (set to original or temporary in call to Solve). */
   const VectorType* LinSysRes_ptr;  /*!< \brief Pointer to appropriate LinSysRes (set to original or temporary in call to Solve). */
+
+  LinearToleranceType tol_type = LinearToleranceType::RELATIVE; /*!< \brief How the linear solvers interpret the tolerance. */
 
   /*!
    * \brief sign transfer function
@@ -312,5 +318,10 @@ public:
    * \return The residual at the end of Solve
    */
   inline ScalarType GetResidual(void) const { return Residual; }
+
+  /*!
+   * \brief Set the type of the tolerance for stoping the linear solvers (RELATIVE or ABSOLUTE).
+   */
+  inline void SetToleranceType(LinearToleranceType type) {tol_type = type;}
 
 };
