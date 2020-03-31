@@ -1276,14 +1276,14 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
-//   if (using_uq){
-//     pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
-//   }
-//   else {
-//     pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
-//   }
-//   pw = alfa_blended*Density_i*max(pw,0.0);
-    pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
+   if (using_uq){
+     pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
+   }
+   else {
+     pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
+   }
+   pw = alfa_blended*Density_i*max(pw,0.0);
+//    pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
 
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
@@ -1321,15 +1321,15 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    val_Jacobian_i[1][0] = 0.0;
    val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
     
-//   /*--- Production ---*/
-//   val_Jacobian_i[0][0] += (1./TurbVar_i[1]*StrainMag_i*StrainMag_i-2./3.*diverg)*Volume;
-//   val_Jacobian_i[0][1] += -(TurbVar_i[0]/pow(TurbVar_i[1],2.0)*StrainMag_i*StrainMag_i)*Volume;
-//   val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
-//
-//   /*--- Cross diffusion ---*/
-//
-//   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[1]/TurbVar_i[1];
-//   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[0]/TurbVar_i[1];
+   /*--- Production ---*/
+   val_Jacobian_i[0][0] += (1./TurbVar_i[1]*StrainMag_i*StrainMag_i-2./3.*diverg)*Volume;
+   val_Jacobian_i[0][1] += -(TurbVar_i[0]/pow(TurbVar_i[1],2.0)*StrainMag_i*StrainMag_i)*Volume;
+   val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
+
+   /*--- Cross diffusion ---*/
+
+   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[1]/TurbVar_i[1];
+   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[0]/TurbVar_i[1];
   }
 
   AD::SetPreaccOut(val_residual, nVar);
