@@ -2,7 +2,7 @@
  * \file signal_processing_toolbox.hpp
  * \brief Header file for the signal processing toolbox.
  * \author T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
