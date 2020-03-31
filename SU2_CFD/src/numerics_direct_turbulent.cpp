@@ -1269,7 +1269,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
 
    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
-   pk = max(pk,0.0);
+//   pk = max(pk,0.0);
 
    zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
 //    zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
@@ -1282,8 +1282,8 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    else {
      pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
    }
-   pw = alfa_blended*Density_i*max(pw,0.0);
-//    pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
+//   pw = alfa_blended*Density_i*max(pw,0.0);
+    pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
 
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
@@ -1302,8 +1302,8 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
    /*--- Add the production terms to the residuals. ---*/
 
-   val_residual[0] += pk*Volume;
-   val_residual[1] += pw*Volume;
+   val_residual[0] += max(pk, 0.0)*Volume;
+   val_residual[1] += max(pw, 0.0)*Volume;
 
    /*--- Dissipation ---*/
 
