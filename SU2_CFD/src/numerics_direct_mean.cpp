@@ -4694,7 +4694,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
       }
     } else {
 //      const su2double dist_ij = sqrt(dist_ij_2);
-      su2double proj_vector_ij = Area*Area/dist_ij_2;
+      su2double proj_vector_ij = Area/dist_ij_2;
       SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
                      proj_vector_ij, UnitNormal);
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity,
@@ -4965,7 +4965,7 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
       }
     } else {
 //      const su2double dist_ij = sqrt(dist_ij_2);
-      su2double proj_vector_ij = Area*Area/dist_ij_2;
+      su2double proj_vector_ij = Area/dist_ij_2;
       SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
                      proj_vector_ij, UnitNormal);
       SetHeatFluxJacobian(Mean_PrimVar, Mean_SecVar, Mean_Eddy_Viscosity,
