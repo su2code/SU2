@@ -62,7 +62,6 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
-//   AD::SetPreaccIn(W_i); AD::SetPreaccIn(W_j);
   ExtraADPreaccIn();
 
   Density_i = V_i[nDim+2];
@@ -74,7 +73,6 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
       Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
       Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-//       q_ij += (Velocity_i[iDim]*W_i+Velocity_j[iDim]*W_j)*Normal[iDim];
     }
   }
   else {
@@ -82,7 +80,6 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
       Velocity_i[iDim] = V_i[iDim+1];
       Velocity_j[iDim] = V_j[iDim+1];
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-//       q_ij += (Velocity_i[iDim]*W_i+Velocity_j[iDim]*W_j)*Normal[iDim];
     }
   }
 
@@ -164,7 +161,6 @@ void CAvgGrad_Scalar::ComputeResidual(su2double *val_residual,
   if (correct_gradient) {
     AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_j ,nVar);
   }
-//   AD::SetPreaccIn(W_i); AD::SetPreaccIn(W_j);
   ExtraADPreaccIn();
 
   if (incompressible) {
@@ -200,8 +196,6 @@ void CAvgGrad_Scalar::ComputeResidual(su2double *val_residual,
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] +
                                           TurbVar_Grad_j[iVar][iDim]);
-//       Mean_GradTurbVar[iVar][iDim] = (TurbVar_Grad_i[iVar][iDim]*W_i +
-//                                       TurbVar_Grad_j[iVar][iDim]*W_j);
       Proj_Mean_GradTurbVar_Normal[iVar] += Mean_GradTurbVar[iVar][iDim] *
                                             Normal[iDim];
       if (correct_gradient)
@@ -1163,8 +1157,6 @@ void CAvgGrad_TurbSST::FinishResidualCalc(su2double *val_residual, su2double **J
   
   diff_kine  = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
   diff_omega = 0.5*(diff_i_omega + diff_j_omega);
-//   diff_kine  = (diff_i_kine*W_i + diff_j_kine*W_j);    // Use weighted average!
-//   diff_omega = (diff_i_omega*W_i + diff_j_omega*W_j);
   
   val_residual[0] = diff_kine*Proj_Mean_GradTurbVar[0];
   val_residual[1] = diff_omega*Proj_Mean_GradTurbVar[1];
@@ -1265,6 +1257,14 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    }
    else {
      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+     if (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
+       val_Jacobian_i[0][0] += (1./TurbVar_i[1]*StrainMag_i*StrainMag_i-2./3.*diverg)*Volume;
+       val_Jacobian_i[0][1] += -(TurbVar_i[0]/pow(TurbVar_i[1],2.0)*StrainMag_i*StrainMag_i)*Volume;
+     }
+     else {
+       val_Jacobian_i[0][0] += 20.0*beta_star*TurbVar_i[1]*Volume;
+       val_Jacobian_i[0][1] += 20.0*beta_star*TurbVar_i[0]*Volume;
+     }
    }
 
 
@@ -1281,6 +1281,12 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    }
    else {
      pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
+     if (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
+       val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
+     }
+     else {
+       val_Jacobian_i[1][1] += 40.0*alfa_blended*beta_star*TurbVar_i[1]*Volume;
+     }
    }
 //   pw = alfa_blended*Density_i*max(pw,0.0);
     pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
@@ -1316,25 +1322,24 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
    /*--- Implicit part ---*/
 
-   val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;
-//   val_Jacobian_i[0][1] = -beta_star*TurbVar_i[0]*Volume;
-   val_Jacobian_i[0][1] = 0.0;
-   val_Jacobian_i[1][0] = 0.0;
-   val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
+   val_Jacobian_i[0][0] += -beta_star*TurbVar_i[1]*Volume;
+   val_Jacobian_i[0][1] += -beta_star*TurbVar_i[0]*Volume;
+   val_Jacobian_i[1][0] += 0.0;
+   val_Jacobian_i[1][1] += -2.0*beta_blended*TurbVar_i[1]*Volume;
     
    /*--- Production ---*/
     
-//   val_Jacobian_i[0][0] += (1./TurbVar_i[1]*StrainMag_i*StrainMag_i-2./3.*diverg)*Volume;
-//   val_Jacobian_i[0][1] += -(TurbVar_i[0]/pow(TurbVar_i[1],2.0)*StrainMag_i*StrainMag_i)*Volume;
-//   val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
-    val_Jacobian_i[0][0] += -2./3.*diverg*Volume;
-    val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
+////   val_Jacobian_i[0][0] += (1./TurbVar_i[1]*StrainMag_i*StrainMag_i-2./3.*diverg)*Volume;
+////   val_Jacobian_i[0][1] += -(TurbVar_i[0]/pow(TurbVar_i[1],2.0)*StrainMag_i*StrainMag_i)*Volume;
+////   val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
+//    val_Jacobian_i[0][0] += -2./3.*diverg*Volume;
+//    val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
 
    /*--- Cross diffusion ---*/
 
-//   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[1]/TurbVar_i[1];
-//   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[0]/TurbVar_i[1];
-    val_Jacobian_i[1][1] += -(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[1]/TurbVar_i[1];
+   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[0]/TurbVar_i[1];
+   val_Jacobian_i[1][1] += -(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
   }
 
   AD::SetPreaccOut(val_residual, nVar);

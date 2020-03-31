@@ -73,7 +73,6 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
       AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
     }
   }
-//  AD::SetPreaccIn(W_i); AD::SetPreaccIn(W_j);
 
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
   
@@ -107,12 +106,6 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   for (iDim = 0; iDim < nDim; iDim++)
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
   MeanEnergy = 0.5*(Energy_i+Energy_j);
-//   MeanDensity = (Density_i*W_i+Density_j*W_j);
-//   MeanPressure = (Pressure_i*W_i+Pressure_j*W_j);
-//   MeanEnthalpy = (Enthalpy_i*W_i+Enthalpy_j*W_j);
-//   for (iDim = 0; iDim < nDim; iDim++)
-//     MeanVelocity[iDim] =  (Velocity_i[iDim]*W_i+Velocity_j[iDim]*W_j);
-//   MeanEnergy = (Energy_i*W_i+Energy_j*W_j);
   
   /*--- Get projected flux tensor ---*/
   
@@ -130,8 +123,6 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
-//     GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, W_i, val_Jacobian_i);
-//     GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, W_j, val_Jacobian_j);
   }
 
   /*--- Adjustment due to grid motion ---*/
@@ -172,7 +163,6 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   Local_Lambda_i = (fabs(ProjVelocity_i)+SoundSpeed_i*Area);
   Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
   MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
-//  MeanLambda = (Local_Lambda_i*W_i+Local_Lambda_j*W_j);
   
   Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
   Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
@@ -4862,7 +4852,6 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
-//   AD::SetPreaccIn(W_i); AD::SetPreaccIn(W_j);
 
   unsigned short iVar, jVar, iDim;
 
@@ -4882,7 +4871,6 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
     PrimVar_i[iVar] = V_i[iVar];
     PrimVar_j[iVar] = V_j[iVar];
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
-//     Mean_PrimVar[iVar] = (PrimVar_i[iVar]*W_i+PrimVar_j[iVar]*W_j);
   }
 
   /*--- Compute vector going from iPoint to jPoint ---*/

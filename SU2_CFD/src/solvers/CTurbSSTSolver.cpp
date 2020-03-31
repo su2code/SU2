@@ -604,7 +604,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
 
       Solution[0] = 0.0;
-      Solution[1] = 60.0*laminar_viscosity/(beta_1*distance*distance+EPS*EPS);
+      Solution[1] = 60.0*laminar_viscosity/(beta_1*distance*distance);
       Solution[1] = min(max(Solution[1]/density, lowerlimit[1]), upperlimit[1])*density;
 
       /*--- Set the solution values and zero the residual ---*/
