@@ -1862,7 +1862,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
     }
   }
 
-  const su2double F1 = varTur->GetF1blending(iPoint);
+  const su2double F1   = varTur->GetF1blending(iPoint);
+  const su2double CDkw = varTur->GetCrossDiff(iPoint);
 
   const su2double alfa        = F1*constants[8] + (1.0 - F1)*constants[9];
   const su2double sigmak      = F1*constants[0] + (1.0 - F1)*constants[1];
@@ -1939,13 +1940,14 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
   weights[nVarFlo+0] += TmpWeights[nVarFlo+0];
   weights[nVarFlo+1] += TmpWeights[nVarFlo+1];
 
-  //--- Zeroth-order terms (due to production and dissipation)
+  //--- Zeroth-order terms (due to production, dissipation, and cross-diffusion)
   weights[0]         += -betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
                       - beta*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);
   weights[nVarFlo+0] += betastar*omega*varAdjTur->GetSolution(iPoint,0)
                       + (2./3.)*divu*varAdjTur->GetSolution(iPoint,0);
   weights[nVarFlo+1] += betastar*k*varAdjTur->GetSolution(iPoint,0)
                       + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1)
-                      + (2./3.)*alfa*divu*varAdjTur->GetSolution(iPoint,1);
+                      + (2./3.)*alfa*divu*varAdjTur->GetSolution(iPoint,1)
+                      +(1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
 
 }
