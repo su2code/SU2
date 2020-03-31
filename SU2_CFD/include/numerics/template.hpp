@@ -5,7 +5,7 @@
  *        new schemes in SU2, in practice you should look for a similar
  *        scheme and try to re-use functionality (not by copy-paste).
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
