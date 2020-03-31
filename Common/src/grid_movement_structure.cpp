@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

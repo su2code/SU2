@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1294,7 +1294,7 @@ public:
  * \class CElasticityMovement
  * \brief Class for moving the volumetric numerical grid using the new linear elasticity solver.
  * \author R.Sanchez, based on CVolumetricMovement developments of F. Palacios, A. Bueno, T. Economon, S. Padron
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  */
 class CElasticityMovement : public CVolumetricMovement {
 protected:

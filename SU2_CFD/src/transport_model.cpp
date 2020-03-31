@@ -2,7 +2,7 @@
  * transport_model.cpp
  * \brief Source of the main transport properties subroutines of the SU2 solvers.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
