@@ -122,15 +122,10 @@ public:
   /*!
    * \brief A pure virtual member.
    */
-  virtual su2double GetPartialVolume(unsigned short val_Point) const = 0;
+  virtual inline su2double GetEdgeWeights(unsigned short val_Point) const = 0;
 
   /*!
    * \brief A pure virtual member.
    */
-  virtual void AddPartialVolume(su2double val_Volume, unsigned short val_Point) = 0;
-
-  /*!
-   * \brief A pure virtual member.
-   */
-  virtual void SetPartialVolume(su2double val_Volume, unsigned short val_Point) = 0;
+  virtual inline void SetEdgeWeights(su2double val_Weight, unsigned short val_Point) = 0;
 };
