@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.2 "Blackbird"
+#  \version 7.0.3 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -203,8 +203,7 @@ def main():
     discadj_cylinder.timeout   = 1600
     discadj_cylinder.tol       = 0.0001
     discadj_cylinder.unsteady  = True
-    test_list.append(discadj_cylinder)
-    
+    test_list.append(discadj_cylinder)  
     
     ##########################################################################
     ### Unsteady Disc. adj. compressible RANS DualTimeStepping 1st order   ###
@@ -346,7 +345,41 @@ def main():
     pass_list.append(discadj_topol_optim.run_filediff())
     test_list.append(discadj_topol_optim)
 
+    ####################################################################################
+    ### Unsteady Disc. adj. compressible RANS Windowed Average with restart solution ###
+    ####################################################################################
 
+    # NACA0012 Airfoil
+    unsteady_naca0012           = TestCase('unsteady_NACA0012_restart_adjoint')
+    unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
+    unsteady_naca0012.cfg_file  = "naca0012.cfg" 
+    unsteady_naca0012.test_iter = 14
+    unsteady_naca0012.su2_exec  = "discrete_adjoint.py -f"
+    unsteady_naca0012.timeout   = 1600
+    unsteady_naca0012.reference_file = "of_grad_cd.csv.ref"
+    unsteady_naca0012.test_file = "of_grad_cd.csv"
+    unsteady_naca0012.unsteady  = True
+    pass_list.append(unsteady_naca0012.run_filediff())
+    test_list.append(unsteady_naca0012)
+    
+    ####################################################################################
+    ### Unsteady Disc. adj. compressible RANS Windowed Average  only adjoint ###
+    ####################################################################################
+
+    # NACA0012 Airfoil (Test depends on results of "unsteady_NACA0012_restart_adjoint")
+    unsteady_naca0012           = TestCase('unsteady_NACA0012_adjoint_only')
+    unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
+    unsteady_naca0012.cfg_file  = "naca0012.cfg" 
+    unsteady_naca0012.test_iter = 14
+    unsteady_naca0012.su2_exec  = "discrete_adjoint.py -m adj -f"
+    unsteady_naca0012.timeout   = 1600
+    unsteady_naca0012.reference_file = "of_grad_cd.csv.ref"
+    unsteady_naca0012.test_file = "of_grad_cd.csv"
+    unsteady_naca0012.unsteady  = True
+    pass_list.append(unsteady_naca0012.run_filediff())
+    test_list.append(unsteady_naca0012)
+
+	
     # Tests summary
     print('==================================================================')
     print('Summary of the parallel tests')

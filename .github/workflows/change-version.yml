@@ -16,7 +16,7 @@ jobs:
       id: extract_branch
     - name: Change the version number
       run: |
-        SU2_PY/change_version_number.py -v "${GITHUB_REF##*/release_v} \"Blackbird\"" -y
+        SU2_PY/change_version_number.py -v ${GITHUB_REF##*/release_v} -r Blackbird -y
     - name: Commit files
       run: |
         git config --local user.email "action@github.com"
