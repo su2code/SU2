@@ -33,7 +33,9 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 bin_PROGRAMS = ../bin/SU2_GEO
 
 ___bin_SU2_GEO_SOURCES = \
+  ../include/CGeometryEvaluation.hpp \
   ../include/SU2_GEO.hpp \
+  ../src/CGeometryEvaluation.cpp \
   ../src/SU2_GEO.cpp
 
 ___bin_SU2_GEO_CXXFLAGS =

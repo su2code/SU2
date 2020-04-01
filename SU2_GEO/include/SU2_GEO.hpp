@@ -39,5 +39,6 @@
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../Common/include/CConfig.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
+#include "CGeometryEvaluation.hpp"
 
 using namespace std;
