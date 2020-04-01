@@ -1169,26 +1169,51 @@ void CAvgGrad_TurbSST::FinishResidualCalc(su2double *val_residual, su2double **J
     Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j;     Jacobian_j[0][1] = 0.0;
     Jacobian_j[1][0] = 0.0;                      Jacobian_j[1][1] = diff_omega*proj_vector_ij/Density_j;
     
-    /*--- Add contributions of GG gradients ---*/
-    if (Grad_Method == GREEN_GAUSS) {
-      const su2double halfOnVol_i = 0.5 / (Volume_i);
-      const su2double halfOnVol_j = 0.5 / (Volume_j);
-      for (iDim = 0; iDim < nDim; iDim++) {
-        const su2double weight_i = Normal[iDim]*halfOnVol_i;
-        const su2double weight_j = Normal[iDim]*halfOnVol_j;
-        
-        Jacobian_i[0][0] += 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_kine/Density_i;
-        Jacobian_i[1][1] += 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_omega/Density_i;
-        
-        Jacobian_j[0][0] -= 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_kine/Density_j;
-        Jacobian_j[1][1] -= 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_omega/Density_j;
-      }
-    }
-    
-    /*--- TODO: add contributions of WLS gradients ---*/
-    else if (Grad_Method == WEIGHTED_LEAST_SQUARES) {}
+    CorrectJacobian(Jacobian_i, Jacobian_j, config);
   }
   
+}
+
+void CAvgGrad_TurbSST::CorrectJacobian(su2double **Jacobian_i,
+                                       su2double **Jacobian_j,
+                                       CConfig *config) {
+  
+  su2double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
+  su2double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
+  
+  /*--- Compute the blended constant for the viscous terms ---*/
+  sigma_kine_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
+  sigma_kine_j  = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
+  sigma_omega_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
+  sigma_omega_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
+  
+  /*--- Compute mean effective viscosity ---*/
+  diff_i_kine  = Laminar_Viscosity_i + sigma_kine_i*Eddy_Viscosity_i;
+  diff_j_kine  = Laminar_Viscosity_j + sigma_kine_j*Eddy_Viscosity_j;
+  diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i;
+  diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j;
+  
+  diff_kine  = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
+  diff_omega = 0.5*(diff_i_omega + diff_j_omega);
+  
+  /*--- Add contributions of GG gradients ---*/
+  if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) {
+    const su2double halfOnVol_i = 0.5 / (Volume_i);
+    const su2double halfOnVol_j = 0.5 / (Volume_j);
+    for (iDim = 0; iDim < nDim; iDim++) {
+      const su2double weight_i = Normal[iDim]*halfOnVol_i;
+      const su2double weight_j = Normal[iDim]*halfOnVol_j;
+      
+      Jacobian_i[0][0] += 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_kine/Density_i;
+      Jacobian_i[1][1] += 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_omega/Density_i;
+      
+      Jacobian_j[0][0] -= 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_kine/Density_j;
+      Jacobian_j[1][1] -= 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_omega/Density_j;
+    }
+  }
+  
+  /*--- TODO: add contributions of WLS gradients ---*/
+  else if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES) {}
 }
 
 CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double *constants,
@@ -1276,16 +1301,11 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    }
    else {
      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-     if ((pk > 0) && (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
-       val_Jacobian_i[0][0] += -2./3.*diverg*Volume;
-     }
-     else if (pk > 0) {
-//       val_Jacobian_i[0][0] += 20.0*beta_star*TurbVar_i[1]*Volume;
-//       val_Jacobian_i[0][1] += 20.0*beta_star*TurbVar_i[0]*Volume;
-     }
+//     if ((pk > 0) && (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
+//       val_Jacobian_i[0][0] += -2./3.*diverg*Volume;
+//     }
    }
-
-
+    
    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
 //   pk = max(pk,0.0);
 
@@ -1299,15 +1319,15 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    }
    else {
      pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
-     if ((pk > 0) && (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
-       val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
-     }
-     else if (pk > 0) {
-//       val_Jacobian_i[1][1] += 40.0*alfa_blended*beta_star*TurbVar_i[1]*Volume;
-     }
+//     if ((pk > 0) && (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
+//       val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
+//     }
    }
 //   pw = alfa_blended*Density_i*max(pw,0.0);
     pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
+    
+    pk = max(pk, 0.0);
+    pw = max(pw, 0.0);
 
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
@@ -1326,8 +1346,8 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
    /*--- Add the production terms to the residuals. ---*/
 
-   val_residual[0] += max(pk, 0.0)*Volume;
-   val_residual[1] += max(pw, 0.0)*Volume;
+   val_residual[0] += pk*Volume;
+   val_residual[1] += pw*Volume;
 
    /*--- Dissipation ---*/
 
@@ -1347,9 +1367,9 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
    /*--- Cross diffusion ---*/
 
-//   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[1]/TurbVar_i[1];
-//   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[0]/TurbVar_i[1];
-   val_Jacobian_i[1][1] += -(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+////   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[1]/TurbVar_i[1];
+////   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[0]/TurbVar_i[1];
+//   val_Jacobian_i[1][1] += -(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
   }
 
   AD::SetPreaccOut(val_residual, nVar);

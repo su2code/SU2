@@ -3559,6 +3559,16 @@ class CAvgGrad_Scalar : public CNumerics {
                                   su2double **Jacobian_i,
                                   su2double **Jacobian_j,
                                   CConfig *config) = 0;
+  
+  /*!
+   * \brief Model-specific steps to include gradient terms in Jacobian
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void CorrectJacobian(su2double **Jacobian_i,
+                               su2double **Jacobian_j,
+                               CConfig *config) = 0;
 
  protected:
   bool implicit, incompressible;
@@ -3842,6 +3852,16 @@ private:
    */
   void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
                                 su2double **Jacobian_j, CConfig *config);
+  
+  /*!
+   * \brief SST specific steps to include gradient terms in Jacobian
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CorrectJacobian(su2double **Jacobian_i,
+                       su2double **Jacobian_j,
+                       CConfig *config);
 
 public:
 

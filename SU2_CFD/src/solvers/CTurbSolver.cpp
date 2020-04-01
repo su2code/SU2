@@ -247,7 +247,6 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Set values for gradient Jacobian ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume(), geometry->node[jPoint]->GetVolume());
-    numerics->SetGradientMethod(config->GetKind_Gradient_Method());
 
     /*--- Compute residual, and Jacobians ---*/
 
