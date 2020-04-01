@@ -596,7 +596,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
       }
       distance = sqrt(distance);
-      distance = geometry->node[jPoint]->GetWall_Distance();
+//      distance = geometry->node[jPoint]->GetWall_Distance();
 
       /*--- Set wall values ---*/
 
