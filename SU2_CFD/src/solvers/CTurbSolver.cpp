@@ -244,6 +244,10 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Menter's first blending function (only SST)---*/
     if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
       numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
+    
+    /*--- Set values for gradient Jacobian ---*/
+    numerics->SetVolume(geometry->node[iPoint]->GetVolume(), geometry->node[jPoint]->GetVolume());
+    numerics->SetGradientMethod(config->GetKind_Gradient_Method());
 
     /*--- Compute residual, and Jacobians ---*/
 
@@ -456,24 +460,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
               nodes->AddConservative(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar],
                                      density, lowerlimit[iVar], upperlimit[iVar]);
 //          }
-          // else{
-          //   bool vw = false;
-          //   for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
-          //     if((geometry->node[iPoint]->GetVertex(iMarker) >= 0) &&
-          //        (config->GetViscous_Wall(iMarker))) {
-          //       vw = true;
-          //       break;
-          //     }
-          //   }
-          //   if (!vw) {
-              /*--- Set omega if not part of a viscous wall ---*/
-          //     su2double muLam     = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint),
-          //               viscRatio = config->GetTurb2LamViscRatio_FreeStream(),
-          //               k         = nodes->GetSolution(iPoint, 0);
-          //     nodes->SetSolution(iPoint, 1, density*k/(muLam*viscRatio));
-          //   }
-          // }
-
         }
 
         break;

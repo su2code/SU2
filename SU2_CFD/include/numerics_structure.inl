@@ -375,9 +375,13 @@ inline void CNumerics::SetNormal(su2double *val_normal) { Normal = val_normal; }
 
 inline void CNumerics::SetVolume(su2double val_volume) { Volume = val_volume; }
 
-inline void CNumerics::SetEdgeWeights(su2double val_weight_i, su2double val_weight_j) {
-  W_i = val_weight_i/(val_weight_i+val_weight_j);
-  W_j = val_weight_j/(val_weight_i+val_weight_j);
+inline void CNumerics::SetVolume(su2double val_volume_i, su2double val_volume_j) {
+  Volume_i = val_volume_i;
+  Volume_j = val_volume_j;
+}
+
+inline void CNumerics::SetGradientMethod(unsigned short val_grad_method) {
+  Grad_Method = val_grad_method;
 }
 
 inline void CNumerics::SetDissipation(su2double diss_i, su2double diss_j) {

@@ -255,8 +255,11 @@ public:
   /* Supporting data structures for the eigenspace perturbation for UQ methodology */
   su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
   su2double *Eig_Val, *Barycentric_Coord, *New_Coord;
-
-  su2double W_i, W_j; /*!< \brief Weights of each cell for averaging */
+  
+  su2double Volume_i, /*!< \brief Volume of the control volume around point i. */
+            Volume_j; /*!< \brief Volume of the control volume around point j. */
+  
+  unsigned short Grad_Method; /*!< \brief Method used to compute gradients. */
 
   /*!
    * \brief Constructor of the class.
@@ -696,13 +699,19 @@ public:
    * \param[in] val_volume Volume of the control volume.
    */
   void SetVolume(su2double val_volume);
-
+  
   /*!
-   * \brief Set the value of the weights of the partial control volume.
-   * \param[in] val_weight_i - Weight of the partial control volume for node i.
-   * \param[in] val_weight_j - Weight of the partial control volume for node j.
+   * \brief Set the value of the volume of the control volume.
+   * \param[in] val_volume_i Volume of the control volume for node i.
+   * \param[in] val_volume_j Volume of the control volume for node j.
    */
-  void SetEdgeWeights(su2double val_weight_i, su2double val_weight_j);
+  void SetVolume(su2double val_volume_i, su2double val_volume_j);
+  
+  /*!
+  * \brief Set the method used to compute gradients.
+  * \param[in] val_grad_method Method used for gradient computation.
+  */
+  void SetGradientMethod(unsigned short val_grad_method);
   
   /*!
    * \brief Retrieves the value of the species density in the primitive variable vector.
