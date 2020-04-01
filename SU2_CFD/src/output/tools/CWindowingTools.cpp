@@ -1,7 +1,7 @@
 /*!
  * \file signal_processing_toolbox.cpp
  * \brief Signal processing tools
- * \author T. Albring
+ * \author S. Schotthöfer
  * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
