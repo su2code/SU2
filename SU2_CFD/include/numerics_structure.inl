@@ -380,10 +380,6 @@ inline void CNumerics::SetVolume(su2double val_volume_i, su2double val_volume_j)
   Volume_j = val_volume_j;
 }
 
-inline void CNumerics::SetGradientMethod(unsigned short val_grad_method) {
-  Grad_Method = val_grad_method;
-}
-
 inline void CNumerics::SetDissipation(su2double diss_i, su2double diss_j) {
   Dissipation_i = diss_i;
   Dissipation_j = diss_j;

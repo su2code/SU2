@@ -1169,7 +1169,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(su2double *val_residual, su2double **J
     Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j;     Jacobian_j[0][1] = 0.0;
     Jacobian_j[1][0] = 0.0;                      Jacobian_j[1][1] = diff_omega*proj_vector_ij/Density_j;
     
-    CorrectJacobian(Jacobian_i, Jacobian_j, config);
+    if (correct_gradient) CorrectJacobian(Jacobian_i, Jacobian_j, config);
   }
   
 }
@@ -1178,37 +1178,46 @@ void CAvgGrad_TurbSST::CorrectJacobian(su2double **Jacobian_i,
                                        su2double **Jacobian_j,
                                        CConfig *config) {
   
-  su2double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
-  su2double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
-  
-  /*--- Compute the blended constant for the viscous terms ---*/
-  sigma_kine_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
-  sigma_kine_j  = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
-  sigma_omega_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
-  sigma_omega_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
-  
-  /*--- Compute mean effective viscosity ---*/
-  diff_i_kine  = Laminar_Viscosity_i + sigma_kine_i*Eddy_Viscosity_i;
-  diff_j_kine  = Laminar_Viscosity_j + sigma_kine_j*Eddy_Viscosity_j;
-  diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i;
-  diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j;
-  
-  diff_kine  = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
-  diff_omega = 0.5*(diff_i_omega + diff_j_omega);
+//  su2double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
+//  su2double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
+//
+//  /*--- Compute the blended constant for the viscous terms ---*/
+//  sigma_kine_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
+//  sigma_kine_j  = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
+//  sigma_omega_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
+//  sigma_omega_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
+//
+//  /*--- Compute mean effective viscosity ---*/
+//  diff_i_kine  = Laminar_Viscosity_i + sigma_kine_i*Eddy_Viscosity_i;
+//  diff_j_kine  = Laminar_Viscosity_j + sigma_kine_j*Eddy_Viscosity_j;
+//  diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i;
+//  diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j;
+//
+//  diff_kine  = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
+//  diff_omega = 0.5*(diff_i_omega + diff_j_omega);
   
   /*--- Add contributions of GG gradients ---*/
   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) {
     const su2double halfOnVol_i = 0.5 / (Volume_i);
     const su2double halfOnVol_j = 0.5 / (Volume_j);
+    
+    su2double jac_i[nVar][nVar], jac_j[nVar][nVar];
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+        jac_i[iVar][jVar] = Jacobian_i[iVar][jVar];
+        jac_j[iVar][jVar] = Jacobian_j[iVar][jVar];
+      }
+    }
+    
     for (iDim = 0; iDim < nDim; iDim++) {
       const su2double weight_i = Normal[iDim]*halfOnVol_i;
       const su2double weight_j = Normal[iDim]*halfOnVol_j;
       
-      Jacobian_i[0][0] += 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_kine/Density_i;
-      Jacobian_i[1][1] += 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_omega/Density_i;
+      Jacobian_i[0][0] -= weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_i[0][0]/proj_vector_ij;
+      Jacobian_i[1][1] -= weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_i[1][1]/proj_vector_ij;
       
-      Jacobian_j[0][0] -= 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_kine/Density_j;
-      Jacobian_j[1][1] -= 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_omega/Density_j;
+      Jacobian_j[0][0] -= weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[0][0]/proj_vector_ij;
+      Jacobian_j[1][1] -= weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[1][1]/proj_vector_ij;
     }
   }
   

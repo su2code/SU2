@@ -259,8 +259,6 @@ public:
   su2double Volume_i, /*!< \brief Volume of the control volume around point i. */
             Volume_j; /*!< \brief Volume of the control volume around point j. */
   
-  unsigned short Grad_Method; /*!< \brief Method used to compute gradients. */
-
   /*!
    * \brief Constructor of the class.
    */
@@ -3179,7 +3177,8 @@ class CAvgGrad_Base : public CNumerics {
   void SetTauJacobian(const su2double* val_Mean_PrimVar,
                       su2double val_laminar_viscosity,
                       su2double val_eddy_viscosity,
-                      su2double val_dist_ij,
+                      su2double val_proj_vector,
+                      su2double val_area,
                       const su2double *val_normal);
 
 
@@ -3229,6 +3228,26 @@ class CAvgGrad_Base : public CNumerics {
                           const su2double *val_Proj_Visc_Flux,
                           su2double **val_Proj_Jac_Tensor_i,
                           su2double **val_Proj_Jac_Tensor_j);
+  
+  /*!
+   * \brief Include gradient terms in Jacobian
+   *
+   * The Jacobians of the heat flux vector and the stress tensor must be
+   * calculated before calling this function.
+   *
+   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+   * \param[in] val_dS - Area of the face between two nodes.
+   * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
+   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
+   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
+   */
+  void CorrectJacobian(const su2double *val_Mean_PrimVar,
+                       const su2double val_proj_vector,
+                       su2double val_dS,
+                       const su2double *val_Proj_Visc_Flux,
+                       su2double **val_Proj_Jac_Tensor_i,
+                       su2double **val_Proj_Jac_Tensor_j,
+                       CConfig *config);
 
   /*!
    * \brief Apply a correction to the gradient to reduce the truncation error
@@ -3243,7 +3262,7 @@ class CAvgGrad_Base : public CNumerics {
                        const su2double* val_PrimVar_i,
                        const su2double* val_PrimVar_j,
                        const su2double* val_edge_vector,
-                       su2double val_dist_ij_2,
+                       su2double val_proj_vector,
                        const unsigned short val_nPrimVar);
 
   /*!
@@ -3383,7 +3402,8 @@ public:
   void SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
                            su2double val_laminar_viscosity,
                            su2double val_eddy_viscosity,
-                           su2double val_dist_ij,
+                           su2double val_proj_vector,
+                           su2double val_area,
                            const su2double *val_normal);
 };
 
@@ -3431,7 +3451,8 @@ private:
                            su2double val_eddy_viscosity,
                            su2double val_thermal_conductivity,
                            su2double val_heat_capacity_cp,
-                           su2double val_dist_ij);
+                           su2double val_proj_vector,
+                           su2double val_area);
 
 public:
 
@@ -3568,7 +3589,7 @@ class CAvgGrad_Scalar : public CNumerics {
    */
   virtual void CorrectJacobian(su2double **Jacobian_i,
                                su2double **Jacobian_j,
-                               CConfig *config) = 0;
+                               CConfig *config) { }
 
  protected:
   bool implicit, incompressible;
@@ -3634,6 +3655,16 @@ private:
    */
   void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
                                 su2double **Jacobian_j, CConfig *config);
+  
+  /*!
+   * \brief Model-specific steps to include gradient terms in Jacobian
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline void CorrectJacobian(su2double **Jacobian_i,
+                              su2double **Jacobian_j,
+                              CConfig *config) { }
 
 public:
 
@@ -3680,6 +3711,16 @@ private:
    */
   void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
                                 su2double **Jacobian_j, CConfig *config);
+  
+  /*!
+   * \brief Model-specific steps to include gradient terms in Jacobian
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline void CorrectJacobian(su2double **Jacobian_i,
+                              su2double **Jacobian_j,
+                              CConfig *config) { }
 
 public:
 
