@@ -1171,11 +1171,17 @@ void CAvgGrad_TurbSST::FinishResidualCalc(su2double *val_residual, su2double **J
     
     /*--- Add contributions of GG gradients ---*/
     if (Grad_Method == GREEN_GAUSS) {
-      const su2double halfOnVol_i = 0.5 / (Volume_i), halfOnVol_j = 0.5 / (Volume_j);
+      const su2double halfOnVol_i = 0.5 / (Volume_i);
+      const su2double halfOnVol_j = 0.5 / (Volume_j);
       for (iDim = 0; iDim < nDim; iDim++) {
-        const su2double weight_i = Normal[iDim]*halfOnVol_i, weight_j = Normal[iDim]*halfOnVol_j;
-        Jacobian_i[0][0] += 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij);
-        Jacobian_j[0][0] -= 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij);
+        const su2double weight_i = Normal[iDim]*halfOnVol_i;
+        const su2double weight_j = Normal[iDim]*halfOnVol_j;
+        
+        Jacobian_i[0][0] += 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_kine/Density_i;
+        Jacobian_i[1][1] += 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_omega/Density_i;
+        
+        Jacobian_j[0][0] -= 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_kine/Density_j;
+        Jacobian_j[1][1] -= 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*diff_omega/Density_j;
       }
     }
     
