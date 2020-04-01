@@ -4471,10 +4471,12 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
 }
 
 void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
-                                       const su2double val_dS,
+                                       su2double val_proj_vector,
+                                       su2double val_dS,
                                        const su2double *val_Proj_Visc_Flux,
                                        su2double **val_Proj_Jac_Tensor_i,
-                                       su2double **val_Proj_Jac_Tensor_j) {
+                                       su2double **val_Proj_Jac_Tensor_j,
+                                       CConfig *config) {
 
   const su2double Density = val_Mean_PrimVar[nDim+2];
   const su2double factor = 0.5/Density;
@@ -4503,6 +4505,8 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
+    
+    if (correct_gradient) CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, config);
 
     const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] +
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2];
@@ -4549,6 +4553,8 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
     
+    if (correct_gradient) CorrectJacobian(val_proj_vector, val_dS, val_Proj_Jac_Tensor_i, val_Proj_Jac_Tensor_j, config);
+    
     const su2double proj_viscousflux_vel= val_Proj_Visc_Flux[1]*val_Mean_PrimVar[1] +
                                           val_Proj_Visc_Flux[2]*val_Mean_PrimVar[2] +
                                           val_Proj_Visc_Flux[3]*val_Mean_PrimVar[3];
@@ -4565,10 +4571,8 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
 
 }
 
-void CAvgGrad_Base::CorrectJacobian(const su2double *val_Mean_PrimVar,
-                                    const su2double val_proj_vector,
+void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
                                     const su2double val_dS,
-                                    const su2double *val_Proj_Visc_Flux,
                                     su2double **val_Proj_Jac_Tensor_i,
                                     su2double **val_Proj_Jac_Tensor_j,
                                     CConfig *config) {
@@ -4731,11 +4735,8 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
                      proj_vector_ij, Area, UnitNormal);
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity,
                           Mean_Eddy_Viscosity, proj_vector_ij, Area, UnitNormal);
-      GetViscousProjJacs(Mean_PrimVar, Area, Proj_Flux_Tensor,
-                         val_Jacobian_i, val_Jacobian_j);
-      
-      if (correct_gradient) CorrectJacobian(Mean_PrimVar, proj_vector_ij, Area, Proj_Flux_Tensor,
-                                            val_Jacobian_i, val_Jacobian_j, config);
+      GetViscousProjJacs(Mean_PrimVar, proj_vector_ij, Area, Proj_Flux_Tensor,
+                         val_Jacobian_i, val_Jacobian_j, config);
     }
     
   }
@@ -5005,8 +5006,8 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
                      proj_vector_ij, Area, UnitNormal);
       SetHeatFluxJacobian(Mean_PrimVar, Mean_SecVar, Mean_Eddy_Viscosity,
                           Mean_Thermal_Conductivity, Mean_Cp, proj_vector_ij, Area);
-      GetViscousProjJacs(Mean_PrimVar, Area, Proj_Flux_Tensor,
-                         val_Jacobian_i, val_Jacobian_j);
+      GetViscousProjJacs(Mean_PrimVar, proj_vector_ij, Area, Proj_Flux_Tensor,
+                         val_Jacobian_i, val_Jacobian_j, config);
     }
     
   }

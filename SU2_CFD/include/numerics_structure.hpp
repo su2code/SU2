@@ -3224,10 +3224,12 @@ class CAvgGrad_Base : public CNumerics {
    * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
    */
   void GetViscousProjJacs(const su2double *val_Mean_PrimVar,
+                          su2double val_proj_vector,
                           su2double val_dS,
                           const su2double *val_Proj_Visc_Flux,
                           su2double **val_Proj_Jac_Tensor_i,
-                          su2double **val_Proj_Jac_Tensor_j);
+                          su2double **val_Proj_Jac_Tensor_j,
+                          CConfig *config);
   
   /*!
    * \brief Include gradient terms in Jacobian
@@ -3241,10 +3243,8 @@ class CAvgGrad_Base : public CNumerics {
    * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
    * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
    */
-  void CorrectJacobian(const su2double *val_Mean_PrimVar,
-                       const su2double val_proj_vector,
+  void CorrectJacobian(const su2double val_proj_vector,
                        su2double val_dS,
-                       const su2double *val_Proj_Visc_Flux,
                        su2double **val_Proj_Jac_Tensor_i,
                        su2double **val_Proj_Jac_Tensor_j,
                        CConfig *config);
