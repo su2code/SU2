@@ -4086,7 +4086,7 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
                                     const su2double* val_PrimVar_i,
                                     const su2double* val_PrimVar_j,
                                     const su2double* val_edge_vector,
-                                    const su2double val_dist_ij_2,
+                                    const su2double val_proj_vector_ij,
                                     const unsigned short val_nPrimVar) {
 //  for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
 //    Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
@@ -4110,7 +4110,7 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
     }
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-                                 (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*Normal[iDim] / val_dist_ij_2;
+                                 (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*Normal[iDim] / val_proj_vector_ij;
     }
   }
 }
@@ -4389,7 +4389,7 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
   const su2double Density = val_Mean_PrimVar[nDim+2];
   const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
 //  const su2double xi = total_viscosity/(Density*val_dist_ij);
-   const su2double xi = total_viscosity*val_proj_vector/Density;
+   const su2double xi = total_viscosity/(Density*val_proj_vector);
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
@@ -4607,11 +4607,12 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Compute vector going from iPoint to jPoint ---*/
   
+  su2double proj_vector_ij = 0.0;
   dist_ij_2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-    //    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-    dist_ij_2 += Edge_Vector[iDim]*Normal[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
 
   /*--- Laminar and Eddy viscosity ---*/
@@ -4637,7 +4638,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   if (correct_gradient && dist_ij_2 != 0.0) {
     CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, Edge_Vector,
-                    dist_ij_2, nDim+1);
+                    proj_vector_ij, nDim+1);
   }
   
   /*--- Wall shear stress values (wall functions) ---*/
@@ -4684,7 +4685,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
       }
     } else {
 //      const su2double dist_ij = sqrt(dist_ij_2);
-      su2double proj_vector_ij = Area/dist_ij_2;
+//      su2double proj_vector_ij = Area/dist_ij_2;
       SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
                      proj_vector_ij, UnitNormal);
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity,
@@ -4740,7 +4741,7 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
   const su2double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb;
   const su2double cpoR = Gamma/Gamma_Minus_One; // cp over R
 //  const su2double conductivity_over_Rd = cpoR*heat_flux_factor/val_dist_ij;
-  const su2double conductivity_over_Rd = cpoR*heat_flux_factor*val_proj_vector;
+  const su2double conductivity_over_Rd = cpoR*heat_flux_factor/val_proj_vector;
 
   heat_flux_jac_i[0] = conductivity_over_Rd * R_dTdu0;
   heat_flux_jac_i[1] = conductivity_over_Rd * R_dTdu1;
@@ -4875,11 +4876,12 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
 
   /*--- Compute vector going from iPoint to jPoint ---*/
   
+  su2double proj_vector_ij = 0.0;
   dist_ij_2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-//    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-    dist_ij_2 += Edge_Vector[iDim]*Normal[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
   
   /*--- Laminar and Eddy viscosity ---*/
@@ -4915,7 +4917,7 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
 
   if (correct_gradient && dist_ij_2 != 0.0) {
     CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, Edge_Vector,
-                    dist_ij_2, nDim+1);
+                    proj_vector_ij, nDim+1);
   }
   
   /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
@@ -4953,7 +4955,7 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
       }
     } else {
 //      const su2double dist_ij = sqrt(dist_ij_2);
-      su2double proj_vector_ij = Area/dist_ij_2;
+//      su2double proj_vector_ij = Area/dist_ij_2;
       SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
                      proj_vector_ij, UnitNormal);
       SetHeatFluxJacobian(Mean_PrimVar, Mean_SecVar, Mean_Eddy_Viscosity,
