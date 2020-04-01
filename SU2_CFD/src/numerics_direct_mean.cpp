@@ -4389,7 +4389,7 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
   const su2double Density = val_Mean_PrimVar[nDim+2];
   const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
 //  const su2double xi = total_viscosity/(Density*val_dist_ij);
-   const su2double xi = total_viscosity/(Density*val_proj_vector);
+   const su2double xi = total_viscosity*val_proj_vector/Density;
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
@@ -4685,7 +4685,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
       }
     } else {
 //      const su2double dist_ij = sqrt(dist_ij_2);
-//      su2double proj_vector_ij = Area/dist_ij_2;
+      proj_vector_ij = Area/proj_vector_ij;
       SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
                      proj_vector_ij, UnitNormal);
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity,
@@ -4741,7 +4741,7 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
   const su2double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb;
   const su2double cpoR = Gamma/Gamma_Minus_One; // cp over R
 //  const su2double conductivity_over_Rd = cpoR*heat_flux_factor/val_dist_ij;
-  const su2double conductivity_over_Rd = cpoR*heat_flux_factor/val_proj_vector;
+  const su2double conductivity_over_Rd = cpoR*heat_flux_factor*val_proj_vector;
 
   heat_flux_jac_i[0] = conductivity_over_Rd * R_dTdu0;
   heat_flux_jac_i[1] = conductivity_over_Rd * R_dTdu1;
@@ -4955,7 +4955,7 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
       }
     } else {
 //      const su2double dist_ij = sqrt(dist_ij_2);
-//      su2double proj_vector_ij = Area/dist_ij_2;
+      proj_vector_ij = Area/proj_vector_ij;
       SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
                      proj_vector_ij, UnitNormal);
       SetHeatFluxJacobian(Mean_PrimVar, Mean_SecVar, Mean_Eddy_Viscosity,
