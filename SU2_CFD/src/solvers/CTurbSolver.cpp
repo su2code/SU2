@@ -242,10 +242,12 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
 
     /*--- Menter's first blending function (only SST)---*/
+    
     if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
       numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
     
     /*--- Set values for gradient Jacobian ---*/
+    
     numerics->SetVolume(geometry->node[iPoint]->GetVolume(), geometry->node[jPoint]->GetVolume());
 
     /*--- Compute residual, and Jacobians ---*/

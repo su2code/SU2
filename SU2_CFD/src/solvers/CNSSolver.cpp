@@ -1384,6 +1384,10 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     /*--- Wall shear stress values (wall functions) ---*/
 
     numerics->SetTauWall(nodes->GetTauWall(iPoint), nodes->GetTauWall(iPoint));
+    
+    /*--- Set values for gradient Jacobian ---*/
+    
+    numerics->SetVolume(geometry->node[iPoint]->GetVolume(), geometry->node[jPoint]->GetVolume());
 
     /*--- Compute and update residual ---*/
 
