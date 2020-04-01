@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1621,7 +1621,7 @@ public:
    * \param[in] fillLvl - Level of fill of the pattern.
    * \return Reference to the sparse pattern.
    */
-  const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl);
+  const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl = 0);
 
   /*!
    * \brief Get the edge to sparse pattern map.
@@ -1631,11 +1631,24 @@ public:
   const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap(void);
 
   /*!
+   * \brief Get the transpose of the (main, i.e 0 fill) sparse pattern (e.g. CSR becomes CSC).
+   * \param[in] type - Finite volume or finite element.
+   * \return Reference to the map.
+   */
+  const su2vector<unsigned long>& GetTransposeSparsePatternMap(ConnectivityType type);
+
+  /*!
    * \brief Get the edge coloring.
    * \note This method computes the coloring if that has not been done yet.
+   * \param[out] efficiency - optional output of the coloring efficiency.
    * \return Reference to the coloring.
    */
-  const CCompressedSparsePatternUL& GetEdgeColoring(void);
+  const CCompressedSparsePatternUL& GetEdgeColoring(su2double* efficiency = nullptr);
+
+  /*!
+   * \brief Force the natural (sequential) edge coloring.
+   */
+  void SetNaturalEdgeColoring();
 
   /*!
    * \brief Get the group size used in edge coloring.
@@ -1646,9 +1659,15 @@ public:
   /*!
    * \brief Get the element coloring.
    * \note This method computes the coloring if that has not been done yet.
+   * \param[out] efficiency - optional output of the coloring efficiency.
    * \return Reference to the coloring.
    */
-  const CCompressedSparsePatternUL& GetElementColoring(void);
+  const CCompressedSparsePatternUL& GetElementColoring(su2double* efficiency = nullptr);
+
+  /*!
+   * \brief Force the natural (sequential) element coloring.
+   */
+  void SetNaturalElementColoring();
 
   /*!
    * \brief Get the group size used in element coloring.

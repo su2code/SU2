@@ -2,7 +2,7 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -96,39 +96,17 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
   /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
 
+  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Mesh Deformation)." << endl;
+
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
 
-#ifdef HAVE_OMP
-  /*--- Get the element coloring. ---*/
+  /*--- Initialize structures for hybrid-parallel mode. ---*/
 
-  const auto& coloring = geometry->GetElementColoring();
+  HybridParallelInitialization(geometry);
 
-  if (!coloring.empty()) {
-    auto nColor = coloring.getOuterSize();
-    ElemColoring.reserve(nColor);
-
-    for(auto iColor = 0ul; iColor < nColor; ++iColor) {
-      ElemColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor));
-    }
-  }
-  ColorGroupSize = geometry->GetElementColorGroupSize();
-
-  omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
-#else
-  ElemColoring[0] = DummyGridColor<>(nElement);
-#endif
-
-  /*--- Structural parameters ---*/
-
-  E      = config->GetDeform_ElasticityMod();
-  Nu     = config->GetDeform_PoissonRatio();
-
-  Mu     = E / (2.0*(1.0 + Nu));
-  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-
-  /*--- Element container structure ---*/
+  /*--- Element container structure. ---*/
 
   if (nDim == 2) {
     for(int thread = 0; thread < omp_get_max_threads(); ++thread) {
@@ -410,23 +388,37 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
 void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
 
-  unsigned long iElem;
+  /*--- Use the config option as an upper bound on elasticity modulus.
+   *    For RANS meshes the range of element volume or wall distance is
+   *    very large and leads to an ill-conditioned stiffness matrix.
+   *    Absolute values of elasticity modulus are not important for
+   *    mesh deformation, since linear elasticity is used and all
+   *    boundary conditions are essential (Dirichlet). ---*/
+  const su2double maxE = config->GetDeform_ElasticityMod();
 
   if (!stiffness_set) {
-    for (iElem = 0; iElem < nElement; iElem++) {
+    /*--- All threads must execute the entire loop (no worksharing),
+     *    each sets the stiffnesses for its numerics instance. ---*/
+    SU2_OMP_PARALLEL
+    {
+    CNumerics* myNumerics = numerics[FEA_TERM + omp_get_thread_num()*MAX_TERMS];
+
+    for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+
+      su2double E = 1.0;
 
       switch (config->GetDeform_Stiffness_Type()) {
-      /*--- Stiffness inverse of the volume of the element ---*/
-      case INVERSE_VOLUME: E = 1.0 / element[iElem].GetRef_Volume();  break;
-      /*--- Stiffness inverse of the distance of the element to the closest wall ---*/
-      case SOLID_WALL_DISTANCE: E = 1.0 / element[iElem].GetWallDistance(); break;
+        /*--- Stiffness inverse of the volume of the element ---*/
+        case INVERSE_VOLUME: E = 1.0 / element[iElem].GetRef_Volume();  break;
+
+        /*--- Stiffness inverse of the distance of the element to the closest wall ---*/
+        case SOLID_WALL_DISTANCE: E = 1.0 / element[iElem].GetWallDistance(); break;
       }
 
       /*--- Set the element elastic properties in the numerics container ---*/
-      numerics[FEA_TERM]->SetMeshElasticProperties(iElem, E);
-
+      myNumerics->SetMeshElasticProperties(iElem, min(E,maxE));
     }
-
+    }
     stiffness_set = true;
   }
 
@@ -436,15 +428,15 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   if (multizone) nodes->Set_BGSSolution_k();
 
-  /*--- Initialize sparse matrix ---*/
-  Jacobian.SetValZero();
-
   /*--- Compute the stiffness matrix. ---*/
   Compute_StiffMatrix(geometry[MESH_0], numerics, config);
 
-  /*--- Initialize vectors and clean residual ---*/
-  LinSysSol.SetValZero();
-  LinSysRes.SetValZero();
+  /*--- Initialize vectors and clean residual. ---*/
+  SU2_OMP_PARALLEL
+  {
+    LinSysSol.SetValZero();
+    LinSysRes.SetValZero();
+  }
 
   /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
    Hence we still need a communication of the transformed coordinates, otherwise periodicity

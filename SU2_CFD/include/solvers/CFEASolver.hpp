@@ -2,7 +2,7 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -77,15 +77,18 @@ protected:
 
 #ifdef HAVE_OMP
   vector<GridColor<> > ElemColoring;   /*!< \brief Element colors. */
+  bool LockStrategy = false;           /*!< \brief Whether to use an OpenMP lock to guard updates of the Jacobian. */
+  vector<omp_lock_t> UpdateLocks;      /*!< \brief Locks that may be used to protect accesses to CSysMatrix/Vector in element loops. */
 #else
-  array<DummyGridColor<>,1> ElemColoring;
+  array<DummyGridColor<>,1> ElemColoring;      /*--- Behaves like a normal integer type. ---*/
+  static constexpr bool LockStrategy = false;  /*--- Lock strategy is never needed for MPI-only. ---*/
+  DummyVectorOfLocks UpdateLocks;
 #endif
-  unsigned long ColorGroupSize;     /*!< \brief Group size used for coloring, chunk size must be a multiple of this. */
 
-  bool element_based;               /*!< \brief Bool to determine if an element-based file is used. */
-  bool topol_filter_applied;        /*!< \brief True if density filtering has been performed. */
+  bool element_based;          /*!< \brief Bool to determine if an element-based file is used. */
+  bool topol_filter_applied;   /*!< \brief True if density filtering has been performed. */
 
-  unsigned long nElement;           /*!< \brief Number of elements. */
+  unsigned long nElement;      /*!< \brief Number of elements. */
 
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use,
@@ -115,6 +118,12 @@ protected:
       default: assert(false); nNodes = 0; EL_KIND = -(1<<30); break;
     }
   }
+
+  /*!
+   * \brief Actions required to initialize the supporting variables for hybrid parallel execution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void HybridParallelInitialization(CGeometry* geometry);
 
   /*!
    * \brief Set container of element properties.

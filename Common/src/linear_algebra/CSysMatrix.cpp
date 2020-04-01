@@ -2,7 +2,7 @@
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -89,8 +89,9 @@ CSysMatrix<ScalarType>::~CSysMatrix(void) {
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain,
-                            unsigned short nvar, unsigned short neqn,
-                            bool EdgeConnect, CGeometry *geometry, CConfig *config) {
+                                        unsigned short nvar, unsigned short neqn,
+                                        bool EdgeConnect, CGeometry *geometry,
+                                        CConfig *config, bool needTranspPtr) {
 
   assert(omp_get_thread_num()==0 && "Only the master thread is allowed to initialize the matrix.");
 
@@ -126,10 +127,13 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   const auto& csr = geometry->GetSparsePattern(type,0);
 
+  nnz = csr.getNumNonZeros();
   row_ptr = csr.outerPtr();
   col_ind = csr.innerIdx();
   dia_ptr = csr.diagPtr();
-  nnz = csr.getNumNonZeros();
+
+  if (needTranspPtr)
+    col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
 
   if (type == ConnectivityType::FiniteVolume)
     edge_ptr.ptr = geometry->GetEdgeToSparsePatternMap().data();
@@ -188,24 +192,6 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   for(auto part = 0ul; part < omp_num_parts; ++part)
     omp_partitions[part] = part * pts_per_part;
   omp_partitions[omp_num_parts] = nPointDomain;
-
-  /*--- For coarse grid levels setup a structure that allows doing a column sum efficiently,
-   * essentially the transpose of the col_ind, this allows populating the matrix by setting
-   * the off-diagonal entries and then setting the diagonal ones as the sum of column
-   * (excluding the diagonal itself). We use the fact that the pattern is symmetric. ---*/
-
-  if ((geometry->GetMGLevel() != MESH_0) && (omp_get_max_threads() > 1)) {
-
-    col_ptr.resize(nnz, nullptr);
-
-    SU2_OMP_PARALLEL_(for schedule(static,omp_heavy_size))
-    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-      for (auto k = row_ptr[iPoint]; k < row_ptr[iPoint+1]; ++k) {
-        auto jPoint = col_ind[k];
-        col_ptr[k] = GetBlock(jPoint, iPoint);
-      }
-    }
-  }
 
   /*--- Generate MKL Kernels ---*/
 
@@ -1333,8 +1319,10 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
 
     auto block_ii = &matrix[dia_ptr[iPoint]*nVar*nEqn];
 
+    for (auto k = 0ul; k < nVar*nEqn; ++k) block_ii[k] = 0.0;
+
     for (auto k = row_ptr[iPoint]; k < row_ptr[iPoint+1]; ++k) {
-      auto block_ji = col_ptr[k];
+      auto block_ji = &matrix[col_ptr[k]*nVar*nEqn];
       if (block_ji != block_ii) MatrixSubtraction(block_ii, block_ji, block_ii);
     }
   }
