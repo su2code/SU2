@@ -1280,8 +1280,8 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
        val_Jacobian_i[0][0] += -2./3.*diverg*Volume;
      }
      else if (pk > 0) {
-       val_Jacobian_i[0][0] += 20.0*beta_star*TurbVar_i[1]*Volume;
-       val_Jacobian_i[0][1] += 20.0*beta_star*TurbVar_i[0]*Volume;
+//       val_Jacobian_i[0][0] += 20.0*beta_star*TurbVar_i[1]*Volume;
+//       val_Jacobian_i[0][1] += 20.0*beta_star*TurbVar_i[0]*Volume;
      }
    }
 
@@ -1303,7 +1303,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
        val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
      }
      else if (pk > 0) {
-       val_Jacobian_i[1][1] += 40.0*alfa_blended*beta_star*TurbVar_i[1]*Volume;
+//       val_Jacobian_i[1][1] += 40.0*alfa_blended*beta_star*TurbVar_i[1]*Volume;
      }
    }
 //   pw = alfa_blended*Density_i*max(pw,0.0);
@@ -1349,7 +1349,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
 //   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[1]/TurbVar_i[1];
 //   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[0]/TurbVar_i[1];
-//   val_Jacobian_i[1][1] += -(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+   val_Jacobian_i[1][1] += -(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
   }
 
   AD::SetPreaccOut(val_residual, nVar);
