@@ -381,7 +381,7 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
     su2double dNi[4][2] = {{0.0}};
     CQUAD4::ShapeFunctionJacobian(Xi, Eta, dNi);
 
-    su2double jac[3][2];
+    su2double jac[3][2] = {{0.0}};
     for (int i = 0; i < 3; ++i)
       for (int j = 0; j < 2; ++j)
         for (int k = 0; k < 4; ++k)
