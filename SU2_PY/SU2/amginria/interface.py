@@ -103,7 +103,7 @@ def prepro_back_mesh_2d(config_cfd, config_amg):
             Tri[i][2] = tmp
 
         mesh_bak['Triangles'] = Tri.tolist()
-        Ver = mesh['xyz']
+        Ver = mesh_bak['xyz']
         mesh_bak['xy'] = np.stack((Ver[:,0],Ver[:,1]), axis=1).tolist()
         del mesh_bak['xyz']
         write_mesh(config_amg['adap_back'], mesh_bak)
