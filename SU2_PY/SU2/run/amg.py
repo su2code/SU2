@@ -276,7 +276,7 @@ def amg ( config , kind='' ):
     if dim == 2:
         sys.stdout.write("\nPreprocessing background mesh.\n")
         sys.stdout.flush()
-        su2amg.prepro_back_mesh(config_cfd, config_amg)
+        su2amg.prepro_back_mesh_2d(config_cfd, config_amg)
     
     if 'PYADAP_SOURCE' in config:
         config_amg['adap_source'] = os.path.join(cwd,config['PYADAP_SOURCE'])

@@ -59,7 +59,7 @@ def return_mesh_size(mesh):
     
     return ', '.join(map(str, tab_out))
     
-def prepro_back_mesh(config_cfd, config_amg):
+def prepro_back_mesh_2d(config_cfd, config_amg):
     #--- Read initial and background meshes
     sys.stdout.write("Reading initial and background mesh.\n")
     sys.stdout.flush()
@@ -103,6 +103,9 @@ def prepro_back_mesh(config_cfd, config_amg):
             Tri[i][2] = tmp
 
         mesh_bak['Triangles'] = Tri.tolist()
+        Ver = mesh['xyz']
+        mesh_bak['xy'] = np.stack((Ver[:,0],Ver[:,1]), axis=1).tolist()
+        del mesh_bak['xyz']
         write_mesh(config_amg['adap_back'], mesh_bak)
 
     del mesh_bak
