@@ -43,7 +43,7 @@ CIsoparametric::CIsoparametric(CGeometry ****geometry_container, const CConfig* 
 void CIsoparametric::PrintStatistics(void) const {
   if (rank != MASTER_NODE) return;
   cout << " Maximum distance to closest donor element: " << MaxDistance << ".\n"
-       << " Interpolation mitigated on " << ErrorCounter << " (" << ErrorRate << "%) target vertices." << endl;
+       << " Interpolation mitigated for " << ErrorCounter << " (" << ErrorRate << "%) target vertices." << endl;
 }
 
 void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
@@ -283,7 +283,7 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
 
 int CIsoparametric::LineIsoparameters(const su2double X[][3], const su2double *xj, su2double *isoparams) {
 
-  const su2double extrapTol = 1.01;
+  const su2double extrapTol = 1.05;
 
   su2double l01 = Distance(2, X[0], X[1]);
   su2double l0j = Distance(2, X[0], xj);
@@ -293,12 +293,7 @@ int CIsoparametric::LineIsoparameters(const su2double X[][3], const su2double *x
 
   const int outOfBounds = (l0j+lj1) > (extrapTol*l01);
 
-  if (outOfBounds) {
-    l0j = (l0j > lj1)? l01 : 0.0; // which ever is closest becomes the donor
-    lj1 = l01 - l0j;
-  }
-
-  isoparams[0] = lj1 / l01;
+  isoparams[0] = max(1.0-extrapTol, min(lj1/l01, extrapTol));
   isoparams[1] = 1.0 - isoparams[0];
 
   return outOfBounds;
@@ -309,7 +304,7 @@ int CIsoparametric::TriangleIsoparameters(const su2double X[][3], const su2doubl
   /*--- The isoparameters are the solution to the determined system X^T * isoparams = xj.
    *    This is consistent with the shape functions of the linear triangular element. ---*/
 
-  const su2double extrapTol = -0.01;
+  const su2double extrapTol = -0.05;
 
   su2double A[3][3] = {{0.0}}; // = X^T
 
@@ -342,9 +337,18 @@ int CIsoparametric::TriangleIsoparameters(const su2double X[][3], const su2doubl
                           (isoparams[1] < extrapTol) ||
                           (isoparams[2] < extrapTol);
 
-  /*--- Simple mitigation. ---*/
-  if (outOfBounds)
-    isoparams[0] = isoparams[1] = isoparams[2] = 1.0/3.0;
+  /*--- Mitigation. ---*/
+  if (outOfBounds) {
+    /*--- Clamp. ---*/
+    su2double sum = 0.0;
+    for (int i = 0; i < 3; ++i) {
+      isoparams[i] = max(isoparams[i], extrapTol);
+      sum += isoparams[i];
+    }
+    /*--- Enforce unit sum. ---*/
+    for (int i = 0; i < 3; ++i)
+      isoparams[i] /= sum;
+  }
 
   return outOfBounds;
 }
@@ -353,12 +357,12 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
 
   /*--- The isoparameters are the shape functions (Ni) evaluated at xj, for that we need
    *    the corresponding Xi and Eta, which are obtained by solving the overdetermined
-   *    nonlinear system xj - X^T * Ni(Xi,Eta) = 0 via the Gauss-Newton method. ---*/
+   *    nonlinear system xj - X^T * Ni(Xi,Eta) = 0 via the modified Marquardt method. ---*/
 
-  const su2double extrapTol = 1.01;
+  const su2double extrapTol = 1.05;
 
-  constexpr int NITER = 200;
-  const su2double tol = 1e-5, relax = 0.8;
+  constexpr int NITER = 20;
+  const su2double tol = 1e-10, lambda = 0.05;
 
   su2double Xi = 0.0, Eta = 0.0, eps;
 
@@ -393,17 +397,19 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
       for (int j = i; j < 2; ++j)
         for (int k = 0; k < 3; ++k)
           A[i][j] += jac[k][i] * jac[k][j];
-      A[1][0] = A[0][1];
+
+      A[i][i] *= (1.0+lambda);
 
       for (int k = 0; k < 3; ++k)
         b[i] += jac[k][i] * r[k];
     }
+    A[1][0] = A[0][1];
 
     su2double detA = 1.0 / (A[0][0]*A[1][1] - A[0][1]*A[1][0]);
     su2double dXi = (b[0]*A[1][1] - b[1]*A[0][1]) * detA;
     su2double dEta = (A[0][0]*b[1] - A[1][0]*b[0]) * detA;
-    Xi -= relax * dXi;
-    Eta -= relax * dEta;
+    Xi -= dXi;
+    Eta -= dEta;
 
     eps = fabs(dXi)+fabs(dEta);
     if (eps < tol) break;
@@ -414,7 +420,7 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
   int outOfBounds = 0;
 
   if (eps > 0.01) {
-    /*--- Iteration diverged. ---*/
+    /*--- Iteration diverged, hard fallback. ---*/
     Xi = Eta = 0.0;
     outOfBounds = 1;
   }
@@ -424,8 +430,8 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
 
     /*--- Mitigate by clamping coordinates. ---*/
     if (outOfBounds) {
-      Xi = max(-1.0, min(Xi, 1.0));
-      Eta = max(-1.0, min(Eta, 1.0));
+      Xi = max(-extrapTol, min(Xi, extrapTol));
+      Eta = max(-extrapTol, min(Eta, extrapTol));
     }
   }
 
