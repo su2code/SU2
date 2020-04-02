@@ -4150,7 +4150,7 @@ void CGeometry::ComputeWallDistance(CConfig **config_container, CGeometry ****ge
        * It might happen that there is a closer viscous wall in zone iZone for points in zone jZone. ---*/
         for (int jZone = 0; jZone < nZone; jZone++){
           if (wallDistanceNeeded[jZone] && WallADT && !WallADT->IsEmpty())
-            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(config_container[iZone], WallADT.get());
+            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(config_container[jZone], WallADT.get());
         }
       }
     }
