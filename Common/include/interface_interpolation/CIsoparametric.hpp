@@ -1,7 +1,7 @@
 ﻿/*!
  * \file CIsoparametric.hpp
  * \brief Isoparametric interpolation using FE shape functions.
- * \author H. Kline, P. Gomes
+ * \author P. Gomes
  * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

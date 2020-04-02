@@ -111,6 +111,11 @@ public:
   inline su2double *GetNormal(void) override { return Normal; }
 
   /*!
+   * \brief Get the ith component of the normal.
+   */
+  inline su2double GetNormal(unsigned short iDim) const { return Normal[iDim]; }
+
+  /*!
    * \brief Initialize normal vector.
    */
   inline void SetZeroValues(void) override {

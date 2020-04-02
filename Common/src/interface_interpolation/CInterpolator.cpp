@@ -133,7 +133,7 @@ unsigned long CInterpolator::Collect_ElementInfo(int markDonor, unsigned short n
 
     const auto nNode = donor_geometry->bound[markDonor][iElem]->GetnNodes();
     bufferSendNum[iElem] = nNode;
-    assert(nNode < maxElemNodes && "Donor element has too many nodes.");
+    assert(nNode <= maxElemNodes && "Donor element has too many nodes.");
 
     for (auto iNode = 0u; iNode < nNode; ++iNode) {
       auto iPoint = donor_geometry->bound[markDonor][iElem]->GetNode(iNode);

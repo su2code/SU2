@@ -38,7 +38,7 @@ using namespace std;
 /*!
  * \class CInterpolator
  * \brief Main class for defining the interpolator, it requires
- * a child class for each particular interpolation method
+ *        a child class for each particular interpolation method.
  * \author H. Kline
  */
 class CInterpolator {
@@ -65,9 +65,7 @@ protected:
   *Buffer_Send_FaceIndex,            /*!< \brief Buffer to send indices pointing to the node indices that define the faces*/
   *Buffer_Receive_FaceIndex,         /*!< \brief Buffer to receive indices pointing to the node indices that define the faces*/
   *Buffer_Send_FaceNodes,            /*!< \brief Buffer to send indices pointing to the location of node information in other buffers, defining faces*/
-  *Buffer_Receive_FaceNodes,         /*!< \brief Buffer to receive indices pointing to the location of node information in other buffers, defining faces*/
-  *Buffer_Send_FaceProc,             /*!< \brief Buffer to send processor which stores the node indicated in Buffer_Receive_FaceNodes*/
-  *Buffer_Receive_FaceProc;          /*!< \brief Buffer to receive processor which stores the node indicated in Buffer_Receive_FaceNodes*/
+  *Buffer_Receive_FaceNodes;         /*!< \brief Buffer to receive indices pointing to the location of node information in other buffers, defining faces*/
 
   long *Buffer_Send_GlobalPoint,     /*!< \brief Buffer to send global point indices*/
   *Buffer_Receive_GlobalPoint;       /*!< \brief Buffer to receive global point indices*/

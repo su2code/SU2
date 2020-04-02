@@ -1,7 +1,7 @@
 /*!
  * \file CIsoparametric.cpp
  * \brief Implementation isoparametric interpolation (using FE shape functions).
- * \author H. Kline, P. Gomes
+ * \author P. Gomes
  * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -48,8 +48,8 @@ void CIsoparametric::PrintStatistics(void) const {
 
 void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
 
-  /*--- Angle between target and donor below which we trigger fallback measures. ---*/
-  const su2double thetaMin = 80.0/180.0*PI_NUMBER;
+  /*--- Angle between target and donor above which we trigger fallback measures. ---*/
+  const su2double thetaMax = 20.0/180.0*PI_NUMBER;
 
   const int nProcessor = size;
   const auto nMarkerInt = config[donorZone]->GetMarker_n_ZoneInterface()/2;
@@ -174,9 +174,12 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
       if (!target_geometry->node[iPoint]->GetDomain()) continue;
       totalCount += 1;
 
-      /*--- Coordinates and normal of the target point. ---*/
+      /*--- Coordinates and unit normal of the target point. ---*/
       const su2double* coord_i = target_geometry->node[iPoint]->GetCoord();
-      const su2double* normal_i = target_vertex->GetNormal();
+      const su2double area_i = Norm(nDim, target_vertex->GetNormal());
+      su2double unitNormal_i[3] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; ++iDim)
+        unitNormal_i[iDim] = target_vertex->GetNormal(iDim) / area_i;
 
       /*--- Find closest element (the naive way). ---*/
       su2double minDist = 1e20;
@@ -215,19 +218,19 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
 
       /*--- Project the target onto the donor plane, as grids may not be exactly conformal.
        *    For quadrilaterals this is approximate as the element may be warped. ---*/
-      su2double proj = DotProduct(nDim, normal_i, normal_j);
-      su2double theta = acos(fabs(proj) / (Norm(nDim, normal_i)*Norm(nDim, normal_j)));
+      su2double proj = DotProduct(nDim, unitNormal_i, normal_j);
+      su2double theta = acos(fabs(proj) / Norm(nDim, normal_j));
 
       su2double projCoord[3] = {0.0};
 
-      if (theta >= thetaMin) {
+      if (theta < thetaMax) {
         su2double dist_ij[3] = {0.0};
         Distance(nDim, coord_j, coord_i, dist_ij);
         proj = DotProduct(nDim, dist_ij, normal_j) / proj;
         for (auto iDim = 0u; iDim < nDim; ++iDim)
-          projCoord[iDim] = coord_i[iDim] + proj*dist_ij[iDim];
+          projCoord[iDim] = coord_i[iDim] + proj*unitNormal_i[iDim];
 
-        maxDist = max(maxDist, proj*Norm(nDim, dist_ij));
+        maxDist = max(maxDist, fabs(proj));
       }
       else {
         /*--- Target and donor are too out of alignement, as fallback
@@ -280,13 +283,15 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
 
 int CIsoparametric::LineIsoparameters(const su2double X[][3], const su2double *xj, su2double *isoparams) {
 
+  const su2double extrapTol = 1.01;
+
   su2double l01 = Distance(2, X[0], X[1]);
   su2double l0j = Distance(2, X[0], xj);
   su2double lj1 = Distance(2, xj, X[1]);
 
   /*--- Detect out of bounds point. ---*/
 
-  const int outOfBounds = (l0j+lj1) > l01;
+  const int outOfBounds = (l0j+lj1) > (extrapTol*l01);
 
   if (outOfBounds) {
     l0j = (l0j > lj1)? l01 : 0.0; // which ever is closest becomes the donor
@@ -304,6 +309,8 @@ int CIsoparametric::TriangleIsoparameters(const su2double X[][3], const su2doubl
   /*--- The isoparameters are the solution to the determined system X^T * isoparams = xj.
    *    This is consistent with the shape functions of the linear triangular element. ---*/
 
+  const su2double extrapTol = -0.01;
+
   su2double A[3][3] = {{0.0}}; // = X^T
 
   for (int i = 0; i < 3; ++i) {
@@ -312,7 +319,7 @@ int CIsoparametric::TriangleIsoparameters(const su2double X[][3], const su2doubl
       A[i][j] = X[j][i];
   }
 
-  /*--- Solve normal system by in-place Gaussian elimination without pivoting. ---*/
+  /*--- Solve system by in-place Gaussian elimination without pivoting. ---*/
 
   /*--- Transform system in Upper Matrix. ---*/
   for (int i = 1; i < 3; ++i) {
@@ -323,7 +330,6 @@ int CIsoparametric::TriangleIsoparameters(const su2double X[][3], const su2doubl
       isoparams[i] -= w * isoparams[j];
     }
   }
-
   /*--- Backwards substitution. ---*/
   for (int i = 2; i >= 0; --i) {
     for (int j = i+1; j < 3; ++j)
@@ -332,7 +338,9 @@ int CIsoparametric::TriangleIsoparameters(const su2double X[][3], const su2doubl
   }
 
   /*--- Detect out of bounds point. ---*/
-  const int outOfBounds = (isoparams[0] < 0.0) || (isoparams[1] < 0.0) || (isoparams[2] < 0.0);
+  const int outOfBounds = (isoparams[0] < extrapTol) ||
+                          (isoparams[1] < extrapTol) ||
+                          (isoparams[2] < extrapTol);
 
   /*--- Simple mitigation. ---*/
   if (outOfBounds)
@@ -346,6 +354,8 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
   /*--- The isoparameters are the shape functions (Ni) evaluated at xj, for that we need
    *    the corresponding Xi and Eta, which are obtained by solving the overdetermined
    *    nonlinear system xj - X^T * Ni(Xi,Eta) = 0 via the Gauss-Newton method. ---*/
+
+  const su2double extrapTol = 1.01;
 
   constexpr int NITER = 10;
   const su2double tol = 1e-12;
@@ -410,7 +420,7 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
   }
   else {
     /*--- Check bounds. ---*/
-    outOfBounds = (fabs(Xi) > 1.0) || (fabs(Eta) > 1.0);
+    outOfBounds = (fabs(Xi) > extrapTol) || (fabs(Eta) > extrapTol);
 
     /*--- Mitigate by clamping coordinates. ---*/
     if (outOfBounds) {
