@@ -504,7 +504,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
   su2double localUnderRelaxation    =  1.00;
   const su2double allowableDecrease = -0.99;
   const su2double allowableIncrease =  0.99;
-  const su2double allowableRatio    = 0.5;
+//  const su2double allowableRatio    = 0.5;
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -530,16 +530,11 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
       /* We impose a limit on the maximum percentage that the
        specific dissipation can change over a nonlinear iteration. */
 
-       unsigned short iVar = 1;
-       const unsigned long index = iPoint*nVar + iVar;
-       su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, iVar)+EPS);
-       if (ratio > allowableRatio) {
-         localUnderRelaxation = min(allowableRatio/ratio, localUnderRelaxation);
-       }
-//       if (ratio > allowableIncrease) {
-//         localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
-//       } else if (ratio < allowableDecrease) {
-//         localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
+//       unsigned short iVar = 1;
+//       const unsigned long index = iPoint*nVar + iVar;
+//       su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, iVar)+EPS);
+//       if (ratio > allowableRatio) {
+//         localUnderRelaxation = min(allowableRatio/ratio, localUnderRelaxation);
 //       }
 
     }
