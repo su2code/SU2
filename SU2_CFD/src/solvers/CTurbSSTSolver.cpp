@@ -493,7 +493,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   unsigned long iPoint;
   unsigned long iEdge, jPoint;
   unsigned short iNeigh, iDim;
-  su2double *DivTurbVarGrad = new su2double[2], *Normal;
+  su2double *NormalSum = new su2double[nDim], *Normal;
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -536,25 +536,25 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint),0.0);
     
-    /*--- Divergence of turbulent variable gradients ---*/
+    /*--- Contribution of gradients to Jacobian ---*/
     
-    DivTurbVarGrad[0] = DivTurbVarGrad[1] = 0.;
-    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-      iEdge = geometry->FindEdge(iPoint,jPoint);
-      Normal = geometry->edge[iEdge]->GetNormal();
-      for (iDim = 0; iDim < nDim; iDim++) {
-        if (iPoint < jPoint) {
-          DivTurbVarGrad[0] += nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
-          DivTurbVarGrad[1] += nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
-        }
-        else {
-          DivTurbVarGrad[0] -= nodes->GetGradient(iPoint, 0, iDim)*Normal[iDim];
-          DivTurbVarGrad[1] -= nodes->GetGradient(iPoint, 1, iDim)*Normal[iDim];
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+      for (iDim = 0; iDim < nDim; iDim++) NormalSum[iDim] = 0.0;
+      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+        iEdge = geometry->FindEdge(iPoint,jPoint);
+        Normal = geometry->edge[iEdge]->GetNormal();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          if (iPoint < jPoint) {
+            NormalSum[iDim] += 0.5*Normal[iDim];
+          }
+          else {
+            NormalSum[iDim] -= 0.5*Normal[iDim];
+          }
         }
       }
     }
-    numerics->SetDivTurbVarGrad(DivTurbVarGrad, NULL);
+    numerics->SetNormalSum(NormalSum);
 
     /*--- Compute the source term ---*/
 
@@ -567,7 +567,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   }
   
-  delete [] DivTurbVarGrad;
+  delete [] NormalSum;
 
 }
 

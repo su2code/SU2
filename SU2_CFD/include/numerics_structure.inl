@@ -404,9 +404,8 @@ inline void CSourcePieceWise_TurbSST::SetCrossDiff(su2double val_CDkw_i, su2doub
   CDkw_j = val_CDkw_j;
 }
 
-inline void CSourcePieceWise_TurbSST::SetDivTurbVarGrad(su2double *val_DivTurbVarGrad_i, su2double *val_DivTurbVarGrad_j) {
-  DivTurbVarGrad_i = val_DivTurbVarGrad_i;
-  DivTurbVarGrad_j = val_DivTurbVarGrad_j;
+inline void CSourcePieceWise_TurbSST::SetNormalSum(su2double *val_NormalSum) {
+  NormalSum = val_NormalSum;
 }
 
 inline void CSourcePieceWise_TurbSA::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }

@@ -493,11 +493,10 @@ public:
   virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {/* empty */};
   
   /*!
-   * \brief Set the divergene of the turbulent variables for the SST model.
-   * \param[in] val_DivTurbVarGrad_i - Value of the divergence of turbulent variables at point i.
-   * \param[in] val_DivTurbVarGrad_j - Value of the divergence of turbulent variables at point j.
+   * \brief Set the weights of the gradient of turbulent variables for the Jacobian of the SST model.
+   * \param[in] val_NormalSum - Value of the divergence of turbulent variables at point i.
    */
-  virtual void SetDivTurbVarGrad(su2double *val_DivTurbVarGrad_i, su2double *val_DivTurbVarGrad_j) {/* empty */};
+  virtual void SetNormalSum(su2double *val_NormalSum) {/* empty */};
   
   /*!
    * \brief Set the gradient of the auxiliary variables.
@@ -4792,7 +4791,7 @@ private:
 
   su2double kAmb, omegaAmb;
   
-  su2double *DivTurbVarGrad_i, *DivTurbVarGrad_j;
+  su2double *NormalSum;
  
   bool incompressible;
   bool sustaining_terms;
@@ -4832,14 +4831,13 @@ public:
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
    * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
    */
-  virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j);
+  void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j);
   
   /*!
-   * \brief Set the divergene of the turbulent variables for the SST model.
-   * \param[in] val_DivTurbVarGra_i - Value of the divergence of turbulent variables at point i.
-   * \param[in] val_DivTurbVar_j - Value of the divergence of turbulent variables at point j.
+   * \brief Set the weights of the gradient of turbulent variables for the Jacobian of the SST model.
+   * \param[in] val_NormalSum - Value of the divergence of turbulent variables at point i.
    */
-  virtual void SetDivTurbVarGrad(su2double *val_DivTurbVarGrad_i, su2double *val_DivTurbVarGrad_j);
+  void SetNormalSum(su2double *val_NormalSum);
   
   /*!
    * \brief Residual for source term integration.
