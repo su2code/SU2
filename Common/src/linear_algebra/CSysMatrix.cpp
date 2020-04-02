@@ -33,20 +33,6 @@
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
 #include <cmath>
-#include <Eigen/Sparse>
-#include <unsupported/Eigen/SparseExtra>
-
-namespace SuperLU
-{
-#ifdef __cplusplus
-  extern "C" {
-#endif
-    #include "superlu_ddefs.h"
-    #undef Reduce
-#ifdef __cplusplus
-  }
-#endif
-}
 
 template<class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix(void) {
@@ -221,56 +207,6 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   mkl_jit_create_dgemm( &MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, 1, nVar,  1.0, nVar, nVar, 1.0, nVar );
   MatrixVectorProductTranspKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductTranspJitterBetaOne );
 #endif
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::Initialize_DG(unsigned long npoint, unsigned long npointdomain,
-                  unsigned short nvar, unsigned short neqn,
-                  const vector<unsigned long>& nNonZeroEntries, 
-                  const vector<unsigned long>& nonZeroEntriesJacobian_flat, 
-                  const unsigned long nDOFsLocOwned,
-                  CGeometry *geometry, CConfig *config) {
-
-  /*--- Basic dimensions. ---*/
-  nVar = nvar;
-  nEqn = neqn;
-  nPoint = npoint; // nDOFsGlobal
-  nPointDomain = npointdomain; // nDOFsLocOwned
-
-  /*--- Flatten nonZeroEntriesJacobian. ---*/
-  // std::vector<unsigned long> nonZeroEntriesJacobian_flat(nNonZeroEntries[nDOFsLocOwned]);
-  // for (unsigned long i = 0; i < nonZeroEntriesJacobian.size(); ++i){
-  //   for (unsigned long j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
-  //     nonZeroEntriesJacobian_flat[nNonZeroEntries[i] + j] = nonZeroEntriesJacobian[i][j];
-  //   }
-  // }
-
-  /*--- Assign sparsity pattern to the pointers ---*/
-  row_ptr = nNonZeroEntries.data();
-  col_ind = nonZeroEntriesJacobian_flat.data();
-  dia_ptr = nullptr;
-  nnz = nVar*nEqn*nNonZeroEntries[nDOFsLocOwned];
-
-  /*--- Allocate data. ---*/
-#define ALLOC_AND_INIT(ptr,num) {\
-  ptr = MemoryAllocation::aligned_alloc<ScalarType>(64,num*sizeof(ScalarType));\
-  for(size_t k=0; k<num; ++k) ptr[k]=0.0; }
-
-  ALLOC_AND_INIT(matrix, nnz*nVar*nEqn)
-
-  // /*--- Preconditioners (commented out in case needed in the future.) ---*/
-
-  // if (ilu_needed) {
-  //   ALLOC_AND_INIT(ILU_matrix, nnz_ilu*nVar*nEqn)
-  // }
-
-  // if (ilu_needed || (sol_prec==JACOBI) || (sol_prec==LINELET) ||
-  //     (adjoint && (adj_prec==JACOBI)) || (def_prec==JACOBI))
-  // {
-  //   ALLOC_AND_INIT(invM, nPointDomain*nVar*nEqn);
-  // }
-#undef ALLOC_AND_INIT
 
 }
 
@@ -1441,127 +1377,12 @@ void CSysMatrix<su2double>::ComputePastixPreconditioner(const CSysVector<su2doub
 }
 #endif
 
-template<class ScalarType>
-// template<class OtherType>
-void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<ScalarType> & LinSysRes, CSysVector<ScalarType> & LinSysSol, 
-                                               CGeometry *geometry, CConfig *config) const {
-
-    unsigned long nDOFsLocOwned_acc_allranks_counts[size], nDOFsLocOwned_acc_allranks_displs[size];
-    unsigned long sendbuf = nPointDomain * nVar;
-    SU2_MPI::Allgather(&sendbuf, 1, MPI_UNSIGNED_LONG, &nDOFsLocOwned_acc_allranks_counts, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    nDOFsLocOwned_acc_allranks_displs[0] = 0;
-    for (int i = 0; i < size-1; ++i) {
-      nDOFsLocOwned_acc_allranks_displs[i+1] = nDOFsLocOwned_acc_allranks_displs[i] + nDOFsLocOwned_acc_allranks_counts[i];
-    }
-    unsigned long nDOFsLocOwned = nPointDomain;
-    unsigned long nDOFsGlobal = (nDOFsLocOwned_acc_allranks_counts[size-1] + nDOFsLocOwned_acc_allranks_displs[size-1])/nVar;
-
-    vector<passivedouble> matrix_CSR(nnz, 0.0);
-    vector<int> col_ind_CSR(nnz, 0);
-    vector<int> row_ptr_CSR(nDOFsGlobal*nVar + 1, 0);
-
-    for (unsigned long i = 0; i < nDOFsLocOwned; ++i) {
-      for (int i_row = i*nVar; i_row < (i+1)*nVar; ++i_row)
-        row_ptr_CSR[i_row+1] = row_ptr_CSR[i_row] + (row_ptr[i+1] - row_ptr[i])*nVar;
-      for (unsigned long j = row_ptr[i]; j < row_ptr[i+1]; ++j){
-        unsigned long block_index = col_ind[j];
-        unsigned long block_offset = j;
-        unsigned long CSR_offset = (row_ptr[i+1]-row_ptr[i]);
-        for (int i_row = 0; i_row < nVar; ++i_row) {
-          for (int i_col = 0; i_col < nVar; ++i_col) {
-            unsigned long LHS = row_ptr[i]*nVar*nVar + (i_row*CSR_offset + j-row_ptr[i])*nVar + i_col;
-            unsigned long RHS = block_offset*nVar*nVar + i_row*nVar + i_col;
-            col_ind_CSR[LHS] = block_index*nVar + i_col;
-            matrix_CSR[LHS] = SU2_TYPE::GetValue(matrix[RHS]); // matrix[RHS].getValue();
-          }
-        }
-      }
-    }
-
-    Eigen::Map<Eigen::SparseMatrix<double, Eigen::RowMajor>> Jacobian_CSR(nDOFsLocOwned*nVar, nDOFsGlobal*nVar, nnz, row_ptr_CSR.data(), col_ind_CSR.data(), matrix_CSR.data());
-    std::string Jacobian_name;
-    Jacobian_name = "Jacobian_CSR" + to_string(rank) + ".mtx";
-    Eigen::saveMarket(Jacobian_CSR, Jacobian_name);
-
-#ifdef CODI_FORWARD_TYPE
-    /* SUPERLU STUFF */
-    SuperLU::superlu_dist_options_t options;
-    SuperLU::SuperLUStat_t stat;
-    SuperLU::SuperMatrix A;
-    SuperLU::ScalePermstruct_t ScalePermstruct;
-    SuperLU::LUstruct_t LUstruct;
-    SuperLU::SOLVEstruct_t SOLVEstruct;
-    SuperLU::gridinfo_t grid;
-    double   berr[1];
-    int      info, iam;
-    int      nprow, npcol;
-
-    nprow = size;  /* Default process rows.   */
-    npcol = 1;  /* Default process columns.   */
-
-     // ------------------------------------------------------------
-     // INITIALIZE THE SUPERLU PROCESS GRID. 
-     // ------------------------------------------------------------
-    superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
-
-    set_default_options_dist(&options);
-
-     // Initialize ScalePermstruct and LUstruct. 
-    ScalePermstructInit(nDOFsGlobal*nVar, nDOFsGlobal*nVar, &ScalePermstruct);
-    LUstructInit(nDOFsGlobal*nVar, &LUstruct);
-
-    /* Initialize the statistics variables. */
-    PStatInit(&stat);
-
-    SuperLU::dCreate_CompRowLoc_Matrix_dist(&A, nDOFsGlobal*nVar, nDOFsGlobal*nVar, nnz, 
-      nDOFsLocOwned_acc_allranks_counts[rank], nDOFsLocOwned_acc_allranks_displs[rank], matrix_CSR.data(), col_ind_CSR.data(), 
-      row_ptr_CSR.data(), SuperLU::SLU_NR_loc, SuperLU::SLU_D, SuperLU::SLU_GE);
-
-    // SuperLU::dPrint_CompRowLoc_Matrix_dist(&A);
-
-    CSysVector<passivedouble> LinSysRes_tmp;
-    LinSysRes_tmp.PassiveCopy(LinSysRes);
-
-    // debugging write files to check against original sol
-    Eigen::VectorXd vec(nDOFsLocOwned*nVar);
-    for (int i = 0; i < nDOFsLocOwned*nVar; ++i) {
-      vec(i) = LinSysRes_tmp[i];
-    }
-    std::string vec_name;
-    vec_name = "CSysVector_before" + std::to_string(rank) + ".mtx";
-    Eigen::saveMarket(vec, vec_name);
-
-    SuperLU::pdgssvx(&options, &A, &ScalePermstruct, LinSysRes_tmp.GetBlock(0), nDOFsLocOwned_acc_allranks_counts[rank], 1, &grid,
-      &LUstruct, &SOLVEstruct, berr, &stat, &info);
-
-    // LinSysRes.PassiveCopy(LinSysRes_tmp);  // solution is saved in LinSysRes_tmp, but not output in anyway yet. need more stuff here
-
-    for (int i = 0; i < nDOFsLocOwned*nVar; ++i) {
-      vec(i) = LinSysRes_tmp[i];
-    }
-    
-    vec_name = "CSysVector" + std::to_string(rank) + ".mtx";
-    Eigen::saveMarket(vec, vec_name);
-
-    SuperLU::PStatFree(&stat);
-    SuperLU::ScalePermstructFree(&ScalePermstruct);
-    SuperLU::Destroy_LU(nDOFsGlobal*nVar, &grid, &LUstruct);
-    SuperLU::LUstructFree(&LUstruct);
-    if ( options.SolveInitialized ) {
-      dSolveFinalize(&options, &SOLVEstruct);
-    }
-    SuperLU::superlu_gridexit(&grid);
-
-#endif
-}
-
 /*--- Explicit instantiations ---*/
 template class CSysMatrix<su2double>;
 template void  CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
 template void  CSysMatrix<su2double>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
-// template class CSysMatrix<passivedouble>;
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysMatrix<passivedouble>;

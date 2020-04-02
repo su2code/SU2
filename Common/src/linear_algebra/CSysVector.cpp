@@ -260,8 +260,9 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
 /*--- Explicit instantiations ---*/
 template class CSysVector<su2double>;
 template void CSysVector<su2double>::PassiveCopy(const CSysVector<su2double>&);
-// #ifdef CODI_REVERSE_TYPE
+
+#ifdef CODI_REVERSE_TYPE
 template class CSysVector<passivedouble>;
 template void CSysVector<su2double>::PassiveCopy(const CSysVector<passivedouble>&);
 template void CSysVector<passivedouble>::PassiveCopy(const CSysVector<su2double>&);
-// #endif
+#endif

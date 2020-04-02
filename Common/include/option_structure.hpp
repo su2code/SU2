@@ -1762,7 +1762,6 @@ enum ENUM_LINEAR_SOLVER {
   SMOOTHER = 8,             /*!< \brief Iterative smoother. */
   PASTIX_LDLT = 9,          /*!< \brief PaStiX LDLT (complete) factorization. */
   PASTIX_LU = 10,           /*!< \brief PaStiX LU (complete) factorization. */
-  SUPERLU = 11,             /*!< \brief SuperLU solver. */
 };
 static const MapType<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
   MakePair("STEEPEST_DESCENT", STEEPEST_DESCENT)
@@ -1775,7 +1774,6 @@ static const MapType<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
   MakePair("SMOOTHER", SMOOTHER)
   MakePair("PASTIX_LDLT", PASTIX_LDLT)
   MakePair("PASTIX_LU", PASTIX_LU)
-  MakePair("SUPERLU", SUPERLU)
 };
 
 /*!

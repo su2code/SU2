@@ -354,24 +354,6 @@ public:
                   bool EdgeConnect, CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Initializes sparse matrix system.
-   * \param[in] npoint - Number of points including halos.
-   * \param[in] npointdomain - Number of points excluding halos.
-   * \param[in] nvar - Number of variables.
-   * \param[in] neqn - Number of equations.
-   * \param[in] nNonZeroEntries - number of non-zero entries.
-   * \param[in] nonZeroEntriesJacobian - pre-computed sparsity pattern of Jacobian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Initialize_DG(unsigned long npoint, unsigned long npointdomain,
-                  unsigned short nvar, unsigned short neqn,
-                  const vector<unsigned long>& nNonZeroEntries, 
-                  const vector<unsigned long>& nonZeroEntriesJacobian_flat, 
-                  const unsigned long nDOFsLocOwned,
-                  CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Sets to zero all the entries of the sparse matrix.
    */
   void SetValZero(void);
@@ -530,27 +512,6 @@ public:
         for (iVar = 0; iVar < nVar; iVar++)
           for (jVar = 0; jVar < nEqn; jVar++)
             matrix[index*nVar*nEqn+iVar*nEqn+jVar] += PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
-        break;
-      }
-    }
-  }
-
-    /*!
-   * \brief Adds the specified block with only diagonal entries to the sparse matrix.
-   *        (used mainly in DG solver for adding mass matrices.)
-   * \param[in] block_i - Row index.
-   * \param[in] block_j - Column index.
-   * \param[in] val_block - Block to add to A(i, j).(single value in this case)
-   */
-  template<class OtherType>
-  inline void AddBlockDiag(unsigned long block_i, unsigned long block_j, OtherType& val_block) {
-
-    unsigned long iVar, jVar, index;
-
-    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-      if (col_ind[index] == block_j) {
-        for (iVar = 0; iVar < nVar; iVar++)
-            matrix[index*nVar*nVar+iVar*(nVar+1)] += PassiveAssign<ScalarType,OtherType>(val_block);
         break;
       }
     }
@@ -767,12 +728,7 @@ public:
   void ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
                                    CGeometry *geometry, CConfig *config) const;
 
-  // template <class OtherType>
-  void SuperLU_LinSolver(const CSysVector<ScalarType> & LinSysRes,
-                        CSysVector<ScalarType> & LinSysSol, CGeometry *geometry, CConfig *config) const;
-
 };
-
 
 #ifdef CODI_REVERSE_TYPE
 template<> template<>
