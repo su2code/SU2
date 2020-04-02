@@ -51,10 +51,9 @@ def amg ( config , kind='' ):
     adap_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', 'PYADAP_SENSOR', \
     'PYADAP_BACK', 'PYADAP_HMAX', 'PYADAP_HMIN', 'PYADAP_HGRAD', \
     'PYADAP_RESIDUAL_REDUCTION', 'PYADAP_FLOW_ITER', 'PYADAP_ADJ_ITER', 'PYADAP_CFL', \
-    'PYADAP_INV_VOL', 'PYADAP_PYTHON']
+    'PYADAP_INV_VOL', 'PYADAP_ORTHO', 'PYADAP_RDG', 'PYADAP_PYTHON']
     required_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', \
-    'PYADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME', \
-    'PYADAP_INV_VOL', 'PYADAP_ORTHO']
+    'PYADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME']
     
     if not all (opt in config for opt in required_options):
         err = '\n\n## ERROR : Missing options: \n'
@@ -257,6 +256,7 @@ def amg ( config , kind='' ):
     config_amg['mesh_in']     = 'current.meshb'
     config_amg['adap_source'] = ''
     
+    #--- Generate background surface mesh
     if 'PYADAP_BACK' in config:
         config_amg['adap_back'] = os.path.join(cwd,config['PYADAP_BACK'])
     else:
@@ -277,15 +277,26 @@ def amg ( config , kind='' ):
         sys.stdout.write("\nPreprocessing background mesh.\n")
         sys.stdout.flush()
         su2amg.prepro_back_mesh_2d(config_cfd, config_amg)
-    
-    if 'PYADAP_SOURCE' in config:
-        config_amg['adap_source'] = os.path.join(cwd,config['PYADAP_SOURCE'])
 
+    #--- Remesh options: background surface mesh
     config_amg['options'] = "-back " + config_amg['adap_back']
-    if(config['PYADAP_INV_VOL'] == 'YES'):
-        config_amg['options'] = config_amg['options'] + ' -inv-back'
-    if(config['PYADAP_ORTHO'] == 'YES'):
-        config_amg['options'] = config_amg['options'] + ' -cart3d-only'
+
+    #--- Remesh options: invert background mesh
+    if 'PYADAP_INV_BACK' in config:
+        if(config['PYADAP_INV_BACK'] == 'YES'):
+            config_amg['options'] = config_amg['options'] + ' -inv-back'
+
+    #--- Remesh options: metric orthogonal adaptation
+    if 'PYADAP_ORTHO' in config:
+        if(config['PYADAP_ORTHO'] == 'YES'):
+            config_amg['options'] = config_amg['options'] + ' -cart3d-only'
+
+    #--- Remesh options: ridge detection
+    if 'PYADAP_RDG' not in config:
+        config_amg['options'] = config_amg['options'] + ' -nordg'
+    else:
+        if(config['PYADAP_RDG'] == 'NO'):
+            config_amg['options'] = config_amg['options'] + ' -nordg'
     
     #--- Start adaptive loop
 

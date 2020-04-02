@@ -2859,10 +2859,13 @@ void CConfig::SetConfig_Options() {
   addPythonOption("PYADAP_HGRAD");
 
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_INV_VOL");
+  addPythonOption("PYADAP_INV_BACK");
 
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("PYADAP_ORTHO");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_RDG");
 
   /* END_CONFIG_OPTIONS */
 
