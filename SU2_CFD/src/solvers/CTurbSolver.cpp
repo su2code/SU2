@@ -530,12 +530,12 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
       /* We impose a limit on the maximum percentage that the
        specific dissipation can change over a nonlinear iteration. */
 
-//       unsigned short iVar = 1;
-//       const unsigned long index = iPoint*nVar + iVar;
-//       su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, iVar)+EPS);
-//       if (ratio > allowableRatio) {
-//         localUnderRelaxation = min(allowableRatio, localUnderRelaxation);
-//       }
+       unsigned short iVar = 1;
+       const unsigned long index = iPoint*nVar + iVar;
+       su2double ratio = fabs(LinSysSol[index])/(nodes->GetSolution(iPoint, iVar)+EPS);
+       if (ratio > allowableRatio) {
+         localUnderRelaxation = min(allowableRatio, localUnderRelaxation);
+       }
 //       if (ratio > allowableIncrease) {
 //         localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
 //       } else if (ratio < allowableDecrease) {
