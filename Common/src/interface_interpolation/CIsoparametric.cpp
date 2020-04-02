@@ -49,7 +49,7 @@ void CIsoparametric::PrintStatistics(void) const {
 void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
 
   /*--- Angle between target and donor above which we trigger fallback measures. ---*/
-  const su2double thetaMax = 20.0/180.0*PI_NUMBER;
+  const su2double thetaMax = 30.0/180.0*PI_NUMBER;
 
   const int nProcessor = size;
   const auto nMarkerInt = config[donorZone]->GetMarker_n_ZoneInterface()/2;
@@ -262,7 +262,7 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
     }
     SU2_OMP_CRITICAL
     {
-      MaxDistance = max(MaxDistance,maxDist);
+      MaxDistance = max(MaxDistance, maxDist);
       ErrorCounter += errorCount;
       nGlobalVertexTarget += totalCount;
     }
@@ -357,8 +357,8 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
 
   const su2double extrapTol = 1.01;
 
-  constexpr int NITER = 10;
-  const su2double tol = 1e-12;
+  constexpr int NITER = 200;
+  const su2double tol = 1e-5, relax = 0.8;
 
   su2double Xi = 0.0, Eta = 0.0, eps;
 
@@ -402,8 +402,8 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
     su2double detA = 1.0 / (A[0][0]*A[1][1] - A[0][1]*A[1][0]);
     su2double dXi = (b[0]*A[1][1] - b[1]*A[0][1]) * detA;
     su2double dEta = (A[0][0]*b[1] - A[1][0]*b[0]) * detA;
-    Xi -= dXi;
-    Eta -= dEta;
+    Xi -= relax * dXi;
+    Eta -= relax * dEta;
 
     eps = fabs(dXi)+fabs(dEta);
     if (eps < tol) break;
@@ -414,7 +414,7 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
   int outOfBounds = 0;
 
   if (eps > 0.01) {
-    /*--- Iteration did not converge. ---*/
+    /*--- Iteration diverged. ---*/
     Xi = Eta = 0.0;
     outOfBounds = 1;
   }
