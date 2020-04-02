@@ -1,7 +1,7 @@
 ﻿/*!
  * \file CIsoparametric.hpp
  * \brief Isoparametric interpolation using FE shape functions.
- * \author H. Kline
+ * \author H. Kline, P. Gomes
  * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -32,6 +32,10 @@
  * \brief Isoparametric interpolation.
  */
 class CIsoparametric final : public CInterpolator {
+private:
+  su2double MaxDistance = 0.0, ErrorRate = 0.0;
+  unsigned long ErrorCounter = 0;
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -40,7 +44,8 @@ public:
    * \param[in] iZone - index of the donor zone
    * \param[in] jZone - index of the target zone
    */
-  CIsoparametric(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
+  CIsoparametric(CGeometry ****geometry_container, const CConfig* const* config,
+                 unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
@@ -48,23 +53,37 @@ public:
    */
   void Set_TransferCoeff(const CConfig* const* config) override;
 
+  /*!
+   * \brief Print information about the interpolation.
+   */
+  void PrintStatistics(void) const override;
+
 private:
   /*!
-   * \brief Calculate the isoparametric representation of point iVertex in marker iZone_0 by
-   *        nodes of element donor_elem in marker jMarker of zone iZone_1.
-   * \param[in] iVertex - vertex index of the point being interpolated.
-   * \param[in] nDim - the dimension of the coordinates.
-   * \param[in] iZone_1 - zone index of the element to use for interpolation (the DONOR zone)
-   * \param[in] donor_elem - element index of the element to use for interpolation (or global index of a point in 2D)
-   * \param[in] nDonorPoints - number of donor points in the element.
-   * \param[in] xj - point projected onto the plane of the donor element.
-   * \param[out] isoparams - isoparametric coefficients. Must be allocated to size nNodes ahead of time. (size> nDonors)
-   *
-   * \note If the problem is 2D, the 'face' projected onto is actually an edge; the local index
-   * of the edge is then stored in iFace, and the global index of the node (from which the edge
-   * is referenced)
+   * \brief Compute the isoparametric interpolation coefficients for a 2D line element.
+   * \param[in] X - Coordinate matrix defining the line.
+   * \param[in] xj - Coordinates of the target point projected onto the plane of the element.
+   * \param[out] isoparams - Isoparametric coefficients.
+   * \return 0 on success, 1 if xj is outside element bounds.
    */
-  void Isoparameters(unsigned short nDim, unsigned short nDonor, const su2double *X,
-                     const su2double *xj, su2double* isoparams) const;
+  static int LineIsoparameters(const su2double X[][3], const su2double *xj, su2double* isoparams);
+
+  /*!
+   * \brief Compute the isoparametric interpolation coefficients for a 3D triangle element.
+   * \param[in] X - Coordinate matrix defining the triangle.
+   * \param[in] xj - Coordinates of the target point projected onto the plane of the element.
+   * \param[out] isoparams - Isoparametric coefficients.
+   * \return 0 on success, 1 if xj is outside element bounds.
+   */
+  static int TriangleIsoparameters(const su2double X[][3], const su2double *xj, su2double* isoparams);
+
+  /*!
+   * \brief Compute the isoparametric interpolation coefficients for a 3D quadrilateral element.
+   * \param[in] X - Coordinate matrix defining the quadrilateral.
+   * \param[in] xj - Coordinates of the target point projected onto the plane of the element.
+   * \param[out] isoparams - Isoparametric coefficients.
+   * \return 0 on success, 1 if xj is outside element bounds.
+   */
+  static int QuadrilateralIsoparameters(const su2double X[][3], const su2double *xj, su2double* isoparams);
 
 };

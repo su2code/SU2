@@ -28,6 +28,7 @@
 #include "../../include/interface_interpolation/CNearestNeighbor.hpp"
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 
 
 /*! \brief Helper struct to (partially) sort neighbours according to distance while
@@ -87,11 +88,11 @@ void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
     if (!CheckInterfaceBoundary(markDonor, markTarget)) continue;
 
     unsigned long nVertexDonor = 0, nVertexTarget = 0;
-    if(markDonor != -1) nVertexDonor = donor_geometry->GetnVertex( markDonor );
-    if(markTarget != -1) nVertexTarget = target_geometry->GetnVertex( markTarget );
+    if (markDonor != -1) nVertexDonor = donor_geometry->GetnVertex(markDonor);
+    if (markTarget != -1) nVertexTarget = target_geometry->GetnVertex(markTarget);
 
-    /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor. */
-    Determine_ArraySize(false, markDonor, markTarget, nVertexDonor, nDim);
+    /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor. ---*/
+    Determine_ArraySize(markDonor, markTarget, nVertexDonor, nDim);
 
     const auto nPossibleDonor = accumulate(Buffer_Receive_nVertex_Donor,
                                 Buffer_Receive_nVertex_Donor+nProcessor, 0ul);
@@ -101,8 +102,8 @@ void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
     Buffer_Receive_Coord = new su2double [ nProcessor * MaxLocalVertex_Donor * nDim ];
     Buffer_Receive_GlobalPoint = new long [ nProcessor * MaxLocalVertex_Donor ];
 
-    /*-- Collect coordinates and global point indices. ---*/
-    Collect_VertexInfo( false, markDonor, markTarget, nVertexDonor, nDim );
+    /*--- Collect coordinates and global point indices. ---*/
+    Collect_VertexInfo(markDonor, markTarget, nVertexDonor, nDim);
 
     /*--- Find the closest donor points to each target. ---*/
     SU2_OMP_PARALLEL
@@ -132,7 +133,7 @@ void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
           const auto idx = iProcessor*MaxLocalVertex_Donor + jVertex;
           const auto pGlobalPoint = Buffer_Receive_GlobalPoint[idx];
           const su2double* Coord_j = &Buffer_Receive_Coord[idx*nDim];
-          const auto dist2 = PointsSquareDistance(nDim, Coord_i, Coord_j);
+          const auto dist2 = GeometryToolbox::SquaredDistance(nDim, Coord_i, Coord_j);
 
           donorInfo[iDonor++] = DonorInfo(dist2, pGlobalPoint, iProcessor);
         }

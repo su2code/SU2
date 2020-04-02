@@ -60,132 +60,110 @@ bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget) {
   return (donorCheck != -1) && (targetCheck != -1);
 }
 
-void CInterpolator::Determine_ArraySize(bool faces, int markDonor, int markTarget,
-                                        unsigned long nVertexDonor, unsigned short nDim) {
+void CInterpolator::Determine_ArraySize(int markDonor, int markTarget,
+                    unsigned long nVertexDonor, unsigned short nDim) {
 
-  unsigned long nLocalVertex_Donor = 0, nLocalFaceNodes_Donor=0, nLocalFace_Donor=0;
-  unsigned long iVertex, iPointDonor = 0;
-  /* Only needed if face data is also collected */
-  unsigned long inode;
-  unsigned long donor_elem, jElem, jPoint;
-  unsigned short iDonor;
-  unsigned int nFaces=0, iFace, nNodes=0;
-  bool face_on_marker = true;
-
-  for (iVertex = 0; iVertex < nVertexDonor; iVertex++) {
-    iPointDonor = donor_geometry->vertex[markDonor][iVertex]->GetNode();
-
-    if (!donor_geometry->node[iPointDonor]->GetDomain()) continue;
-
-    nLocalVertex_Donor++;
-
-    if (!faces) continue;
-
-    /*--- On Donor geometry also communicate face info ---*/
-    if (nDim==3) {
-      for (jElem=0; jElem<donor_geometry->node[iPointDonor]->GetnElem(); jElem++) {
-        donor_elem = donor_geometry->node[iPointDonor]->GetElem(jElem);
-        nFaces = donor_geometry->elem[donor_elem]->GetnFaces();
-        for (iFace=0; iFace<nFaces; iFace++) {
-          face_on_marker=true;
-          nNodes = donor_geometry->elem[donor_elem]->GetnNodesFace(iFace);
-          for (iDonor=0; iDonor<nNodes; iDonor++) {
-            /*--- Local index of the node on face --*/
-            inode = donor_geometry->elem[donor_elem]->GetFaces(iFace, iDonor);
-            jPoint = donor_geometry->elem[donor_elem]->GetNode(inode);
-            face_on_marker = (face_on_marker && (donor_geometry->node[jPoint]->GetVertex(markDonor) !=-1));
-          }
-          if (face_on_marker ) {
-            nLocalFace_Donor++;
-            nLocalFaceNodes_Donor+=nNodes;
-          }
-        }
-      }
-    }
-    else {
-      /*--- in 2D we use the edges ---*/
-      nNodes=2;
-      nFaces = donor_geometry->node[iPointDonor]->GetnPoint();
-      for (iFace=0; iFace<nFaces; iFace++) {
-        face_on_marker=true;
-        for (iDonor=0; iDonor<nNodes; iDonor++) {
-          inode = donor_geometry->node[iPointDonor]->GetEdge(iFace);
-          jPoint = donor_geometry->edge[inode]->GetNode(iDonor);
-          face_on_marker = (face_on_marker && (donor_geometry->node[jPoint]->GetVertex(markDonor) !=-1));
-        }
-        if (face_on_marker ) {
-          nLocalFace_Donor++;
-          nLocalFaceNodes_Donor+=nNodes;
-        }
-      }
-    }
+  /*--- Count donor vertices. ---*/
+  auto nLocalVertex_Donor = 0ul;
+  for (auto iVertex = 0ul; iVertex < nVertexDonor; iVertex++) {
+    auto iPointDonor = donor_geometry->vertex[markDonor][iVertex]->GetNode();
+    nLocalVertex_Donor += donor_geometry->node[iPointDonor]->GetDomain();
   }
 
   Buffer_Send_nVertex_Donor[0] = nLocalVertex_Donor;
-  if (faces) {
-    Buffer_Send_nFace_Donor[0] = nLocalFace_Donor;
-    Buffer_Send_nFaceNodes_Donor[0] = nLocalFaceNodes_Donor;
-  }
 
   /*--- Send Interface vertex information --*/
   SU2_MPI::Allreduce(&nLocalVertex_Donor, &MaxLocalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allgather(Buffer_Send_nVertex_Donor, 1, MPI_UNSIGNED_LONG,
                      Buffer_Receive_nVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  if (faces) {
-    SU2_MPI::Allreduce(&nLocalFace_Donor, &nGlobalFace_Donor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&nLocalFace_Donor, &MaxFace_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&nLocalFaceNodes_Donor, &nGlobalFaceNodes_Donor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&nLocalFaceNodes_Donor, &MaxFaceNodes_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_nFace_Donor, 1, MPI_UNSIGNED_LONG,
-                       Buffer_Receive_nFace_Donor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_nFaceNodes_Donor, 1, MPI_UNSIGNED_LONG,
-                       Buffer_Receive_nFaceNodes_Donor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    MaxFace_Donor++;
-  }
 }
 
-void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget,
-                                       unsigned long nVertexDonor, unsigned short nDim) {
+void CInterpolator::Collect_VertexInfo(int markDonor, int markTarget,
+                    unsigned long nVertexDonor, unsigned short nDim) {
 
-  unsigned long iVertex, iPointDonor = 0, iVertexDonor, nBuffer_Coord, nBuffer_Point, nLocalVertex_Donor;
+  unsigned long iVertex;
   unsigned short iDim;
 
   for (iVertex = 0; iVertex < MaxLocalVertex_Donor; iVertex++) Buffer_Send_GlobalPoint[iVertex] = -1;
 
   for (iVertex = 0; iVertex < MaxLocalVertex_Donor*nDim; iVertex++) Buffer_Send_Coord[iVertex] = 0.0;
 
-  if(faces)
-    for (iVertex = 0; iVertex < MaxLocalVertex_Donor*nDim; iVertex++) Buffer_Send_Normal[iVertex] = 0.0;
-
   /*--- Copy coordinates and point to the auxiliar vector --*/
-  nLocalVertex_Donor = 0;
+  auto iLocalVertexDonor = 0ul;
 
-  for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++) {
-    iPointDonor = donor_geometry->vertex[markDonor][iVertexDonor]->GetNode();
+  for (iVertex = 0; iVertex < nVertexDonor; iVertex++) {
+    auto iPointDonor = donor_geometry->vertex[markDonor][iVertex]->GetNode();
     if (donor_geometry->node[iPointDonor]->GetDomain()) {
-      Buffer_Send_GlobalPoint[nLocalVertex_Donor] = donor_geometry->node[iPointDonor]->GetGlobalIndex();
+      Buffer_Send_GlobalPoint[iLocalVertexDonor] = donor_geometry->node[iPointDonor]->GetGlobalIndex();
       for (iDim = 0; iDim < nDim; iDim++)
-        Buffer_Send_Coord[nLocalVertex_Donor*nDim+iDim] = donor_geometry->node[iPointDonor]->GetCoord(iDim);
-
-      if (faces) {
-        const su2double* Normal = donor_geometry->vertex[markDonor][iVertexDonor]->GetNormal();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Normal[nLocalVertex_Donor*nDim+iDim] = Normal[iDim];
-      }
-      nLocalVertex_Donor++;
+        Buffer_Send_Coord[iLocalVertexDonor*nDim+iDim] = donor_geometry->node[iPointDonor]->GetCoord(iDim);
+      iLocalVertexDonor++;
     }
   }
-  nBuffer_Coord = MaxLocalVertex_Donor*nDim;
-  nBuffer_Point = MaxLocalVertex_Donor;
+  auto nBuffer_Coord = MaxLocalVertex_Donor*nDim;
+  auto nBuffer_Point = MaxLocalVertex_Donor;
 
   SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE,
                      Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
   SU2_MPI::Allgather(Buffer_Send_GlobalPoint, nBuffer_Point, MPI_LONG,
                      Buffer_Receive_GlobalPoint, nBuffer_Point, MPI_LONG, MPI_COMM_WORLD);
-  if (faces) {
-    SU2_MPI::Allgather(Buffer_Send_Normal, nBuffer_Coord, MPI_DOUBLE,
-                       Buffer_Receive_Normal, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+}
+
+unsigned long CInterpolator::Collect_ElementInfo(int markDonor, unsigned short nDim, bool compress,
+                             vector<unsigned long>& allNumElem, vector<unsigned short>& numNodes,
+                             su2matrix<long>& idxNodes) const {
+
+  const auto maxElemNodes = (nDim == 2u)? 2u : 4u; // line and quad respectively
+
+  unsigned long nElemDonor = 0;
+  if (markDonor != -1) nElemDonor = donor_geometry->GetnElem_Bound(markDonor);
+
+  allNumElem.resize(size);
+  SU2_MPI::Allgather(&nElemDonor, 1, MPI_UNSIGNED_LONG, allNumElem.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+  auto nMaxElemDonor = *max_element(allNumElem.begin(), allNumElem.end());
+
+  vector<unsigned short> bufferSendNum(nMaxElemDonor);
+  su2matrix<long> bufferSendIdx(nMaxElemDonor, maxElemNodes);
+
+  numNodes.resize(nMaxElemDonor*size);
+  idxNodes.resize(nMaxElemDonor*size, maxElemNodes);
+
+  for (auto iElem = 0ul; iElem < nElemDonor; ++iElem) {
+
+    const auto nNode = donor_geometry->bound[markDonor][iElem]->GetnNodes();
+    bufferSendNum[iElem] = nNode;
+    assert(nNode < maxElemNodes && "Donor element has too many nodes.");
+
+    for (auto iNode = 0u; iNode < nNode; ++iNode) {
+      auto iPoint = donor_geometry->bound[markDonor][iElem]->GetNode(iNode);
+      auto iPointGlobal = donor_geometry->node[iPoint]->GetGlobalIndex();
+      bufferSendIdx(iElem, iNode) = iPointGlobal;
+    }
   }
+
+  SU2_MPI::Allgather(bufferSendNum.data(), bufferSendNum.size(), MPI_UNSIGNED_SHORT,
+                     numNodes.data(),      bufferSendNum.size(), MPI_UNSIGNED_SHORT, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(bufferSendIdx.data(), bufferSendIdx.size(), MPI_LONG,
+                     idxNodes.data(),      bufferSendIdx.size(), MPI_LONG, MPI_COMM_WORLD);
+
+  if (!compress)
+    return accumulate(allNumElem.begin(), allNumElem.end(), 0ul);
+
+  /*--- Compress the information (overlapping copy do not use memcpy). ---*/
+
+  unsigned long dstIdx = 0;
+  for (int iProcessor = 0; iProcessor < size; ++iProcessor) {
+    auto srcOffset = iProcessor * nMaxElemDonor;
+    for (auto idx = 0u; idx < allNumElem[iProcessor]; ++idx) {
+      numNodes[dstIdx] = numNodes[srcOffset+idx];
+      for (auto iNode = 0u; iNode < maxElemNodes; ++iNode)
+        idxNodes(dstIdx, iNode) = idxNodes(srcOffset+idx, iNode);
+      ++dstIdx;
+    }
+  }
+
+  return dstIdx;
 }
 
 void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){

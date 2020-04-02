@@ -29,6 +29,7 @@
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/toolboxes/CSymmetricMatrix.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 
 #if defined(HAVE_MKL)
 #include "mkl.h"
@@ -126,13 +127,13 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
     const auto markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt+1);
 
     /*--- If the zone does not contain the interface continue to the next pair of markers. ---*/
-    if(!CheckInterfaceBoundary(markDonor,markTarget)) continue;
+    if (!CheckInterfaceBoundary(markDonor,markTarget)) continue;
 
     unsigned long nVertexDonor = 0;
-    if(markDonor != -1) nVertexDonor = donor_geometry->GetnVertex(markDonor);
+    if (markDonor != -1) nVertexDonor = donor_geometry->GetnVertex(markDonor);
 
     /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor. ---*/
-    Determine_ArraySize(false, markDonor, markTarget, nVertexDonor, nDim);
+    Determine_ArraySize(markDonor, markTarget, nVertexDonor, nDim);
 
     /*--- Compute total number of donor vertices. ---*/
     const auto nGlobalVertexDonor = accumulate(Buffer_Receive_nVertex_Donor,
@@ -144,7 +145,7 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
     Buffer_Receive_Coord = new su2double [ nProcessor * MaxLocalVertex_Donor * nDim ];
     Buffer_Receive_GlobalPoint = new long [ nProcessor * MaxLocalVertex_Donor ];
 
-    Collect_VertexInfo(false, markDonor, markTarget, nVertexDonor, nDim);
+    Collect_VertexInfo(markDonor, markTarget, nVertexDonor, nDim);
 
     /*--- Compresses the gathered donor point information to simplify computations. ---*/
     auto& donorCoord = donorCoordinates[iMarkerInt];
@@ -331,7 +332,7 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
       /*--- RBF terms: ---*/
       for (auto iVertexDonor = 0ul; iVertexDonor < nGlobalVertexDonor; ++iVertexDonor) {
         for (auto k = 0ul; k < slabSize; ++k) {
-          auto dist = PointsDistance(nDim, targetCoord[iVertexTarget+k], donorCoord[iVertexDonor]);
+          auto dist = GeometryToolbox::Distance(nDim, targetCoord[iVertexTarget+k], donorCoord[iVertexDonor]);
           auto rbf = Get_RadialBasisValue(kindRBF, paramRBF, dist);
           funcMat(k, 1+nPolynomial+iVertexDonor) = SU2_TYPE::GetValue(rbf);
         }
@@ -449,7 +450,7 @@ void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool us
   for (int iVertex = 0; iVertex < nVertexDonor; ++iVertex)
     for (int jVertex = iVertex; jVertex < nVertexDonor; ++jVertex)
       global_M(iVertex, jVertex) = SU2_TYPE::GetValue(Get_RadialBasisValue(type, radius,
-                                   PointsDistance(nDim, coords[iVertex], coords[jVertex])));
+                                   GeometryToolbox::Distance(nDim, coords[iVertex], coords[jVertex])));
 
   /*--- Invert M matrix (operation is in-place). ---*/
   const bool kernelIsSPD = (type==WENDLAND_C2) || (type==GAUSSIAN) || (type==INV_MULTI_QUADRIC);

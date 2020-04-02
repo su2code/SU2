@@ -28,6 +28,7 @@
 #include "../../include/interface_interpolation/CSlidingMesh.hpp"
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 
 
 CSlidingMesh::CSlidingMesh(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
@@ -203,7 +204,7 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
 
             Coord_j = &DonorPoint_Coord[ donor_iPoint * nDim ];
 
-            dist = PointsDistance(nDim, Coord_i, Coord_j);
+            dist = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
             if (dist < mindist) {
               mindist = dist;
@@ -250,7 +251,7 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
           for(iDim = 0; iDim < nDim; iDim++)
             Direction[iDim] /= dTMP;
 
-          length = PointsDistance(nDim, target_iMidEdge_point, target_jMidEdge_point);
+          length = GeometryToolbox::Distance(nDim, target_iMidEdge_point, target_jMidEdge_point);
 
           check = false;
 
@@ -487,7 +488,7 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
 
           Coord_j = &DonorPoint_Coord[ donor_iPoint * nDim ];
 
-          dist = PointsDistance(nDim, Coord_i, Coord_j);
+          dist = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
           if (dist < mindist) {
             mindist = dist;

@@ -28,57 +28,13 @@
 #include "../../include/solvers/CFEASolver.hpp"
 #include "../../include/variables/CFEABoundVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include <algorithm>
 #include <unordered_set>
 #include <unordered_map>
 
-/*!
- * \brief Anonymous namespace with helper functions of the FEA solver.
- */
-namespace {
+using namespace GeometryToolbox;
 
-  template<class T>
-  void CrossProduct(const T* a, const T* b, T* c) {
-    c[0] = a[1]*b[2] - a[2]*b[1];
-    c[1] = a[2]*b[0] - a[0]*b[2];
-    c[2] = a[0]*b[1] - a[1]*b[0];
-  }
-
-  template<class T, class U>
-  void LineNormal(const T& coords, U* normal) {
-    normal[0] = coords[0][1] - coords[1][1];
-    normal[1] = coords[1][0] - coords[0][0];
-  }
-
-  template<class T, class U>
-  void TriangleNormal(const T& coords, U* normal) {
-    /*--- Cross product of two sides. ---*/
-    U a[3], b[3];
-
-    for (int iDim = 0; iDim < 3; iDim++) {
-      a[iDim] = coords[1][iDim] - coords[0][iDim];
-      b[iDim] = coords[2][iDim] - coords[0][iDim];
-    }
-
-    CrossProduct(a, b, normal);
-    normal[0] *= 0.5; normal[1] *= 0.5; normal[2] *= 0.5;
-  }
-
-  template<class T, class U>
-  void QuadrilateralNormal(const T& coords, U* normal) {
-    /*--- Cross product of the two diagonals. ---*/
-    U a[3], b[3];
-
-    for (int iDim = 0; iDim < 3; iDim++) {
-      a[iDim] = coords[2][iDim] - coords[0][iDim];
-      b[iDim] = coords[3][iDim] - coords[1][iDim];
-    }
-
-    CrossProduct(a, b, normal);
-    normal[0] *= 0.5; normal[1] *= 0.5; normal[2] *= 0.5;
-  }
-
-}
 
 CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
 
