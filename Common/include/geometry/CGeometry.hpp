@@ -578,12 +578,6 @@ public:
                                unsigned short &face_second_elem) {return false;}
 
   /*!
-   * \brief Computes the wall distance.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void ComputeWall_Distance(CConfig *config) {}
-
-  /*!
    * \brief Sets area to be positive in Z direction.
    * \param[in] config - Definition of the particular problem.
    */
@@ -1603,12 +1597,6 @@ public:
    * \return Multigrid index for current geometry object.
    */
   inline unsigned short GetMGLevel(void) const { return MGLevel; }
-
-  /*!
-   * \brief Compute and store the volume of the elements.
-   * \param[in] config - Problem configuration.
-   */
-  void UpdateBoundaries(CConfig *config);
 
   /*!
    * \brief A virtual member.

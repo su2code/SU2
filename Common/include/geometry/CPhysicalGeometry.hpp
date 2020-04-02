@@ -382,12 +382,6 @@ public:
                 unsigned short &face_second_elem) override;
 
   /*!
-   * \brief Computes the distance to the nearest no-slip wall for each grid node.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeWall_Distance(CConfig *config) override;
-
-  /*!
    * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
    * \param[in] config - Definition of the particular problem.
    */
