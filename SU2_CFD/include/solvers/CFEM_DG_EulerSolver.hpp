@@ -222,8 +222,9 @@ protected:
 
   vector<passivedouble> SpatialJacobian;    /*!< \brief Vector containing the Spatial Jacobian used for implicit schemes. */
 
-  CSysMatrix<passivedouble> Jacobian_DG;
-  
+  // CSysMatrix<passivedouble> Jacobian_DG;
+  // CSysSolve<passivedouble>  System_DG;
+
   CSysMatrix<su2double> MassMatrix_local;
 
   vector<unsigned long> MassMatrix_col_ind;

@@ -922,6 +922,10 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
         Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
         iter = 1;
         break;
+      case SUPERLU:
+        Jacobian.SuperLU_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
+        iter = 1;
+        break;
       default:
         SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
     }

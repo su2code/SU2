@@ -35,7 +35,7 @@
 #include <cmath>
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/SparseExtra>
-#ifdef CODI_FORWARD_TYPE
+
 namespace SuperLU
 {
 #ifdef __cplusplus
@@ -47,7 +47,6 @@ namespace SuperLU
   }
 #endif
 }
-#endif
 
 template<class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix(void) {
@@ -1444,57 +1443,45 @@ void CSysMatrix<su2double>::ComputePastixPreconditioner(const CSysVector<su2doub
 
 template<class ScalarType>
 // template<class OtherType>
-void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<ScalarType> & LinSysRes,
-                                              CSysVector<ScalarType> & LinSysSol, CGeometry *geometry, CConfig *config,
-                                              const int* nDOFsLocOwned_acc_allranks_counts,
-                                              const int* nDOFsLocOwned_acc_allranks_displs, 
-                                              const unsigned long nDOFsGlobal,
-                                              CSysVector<ScalarType> & LinSysSol_tmp) const {
+void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<ScalarType> & LinSysRes, CSysVector<ScalarType> & LinSysSol, 
+                                               CGeometry *geometry, CConfig *config) const {
 
-    CSysVector<passivedouble> LinSysSol_tmp_passivedouble;
-    LinSysSol_tmp_passivedouble.Initialize(nDOFsGlobal, nPointDomain, nVar, nullptr);
-    LinSysSol_tmp.PassiveCopy(LinSysSol_tmp_passivedouble);
+    unsigned long nDOFsLocOwned_acc_allranks_counts[size], nDOFsLocOwned_acc_allranks_displs[size];
+    unsigned long sendbuf = nPointDomain * nVar;
+    SU2_MPI::Allgather(&sendbuf, 1, MPI_UNSIGNED_LONG, &nDOFsLocOwned_acc_allranks_counts, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    nDOFsLocOwned_acc_allranks_displs[0] = 0;
+    for (int i = 0; i < size-1; ++i) {
+      nDOFsLocOwned_acc_allranks_displs[i+1] = nDOFsLocOwned_acc_allranks_displs[i] + nDOFsLocOwned_acc_allranks_counts[i];
+    }
+    unsigned long nDOFsLocOwned = nPointDomain;
+    unsigned long nDOFsGlobal = (nDOFsLocOwned_acc_allranks_counts[size-1] + nDOFsLocOwned_acc_allranks_displs[size-1])/nVar;
 
-    
-    passivedouble matrix_passivedouble[nnz];
+    vector<passivedouble> matrix_CSR(nnz, 0.0);
+    vector<int> col_ind_CSR(nnz, 0);
+    vector<int> row_ptr_CSR(nDOFsGlobal*nVar + 1, 0);
 
-    int col_ind_CSR[nnz];
-    int row_ptr_CSR[nDOFsGlobal*nVar+1];
-    row_ptr_CSR[0] = 0;
-//     for (unsigned long i = 0; i < nnz; ++i) {
-// #ifdef CODI_FORWARD_TYPE
-//       matrix_passivedouble[i] = matrix[i].getValue();
-// #else
-//       matrix_passivedouble[i] = matrix[i];
-// #endif
-//     }
-
-    // col_ind_CSR = 
-    for (unsigned long i = 0; i < nDOFsGlobal; ++i) {
+    for (unsigned long i = 0; i < nDOFsLocOwned; ++i) {
       for (int i_row = i*nVar; i_row < (i+1)*nVar; ++i_row)
         row_ptr_CSR[i_row+1] = row_ptr_CSR[i_row] + (row_ptr[i+1] - row_ptr[i])*nVar;
       for (unsigned long j = row_ptr[i]; j < row_ptr[i+1]; ++j){
         unsigned long block_index = col_ind[j];
         unsigned long block_offset = j;
         unsigned long CSR_offset = (row_ptr[i+1]-row_ptr[i]);
-        std::cout << "block_index = " << block_index << ", offset = " << block_offset << ", CSR_offset = " << CSR_offset << std::endl;
         for (int i_row = 0; i_row < nVar; ++i_row) {
           for (int i_col = 0; i_col < nVar; ++i_col) {
             unsigned long LHS = row_ptr[i]*nVar*nVar + (i_row*CSR_offset + j-row_ptr[i])*nVar + i_col;
             unsigned long RHS = block_offset*nVar*nVar + i_row*nVar + i_col;
-            std::cout << "LHS = " << LHS << ", RHS = " << RHS << std::endl;
             col_ind_CSR[LHS] = block_index*nVar + i_col;
-            matrix_passivedouble[LHS] = matrix[RHS];
+            matrix_CSR[LHS] = SU2_TYPE::GetValue(matrix[RHS]); // matrix[RHS].getValue();
           }
         }
       }
     }
 
-    Eigen::Map<Eigen::SparseMatrix<double, Eigen::RowMajor>> Jacobian_CSR(nDOFsGlobal*nVar, nDOFsGlobal*nVar, nnz, &row_ptr_CSR[0], &col_ind_CSR[0], &matrix_passivedouble[0]);
+    Eigen::Map<Eigen::SparseMatrix<double, Eigen::RowMajor>> Jacobian_CSR(nDOFsLocOwned*nVar, nDOFsGlobal*nVar, nnz, row_ptr_CSR.data(), col_ind_CSR.data(), matrix_CSR.data());
     std::string Jacobian_name;
     Jacobian_name = "Jacobian_CSR" + to_string(rank) + ".mtx";
     Eigen::saveMarket(Jacobian_CSR, Jacobian_name);
-
 
 #ifdef CODI_FORWARD_TYPE
     /* SUPERLU STUFF */
@@ -1527,98 +1514,44 @@ void CSysMatrix<ScalarType>::SuperLU_LinSolver(const CSysVector<ScalarType> & Li
     PStatInit(&stat);
 
     SuperLU::dCreate_CompRowLoc_Matrix_dist(&A, nDOFsGlobal*nVar, nDOFsGlobal*nVar, nnz, 
-      nDOFsLocOwned_acc_allranks_counts[rank], nDOFsLocOwned_acc_allranks_displs[rank], matrix_passivedouble, reinterpret_cast<int*>(const_cast<unsigned long*>(col_ind)), 
-      reinterpret_cast<int*>(const_cast<unsigned long*>(row_ptr)), SuperLU::SLU_NR_loc, SuperLU::SLU_D, SuperLU::SLU_GE);
+      nDOFsLocOwned_acc_allranks_counts[rank], nDOFsLocOwned_acc_allranks_displs[rank], matrix_CSR.data(), col_ind_CSR.data(), 
+      row_ptr_CSR.data(), SuperLU::SLU_NR_loc, SuperLU::SLU_D, SuperLU::SLU_GE);
 
-    SuperLU::dPrint_CompRowLoc_Matrix_dist(&A);
+    // SuperLU::dPrint_CompRowLoc_Matrix_dist(&A);
 
-    // Eigen::VectorXd mSol_delta(nDOFsLocOwned*nVar);
-    // for (unsigned long i = 0; i < nDOFsLocOwned*nVar; ++i) {
-    //   mSol_delta(i) = -Res_global(i);
-    // } 
+    CSysVector<passivedouble> LinSysRes_tmp;
+    LinSysRes_tmp.PassiveCopy(LinSysRes);
 
-    // su2double Timer_start, Timer_end;
-    // if (rank == MASTER_NODE)
-    // {
-    //   Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
-    // }
-    
-    
+    // debugging write files to check against original sol
+    Eigen::VectorXd vec(nDOFsLocOwned*nVar);
+    for (int i = 0; i < nDOFsLocOwned*nVar; ++i) {
+      vec(i) = LinSysRes_tmp[i];
+    }
+    std::string vec_name;
+    vec_name = "CSysVector_before" + std::to_string(rank) + ".mtx";
+    Eigen::saveMarket(vec, vec_name);
 
-    SuperLU::pdgssvx(&options, &A, &ScalePermstruct, LinSysSol_tmp_passivedouble.GetBlock(0), nDOFsLocOwned_acc_allranks_counts[rank], 1, &grid,
+    SuperLU::pdgssvx(&options, &A, &ScalePermstruct, LinSysRes_tmp.GetBlock(0), nDOFsLocOwned_acc_allranks_counts[rank], 1, &grid,
       &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    LinSysSol_tmp_passivedouble.PassiveCopy(LinSysSol_tmp);
+    // LinSysRes.PassiveCopy(LinSysRes_tmp);  // solution is saved in LinSysRes_tmp, but not output in anyway yet. need more stuff here
+
+    for (int i = 0; i < nDOFsLocOwned*nVar; ++i) {
+      vec(i) = LinSysRes_tmp[i];
+    }
     
-    // if (rank == MASTER_NODE)
-    // {
-    //   Timer_end = su2double(clock())/su2double(CLOCKS_PER_SEC);
-    //   Time_LINSOL = Timer_end - Timer_start;
-    // }
+    vec_name = "CSysVector" + std::to_string(rank) + ".mtx";
+    Eigen::saveMarket(vec, vec_name);
 
-    /*--- Newton iteration with damping parameter lambda ---*/
-    
-    // double lambda = 1.0;
-    // // double norm_temp = (Jacobian_global*(mSol_delta*lambda)+Res_global).norm();
-    // // while (norm_temp/norm0 > 1 && lambda > 1e-6)
-    // // {
-    // //   lambda = lambda/2;
-    // //   norm_temp = (Jacobian_global*(mSol_delta*lambda)+Res_global).norm();
-    // // }
-    // if (rank == MASTER_NODE) {
-    //   cout << "lambda = " << lambda << endl;
-    // }
-  
-    // // std::cout << "nDOFsLocOwned_acc_allranks[rank] = " << nDOFsLocOwned_acc_allranks[rank] << " in rank " << rank << std::endl;
-    // Sol_global += mSol_delta * lambda;
-    // Res_global += MassMatrix_local*mSol_delta * lambda;
-
-    // LinSysSol += LinSysSol_tmp * lambda;
-    
-    // MassMatrix_local.MatrixVectorProduct(LinSysSol_tmp, LinSysRes, geometry, config);
-
-    // // /*--- convert solution back into the SU2 solver format ---*/
-    // // for (unsigned int i = 0; i < nDOFsLocOwned*nVar; ++i)
-    // // {
-    // //   VecResDOFs[i] = Res_global(i);
-    // //   VecSolDOFs[i] = Sol_global(i);
-    // // }
-
-    // /*--- Compute the root mean square residual. Note that the SetResidual_RMS
-    // function of CSolver cannot be used, because that is for the FV solver. ---*/
-    
-    // SetResidual_RMS_FEM(geometry, config);
-
-    // if (config->GetInnerIter() == 0) {
-    //   ResRMSinitial.resize(nVar);
-    //   for (unsigned int iVar = 0; iVar<nVar; ++iVar) {
-    //     ResRMSinitial[iVar] = GetRes_RMS(iVar);
-    //   }
-    // }
-
-    // std::cout << "Jacobian_global.resize(0, 0);" << std::endl;
-    // Jacobian_global.resize(0, 0);
-    // std::cout << "SuperLU::PStatFree(&stat);" << std::endl;
     SuperLU::PStatFree(&stat);
-    // std::cout << "SuperLU::Destroy_SuperMatrix_Store_dist(&A);" << std::endl;
-    // SuperLU::Destroy_SuperMatrix_Store_dist(&A);
-    // std::cout << "SuperLU::Destroy_CompRowLoc_Matrix_dist(&A);" << std::endl;
-    // SuperLU::Destroy_CompRowLoc_Matrix_dist(&A);
-    // std::cout << "SuperLU::ScalePermstructFree(&ScalePermstruct);" << std::endl;
     SuperLU::ScalePermstructFree(&ScalePermstruct);
-    // std::cout << "SuperLU::Destroy_LU(nDOFsGlobal*nVar, &grid, &LUstruct);" << std::endl;
     SuperLU::Destroy_LU(nDOFsGlobal*nVar, &grid, &LUstruct);
-    // std::cout << "SuperLU::LUstructFree(&LUstruct);" << std::endl;
     SuperLU::LUstructFree(&LUstruct);
-    // std::cout << "SuperLU::SUPERLU_FREE(b);" << std::endl;
-    // SuperLU::SUPERLU_FREE(b);
-    // std::cout << "SuperLU::SUPERLU_FREE(berr);" << std::endl;
-    // SuperLU::SUPERLU_FREE(berr);
     if ( options.SolveInitialized ) {
       dSolveFinalize(&options, &SOLVEstruct);
     }
-    // std::cout << "SuperLU::superlu_gridexit(&grid);" << std::endl;
     SuperLU::superlu_gridexit(&grid);
+
 #endif
 }
 
@@ -1628,6 +1561,7 @@ template void  CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&
 template void  CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
 template void  CSysMatrix<su2double>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
+// template class CSysMatrix<passivedouble>;
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysMatrix<passivedouble>;

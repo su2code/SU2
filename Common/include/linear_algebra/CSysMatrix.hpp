@@ -769,13 +769,10 @@ public:
 
   // template <class OtherType>
   void SuperLU_LinSolver(const CSysVector<ScalarType> & LinSysRes,
-                        CSysVector<ScalarType> & LinSysSol, CGeometry *geometry, CConfig *config,
-                        const int* nDOFsLocOwned_acc_allranks_counts,
-                        const int* nDOFsLocOwned_acc_allranks_displs, 
-                        const unsigned long nDOFsGlobal,
-                        CSysVector<ScalarType> & LinSysSol_tmp) const;
+                        CSysVector<ScalarType> & LinSysSol, CGeometry *geometry, CConfig *config) const;
 
 };
+
 
 #ifdef CODI_REVERSE_TYPE
 template<> template<>
