@@ -3516,7 +3516,8 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
 #ifdef CODI_FORWARD_TYPE
             Jac[var+j*nVar] = resDOF[j].getGradient();
 #else
-            Jac[var+j*nVar] = 0.0;   /* This is to avoid a compiler warning. */
+            Jac[var+j*nVar] = var+j*nVar+nVar2*(nNonZeroEntries[i] + ind);   /* This is to avoid a compiler warning. */
+            // Jac[var+j*nVar] = 0.0;   /* This is to avoid a compiler warning. */
 #endif
           }
         }
@@ -7411,40 +7412,90 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
       mSol_delta(i) = -Res_global(i);
     } 
 
+    std::string vec_name;
+    vec_name = "mSol_deltavec_before" + std::to_string(rank) + ".mtx";
+    Eigen::saveMarket(mSol_delta, vec_name);
+
+
+    /* attempt to use SU2 linear algebra library. */
+        LinSysRes.Initialize(nDOFsLocOwned, nDOFsLocOwned, nVar, VecResDOFs.data());
+    LinSysSol.Initialize(nDOFsLocOwned, nDOFsLocOwned, nVar, VecSolDOFs.data());
+
+    nonZeroEntriesJacobian_flat.resize(nNonZeroEntries[nDOFsLocOwned]);
+    for (unsigned long i = 0; i < nonZeroEntriesJacobian.size(); ++i){
+      for (unsigned long j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
+        nonZeroEntriesJacobian_flat[nNonZeroEntries[i] + j] = nonZeroEntriesJacobian[i][j];
+      }
+    }
+
+    Jacobian.Initialize_DG(nDOFsLocOwned, nDOFsLocOwned, nVar, nVar, nNonZeroEntries, nonZeroEntriesJacobian_flat, nDOFsLocOwned, geometry, config);
+
+    MassMatrix_col_ind.clear(); //0,1,2,0,1,2,0,1,2,3,4,5,3,4,5,3,4,5...
+    MassMatrix_row_ptr.clear(); // 0,3,6,9,
+    MassMatrix_row_ptr.push_back(0);
+    for (unsigned long l = 0; l < nVolElemOwned; ++l){
+      const unsigned long nDOFs  = volElem[l].nDOFsSol;
+      const unsigned long offset = volElem[l].offsetDOFsSolLocal;
+      for (unsigned long j = 0; j < nDOFs; ++j){
+        for (unsigned int k = 0; k < nDOFs; ++k) {
+          MassMatrix_col_ind.push_back(offset + k);
+        }
+        MassMatrix_row_ptr.push_back(MassMatrix_row_ptr.back() + nDOFs);
+      }
+    }
+    
+    MassMatrix_local.Initialize_DG(nDOFsLocOwned, nDOFsLocOwned, nVar, nVar, MassMatrix_row_ptr, MassMatrix_col_ind, nDOFsLocOwned, geometry, config);
+    for (unsigned int i = 0; i < nonZeroEntriesJacobian.size(); ++i) {
+      for (unsigned int j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
+        // std::cout << "i = " << i << ", j = " << j << ", nonZeroEntriesJacobian[i][j] = " << nonZeroEntriesJacobian[i][j] 
+        // << ", nNonZeroEntries[i] + j = " << nNonZeroEntries[i] + j << std::endl;
+        Jacobian.SetBlock(i, nonZeroEntriesJacobian[i][j], SpatialJacobian.data()+nVar*nVar*(nNonZeroEntries[i] + j));
+      }
+    }
+
+    // add Mass Matrix
+    for (unsigned long l = 0; l < nVolElemOwned; ++l) {
+
+      const unsigned long nDOFs  = volElem[l].nDOFsSol;
+      const unsigned long offset = volElem[l].offsetDOFsSolLocal;
+
+      for (unsigned int j = 0; j < nDOFs; ++j) {
+        for (unsigned int k = 0; k < nDOFs; ++k) {
+
+          unsigned long block_i = offset + j;
+          unsigned long block_j = offset + k + nDOFsLocOwned_acc_allranks[rank];
+          // std::cout << "block_i =" << block_i << ", block_j =" << block_j << std::endl;
+          auto v = 1.0/(ResRatio*Min_Delta_Time)*volElem[l].massMatrix[j*nDOFs + k];
+          Jacobian.AddBlockDiag(block_i, block_j, v);
+          MassMatrix_local.AddBlockDiag(offset+j, offset+k, v);
+        }
+      }
+    }
+    unsigned long IterLinSol = 0;
+    IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+    /* attempt to use SU2 linear algebra library. */
+
+    // CSysVector<su2double> LinSysSol_tmp;
+    // LinSysSol_tmp.Initialize(nDOFsLocOwned, nDOFsLocOwned, nVar, nullptr);
+
+    // su2double Timer_start, Timer_end;
+    // if (rank == MASTER_NODE)
+    // {
+    //   Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
+    // }
+    // Jacobian_DG.SuperLU_LinSolver(LinSysRes, LinSysSol, geometry, config, nDOFsLocOwned_acc_allranks_counts, nDOFsLocOwned_acc_allranks_displs, nDOFsGlobal);
+    
     // std::cout << "Starting SUPERLU" << std::endl;
     SuperLU::pdgssvx(&options, &A, &ScalePermstruct, mSol_delta.data(), nDOFsLocOwned_acc_allranks_counts[rank], 1, &grid,
       &LUstruct, &SOLVEstruct, berr, &stat, &info);
     // std::cout << "Finishing SUPERLU" << std::endl;
 
-    if (rank == MASTER_NODE)
-    {
-      Timer_end = su2double(clock())/su2double(CLOCKS_PER_SEC);
-      Time_LINSOL = Timer_end - Timer_start;
-    }
-
-    // std::cout << "berr: " << berr[0] << std::endl;
-    // Eigen::VectorXd mSol_delta(nDOFsLocOwned*nVar);
-    // for (unsigned long i = 0; i < nDOFsLocOwned*nVar; ++i) {
-    //   mSol_delta(i) = b[i];
-    // } 
-
-    // std::string JacobianwithMassMatrixafter_name;
-    // JacobianwithMassMatrixafter_name = "JacobianwithMassMatrixafter_global" + to_string(rank) + ".mtx";
-    // Eigen::saveMarket(Jacobian_global, JacobianwithMassMatrixafter_name);
-
-
-    // Eigen::VectorXd globalID(nVolElemOwned);
-    // std::string GlobalID_name;
-    // GlobalID_name = "globalID" + to_string(rank) + ".mtx";
-    // for (int k = 0; k < size; k++) {
-    //   if (k == rank) {
-    //     for (unsigned long i = 0; i < nVolElemOwned; ++i) {
-    //       globalID(i) = volElem[i].elemIDGlobal;
-    //       // globalID.push_back(volElem[i].elemIDGlobal);
-    //       // std::cout << "globalID[" << i << "] = " << globalID[i] << " in rank " << rank << std::endl;
-    //     }
-    //   }
-    //   SU2_MPI::Barrier(MPI_COMM_WORLD);
+    vec_name = "mSol_deltavec" + std::to_string(rank) + ".mtx";
+    Eigen::saveMarket(mSol_delta, vec_name);
+    // if (rank == MASTER_NODE)
+    // {
+    //   Timer_end = su2double(clock())/su2double(CLOCKS_PER_SEC);
+    //   Time_LINSOL = Timer_end - Timer_start;
     // }
 
     // PStatPrint(&options, &stat, &grid);
