@@ -536,7 +536,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint),0.0);
     
-    /*--- Contribution of gradients to Jacobian ---*/
+    /*--- Contribution of TurbVar_i to cross diffusion gradient Jacobian at i ---*/
     
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
       for (iDim = 0; iDim < nDim; iDim++) NormalSum[iDim] = 0.0;
@@ -564,6 +564,35 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     LinSysRes.SubtractBlock(iPoint, Residual);
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    
+    /*--- Contribution of TurbVar_j to cross diffusion gradient Jacobian at i ---*/
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+      if (geometry->node[iPoint]->GetWall_Distance() > 1e-10) {
+        const su2double Volume_i = geometry->node[iPoint]->GetVolume();
+        const su2double F1_i     = nodes->GetF1blending(iPoint);
+        const su2double r_i      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        const su2double om_i     = nodes->GetPrimitive(iPoint,1);
+        for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+          jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+          iEdge = geometry->FindEdge(iPoint,jPoint);
+          Normal = geometry->edge[iEdge]->GetNormal();
+          const su2double Volume_j = geometry->node[jPoint]->GetVolume();
+          const su2double r_j      = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
+          Jacobian_j[0][0] = 0.; Jacobian_j[0][1] = 0.;
+          Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Jacobian_j[1][0] -= 2.*(1. - F1_i)*constants[3]*r_i
+                              * Normal[iDim]*nodes->GetGradient(iPoint,1,iDim)/(r_j*om_i)
+                              * Volume_i/Volume_j;
+            Jacobian_j[1][1] -= 2.*(1. - F1_i)*constants[3]*r_i
+                              * Normal[iDim]*nodes->GetGradient(iPoint,0,iDim)/(r_j*om_i)
+                              * Volume_i/Volume_j;
+          }
+          if (iPoint < jPoint) Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+          else                 Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+        }
+      }
+    }
 
   }
   
