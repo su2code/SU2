@@ -1364,6 +1364,25 @@ protected:
   void VolumeMetricTermsFromCoorGradients(const unsigned short nEntities,
                                           const su2double      *gradCoor,
                                           vector<su2double>    &metricTerms);
+
+  /*!
+   * \brief Compute an ADT including the coordinates of all viscous markers
+   * \param[in] config - Definition of the particular problem.
+   * \return pointer to the ADT
+   */
+  std::unique_ptr<CADTElemClass> ComputeViscousWallADT(CConfig *config) const override;
+
+  /*!
+   * \brief Set wall distances a specific value
+   */
+  void SetWallDistance(su2double val) override;
+
+  /*!
+   * \brief Set the wall distance based on an previously constructed ADT
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] WallADT - The ADT to compute the wall distance
+   */
+  void SetWallDistance(CConfig *config, CADTElemClass* WallADT) override;
 };
 
 /*! 

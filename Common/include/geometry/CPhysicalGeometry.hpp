@@ -787,4 +787,26 @@ public:
    */
   void Check_Periodicity(CConfig *config) override;
 
+  /*!
+   * \brief Compute an ADT including the coordinates of all viscous markers
+   * \param[in] config - Definition of the particular problem.
+   * \return pointer to the ADT
+   */
+  std::unique_ptr<CADTElemClass> ComputeViscousWallADT(CConfig *config) const override;
+
+  /*!
+   * \brief Set the wall distance based on an previously constructed ADT
+   * \param[in] WallADT - The ADT to compute the wall distance
+   */
+  void SetWallDistance(CConfig *config, CADTElemClass* WallADT) override;
+
+  /*!
+   * \brief Set wall distances a specific value
+   */
+  void SetWallDistance(su2double val) override {
+    for (unsigned long iPoint = 0; iPoint < GetnPoint(); iPoint++){
+      node[iPoint]->SetWall_Distance(val);
+    }
+  }
+
 };

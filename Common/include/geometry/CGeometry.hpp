@@ -48,6 +48,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <climits>
+#include <memory>
 
 #include "primal_grid/CPrimalGrid.hpp"
 #include "dual_grid/CDualGrid.hpp"
@@ -59,6 +60,7 @@ extern "C" {
 #include "../CConfig.hpp"
 #include "../geometry_structure_fem_part.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
+#include "../adt_structure.hpp"
 
 using namespace std;
 
@@ -1674,6 +1676,33 @@ public:
    * \return Group size.
    */
   inline unsigned long GetElementColorGroupSize(void) const { return elemColorGroupSize; }
+
+  /*!
+   * \brief Compute an ADT including the coordinates of all viscous markers
+   * \param[in] config - Definition of the particular problem.
+   * \return pointer to the ADT
+   */
+  virtual std::unique_ptr<CADTElemClass> ComputeViscousWallADT(CConfig *config) const { return nullptr; }
+
+  /*!
+   * \brief Set the wall distance based on an previously constructed ADT
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] WallADT - The ADT to compute the wall distance
+   */
+  virtual void SetWallDistance(CConfig *config, CADTElemClass* WallADT) {}
+
+  /*!
+   * \brief Set wall distances a specific value
+   *  \param[in] val - new value for the wall distance at all points.
+   */
+  virtual void SetWallDistance(su2double val) {};
+
+  /*!
+   * \brief Compute the distances to the closest vertex on viscous walls over the entire domain
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   */
+  static void ComputeWallDistance(CConfig **config_container, CGeometry ****geometry_container);
 
 };
 
