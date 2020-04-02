@@ -1288,7 +1288,12 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    else {
      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
      if ((pk > 0) && (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
-       val_Jacobian_i[0][0] += -2./3.*diverg*Volume;
+       val_Jacobian_i[0][0] += (StrainMag_i*StrainMag_i/TurbVar_i[1]-2./3.*diverg)*Volume;
+       val_Jacobian_i[0][1] += -StrainMag_i*StrainMag_i*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
+     }
+     else if (pk > 0) {
+       val_Jacobian_i[0][0] += 20.0*beta_star*TurbVar_i[1]*Volume;
+       val_Jacobian_i[0][1] += 20.0*beta_star*TurbVar_i[0]*Volume;
      }
    }
     
@@ -1305,6 +1310,9 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
      pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
      if ((pk > 0) && (pk < 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
        val_Jacobian_i[1][1] += -2./3.*alfa_blended*diverg*Volume;
+     }
+     else if (pk > 0) {
+       val_Jacobian_i[1][1] += 40.0*beta_star*TurbVar_i[1]*Volume;
      }
    }
     pw = pk*alfa_blended*Density_i/Eddy_Viscosity_i;
@@ -1350,8 +1358,8 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
    /*--- Cross diffusion ---*/
 
-   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[1]/TurbVar_i[1];
-   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[0]/TurbVar_i[1];
+   val_Jacobian_i[1][0] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[1]/TurbVar_i[1]*Volume;
+   val_Jacobian_i[1][1] += 2.*(1. - F1_i)*sigma_omega_2*DivTurbVarGrad_i[0]/TurbVar_i[1]*Volume;
    val_Jacobian_i[1][1] += -(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
   }
 
