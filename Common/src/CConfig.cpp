@@ -3277,7 +3277,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- By default, in 2D we should use TWOD_AIRFOIL (independenly from the input file) ---*/
 
-  if (val_nDim == 2) Geo_Description = TWOD_AIRFOIL;
+  if (val_nDim == 2 && Geo_Description != THICKNESS) Geo_Description = TWOD_AIRFOIL;
 
   /*--- Store the SU2 module that we are executing. ---*/
 

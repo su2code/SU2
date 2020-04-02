@@ -4166,15 +4166,16 @@ vector<vector<su2double>> CGeometry::ReadThicknessConstraints(string filename){
       i++;
     }
   }
+  else SU2_MPI::Error("Could not find thickness constraint file: " + filename, CURRENT_FUNCTION);
   return vals;
 
 }
 
-vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config){
-  unsigned short iFile, iLoc, iM, dim, dir;
+vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config, bool original_surface){
+  unsigned short iFile, iLoc, iM, dim, dir, iDim;
   short iMarker;
-  unsigned long iElem, iPoint, jPoint, totalLocs = 0, iInt;
-  su2double loc_val;
+  unsigned long iElem, iPoint, jPoint, totalLocs = 0, iInt, iVertex;
+  su2double loc_val, iPoint_Coord_dim, iPoint_Coord_dir, jPoint_Coord_dim, jPoint_Coord_dir;
   vector<string> filenames = config->GetThickness_Constraint_FileNames();
   vector<string> directions = config->GetThickness_Constraint_Directions();
   vector<vector<string>> markers = config->GetThickness_Constraint_Markers();
@@ -4186,6 +4187,8 @@ vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config){
   vector<su2double> Coords;
   vector<unsigned long> Locations;
   vector<unsigned long> ElemGlobalID;
+  su2double **Coord_Variation = NULL;
+  su2double *VarCoord = NULL;
 
   locs.resize(filenames.size(), {});
   nLocs.resize(filenames.size(), 0);
@@ -4198,6 +4201,15 @@ vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config){
   su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
   unsigned long *Buffer_Send_GlobalID, *Buffer_Receive_GlobalID, *Buffer_Send_Location, *Buffer_Receive_Location;
 #endif
+
+  /*--- Grid movement is stored using a vertices information,
+   we should go from vertex to points ---*/
+
+  if (original_surface == false) {
+    Coord_Variation = new su2double *[nPoint];
+    for (iPoint = 0; iPoint < nPoint; iPoint++)
+      Coord_Variation[iPoint] = new su2double [nDim];
+  }
 
   for (iFile = 0; iFile < filenames.size(); iFile++){
 
@@ -4239,6 +4251,15 @@ vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config){
         iMarker = config->GetMarker_All_TagBound(markers[iFile][iM]);
         if (iMarker == -1) break; // Marker doesn't exist on current rank
 
+        if (original_surface == false) {
+          for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
+            iPoint = vertex[iMarker][iVertex]->GetNode();
+            for (iDim = 0; iDim < nDim; iDim++)
+              Coord_Variation[iPoint][iDim] = VarCoord[iDim];
+          }
+        }
+
         /* --- Loop through all elements in marker to find intersections with thickness location --- */
         
         for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
@@ -4248,17 +4269,31 @@ vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config){
 
           iPoint = bound[iMarker][iElem]->GetNode(0);
           jPoint = bound[iMarker][iElem]->GetNode(1);
-          bool inElem = (node[iPoint]->GetCoord(dim) < loc_val && loc_val < node[jPoint]->GetCoord(dim)) ||
-                        (node[jPoint]->GetCoord(dim) < loc_val && loc_val < node[iPoint]->GetCoord(dim));
+
+          if (original_surface == false) {
+            iPoint_Coord_dim = node[iPoint]->GetCoord(dim) + Coord_Variation[iPoint][dim];
+            jPoint_Coord_dim = node[jPoint]->GetCoord(dim) + Coord_Variation[jPoint][dim];
+            iPoint_Coord_dir = node[iPoint]->GetCoord(dir) + Coord_Variation[iPoint][dir];
+            jPoint_Coord_dir = node[jPoint]->GetCoord(dir) + Coord_Variation[jPoint][dir];
+          }
+          else {
+            iPoint_Coord_dim = node[iPoint]->GetCoord(dim);
+            jPoint_Coord_dim = node[jPoint]->GetCoord(dim);
+            iPoint_Coord_dir = node[iPoint]->GetCoord(dir);
+            jPoint_Coord_dir = node[jPoint]->GetCoord(dir);
+          }
+
+          bool inElem = (iPoint_Coord_dim < loc_val && loc_val < jPoint_Coord_dim) ||
+                        (jPoint_Coord_dim < loc_val && loc_val < iPoint_Coord_dim);
           
           if (inElem) {
 
             /* --- If intersection is found, calculate the exact location of intersection 
                     using the slope of the line element --- */
 
-            su2double p = node[iPoint]->GetCoord(dir) + (loc_val - node[iPoint]->GetCoord(dim)) * 
-                          (node[jPoint]->GetCoord(dir) - node[iPoint]->GetCoord(dir)) / 
-                          (node[jPoint]->GetCoord(dim) - node[iPoint]->GetCoord(dim));
+            su2double p = iPoint_Coord_dir + (loc_val - iPoint_Coord_dim) * 
+                          (jPoint_Coord_dir - iPoint_Coord_dir) / 
+                          (jPoint_Coord_dim - iPoint_Coord_dim);
 
             /* --- Store relevant data for MPI communications. Location index is offset by 
                     locations of any previous files that might have been used --- */
@@ -4398,7 +4433,9 @@ vector<vector<su2double>> CGeometry::CalculateThickness2D(CConfig *config){
 
     for (iFile = 0; iFile < filenames.size(); iFile++){
       if (config->GetTabular_FileFormat() == TAB_CSV) {
-        string fn = "thickness_" + to_string(iFile) + ".csv";
+        string fn;
+        if (original_surface) fn = "thickness_" + to_string(iFile) + ".csv";
+        else fn = "thickness_fd_" + to_string(iFile) + ".csv";
         thickness_file.open(fn, ios::out);
         if (config->GetSystemMeasurements() == US){
           if (directions[iFile].compare("x") == 0)

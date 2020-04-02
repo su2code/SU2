@@ -1685,5 +1685,5 @@ public:
    * \brief Get thickness of 
    * \return 2D vector containing locations and values of thickness constraints
    */
-  vector<vector<su2double>> CalculateThickness2D(CConfig *config);
+  vector<vector<su2double>> CalculateThickness2D(CConfig *config, bool original_surface);
 };

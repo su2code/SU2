@@ -36,7 +36,6 @@ CGeometryEvaluation::CGeometryEvaluation(CGeometry* geo_val, CConfig* config_val
   SU2_MPI::SetComm(MPICommunicator);
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
-
   switch(config->GetGeo_Description()) {
     case FUSELAGE: fuselage = true; break;
     case WING: wing = true; break;
@@ -165,7 +164,8 @@ void CGeometryEvaluation::ComputeGeometry(){
 
   /* --- Evaluation 2D constraint locations --- */
   if (thickness && geometry->GetnDim() == 2) {
-    thicc = geometry->CalculateThickness2D(config);
+    cout << "Computing thickness at given locations." << endl;
+    thicc = geometry->CalculateThickness2D(config, true);
   }
 
   /*--- Compute the wing and fan description (only 3D). ---*/
@@ -404,10 +404,10 @@ void CGeometryEvaluation::OutputFunctionFile(){
         unsigned long thicc_index = 0;
         for (iFile = 0; iFile < thicc.size(); iFile++){
           for (iLoc = 0; iLoc < thicc[iFile].size(); iLoc++){
-            ObjFunc_file << "\"THICKNESS_LOCATION_" << thicc_index;
+            ObjFunc_file << "\"THICKNESS_LOCATION_" << thicc_index << "\"";
             thicc_index++;
             if (!(iFile == thicc.size()-1 && iLoc == thicc[iFile].size()-1)){
-              ObjFunc_file << "\",";
+              ObjFunc_file << ",";
             }
           }
         }
@@ -485,17 +485,18 @@ void CGeometryEvaluation::OutputFunctionFile(){
         if (iPlane != (nPlane*6)-1) ObjFunc_file <<", ";
       }
       if (thickness && geometry->GetnDim() == 2){
+        ObjFunc_file << ", ";
         for (iFile = 0; iFile < thicc.size(); iFile++){
           for (iLoc = 0; iLoc < thicc[iFile].size(); iLoc++){
             ObjFunc_file << thicc[iFile][iLoc];
             if (!(iFile == thicc.size()-1 && iLoc == thicc[iFile].size()-1)){
-              ObjFunc_file << "\",";
+              ObjFunc_file << ", ";
             }
           }
         }
       }
     }
-    
+    ObjFunc_file << endl;
     ObjFunc_file.close();
     
   }
@@ -729,7 +730,7 @@ void CGeometryEvaluation::EverythingGradient(){
 
         /* --- Evaluate new 2D constraint locations --- */
         if (thickness && geometry->GetnDim() == 2) {
-          thicc_New = geometry->CalculateThickness2D(config);
+          thicc_New = geometry->CalculateThickness2D(config, false);
         }
         
         /*--- Compute the gradient for the volume. In 2D this is just
@@ -785,7 +786,7 @@ void CGeometryEvaluation::EverythingGradient(){
           if (thickness && geometry->GetnDim() == 2) {
             thicc_Grad.resize(thicc.size(), {});
             for (iFile = 0; iFile < thicc.size(); iFile++){
-              thicc_Grad.resize(thicc[iFile].size(),0.0);
+              thicc_Grad[iFile].resize(thicc[iFile].size(),0.0);
               for (iLoc = 0; iLoc < thicc[iFile].size(); iLoc++){
                 thicc_Grad[iFile][iLoc] = (thicc_New[iFile][iLoc] - thicc[iFile][iLoc]) / delta_eps;
               }
@@ -909,7 +910,7 @@ void CGeometryEvaluation::EverythingGradient(){
           if (thickness && geometry->GetnDim() == 2) {
             thicc_Grad.resize(thicc.size(), {});
             for (iFile = 0; iFile < thicc.size(); iFile++){
-              thicc_Grad.resize(thicc[iFile].size(),0.0);
+              thicc_Grad[iFile].resize(thicc[iFile].size(),0.0);
               for (iLoc = 0; iLoc < thicc[iFile].size(); iLoc++){
                 thicc_Grad[iFile][iLoc] = 0.0;
               }
@@ -1082,10 +1083,10 @@ void CGeometryEvaluation::EverythingGradient(){
               unsigned long thicc_index = 0;
               for (iFile = 0; iFile < thicc.size(); iFile++){
                 for (iLoc = 0; iLoc < thicc[iFile].size(); iLoc++){
-                  Gradient_file << "\"THICKNESS_LOCATION_" << thicc_index;
+                  Gradient_file << "\"THICKNESS_LOCATION_" << thicc_index << "\"";
                   thicc_index++;
                   if (!(iFile == thicc.size()-1 && iLoc == thicc[iFile].size()-1)){
-                    Gradient_file << "\",";
+                    Gradient_file << ",";
                   }
                 }
               }
@@ -1167,11 +1168,12 @@ void CGeometryEvaluation::EverythingGradient(){
             if (iPlane != (nPlane*6)-1) Gradient_file <<",";
           }
           if (thickness && geometry->GetnDim() == 2){
+            Gradient_file << ", ";
             for (iFile = 0; iFile < thicc.size(); iFile++){
               for (iLoc = 0; iLoc < thicc[iFile].size(); iLoc++){
                 Gradient_file << thicc_Grad[iFile][iLoc];
                 if (!(iFile == thicc.size()-1 && iLoc == thicc[iFile].size()-1)){
-                  Gradient_file << "\",";
+                  Gradient_file << ", ";
                 }
               }
             }
