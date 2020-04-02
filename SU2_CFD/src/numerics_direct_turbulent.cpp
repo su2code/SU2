@@ -1193,8 +1193,8 @@ void CAvgGrad_TurbSST::CorrectJacobian(su2double **Jacobian_i,
       Jacobian_i[0][0] -= 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_i[0]/proj_vector_ij;
       Jacobian_i[1][1] -= 0.5*weight_i*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_i[1]/proj_vector_ij;
       
-      Jacobian_j[0][0] += 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[0]/proj_vector_ij;
-      Jacobian_j[1][1] += 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[1]/proj_vector_ij;
+      Jacobian_j[0][0] -= 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[0]/proj_vector_ij;
+      Jacobian_j[1][1] -= 0.5*weight_j*(Normal[iDim] - Edge_Vector[iDim]*proj_vector_ij)*jac_j[1]/proj_vector_ij;
     }
   }
   
