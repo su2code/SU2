@@ -100,12 +100,16 @@ def init_submodules(method = 'auto'):
   err = open( 'preconf_inria.err', 'w' )
 
   # Setup AMG interface
-  subprocess.call(['python setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
+  subprocess.check_call([sys.executable,'setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
 
   # Setup pyamg
-  try:
-    import pyamg
-  except ImportError:
+  import pkg_resources
+
+  required = {'pyamg'}
+  installed = {pkg.key for pkg in pkg_resources.working_set}
+  missing = required - installed
+
+  if missing:
     install_pyamg(log, err)
 
 def is_git_directory(path = '.'):
@@ -211,29 +215,22 @@ def download_module(name, alt_name, git_repo, commit_sha):
 
 def install_pyamg(log, err):
   # Install pyAMG
-  import pkg_resources
+  if sys.platform == 'linux' or sys.platform == 'linux2':
+      print('Installing pyAMG for Linux.')
+      pyamg_whl = 'pyamg-1.0.0-cp37-cp37m-linux_x86_64.whl'
 
-  required = {'pyamg'}
-  installed = {pkg.key for pkg in pkg_resources.working_set}
-  missing = required - installed
+  elif sys.platform == 'darwin':
+      print('Installing pyAMG for Mac.')
+      pyamg_whl = 'pyamg-1.0.1-cp37-cp37m-macosx_10_9_x86_64.whl'
 
-  if missing:
-    if sys.platform == 'linux' or sys.platform == 'linux2':
-        print('Installing pyAMG for Linux.')
-        pyamg_whl = 'pyamg-1.0.0-cp37-cp37m-linux_x86_64.whl'
-
-    elif sys.platform == 'darwin':
-        print('Installing pyAMG for Mac.')
-        pyamg_whl = 'pyamg-1.0.1-cp37-cp37m-macosx_10_9_x86_64.whl'
-
-    pyamg_whl = 'externals/AMGIO/pyamg/Python3/' + pyamg_whl
-    try:
-      # subprocess.check_call('pip3 install --user externals/AMGIO/pyamg/Python3/' + pyamg_whl, stdout = log, stderr = err, shell = True)
-      subprocess.check_call([sys.executable, '-m', 'pip', 'install', pyamg_whl], stdout=log, stderr = err)
-      log.close()
-      err.close()
-    except:
-        print('pyAMG installation failed')
+  pyamg_whl = 'externals/AMGIO/pyamg/Python3/' + pyamg_whl
+  try:
+    # subprocess.check_call('pip3 install --user externals/AMGIO/pyamg/Python3/' + pyamg_whl, stdout = log, stderr = err, shell = True)
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', pyamg_whl], stdout=log, stderr = err)
+    log.close()
+    err.close()
+  except:
+      print('pyAMG installation failed')
 
   return True
 
