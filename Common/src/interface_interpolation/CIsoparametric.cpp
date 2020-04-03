@@ -34,6 +34,19 @@
 
 using namespace GeometryToolbox;
 
+/*! \brief Helper struct to store information about candidate donor elements. */
+struct DonorInfo {
+  su2double isoparams[4] = {0.0};  /*!< \brief Interpolation coefficients. */
+  su2double distance = 0.0;        /*!< \brief Distance from target to final mapped point on donor plane. */
+  unsigned iElem = 0;              /*!< \brief Identification of the element. */
+  int error = 2;                   /*!< \brief If the mapped point is "outside" of the donor. */
+
+  bool operator< (const DonorInfo& other) const {
+    /*--- Best donor is one for which the mapped point is within bounds and closest to target. ---*/
+    return (error == other.error)? (distance < other.distance) : (error < other.error);
+  }
+};
+
 
 CIsoparametric::CIsoparametric(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
                                unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
@@ -47,9 +60,6 @@ void CIsoparametric::PrintStatistics(void) const {
 }
 
 void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
-
-  /*--- Angle between target and donor above which we trigger fallback measures. ---*/
-  const su2double thetaMax = 30.0/180.0*PI_NUMBER;
 
   const int nProcessor = size;
   const auto nMarkerInt = config[donorZone]->GetMarker_n_ZoneInterface()/2;
@@ -132,8 +142,8 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
     vector<unsigned short> elemNumNodes;
     su2matrix<long> elemIdxNodes;
 
-    auto nGlobalElemDonor = Collect_ElementInfo(markDonor, nDim, true,
-                              allNumElem, elemNumNodes, elemIdxNodes);
+    const auto nGlobalElemDonor = Collect_ElementInfo(markDonor, nDim, true,
+                                    allNumElem, elemNumNodes, elemIdxNodes);
 
     su2activematrix elemCentroid(nGlobalElemDonor, nDim);
 
@@ -164,6 +174,7 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
     /*--- Compute transfer coefficients for each target point. ---*/
     su2double maxDist = 0.0;
     unsigned long errorCount = 0, totalCount = 0;
+    vector<unsigned> nearElems(nGlobalElemDonor);
 
     SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget,2*omp_get_max_threads()))
     for (auto iVertex = 0u; iVertex < nVertexTarget; ++iVertex) {
@@ -174,89 +185,74 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
       if (!target_geometry->node[iPoint]->GetDomain()) continue;
       totalCount += 1;
 
-      /*--- Coordinates and unit normal of the target point. ---*/
+      /*--- Coordinates of the target point. ---*/
       const su2double* coord_i = target_geometry->node[iPoint]->GetCoord();
-      const su2double area_i = Norm(nDim, target_vertex->GetNormal());
-      su2double unitNormal_i[3] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; ++iDim)
-        unitNormal_i[iDim] = target_vertex->GetNormal(iDim) / area_i;
 
-      /*--- Find closest element (the naive way). ---*/
-      su2double minDist = 1e20;
-      auto iElemDonor = 0u;
-      for (auto iElem = 0u; iElem < nGlobalElemDonor; ++iElem) {
-        su2double dist = SquaredDistance(nDim, coord_i, elemCentroid[iElem]);
-        if (dist < minDist) {
-          minDist = dist;
-          iElemDonor = iElem;
+      /*--- Find "n" closest candidate donor elements (the naive way). ---*/
+      iota(nearElems.begin(), nearElems.end(), 0);
+      auto last = nearElems.begin() + min(NUM_CANDIDATE_DONORS, nGlobalElemDonor);
+      partial_sort(nearElems.begin(), last, nearElems.end(),
+        [&](unsigned iElem, unsigned jElem) {
+          return SquaredDistance(nDim, coord_i, elemCentroid[iElem]) <
+                 SquaredDistance(nDim, coord_i, elemCentroid[jElem]);
         }
-      }
+      );
 
-      /*--- Fetch donor element info. ---*/
-      int procList[4] = {0};
-      long nodeList[4] = {0};
-      su2double coords[4][3] = {{0.0}};
+      /*--- Evaluate interpolation for the candidates. ---*/
+      array<DonorInfo, NUM_CANDIDATE_DONORS> candidateElems;
 
-      const auto nNode = elemNumNodes[iElemDonor];
+      for (auto i = 0u; i < min(NUM_CANDIDATE_DONORS, nGlobalElemDonor); ++i) {
+        const auto iElem = nearElems[i];
 
-      for (auto iNode = 0u; iNode < nNode; ++iNode) {
-        const auto iVertex = elemIdxNodes(iElemDonor, iNode);
-        procList[iNode] = donorProc[iVertex];
-        nodeList[iNode] = donorPoint[iVertex];
+        /*--- Fetch element info. ---*/
+        auto& candidate = candidateElems[i];
+        candidate.iElem = iElem;
+        const auto nNode = elemNumNodes[iElem];
+        su2double coords[4][3] = {{0.0}};
+
+        for (auto iNode = 0u; iNode < nNode; ++iNode) {
+          const auto iVertex = elemIdxNodes(iElem, iNode);
+          for (auto iDim = 0u; iDim < nDim; ++iDim)
+            coords[iNode][iDim] = donorCoord(iVertex,iDim);
+        }
+
+        /*--- Compute the interpolation coefficients. ---*/
+        switch (nNode) {
+          case 2: candidate.error = LineIsoparameters(coords, coord_i, candidate.isoparams); break;
+          case 3: candidate.error = TriangleIsoparameters(coords, coord_i, candidate.isoparams); break;
+          case 4: candidate.error = QuadrilateralIsoparameters(coords, coord_i, candidate.isoparams); break;
+        }
+
+        /*--- Evaluate distance from target to final mapped point. ---*/
+        su2double finalCoord[3] = {0.0};
         for (auto iDim = 0u; iDim < nDim; ++iDim)
-          coords[iNode][iDim] = donorCoord(iVertex,iDim);
+          for (auto iNode = 0u; iNode < nNode; ++iNode)
+            finalCoord[iDim] += coords[iNode][iDim] * candidate.isoparams[iNode];
+
+        candidate.distance = Distance(nDim, coord_i, finalCoord);
+        if (candidate.distance != candidate.distance) // NaN check
+          candidate.error = 2;
       }
 
-      const su2double* coord_j = elemCentroid[iElemDonor];
-      su2double normal_j[3] = {0.0};
+      /*--- Find best donor. ---*/
+      partial_sort(candidateElems.begin(), candidateElems.begin()+1, candidateElems.end());
+      const auto& donor = candidateElems[0];
 
-      switch (nNode) {
-        case 2: LineNormal(coords, normal_j); break;
-        case 3: TriangleNormal(coords, normal_j); break;
-        case 4: QuadrilateralNormal(coords, normal_j); break;
-      }
+      if (donor.error > 1)
+        SU2_MPI::Error("Isoparametric interpolation failed, NaN detected.", CURRENT_FUNCTION);
 
-      /*--- Project the target onto the donor plane, as grids may not be exactly conformal.
-       *    For quadrilaterals this is approximate as the element may be warped. ---*/
-      su2double proj = DotProduct(nDim, unitNormal_i, normal_j);
-      su2double theta = acos(fabs(proj) / Norm(nDim, normal_j));
+      errorCount += donor.error;
+      maxDist = max(maxDist, donor.distance);
 
-      su2double projCoord[3] = {0.0};
-
-      if (theta < thetaMax) {
-        su2double dist_ij[3] = {0.0};
-        Distance(nDim, coord_j, coord_i, dist_ij);
-        proj = DotProduct(nDim, dist_ij, normal_j) / proj;
-        for (auto iDim = 0u; iDim < nDim; ++iDim)
-          projCoord[iDim] = coord_i[iDim] + proj*unitNormal_i[iDim];
-
-        maxDist = max(maxDist, fabs(proj));
-      }
-      else {
-        /*--- Target and donor are too out of alignement, as fallback
-         *    use the element centroid as the projected coordinate. ---*/
-        for (auto iDim = 0u; iDim < nDim; ++iDim)
-          projCoord[iDim] = coord_j[iDim];
-
-        errorCount += 1;
-        maxDist = max(maxDist, sqrt(minDist));
-      }
-
-      /*--- Compute and set interpolation coefficients. ---*/
-
-      su2double isoparams[4] = {0.0};
-      switch (nNode) {
-        case 2: errorCount += LineIsoparameters(coords, projCoord, isoparams); break;
-        case 3: errorCount += TriangleIsoparameters(coords, projCoord, isoparams); break;
-        case 4: errorCount += QuadrilateralIsoparameters(coords, projCoord, isoparams); break;
-      }
+      const auto nNode = elemNumNodes[donor.iElem];
 
       target_vertex->Allocate_DonorInfo(nNode);
 
-      for (auto iDonor = 0u; iDonor < nNode; ++iDonor) {
-        target_vertex->SetDonorCoeff(iDonor, isoparams[iDonor]);
-        target_vertex->SetInterpDonorPoint(iDonor, nodeList[iDonor]);
-        target_vertex->SetInterpDonorProcessor(iDonor, procList[iDonor]);
+      for (auto iNode = 0u; iNode < nNode; ++iNode) {
+        const auto iVertex = elemIdxNodes(donor.iElem, iNode);
+        target_vertex->SetDonorCoeff(iNode, donor.isoparams[iNode]);
+        target_vertex->SetInterpDonorPoint(iNode, donorPoint[iVertex]);
+        target_vertex->SetInterpDonorProcessor(iNode, donorProc[iVertex]);
       }
 
     }
@@ -283,11 +279,18 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
 
 int CIsoparametric::LineIsoparameters(const su2double X[][3], const su2double *xj, su2double *isoparams) {
 
-  const su2double extrapTol = 1.05;
+  const su2double extrapTol = 1.5;
+
+  /*--- Project the target point onto the line. ---*/
+
+  su2double normal[2] = {0.0};
+  LineNormal(X, normal);
+  su2double xprj[2] = {0.0};
+  PointPlaneProjection<su2double,2>(xj, X[0], normal, xprj);
 
   su2double l01 = Distance(2, X[0], X[1]);
-  su2double l0j = Distance(2, X[0], xj);
-  su2double lj1 = Distance(2, xj, X[1]);
+  su2double l0j = Distance(2, X[0], xprj);
+  su2double lj1 = Distance(2, xprj, X[1]);
 
   /*--- Detect out of bounds point. ---*/
 
@@ -304,15 +307,18 @@ int CIsoparametric::TriangleIsoparameters(const su2double X[][3], const su2doubl
   /*--- The isoparameters are the solution to the determined system X^T * isoparams = xj.
    *    This is consistent with the shape functions of the linear triangular element. ---*/
 
-  const su2double extrapTol = -0.05;
+  const su2double extrapTol = -0.5;
 
-  su2double A[3][3] = {{0.0}}; // = X^T
+  /*--- Project the target point onto the triangle. ---*/
 
-  for (int i = 0; i < 3; ++i) {
-    isoparams[i] = xj[i]; // use isoparams as rhs
+  su2double normal[3] = {0.0};
+  TriangleNormal(X, normal);
+  PointPlaneProjection<su2double,3>(xj, X[0], normal, isoparams); // use isoparams as rhs
+
+  su2double A[3][3]; // = X^T
+  for (int i = 0; i < 3; ++i)
     for (int j = 0; j < 3; ++j)
       A[i][j] = X[j][i];
-  }
 
   /*--- Solve system by in-place Gaussian elimination without pivoting. ---*/
 
@@ -357,9 +363,10 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
 
   /*--- The isoparameters are the shape functions (Ni) evaluated at xj, for that we need
    *    the corresponding Xi and Eta, which are obtained by solving the overdetermined
-   *    nonlinear system xj - X^T * Ni(Xi,Eta) = 0 via the modified Marquardt method. ---*/
+   *    nonlinear system r = xj - X^T * Ni(Xi,Eta) = 0 via the modified Marquardt method.
+   *    It is not necessary to project the point as minimizing ||r|| is equivalent. ---*/
 
-  const su2double extrapTol = 1.05;
+  const su2double extrapTol = 3.0;
 
   constexpr int NITER = 20;
   const su2double tol = 1e-10, lambda = 0.05;
@@ -435,7 +442,7 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
     }
   }
 
-  /*--- Evaluate isoparameters. ---*/
+  /*--- Evaluate isoparameters at final Xi and Eta. ---*/
   CQUAD4::ShapeFunctions(Xi, Eta, isoparams);
 
   return outOfBounds;

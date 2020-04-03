@@ -76,6 +76,31 @@ inline void CrossProduct(const T* a, const T* b, T* c) {
   c[2] = a[0]*b[1] - a[1]*b[0];
 }
 
+/*!
+ * \brief Compute the coordinate (c) where the line defined by coordinate l0 and
+ *        direction d intersects the plane defined by point p0 and normal n.
+ * \return The intersection distance.
+ */
+template<class T, int nDim>
+inline T LinePlaneIntersection(const T* l0, const T* d, const T* p0, const T* n, T* c) {
+  T dist[nDim] = {0.0};
+  Distance(nDim, p0, l0, dist);
+  T alpha = DotProduct(nDim, dist, n) / DotProduct(nDim, d, n);
+  for (int iDim = 0; iDim < nDim; ++iDim)
+    c[iDim] = l0[iDim] + alpha * d[iDim];
+  return fabs(alpha) * Norm(nDim,d);
+}
+
+/*!
+ * \brief Compute the coordinate (c) where point p1 intersects the plane defined
+ *        by point p0 and normal n if projected perpendicular to it.
+ * \return The normal distance.
+ */
+template<class T, int nDim>
+inline T PointPlaneProjection(const T* p1, const T* p0, const T* n, T* c) {
+  return LinePlaneIntersection<T,nDim>(p1, n, p0, n, c);
+}
+
 /*! \brief Set U as the normal to a 2D line defined by coords[iPoint][iDim]. */
 template<class T, class U>
 inline void LineNormal(const T& coords, U* normal) {

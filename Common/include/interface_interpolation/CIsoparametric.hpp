@@ -33,6 +33,8 @@
  */
 class CIsoparametric final : public CInterpolator {
 private:
+  static constexpr auto NUM_CANDIDATE_DONORS = 8ul; /*!< \brief Test this many nearby donor elements for "best fit". */
+  /*--- Statistics. ---*/
   su2double MaxDistance = 0.0, ErrorRate = 0.0;
   unsigned long ErrorCounter = 0;
 
@@ -62,27 +64,27 @@ private:
   /*!
    * \brief Compute the isoparametric interpolation coefficients for a 2D line element.
    * \param[in] X - Coordinate matrix defining the line.
-   * \param[in] xj - Coordinates of the target point projected onto the plane of the element.
+   * \param[in] xj - Coordinates of the target point.
    * \param[out] isoparams - Isoparametric coefficients.
-   * \return 0 on success, 1 if xj is outside element bounds.
+   * \return 0 on success, 1 if xj is too far outside element bounds.
    */
   static int LineIsoparameters(const su2double X[][3], const su2double *xj, su2double* isoparams);
 
   /*!
    * \brief Compute the isoparametric interpolation coefficients for a 3D triangle element.
    * \param[in] X - Coordinate matrix defining the triangle.
-   * \param[in] xj - Coordinates of the target point projected onto the plane of the element.
+   * \param[in] xj - Coordinates of the target point.
    * \param[out] isoparams - Isoparametric coefficients.
-   * \return 0 on success, 1 if xj is outside element bounds.
+   * \return 0 on success, 1 if xj is too far outside element bounds.
    */
   static int TriangleIsoparameters(const su2double X[][3], const su2double *xj, su2double* isoparams);
 
   /*!
    * \brief Compute the isoparametric interpolation coefficients for a 3D quadrilateral element.
    * \param[in] X - Coordinate matrix defining the quadrilateral.
-   * \param[in] xj - Coordinates of the target point projected onto the plane of the element.
+   * \param[in] xj - Coordinates of the target point.
    * \param[out] isoparams - Isoparametric coefficients.
-   * \return 0 on success, 1 if xj is outside element bounds.
+   * \return 0 on success, 1 if xj is too far outside element bounds.
    */
   static int QuadrilateralIsoparameters(const su2double X[][3], const su2double *xj, su2double* isoparams);
 
