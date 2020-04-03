@@ -100,7 +100,8 @@ def init_submodules(method = 'auto'):
   err = open( 'preconf_inria.err', 'w' )
 
   # Setup AMG interface
-  subprocess.check_call([sys.executable,'setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
+  cmd = sys.executable + ' setup.py'
+  subprocess.call([cmd,'build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
 
   # Setup pyamg
   import pkg_resources
