@@ -7330,41 +7330,6 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     fst_row[i+1] = fst_row[i] + m_loc[i];
   }
 
-  // SpatialJacobian, nonZeroEntriesJacobian
-  // <vector> SpatialJacobian_CSC(SpatialJacobian.size());
-
-  // for(unsigned long l=0; l<nVolElemOwned; ++l) {
-  //   const unsigned long nDOFs  = volElem[l].nDOFsSol;
-  //   const unsigned long offset = volElem[l].offsetDOFsSolLocal*nVar;
-
-  vector<unsigned long> nNonZeroEntries(nDOFsLocOwned+1);
-
-  nNonZeroEntries[0] = 0;
-  for(unsigned i=0; i<nDOFsLocOwned; ++i)
-    nNonZeroEntries[i+1] = nNonZeroEntries[i] + nonZeroEntriesJacobian[i].size();
-
-  for (int i = 0; i < nonZeroEntriesJacobian.size(); ++i){
-    std::cout<< "[i] = " << i << ": ";
-    for (int j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
-      std::cout << nonZeroEntriesJacobian[i][j] << " ";
-      for (int k = 0; k < size - 1; ++k) {
-        std::cout << "( ";
-        if (nonZeroEntriesJacobian[i][j] >= fst_row[k] && nonZeroEntriesJacobian[i][j] < fst_row[k+1]) {
-          unsigned long offset = nNonZeroEntries[i] + j;
-          // SU2_MPI::Send
-          std::cout << offset << " ";
-        }
-        std::cout << ") ";
-      }
-    }
-    std::cout << std::endl;
-  }
-
-
-
-
-
-
   /*--- Compute the timestep for time-stepping ---*/
   su2double ResRatio = 0;
   if (config->GetInnerIter() == 0) {
