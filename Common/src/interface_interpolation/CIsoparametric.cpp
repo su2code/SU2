@@ -190,7 +190,7 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
 
       /*--- Find "n" closest candidate donor elements (the naive way). ---*/
       iota(nearElems.begin(), nearElems.end(), 0);
-      auto last = nearElems.begin() + min(NUM_CANDIDATE_DONORS, nGlobalElemDonor);
+      auto last = nearElems.begin() + min<unsigned long>(NUM_CANDIDATE_DONORS, nGlobalElemDonor);
       partial_sort(nearElems.begin(), last, nearElems.end(),
         [&](unsigned iElem, unsigned jElem) {
           return SquaredDistance(nDim, coord_i, elemCentroid[iElem]) <
@@ -201,7 +201,7 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
       /*--- Evaluate interpolation for the candidates. ---*/
       array<DonorInfo, NUM_CANDIDATE_DONORS> candidateElems;
 
-      for (auto i = 0u; i < min(NUM_CANDIDATE_DONORS, nGlobalElemDonor); ++i) {
+      for (auto i = 0u; i < min<unsigned long>(NUM_CANDIDATE_DONORS, nGlobalElemDonor); ++i) {
         const auto iElem = nearElems[i];
 
         /*--- Fetch element info. ---*/

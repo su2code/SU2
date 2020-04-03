@@ -33,7 +33,7 @@
  */
 class CIsoparametric final : public CInterpolator {
 private:
-  static constexpr auto NUM_CANDIDATE_DONORS = 8ul; /*!< \brief Test this many nearby donor elements for "best fit". */
+  enum: unsigned long { NUM_CANDIDATE_DONORS = 8 }; /*!< \brief Test this many nearby donor elements for "best fit". */
   /*--- Statistics. ---*/
   su2double MaxDistance = 0.0, ErrorRate = 0.0;
   unsigned long ErrorCounter = 0;
