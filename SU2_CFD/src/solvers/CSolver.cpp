@@ -4785,7 +4785,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
-  int desired_nodes = 1000; //TODO: create config file option
+  int desired_nodes = 50; //TODO: create config file option
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   int firstrun = 0;
@@ -4881,6 +4881,15 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
       PhiNodes.push_back( sqrt(norm_phi) );
     }
     
+    ///*--- Devalue already chosen nodes ---*/
+    //
+    //for (int node_mask = 0; node_mask < (int)Mask.size(); node_mask++){
+    //  int node = Mask[node_mask];
+    //  PhiNodes[node] = -100000.0;
+    //}
+    
+    /*--- Add nodes corresponding to a single Phi vector ---*/
+    
     unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil (nodes to add per loop)
     
     for (inode = 0; inode < nodestoAdd; inode++) {
@@ -4890,23 +4899,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
       
       if (MaskedNode(nodewithMax) == false) { Mask.push_back(nodewithMax); }
       else { nodestoAdd++; }
-
-      //ofstream fs;
-      //std::string fname = "phi_vector_debug.csv";
-      //fs.open(fname);
-      //for(int i=0; i < (int)PhiNodes.size(); i++){
-      //  fs << PhiNodes[i] << "," << "\n" ;
-      //}
-      //fs.close();
-      //
-      //fname = "phi_gappy_debug.csv";
-      //fs.open(fname);
-      //for(int i=0; i < (int)gappy_Phi.size(); i++){
-      //  fs << gappy_Phi[i] << "," << "\n" ;
-      //}
-      //fs.close();
     }
-  
   }
   }
   //// set mask to all even nodes for now
@@ -4957,10 +4950,23 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
     
     if (MaskedNode(iPoint)) {
       Edge_masked.push_back(iEdge);
-      if (!MaskedNode(jPoint))
-        MaskNeighbors.push_back(jPoint);
+      if (!MaskedNode(jPoint)) MaskNeighbors.push_back(jPoint);
+    }
+    else if (MaskedNode(jPoint)) {
+      Edge_masked.push_back(iEdge);
+      if (!MaskedNode(iPoint)) MaskNeighbors.push_back(iPoint);
     }
     
     
   }
+  
+  ofstream fs;
+  std::string fname = "masked_nodes_neighs.csv";
+  fs.open(fname);
+  for(int i=0; i < (int)MaskNeighbors.size(); i++){
+    fs << MaskNeighbors[i] << "," ;
+  }
+  fs << "\n";
+  fs.close();
+  
 }
