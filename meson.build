@@ -6,8 +6,8 @@ project('SU2', 'c', 'cpp',
                           'cpp_std=c++11'])
 
 
-pymod = import('python3')
-python = pymod.find_installation()
+pymod = import('python')
+python = pymod.find_installation(python3)
 
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
