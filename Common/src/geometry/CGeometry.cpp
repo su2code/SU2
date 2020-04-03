@@ -4111,7 +4111,7 @@ void CGeometry::SetNaturalElementColoring()
   if (omp_get_max_threads() > 1) elemColorGroupSize = nElem;
 }
 
-void CGeometry::ComputeWallDistance(CConfig **config_container, CGeometry ****geometry_container){
+void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry ****geometry_container){
 
   int nZone = config_container[ZONE_0]->GetnZone();
   bool allEmpty = true;
@@ -4149,7 +4149,7 @@ void CGeometry::ComputeWallDistance(CConfig **config_container, CGeometry ****ge
         /*--- Inner loop over all zones to update the wall distances.
        * It might happen that there is a closer viscous wall in zone iZone for points in zone jZone. ---*/
         for (int jZone = 0; jZone < nZone; jZone++){
-          if (wallDistanceNeeded[jZone] && WallADT && !WallADT->IsEmpty())
+          if (wallDistanceNeeded[jZone])
             geometry_container[jZone][iInst][MESH_0]->SetWallDistance(config_container[jZone], WallADT.get());
         }
       }

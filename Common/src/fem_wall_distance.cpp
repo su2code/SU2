@@ -28,7 +28,7 @@
 #include "../include/fem_geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
 
-std::unique_ptr<CADTElemClass> CMeshFEM_DG::ComputeViscousWallADT(CConfig *config) const {
+std::unique_ptr<CADTElemClass> CMeshFEM_DG::ComputeViscousWallADT(const CConfig *config) const {
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Create the coordinates and connectivity of the linear      ---*/
@@ -118,15 +118,7 @@ std::unique_ptr<CADTElemClass> CMeshFEM_DG::ComputeViscousWallADT(CConfig *confi
 
   /* Build the ADT. */
   std::unique_ptr<CADTElemClass> WallADT(new CADTElemClass(nDim, surfaceCoor, surfaceConn, VTK_TypeElem,
-                        markerIDs, elemIDs, true));
-
-  /* Release the memory of the vectors used to build the ADT. To make sure
-     that all the memory is deleted, the swap function is used. */
-  vector<unsigned short>().swap(markerIDs);
-  vector<unsigned short>().swap(VTK_TypeElem);
-  vector<unsigned long>().swap(elemIDs);
-  vector<unsigned long>().swap(surfaceConn);
-  vector<su2double>().swap(surfaceCoor);
+                                                           markerIDs, elemIDs, true));
 
   return WallADT;
 
@@ -180,7 +172,7 @@ void CMeshFEM_DG::SetWallDistance(su2double val){
   }
 }
 
-void CMeshFEM_DG::SetWallDistance(CConfig *config, CADTElemClass *WallADT){
+void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT){
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Determine the wall distance of the integration points of   ---*/

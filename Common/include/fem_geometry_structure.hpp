@@ -1364,7 +1364,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \return pointer to the ADT
    */
-  std::unique_ptr<CADTElemClass> ComputeViscousWallADT(CConfig *config) const override;
+  std::unique_ptr<CADTElemClass> ComputeViscousWallADT(const CConfig *config) const override;
 
   /*!
    * \brief Set wall distances a specific value
@@ -1376,7 +1376,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] WallADT - The ADT to compute the wall distance
    */
-  void SetWallDistance(CConfig *config, CADTElemClass* WallADT) override;
+  void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
 };
 
 /*! 

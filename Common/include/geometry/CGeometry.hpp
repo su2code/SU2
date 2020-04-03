@@ -1670,27 +1670,27 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return pointer to the ADT
    */
-  virtual std::unique_ptr<CADTElemClass> ComputeViscousWallADT(CConfig *config) const { return nullptr; }
+  virtual std::unique_ptr<CADTElemClass> ComputeViscousWallADT(const CConfig *config) const { return nullptr; }
 
   /*!
    * \brief Set the wall distance based on an previously constructed ADT
    * \param[in] config - Definition of the particular problem.
    * \param[in] WallADT - The ADT to compute the wall distance
    */
-  virtual void SetWallDistance(CConfig *config, CADTElemClass* WallADT) {}
+  virtual void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) {}
 
   /*!
    * \brief Set wall distances a specific value
    *  \param[in] val - new value for the wall distance at all points.
    */
-  virtual void SetWallDistance(su2double val) {};
+  virtual void SetWallDistance(su2double val) {}
 
   /*!
    * \brief Compute the distances to the closest vertex on viscous walls over the entire domain
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] geometry_container - Geometrical definition of the problem.
    */
-  static void ComputeWallDistance(CConfig **config_container, CGeometry ****geometry_container);
+  static void ComputeWallDistance(const CConfig * const *config_container, CGeometry ****geometry_container);
 
 };
 

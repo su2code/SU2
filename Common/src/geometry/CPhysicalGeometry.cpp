@@ -11672,7 +11672,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
 
 }
 
-std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(CConfig *config) const{
+std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CConfig *config) const{
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Create the coordinates and connectivity of the linear      ---*/
@@ -11757,19 +11757,11 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(CConfig 
   std::unique_ptr<CADTElemClass> WallADT(new CADTElemClass(nDim, surfaceCoor, surfaceConn, VTK_TypeElem,
                                                            markerIDs, elemIDs, true));
 
-  /* Release the memory of the vectors used to build the ADT. To make sure
-     that all the memory is deleted, the swap function is used. */
-  vector<unsigned short>().swap(markerIDs);
-  vector<unsigned short>().swap(VTK_TypeElem);
-  vector<unsigned long>().swap(elemIDs);
-  vector<unsigned long>().swap(surfaceConn);
-  vector<su2double>().swap(surfaceCoor);
-
   return WallADT;
 
 }
 
-void CPhysicalGeometry::SetWallDistance(CConfig *config, CADTElemClass *WallADT){
+void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *WallADT){
 
 
   /*--------------------------------------------------------------------------*/
