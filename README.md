@@ -88,3 +88,63 @@ We follow the popular "GitFlow" branching model for scalable development. In the
 SU2 is being developed by individuals and organized teams all around the world. 
 
 A list of current contributors can be found in the AUTHORS.md file.
+
+
+# Instructions to configure SU2 for implicitDG discretization
+
+If you are on sherlock, load the modules necessary. Last option superlu module is optional, but I would recommend u to configure that since it will be easier to run comparison studies later on.
+```
+module load gcc eigen metis parmetis openmpi superlu
+```
+Configuring SU2. SU2 offers the conventional Makefile build and meson/ninja build. Personally I’ve been using the old fashion makefile build as linking/unlinking library on sherlock using meson gave me a lot of headache.
+
+Initiating configurtion
+```
+./bootstrap
+```
+
+Installing necessary 3rd party libraries, in particular, CodiPack (automatic differentiation tool) and MediPack (MPI wrapper for CoDiPack)
+```
+./preconfigure.py --enable-direct-diff --enable-mpi
+```
+
+Configure SU2 setup. A couple of notes:
+1. SU2 requires metis and parmetis and it actually comes with the two libraries by default, which means you wouldnt have to load metis/parmetis on sherlock. However, the Superlu solver on sherlock loads metis/parmetis modules on sherlock, which then gives a version conflict error if the SU2 metis/parmetis are present. Hence, my solution at the moment is to disable the installation of metis/parmetis in SU2, but using metis/parmetis on sherlock server. Two flags `-DHAVE_METIS -DHAVE_PARMETIS` and two links '-lmetis -lparmetis' are used to link to the sherlock metis/parmetis libraries. I hope this doesnt give you any problem when you use your spaND solver.
+2. You are welcome to change the optimization flag if you start to run performance tests.
+3. Please install SU2 into a SCRATCH folder. Installing it into a HOME directory will easily lead to memory issues when you start to run it locally for quick tests. SCRATCH directory seems to be less stringent and allow you to run some quick tests without the need to submit jobs to the queue.
+```
+./configure --prefix=$SCRATCH/<your directory> --enable-mpi --enable-codi-forward --disable-metis --disable-parmetis CXXFLAGS="-O0 -g -DHAVE_METIS -DHAVE_PARMETIS -lmetis -lparmetis -lsuperlu_dist"
+```
+
+Once you are done with the above commend, the screen output towards the end will have 4 lines of path variables that you need to copy and add to the bash file. Typically they look something like this (this is my version, yours will be different depending on the installing path you specified earlier with the prefix option)
+```
+export SU2_RUN="/scratch/users/zanxu/SU2/bin"
+export SU2_HOME="/scratch/users/zanxu/SU2"
+export PATH=$PATH:$SU2_RUN
+export PYTHONPATH=$PYTHONPATH:$SU2_RUN
+```
+(Later on you will need to copy and paste these 4 lines and add to the end of the bash file. You will need to reload the terminal or refresh the bashfile to run SU2. but this can be done last.)
+```
+cd
+vi .bashrc
+(copy and paste)
+```
+
+In the original SU2 directory, start installing the objects and executables. On sherlock, I would highly recommend you to request multiple N nodes via `-j N` to parallelize the installation for speedup. It takes quite some time. If the parallelization fails at some point, just rerun it. I have experienced some minor problems before they usually can be fixed with a re-run.
+```
+make install -j 8
+```
+
+This should be the end of installation. Once you are done with installation and reloading/refreshing bash file, you should be able to run a quick test. you can go to QuickStart directory and run SU2 to test its completion.
+```
+cd QuickStart
+```
+Usually the SU2 executable is `SU2_CFD`, but for our case, we use automatic differentiation for computing Jacobian, so our SU2 is built with automatic differentiation support and the executable is `SU2_CFD_DIRECTDIFF`. The argument required is a single `.cfg` configuration file. You shouldnt worry about the configuration file. Mostly they are used to specify the flow solver, not really the linear solver. I will make sure you have the right config file when we start to run tests together.
+To run the QuickStart test case sequentially
+```
+SU2_CFD_DIRECTDIFF inv_NACA0012.cfg
+```
+To run in parallel
+```
+mpirun -n 8 SU2_CFD_DIRECTDIFF inv_NACA0012.cfg
+```

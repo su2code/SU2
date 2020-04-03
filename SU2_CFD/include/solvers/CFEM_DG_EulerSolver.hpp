@@ -904,6 +904,12 @@ public:
                               unsigned short iRKStep) final;
 
   /*!
+   * \brief Using the SUPERLU linear solver to solve for implicit Euler iteration.
+   */
+  void SUPERLU_LinSolver(unsigned long mat_size, int nnz, passivedouble* valuePtr,
+                        int* innerIndexPtr, int* outerIndexPtr, passivedouble* b,  
+                        unsigned long* m_loc, unsigned long* fst_row);
+  /*!
    * \brief Update the solution using an implicit Euler scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
