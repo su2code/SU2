@@ -64,7 +64,7 @@ def init_submodules(method = 'auto'):
   base_path = cur_dir + os.path.sep + 'externals' + os.path.sep 
   alt_name_medi = base_path + 'medi'
   alt_name_codi = base_path + 'codi'
-  alt_name_amg  = base_path + '/externals/AMGIO'
+  alt_name_amg  = base_path + 'AMGIO'
   alt_name_meson =  base_path + 'meson'
   alt_name_ninja =  base_path + 'ninja'
 
