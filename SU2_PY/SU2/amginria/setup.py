@@ -1,5 +1,6 @@
 import sys,os
-from distutils.core import setup, Extension, sysconfig
+from distutils.core import setup, Extension
+from distutils import sysconfig
 
 
 def setup_amgio(argv=[]):
