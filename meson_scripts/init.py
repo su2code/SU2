@@ -48,9 +48,8 @@ def init_submodules(method = 'auto'):
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
   sha_version_medi = 'edde14f9ac4026b72b1e130f61c0a78e8652afa5'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
-  sha_version_amg = '0abd5b88a760736e6e5f2966c101a3d263ea030d'
+  sha_version_amg = 'cb046ba9b1cdc2011dfa3ac6dfabc0460e17f77d'
   github_repo_amg = 'https://github.com/bmunguia/AMGIO'
-  sha_version_meson = '0435691e83fb7172e2a9635d2eb32d5521089916'
   sha_version_meson = '0435691e83fb7172e2a9635d2eb32d5521089916'
   github_repo_meson = 'https://github.com/mesonbuild/meson'
   sha_version_ninja = '2d15b04e411229cb902332957281622119025e77'
@@ -217,15 +216,11 @@ def install_pyamg(log, err):
   except ImportError:
     if sys.platform == 'linux' or sys.platform == 'linux2':
         print('Installing pyAMG for Linux.')
-        import sysconfig
-        if sysconfig.get_config_var('Py_UNICODE_SIZE') == 2:
-            pyamg_whl = 'pyamg-1.0.0-cp27-cp27m-linux_x86_64.whl'
-        else:
-            pyamg_whl = 'pyamg-1.0.0-cp27-cp27mu-linux_x86_64.whl'
+        pyamg_whl = 'pyamg-1.0.0-cp37-cp37m-linux_x86_64.whl'
 
     elif sys.platform == 'darwin':
         print('Installing pyAMG for Mac.')
-        pyamg_whl = 'pyamg-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl'
+        pyamg_whl = 'pyamg-1.0.1-cp37-cp37m-macosx_10_9_x86_64.whl'
         
     try:
         subprocess.check_call('pip3 install --user externals/AMGIO/pyamg/Python3/' + pyamg_whl, stdout = log, stderr = err, shell = True)

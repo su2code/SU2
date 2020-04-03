@@ -340,7 +340,7 @@ def init_inria(argument_dict, modes, update = False):
     
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_amg = '0abd5b88a760736e6e5f2966c101a3d263ea030d'
+    sha_version_amg = 'cb046ba9b1cdc2011dfa3ac6dfabc0460e17f77d'
     github_repo_amg = 'https://github.com/bmunguia/AMGIO'
 
     amg_name = 'AMGIO'
@@ -372,18 +372,14 @@ def init_inria(argument_dict, modes, update = False):
     except ImportError:
         if sys.platform == 'linux' or sys.platform == 'linux2':
             print('Installing pyAMG for Linux.')
-            import sysconfig
-            if sysconfig.get_config_var('Py_UNICODE_SIZE') == 2:
-                pyamg_whl = 'pyamg-1.0.0-cp27-cp27m-linux_x86_64.whl'
-            else:
-                pyamg_whl = 'pyamg-1.0.0-cp27-cp27mu-linux_x86_64.whl'
+            pyamg_whl = 'pyamg-1.0.0-cp37-cp37m-linux_x86_64.whl'
 
         elif sys.platform == 'darwin':
             print('Installing pyAMG for Mac.')
-            pyamg_whl = 'pyamg-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl'
+            pyamg_whl = 'pyamg-1.0.1-cp37-cp37m-macosx_10_9_x86_64.whl'
           
         try:
-            subprocess.check_call('pip install --user externals/AMGIO/pyamg/Python2/' + pyamg_whl, stdout = log, stderr = err, shell = True)
+            subprocess.check_call('pip3 install --user externals/AMGIO/pyamg/Python3/' + pyamg_whl, stdout = log, stderr = err, shell = True)
             log.close()
             err.close()
         except:
