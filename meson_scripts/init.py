@@ -213,7 +213,7 @@ def install_pyamg(log, err):
   # Install pyAMG
   import pkg_resources
 
-  required = {'mutagen', 'gTTS'}
+  required = {'pyamg'}
   installed = {pkg.key for pkg in pkg_resources.working_set}
   missing = required - installed
 

@@ -367,23 +367,29 @@ def init_inria(argument_dict, modes, update = False):
     subprocess.call(['python setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
 
     # Install pyAMG
-    try:
-        import pyamg
-    except ImportError:
+    import pkg_resources
+
+    required = {'pyamg'}
+    installed = {pkg.key for pkg in pkg_resources.working_set}
+    missing = required - installed
+
+    if missing:
         if sys.platform == 'linux' or sys.platform == 'linux2':
             print('Installing pyAMG for Linux.')
             pyamg_whl = 'pyamg-1.0.0-cp37-cp37m-linux_x86_64.whl'
 
-        elif sys.platform == 'darwin':
-            print('Installing pyAMG for Mac.')
-            pyamg_whl = 'pyamg-1.0.1-cp37-cp37m-macosx_10_9_x86_64.whl'
-          
-        try:
-            subprocess.check_call('pip3 install --user externals/AMGIO/pyamg/Python3/' + pyamg_whl, stdout = log, stderr = err, shell = True)
-            log.close()
-            err.close()
-        except:
-            print('pyAMG installation failed')
+    elif sys.platform == 'darwin':
+        print('Installing pyAMG for Mac.')
+        pyamg_whl = 'pyamg-1.0.1-cp37-cp37m-macosx_10_9_x86_64.whl'
+
+    pyamg_whl = 'externals/AMGIO/pyamg/Python3/' + pyamg_whl
+    try:
+      # subprocess.check_call('pip3 install --user externals/AMGIO/pyamg/Python3/' + pyamg_whl, stdout = log, stderr = err, shell = True)
+      subprocess.check_call(['pip3', 'install', *missing], stdout=log, stderr = err)
+      log.close()
+      err.close()
+    except:
+        print('pyAMG installation failed')
 
     return True
 
