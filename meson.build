@@ -54,7 +54,6 @@ if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_for_args = '-DCODI_FORWARD_TYPE'
 endif
 
-<<<<<<< HEAD
 if get_option('enable-inria')
   subdir('externals/AMGIO/sources')
   su2_deps += libmeshb7_dep
@@ -62,9 +61,6 @@ if get_option('enable-inria')
 endif
 
 # Add cgns library
-=======
-# add cgns library
->>>>>>> develop
 if get_option('enable-cgns')
   subdir('externals/cgns')
   su2_deps     += cgns_dep
