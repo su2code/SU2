@@ -129,12 +129,6 @@ public:
   void SecondaryRecording(void);
 
   /*!
-   * \brief Run one iteration of the primal solver.
-   * \param[in] TimeIter - Iteration number)
-   */
-  bool DirectIteration(unsigned long TimeIter);
-
-  /*!
    * \brief Perform all steps to compute the metric.
    */
   void ComputeMetric(void);
