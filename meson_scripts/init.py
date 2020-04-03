@@ -229,7 +229,7 @@ def install_pyamg(log, err):
     pyamg_whl = 'externals/AMGIO/pyamg/Python3/' + pyamg_whl
     try:
       # subprocess.check_call('pip3 install --user externals/AMGIO/pyamg/Python3/' + pyamg_whl, stdout = log, stderr = err, shell = True)
-      subprocess.check_call(['pip3', 'install', pyamg_whl], stdout=log, stderr = err)
+      subprocess.check_call([sys.executable, '-m', 'pip', 'install', pyamg_whl], stdout=log, stderr = err)
       log.close()
       err.close()
     except:
