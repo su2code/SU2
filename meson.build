@@ -6,7 +6,7 @@ project('SU2', 'c', 'cpp',
                           'cpp_std=c++11'])
 
 
-pymod = import('python')
+pymod = import('python3')
 python = pymod.find_installation()
 
 su2_cpp_args = []
