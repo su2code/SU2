@@ -9,12 +9,12 @@ if _swig_python_version_info >= (2, 7, 0):
     def swig_import_helper():
         import importlib
         pkg = __name__.rpartition('.')[0]
-        mname = '.'.join((pkg, 'amgio')).lstrip('.')
+        mname = '.'.join((pkg, '_amgio')).lstrip('.')
         try:
             return importlib.import_module(mname)
         except ImportError:
-            return importlib.import_module('amgio')
-    amgio = swig_import_helper()
+            return importlib.import_module('_amgio')
+    _amgio = swig_import_helper()
     del swig_import_helper
 elif _swig_python_version_info >= (2, 6, 0):
     def swig_import_helper():
@@ -22,20 +22,20 @@ elif _swig_python_version_info >= (2, 6, 0):
         import imp
         fp = None
         try:
-            fp, pathname, description = imp.find_module('amgio', [dirname(__file__)])
+            fp, pathname, description = imp.find_module('_amgio', [dirname(__file__)])
         except ImportError:
-            import amgio
-            return amgio
+            import _amgio
+            return _amgio
         try:
-            _mod = imp.load_module('amgio', fp, pathname, description)
+            _mod = imp.load_module('_amgio', fp, pathname, description)
         finally:
             if fp is not None:
                 fp.close()
         return _mod
-    amgio = swig_import_helper()
+    _amgio = swig_import_helper()
     del swig_import_helper
 else:
-    import amgio
+    import _amgio
 del _swig_python_version_info
 
 try:
@@ -97,36 +97,36 @@ except __builtin__.Exception:
 
 
 def py_ConvertSU2toInria(MshNam, SolNam, OutNam):
-    return amgio.py_ConvertSU2toInria(MshNam, SolNam, OutNam)
-py_ConvertSU2toInria = amgio.py_ConvertSU2toInria
+    return _amgio.py_ConvertSU2toInria(MshNam, SolNam, OutNam)
+py_ConvertSU2toInria = _amgio.py_ConvertSU2toInria
 
 def py_ConvertInriatoSU2(MshNam, SolNam, OutNam):
-    return amgio.py_ConvertInriatoSU2(MshNam, SolNam, OutNam)
-py_ConvertInriatoSU2 = amgio.py_ConvertInriatoSU2
+    return _amgio.py_ConvertInriatoSU2(MshNam, SolNam, OutNam)
+py_ConvertInriatoSU2 = _amgio.py_ConvertInriatoSU2
 
 def py_SplitSolution(SolNam, dim, prefix, adap_sensor):
-    return amgio.py_SplitSolution(SolNam, dim, prefix, adap_sensor)
-py_SplitSolution = amgio.py_SplitSolution
+    return _amgio.py_SplitSolution(SolNam, dim, prefix, adap_sensor)
+py_SplitSolution = _amgio.py_SplitSolution
 
 def py_ReadMeshAndSol(MshNam, SolNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pySolHeader, pyMarkers):
-    return amgio.py_ReadMeshAndSol(MshNam, SolNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pySolHeader, pyMarkers)
-py_ReadMeshAndSol = amgio.py_ReadMeshAndSol
+    return _amgio.py_ReadMeshAndSol(MshNam, SolNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pySolHeader, pyMarkers)
+py_ReadMeshAndSol = _amgio.py_ReadMeshAndSol
 
 def py_ReadMesh(MshNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pyMarkers):
-    return amgio.py_ReadMesh(MshNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pyMarkers)
-py_ReadMesh = amgio.py_ReadMesh
+    return _amgio.py_ReadMesh(MshNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pyMarkers)
+py_ReadMesh = _amgio.py_ReadMesh
 
 def py_WriteMeshAndSol(MshNam, SolNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pySolHeader, pyMarkers, Dim):
-    return amgio.py_WriteMeshAndSol(MshNam, SolNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pySolHeader, pyMarkers, Dim)
-py_WriteMeshAndSol = amgio.py_WriteMeshAndSol
+    return _amgio.py_WriteMeshAndSol(MshNam, SolNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pySol, pySolHeader, pyMarkers, Dim)
+py_WriteMeshAndSol = _amgio.py_WriteMeshAndSol
 
 def py_WriteMesh(MshNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pyMarkers, Dim):
-    return amgio.py_WriteMesh(MshNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pyMarkers, Dim)
-py_WriteMesh = amgio.py_WriteMesh
+    return _amgio.py_WriteMesh(MshNam, pyVer, pyCor, pyTri, pyTet, pyEdg, pyHex, pyQua, pyPyr, pyPri, pyMarkers, Dim)
+py_WriteMesh = _amgio.py_WriteMesh
 
 def py_WriteSolution(SolNam, pyVer, pySol, pySolHeader, NbrVer, Dim):
-    return amgio.py_WriteSolution(SolNam, pyVer, pySol, pySolHeader, NbrVer, Dim)
-py_WriteSolution = amgio.py_WriteSolution
+    return _amgio.py_WriteSolution(SolNam, pyVer, pySol, pySolHeader, NbrVer, Dim)
+py_WriteSolution = _amgio.py_WriteSolution
 # This file is compatible with both classic and new-style classes.
 
 

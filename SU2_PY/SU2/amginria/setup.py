@@ -12,21 +12,21 @@ def setup_amgio(argv=[]):
     file_dir    = os.path.dirname(os.path.abspath(__file__));
     
     os.chdir(file_dir);
-    setup(name="amgio",
+    setup(name="_amgio",
           ext_modules=[ \
-          Extension("amgio",
-          sources=[ "./amgio/amgio_py.c", \
-                    "./amgio/mesh.c", \
-                    "./amgio/GMFio.c", \
-                    "./amgio/SU2io.c", \
-                    "./amgio/option.c", \
-                    "./amgio/libmesh6.c", \
-                    "./amgio/amgio_py.i", \
-                    "./amgio/convert.c"],
+          Extension("_amgio",
+          sources=[ "./_amgio/amgio_py.c", \
+                    "./_amgio/mesh.c", \
+                    "./_amgio/GMFio.c", \
+                    "./_amgio/SU2io.c", \
+                    "./_amgio/option.c", \
+                    "./_amgio/libmesh6.c", \
+                    "./_amgio/amgio_py.i", \
+                    "./_amgio/convert.c"],
           extra_compile_args=["-std=c99","-Wno-unused-variable","-Wno-unused-result"]), 
           ],);
     
-    os.rename("amgio"+sysconfig.get_config_var('EXT_SUFFIX'),"amgio.so");
+    os.rename("_amgio"+sysconfig.get_config_var('EXT_SUFFIX'),"_amgio.so");
     os.chdir(working_dir);
     sys.argv = sav_argv;
 
