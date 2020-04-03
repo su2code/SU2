@@ -15,6 +15,7 @@ if get_option('enable-normal')
                                         'output/filewriter/CFEMDataSorter.cpp',
                                         'output/filewriter/CSurfaceFEMDataSorter.cpp',
                                         'output/filewriter/CSurfaceFVMDataSorter.cpp',
+                                        'output/filewriter/CInriaFileWriter.cpp',
                                         'output/filewriter/CParallelFileWriter.cpp',
                                         'output/filewriter/CParaviewFileWriter.cpp',
                                         'output/filewriter/CParaviewBinaryFileWriter.cpp',

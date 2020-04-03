@@ -12,6 +12,7 @@ if get_option('enable-normal')
                                          'output/filewriter/CFEMDataSorter.cpp',
                                          'output/filewriter/CSurfaceFEMDataSorter.cpp',
                                          'output/filewriter/CFVMDataSorter.cpp',
+                                         'output/filewriter/CInriaFileWriter.cpp',
                                          'output/filewriter/CSurfaceFVMDataSorter.cpp',
                                          'output/filewriter/CCSVFileWriter.cpp',
                                          'output/filewriter/CSTLFileWriter.cpp',
