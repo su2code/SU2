@@ -60,7 +60,7 @@ def amg ( config , kind='' ):
         for opt in required_options:
             if not opt in config:
                 err += opt + '\n'
-        raise RuntimeError , err
+        raise AttributeError(err)
     
     # Print adap options
     sys.stdout.write(su2amg.print_adap_options(config, adap_options))
@@ -80,10 +80,11 @@ def amg ( config , kind='' ):
     sensor_avail = ['MACH', 'PRES', 'MACH_PRES', 'GOAL']
     
     if adap_sensor not in sensor_avail:
-        raise RuntimeError , 'Unknown adaptation sensor (PYADAP_SENSOR option)\n'
+        raise ValueError('Unknown adaptation sensor (PYADAP_SENSOR option).\n')
         
     if len(mesh_sizes) != len(sub_iter):
-        raise RuntimeError , 'Inconsistent number of mesh sizes and sub-iterations'
+        raise ValueError('Inconsistent number of mesh sizes and sub-iterations.\n \
+                          %d mesh sizes and %d sub-iterations provided.' % (len(mesh_sizes),len(sub_iter)))
         
         
     #--- Use the python interface to amg, or the executable?
@@ -179,7 +180,7 @@ def amg ( config , kind='' ):
             for opt in required_options:
                 if not opt in config:
                     err += opt + '\n'
-            raise RuntimeError , err
+            raise AttributeError(err)
 
         sys.stdout.write('Initial CFD solution is provided.\n')
         sys.stdout.flush()
@@ -237,13 +238,13 @@ def amg ( config , kind='' ):
         for fil in required_files:
             if not os.path.exists(fil):
                 err += fil + '\n'
-        raise RuntimeError , err
+        raise Exception(err)
         
     #--- Get mesh dimension
 
     dim = su2amg.get_su2_dim(current_mesh)
     if ( dim != 2 and dim != 3 ):
-        raise RuntimeError , "Wrong dimension number\n"
+        raise ValueError("Wrong dimension number\n")
     
     #--- AMG parameters
     
@@ -265,7 +266,7 @@ def amg ( config , kind='' ):
     back_name, back_extension = os.path.splitext(config_amg['adap_back'])
     
     if not os.path.exists(config_amg['adap_back']):
-        raise RuntimeError , "\n\n##ERROR : Can't find back mesh: %s.\n\n" % config_amg['adap_back']
+        raise Exception("\n\n##ERROR : Can't find back mesh: %s.\n\n" % config_amg['adap_back'])
     
     if back_extension == ".su2":
         sys.stdout.write("\nGenerating GMF background surface mesh.\n")
@@ -341,9 +342,9 @@ def amg ( config , kind='' ):
                 su2amg.write_mesh_and_sol("current.meshb", "current.solb", mesh)
                 
                 if not os.path.exists("current.solb"):
-                    raise RuntimeError , "\n##ERROR : Can't find solution.\n"
+                    raise Exception("\n##ERROR : Can't find solution.\n")
                 if not os.path.exists("current.meshb"):
-                    raise RuntimeError , "\n##ERROR : Can't find mesh.\n"
+                    raise Exception("\n##ERROR : Can't find mesh.\n")
                 
                 #--- Get sensor
                                 
@@ -351,7 +352,7 @@ def amg ( config , kind='' ):
                 su2amg.write_sol("current_sensor.solb", sensor)
                 
                 if not os.path.exists("current_sensor.solb"):
-                    raise RuntimeError , "\n##ERROR : Can't find adap sensor.\n"
+                    raise Exception("\n##ERROR : Can't find adap sensor.\n")
                 
                 #--- Run amg
                                 
@@ -364,13 +365,13 @@ def amg ( config , kind='' ):
                 try :
                     su2amg.amg_call(config_amg)
                 except:
-                    raise RuntimeError , "\n##ERROR : Call to AMG failed.\n"
+                    raise Exception("\n##ERROR : Call to AMG failed.\n")
                 
                 if not os.path.exists(config_amg['mesh_out']):
-                    raise RuntimeError , "\n##ERROR : Mesh adaptation failed.\n"
+                    raise Exception("\n##ERROR : Mesh adaptation failed.\n")
                 
                 if not os.path.exists("current.itp.solb"):
-                    raise RuntimeError , "\n##ERROR AMG: Solution interpolation failed.\n"            
+                    raise Exception("\n##ERROR AMG: Solution interpolation failed.\n")         
                 
                 #--- Convert output from Inria mesh format to su2
                 # Deal with markers
@@ -388,7 +389,7 @@ def amg ( config , kind='' ):
                 su2amg.write_mesh_and_sol(current_mesh, current_solution, mesh)
                 
                 if not os.path.exists(current_mesh) or not os.path.exists(current_solution) :
-                    raise RuntimeError , "\n##ERROR : Conversion to SU2 failed.\n"
+                    raise Exception("\n##ERROR : Conversion to SU2 failed.\n")
 
             else :
                 
@@ -504,7 +505,7 @@ def amg ( config , kind='' ):
                 #     config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
                 
                 if not os.path.exists(current_solution) :
-                    raise RuntimeError , "\n##ERROR : SU2_CFD Failed.\n"
+                    raise Exception("\n##ERROR : SU2_CFD Failed.\n")
                     
                 if adap_sensor == 'GOAL':
                     current_solution_adj = "ite%d_adj.csv" % (global_iter)
