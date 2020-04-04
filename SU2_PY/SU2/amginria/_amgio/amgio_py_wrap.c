@@ -2997,7 +2997,7 @@ static swig_module_info swig_module = {swig_types, 1, 0, 0, 0, 0};
               @(target):= _amgio.so
   ------------------------------------------------*/
 #if PY_VERSION_HEX >= 0x03000000
-#  define SWIG_init    PyInit_amgio
+#  define SWIG_init    PyInit__amgio
 
 #else
 #  define SWIG_init    init_amgio
