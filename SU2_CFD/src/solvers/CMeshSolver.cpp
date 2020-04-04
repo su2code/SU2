@@ -25,11 +25,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../../Common/include/adt_structure.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 #include "../../include/solvers/CMeshSolver.hpp"
 #include "../../include/variables/CMeshBoundVariable.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+
+using namespace GeometryToolbox;
 
 
 CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true) {
@@ -891,8 +893,7 @@ void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigne
   su2double VarCoordAbs[3] = {0.0};
   su2double rotCoord[3] = {0.0}, r[3] = {0.0};
   su2double rotMatrix[3][3] = {{0.0}};
-  su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
-  su2double cosPhi, sinPhi, cosPsi, sinPsi;
+  su2double dtheta, dphi, dpsi;
   const su2double DEG2RAD = PI_NUMBER/180.0;
   unsigned short iMarker, jMarker, iDim;
   unsigned long iPoint, iVertex;
@@ -909,14 +910,8 @@ void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigne
   if (iter == 0) time_old = time_new;
   else time_old = (iter-1)*deltaT;
 
-  auto Rotate = [](const su2double mat[][3], const su2double* r, const su2double* o, su2double* c) {
-    c[0] = mat[0][0]*r[0] + mat[0][1]*r[1] + mat[0][2]*r[2] + o[0];
-    c[1] = mat[1][0]*r[0] + mat[1][1]*r[1] + mat[1][2]*r[2] + o[1];
-    c[2] = mat[2][0]*r[0] + mat[2][1]*r[1] + mat[2][2]*r[2] + o[2];
-  };
-
   /*--- Store displacement of each node on the pitching surface ---*/
-    /*--- Loop over markers and find the particular marker(s) (surface) to pitch ---*/
+  /*--- Loop over markers and find the particular marker(s) (surface) to pitch ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Moving(iMarker) != YES) continue;
@@ -968,25 +963,11 @@ void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigne
       dpsi   = -Ampl[2]*(sin(Omega[2]*time_new + Phase[2])
                        - sin(Omega[2]*time_old + Phase[2]));
 
-      /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+      /*--- Compute rotation matrix. ---*/
 
-      cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
-      sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
+      RotationMatrix(dtheta, dphi, dpsi, rotMatrix);
 
-      /*--- Compute the rotation matrix. Note that the implicit
-       ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-
-      rotMatrix[0][0] = cosPhi*cosPsi;
-      rotMatrix[1][0] = cosPhi*sinPsi;
-      rotMatrix[2][0] = -sinPhi;
-
-      rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-      rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-      rotMatrix[2][1] = sinTheta*cosPhi;
-
-      rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-      rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-      rotMatrix[2][2] = cosTheta*cosPhi;
+      /*--- Apply rotation to the vertices. ---*/
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -1002,7 +983,7 @@ void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigne
 
         /*--- Compute transformed point coordinates ---*/
 
-        Rotate(rotMatrix, r, Center, rotCoord);
+        Rotate(rotMatrix, Center, r, rotCoord);
 
         /*--- Calculate delta change in the x, y, & z directions ---*/
         for (iDim = 0; iDim < nDim; iDim++)
@@ -1030,8 +1011,7 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigne
   su2double Center[3] = {0.0}, VarCoord[3] = {0.0}, Omega[3] = {0.0},
   rotCoord[3] = {0.0}, r[3] = {0.0}, Center_Aux[3] = {0.0};
   su2double rotMatrix[3][3] = {{0.0}};
-  su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
-  su2double cosPhi, sinPhi, cosPsi, sinPsi;
+  su2double dtheta, dphi, dpsi;
   unsigned short iMarker, jMarker, iDim;
   unsigned long iPoint, iVertex;
   string Marker_Tag, Moving_Tag;
@@ -1046,12 +1026,6 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigne
   time_new = iter*deltaT;
   if (iter == 0) time_old = time_new;
   else time_old = (iter-1)*deltaT;
-
-  auto Rotate = [](const su2double mat[][3], const su2double* r, const su2double* o, su2double* c) {
-    c[0] = mat[0][0]*r[0] + mat[0][1]*r[1] + mat[0][2]*r[2] + o[0];
-    c[1] = mat[1][0]*r[0] + mat[1][1]*r[1] + mat[1][2]*r[2] + o[1];
-    c[2] = mat[2][0]*r[0] + mat[2][1]*r[1] + mat[2][2]*r[2] + o[2];
-  };
 
   /*--- Store displacement of each node on the rotating surface ---*/
   /*--- Loop over markers and find the particular marker(s) (surface) to rotate ---*/
@@ -1096,25 +1070,11 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigne
       dphi   = Omega[1]*(time_new-time_old);
       dpsi   = Omega[2]*(time_new-time_old);
 
-      /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+      /*--- Compute rotation matrix. ---*/
 
-      cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
-      sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
+      RotationMatrix(dtheta, dphi, dpsi, rotMatrix);
 
-      /*--- Compute the rotation matrix. Note that the implicit
-       ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-
-      rotMatrix[0][0] = cosPhi*cosPsi;
-      rotMatrix[1][0] = cosPhi*sinPsi;
-      rotMatrix[2][0] = -sinPhi;
-
-      rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-      rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-      rotMatrix[2][1] = sinTheta*cosPhi;
-
-      rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-      rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-      rotMatrix[2][2] = cosTheta*cosPhi;
+      /*--- Apply rotation to the vertices. ---*/
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -1130,7 +1090,7 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigne
 
         /*--- Compute transformed point coordinates ---*/
 
-        Rotate(rotMatrix, r, Center, rotCoord);
+        Rotate(rotMatrix, Center, r, rotCoord);
 
         /*--- Calculate delta change in the x, y, & z directions ---*/
         for (iDim = 0; iDim < nDim; iDim++)
@@ -1168,7 +1128,7 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigne
 
     /*--- Compute transformed point coordinates ---*/
 
-    Rotate(rotMatrix, r, Center, rotCoord);
+    Rotate(rotMatrix, Center, r, rotCoord);
 
     /*--- Calculate delta change in the x, y, & z directions ---*/
     for (iDim = 0; iDim < nDim; iDim++)
@@ -1196,7 +1156,7 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigne
 
     /*--- Compute transformed point coordinates ---*/
 
-    Rotate(rotMatrix, r, Center, rotCoord);
+    Rotate(rotMatrix, Center, r, rotCoord);
 
     /*--- Calculate delta change in the x, y, & z directions ---*/
     for (iDim = 0; iDim < nDim; iDim++)

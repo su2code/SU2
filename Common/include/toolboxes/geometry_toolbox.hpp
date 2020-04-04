@@ -138,4 +138,49 @@ inline void QuadrilateralNormal(const T& coords, U* normal) {
   normal[0] *= 0.5; normal[1] *= 0.5; normal[2] *= 0.5;
 }
 
+/*!
+ * \brief Compute a 3D rotation matrix.
+ * \note The implicit ordering is rotation about the x, y, and then z axis.
+ */
+template<class Scalar, class Matrix>
+inline void RotationMatrix(Scalar theta, Scalar phi, Scalar psi, Matrix& mat) {
+
+  Scalar cosTheta = cos(theta);  Scalar cosPhi = cos(phi);  Scalar cosPsi = cos(psi);
+  Scalar sinTheta = sin(theta);  Scalar sinPhi = sin(phi);  Scalar sinPsi = sin(psi);
+
+  mat[0][0] = cosPhi*cosPsi;
+  mat[1][0] = cosPhi*sinPsi;
+  mat[2][0] = -sinPhi;
+
+  mat[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+  mat[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+  mat[2][1] = sinTheta*cosPhi;
+
+  mat[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+  mat[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+  mat[2][2] = cosTheta*cosPhi;
+}
+
+/*! \brief Compute a 2D rotation matrix. */
+template<class Scalar, class Matrix>
+inline void RotationMatrix(Scalar psi, Matrix& mat) {
+
+  Scalar cosPsi = cos(psi);
+  Scalar sinPsi = sin(psi);
+
+  mat[0][0] = cosPsi;  mat[0][1] =-sinPsi;
+  mat[1][0] = sinPsi;  mat[1][1] = cosPsi;
+}
+
+/*! \brief Apply a rotation matrix (R) about origin (O) to a point at
+ *         distance (d) from it to obtain new coordinate (c). */
+template<class Scalar, int nDim>
+inline void Rotate(const Scalar R[][nDim], const Scalar* O, const Scalar* d, Scalar* c) {
+
+  for (int iDim = 0; iDim < nDim; ++iDim) {
+    c[iDim] = O[iDim];
+    for (int k = 0; k < nDim; ++k) c[iDim] += R[iDim][k] * d[k];
+  }
+}
+
 }
