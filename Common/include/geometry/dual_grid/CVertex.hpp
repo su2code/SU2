@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>CVertex.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,8 +49,6 @@ protected:
   unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
   unsigned long *Donor_Points;   /*!< \brief indices of donor points for interpolation across zones */
   unsigned long *Donor_Proc;     /*!< \brief indices of donor processor for interpolation across zones in parallel */
-  unsigned long Donor_Elem;      /*!< \brief Store the donor element for interpolation across zones/ */
-  unsigned short Donor_Face;     /*!< \brief Store the donor face (w/in donor element) for interpolation across zones */
   su2double Basis_Function[3];   /*!< \brief Basis function values for interpolation across zones. */
   su2double *Donor_Coeff;        /*!< \brief Store a list of coefficients corresponding to the donor points. */
   unsigned short nDonor_Points;  /*!< \brief Number of points in Donor_Coeff. */
@@ -111,6 +109,11 @@ public:
    * \return Dimensional normal vector, the modulus is the area of the face.
    */
   inline su2double *GetNormal(void) override { return Normal; }
+
+  /*!
+   * \brief Get the ith component of the normal.
+   */
+  inline su2double GetNormal(unsigned short iDim) const { return Normal[iDim]; }
 
   /*!
    * \brief Initialize normal vector.
@@ -306,30 +309,6 @@ public:
    * \return Value of the periodic point of a vertex, and the domain.
    */
   inline bool GetActDisk_Perimeter(void) const { return ActDisk_Perimeter; }
-
-  /*!
-   * \brief Set the donor element of a vertex for interpolation across zones.
-   * \param[in] val_donorelem - donor element index.
-   */
-  inline void SetDonorElem(long val_donorelem) { Donor_Elem = val_donorelem; }
-
-  /*!
-   * \brief Get the donor element of a vertex for interpolation across zones.
-   * \return Value of the donor element of a vertex.
-   */
-  inline long GetDonorElem(void) const { return Donor_Elem; }
-
-  /*!
-   * \brief Set the donor face of a vertex for interpolation across zones.
-   * \param[in] val_donorface- donor face index (w/in donor elem).
-   */
-  inline void SetDonorFace(unsigned short val_donorface) { Donor_Face = val_donorface; }
-
-  /*!
-   * \brief Get the donor face of a vertex for interpolation across zones.
-   * \return Value of the donor face index (w/in donor elem).
-   */
-  inline unsigned short GetDonorFace(void) const { return Donor_Face; }
 
   /*!
    * \brief Set the finite element basis functions needed for interpolation.

@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2216,11 +2216,13 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Deform limit in m or inches */
   addDoubleOption("DEFORM_LIMIT", Deform_Limit, 1E6);
   /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
-  addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, SOLID_WALL_DISTANCE);
-  /* DESCRIPTION: Poisson's ratio for constant stiffness FEA method of grid deformation*/
+  addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_StiffnessType, Deform_Stiffness_Map, SOLID_WALL_DISTANCE);
+  /* DESCRIPTION: Poisson's ratio for constant stiffness FEA method of grid deformation */
   addDoubleOption("DEFORM_ELASTICITY_MODULUS", Deform_ElasticityMod, 2E11);
-  /* DESCRIPTION: Young's modulus and Poisson's ratio for constant stiffness FEA method of grid deformation*/
+  /* DESCRIPTION: Young's modulus and Poisson's ratio for constant stiffness FEA method of grid deformation */
   addDoubleOption("DEFORM_POISSONS_RATIO", Deform_PoissonRatio, 0.3);
+  /* DESCRIPTION: Size of the layer of highest stiffness for wall distance-based mesh stiffness */
+  addDoubleOption("DEFORM_STIFF_LAYER_SIZE", Deform_StiffLayerSize, 0.0);
   /*  DESCRIPTION: Linear solver for the mesh deformation\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
   addEnumOption("DEFORM_LINEAR_SOLVER", Kind_Deform_Linear_Solver, Linear_Solver_Map, FGMRES);
   /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
@@ -3012,7 +3014,7 @@ void CConfig::SetHeader(unsigned short val_software){
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.0.2 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.3 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -6596,7 +6598,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if(Cauchy_Elems <1){
       SU2_MPI::Error(to_string(Cauchy_Elems) + string(" Cauchy elements are no viable input. Please check your configuration file."), CURRENT_FUNCTION);
     }
-    cout << "Begin windowed time average at iteration " << Wnd_StartConv_Iter << "." << endl;
+    cout << "Begin windowed time average at iteration " << StartWindowIteration << "." << endl;
 
     if(Wnd_Cauchy_Crit){
       cout << "Begin time convergence monitoring at iteration " << Wnd_StartConv_Iter + StartWindowIteration << "." << endl;

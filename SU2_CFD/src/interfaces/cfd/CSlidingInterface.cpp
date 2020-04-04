@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another
  * \author G. Gori Politecnico di Milano
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

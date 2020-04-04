@@ -2,7 +2,7 @@
  * \file CInterpolator.hpp
  * \brief Base class for multiphysics interpolation.
  * \author H. Kline
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,20 +27,24 @@
 #pragma once
 
 #include "../../include/datatype_structure.hpp"
+#include "../../include/toolboxes/C2DContainer.hpp"
+#include <vector>
 
 class CConfig;
 class CGeometry;
 
+using namespace std;
+
 /*!
  * \class CInterpolator
  * \brief Main class for defining the interpolator, it requires
- * a child class for each particular interpolation method
+ *        a child class for each particular interpolation method.
  * \author H. Kline
  */
 class CInterpolator {
 protected:
-  const int rank; 	         /*!< \brief MPI Rank. */
-  const int size;       	   /*!< \brief MPI Size. */
+  const int rank;            /*!< \brief MPI Rank. */
+  const int size;            /*!< \brief MPI Size. */
   const unsigned donorZone;  /*!< \brief Index of donor zone. */
   const unsigned targetZone; /*!< \brief Index of target zone. */
 
@@ -61,9 +65,7 @@ protected:
   *Buffer_Send_FaceIndex,            /*!< \brief Buffer to send indices pointing to the node indices that define the faces*/
   *Buffer_Receive_FaceIndex,         /*!< \brief Buffer to receive indices pointing to the node indices that define the faces*/
   *Buffer_Send_FaceNodes,            /*!< \brief Buffer to send indices pointing to the location of node information in other buffers, defining faces*/
-  *Buffer_Receive_FaceNodes,         /*!< \brief Buffer to receive indices pointing to the location of node information in other buffers, defining faces*/
-  *Buffer_Send_FaceProc,             /*!< \brief Buffer to send processor which stores the node indicated in Buffer_Receive_FaceNodes*/
-  *Buffer_Receive_FaceProc;          /*!< \brief Buffer to receive processor which stores the node indicated in Buffer_Receive_FaceNodes*/
+  *Buffer_Receive_FaceNodes;         /*!< \brief Buffer to receive indices pointing to the location of node information in other buffers, defining faces*/
 
   long *Buffer_Send_GlobalPoint,     /*!< \brief Buffer to send global point indices*/
   *Buffer_Receive_GlobalPoint;       /*!< \brief Buffer to receive global point indices*/
@@ -147,47 +149,35 @@ protected:
   void ReconstructBoundary(unsigned long val_zone, int val_marker);
 
   /*!
-   * \brief compute squared distance between 2 points
-   * \param[in] nDim - number of dimensions
-   * \param[in] point_i - coordinates of point i
-   * \param[in] point_j - coordinates of point j
-   */
-  static inline su2double PointsSquareDistance(unsigned short nDim, const su2double *point_i, const su2double *point_j) {
-    su2double d = 0.0;
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      d += pow(point_j[iDim] - point_i[iDim], 2);
-    return d;
-  }
-
-  /*!
-   * \brief compute distance between 2 points
-   * \param[in] nDim - number of dimensions
-   * \param[in] point_i - coordinates of point i
-   * \param[in] point_j - coordinates of point j
-   */
-  static inline su2double PointsDistance(unsigned short nDim, const su2double *point_i, const su2double *point_j) {
-    return sqrt(PointsSquareDistance(nDim, point_i, point_j));
-  }
-
-  /*!
-   * \brief Determine array sizes used to collect and send coordinate and global point
-   * information.
-   * \param[in] faces - boolean that determines whether or not to set face information as well
+   * \brief Determine array sizes used to collect and send coordinate and global point information.
    * \param[in] markDonor - Index of the boundary on the donor domain.
    * \param[in] markTarget - Index of the boundary on the target domain.
    * \param[in] nVertexDonor - Number of vertices on the donor boundary.
    * \param[in] nDim - number of physical dimensions.
    */
-  void Determine_ArraySize(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short nDim);
+  void Determine_ArraySize(int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short nDim);
 
   /*!
-   * \brief Collect and communicate vertex info: coord, global point, and if faces=true the normal vector
-   * \param[in] faces - boolean that determines whether or not to set face information as well
+   * \brief Collect and communicate vertex info: coord, global point.
    * \param[in] markDonor - Index of the boundary on the donor domain.
    * \param[in] markTarget - Index of the boundary on the target domain.
    * \param[in] nVertexDonor - Number of vertices on the donor boundary.
    * \param[in] nDim - number of physical dimensions.
    */
-  void Collect_VertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short nDim);
+  void Collect_VertexInfo(int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short nDim);
 
+  /*!
+   * \brief Collect all donor elements in an interface pair.
+   * \param[in] markDonor - Index of the boundary on the donor domain.
+   * \param[in] nDim - number of physical dimensions.
+   * \param[in] compress - Squeeze the information (Allgatherv instead of Allgather).
+   * \param[out] allNumElem - Number of donor element per rank.
+   * \param[out] numNodes - Number of nodes for each element.
+   * \param[out] idxNodes - Index (global) of those nodes.
+   * \return Number of collected donor elements.
+   * \note The last two outputs are always sized for Allgather.
+   */
+  unsigned long Collect_ElementInfo(int markDonor, unsigned short nDim, bool compress,
+                                    vector<unsigned long>& allNumElem, vector<unsigned short>& numNodes,
+                                    su2matrix<long>& idxNodes) const;
 };

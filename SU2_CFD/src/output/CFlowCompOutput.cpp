@@ -2,7 +2,7 @@
  * \file output_flow_comp.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -58,6 +58,7 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("PRIMITIVE");
+    if (config->GetGrid_Movement()) requestedVolumeFields.emplace_back("GRID_VELOCITY");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 

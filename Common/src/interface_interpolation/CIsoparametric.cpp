@@ -1,8 +1,8 @@
 /*!
  * \file CIsoparametric.cpp
  * \brief Implementation isoparametric interpolation (using FE shape functions).
- * \author H. Kline
- * \version 7.0.2 "Blackbird"
+ * \author P. Gomes
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,24 @@
 #include "../../include/interface_interpolation/CIsoparametric.hpp"
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
+#include "../../include/geometry/elements/CElement.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
+#include <unordered_map>
+
+using namespace GeometryToolbox;
+
+/*! \brief Helper struct to store information about candidate donor elements. */
+struct DonorInfo {
+  su2double isoparams[4] = {0.0};  /*!< \brief Interpolation coefficients. */
+  su2double distance = 0.0;        /*!< \brief Distance from target to final mapped point on donor plane. */
+  unsigned iElem = 0;              /*!< \brief Identification of the element. */
+  int error = 2;                   /*!< \brief If the mapped point is "outside" of the donor. */
+
+  bool operator< (const DonorInfo& other) const {
+    /*--- Best donor is one for which the mapped point is within bounds and closest to target. ---*/
+    return (error == other.error)? (distance < other.distance) : (error < other.error);
+  }
+};
 
 
 CIsoparametric::CIsoparametric(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
@@ -35,520 +53,397 @@ CIsoparametric::CIsoparametric(CGeometry ****geometry_container, const CConfig* 
   Set_TransferCoeff(config);
 }
 
-void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
-
-  unsigned long iVertex, jVertex;
-  unsigned long  dPoint, inode, jElem, nElem;
-  unsigned short iDim, iDonor=0, iFace;
-
-  unsigned short nDim = donor_geometry->GetnDim();
-
-  unsigned short nMarkerInt;
-  unsigned short iMarkerInt;
-
-  int markDonor=0, markTarget=0;
-
-  long donor_elem=0, temp_donor=0;
-  unsigned int nNodes=0;
-  /*--- Restricted to 2-zone for now ---*/
-  unsigned int nFaces=1; //For 2D cases, we want to look at edges, not faces, as the 'interface'
-  bool face_on_marker=true;
-
-  unsigned long nVertexDonor = 0, nVertexTarget= 0;
-  unsigned long Point_Target = 0;
-
-  unsigned long iVertexDonor, iPointDonor = 0;
-  int iProcessor;
-
-  unsigned long nLocalFace_Donor = 0, nLocalFaceNodes_Donor=0;
-
-  unsigned long faceindex;
-
-  su2double dist = 0.0, mindist=1E6, *Coord, *Coord_i;
-  su2double myCoeff[10]; // Maximum # of donor points
-  su2double  *Normal;
-  su2double *projected_point = new su2double[nDim];
-  su2double tmp, tmp2;
-  su2double storeCoeff[10];
-  unsigned long storeGlobal[10];
-  int storeProc[10];
-
-  int nProcessor = size;
-  Coord = new su2double[nDim];
-  Normal = new su2double[nDim];
-
-  Buffer_Receive_nVertex_Donor    = new unsigned long [nProcessor];
-  Buffer_Receive_nFace_Donor      = new unsigned long [nProcessor];
-  Buffer_Receive_nFaceNodes_Donor = new unsigned long [nProcessor];
-
-  nMarkerInt = (config[donorZone]->GetMarker_n_ZoneInterface())/2;
-
-  /*--- For the number of markers on the interface... ---*/
-  for (iMarkerInt=1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
-    /*--- Procedure:
-    * -Loop through vertices of the aero grid
-    * -Find nearest element and allocate enough space in the aero grid donor point info
-    *    -set the transfer coefficient values
-    */
-
-    /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
-    markDonor = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
-
-    /*--- On the target side: find the tag of the boundary sharing the interface ---*/
-    markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
-
-    /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
-    if(!CheckInterfaceBoundary(markDonor, markTarget)) continue;
-
-    if(markDonor != -1)
-      nVertexDonor  = donor_geometry->GetnVertex( markDonor );
-    else
-      nVertexDonor  = 0;
-
-    if(markTarget != -1)
-      nVertexTarget = target_geometry->GetnVertex( markTarget );
-    else
-      nVertexTarget  = 0;
-
-    /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
-    Determine_ArraySize(true, markDonor, markTarget, nVertexDonor, nDim);
-
-    Buffer_Send_Coord       = new su2double [MaxLocalVertex_Donor*nDim];
-    Buffer_Send_Normal      = new su2double [MaxLocalVertex_Donor*nDim];
-    Buffer_Send_GlobalPoint = new long [MaxLocalVertex_Donor];
-
-    Buffer_Receive_Coord       = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
-    Buffer_Receive_Normal      = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
-    Buffer_Receive_GlobalPoint = new long [nProcessor*MaxLocalVertex_Donor];
-
-    /*-- Collect coordinates, global points, and normal vectors ---*/
-    Collect_VertexInfo(true, markDonor,markTarget,nVertexDonor,nDim);
-
-    Buffer_Send_FaceIndex    = new unsigned long[MaxFace_Donor];
-    Buffer_Send_FaceNodes    = new unsigned long[MaxFaceNodes_Donor];
-    Buffer_Send_FaceProc     = new unsigned long[MaxFaceNodes_Donor];
-
-    Buffer_Receive_FaceIndex = new unsigned long[MaxFace_Donor*nProcessor];
-    Buffer_Receive_FaceNodes = new unsigned long[MaxFaceNodes_Donor*nProcessor];
-    Buffer_Receive_FaceProc  = new unsigned long[MaxFaceNodes_Donor*nProcessor];
-
-    nLocalFace_Donor=0;
-    nLocalFaceNodes_Donor=0;
-
-    /*--- Collect Face info ---*/
-
-    for (iVertex = 0; iVertex < MaxFace_Donor; iVertex++) {
-      Buffer_Send_FaceIndex[iVertex] = 0;
-    }
-    for (iVertex=0; iVertex<MaxFaceNodes_Donor; iVertex++) {
-      Buffer_Send_FaceNodes[iVertex] = 0;
-      Buffer_Send_FaceProc[iVertex]  = 0;
-    }
-
-    Buffer_Send_FaceIndex[0] = rank * MaxFaceNodes_Donor;
-
-    if (nDim==2) nNodes=2;
-
-    for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++) {
-      iPointDonor = donor_geometry->vertex[markDonor][iVertexDonor]->GetNode();
-
-      if (donor_geometry->node[iPointDonor]->GetDomain()) {
-
-    if (nDim==3)  nElem = donor_geometry->node[iPointDonor]->GetnElem();
-    else          nElem =donor_geometry->node[iPointDonor]->GetnPoint();
-
-    for (jElem=0; jElem < nElem; jElem++) {
-      if (nDim==3) {
-        temp_donor = donor_geometry->node[iPointDonor]->GetElem(jElem);
-        nFaces = donor_geometry->elem[temp_donor]->GetnFaces();
-        for (iFace=0; iFace<nFaces; iFace++) {
-          /*-- Determine whether this face/edge is on the marker --*/
-          face_on_marker=true;
-          nNodes = donor_geometry->elem[temp_donor]->GetnNodesFace(iFace);
-          for (iDonor=0; iDonor<nNodes; iDonor++) {
-            inode = donor_geometry->elem[temp_donor]->GetFaces(iFace, iDonor);
-            dPoint = donor_geometry->elem[temp_donor]->GetNode(inode);
-            face_on_marker = (face_on_marker && (donor_geometry->node[dPoint]->GetVertex(markDonor) !=-1));
-          }
-
-          if (face_on_marker ) {
-            for (iDonor=0; iDonor<nNodes; iDonor++) {
-              inode = donor_geometry->elem[temp_donor]->GetFaces(iFace, iDonor);
-              dPoint = donor_geometry->elem[temp_donor]->GetNode(inode);
-              // Match node on the face to the correct global index
-              long jGlobalPoint = donor_geometry->node[dPoint]->GetGlobalIndex();
-              for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-                for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
-                  if (jGlobalPoint == Buffer_Receive_GlobalPoint[MaxLocalVertex_Donor*iProcessor+jVertex]) {
-                    Buffer_Send_FaceNodes[nLocalFaceNodes_Donor]=MaxLocalVertex_Donor*iProcessor+jVertex;
-                    Buffer_Send_FaceProc[nLocalFaceNodes_Donor]=iProcessor;
-                  }
-                }
-              }
-              nLocalFaceNodes_Donor++; // Increment total number of face-nodes / processor
-            }
-            /* Store the indices */
-            Buffer_Send_FaceIndex[nLocalFace_Donor+1] = Buffer_Send_FaceIndex[nLocalFace_Donor]+nNodes;
-            nLocalFace_Donor++; // Increment number of faces / processor
-          }
-        }
-      }
-      else {
-        /*-- Determine whether this face/edge is on the marker --*/
-        face_on_marker=true;
-        for (iDonor=0; iDonor<nNodes; iDonor++) {
-          inode = donor_geometry->node[iPointDonor]->GetEdge(jElem);
-          dPoint = donor_geometry->edge[inode]->GetNode(iDonor);
-          face_on_marker = (face_on_marker && (donor_geometry->node[dPoint]->GetVertex(markDonor) !=-1));
-        }
-        if (face_on_marker ) {
-          for (iDonor=0; iDonor<nNodes; iDonor++) {
-            inode = donor_geometry->node[iPointDonor]->GetEdge(jElem);
-            dPoint = donor_geometry->edge[inode]->GetNode(iDonor);
-            // Match node on the face to the correct global index
-            long jGlobalPoint = donor_geometry->node[dPoint]->GetGlobalIndex();
-            for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-              for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
-                if (jGlobalPoint == Buffer_Receive_GlobalPoint[MaxLocalVertex_Donor*iProcessor+jVertex]) {
-                  Buffer_Send_FaceNodes[nLocalFaceNodes_Donor]=MaxLocalVertex_Donor*iProcessor+jVertex;
-                  Buffer_Send_FaceProc[nLocalFaceNodes_Donor]=iProcessor;
-                }
-              }
-            }
-            nLocalFaceNodes_Donor++; // Increment total number of face-nodes / processor
-          }
-          /* Store the indices */
-          Buffer_Send_FaceIndex[nLocalFace_Donor+1] = Buffer_Send_FaceIndex[nLocalFace_Donor]+nNodes;
-          nLocalFace_Donor++; // Increment number of faces / processor
-        }
-      }
-    }
-      }
-    }
-
-    //Buffer_Send_FaceIndex[nLocalFace_Donor+1] = MaxFaceNodes_Donor*rank+nLocalFaceNodes_Donor;
-
-    SU2_MPI::Allgather(Buffer_Send_FaceNodes, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG,
-                       Buffer_Receive_FaceNodes, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_FaceProc, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG,
-                       Buffer_Receive_FaceProc, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_FaceIndex, MaxFace_Donor, MPI_UNSIGNED_LONG,
-                       Buffer_Receive_FaceIndex, MaxFace_Donor, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-
-    /*--- Loop over the vertices on the target Marker ---*/
-    for (iVertex = 0; iVertex<nVertexTarget; iVertex++) {
-      mindist=1E6;
-      for (unsigned short iCoeff=0; iCoeff<10; iCoeff++)
-        storeCoeff[iCoeff]=0;
-
-      Point_Target = target_geometry->vertex[markTarget][iVertex]->GetNode();
-
-      if (!target_geometry->node[Point_Target]->GetDomain()) continue;
-
-      Coord_i = target_geometry->node[Point_Target]->GetCoord();
-      /*---Loop over the faces previously communicated/stored ---*/
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-
-        nFaces = (unsigned int)Buffer_Receive_nFace_Donor[iProcessor];
-
-        for (iFace = 0; iFace< nFaces; iFace++) {
-          /*--- ---*/
-
-          nNodes = (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1] -
-                   (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace];
-
-          su2double *X = new su2double[nNodes*(nDim+1)];
-          faceindex = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace]; // first index of this face
-          for (iDonor=0; iDonor<nNodes; iDonor++) {
-            jVertex = Buffer_Receive_FaceNodes[iDonor+faceindex]; // index which points to the stored coordinates, global points
-            for (iDim=0; iDim<nDim; iDim++) {
-              X[iDim*nNodes+iDonor]=
-                  Buffer_Receive_Coord[jVertex*nDim+iDim];
-            }
-          }
-          jVertex = Buffer_Receive_FaceNodes[faceindex];
-
-          for (iDim=0; iDim<nDim; iDim++) {
-            Normal[iDim] = Buffer_Receive_Normal[jVertex*nDim+iDim];
-          }
-
-          /* Project point used for case where surfaces are not exactly coincident, where
-           * the point is assumed connected by a rigid rod normal to the surface.
-           */
-          tmp = 0;
-          tmp2=0;
-          for (iDim=0; iDim<nDim; iDim++) {
-            tmp+=Normal[iDim]*Normal[iDim];
-            tmp2+=Normal[iDim]*(Coord_i[iDim]-X[iDim*nNodes]);
-          }
-          tmp = 1/tmp;
-          tmp2 = tmp2*sqrt(tmp);
-          for (iDim=0; iDim<nDim; iDim++) {
-            // projection of \vec{q} onto plane defined by \vec{n} and \vec{p}:
-            // \vec{q} - \vec{n} ( (\vec{q}-\vec{p} ) \cdot \vec{n})
-            // tmp2 = ( (\vec{q}-\vec{p} ) \cdot \vec{N})
-            // \vec{n} = \vec{N}/(|N|), tmp = 1/|N|^2
-            projected_point[iDim]=Coord_i[iDim] + Normal[iDim]*tmp2*tmp;
-          }
-
-          Isoparameters(nDim, nNodes, X, projected_point,myCoeff);
-
-          /*--- Find distance to the interpolated point ---*/
-          dist = 0.0;
-          for (iDim=0; iDim<nDim; iDim++) {
-            Coord[iDim] = Coord_i[iDim];
-            for(iDonor=0; iDonor< nNodes; iDonor++) {
-              Coord[iDim]-=myCoeff[iDonor]*X[iDim*nNodes+iDonor];
-            }
-            dist+=pow(Coord[iDim],2.0);
-          }
-
-          /*--- If the dist is shorter than last closest (and nonzero nodes are on the boundary), update ---*/
-          if (dist<mindist ) {
-            /*--- update last dist ---*/
-            mindist = dist;
-            /*--- Store info ---*/
-            donor_elem = temp_donor;
-            target_geometry->vertex[markTarget][iVertex]->SetDonorElem(donor_elem); // in 2D is nearest neighbor
-            for (iDonor=0; iDonor<nNodes; iDonor++) {
-              storeCoeff[iDonor] = myCoeff[iDonor];
-              jVertex = Buffer_Receive_FaceNodes[faceindex+iDonor];
-              storeGlobal[iDonor] =Buffer_Receive_GlobalPoint[jVertex];
-              storeProc[iDonor] = (int)Buffer_Receive_FaceProc[faceindex+iDonor];
-            }
-          }
-
-          delete [] X;
-        }
-      }
-
-      /*--- Set the appropriate amount of memory and fill ---*/
-      target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo(nNodes);
-
-      for (iDonor=0; iDonor<nNodes; iDonor++) {
-        target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(iDonor,storeGlobal[iDonor]);
-        target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor,storeCoeff[iDonor]);
-        target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
-      }
-
-    }
-
-    delete[] Buffer_Send_Coord;
-    delete[] Buffer_Send_Normal;
-    delete[] Buffer_Send_GlobalPoint;
-
-    delete[] Buffer_Receive_Coord;
-    delete[] Buffer_Receive_Normal;
-    delete[] Buffer_Receive_GlobalPoint;
-
-    delete[] Buffer_Send_FaceIndex;
-    delete[] Buffer_Send_FaceNodes;
-    delete[] Buffer_Send_FaceProc;
-
-    delete[] Buffer_Receive_FaceIndex;
-    delete[] Buffer_Receive_FaceNodes;
-    delete[] Buffer_Receive_FaceProc;
-  }
-
-  delete[] Buffer_Receive_nVertex_Donor;
-  delete[] Buffer_Receive_nFace_Donor;
-  delete[] Buffer_Receive_nFaceNodes_Donor;
-
-  delete [] Coord;
-  delete [] Normal;
-
-  delete [] projected_point;
+void CIsoparametric::PrintStatistics(void) const {
+  if (rank != MASTER_NODE) return;
+  cout << " Maximum distance to closest donor element: " << MaxDistance << ".\n"
+       << " Interpolation mitigated for " << ErrorCounter << " (" << ErrorRate << "%) target vertices." << endl;
 }
 
-void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
-                     const su2double *X, const su2double *xj, su2double *isoparams) const {
+void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
 
-  short iDonor,iDim,k; // indices
-  su2double tmp, tmp2;
+  const int nProcessor = size;
+  const auto nMarkerInt = config[donorZone]->GetMarker_n_ZoneInterface()/2;
+  const auto nDim = donor_geometry->GetnDim();
 
-  su2double *x     = new su2double[nDim+1];
-  su2double *x_tmp = new su2double[nDim+1];
-  su2double *Q     = new su2double[nDonor*nDonor];
-  su2double *R     = new su2double[nDonor*nDonor];
-  su2double *A     = new su2double[(nDim+2)*nDonor];
-  su2double *A2    = NULL;
-  su2double *x2    = new su2double[nDim+1];
+  Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
 
-  bool *test  = new bool[nDim+1];
-  bool *testi = new bool[nDim+1];
+  /*--- Init stats. ---*/
+  MaxDistance = 0.0; ErrorCounter = 0;
+  unsigned long nGlobalVertexTarget = 0;
 
-  su2double eps = 1E-10;
+  /*--- Cycle over nMarkersInt interface to determine communication pattern. ---*/
 
-  short n = nDim+1;
+  for (unsigned short iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
 
-  if (nDonor>2) {
-    /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
-    /*--- Right hand side is [1, \vec{x}']'---*/
-    for (iDonor=0; iDonor<nDonor; iDonor++) {
-      isoparams[iDonor]=0;
-      A[iDonor] = 1.0;
-      for (iDim=0; iDim<n; iDim++)
-        A[(iDim+1)*nDonor+iDonor]=X[iDim*nDonor+iDonor];
+    /* High level procedure:
+     * - Loop through vertices of the target grid;
+     * - Find nearest element;
+     * - Compute and set the transfer coefficients.
+     */
+
+    /*--- On the donor side: find the tag of the boundary sharing the interface. ---*/
+    const auto markDonor = Find_InterfaceMarker(config[donorZone], iMarkerInt);
+
+    /*--- On the target side: find the tag of the boundary sharing the interface. ---*/
+    const auto markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+
+    /*--- Checks if the zone contains the interface, if not continue to the next step. ---*/
+    if (!CheckInterfaceBoundary(markDonor, markTarget)) continue;
+
+    unsigned long nVertexDonor = 0, nVertexTarget = 0;
+    if (markDonor != -1) nVertexDonor = donor_geometry->GetnVertex(markDonor);
+    if (markTarget != -1) nVertexTarget = target_geometry->GetnVertex(markTarget);
+
+    /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor. ---*/
+    Determine_ArraySize(markDonor, markTarget, nVertexDonor, nDim);
+
+    const auto nGlobalVertexDonor = accumulate(Buffer_Receive_nVertex_Donor,
+                                    Buffer_Receive_nVertex_Donor+nProcessor, 0ul);
+
+    Buffer_Send_Coord = new su2double [ MaxLocalVertex_Donor * nDim ];
+    Buffer_Send_GlobalPoint = new long [ MaxLocalVertex_Donor ];
+    Buffer_Receive_Coord = new su2double [ nProcessor * MaxLocalVertex_Donor * nDim ];
+    Buffer_Receive_GlobalPoint = new long [ nProcessor * MaxLocalVertex_Donor ];
+
+    /*--- Collect coordinates and global point indices. ---*/
+    Collect_VertexInfo(markDonor, markTarget, nVertexDonor, nDim);
+
+    /*--- Compress the vertex information, and build a map of global point to "compressed
+     *    index" to then reconstruct the donor elements in local index space. ---*/
+
+    su2activematrix donorCoord(nGlobalVertexDonor, nDim);
+    vector<long> donorPoint(nGlobalVertexDonor);
+    vector<int> donorProc(nGlobalVertexDonor);
+    unordered_map<long, unsigned long> globalToLocalMap;
+
+    auto iCount = 0ul;
+    for (int iProcessor = 0; iProcessor < nProcessor; ++iProcessor) {
+      auto offset = iProcessor * MaxLocalVertex_Donor;
+      for (auto iVertex = 0ul; iVertex < Buffer_Receive_nVertex_Donor[iProcessor]; ++iVertex) {
+        for (int iDim = 0; iDim < nDim; ++iDim)
+          donorCoord(iCount,iDim) = Buffer_Receive_Coord[(offset+iVertex)*nDim + iDim];
+        donorPoint[iCount] = Buffer_Receive_GlobalPoint[offset+iVertex];
+        donorProc[iCount] = iProcessor;
+        assert((globalToLocalMap.count(donorPoint[iCount]) == 0) && "Duplicate donor point found.");
+        globalToLocalMap[donorPoint[iCount]] = iCount;
+        ++iCount;
+      }
+    }
+    assert((iCount == nGlobalVertexDonor) && "Global donor point count mismatch.");
+
+    delete[] Buffer_Send_Coord;
+    delete[] Buffer_Send_GlobalPoint;
+    delete[] Buffer_Receive_Coord;
+    delete[] Buffer_Receive_GlobalPoint;
+
+    /*--- Collect donor element (face) information. ---*/
+
+    vector<unsigned long> allNumElem;
+    vector<unsigned short> elemNumNodes;
+    su2matrix<long> elemIdxNodes;
+
+    const auto nGlobalElemDonor = Collect_ElementInfo(markDonor, nDim, true,
+                                    allNumElem, elemNumNodes, elemIdxNodes);
+
+    su2activematrix elemCentroid(nGlobalElemDonor, nDim);
+
+    SU2_OMP_PARALLEL
+    {
+    /*--- Compute element centroids to then find the closest one to a given target point. ---*/
+
+    SU2_OMP_FOR_STAT(roundUpDiv(nGlobalElemDonor,omp_get_max_threads()))
+    for (auto iElem = 0u; iElem < nGlobalElemDonor; ++iElem) {
+
+      const auto nNode = elemNumNodes[iElem];
+
+      for (auto iDim = 0u; iDim < nDim; ++iDim)
+        elemCentroid(iElem, iDim) = 0.0;
+
+      for (auto iNode = 0u; iNode < nNode; ++iNode) {
+        /*--- Map the node to "local" coordinates. ---*/
+        assert(globalToLocalMap.count(elemIdxNodes(iElem,iNode)) &&
+               "Unknown donor point referenced by donor element.");
+        const auto iVertex = globalToLocalMap.at(elemIdxNodes(iElem,iNode));
+        elemIdxNodes(iElem,iNode) = iVertex;
+
+        for (auto iDim = 0u; iDim < nDim; ++iDim)
+          elemCentroid(iElem, iDim) += donorCoord(iVertex, iDim) / nNode;
+      }
     }
 
-    x[0] = 1.0;
-    for (iDim=0; iDim<nDim; iDim++)
-      x[iDim+1]=xj[iDim];
+    /*--- Compute transfer coefficients for each target point. ---*/
+    su2double maxDist = 0.0;
+    unsigned long errorCount = 0, totalCount = 0;
+    vector<unsigned> nearElems(nGlobalElemDonor);
 
-    /*--- Eliminate degenerate rows:
-     * for example, if z constant including the z values will make the system degenerate
-     * TODO: improve efficiency of this loop---*/
-    test[0]=true; // always keep the 1st row
-    for (iDim=1; iDim<nDim+1; iDim++) {
-      // Test this row against all previous
-      test[iDim]=true; // Assume that it is not degenerate
-      for (k=0; k<iDim; k++) {
-        tmp=0; tmp2=0;
-        for (iDonor=0;iDonor<nDonor;iDonor++) {
-          tmp+= A[iDim*nDonor+iDonor]*A[iDim*nDonor+iDonor];
-          tmp2+=A[k*nDonor+iDonor]*A[k*nDonor+iDonor];
+    SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget,2*omp_get_max_threads()))
+    for (auto iVertex = 0u; iVertex < nVertexTarget; ++iVertex) {
+
+      auto target_vertex = target_geometry->vertex[markTarget][iVertex];
+      const auto iPoint = target_vertex->GetNode();
+
+      if (!target_geometry->node[iPoint]->GetDomain()) continue;
+      totalCount += 1;
+
+      /*--- Coordinates of the target point. ---*/
+      const su2double* coord_i = target_geometry->node[iPoint]->GetCoord();
+
+      /*--- Find "n" closest candidate donor elements (the naive way). ---*/
+      iota(nearElems.begin(), nearElems.end(), 0);
+      auto last = nearElems.begin() + min<unsigned long>(NUM_CANDIDATE_DONORS, nGlobalElemDonor);
+      partial_sort(nearElems.begin(), last, nearElems.end(),
+        [&](unsigned iElem, unsigned jElem) {
+          return SquaredDistance(nDim, coord_i, elemCentroid[iElem]) <
+                 SquaredDistance(nDim, coord_i, elemCentroid[jElem]);
         }
-        tmp  = pow(tmp,0.5);
-        tmp2 = pow(tmp2,0.5);
-        testi[k]=false;
-        for (iDonor=0; iDonor<nDonor; iDonor++) {
-          // If at least one ratio is non-matching row iDim is not degenerate w/ row k
-          if (A[iDim*nDonor+iDonor]/tmp != A[k*nDonor+iDonor]/tmp2)
-            testi[k]=true;
+      );
+
+      /*--- Evaluate interpolation for the candidates. ---*/
+      array<DonorInfo, NUM_CANDIDATE_DONORS> candidateElems;
+
+      for (auto i = 0u; i < min<unsigned long>(NUM_CANDIDATE_DONORS, nGlobalElemDonor); ++i) {
+        const auto iElem = nearElems[i];
+
+        /*--- Fetch element info. ---*/
+        auto& candidate = candidateElems[i];
+        candidate.iElem = iElem;
+        const auto nNode = elemNumNodes[iElem];
+        su2double coords[4][3] = {{0.0}};
+
+        for (auto iNode = 0u; iNode < nNode; ++iNode) {
+          const auto iVertex = elemIdxNodes(iElem, iNode);
+          for (auto iDim = 0u; iDim < nDim; ++iDim)
+            coords[iNode][iDim] = donorCoord(iVertex,iDim);
         }
-        // If any of testi (k<iDim) are false, row iDim is degenerate
-        test[iDim]=(test[iDim] && testi[k]);
-      }
-      if (!test[iDim]) n--;
-    }
 
-    /*--- Initialize A2 now that we might have a smaller system --*/
-    A2 = new su2double[n*nDonor];
-    iDim=0;
-    /*--- Copy only the rows that are non-degenerate ---*/
-    for (k=0; k<nDim+1; k++) {
-      if (test[k]) {
-        for (iDonor=0;iDonor<nDonor;iDonor++ ) {
-          A2[nDonor*iDim+iDonor]=A[nDonor*k+iDonor];
+        /*--- Compute the interpolation coefficients. ---*/
+        switch (nNode) {
+          case 2: candidate.error = LineIsoparameters(coords, coord_i, candidate.isoparams); break;
+          case 3: candidate.error = TriangleIsoparameters(coords, coord_i, candidate.isoparams); break;
+          case 4: candidate.error = QuadrilateralIsoparameters(coords, coord_i, candidate.isoparams); break;
         }
-        x2[iDim]=x[k];
-        iDim++;
-      }
-    }
-    /*--- Initialize Q,R to 0 --*/
-    for (k=0; k<nDonor*nDonor; k++) {
-      Q[k]=0;
-      R[k]=0;
-    }
-    /*--- TODO: make this loop more efficient ---*/
-    /*--- Solve for rectangular Q1 R1 ---*/
-    for (iDonor=0; iDonor<nDonor; iDonor++) {
-      tmp=0;
-      for (iDim=0; iDim<n; iDim++)
-        tmp += (A2[iDim*nDonor+iDonor])*(A2[iDim*nDonor+iDonor]);
 
-      R[iDonor*nDonor+iDonor]= pow(tmp,0.5);
-      if (tmp>eps && iDonor<n) {
-        for (iDim=0; iDim<n; iDim++)
-          Q[iDim*nDonor+iDonor]=A2[iDim*nDonor+iDonor]/R[iDonor*nDonor+iDonor];
-      }
-      else if (tmp!=0) {
-        for (iDim=0; iDim<n; iDim++)
-          Q[iDim*nDonor+iDonor]=A2[iDim*nDonor+iDonor]/tmp;
-      }
-      for (iDim=iDonor+1; iDim<nDonor; iDim++) {
-        tmp=0;
-        for (k=0; k<n; k++)
-          tmp+=A2[k*nDonor+iDim]*Q[k*nDonor+iDonor];
+        /*--- Evaluate distance from target to final mapped point. ---*/
+        su2double finalCoord[3] = {0.0};
+        for (auto iDim = 0u; iDim < nDim; ++iDim)
+          for (auto iNode = 0u; iNode < nNode; ++iNode)
+            finalCoord[iDim] += coords[iNode][iDim] * candidate.isoparams[iNode];
 
-        R[iDonor*nDonor+iDim]=tmp;
-
-        for (k=0; k<n; k++)
-          A2[k*nDonor+iDim]=A2[k*nDonor+iDim]-Q[k*nDonor+iDonor]*R[iDonor*nDonor+iDim];
+        candidate.distance = Distance(nDim, coord_i, finalCoord);
+        if (candidate.distance != candidate.distance) // NaN check
+          candidate.error = 2;
       }
-    }
-    /*--- x_tmp = Q^T * x2 ---*/
-    for (iDonor=0; iDonor<nDonor; iDonor++)
-      x_tmp[iDonor]=0.0;
-    for (iDonor=0; iDonor<nDonor; iDonor++) {
-      for (iDim=0; iDim<n; iDim++)
-        x_tmp[iDonor]+=Q[iDim*nDonor+iDonor]*x2[iDim];
-    }
 
-    /*--- solve x_tmp = R*isoparams for isoparams: upper triangular system ---*/
-    for (iDonor = n-1; iDonor>=0; iDonor--) {
-      if (R[iDonor*nDonor+iDonor]>eps)
-        isoparams[iDonor]=x_tmp[iDonor]/R[iDonor*nDonor+iDonor];
-      else
-        isoparams[iDonor]=0;
-      for (k=0; k<iDonor; k++)
-        x_tmp[k]=x_tmp[k]-R[k*nDonor+iDonor]*isoparams[iDonor];
+      /*--- Find best donor. ---*/
+      partial_sort(candidateElems.begin(), candidateElems.begin()+1, candidateElems.end());
+      const auto& donor = candidateElems[0];
+
+      if (donor.error > 1)
+        SU2_MPI::Error("Isoparametric interpolation failed, NaN detected.", CURRENT_FUNCTION);
+
+      errorCount += donor.error;
+      maxDist = max(maxDist, donor.distance);
+
+      const auto nNode = elemNumNodes[donor.iElem];
+
+      target_vertex->Allocate_DonorInfo(nNode);
+
+      for (auto iNode = 0u; iNode < nNode; ++iNode) {
+        const auto iVertex = elemIdxNodes(donor.iElem, iNode);
+        target_vertex->SetDonorCoeff(iNode, donor.isoparams[iNode]);
+        target_vertex->SetInterpDonorPoint(iNode, donorPoint[iVertex]);
+        target_vertex->SetInterpDonorProcessor(iNode, donorProc[iVertex]);
+      }
+
     }
+    SU2_OMP_CRITICAL
+    {
+      MaxDistance = max(MaxDistance, maxDist);
+      ErrorCounter += errorCount;
+      nGlobalVertexTarget += totalCount;
+    }
+    } // end SU2_OMP_PARALLEL
+
+  } // end nMarkerInt loop
+
+  /*--- Final reduction of statistics. ---*/
+  su2double tmp = MaxDistance;
+  unsigned long tmp1 = ErrorCounter, tmp2 = nGlobalVertexTarget;
+  SU2_MPI::Allreduce(&tmp, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&tmp1, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&tmp2, &nGlobalVertexTarget, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+  ErrorRate = 100*su2double(ErrorCounter) / nGlobalVertexTarget;
+
+}
+
+int CIsoparametric::LineIsoparameters(const su2double X[][3], const su2double *xj, su2double *isoparams) {
+
+  const su2double extrapTol = 1.5;
+
+  /*--- Project the target point onto the line. ---*/
+
+  su2double normal[2] = {0.0};
+  LineNormal(X, normal);
+  su2double xprj[2] = {0.0};
+  PointPlaneProjection<su2double,2>(xj, X[0], normal, xprj);
+
+  su2double l01 = Distance(2, X[0], X[1]);
+  su2double l0j = Distance(2, X[0], xprj);
+  su2double lj1 = Distance(2, xprj, X[1]);
+
+  /*--- Detect out of bounds point. ---*/
+
+  const int outOfBounds = (l0j+lj1) > (extrapTol*l01);
+
+  isoparams[0] = max(1.0-extrapTol, min(lj1/l01, extrapTol));
+  isoparams[1] = 1.0 - isoparams[0];
+
+  return outOfBounds;
+}
+
+int CIsoparametric::TriangleIsoparameters(const su2double X[][3], const su2double *xj, su2double *isoparams) {
+
+  /*--- The isoparameters are the solution to the determined system X^T * isoparams = xj.
+   *    This is consistent with the shape functions of the linear triangular element. ---*/
+
+  const su2double extrapTol = -0.5;
+
+  /*--- Project the target point onto the triangle. ---*/
+
+  su2double normal[3] = {0.0};
+  TriangleNormal(X, normal);
+  PointPlaneProjection<su2double,3>(xj, X[0], normal, isoparams); // use isoparams as rhs
+
+  su2double A[3][3]; // = X^T
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j)
+      A[i][j] = X[j][i];
+
+  /*--- Solve system by in-place Gaussian elimination without pivoting. ---*/
+
+  /*--- Transform system in Upper Matrix. ---*/
+  for (int i = 1; i < 3; ++i) {
+    for (int j = 0; j < i; ++j) {
+      su2double w = A[i][j] / A[j][j];
+      for (int k = j; k < 3; ++k)
+        A[i][k] -= w * A[j][k];
+      isoparams[i] -= w * isoparams[j];
+    }
+  }
+  /*--- Backwards substitution. ---*/
+  for (int i = 2; i >= 0; --i) {
+    for (int j = i+1; j < 3; ++j)
+      isoparams[i] -= A[i][j] * isoparams[j];
+    isoparams[i] /= A[i][i];
+  }
+
+  /*--- Detect out of bounds point. ---*/
+  const int outOfBounds = (isoparams[0] < extrapTol) ||
+                          (isoparams[1] < extrapTol) ||
+                          (isoparams[2] < extrapTol);
+
+  /*--- Mitigation. ---*/
+  if (outOfBounds) {
+    /*--- Clamp. ---*/
+    su2double sum = 0.0;
+    for (int i = 0; i < 3; ++i) {
+      isoparams[i] = max(isoparams[i], extrapTol);
+      sum += isoparams[i];
+    }
+    /*--- Enforce unit sum. ---*/
+    for (int i = 0; i < 3; ++i)
+      isoparams[i] /= sum;
+  }
+
+  return outOfBounds;
+}
+
+int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2double *xj, su2double *isoparams) {
+
+  /*--- The isoparameters are the shape functions (Ni) evaluated at xj, for that we need
+   *    the corresponding Xi and Eta, which are obtained by solving the overdetermined
+   *    nonlinear system r = xj - X^T * Ni(Xi,Eta) = 0 via the modified Marquardt method.
+   *    It is not necessary to project the point as minimizing ||r|| is equivalent. ---*/
+
+  const su2double extrapTol = 3.0;
+
+  constexpr int NITER = 20;
+  const su2double tol = 1e-10, lambda = 0.05;
+
+  su2double Xi = 0.0, Eta = 0.0, eps;
+
+  /*--- Finding Xi and Eta is a "third order" effect that we do not
+   *    differentiate (also because we need to iterate). ---*/
+  const bool tapeActive = AD::TapeActive();
+  AD::StopRecording();
+
+  for (int iter = 0; iter < NITER; ++iter) {
+
+    /*--- Evaluate the residual. ---*/
+    su2double r[3] = {xj[0], xj[1], xj[2]};
+    su2double Ni[4] = {0.0};
+    CQUAD4::ShapeFunctions(Xi, Eta, Ni);
+    for (int i = 0; i < 3; ++i)
+      for (int j = 0; j < 4; ++j)
+        r[i] -= X[j][i] * Ni[j];
+
+    /*--- Evaluate the residual Jacobian. ---*/
+    su2double dNi[4][2] = {{0.0}};
+    CQUAD4::ShapeFunctionJacobian(Xi, Eta, dNi);
+
+    su2double jac[3][2] = {{0.0}};
+    for (int i = 0; i < 3; ++i)
+      for (int j = 0; j < 2; ++j)
+        for (int k = 0; k < 4; ++k)
+          jac[i][j] -= X[k][i] * dNi[k][j];
+
+    /*--- Compute the correction (normal equations and Cramer's rule). ---*/
+    su2double A[2][2] = {{0.0}}, b[2] = {0.0};
+    for (int i = 0; i < 2; ++i) {
+      for (int j = i; j < 2; ++j)
+        for (int k = 0; k < 3; ++k)
+          A[i][j] += jac[k][i] * jac[k][j];
+
+      A[i][i] *= (1.0+lambda);
+
+      for (int k = 0; k < 3; ++k)
+        b[i] += jac[k][i] * r[k];
+    }
+    A[1][0] = A[0][1];
+
+    su2double detA = 1.0 / (A[0][0]*A[1][1] - A[0][1]*A[1][0]);
+    su2double dXi = (b[0]*A[1][1] - b[1]*A[0][1]) * detA;
+    su2double dEta = (A[0][0]*b[1] - A[1][0]*b[0]) * detA;
+    Xi -= dXi;
+    Eta -= dEta;
+
+    eps = fabs(dXi)+fabs(dEta);
+    if (eps < tol) break;
+  }
+
+  if (tapeActive) AD::StartRecording();
+
+  int outOfBounds = 0;
+
+  if (eps > 0.01) {
+    /*--- Iteration diverged, hard fallback. ---*/
+    Xi = Eta = 0.0;
+    outOfBounds = 1;
   }
   else {
-    /*-- For 2-donors (lines) it is simpler: */
-    tmp =  pow(X[0*nDonor+0]- X[0*nDonor+1],2.0);
-    tmp += pow(X[1*nDonor+0]- X[1*nDonor+1],2.0);
-    tmp = sqrt(tmp);
+    /*--- Check bounds. ---*/
+    outOfBounds = (fabs(Xi) > extrapTol) || (fabs(Eta) > extrapTol);
 
-    tmp2 = pow(X[0*nDonor+0] - xj[0],2.0);
-    tmp2 += pow(X[1*nDonor+0] - xj[1],2.0);
-    tmp2 = sqrt(tmp2);
-    isoparams[1] = tmp2/tmp;
-
-    tmp2 = pow(X[0*nDonor+1] - xj[0],2.0);
-    tmp2 += pow(X[1*nDonor+1] - xj[1],2.0);
-    tmp2 = sqrt(tmp2);
-    isoparams[0] = tmp2/tmp;
-  }
-
-  /*--- Isoparametric coefficients have been calculated. Run checks to eliminate outside-element issues ---*/
-  if (nDonor==4) {
-    /*-- Bilinear coordinates, bounded by [-1,1] ---*/
-    su2double xi, eta;
-    xi = (1.0-isoparams[0]/isoparams[1])/(1.0+isoparams[0]/isoparams[1]);
-    eta = 1- isoparams[2]*4/(1+xi);
-    if (xi>1.0) xi=1.0;
-    if (xi<-1.0) xi=-1.0;
-    if (eta>1.0) eta=1.0;
-    if (eta<-1.0) eta=-1.0;
-    isoparams[0]=0.25*(1-xi)*(1-eta);
-    isoparams[1]=0.25*(1+xi)*(1-eta);
-    isoparams[2]=0.25*(1+xi)*(1+eta);
-    isoparams[3]=0.25*(1-xi)*(1+eta);
-
-  }
-  if (nDonor<4) {
-    tmp = 0.0; // value for normalization
-    tmp2=0; // check for maximum value, to be used to id nearest neighbor if necessary
-    k=0; // index for maximum value
-    for (iDonor=0; iDonor< nDonor; iDonor++) {
-      if (isoparams[iDonor]>tmp2) {
-        k=iDonor;
-        tmp2=isoparams[iDonor];
-      }
-      // [0,1]
-      if (isoparams[iDonor]<0) isoparams[iDonor]=0;
-      if (isoparams[iDonor]>1) isoparams[iDonor] = 1;
-      tmp +=isoparams[iDonor];
-    }
-    if (tmp>0)
-      for (iDonor=0; iDonor< nDonor; iDonor++)
-        isoparams[iDonor]=isoparams[iDonor]/tmp;
-    else {
-      isoparams[k] = 1.0;
+    /*--- Mitigate by clamping coordinates. ---*/
+    if (outOfBounds) {
+      Xi = max(-extrapTol, min(Xi, extrapTol));
+      Eta = max(-extrapTol, min(Eta, extrapTol));
     }
   }
 
-  delete [] x;
-  delete [] x_tmp;
-  delete [] Q;
-  delete [] R;
-  delete [] A;
-  delete [] A2;
-  delete [] x2;
+  /*--- Evaluate isoparameters at final Xi and Eta. ---*/
+  CQUAD4::ShapeFunctions(Xi, Eta, isoparams);
 
-  delete [] test;
-  delete [] testi;
-
+  return outOfBounds;
 }

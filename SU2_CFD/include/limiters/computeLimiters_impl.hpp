@@ -4,7 +4,7 @@
  * \note Common methods are derived by defining small details
  *       via specialization of CLimiterDetails.
  * \author P. Gomes
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -98,15 +98,13 @@ void computeLimiters_impl(CSolver* solver,
                      omp_get_max_threads(), OMP_MAX_CHUNK);
 #endif
 
-#ifdef CODI_REVERSE_TYPE
   bool tapeActive = false;
 
   if (config.GetDiscrete_Adjoint() && config.GetFrozen_Limiter_Disc()) {
     /*--- If limiters are frozen do not record the computation ---*/
-    tapeActive = AD::globalTape.isActive();
+    tapeActive = AD::TapeActive();
     AD::StopRecording();
   }
-#endif
 
   CLimiterDetails<LimiterKind> limiterDetails;
 
@@ -248,8 +246,6 @@ void computeLimiters_impl(CSolver* solver,
   }
   SU2_OMP_BARRIER
 
-#ifdef CODI_REVERSE_TYPE
   if (tapeActive) AD::StartRecording();
-#endif
 
 }
