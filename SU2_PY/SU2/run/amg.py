@@ -40,7 +40,7 @@ import numpy as np
 
 from .. import io   as su2io
 from .. import amginria as su2amg
-from interface import CFD as SU2_CFD
+from .interface import CFD as SU2_CFD
 
 def amg ( config , kind='' ):
     
