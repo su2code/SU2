@@ -13,8 +13,7 @@ def setup_amgio(argv=[]):
     
     os.chdir(file_dir);
     ext_opts = {'extra_compile_args': ['-Wl,-soname,units.so', '-Isrc']}
-    setup(name="_amgio",
-          ext_modules=[ \
+    setup(ext_modules=[ \
           Extension("_amgio",
             sources=[ "./_amgio/amgio_py.c", \
                       "./_amgio/mesh.c", \
@@ -29,7 +28,7 @@ def setup_amgio(argv=[]):
                                 "-Wno-unused-result",
                                 "-Wl,-soname,_amgio.so"]),
           ],);
-    
+
     # os.rename("_amgio"+sysconfig.get_config_var('EXT_SUFFIX'),"_amgio.so")
     os.chdir(working_dir);
     sys.argv = sav_argv;
