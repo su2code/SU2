@@ -20,9 +20,10 @@ install_data(['continuous_adjoint.py',
 install_data(['SU2/__init__.py'], install_dir: join_paths(get_option('bindir'), 'SU2/'))
 
 install_data(['SU2/amginria/_amgio.py',
-            'SU2/amginria/interface.py',
-            'SU2/amginria/tools.py',
-            'SU2/amginria/__init__.py'], 
+              'SU2/amginria/_amgio.so',
+              'SU2/amginria/interface.py',
+              'SU2/amginria/tools.py',
+              'SU2/amginria/__init__.py'], 
         install_dir: join_paths(get_option('bindir'), 'SU2/amginria'))
 
 install_data(['SU2/eval/design.py',
