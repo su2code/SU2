@@ -365,8 +365,8 @@ def init_inria(argument_dict, modes, update = False):
 
     # Setup AMG interface
     cmd = sys.executable
-    subprocess.call([cmd,'setup.py','build_ext'], cwd = alt_name_amgint, stdout = log, stderr = err)
-    subprocess.call([cmd,'setup.py','install','--user'], cwd = alt_name_amgint, stdout = log, stderr = err)
+    subprocess.call([cmd,'setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err)
+    # subprocess.call([cmd,'setup.py','install','--user'], cwd = alt_name_amgint, stdout = log, stderr = err)
 
     # Install pyAMG
     import pkg_resources
