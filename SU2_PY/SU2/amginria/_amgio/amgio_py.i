@@ -1,6 +1,6 @@
 /*  Example of wrapping cos function from math.h using SWIG. */
 
-%module amgio
+%module _amgio
 %{
     /* the resulting C file should be built as a python extension */
     #define SWIG_FILE_WITH_INIT
