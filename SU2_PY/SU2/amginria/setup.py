@@ -17,7 +17,8 @@ def setup_amgio(argv=[]):
           package_data={'': ['_amgio.so']},
           ext_modules=[ \
           Extension("_amgio",
-            sources=[ "./_amgio/amgio_py.c", \
+            sources=[ "./_amgio/amgio_py_wrap.c", \
+                      "./_amgio/amgio_py.c", \
                       "./_amgio/mesh.c", \
                       "./_amgio/GMFio.c", \
                       "./_amgio/SU2io.c", \

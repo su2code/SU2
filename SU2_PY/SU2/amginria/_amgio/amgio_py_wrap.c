@@ -748,7 +748,7 @@ SWIG_UnpackDataName(const char *c, void *ptr, size_t sz, const char *name) {
 #define PyInt_FromLong(x) PyLong_FromLong(x)
 #define PyInt_FromSize_t(x) PyLong_FromSize_t(x)
 #define PyString_Check(name) PyBytes_Check(name)
-#define PyUnicode_FromString(x) PyUnicode_FromString(x)
+#define PyString_FromString(x) PyUnicode_FromString(x)
 #define PyString_Format(fmt, args)  PyUnicode_Format(fmt, args)
 #define PyString_AsString(str) PyBytes_AsString(str)
 #define PyString_Size(str) PyBytes_Size(str)	
@@ -806,7 +806,7 @@ SWIG_Python_str_FromChar(const char *c)
 #if PY_VERSION_HEX >= 0x03000000
   return PyUnicode_FromString(c); 
 #else
-  return PyUnicode_FromString(c);
+  return PyString_FromString(c);
 #endif
 }
 
@@ -834,7 +834,7 @@ PyString_FromFormat(const char *fmt, ...) {
   va_start(ap, fmt);
   res = vsnprintf(buf, sizeof(buf), fmt, ap);
   va_end(ap);
-  return (res < 0 || res >= (int)sizeof(buf)) ? 0 : PyUnicode_FromString(buf);
+  return (res < 0 || res >= (int)sizeof(buf)) ? 0 : PyString_FromString(buf);
 }
 #endif
 
@@ -3957,7 +3957,7 @@ extern "C" {
 #if PY_VERSION_HEX >= 0x03000000
     return PyUnicode_InternFromString("<Swig global variables>");
 #else
-    return PyUnicode_FromString("<Swig global variables>");
+    return PyString_FromString("<Swig global variables>");
 #endif
   }
   
@@ -3988,13 +3988,13 @@ extern "C" {
     Py_DecRef(tail);
     str = joined;
 #else
-    PyObject *str = PyUnicode_FromString("(");
+    PyObject *str = PyString_FromString("(");
     swig_globalvar *var;
     for (var = v->vars; var; var=var->next) {
-      PyString_ConcatAndDel(&str,PyUnicode_FromString(var->name));
-      if (var->next) PyString_ConcatAndDel(&str,PyUnicode_FromString(", "));
+      PyString_ConcatAndDel(&str,PyString_FromString(var->name));
+      if (var->next) PyString_ConcatAndDel(&str,PyString_FromString(", "));
     }
-    PyString_ConcatAndDel(&str,PyUnicode_FromString(")"));
+    PyString_ConcatAndDel(&str,PyString_FromString(")"));
 #endif
     return str;
   }
