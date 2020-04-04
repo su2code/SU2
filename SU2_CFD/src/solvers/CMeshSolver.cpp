@@ -617,7 +617,7 @@ void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config){
 
 void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config){
 
-  if (config->GetSurface_Movement(DEFORMING)) {
+  if (config->GetSurface_Movement(DEFORMING) && !config->GetDiscrete_Adjoint()) {
     if (rank == MASTER_NODE)
       cout << endl << " Updating surface positions." << endl;
 
@@ -810,15 +810,8 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
       if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting known solution" << endl;
 
       /*--- Set loaded solution into correct previous time containers. ---*/
-      unsigned long iPoint;
-      for (iPoint = 0; iPoint < nPoint; iPoint++ ) {
-        for (unsigned short iDim = 0; iDim < nDim; iDim++){
-          if(iStep==1)
-            nodes->Set_Solution_time_n(iPoint, iDim, nodes->GetSolution(iPoint, iDim));
-          else
-            nodes->Set_Solution_time_n1(iPoint, iDim, nodes->GetSolution_time_n(iPoint, iDim));
-        }
-      }
+      if(iStep==1) nodes->Set_Solution_time_n();
+      else nodes->Set_Solution_time_n1();
     }
     else {
       string filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, "");
