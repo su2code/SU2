@@ -101,7 +101,7 @@ def init_submodules(method = 'auto'):
 
   # Setup AMG interface
   cmd = sys.executable
-  subprocess.call([cmd,'setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
+  subprocess.call([cmd,'setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err)
   # subprocess.call([cmd,'install','--user'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
 
   # Setup pyamg
