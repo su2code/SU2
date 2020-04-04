@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -57,13 +57,11 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     Solution_Geometry.resize(nPoint,nDim) = su2double(1e-16);
     Solution_Geometry_Old.resize(nPoint,nDim) = su2double(0.0);
 
-    Solution_BGS.resize(nPoint,nVar) = su2double(0.0);
     Solution_Geometry_BGS_k.resize(nPoint,nDim) = su2double(0.0);
   }
 
-  if (config->GetMultizone_Problem()) {
+  if (config->GetMultizone_Problem() && config->GetDiscrete_Adjoint()) {
     External.resize(nPoint,nVar) = su2double(0.0);
-    Solution_BGS.resize(nPoint,nVar) = su2double(0.0);
   }
 }
 

@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -59,8 +59,6 @@ protected:
 
   MatrixType Solution_Direct_Vel;
   MatrixType Solution_Direct_Accel;
-
-  MatrixType Solution_BGS;
 
   /*!
    * \brief Constructor of the class.
@@ -236,16 +234,5 @@ public:
    * \brief Set the value of the old velocity (Structural Analysis - adjoint).
    */
   void Set_OldSolution_Vel() final;
-
-  /*!
-   * \brief Set the value of the adjoint solution in the current BGS subiteration.
-   */
-  inline void Set_BGSSolution(unsigned long iPoint, unsigned long iDim, su2double val_solution) final { Solution_BGS(iPoint,iDim) = val_solution; }
-
-  /*!
-   * \brief Get the value of the adjoint solution in the previous BGS subiteration.
-   * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution(unsigned long iPoint, unsigned long iDim) const final { return Solution_BGS(iPoint,iDim); }
 
 };

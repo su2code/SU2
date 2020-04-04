@@ -4749,28 +4749,25 @@ void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
   su2double residual;
 
   /*--- Set Residuals to zero ---*/
-
   for (iVar = 0; iVar < nVar; iVar++){
     SetRes_BGS(iVar,0.0);
     SetRes_Max_BGS(iVar,0.0,0);
   }
 
-  /*--- Set the residuals ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++){
-      residual = base_nodes->GetSolution(iPoint,iVar) - base_nodes->Get_BGSSolution_k(iPoint,iVar);
-      AddRes_BGS(iVar,residual*residual);
-      AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+  /*--- Set the residuals and BGSSolution_k to solution for next multizone outer iteration. ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      residual = base_nodes->Get_BGSSolution(iPoint,iVar) - base_nodes->Get_BGSSolution_k(iPoint,iVar);
+      base_nodes->Set_BGSSolution_k(iPoint,iVar, base_nodes->Get_BGSSolution(iPoint,iVar));
+      AddRes_BGS(iVar, residual*residual);
+      AddRes_Max_BGS(iVar, fabs(residual), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
     }
+  }
+  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      base_nodes->Set_BGSSolution_k(iPoint,iVar, base_nodes->Get_BGSSolution(iPoint,iVar));
   }
 
   SetResidual_BGS(geometry, config);
 
-}
-
-
-void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
-
-  /*--- To nPoint: The solution must be communicated beforehand ---*/
-  base_nodes->Set_BGSSolution_k();
 }

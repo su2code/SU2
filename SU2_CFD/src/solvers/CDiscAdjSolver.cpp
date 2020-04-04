@@ -1000,37 +1000,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
-
-}
-
-void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) {
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  su2double residual;
-
-  /*--- Set Residuals to zero ---*/
-  for (iVar = 0; iVar < nVar; iVar++){
-      SetRes_BGS(iVar,0.0);
-      SetRes_Max_BGS(iVar,0.0,0);
-  }
-
-  /*--- Set the residuals ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-
-      /// TODO: This is only difference to the CSolver version, this method and the BGS var might be reduntant.
-      nodes->Set_BGSSolution(iPoint, iVar, nodes->GetSolution(iPoint, iVar));
-
-      residual = nodes->Get_BGSSolution(iPoint,iVar) - nodes->Get_BGSSolution_k(iPoint,iVar);
-      AddRes_BGS(iVar,residual*residual);
-      AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-    }
-  }
-
-  SetResidual_BGS(geometry, config);
+  delete [] Restart_Vars;  Restart_Vars = nullptr;
+  delete [] Restart_Data;  Restart_Data = nullptr;
 
 }

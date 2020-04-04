@@ -303,14 +303,10 @@ void CDiscAdjMultizoneDriver::Run() {
         }
       }
 
-      /*--- Save Solution to Solution_BGS and compute residual from Solution_BGS and Solution_BGS_k. ---*/
+      /*--- Compute residual from Solution and Solution_BGS_k and update the latter. ---*/
 
       SetResidual_BGS(iZone);
 
-      /*--- Save Solution to Solution_BGS_k for a next outer iteration.
-       *    (Solution might be overwritten when entering another zone because of cross derivatives.) ---*/
-
-      Set_BGSSolution(iZone);
     }
 
     /*--- Set the multizone output. ---*/
@@ -908,15 +904,6 @@ void CDiscAdjMultizoneDriver::Update_Cross_Term(unsigned short iZone, unsigned s
     auto solver = solver_container[jZone][INST_0][MESH_0][iSol];
     if (solver && solver->GetAdjoint())
       solver->Update_Cross_Term(config_container[jZone], Cross_Terms[iZone][jZone][iSol]);
-  }
-}
-
-void CDiscAdjMultizoneDriver::Set_BGSSolution(unsigned short iZone) {
-
-  for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-    auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver && solver->GetAdjoint())
-      solver->UpdateSolution_BGS(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
   }
 }
 

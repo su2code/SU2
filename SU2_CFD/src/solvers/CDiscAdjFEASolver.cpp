@@ -858,35 +858,6 @@ void CDiscAdjFEASolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *con
 
 }
 
-void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  su2double residual;
-
-  /*--- Set Residuals to zero ---*/
-  for (iVar = 0; iVar < nVar; iVar++){
-    SetRes_BGS(iVar,0.0);
-    SetRes_Max_BGS(iVar,0.0,0);
-  }
-
-  /*--- Set the residuals ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-
-      /// TODO: This is only difference to the CSolver version, this method and the BGS var might be reduntant.
-      nodes->Set_BGSSolution(iPoint, iVar, nodes->GetSolution(iPoint, iVar));
-
-      residual = nodes->Get_BGSSolution(iPoint, iVar) - nodes->Get_BGSSolution_k(iPoint, iVar);
-      AddRes_BGS(iVar,residual*residual);
-      AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-    }
-  }
-
-  SetResidual_BGS(geometry, config);
-
-}
-
 void CDiscAdjFEASolver::ReadDV(CConfig *config) {
 
   unsigned long index;

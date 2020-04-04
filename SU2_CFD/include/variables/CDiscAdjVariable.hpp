@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -46,7 +46,6 @@ private:
   MatrixType Solution_Geometry_Old;
   MatrixType Geometry_Direct;
 
-  MatrixType Solution_BGS;
   MatrixType Solution_Geometry_BGS_k;
 
 public:
@@ -151,18 +150,5 @@ public:
   inline su2double Get_OldSolution_Geometry(unsigned long iPoint, unsigned long iDim) const override {
     return Solution_Geometry_Old(iPoint,iDim);
   }
-
-  /*!
-   * \brief Set the value of the adjoint solution in the current BGS subiteration.
-   */
-  inline void Set_BGSSolution(unsigned long iPoint, unsigned long iDim, su2double val_solution) override {
-    Solution_BGS(iPoint,iDim) = val_solution;
-  }
-
-  /*!
-   * \brief Get the value of the adjoint solution in the previous BGS subiteration.
-   * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
-   */
-  inline su2double Get_BGSSolution(unsigned long iPoint, unsigned long iDim) const override { return Solution_BGS(iPoint,iDim);}
 
 };

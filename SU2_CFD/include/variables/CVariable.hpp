@@ -129,10 +129,10 @@ protected:
   unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
   unsigned long nSecondaryVarGrad = 0;   /*!< \brief Number of secondaries for which a gradient is computed. */
 
+  /*--- Only allow default construction by derived classes. ---*/
+  CVariable() = default;
 public:
-
-  /*--- Disable default construction copy and assignment. ---*/
-  CVariable() = delete;
+  /*--- Disable copy and assignment. ---*/
   CVariable(const CVariable&) = delete;
   CVariable(CVariable&&) = delete;
   CVariable& operator= (const CVariable&) = delete;
@@ -2110,9 +2110,13 @@ public:
   inline virtual su2double Get_OldSolution_Geometry(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
-   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   * \brief Get BGS solution to compute the BGS residual (difference between BGS and BGS_k).
+   * \note This is virtual because for some classes the result of a BGS iteration is not "Solution".
+   *       If this method is overriden, the BGSSolution_k ones proabably have to be too.
    */
-  inline virtual void Set_BGSSolution(unsigned long iPoint, unsigned long iDim, su2double solution) {}
+  inline virtual su2double Get_BGSSolution(unsigned long iPoint, unsigned long iVar) const {
+    return Solution(iPoint, iVar);
+  }
 
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
@@ -2122,12 +2126,12 @@ public:
   /*!
    * \brief Restore the previous BGS subiteration to solution.
    */
-  void Restore_BGSSolution_k();
+  virtual void Restore_BGSSolution_k();
 
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
-  inline void Set_BGSSolution_k(unsigned long iPoint, unsigned long iVar, su2double val_var) {
+  inline virtual void Set_BGSSolution_k(unsigned long iPoint, unsigned long iVar, su2double val_var) {
     Solution_BGS_k(iPoint,iVar) = val_var;
   }
 
@@ -2138,12 +2142,6 @@ public:
   inline virtual su2double Get_BGSSolution_k(unsigned long iPoint, unsigned long iVar) const {
     return Solution_BGS_k(iPoint,iVar);
   }
-
-  /*!
-   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
-   * \param[out] val_solution - old adjoint solution for coordinate iDim
-   */
-  inline virtual su2double Get_BGSSolution(unsigned long iPoint, unsigned long iDim) const {return 0.0;}
 
   /*!
    * \brief A virtual member. Set the direct velocity solution for the adjoint solver.

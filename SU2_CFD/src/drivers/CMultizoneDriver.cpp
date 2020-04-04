@@ -405,45 +405,37 @@ void CMultizoneDriver::Run_Jacobi() {
 
 void CMultizoneDriver::Corrector(unsigned short val_iZone) {
 
-    if (config_container[val_iZone]->GetRelaxation())
-      iteration_container[val_iZone][INST_0]->Relaxation(output_container[ZONE_0], integration_container, geometry_container, solver_container,
-          numerics_container, config_container, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-
+  if (config_container[val_iZone]->GetRelaxation())
+    iteration_container[val_iZone][INST_0]->Relaxation(output_container[ZONE_0], integration_container,
+                                            geometry_container, solver_container, numerics_container, config_container,
+                                            surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 }
 
 bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
-  /*--- Update the residual for the all the zones ---*/
+  /*--- Update the residual for the all the zones. ---*/
 
-  for (iZone = 0; iZone < nZone; iZone++){
+  for (iZone = 0; iZone < nZone; iZone++) {
 
-    /*--- Account for all the solvers ---*/
+    /*--- Account for all the solvers in this zone. ---*/
+
+    auto solvers = solver_container[iZone][INST_0][MESH_0];
 
     for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != nullptr){
-        solver_container[iZone][INST_0][MESH_0][iSol]->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-      }
+      if (solvers[iSol] != nullptr)
+        solvers[iSol]->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
     }
 
-    /*--- make sure that everything is loaded into the output container ---*/
+    /*--- Make sure that everything is loaded into the output container. ---*/
 
-    output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0],solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
+    output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solvers, config_container[iZone]);
 
   }
 
-  /*--- Update the residual for the all the zones ---*/
-  for (iZone = 0; iZone < nZone; iZone++){
-    /*--- Accounting for all the solvers ---*/
-    for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      /*-- If the solver position iSol is enabled --*/
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != nullptr){
-        solver_container[iZone][INST_0][MESH_0][iSol]->UpdateSolution_BGS(geometry_container[iZone][INST_0][MESH_0],
-            config_container[iZone]);}
-    }
-  }
+  /*--- Print out the convergence data to screen and history file. ---*/
 
-  /*--- Print out the convergence data to screen and history file ---*/
-  driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, driver_config->GetTimeIter(), driver_config->GetOuterIter());
+  driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config,
+                                            driver_config->GetTimeIter(), driver_config->GetOuterIter());
 
   return driver_output->GetConvergence();
 

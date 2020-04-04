@@ -272,17 +272,12 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  virtual void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Move the mesh in time
    */
   inline virtual void SetDualTime_Mesh(void){ }
-
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the solver nondimensionalization.

@@ -297,11 +297,4 @@ public:
                    int val_iter,
                    bool val_update_geo) override;
 
-  /*!
-   * \brief Compute the multizone residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) override;
-
 };
