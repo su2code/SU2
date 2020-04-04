@@ -179,7 +179,7 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
     grid_movement->UpdateMultiGrid(geometry, config);
 
   }
-  
+
   if (config->GetSurface_Movement(EXTERNAL) ||
       config->GetSurface_Movement(EXTERNAL_ROTATION)) {
 
@@ -227,35 +227,30 @@ void CIteration::SetMesh_Deformation(CGeometry **geometry,
                                      CConfig *config,
                                      unsigned short kind_recording) {
 
-  bool ActiveTape = NO;
+  if (!config->GetDeform_Mesh()) return;
 
   /*--- Perform the elasticity mesh movement ---*/
-  if (config->GetDeform_Mesh()) {
 
-    if ((kind_recording != MESH_DEFORM) && !config->GetMultizone_Problem()) {
-      /*--- In a primal run, AD::TapeActive returns a false ---*/
-      /*--- In any other recordings, the tape is passive during the deformation ---*/
-      ActiveTape = AD::TapeActive();
-      AD::StopRecording();
-    }
+  bool ActiveTape = AD::TapeActive();
 
-    /*--- Set the stiffness of each element mesh into the mesh numerics ---*/
-
-    solver[MESH_SOL]->SetMesh_Stiffness(geometry, numerics[MESH_SOL], config);
-
-    /*--- Deform the volume grid around the new boundary locations ---*/
-
-    solver[MESH_SOL]->DeformMesh(geometry, numerics[MESH_SOL], config);
-
-    if (ActiveTape) {
-      /*--- Start recording if it was stopped ---*/
-      AD::StartRecording();
-    }
+  if ((kind_recording != MESH_DEFORM) && !config->GetMultizone_Problem()) {
+    /*--- In a primal run, AD::TapeActive returns a false ---*/
+    /*--- In any other recordings, the tape is passive during the deformation. ---*/
+    AD::StopRecording();
   }
 
+  /*--- Set the stiffness of each element mesh into the mesh numerics ---*/
+
+  solver[MESH_SOL]->SetMesh_Stiffness(geometry, numerics[MESH_SOL], config);
+
+  /*--- Deform the volume grid around the new boundary locations ---*/
+
+  solver[MESH_SOL]->DeformMesh(geometry, numerics[MESH_SOL], config);
+
+  /*--- Continue recording. ---*/
+  if (ActiveTape) AD::StartRecording();
+
 }
-
-
 
 void CIteration::Preprocess(COutput *output,
                             CIntegration ****integration,
@@ -1287,7 +1282,7 @@ void CFEAIteration::Iterate(COutput *output,
 
   }
   else {
-      
+
     /*--- THIS IS THE INCREMENTAL LOAD APPROACH (only makes sense for nonlinear) ---*/
 
     /*--- Set the initial condition: store the current solution as Solution_Old ---*/
@@ -1300,9 +1295,9 @@ void CFEAIteration::Iterate(COutput *output,
     loadIncrement = 1.0;
     feaSolver->SetLoad_Increment(loadIncrement);
     feaSolver->SetForceCoeff(loadIncrement);
-    
+
     /*--- Run two nonlinear iterations to check if incremental loading can be skipped ---*/
-    
+
     for (IntIter = 0; IntIter < 2; ++IntIter) {
 
       config[val_iZone]->SetInnerIter(IntIter);
@@ -1498,7 +1493,7 @@ void CFEAIteration::Predictor(COutput *output,
                               unsigned short val_iInst) {
 
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
-                        
+
   /*--- Predict displacements ---*/
 
   feaSolver->PredictStruct_Displacement(geometry[val_iZone][val_iInst], config[val_iZone], solver[val_iZone][val_iInst]);

@@ -545,22 +545,21 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) {
 
+  auto iteration = iteration_container[val_iZone][INST_0];
+
   /*--- Legacy dynamic mesh update - Only if GRID_MOVEMENT = YES ---*/
   if (config_container[ZONE_0]->GetGrid_Movement()) {
-  iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone],
-                                                           grid_movement[val_iZone][INST_0], solver_container[val_iZone][INST_0],
-                                                           config_container[val_iZone], 0, TimeIter);
+    iteration->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone],
+                                grid_movement[val_iZone][INST_0], solver_container[val_iZone][INST_0],
+                                config_container[val_iZone], 0, TimeIter);
   }
 
   /*--- New solver - all the other routines in SetGrid_Movement should be adapted to this one ---*/
   /*--- Works if DEFORM_MESH = YES ---*/
-  if (config_container[ZONE_0]->GetDeform_Mesh()) {
-    iteration_container[val_iZone][INST_0]->SetMesh_Deformation(geometry_container[val_iZone][INST_0],
-                                                                solver_container[val_iZone][INST_0][MESH_0],
-                                                                numerics_container[val_iZone][INST_0][MESH_0],
-                                                                config_container[ZONE_0],
-                                                                NONE);
-  }
+  iteration->SetMesh_Deformation(geometry_container[val_iZone][INST_0],
+                                 solver_container[val_iZone][INST_0][MESH_0],
+                                 numerics_container[val_iZone][INST_0][MESH_0],
+                                 config_container[val_iZone], NONE);
 
 }
 
