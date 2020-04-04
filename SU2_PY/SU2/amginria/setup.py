@@ -12,8 +12,8 @@ def setup_amgio(argv=[]):
     file_dir    = os.path.dirname(os.path.abspath(__file__));
     
     os.chdir(file_dir);
-    setup(ext_modules=[ \
-          Extension("_amgio",
+    setup(name="_amgio",
+          ext_modules=[ Extension( "_amgio", \
             sources=[ "./_amgio/amgio_py.c", \
                       "./_amgio/mesh.c", \
                       "./_amgio/GMFio.c", \
@@ -24,8 +24,7 @@ def setup_amgio(argv=[]):
                       "./_amgio/convert.c"],
             extra_compile_args=["-std=c99",
                                 "-Wno-unused-variable",
-                                "-Wno-unused-result",
-                                "-Wl,-soname,_amgio.so"]),
+                                "-Wno-unused-result"]),
           ],);
 
     os.rename("_amgio"+sysconfig.get_config_var('EXT_SUFFIX'),"_amgio.so")
