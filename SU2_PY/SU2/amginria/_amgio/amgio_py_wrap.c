@@ -3000,7 +3000,7 @@ static swig_module_info swig_module = {swig_types, 1, 0, 0, 0, 0};
 #  define SWIG_init    PyInit__amgio
 
 #else
-#  define SWIG_init    init__amgio
+#  define SWIG_init    init_amgio
 
 #endif
 #define SWIG_name    "_amgio"
