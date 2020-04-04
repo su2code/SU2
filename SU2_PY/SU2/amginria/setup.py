@@ -13,9 +13,7 @@ def setup_amgio(argv=[]):
     
     os.chdir(file_dir);
     ext_opts = {'extra_compile_args': ['-Wl,-soname,units.so', '-Isrc']}
-    setup(name = '_amgio',
-          package_data={'': ['_amgio.so']},
-          ext_modules=[ \
+    setup(ext_modules=[ \
           Extension("_amgio",
             sources=[ "./_amgio/amgio_py_wrap.c", \
                       "./_amgio/amgio_py.c", \
