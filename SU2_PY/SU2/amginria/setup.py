@@ -6,13 +6,12 @@ from distutils import sysconfig
 def setup_amgio(argv=[]):
     
     sav_argv = sys.argv;    
-    sys.argv = ['', 'build_ext', '--inplace'];
+    # sys.argv = ['', 'build_ext', '--inplace'];
     
     working_dir = os.getcwd();
     file_dir    = os.path.dirname(os.path.abspath(__file__));
     
     os.chdir(file_dir);
-    ext_opts = {'extra_compile_args': ['-Wl,-soname,units.so', '-Isrc']}
     setup(ext_modules=[ \
           Extension("_amgio",
             sources=[ "./_amgio/amgio_py.c", \
