@@ -608,36 +608,47 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
 		SizMsh[i] = 0;
 	
 	//--- Get mesh size
+	printf("Get mesh size\n");
 
 	if ( PyList_Check(pyVer) )
 		SizMsh[GmfVertices] = PyList_Size(pyVer);
+	printf("Got ver size\n");
 	
 	if ( PyList_Check(pyTri) )
 		SizMsh[GmfTriangles] = PyList_Size(pyTri);
+	printf("Got tri size\n");
 	
 	if ( PyList_Check(pyTet) )
 		SizMsh[GmfTetrahedra] = PyList_Size(pyTet);
+	printf("Got tet size\n");
 	
 	if ( PyList_Check(pyEdg) )
 		SizMsh[GmfEdges] = PyList_Size(pyEdg);
+	printf("Got edg size\n");
 
 	if ( PyList_Check(pyHex) )
 		SizMsh[GmfHexahedra] = PyList_Size(pyHex);
+	printf("Got hex size\n");
 	
 	if ( PyList_Check(pyQua) )
 		SizMsh[GmfQuadrilaterals] = PyList_Size(pyQua);
+	printf("Got qua size\n");
 	
 	if ( PyList_Check(pyPyr) )
 		SizMsh[GmfPyramids] = PyList_Size(pyPyr);
+	printf("Got pyr size\n");
 	
 	if ( PyList_Check(pyPri) )
 		SizMsh[GmfPrisms] = PyList_Size(pyPri);
+	printf("Got pri size\n");
 
 	if ( PyList_Check(pyCor) )
 		SizMsh[GmfCorners] = PyList_Size(pyCor);
+	printf("Got cor size\n");
 
 	if ( PyList_Check(pyMarkers) )
 		NbrMarkers = PyList_Size(pyMarkers);
+	printf("Got marker size\n");
 	
 	//--- Allocate mesh
 	
