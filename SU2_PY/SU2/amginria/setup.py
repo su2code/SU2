@@ -13,7 +13,9 @@ def setup_amgio(argv=[]):
     
     os.chdir(file_dir);
     ext_opts = {'extra_compile_args': ['-Wl,-soname,units.so', '-Isrc']}
-    setup(ext_modules=[ \
+    setup(name = '_amgio',
+          package_data={'': ['_amgio.so']},
+          ext_modules=[ \
           Extension("_amgio",
             sources=[ "./_amgio/amgio_py.c", \
                       "./_amgio/mesh.c", \
