@@ -4755,17 +4755,14 @@ void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
   }
 
   /*--- Set the residuals and BGSSolution_k to solution for next multizone outer iteration. ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    const su2double domain = (iPoint < nPointDomain);
     for (iVar = 0; iVar < nVar; iVar++) {
-      residual = base_nodes->Get_BGSSolution(iPoint,iVar) - base_nodes->Get_BGSSolution_k(iPoint,iVar);
+      residual = (base_nodes->Get_BGSSolution(iPoint,iVar) - base_nodes->Get_BGSSolution_k(iPoint,iVar))*domain;
       base_nodes->Set_BGSSolution_k(iPoint,iVar, base_nodes->Get_BGSSolution(iPoint,iVar));
       AddRes_BGS(iVar, residual*residual);
       AddRes_Max_BGS(iVar, fabs(residual), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
     }
-  }
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      base_nodes->Set_BGSSolution_k(iPoint,iVar, base_nodes->Get_BGSSolution(iPoint,iVar));
   }
 
   SetResidual_BGS(geometry, config);
