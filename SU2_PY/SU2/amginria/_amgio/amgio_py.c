@@ -89,52 +89,52 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri,
 	}
 
 	for (i=1; i<=Msh->NbrCor; i++){
-		PyList_Append(pyCor, PyInt_FromLong(Msh->Cor[i]));
+		PyList_Append(pyCor, PyLong_FromLong(Msh->Cor[i]));
 	}
 	
 	for (i=1; i<=Msh->NbrTri; i++){
 		for (j=0; j<4; j++)
-			PyList_Append(pyTri, PyInt_FromLong(Msh->Tri[i][j]));
+			PyList_Append(pyTri, PyLong_FromLong(Msh->Tri[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrTet; i++){
 		for (j=0; j<5; j++)
-			PyList_Append(pyTet, PyInt_FromLong(Msh->Tet[i][j]));
+			PyList_Append(pyTet, PyLong_FromLong(Msh->Tet[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrEfr; i++){
 		for (j=0; j<3; j++)
-			PyList_Append(pyEdg, PyInt_FromLong(Msh->Efr[i][j]));
+			PyList_Append(pyEdg, PyLong_FromLong(Msh->Efr[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrHex; i++){
 		for (j=0; j<9; j++)
-			PyList_Append(pyHex, PyInt_FromLong(Msh->Hex[i][j]));
+			PyList_Append(pyHex, PyLong_FromLong(Msh->Hex[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrQua; i++){
 		for (j=0; j<5; j++)
-			PyList_Append(pyQua, PyInt_FromLong(Msh->Qua[i][j]));
+			PyList_Append(pyQua, PyLong_FromLong(Msh->Qua[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrPyr; i++){
 		for (j=0; j<6; j++)
-			PyList_Append(pyPyr, PyInt_FromLong(Msh->Pyr[i][j]));
+			PyList_Append(pyPyr, PyLong_FromLong(Msh->Pyr[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrPri; i++){
 		for (j=0; j<7; j++)
-			PyList_Append(pyPri, PyInt_FromLong(Msh->Pri[i][j]));
+			PyList_Append(pyPri, PyLong_FromLong(Msh->Pri[i][j]));
 	}
 	
 	//--- First row of Markers contains dimension
-	PyList_Append(pyMarkers, PyInt_FromLong(Msh->Dim));
+	PyList_Append(pyMarkers, PyLong_FromLong(Msh->Dim));
 	for (i=1; i<=Msh->NbrMarkers; i++){
-		PyList_Append(pyMarkers, PyString_FromString(Msh->Markers[i]));
+		PyList_Append(pyMarkers, PyUnicode_FromString(Msh->Markers[i]));
 	}
 	
 	for (i=0; i<=Msh->SolSiz; i++){
-		PyList_Append(pySolHeader, PyString_FromString(Msh->SolTag[i]));
+		PyList_Append(pySolHeader, PyUnicode_FromString(Msh->SolTag[i]));
 	}
 	
 	if ( Msh->Sol ) {
@@ -175,48 +175,48 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers)
 	}
 
 	for (i=1; i<=Msh->NbrCor; i++){
-		PyList_Append(pyCor, PyInt_FromLong(Msh->Cor[i]));
+		PyList_Append(pyCor, PyLong_FromLong(Msh->Cor[i]));
 	}
 	
 	for (i=1; i<=Msh->NbrTri; i++){
 		for (j=0; j<4; j++)
-			PyList_Append(pyTri, PyInt_FromLong(Msh->Tri[i][j]));
+			PyList_Append(pyTri, PyLong_FromLong(Msh->Tri[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrTet; i++){
 		for (j=0; j<5; j++)
-			PyList_Append(pyTet, PyInt_FromLong(Msh->Tet[i][j]));
+			PyList_Append(pyTet, PyLong_FromLong(Msh->Tet[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrEfr; i++){
 		for (j=0; j<3; j++)
-			PyList_Append(pyEdg, PyInt_FromLong(Msh->Efr[i][j]));
+			PyList_Append(pyEdg, PyLong_FromLong(Msh->Efr[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrHex; i++){
 		for (j=0; j<9; j++)
-			PyList_Append(pyHex, PyInt_FromLong(Msh->Hex[i][j]));
+			PyList_Append(pyHex, PyLong_FromLong(Msh->Hex[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrQua; i++){
 		for (j=0; j<5; j++)
-			PyList_Append(pyQua, PyInt_FromLong(Msh->Qua[i][j]));
+			PyList_Append(pyQua, PyLong_FromLong(Msh->Qua[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrPyr; i++){
 		for (j=0; j<6; j++)
-			PyList_Append(pyPyr, PyInt_FromLong(Msh->Pyr[i][j]));
+			PyList_Append(pyPyr, PyLong_FromLong(Msh->Pyr[i][j]));
 	}
 	
 	for (i=1; i<=Msh->NbrPri; i++){
 		for (j=0; j<7; j++)
-			PyList_Append(pyPri, PyInt_FromLong(Msh->Pri[i][j]));
+			PyList_Append(pyPri, PyLong_FromLong(Msh->Pri[i][j]));
 	}
 	
 	//--- First row of Markers contains dimension
-	PyList_Append(pyMarkers, PyInt_FromLong(Msh->Dim));
+	PyList_Append(pyMarkers, PyLong_FromLong(Msh->Dim));
 	for (i=1; i<=Msh->NbrMarkers; i++){
-		PyList_Append(pyMarkers, PyString_FromString(Msh->Markers[i]));
+		PyList_Append(pyMarkers, PyUnicode_FromString(Msh->Markers[i]));
 	}
 	
 	if ( Msh )
@@ -288,9 +288,9 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
       	{
 				
 	       	PyObject *oo = PyList_GetItem(pyCor,i);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-				is[0] = (int) PyInt_AS_LONG(oo);
+				is[0] = (int) PyLong_AsLong(oo);
 	       	}
 				
 				
@@ -309,14 +309,14 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 				
 				for (j=0; j<3; j++) {
 	       	PyObject *oo = PyList_GetItem(pyTri,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
 				PyObject *oo = PyList_GetItem(pyTri,idx+3);
-				ref = (int) PyInt_AS_LONG(oo);
+				ref = (int) PyLong_AsLong(oo);
 				
 				Msh->NbrTri++;
 				AddTriangle(Msh,Msh->NbrTri,is,ref);
@@ -336,9 +336,9 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 				
 				for (j=0; j<5; j++) {
 	       	PyObject *oo = PyList_GetItem(pyTet,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
@@ -358,14 +358,14 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 				
 				for (j=0; j<2; j++) {
 	       	PyObject *oo = PyList_GetItem(pyEdg,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
 				PyObject *oo = PyList_GetItem(pyEdg,idx+2);
-				ref = (int) PyInt_AS_LONG(oo);
+				ref = (int) PyLong_AsLong(oo);
 				
 				Msh->NbrEfr++;
 				AddEdge(Msh,Msh->NbrEfr,is,ref);
@@ -383,14 +383,14 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 				
 				for (j=0; j<8; j++) {
 	       	PyObject *oo = PyList_GetItem(pyHex,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
 				PyObject *oo = PyList_GetItem(pyHex,idx+8);
-				ref = (int) PyInt_AS_LONG(oo);
+				ref = (int) PyLong_AsLong(oo);
 				
 				Msh->NbrHex++;
 				AddHexahedron(Msh,Msh->NbrHex,is,ref);
@@ -407,14 +407,14 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 				
 				for (j=0; j<4; j++) {
 	       	PyObject *oo = PyList_GetItem(pyQua,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
 				PyObject *oo = PyList_GetItem(pyQua,idx+4);
-				ref = (int) PyInt_AS_LONG(oo);
+				ref = (int) PyLong_AsLong(oo);
 								
 				Msh->NbrQua++;
 				AddQuadrilateral(Msh,Msh->NbrQua,is,ref);
@@ -432,14 +432,14 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 				
 				for (j=0; j<5; j++) {
 	       	PyObject *oo = PyList_GetItem(pyPyr,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
 				PyObject *oo = PyList_GetItem(pyPyr,idx+5);
-				ref = (int) PyInt_AS_LONG(oo);
+				ref = (int) PyLong_AsLong(oo);
 				
 				Msh->NbrPyr++;
 				AddPyramid(Msh,Msh->NbrPyr,is,ref);
@@ -456,14 +456,14 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 				
 				for (j=0; j<6; j++) {
 	       	PyObject *oo = PyList_GetItem(pyPri,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
 				PyObject *oo = PyList_GetItem(pyPri,idx+6);
-				ref = (int) PyInt_AS_LONG(oo);
+				ref = (int) PyLong_AsLong(oo);
 				
 				Msh->NbrPri++;
 				AddPrism(Msh,Msh->NbrPri,is,ref);
@@ -497,7 +497,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
   {
 		for (i=0; i<NbrMarkers; i++){
 			PyObject *oo = PyList_GetItem(pyMarkers,i);
-			strcpy(Msh->Markers[i], (char*) PyString_AS_STRING(oo));	
+			strcpy(Msh->Markers[i], (char*) PyBytes_AsString(oo));	
 		}
 		Msh->NbrMarkers = NbrMarkers;
 	}
@@ -523,7 +523,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 				if ( NbrTag == Msh->NbrFld  ) {
 					PyObject *oo = PyList_GetItem(pySolHeader,j);
 		       		if ( PyFloat_Check(oo) ) {
-						sprintf(Msh->SolTag[j], "%s", (char*) PyString_AS_STRING(oo));
+						sprintf(Msh->SolTag[j], "%s", (char*) PyBytes_AsString(oo));
 					}
 				}
 				else {
@@ -655,9 +655,9 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
       	{
 				
 	       	PyObject *oo = PyList_GetItem(pyCor,i);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-				is[0] = (int) PyInt_AS_LONG(oo);
+				is[0] = (int) PyLong_AsLong(oo);
 	       	}
 				
 				
@@ -676,14 +676,14 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
 				
 				for (j=0; j<3; j++) {
 	       	PyObject *oo = PyList_GetItem(pyTri,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
 				PyObject *oo = PyList_GetItem(pyTri,idx+3);
-				ref = (int) PyInt_AS_LONG(oo);
+				ref = (int) PyLong_AsLong(oo);
 				
 				Msh->NbrTri++;
 				AddTriangle(Msh,Msh->NbrTri,is,ref);
@@ -703,9 +703,9 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
 				
 				for (j=0; j<5; j++) {
 	       	PyObject *oo = PyList_GetItem(pyTet,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
@@ -725,14 +725,14 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
 				
 				for (j=0; j<2; j++) {
 	       	PyObject *oo = PyList_GetItem(pyEdg,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
 				PyObject *oo = PyList_GetItem(pyEdg,idx+2);
-				ref = (int) PyInt_AS_LONG(oo);
+				ref = (int) PyLong_AsLong(oo);
 				
 				Msh->NbrEfr++;
 				AddEdge(Msh,Msh->NbrEfr,is,ref);
@@ -750,14 +750,14 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
 				
 				for (j=0; j<8; j++) {
 	       	PyObject *oo = PyList_GetItem(pyHex,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
 				PyObject *oo = PyList_GetItem(pyHex,idx+8);
-				ref = (int) PyInt_AS_LONG(oo);
+				ref = (int) PyLong_AsLong(oo);
 				
 				Msh->NbrHex++;
 				AddHexahedron(Msh,Msh->NbrHex,is,ref);
@@ -774,14 +774,14 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
 				
 				for (j=0; j<4; j++) {
 	       	PyObject *oo = PyList_GetItem(pyQua,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
 				PyObject *oo = PyList_GetItem(pyQua,idx+4);
-				ref = (int) PyInt_AS_LONG(oo);
+				ref = (int) PyLong_AsLong(oo);
 								
 				Msh->NbrQua++;
 				AddQuadrilateral(Msh,Msh->NbrQua,is,ref);
@@ -799,14 +799,14 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
 				
 				for (j=0; j<5; j++) {
 	       	PyObject *oo = PyList_GetItem(pyPyr,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
 				PyObject *oo = PyList_GetItem(pyPyr,idx+5);
-				ref = (int) PyInt_AS_LONG(oo);
+				ref = (int) PyLong_AsLong(oo);
 				
 				Msh->NbrPyr++;
 				AddPyramid(Msh,Msh->NbrPyr,is,ref);
@@ -823,14 +823,14 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
 				
 				for (j=0; j<6; j++) {
 	       	PyObject *oo = PyList_GetItem(pyPri,idx+j);
-	       	if ( PyInt_Check(oo) )
+	       	if ( PyLong_Check(oo) )
 	       	{
-						is[j] = (int) PyInt_AS_LONG(oo);
+						is[j] = (int) PyLong_AsLong(oo);
 	       	}
 				}
 				
 				PyObject *oo = PyList_GetItem(pyPri,idx+6);
-				ref = (int) PyInt_AS_LONG(oo);
+				ref = (int) PyLong_AsLong(oo);
 				
 				Msh->NbrPri++;
 				AddPrism(Msh,Msh->NbrPri,is,ref);
@@ -864,7 +864,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
   {
 		for (i=0; i<NbrMarkers; i++){
 			PyObject *oo = PyList_GetItem(pyMarkers,i);
-			strcpy(Msh->Markers[i], (char*) PyString_AS_STRING(oo));	
+			strcpy(Msh->Markers[i], (char*) PyBytes_AsString(oo));	
 		}
 		Msh->NbrMarkers = NbrMarkers;
 	}
@@ -928,7 +928,7 @@ void py_WriteSolution(char *SolNam, PyObject *pyVer, PyObject *pySol, PyObject *
 	       	PyObject *oo = PyList_GetItem(pySolHeader,j);
 	       	if ( PyFloat_Check(oo) )
 	       	{
-						sprintf(SolTag[j], "%s", (char*) PyString_AS_STRING(oo));
+						sprintf(SolTag[j], "%s", (char*) PyBytes_AsString(oo));
 	       	}
 				}
 				else 
