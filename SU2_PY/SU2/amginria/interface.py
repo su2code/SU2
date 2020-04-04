@@ -269,19 +269,19 @@ def read_mesh(mesh_name):
     
     amgio.py_ReadMesh(mesh_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Markers)
         
-    NbrTet = len(Tet)/5
+    NbrTet = int(len(Tet)/5)
     Tet = np.reshape(Tet,(NbrTet, 5)).astype(int)
     
-    NbrTri = len(Tri)/4
+    NbrTri = int(len(Tri)/4)
     Tri = np.reshape(Tri,(NbrTri, 4)).astype(int)
     
-    NbrEdg = len(Edg)/3
+    NbrEdg = int(len(Edg)/3)
     Edg = np.reshape(Edg,(NbrEdg, 3)).astype(int)
 
-    NbrCor = len(Cor)
+    NbrCor = int(len(Cor))
     Cor = np.reshape(Cor,(NbrCor, 1)).astype(int)
 
-    NbrVer = len(Ver)/3
+    NbrVer = int(len(Ver)/3)
     Ver = np.reshape(Ver,(NbrVer, 3))
     
     # First row of Markers contains dimension
