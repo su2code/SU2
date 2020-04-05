@@ -4949,126 +4949,72 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Allocate the memory (markers in each domain) ---*/
 
   Marker_All_TagBound       = new string[nMarker_All];    // Store the tag that correspond with each marker.
-  Marker_All_SendRecv       = new short[nMarker_All];   // +#domain (send), -#domain (receive).
-  Marker_All_KindBC         = new unsigned short[nMarker_All];  // Store the kind of boundary condition.
-  Marker_All_Monitoring     = new unsigned short[nMarker_All];  // Store whether the boundary should be monitored.
-  Marker_All_Designing      = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
-  Marker_All_Plotting       = new unsigned short[nMarker_All];  // Store whether the boundary should be plotted.
-  Marker_All_Analyze  = new unsigned short[nMarker_All];  // Store whether the boundary should be plotted.
-  Marker_All_ZoneInterface   = new unsigned short[nMarker_All]; // Store whether the boundary is in the FSI interface.
-  Marker_All_GeoEval        = new unsigned short[nMarker_All];  // Store whether the boundary should be geometry evaluation.
-  Marker_All_DV             = new unsigned short[nMarker_All];  // Store whether the boundary should be affected by design variables.
-  Marker_All_Moving         = new unsigned short[nMarker_All];  // Store whether the boundary should be in motion.
-  Marker_All_Deform_Mesh    = new unsigned short[nMarker_All];  // Store whether the boundary is deformable.
-  Marker_All_Fluid_Load     = new unsigned short[nMarker_All];  // Store whether the boundary computes/applies fluid loads.
-  Marker_All_PyCustom       = new unsigned short[nMarker_All];  // Store whether the boundary is Python customizable.
-  Marker_All_PerBound       = new short[nMarker_All];   // Store whether the boundary belongs to a periodic boundary.
-  Marker_All_Turbomachinery       = new unsigned short[nMarker_All];  // Store whether the boundary is in needed for Turbomachinery computations.
-  Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All];  // Store whether the boundary has a flag for Turbomachinery computations.
-  Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All];  // Store whether the boundary has a in the MixingPlane interface.
-
+  Marker_All_SendRecv       = new short[nMarker_All] ();   // +#domain (send), -#domain (receive).
+  Marker_All_KindBC         = new unsigned short[nMarker_All] (); // Store the kind of boundary condition.
+  Marker_All_Monitoring     = new unsigned short[nMarker_All] (); // Store whether the boundary should be monitored.
+  Marker_All_Designing      = new unsigned short[nMarker_All] (); // Store whether the boundary should be designed.
+  Marker_All_Plotting       = new unsigned short[nMarker_All] (); // Store whether the boundary should be plotted.
+  Marker_All_Analyze        = new unsigned short[nMarker_All] (); // Store whether the boundary should be plotted.
+  Marker_All_ZoneInterface  = new unsigned short[nMarker_All] (); // Store whether the boundary is in the FSI interface.
+  Marker_All_GeoEval        = new unsigned short[nMarker_All] (); // Store whether the boundary should be geometry evaluation.
+  Marker_All_DV             = new unsigned short[nMarker_All] (); // Store whether the boundary should be affected by design variables.
+  Marker_All_Moving         = new unsigned short[nMarker_All] (); // Store whether the boundary should be in motion.
+  Marker_All_Deform_Mesh    = new unsigned short[nMarker_All] (); // Store whether the boundary is deformable.
+  Marker_All_Fluid_Load     = new unsigned short[nMarker_All] (); // Store whether the boundary computes/applies fluid loads.
+  Marker_All_PyCustom       = new unsigned short[nMarker_All] (); // Store whether the boundary is Python customizable.
+  Marker_All_PerBound       = new short[nMarker_All] ();          // Store whether the boundary belongs to a periodic boundary.
+  Marker_All_Turbomachinery       = new unsigned short[nMarker_All] (); // Store whether the boundary is in needed for Turbomachinery computations.
+  Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All] (); // Store whether the boundary has a flag for Turbomachinery computations.
+  Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All] (); // Store whether the boundary has a in the MixingPlane interface.
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
-    Marker_All_TagBound[iMarker_All]             = "SEND_RECEIVE";
-    Marker_All_SendRecv[iMarker_All]             = 0;
-    Marker_All_KindBC[iMarker_All]               = 0;
-    Marker_All_Monitoring[iMarker_All]           = 0;
-    Marker_All_GeoEval[iMarker_All]              = 0;
-    Marker_All_Designing[iMarker_All]            = 0;
-    Marker_All_Plotting[iMarker_All]             = 0;
-    Marker_All_Analyze[iMarker_All]              = 0;
-    Marker_All_ZoneInterface[iMarker_All]        = 0;
-    Marker_All_DV[iMarker_All]                   = 0;
-    Marker_All_Moving[iMarker_All]               = 0;
-    Marker_All_Deform_Mesh[iMarker_All]          = 0;
-    Marker_All_Fluid_Load[iMarker_All]           = 0;
-    Marker_All_PerBound[iMarker_All]             = 0;
-    Marker_All_Turbomachinery[iMarker_All]       = 0;
-    Marker_All_TurbomachineryFlag[iMarker_All]   = 0;
-    Marker_All_MixingPlaneInterface[iMarker_All] = 0;
-    Marker_All_PyCustom[iMarker_All]             = 0;
+    Marker_All_TagBound[iMarker_All] = "SEND_RECEIVE";
   }
 
   /*--- Allocate the memory (markers in the config file) ---*/
 
   Marker_CfgFile_TagBound             = new string[nMarker_CfgFile];
-  Marker_CfgFile_KindBC               = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Monitoring           = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Designing            = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Plotting             = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Analyze              = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_GeoEval              = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_ZoneInterface        = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_DV                   = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Moving               = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Deform_Mesh          = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Fluid_Load           = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_PerBound             = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_PyCustom             = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_KindBC               = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Monitoring           = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Designing            = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Plotting             = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Analyze              = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_GeoEval              = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_ZoneInterface        = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_DV                   = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Moving               = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Deform_Mesh          = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Fluid_Load           = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_PerBound             = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_PyCustom             = new unsigned short[nMarker_CfgFile] ();
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile]             = "SEND_RECEIVE";
-    Marker_CfgFile_KindBC[iMarker_CfgFile]               = 0;
-    Marker_CfgFile_Monitoring[iMarker_CfgFile]           = 0;
-    Marker_CfgFile_GeoEval[iMarker_CfgFile]              = 0;
-    Marker_CfgFile_Designing[iMarker_CfgFile]            = 0;
-    Marker_CfgFile_Plotting[iMarker_CfgFile]             = 0;
-    Marker_CfgFile_Analyze[iMarker_CfgFile]              = 0;
-    Marker_CfgFile_ZoneInterface[iMarker_CfgFile]        = 0;
-    Marker_CfgFile_DV[iMarker_CfgFile]                   = 0;
-    Marker_CfgFile_Moving[iMarker_CfgFile]               = 0;
-    Marker_CfgFile_Deform_Mesh[iMarker_CfgFile]          = 0;
-    Marker_CfgFile_Fluid_Load[iMarker_CfgFile]           = 0;
-    Marker_CfgFile_PerBound[iMarker_CfgFile]             = 0;
-    Marker_CfgFile_Turbomachinery[iMarker_CfgFile]       = 0;
-    Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile]   = 0;
-    Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = 0;
-    Marker_CfgFile_PyCustom[iMarker_CfgFile]             = 0;
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = "SEND_RECEIVE";
   }
 
   /*--- Allocate memory to store surface information (Analyze BC) ---*/
 
-  Surface_MassFlow = new su2double[nMarker_Analyze];
-  Surface_Mach = new su2double[nMarker_Analyze];
-  Surface_Temperature = new su2double[nMarker_Analyze];
-  Surface_Pressure = new su2double[nMarker_Analyze];
-  Surface_Density = new su2double[nMarker_Analyze];
-  Surface_Enthalpy = new su2double[nMarker_Analyze];
-  Surface_NormalVelocity = new su2double[nMarker_Analyze];
-  Surface_Uniformity = new su2double[nMarker_Analyze];
-  Surface_SecondaryStrength = new su2double[nMarker_Analyze];
-  Surface_SecondOverUniform = new su2double[nMarker_Analyze];
-  Surface_MomentumDistortion = new su2double[nMarker_Analyze];
-  Surface_TotalTemperature = new su2double[nMarker_Analyze];
-  Surface_TotalPressure = new su2double[nMarker_Analyze];
-  Surface_PressureDrop = new su2double[nMarker_Analyze];
-  Surface_DC60 = new su2double[nMarker_Analyze];
-  Surface_IDC = new su2double[nMarker_Analyze];
-  Surface_IDC_Mach = new su2double[nMarker_Analyze];
-  Surface_IDR = new su2double[nMarker_Analyze];
-  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    Surface_MassFlow[iMarker_Analyze] = 0.0;
-    Surface_Mach[iMarker_Analyze] = 0.0;
-    Surface_Temperature[iMarker_Analyze] = 0.0;
-    Surface_Pressure[iMarker_Analyze] = 0.0;
-    Surface_Density[iMarker_Analyze] = 0.0;
-    Surface_Enthalpy[iMarker_Analyze] = 0.0;
-    Surface_NormalVelocity[iMarker_Analyze] = 0.0;
-    Surface_Uniformity[iMarker_Analyze] = 0.0;
-    Surface_SecondaryStrength[iMarker_Analyze] = 0.0;
-    Surface_SecondOverUniform[iMarker_Analyze] = 0.0;
-    Surface_MomentumDistortion[iMarker_Analyze] = 0.0;
-    Surface_TotalTemperature[iMarker_Analyze] = 0.0;
-    Surface_TotalPressure[iMarker_Analyze] = 0.0;
-    Surface_PressureDrop[iMarker_Analyze] = 0.0;
-    Surface_DC60[iMarker_Analyze] = 0.0;
-    Surface_IDC[iMarker_Analyze] = 0.0;
-    Surface_IDC_Mach[iMarker_Analyze] = 0.0;
-    Surface_IDR[iMarker_Analyze] = 0.0;
-  }
+  Surface_MassFlow = new su2double[nMarker_Analyze] ();
+  Surface_Mach = new su2double[nMarker_Analyze] ();
+  Surface_Temperature = new su2double[nMarker_Analyze] ();
+  Surface_Pressure = new su2double[nMarker_Analyze] ();
+  Surface_Density = new su2double[nMarker_Analyze] ();
+  Surface_Enthalpy = new su2double[nMarker_Analyze] ();
+  Surface_NormalVelocity = new su2double[nMarker_Analyze] ();
+  Surface_Uniformity = new su2double[nMarker_Analyze] ();
+  Surface_SecondaryStrength = new su2double[nMarker_Analyze] ();
+  Surface_SecondOverUniform = new su2double[nMarker_Analyze] ();
+  Surface_MomentumDistortion = new su2double[nMarker_Analyze] ();
+  Surface_TotalTemperature = new su2double[nMarker_Analyze] ();
+  Surface_TotalPressure = new su2double[nMarker_Analyze] ();
+  Surface_PressureDrop = new su2double[nMarker_Analyze] ();
+  Surface_DC60 = new su2double[nMarker_Analyze] ();
+  Surface_IDC = new su2double[nMarker_Analyze] ();
+  Surface_IDC_Mach = new su2double[nMarker_Analyze] ();
+  Surface_IDR = new su2double[nMarker_Analyze] ();
 
   /*--- Populate the marker information in the config file (all domains) ---*/
 
@@ -5098,97 +5044,56 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  ActDisk_DeltaPress = new su2double[nMarker_ActDiskInlet];
-  ActDisk_DeltaTemp = new su2double[nMarker_ActDiskInlet];
-  ActDisk_TotalPressRatio = new su2double[nMarker_ActDiskInlet];
-  ActDisk_TotalTempRatio = new su2double[nMarker_ActDiskInlet];
-  ActDisk_StaticPressRatio = new su2double[nMarker_ActDiskInlet];
-  ActDisk_StaticTempRatio = new su2double[nMarker_ActDiskInlet];
-  ActDisk_Power = new su2double[nMarker_ActDiskInlet];
-  ActDisk_MassFlow = new su2double[nMarker_ActDiskInlet];
-  ActDisk_Mach = new su2double[nMarker_ActDiskInlet];
-  ActDisk_Force = new su2double[nMarker_ActDiskInlet];
-  ActDisk_NetThrust = new su2double[nMarker_ActDiskInlet];
-  ActDisk_BCThrust = new su2double[nMarker_ActDiskInlet];
-  ActDisk_BCThrust_Old = new su2double[nMarker_ActDiskInlet];
-  ActDisk_GrossThrust = new su2double[nMarker_ActDiskInlet];
-  ActDisk_Area = new su2double[nMarker_ActDiskInlet];
-  ActDisk_ReverseMassFlow = new su2double[nMarker_ActDiskInlet];
+  ActDisk_DeltaPress = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_DeltaTemp = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_TotalPressRatio = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_TotalTempRatio = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_StaticPressRatio = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_StaticTempRatio = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_Power = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_MassFlow = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_Mach = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_Force = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_NetThrust = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_BCThrust = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_BCThrust_Old = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_GrossThrust = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_Area = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_ReverseMassFlow = new su2double[nMarker_ActDiskInlet] ();
 
-  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
-    ActDisk_DeltaPress[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_DeltaTemp[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_TotalPressRatio[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_TotalTempRatio[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_StaticPressRatio[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_StaticTempRatio[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_Power[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_MassFlow[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_Mach[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_Force[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_NetThrust[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_BCThrust[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_BCThrust_Old[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_GrossThrust[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_Area[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_ReverseMassFlow[iMarker_ActDiskInlet] = 0.0;
-  }
-
-
-  ActDiskInlet_MassFlow = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_Temperature = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_TotalTemperature = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_Pressure = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_TotalPressure = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_RamDrag = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_Force = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_Power = new su2double[nMarker_ActDiskInlet];
+  ActDiskInlet_MassFlow = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_Temperature = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_TotalTemperature = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_Pressure = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_TotalPressure = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_RamDrag = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_Force = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_Power = new su2double[nMarker_ActDiskInlet] ();
 
   for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDiskInlet[iMarker_ActDiskInlet];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ACTDISK_INLET;
-    ActDiskInlet_MassFlow[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_Temperature[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_TotalTemperature[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_Pressure[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_TotalPressure[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_RamDrag[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_Force[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_Power[iMarker_ActDiskInlet] = 0.0;
     iMarker_CfgFile++;
   }
 
-  ActDiskOutlet_MassFlow = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_Temperature = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_TotalTemperature = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_Pressure = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_TotalPressure = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_GrossThrust = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_Force = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_Power = new su2double[nMarker_ActDiskOutlet];
+  ActDiskOutlet_MassFlow = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_Temperature = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_TotalTemperature = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_Pressure = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_TotalPressure = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_GrossThrust = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_Force = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_Power = new su2double[nMarker_ActDiskOutlet] ();
 
   for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ACTDISK_OUTLET;
-    ActDiskOutlet_MassFlow[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_Temperature[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_TotalTemperature[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_Pressure[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_TotalPressure[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_GrossThrust[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_Force[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_Power[iMarker_ActDiskOutlet] = 0.0;
     iMarker_CfgFile++;
   }
 
-  Outlet_MassFlow = new su2double[nMarker_Outlet];
-  Outlet_Density  = new su2double[nMarker_Outlet];
-  Outlet_Area     = new su2double[nMarker_Outlet];
-  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-    Outlet_MassFlow[iMarker_Outlet] = 0.0;
-    Outlet_Density[iMarker_Outlet]  = 0.0;
-    Outlet_Area[iMarker_Outlet]     = 0.0;
-  }
+  Outlet_MassFlow = new su2double[nMarker_Outlet] ();
+  Outlet_Density  = new su2double[nMarker_Outlet] ();
+  Outlet_Area     = new su2double[nMarker_Outlet] ();
 
   for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_NearFieldBound[iMarker_NearFieldBound];
@@ -5226,69 +5131,42 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  Engine_Power       = new su2double[nMarker_EngineInflow];
-  Engine_Mach        = new su2double[nMarker_EngineInflow];
-  Engine_Force       = new su2double[nMarker_EngineInflow];
-  Engine_NetThrust   = new su2double[nMarker_EngineInflow];
-  Engine_GrossThrust = new su2double[nMarker_EngineInflow];
-  Engine_Area        = new su2double[nMarker_EngineInflow];
+  Engine_Power       = new su2double[nMarker_EngineInflow] ();
+  Engine_Mach        = new su2double[nMarker_EngineInflow] ();
+  Engine_Force       = new su2double[nMarker_EngineInflow] ();
+  Engine_NetThrust   = new su2double[nMarker_EngineInflow] ();
+  Engine_GrossThrust = new su2double[nMarker_EngineInflow] ();
+  Engine_Area        = new su2double[nMarker_EngineInflow] ();
 
-  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
-    Engine_Power[iMarker_EngineInflow] = 0.0;
-    Engine_Mach[iMarker_EngineInflow] = 0.0;
-    Engine_Force[iMarker_EngineInflow] = 0.0;
-    Engine_NetThrust[iMarker_EngineInflow] = 0.0;
-    Engine_GrossThrust[iMarker_EngineInflow] = 0.0;
-    Engine_Area[iMarker_EngineInflow] = 0.0;
-  }
-
-  Inflow_Mach = new su2double[nMarker_EngineInflow];
-  Inflow_Pressure = new su2double[nMarker_EngineInflow];
-  Inflow_MassFlow = new su2double[nMarker_EngineInflow];
-  Inflow_ReverseMassFlow = new su2double[nMarker_EngineInflow];
-  Inflow_TotalPressure = new su2double[nMarker_EngineInflow];
-  Inflow_Temperature = new su2double[nMarker_EngineInflow];
-  Inflow_TotalTemperature = new su2double[nMarker_EngineInflow];
-  Inflow_RamDrag = new su2double[nMarker_EngineInflow];
-  Inflow_Force = new su2double[nMarker_EngineInflow];
-  Inflow_Power = new su2double[nMarker_EngineInflow];
+  Inflow_Mach = new su2double[nMarker_EngineInflow] ();
+  Inflow_Pressure = new su2double[nMarker_EngineInflow] ();
+  Inflow_MassFlow = new su2double[nMarker_EngineInflow] ();
+  Inflow_ReverseMassFlow = new su2double[nMarker_EngineInflow] ();
+  Inflow_TotalPressure = new su2double[nMarker_EngineInflow] ();
+  Inflow_Temperature = new su2double[nMarker_EngineInflow] ();
+  Inflow_TotalTemperature = new su2double[nMarker_EngineInflow] ();
+  Inflow_RamDrag = new su2double[nMarker_EngineInflow] ();
+  Inflow_Force = new su2double[nMarker_EngineInflow] ();
+  Inflow_Power = new su2double[nMarker_EngineInflow] ();
 
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_EngineInflow[iMarker_EngineInflow];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ENGINE_INFLOW;
-    Inflow_Mach[iMarker_EngineInflow] = 0.0;
-    Inflow_Pressure[iMarker_EngineInflow] = 0.0;
-    Inflow_MassFlow[iMarker_EngineInflow] = 0.0;
-    Inflow_ReverseMassFlow[iMarker_EngineInflow] = 0.0;
-    Inflow_TotalPressure[iMarker_EngineInflow] = 0.0;
-    Inflow_Temperature[iMarker_EngineInflow] = 0.0;
-    Inflow_TotalTemperature[iMarker_EngineInflow] = 0.0;
-    Inflow_RamDrag[iMarker_EngineInflow] = 0.0;
-    Inflow_Force[iMarker_EngineInflow] = 0.0;
-    Inflow_Power[iMarker_EngineInflow] = 0.0;
     iMarker_CfgFile++;
   }
 
-  Exhaust_Pressure = new su2double[nMarker_EngineExhaust];
-  Exhaust_Temperature = new su2double[nMarker_EngineExhaust];
-  Exhaust_MassFlow = new su2double[nMarker_EngineExhaust];
-  Exhaust_TotalPressure = new su2double[nMarker_EngineExhaust];
-  Exhaust_TotalTemperature = new su2double[nMarker_EngineExhaust];
-  Exhaust_GrossThrust = new su2double[nMarker_EngineExhaust];
-  Exhaust_Force = new su2double[nMarker_EngineExhaust];
-  Exhaust_Power = new su2double[nMarker_EngineExhaust];
+  Exhaust_Pressure = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_Temperature = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_MassFlow = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_TotalPressure = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_TotalTemperature = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_GrossThrust = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_Force = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_Power = new su2double[nMarker_EngineExhaust] ();
 
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_EngineExhaust[iMarker_EngineExhaust];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ENGINE_EXHAUST;
-    Exhaust_Pressure[iMarker_EngineExhaust] = 0.0;
-    Exhaust_Temperature[iMarker_EngineExhaust] = 0.0;
-    Exhaust_MassFlow[iMarker_EngineExhaust] = 0.0;
-    Exhaust_TotalPressure[iMarker_EngineExhaust] = 0.0;
-    Exhaust_TotalTemperature[iMarker_EngineExhaust] = 0.0;
-    Exhaust_GrossThrust[iMarker_EngineExhaust] = 0.0;
-    Exhaust_Force[iMarker_EngineExhaust] = 0.0;
-    Exhaust_Power[iMarker_EngineExhaust] = 0.0;
     iMarker_CfgFile++;
   }
 

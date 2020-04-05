@@ -166,7 +166,8 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
            (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) ||
-           (config->GetMarker_All_Deform_Mesh(iMarker) == YES)) {
+           (config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
+           (config->GetMarker_All_Moving(iMarker) == YES)) {
         essentialMarkers.push_back(iMarker);
       }
     }
@@ -639,6 +640,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
   /*--- Exceptions: symmetry plane, the receive boundaries and periodic boundaries should get a different treatment. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
+        (config->GetMarker_All_Moving(iMarker) == NO) &&
         (config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
         (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
@@ -647,9 +649,10 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     }
   }
 
-  /*--- Symmetry plane is, for now, clamped. ---*/
+  /*--- Symmetry plane is clamped, for now. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
+        (config->GetMarker_All_Moving(iMarker) == NO) &&
         (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)) {
 
       BC_Clamped(geometry, numerics, config, iMarker);
@@ -658,7 +661,8 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
   /*--- Impose displacement boundary conditions. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Deform_Mesh(iMarker) == YES) {
+    if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
+        (config->GetMarker_All_Moving(iMarker) == YES)) {
 
       BC_Deforming(geometry, numerics, config, iMarker);
     }
@@ -765,7 +769,8 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetMarker_All_Deform_Mesh(iMarker) == YES) {
+    if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
+        (config->GetMarker_All_Moving(iMarker) == YES)) {
 
       for (unsigned long iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
