@@ -523,7 +523,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 				if ( NbrTag == Msh->NbrFld  ) {
 					PyObject *oo = PyList_GetItem(pySolHeader,j);
 		       		if ( PyFloat_Check(oo) ) {
-						sprintf(Msh->SolTag[j], "%s", (char*) PyBytes_AsString(oo));
+						sprintf(Msh->SolTag[j], "%s", PyBytes_AsString(oo));
 					}
 				}
 				else {
