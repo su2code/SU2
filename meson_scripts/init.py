@@ -48,7 +48,7 @@ def init_submodules(method = 'auto'):
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
   sha_version_medi = 'edde14f9ac4026b72b1e130f61c0a78e8652afa5'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
-  sha_version_amg = '2e15dd35e0a86ba7b8682a380a685c4955624497'
+  sha_version_amg = '09de3814440654146be93babc8ef1773bec49442'
   github_repo_amg = 'https://github.com/bmunguia/AMGIO'
   sha_version_meson = '0435691e83fb7172e2a9635d2eb32d5521089916'
   github_repo_meson = 'https://github.com/mesonbuild/meson'
@@ -107,6 +107,7 @@ def init_submodules(method = 'auto'):
     missing = required - installed
 
     if '_amgio' in missing:
+      print('Installing _amgio.')
       cmd = sys.executable
       amg_ext_dir  = alt_name_amg + '/su2io'
       subprocess.call([cmd,'setup.py','build_ext'], cwd = amg_ext_dir, stdout = log, stderr = err)
