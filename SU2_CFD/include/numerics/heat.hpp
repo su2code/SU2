@@ -2,7 +2,7 @@
  * \file heat.hpp
  * \brief Delarations of numerics classes for heat transfer problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for scalar centered scheme.
  * \ingroup ConvDiscr
  * \author O. Burghardt
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  */
 class CCentSca_Heat : public CNumerics {
 
@@ -81,7 +81,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the heat convection equation.
  * \ingroup ConvDiscr
  * \author O. Burghardt.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  */
 class CUpwSca_Heat : public CNumerics {
 private:
@@ -119,7 +119,7 @@ public:
  * \brief Class for computing viscous term using average of gradients without correction (heat equation).
  * \ingroup ViscDiscr
  * \author O. Burghardt.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  */
 class CAvgGrad_Heat : public CNumerics {
 private:
@@ -160,7 +160,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (heat equation).
  * \ingroup ViscDiscr
  * \author O. Burghardt.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  */
 class CAvgGradCorrected_Heat : public CNumerics {
 private:

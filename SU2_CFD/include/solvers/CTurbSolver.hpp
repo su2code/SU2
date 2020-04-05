@@ -2,7 +2,7 @@
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,7 +55,7 @@ protected:
   Gamma_Minus_One,              /*!< \brief Fluids's Gamma - 1.0  . */
   ***Inlet_TurbVars = nullptr;  /*!< \brief Turbulence variables at inlet profiles */
 
-  /* Sliding meshes variables */
+  /*--- Sliding meshes variables. ---*/
 
   su2double ****SlidingState = nullptr;
   int **SlidingStateNodes = nullptr;
@@ -64,10 +64,15 @@ protected:
 
 #ifdef HAVE_OMP
   vector<GridColor<> > EdgeColoring;   /*!< \brief Edge colors. */
+  bool ReducerStrategy = false;        /*!< \brief If the reducer strategy is in use. */
 #else
   array<DummyGridColor<>,1> EdgeColoring;
+  /*--- Never use the reducer strategy if compiling for MPI-only. ---*/
+  static constexpr bool ReducerStrategy = false;
 #endif
-  unsigned long ColorGroupSize; /*!< \brief Group size used for coloring, chunk size in edge loops must be a multiple of this. */
+
+  /*--- Edge fluxes for reducer strategy (see the notes in CEulerSolver.hpp). ---*/
+  CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
 
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use.
@@ -78,6 +83,28 @@ protected:
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
+
+private:
+
+  /*!
+   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
+   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Viscous_Residual(unsigned long iEdge,
+                        CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *numerics,
+                        CConfig *config);
+
+  /*!
+   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SumEdgeFluxes(CGeometry* geometry);
 
 public:
 
@@ -106,28 +133,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-
   void Upwind_Residual(CGeometry *geometry,
                        CSolver **solver_container,
                        CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) override;
-
-  /*!
-   * \brief Compute the viscous residuals for the turbulent equation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  void Viscous_Residual(CGeometry *geometry,
-                        CSolver **solver_container,
-                        CNumerics **numerics_container,
-                        CConfig *config,
-                        unsigned short iMesh,
-                        unsigned short iRKStep) override;
 
   /*!
    * \brief Impose the Symmetry Plane boundary condition.

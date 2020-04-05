@@ -3,7 +3,7 @@
  * \brief Headers of classes used for multiphysics interpolation.
  *        The implementation is in the <i>interpolation_structure.cpp</i> file.
  * \author H. Kline
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
