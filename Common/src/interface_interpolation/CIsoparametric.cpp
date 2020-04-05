@@ -55,8 +55,8 @@ CIsoparametric::CIsoparametric(CGeometry ****geometry_container, const CConfig* 
 
 void CIsoparametric::PrintStatistics(void) const {
   if (rank != MASTER_NODE) return;
-  cout << " Maximum distance to closest donor element: " << MaxDistance << ".\n"
-       << " Interpolation mitigated for " << ErrorCounter << " (" << ErrorRate << "%) target vertices." << endl;
+  cout << "  Maximum distance to closest donor element: " << MaxDistance << ".\n"
+       << "  Interpolation mitigated for " << ErrorCounter << " (" << ErrorRate << "%) target vertices." << endl;
 }
 
 void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {

@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -28,25 +28,15 @@
 
 #include "../../../include/interfaces/fsi/CFlowTractionInterface.hpp"
 
-CFlowTractionInterface::CFlowTractionInterface(void) : CInterface() {
 
-}
-
-CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) :
-  CInterface(val_nVar, val_nConst, config) {
-
-}
-
-CFlowTractionInterface::~CFlowTractionInterface(void) {
+CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
+                                               CConfig *config, bool integrate_tractions_) :
+  CInterface(val_nVar, val_nConst, config),
+  integrate_tractions(integrate_tractions_) {
 
 }
 
 void CFlowTractionInterface::Preprocess(CConfig *flow_config) {
-
-  /*--- Store if consistent interpolation is in use, in which case we need to transfer stresses
-        and integrate on the structural side rather than directly transferring forces. ---*/
-  consistent_interpolation = (!flow_config->GetConservativeInterpolation() ||
-                              (flow_config->GetKindInterpolation() == WEIGHTED_AVERAGE));
 
   /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
   su2double *Velocity_ND, *Velocity_Real;
@@ -139,7 +129,7 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
   su2double Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
   su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
   su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
-  su2double area = 0.0;
+  su2double oneOnArea = 1.0;
 
   su2double Pinf = flow_solution->GetPressure_Inf();
 
@@ -147,11 +137,11 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
   // Get the normal at the vertex: this normal goes inside the fluid domain.
   Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
 
-  if (consistent_interpolation)
-    for (iVar = 0; iVar < nVar; ++iVar) area += Normal_Flow[iVar]*Normal_Flow[iVar];
-  else
-    area = 1.0;
-  area = sqrt(area);
+  // If we do not want integrated tractions, i.e. forces, we will need to divide by area.
+  if (!integrate_tractions) {
+    for (iVar = 0; iVar < nVar; ++iVar) oneOnArea += pow(Normal_Flow[iVar], 2);
+    oneOnArea = 1.0 / sqrt(oneOnArea);
+  }
 
   // Retrieve the values of pressure
 
@@ -192,7 +182,7 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
   // Redimensionalize and take into account ramp transfer of the loads
   for (iVar = 0; iVar < nVar; iVar++) {
-    Donor_Variable[iVar] *= Physical_Constants[0] * Physical_Constants[1] / area;
+    Donor_Variable[iVar] *= Physical_Constants[0] * Physical_Constants[1] * oneOnArea;
   }
 
 }

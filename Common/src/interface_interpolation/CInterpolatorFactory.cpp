@@ -46,7 +46,7 @@ CInterpolator* createInterpolator(CGeometry ****geometry_container,
   /*--- Type of interpolation defined by donor. ---*/
   const auto type = config[iZone]->GetKindInterpolation();
 
-  if (verbose) cout << "Setting coupling ";
+  if (verbose) cout << " Setting coupling ";
 
   /*--- Conservative interpolation is not applicable to the sliding
    *    mesh approach so that case is handled first. Then we either

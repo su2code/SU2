@@ -53,13 +53,13 @@ CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, con
 void CRadialBasisFunction::PrintStatistics() const {
   if (rank != MASTER_NODE) return;
   cout.precision(3);
-  cout << " Min/avg/max number of RBF donors per target point: "
+  cout << "  Min/avg/max number of RBF donors per target point: "
        << MinDonors << "/" << AvgDonors << "/" << MaxDonors << "\n"
-       << " Avg/max correction factor after pruning: " << AvgCorrection << "/" << MaxCorrection;
+       << "  Avg/max correction factor after pruning: " << AvgCorrection << "/" << MaxCorrection;
   if (MaxCorrection < 1.1 || AvgCorrection < 1.02) cout << " (ok)\n";
   else if (MaxCorrection < 2.0 && AvgCorrection < 1.05) cout << " (warning)\n";
   else cout << " <<< WARNING >>>\n";
-  cout << " Interpolation matrix is " << Density << "% dense." << endl;
+  cout << "  Interpolation matrix is " << Density << "% dense." << endl;
   cout.unsetf(ios::floatfield);
 }
 

@@ -52,7 +52,7 @@ CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, const CConf
 
 void CNearestNeighbor::PrintStatistics() const {
   if (rank != MASTER_NODE) return;
-  cout << " Avg/max distance to closest donor point: " << AvgDistance << "/" << MaxDistance << endl;
+  cout << "  Avg/max distance to closest donor point: " << AvgDistance << "/" << MaxDistance << endl;
 }
 
 void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {

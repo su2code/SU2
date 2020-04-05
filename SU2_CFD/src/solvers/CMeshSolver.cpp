@@ -617,6 +617,12 @@ void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config){
 
 void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config){
 
+  /* Surface motions are not applied during discrete adjoint runs as the corresponding
+   * boundary displacements are computed when loading the primal solution, and it
+   * would be complex to account for the incremental nature of these motions.
+   * The derivatives are still correct since the motion does not depend on the solution,
+   * but this means that (for now) we cannot get derivatives w.r.t. motion parameters. */
+
   if (config->GetSurface_Movement(DEFORMING) && !config->GetDiscrete_Adjoint()) {
     if (rank == MASTER_NODE)
       cout << endl << " Updating surface positions." << endl;
@@ -984,9 +990,8 @@ void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigne
 
         /*--- Set node displacement for volume deformation ---*/
 
-        for (iDim = 0; iDim < nDim; iDim++){
+        for (iDim = 0; iDim < nDim; iDim++)
           VarCoordAbs[iDim] = nodes->GetBound_Disp(iPoint, iDim) + VarCoord[iDim];
-        }
 
         nodes->SetBound_Disp(iPoint, VarCoordAbs);
       }

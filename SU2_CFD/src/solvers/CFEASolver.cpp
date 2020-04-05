@@ -778,8 +778,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   const bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   const bool body_forces = config->GetDeadLoad();
   const bool fsi = config->GetFSI_Simulation();
-  const bool consistent_interpolation = (!config->GetConservativeInterpolation() ||
-                                        (config->GetKindInterpolation() == WEIGHTED_AVERAGE));
+  const bool consistent_interpolation = !config->GetConservativeInterpolation();
   const bool topology_mode = config->GetTopology_Optimization();
 
   /*

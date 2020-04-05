@@ -2495,19 +2495,19 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
 }
 
 void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGeometry**** geometry,
-                                      unsigned short** interface_types, CInterface ***&interface,
+                                      unsigned short** interface_types, CInterface ***interface,
                                       CInterpolator ***interpolation) {
 
   /*--- Setup interpolation and transfer for all possible donor/target pairs. ---*/
 
-  for (auto targetZone = 0u; targetZone < nZone; targetZone++) {
+  for (auto target = 0u; target < nZone; target++) {
 
-    for (auto donorZone = 0u; donorZone < nZone; donorZone++) {
+    for (auto donor = 0u; donor < nZone; donor++) {
 
-      /*--- Alias to make code less verbose. ---*/
-      auto& interface_type = interface_types[donorZone][targetZone];
+      /*--- Aliases to make code less verbose. ---*/
+      auto& interface_type = interface_types[donor][target];
 
-      if (donorZone == targetZone) {
+      if (donor == target) {
         interface_type = ZONES_ARE_EQUAL;
         continue;
       }
@@ -2515,73 +2515,65 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
       /*--- If there is a common interface setup the interpolation and transfer. ---*/
 
-      if (!CInterpolator::CheckZonesInterface(config[donorZone], config[targetZone])) {
+      if (!CInterpolator::CheckZonesInterface(config[donor], config[target])) {
         interface_type = NO_COMMON_INTERFACE;
       }
       else {
-        /*--- Begin the creation of the communication pattern among zones ---*/
+        /*--- Begin the creation of the communication pattern among zones. ---*/
 
-        if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
+        if (rank == MASTER_NODE) cout << "From zone " << donor << " to zone " << target << ":" << endl;
 
         /*--- Setup the interpolation. ---*/
 
-        interpolation[donorZone][targetZone] = CInterpolatorFactory::createInterpolator(geometry, config, donorZone, targetZone);
+        interpolation[donor][target] = CInterpolatorFactory::createInterpolator(geometry, config, donor, target);
 
         /*--- The type of variables transferred depends on the donor/target physics. ---*/
 
-        const bool heat_target = config[targetZone]->GetHeatProblem();
-        const bool fluid_target = config[targetZone]->GetFluidProblem();
-        const bool structural_target = config[targetZone]->GetStructuralProblem();
+        const bool heat_target = config[target]->GetHeatProblem();
+        const bool fluid_target = config[target]->GetFluidProblem();
+        const bool structural_target = config[target]->GetStructuralProblem();
 
-        const bool heat_donor = config[donorZone]->GetHeatProblem();
-        const bool fluid_donor = config[donorZone]->GetFluidProblem();
-        const bool structural_donor = config[donorZone]->GetStructuralProblem();
+        const bool heat_donor = config[donor]->GetHeatProblem();
+        const bool fluid_donor = config[donor]->GetFluidProblem();
+        const bool structural_donor = config[donor]->GetStructuralProblem();
 
-        /*--- Retrieve the number of conservative variables as default. ---*/
+        /*--- Initialize the appropriate transfer strategy. ---*/
 
-        auto nVar = solver[donorZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-
-        /*--- If at least one of the zones is structural. ---*/
-        if (structural_donor || structural_target) nVar = nDim;
-
-        /*--- If at least one of the zones has heat transfer. ---*/
-        if (heat_donor || heat_target) nVar = 4;
-
-        /*--- Initialize the appropriate transfer strategy ---*/
-        if (rank == MASTER_NODE) cout << "Transferring ";
+        if (rank == MASTER_NODE) cout << " Transferring ";
 
         if (fluid_donor && structural_target) {
           interface_type = FLOW_TRACTION;
-          auto nVarTransfer = 2;
+          auto nConst = 2;
+          bool conservative = config[target]->GetConservativeInterpolation();
           if(!config[ZONE_0]->GetDiscrete_Adjoint()) {
-            interface[donorZone][targetZone] = new CFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
+            interface[donor][target] = new CFlowTractionInterface(nDim, nConst, config[donor], conservative);
           } else {
-            interface[donorZone][targetZone] = new CDiscAdjFlowTractionInterface(nVar, nVarTransfer, config[donorZone]);
+            interface[donor][target] = new CDiscAdjFlowTractionInterface(nDim, nConst, config[donor], conservative);
           }
           if (rank == MASTER_NODE) cout << "flow tractions. " << endl;
         }
         else if (structural_donor && fluid_target) {
-          if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] == nullptr) {
+          if (solver_container[target][INST_0][MESH_0][MESH_SOL] == nullptr) {
             SU2_MPI::Error("Mesh deformation was not correctly specified for the fluid zone.\n"
                            "Use DEFORM_MESH=YES, and setup MARKER_DEFORM_MESH=(...)", CURRENT_FUNCTION);
           }
           interface_type = BOUNDARY_DISPLACEMENTS;
-          interface[donorZone][targetZone] = new CDisplacementsInterface(nVar, 0, config[donorZone]);
+          interface[donor][target] = new CDisplacementsInterface(nDim, 0, config[donor]);
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver." << endl;
         }
         else if (fluid_donor && fluid_target) {
           interface_type = SLIDING_INTERFACE;
-          nVar = solver[donorZone][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
-          interface[donorZone][targetZone] = new CSlidingInterface(nVar, 0, config[donorZone]);
+          auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
+          interface[donor][target] = new CSlidingInterface(nVar, 0, config[donor]);
           if (rank == MASTER_NODE) cout << "sliding interface." << endl;
         }
         else if (heat_donor || heat_target) {
           if (heat_donor && heat_target)
             SU2_MPI::Error("Conjugate heat transfer between solids is not implemented.", CURRENT_FUNCTION);
 
-          const auto fluidZone = heat_target? donorZone : targetZone;
+          const auto fluidZone = heat_target? donor : target;
 
-          if(config[fluidZone]->GetEnergy_Equation() || (config[fluidZone]->GetKind_Regime() == COMPRESSIBLE))
+          if (config[fluidZone]->GetEnergy_Equation() || (config[fluidZone]->GetKind_Regime() == COMPRESSIBLE))
             interface_type = heat_target? CONJUGATE_HEAT_FS : CONJUGATE_HEAT_SF;
           else if (config[fluidZone]->GetWeakly_Coupled_Heat())
             interface_type = heat_target? CONJUGATE_HEAT_WEAKLY_FS : CONJUGATE_HEAT_WEAKLY_SF;
@@ -2589,26 +2581,31 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
             interface_type = NO_TRANSFER;
 
           if (interface_type != NO_TRANSFER) {
-            interface[donorZone][targetZone] = new CConjugateHeatInterface(nVar, 0, config[donorZone]);
+            auto nVar = 4;
+            interface[donor][target] = new CConjugateHeatInterface(nVar, 0, config[donor]);
             if (rank == MASTER_NODE) cout << "conjugate heat variables." << endl;
           }
         }
         else {
+          if (solver[donor][INST_0][MESH_0][FLOW_SOL] == nullptr)
+            SU2_MPI::Error("Could not determine the number of variables for transfer.", CURRENT_FUNCTION);
+
+          auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
           interface_type = CONSERVATIVE_VARIABLES;
-          interface[donorZone][targetZone] = new CConservativeVarsInterface(nVar, 0, config[donorZone]);
+          interface[donor][target] = new CConservativeVarsInterface(nVar, 0, config[donor]);
           if (rank == MASTER_NODE) cout << "generic conservative variables." << endl;
         }
       }
 
       /*--- Mixing plane for turbo machinery applications. ---*/
 
-      if (config[donorZone]->GetBoolMixingPlaneInterface()) {
+      if (config[donor]->GetBoolMixingPlaneInterface()) {
         interface_type = MIXING_PLANE;
-        auto nVar = solver[donorZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-        interface[donorZone][targetZone] = new CMixingPlaneInterface(nVar, 0, config[donorZone], config[targetZone]);
+        auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+        interface[donor][target] = new CMixingPlaneInterface(nVar, 0, config[donor], config[target]);
         if (rank == MASTER_NODE) {
           cout << "Set mixing-plane interface from donor zone "
-               << donorZone << " to target zone " << targetZone << "." << endl;
+               << donor << " to target zone " << target << "." << endl;
         }
       }
 
