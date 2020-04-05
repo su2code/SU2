@@ -101,19 +101,19 @@ def init_submodules(method = 'auto'):
   # Setup AMG interface
   # Require at least python 3.7 for pyamg
   if sys.version_info >= (3, 7):
-    cmd = sys.executable
-    amg_ext_dir  = alt_name_amg + '/su2io'
-    subprocess.call([cmd,'setup.py','build_ext'], cwd = amg_ext_dir, stdout = log, stderr = err)
-    subprocess.call([cmd,'setup.py','install','--user'], cwd = amg_ext_dir, stdout = log, stderr = err)
-
-    # Setup pyamg
     import pkg_resources
-
-    required = {'pyamg'}
+    required = {'pyamg','_amgio'}
     installed = {pkg.key for pkg in pkg_resources.working_set}
     missing = required - installed
 
-    if missing:
+    if '_amgio' in missing:
+      cmd = sys.executable
+      amg_ext_dir  = alt_name_amg + '/su2io'
+      subprocess.call([cmd,'setup.py','build_ext'], cwd = amg_ext_dir, stdout = log, stderr = err)
+      subprocess.call([cmd,'setup.py','install','--user'], cwd = amg_ext_dir, stdout = log, stderr = err)
+
+    # Setup pyamg
+    if 'pyamg' in missing:
       install_pyamg(log, err)
 
 def is_git_directory(path = '.'):

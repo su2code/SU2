@@ -365,19 +365,19 @@ def init_inria(argument_dict, modes, update = False):
     submodule_check(amg_name, alt_name_amg, github_repo_amg, sha_version_amg, log, err, update)
 
     # Setup AMG interface
-    cmd = sys.executable
-    amg_ext_dir  = alt_name_amg + '/su2io'
-    subprocess.call([cmd,'setup.py','build_ext'], cwd = amg_ext_dir, stdout = log, stderr = err)
-    subprocess.call([cmd,'setup.py','install','--user'], cwd = amg_ext_dir, stdout = log, stderr = err)
-
-    # Install pyAMG
     import pkg_resources
-
-    required = {'pyamg'}
+    required = {'pyamg','_amgio'}
     installed = {pkg.key for pkg in pkg_resources.working_set}
     missing = required - installed
 
-    if missing:
+    if '_amgio' in missing:
+        cmd = sys.executable
+        amg_ext_dir  = alt_name_amg + '/su2io'
+        subprocess.call([cmd,'setup.py','build_ext'], cwd = amg_ext_dir, stdout = log, stderr = err)
+        subprocess.call([cmd,'setup.py','install','--user'], cwd = amg_ext_dir, stdout = log, stderr = err)
+
+    # Install pyAMG
+    if 'pyamg' in missing:
         if sys.platform == 'linux' or sys.platform == 'linux2':
             print('Installing pyAMG for Linux.')
             pyamg_whl = 'pyamg-1.0.0-cp37-cp37m-linux_x86_64.whl'
