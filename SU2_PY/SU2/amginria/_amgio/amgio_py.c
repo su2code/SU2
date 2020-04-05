@@ -497,7 +497,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
   {
 		for (i=0; i<NbrMarkers; i++){
 			PyObject *oo = PyList_GetItem(pyMarkers,i);
-			strcpy(Msh->Markers[i], (char*) PyBytes_AsString(oo));	
+			strcpy(Msh->Markers[i], PyBytes_AsString(oo));	
 		}
 		Msh->NbrMarkers = NbrMarkers;
 	}
@@ -928,7 +928,7 @@ void py_WriteSolution(char *SolNam, PyObject *pyVer, PyObject *pySol, PyObject *
 	       	PyObject *oo = PyList_GetItem(pySolHeader,j);
 	       	if ( PyFloat_Check(oo) )
 	       	{
-						sprintf(SolTag[j], "%s", (char*) PyBytes_AsString(oo));
+						sprintf(SolTag[j], "%s", PyBytes_AsString(oo));
 	       	}
 				}
 				else 
