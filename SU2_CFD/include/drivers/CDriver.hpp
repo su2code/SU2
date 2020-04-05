@@ -205,7 +205,7 @@ protected:
    */
   void Interface_Preprocessing(CConfig **config, CSolver *****solver, CGeometry ****geometry,
                                unsigned short **interface_types, CInterface ***&interface,
-                               CInterpolator ***&interpolation);
+                               CInterpolator ***interpolation);
 
   /*!
    * \brief Definition and allocation of all solver classes.

@@ -47,7 +47,7 @@ struct DonorInfo {
 
 CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, const CConfig* const* config,  unsigned int iZone,
                                    unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
-  Set_TransferCoeff(config);
+  SetTransferCoeff(config);
 }
 
 void CNearestNeighbor::PrintStatistics() const {
@@ -55,7 +55,7 @@ void CNearestNeighbor::PrintStatistics() const {
   cout << " Avg/max distance to closest donor point: " << AvgDistance << "/" << MaxDistance << endl;
 }
 
-void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
+void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
 
   /*--- Desired number of donor points. ---*/
   const auto nDonor = max<unsigned long>(config[donorZone]->GetNumNearestNeighbors(), 1);
@@ -79,10 +79,10 @@ void CNearestNeighbor::Set_TransferCoeff(const CConfig* const* config) {
   for (unsigned short iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
 
     /*--- On the donor side: find the tag of the boundary sharing the interface. ---*/
-    const auto markDonor = Find_InterfaceMarker(config[donorZone], iMarkerInt);
+    const auto markDonor = FindInterfaceMarker(config[donorZone], iMarkerInt);
 
     /*--- On the target side: find the tag of the boundary sharing the interface. ---*/
-    const auto markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+    const auto markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt);
 
     /*--- Checks if the zone contains the interface, if not continue to the next step. ---*/
     if (!CheckInterfaceBoundary(markDonor, markTarget)) continue;

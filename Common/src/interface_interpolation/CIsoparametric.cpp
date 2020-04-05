@@ -34,6 +34,7 @@
 
 using namespace GeometryToolbox;
 
+
 /*! \brief Helper struct to store information about candidate donor elements. */
 struct DonorInfo {
   su2double isoparams[4] = {0.0};  /*!< \brief Interpolation coefficients. */
@@ -47,10 +48,9 @@ struct DonorInfo {
   }
 };
 
-
 CIsoparametric::CIsoparametric(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
                                unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
-  Set_TransferCoeff(config);
+  SetTransferCoeff(config);
 }
 
 void CIsoparametric::PrintStatistics(void) const {
@@ -59,7 +59,7 @@ void CIsoparametric::PrintStatistics(void) const {
        << " Interpolation mitigated for " << ErrorCounter << " (" << ErrorRate << "%) target vertices." << endl;
 }
 
-void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
+void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
 
   const int nProcessor = size;
   const auto nMarkerInt = config[donorZone]->GetMarker_n_ZoneInterface()/2;
@@ -82,10 +82,10 @@ void CIsoparametric::Set_TransferCoeff(const CConfig* const* config) {
      */
 
     /*--- On the donor side: find the tag of the boundary sharing the interface. ---*/
-    const auto markDonor = Find_InterfaceMarker(config[donorZone], iMarkerInt);
+    const auto markDonor = FindInterfaceMarker(config[donorZone], iMarkerInt);
 
     /*--- On the target side: find the tag of the boundary sharing the interface. ---*/
-    const auto markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+    const auto markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt);
 
     /*--- Checks if the zone contains the interface, if not continue to the next step. ---*/
     if (!CheckInterfaceBoundary(markDonor, markTarget)) continue;

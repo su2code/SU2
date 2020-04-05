@@ -285,7 +285,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (unsigned short jZone = 0; jZone < nZone; jZone++){
         if(jZone != iZone && interpolator_container[iZone][jZone] != NULL && prefixed_motion[iZone])
-          interpolator_container[iZone][jZone]->Set_TransferCoeff(config_container);
+          interpolator_container[iZone][jZone]->SetTransferCoeff(config_container);
       }
     }
   }

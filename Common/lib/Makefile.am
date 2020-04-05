@@ -93,6 +93,7 @@ lib_sources = \
   ../src/geometry/primal_grid/CTetrahedron.cpp \
   ../src/geometry/primal_grid/CQuadrilateral.cpp \
   ../src/geometry/primal_grid/CVertexMPI.cpp \
+  ../src/interface_interpolation/CInterpolatorFactory.cpp \
   ../src/interface_interpolation/CInterpolator.cpp \
   ../src/interface_interpolation/CMirror.cpp \
   ../src/interface_interpolation/CSlidingMesh.cpp \

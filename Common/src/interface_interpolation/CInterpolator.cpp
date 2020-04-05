@@ -41,7 +41,7 @@ CInterpolator::CInterpolator(CGeometry ****geometry_container, const CConfig* co
   target_geometry(geometry_container[jZone][INST_0][MESH_0]) {
 }
 
-int CInterpolator::Find_InterfaceMarker(const CConfig *config, unsigned short val_marker_interface) {
+int CInterpolator::FindInterfaceMarker(const CConfig *config, unsigned short val_marker_interface) {
 
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     /*--- If the tag GetMarker_All_ZoneInterface(iMarker) equals the interface we are looking for. ---*/
@@ -58,6 +58,16 @@ bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget) {
   SU2_MPI::Allreduce(&markDonor, &donorCheck, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&markTarget, &targetCheck, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
   return (donorCheck != -1) && (targetCheck != -1);
+}
+
+bool CInterpolator::CheckZonesInterface(const CConfig* donor, const CConfig* target) {
+
+  /*--- Loop over all interface markers to find if the 2 zones share any interface boundary. ---*/
+  for (auto iInter = 1u; iInter <= (donor->GetMarker_n_ZoneInterface()/2); iInter++) {
+    if (CheckInterfaceBoundary(FindInterfaceMarker(donor, iInter), FindInterfaceMarker(target, iInter)))
+      return true;
+  }
+  return false;
 }
 
 void CInterpolator::Determine_ArraySize(int markDonor, int markTarget,

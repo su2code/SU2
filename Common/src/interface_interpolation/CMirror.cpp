@@ -28,14 +28,20 @@
 #include "../../include/interface_interpolation/CMirror.hpp"
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
+#include "../../include/toolboxes/printing_toolbox.hpp"
 
 
 CMirror::CMirror(CGeometry ****geometry_container, const CConfig* const* config,  unsigned int iZone,
                  unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
-  Set_TransferCoeff(config);
+  using PrintingToolbox::to_string;
+  if (jZone < iZone) {
+    SU2_MPI::Error(string("The order of the zones does not allow conservative interpolation to be setup.\n"
+      "Swap zones ") + to_string(iZone) + string(" and ") + to_string(jZone) + string("."),CURRENT_FUNCTION);
+  }
+  SetTransferCoeff(config);
 }
 
-void CMirror::Set_TransferCoeff(const CConfig* const* config) {
+void CMirror::SetTransferCoeff(const CConfig* const* config) {
 
   const int nProcessor = size;
 
@@ -54,10 +60,10 @@ void CMirror::Set_TransferCoeff(const CConfig* const* config) {
     */
 
     /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
-    const auto markDonor = Find_InterfaceMarker(config[donorZone], iMarkerInt);
+    const auto markDonor = FindInterfaceMarker(config[donorZone], iMarkerInt);
 
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
-    const auto markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+    const auto markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt);
 
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
     if(!CheckInterfaceBoundary(markDonor, markTarget)) continue;

@@ -1365,9 +1365,9 @@ void CMeshSolver::Surface_Translating(CGeometry *geometry, CConfig *config, unsi
     /*-- Check if we want to update the motion origin for the given marker ---*/
 
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
-      for (iDim = 0; iDim < 3; iDim++){
+      for (iDim = 0; iDim < 3; iDim++)
         Center[iDim] += VarCoord[iDim];
-      }
+
       config->SetMarkerMotion_Origin(Center, jMarker);
     }
   }

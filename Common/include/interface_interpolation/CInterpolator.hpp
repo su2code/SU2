@@ -119,7 +119,7 @@ public:
    * \note Main method that derived classes must implement.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Set_TransferCoeff(const CConfig* const* config) = 0;
+  virtual void SetTransferCoeff(const CConfig* const* config) = 0;
 
   /*!
    * \brief Print information about the interpolation.
@@ -131,7 +131,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker_interface - Interface tag.
    */
-  static int Find_InterfaceMarker(const CConfig *config, unsigned short val_marker_interface);
+  static int FindInterfaceMarker(const CConfig *config, unsigned short val_marker_interface);
 
   /*!
    * \brief Check whether an interface should be processed or not, i.e. if it is part of the zones.
@@ -139,6 +139,13 @@ public:
    * \param[in] val_markTarget - Marker tag from target zone.
    */
   static bool CheckInterfaceBoundary(int val_markDonor, int val_markTarget);
+
+  /*!
+   * \brief Check whether two zones have a common interface.
+   * \param[in] donor - Configuration of the donor zone.
+   * \param[in] target - Configuration of the target zone.
+   */
+  static bool CheckZonesInterface(const CConfig* donor, const CConfig* target);
 
 protected:
   /*!

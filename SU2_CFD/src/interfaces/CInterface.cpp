@@ -95,8 +95,8 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
 
     /*--- Check if this interface connects the two zones, if not continue. ---*/
 
-    Marker_Donor = CInterpolator::Find_InterfaceMarker(donor_config, iMarkerInt);
-    Marker_Target = CInterpolator::Find_InterfaceMarker(target_config, iMarkerInt);
+    Marker_Donor = CInterpolator::FindInterfaceMarker(donor_config, iMarkerInt);
+    Marker_Target = CInterpolator::FindInterfaceMarker(target_config, iMarkerInt);
 
     if(!CInterpolator::CheckInterfaceBoundary(Marker_Donor, Marker_Target)) continue;
 

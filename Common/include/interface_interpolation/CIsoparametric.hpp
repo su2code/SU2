@@ -53,7 +53,7 @@ public:
    * \brief Set up transfer matrix defining relation between two meshes
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_TransferCoeff(const CConfig* const* config) override;
+  void SetTransferCoeff(const CConfig* const* config) override;
 
   /*!
    * \brief Print information about the interpolation.

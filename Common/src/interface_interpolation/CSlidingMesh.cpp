@@ -33,10 +33,10 @@
 
 CSlidingMesh::CSlidingMesh(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
                            unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
-  Set_TransferCoeff(config);
+  SetTransferCoeff(config);
 }
 
-void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
+void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
   /* 0 - Variable declaration */
 
@@ -123,10 +123,10 @@ void CSlidingMesh::Set_TransferCoeff(const CConfig* const* config) {
   for ( iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++ ){
 
     /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
-    markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
+    markDonor  = FindInterfaceMarker(config[donorZone],  iMarkerInt);
 
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
-    markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+    markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt);
 
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
     if(!CheckInterfaceBoundary(markDonor, markTarget)) continue;

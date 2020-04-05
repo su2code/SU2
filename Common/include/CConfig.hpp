@@ -3614,11 +3614,39 @@ public:
   void SetKind_Solver(unsigned short val_solver) { Kind_Solver = val_solver; }
 
   /*!
+   * \brief Return true if a fluid solver is in use.
+   */
+  bool GetFluidProblem(void) const {
+    switch (Kind_Solver) {
+      case EULER : case NAVIER_STOKES: case RANS:
+      case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /*!
+   * \brief Return true if a structural solver is in use.
+   */
+  bool GetStructuralProblem(void) const {
+    return (Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM);
+  }
+
+  /*!
+   * \brief Return true if a heat solver is in use.
+   */
+  bool GetHeatProblem(void) const {
+    return (Kind_Solver == HEAT_EQUATION) || (Kind_Solver == DISC_ADJ_HEAT);
+  }
+
+  /*!
    * \brief Kind of Multizone Solver.
    * \return Governing equation that we are solving.
    */
   unsigned short GetKind_MZSolver(void) const { return Kind_MZSolver; }
-
 
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
@@ -8753,7 +8781,7 @@ public:
   /*!
    * \brief Get option of whether to use conservative interpolation between zones.
    */
-  bool GetConservativeInterpolation(void) const { return ConservativeInterpolation; }
+  bool GetConservativeInterpolation(void) const { return ConservativeInterpolation && GetStructuralProblem(); }
 
   /*!
    * \brief Get the basis function to use for radial basis function interpolation for FSI.

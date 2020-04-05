@@ -47,7 +47,7 @@ extern "C" void dgemm_(const char*, const char*, const int*, const int*, const i
 
 CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
                                            unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
-  Set_TransferCoeff(config);
+  SetTransferCoeff(config);
 }
 
 void CRadialBasisFunction::PrintStatistics() const {
@@ -93,7 +93,7 @@ su2double CRadialBasisFunction::Get_RadialBasisValue(ENUM_RADIALBASIS type, cons
   return rbf;
 }
 
-void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
+void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
   /*--- RBF options. ---*/
   const auto kindRBF = static_cast<ENUM_RADIALBASIS>(config[donorZone]->GetKindRadialBasisFunction());
@@ -121,10 +121,10 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
   for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; ++iMarkerInt) {
 
     /*--- On the donor side: find the tag of the boundary sharing the interface. ---*/
-    const auto markDonor = Find_InterfaceMarker(config[donorZone], iMarkerInt+1);
+    const auto markDonor = FindInterfaceMarker(config[donorZone], iMarkerInt+1);
 
     /*--- On the target side: find the tag of the boundary sharing the interface. ---*/
-    const auto markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt+1);
+    const auto markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt+1);
 
     /*--- If the zone does not contain the interface continue to the next pair of markers. ---*/
     if (!CheckInterfaceBoundary(markDonor,markTarget)) continue;
@@ -230,7 +230,7 @@ void CRadialBasisFunction::Set_TransferCoeff(const CConfig* const* config) {
     if (iProcessor < 0) continue;
 
     /*--- Setup target information. ---*/
-    const int markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt+1);
+    const int markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt+1);
     unsigned long nVertexTarget = 0;
     if (markTarget != -1) nVertexTarget = target_geometry->GetnVertex(markTarget);
 
