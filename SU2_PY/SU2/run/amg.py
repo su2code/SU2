@@ -42,6 +42,8 @@ from .. import io   as su2io
 from .. import amginria as su2amg
 from .interface import CFD as SU2_CFD
 
+import _amgio as amgio
+
 def amg ( config , kind='' ):
     
     sys.stdout.write("SU2-AMG Anisotropic Mesh Adaptation\n")
@@ -271,7 +273,7 @@ def amg ( config , kind='' ):
     if back_extension == ".su2":
         sys.stdout.write("\nGenerating GMF background surface mesh.\n")
         sys.stdout.flush()
-        _amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
+        amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
         config_amg['adap_back'] = "amg_back.meshb"
 
     if dim == 2:

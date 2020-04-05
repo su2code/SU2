@@ -36,8 +36,9 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 import os, sys
-import _amgio as amgio
 import numpy as np
+
+import _amgio as amgio
 import pyamg
 
 
