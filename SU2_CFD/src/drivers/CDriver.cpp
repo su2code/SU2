@@ -2550,7 +2550,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
           } else {
             interface[donor][target] = new CDiscAdjFlowTractionInterface(nDim, nConst, config[donor], conservative);
           }
-          if (rank == MASTER_NODE) cout << "flow tractions. " << endl;
+          if (rank == MASTER_NODE) cout << "fluid " << (conservative? "forces." : "tractions.") << endl;
         }
         else if (structural_donor && fluid_target) {
           if (solver_container[target][INST_0][MESH_0][MESH_SOL] == nullptr) {

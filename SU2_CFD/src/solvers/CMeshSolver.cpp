@@ -581,8 +581,8 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
       if (config->GetTime_Marching() == DT_STEPPING_1ST)
         GridVel = ( Disp_nP1[iDim] - Disp_n[iDim] ) / TimeStep;
       if (config->GetTime_Marching() == DT_STEPPING_2ND)
-        GridVel = ( 3.0*Disp_nP1[iDim] - 4.0*Disp_n[iDim]
-                    +  1.0*Disp_nM1[iDim] ) / (2.0*TimeStep);
+        GridVel = ( 3.0*Disp_nP1[iDim] - 4.0*Disp_n[iDim] +
+                    1.0*Disp_nM1[iDim] ) / (2.0*TimeStep);
 
       /*--- Store grid velocity for this point ---*/
 

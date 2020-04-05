@@ -467,7 +467,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Integrate_FSI_Loads(CGeometry *geometry, CConfig *config);
+  void Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Update the solution using an implicit solver.

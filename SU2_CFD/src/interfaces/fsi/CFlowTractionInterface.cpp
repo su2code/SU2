@@ -39,7 +39,7 @@ CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned
 void CFlowTractionInterface::Preprocess(CConfig *flow_config) {
 
   /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
-  su2double *Velocity_ND, *Velocity_Real;
+  const su2double *Velocity_ND, *Velocity_Real;
   su2double Density_ND,  Density_Real, Velocity2_Real, Velocity2_ND;
 
   Velocity_Real = flow_config->GetVelocity_FreeStream();
@@ -100,82 +100,66 @@ void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolv
 void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
                                                CConfig *flow_config, unsigned long Marker_Flow,
                                                unsigned long Vertex_Flow, unsigned long Point_Struct) {
-
-
   unsigned short iVar, jVar;
-  unsigned long Point_Flow;
-  su2double const *Normal_Flow;
 
   // Check the kind of fluid problem
-  bool compressible       = (flow_config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible     = (flow_config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool viscous_flow       = ((flow_config->GetKind_Solver() == NAVIER_STOKES) ||
-                             (flow_config->GetKind_Solver() == RANS) ||
-                             (flow_config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                             (flow_config->GetKind_Solver() == INC_RANS) ||
-                             (flow_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
-                             (flow_config->GetKind_Solver() == DISC_ADJ_RANS) ||
-                             (flow_config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
-                             (flow_config->GetKind_Solver() == DISC_ADJ_INC_RANS));
+  bool viscous_flow;
+  switch (flow_config->GetKind_Solver()) {
+    case RANS: case INC_RANS:
+    case NAVIER_STOKES: case INC_NAVIER_STOKES:
+    case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
+    case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES:
+      viscous_flow = true; break;
+    default:
+      viscous_flow = false; break;
+  }
 
-  // Parameters for the calculations
-  // Pn: Pressure
-  // Pinf: Pressure_infinite
-  // div_vel: Velocity divergence
-  // Dij: Dirac delta
-  // area: area of the face, needed if we transfer stress instead of force
-  su2double Pn = 0.0, div_vel = 0.0;
-  su2double Viscosity = 0.0;
-  su2double Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
-  su2double oneOnArea = 1.0;
+  const auto Point_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNode();
 
-  su2double Pinf = flow_solution->GetPressure_Inf();
-
-  Point_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNode();
   // Get the normal at the vertex: this normal goes inside the fluid domain.
-  Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
+  const su2double* Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
 
   // If we do not want integrated tractions, i.e. forces, we will need to divide by area.
+  su2double oneOnArea = 1.0;
   if (!integrate_tractions) {
+    oneOnArea = 0.0;
     for (iVar = 0; iVar < nVar; ++iVar) oneOnArea += pow(Normal_Flow[iVar], 2);
     oneOnArea = 1.0 / sqrt(oneOnArea);
   }
 
   // Retrieve the values of pressure
 
-  Pn = flow_solution->GetNodes()->GetPressure(Point_Flow);
+  CVariable* flow_nodes = flow_solution->GetNodes();
+  su2double Pinf = flow_solution->GetPressure_Inf();
+  su2double Pn = flow_nodes->GetPressure(Point_Flow);
 
   // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
+
   for (iVar = 0; iVar < nVar; iVar++)
     Donor_Variable[iVar] = -(Pn-Pinf)*Normal_Flow[iVar];
 
   // Calculate tn in the fluid nodes for the viscous term
 
-  if ((incompressible || compressible) && viscous_flow) {
+  if (viscous_flow) {
 
-    Viscosity = flow_solution->GetNodes()->GetLaminarViscosity(Point_Flow);
+    su2double Viscosity = flow_nodes->GetLaminarViscosity(Point_Flow);
 
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0 ; jVar < nVar; jVar++) {
-        Grad_Vel[iVar][jVar] = flow_solution->GetNodes()->GetGradient_Primitive(Point_Flow, iVar+1, jVar);
-      }
-    }
+    const su2double* const* GradVel = &flow_nodes->GetGradient_Primitive(Point_Flow)[1];
 
     // Divergence of the velocity
-    div_vel = 0.0; for (iVar = 0; iVar < nVar; iVar++) div_vel += Grad_Vel[iVar][iVar];
+    su2double DivVel = 0.0;
+    for (iVar = 0; iVar < nVar; iVar++) DivVel += GradVel[iVar][iVar];
 
     for (iVar = 0; iVar < nVar; iVar++) {
 
       for (jVar = 0 ; jVar < nVar; jVar++) {
 
         // Viscous stress
-        Tau[iVar][jVar] = Viscosity*(Grad_Vel[jVar][iVar] + Grad_Vel[iVar][jVar])
-                          - TWO3*Viscosity*div_vel*delta[iVar][jVar];
+        su2double delta_ij = (iVar == jVar);
+        su2double tau_ij = Viscosity*(GradVel[jVar][iVar] + GradVel[iVar][jVar] - TWO3*DivVel*delta_ij);
 
         // Viscous component in the tn vector --> Units of force (non-dimensional).
-        Donor_Variable[iVar] += Tau[iVar][jVar]*Normal_Flow[jVar];
+        Donor_Variable[iVar] += tau_ij * Normal_Flow[jVar];
       }
     }
   }

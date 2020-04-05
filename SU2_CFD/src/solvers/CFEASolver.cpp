@@ -778,7 +778,6 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   const bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   const bool body_forces = config->GetDeadLoad();
   const bool fsi = config->GetFSI_Simulation();
-  const bool consistent_interpolation = !config->GetConservativeInterpolation();
   const bool topology_mode = config->GetTopology_Optimization();
 
   /*
@@ -791,7 +790,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    */
   if (topology_mode && !topol_filter_applied) {
     geometry->SetElemVolume(config);
-    FilterElementDensities(geometry,config);
+    FilterElementDensities(geometry, config);
     topol_filter_applied = true;
   }
 
@@ -827,7 +826,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   /*
    * FSI loads (computed upstream) need to be integrated if a nonconservative interpolation scheme is in use
    */
-  if (fsi && first_iter && consistent_interpolation) Integrate_FSI_Loads(geometry,config);
+  if (fsi && first_iter) Integrate_FSI_Loads(geometry, config);
 
   /*--- Next call to Preprocessing will not be "initial_calc" and linear operations will not be repeated. ---*/
   initial_calc = false;
@@ -2148,7 +2147,10 @@ void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig 
 
 }
 
-void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, CConfig *config) {
+void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config) {
+
+  /*--- The conservative approach transfers forces directly, no integration needed. ---*/
+  if (config->GetConservativeInterpolation()) return;
 
   const auto nMarker = config->GetnMarker_All();
   const auto nMarkerInt = config->GetMarker_n_ZoneInterface()/2u;
