@@ -10,11 +10,11 @@ Options* AllocOptions()
   Options *mshopt = (Options*)malloc(sizeof(struct T_Options));
 
   mshopt->Mod       = -1;
-	mshopt->InpFilTyp = 0;
+  mshopt->InpFilTyp = 0;
 	
-	mshopt->flagSol = 0;
+  mshopt->flagSol = 0;
 	
-	mshopt->clean = 0;
+  mshopt->clean = 0;
 	
 	strcpy(mshopt->InpNam, "");
 	strcpy(mshopt->OutNam, "");

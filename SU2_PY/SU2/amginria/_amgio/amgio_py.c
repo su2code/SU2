@@ -551,28 +551,28 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 	//--- Write Mesh
 	
 	int FilTyp = GetInputFileType(MshNam);
-  char *ptr = NULL;
+    char *ptr = NULL;
 	char BasNam[1024], BasNamSol[1024], OutSol[1024];
 	
 	// --- Get BasNam
 	
-  strcpy(BasNam,MshNam);
+    strcpy(BasNam,MshNam);
 	
-  ptr = strstr(BasNam,".su2");	
-  if ( ptr != NULL )
-    BasNam[ptr-BasNam]='\0';
-  ptr = strstr(BasNam,".meshb");	
-  if ( ptr != NULL )
-    BasNam[ptr-BasNam]='\0';
+    ptr = strstr(BasNam,".su2");	
+    if ( ptr != NULL )
+      BasNam[ptr-BasNam]='\0';
+    ptr = strstr(BasNam,".meshb");	
+    if ( ptr != NULL )
+      BasNam[ptr-BasNam]='\0';
 	
-	strcpy(BasNamSol,SolNam);
+    strcpy(BasNamSol,SolNam);
 	
-  ptr = strstr(BasNamSol,".csv");	
-  if ( ptr != NULL )
-    BasNamSol[ptr-BasNamSol]='\0';
-  ptr = strstr(BasNamSol,".solb");	
-  if ( ptr != NULL )
-    BasNamSol[ptr-BasNamSol]='\0';
+    ptr = strstr(BasNamSol,".csv");	
+    if ( ptr != NULL )
+      BasNamSol[ptr-BasNamSol]='\0';
+    ptr = strstr(BasNamSol,".solb");	
+    if ( ptr != NULL )
+      BasNamSol[ptr-BasNamSol]='\0';
 	
 	if ( FilTyp != FILE_SU2 ) {
 		WriteGMFMesh(BasNam, Msh, 1);
@@ -864,7 +864,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
   {
 		for (i=0; i<NbrMarkers; i++){
 			PyObject *oo = PyList_GetItem(pyMarkers,i);
-			strcpy(Msh->Markers[i], (char*) PyBytes_AsString(oo));	
+			strcpy(Msh->Markers[i], PyBytes_AsString(oo));	
 		}
 		Msh->NbrMarkers = NbrMarkers;
 	}
@@ -872,19 +872,19 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
 	//--- Write Mesh
 	
 	int FilTyp = GetInputFileType(MshNam);
-  char *ptr = NULL;
+    char *ptr = NULL;
 	char BasNam[1024], BasNamSol[1024], OutSol[1024];
 	
 	// --- Get BasNam
 	
-  strcpy(BasNam,MshNam);
+    strcpy(BasNam,MshNam);
 	
-  ptr = strstr(BasNam,".su2");	
-  if ( ptr != NULL )
-    BasNam[ptr-BasNam]='\0';
-  ptr = strstr(BasNam,".meshb");	
-  if ( ptr != NULL )
-    BasNam[ptr-BasNam]='\0';
+    ptr = strstr(BasNam,".su2");	
+    if ( ptr != NULL )
+      BasNam[ptr-BasNam]='\0';
+    ptr = strstr(BasNam,".meshb");	
+    if ( ptr != NULL )
+      BasNam[ptr-BasNam]='\0';
 	
 	if ( FilTyp != FILE_SU2 ) {
 		WriteGMFMesh(BasNam, Msh, 1);
