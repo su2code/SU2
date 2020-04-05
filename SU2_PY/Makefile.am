@@ -62,7 +62,6 @@ bin_SCRIPTS = \
 mypkgdir = $(prefix)/bin
 nobase_dist_mypkg_DATA= \
     SU2/__init__.py \
-    SU2/amginria/_amgio.py \
     SU2/amginria/interface.py \
     SU2/amginria/tools.py \
     SU2/amginria/__init__.py \
