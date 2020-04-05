@@ -130,11 +130,11 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri,
 	//--- First row of Markers contains dimension
 	PyList_Append(pyMarkers, PyLong_FromLong(Msh->Dim));
 	for (i=1; i<=Msh->NbrMarkers; i++){
-		PyList_Append(pyMarkers, PyUnicode_FromString(Msh->Markers[i]));
+		PyList_Append(pyMarkers, PyUnicode_FromUnicode(Msh->Markers[i]));
 	}
 	
 	for (i=0; i<=Msh->SolSiz; i++){
-		PyList_Append(pySolHeader, PyUnicode_FromString(Msh->SolTag[i]));
+		PyList_Append(pySolHeader, PyUnicode_FromUnicode(Msh->SolTag[i]));
 	}
 	
 	if ( Msh->Sol ) {
@@ -216,7 +216,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers)
 	//--- First row of Markers contains dimension
 	PyList_Append(pyMarkers, PyLong_FromLong(Msh->Dim));
 	for (i=1; i<=Msh->NbrMarkers; i++){
-		PyList_Append(pyMarkers, PyUnicode_FromString(Msh->Markers[i]));
+		PyList_Append(pyMarkers, PyUnicode_FromUnicode(Msh->Markers[i]));
 	}
 	
 	if ( Msh )
