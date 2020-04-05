@@ -27,7 +27,7 @@ def setup_amgio(argv=[]):
                                 "-Wno-unused-result"]),
           ],);
 
-    os.rename("_amgio"+sysconfig.get_config_var('EXT_SUFFIX'),"_amgio.so")
+    # os.rename("_amgio"+sysconfig.get_config_var('EXT_SUFFIX'),"_amgio.so")
     os.chdir(working_dir);
     sys.argv = sav_argv;
 
