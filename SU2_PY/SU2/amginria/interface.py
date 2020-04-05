@@ -208,7 +208,7 @@ def read_mesh_and_sol(mesh_name, solution_name):
     
     Markers = []
     
-    amgio.py_ReadMeshAndSol(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag,  Markers)
+    amgio.py_ReadMeshAndSol(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers)
         
     NbrTet = int(len(Tet)/5)
     Tet = np.reshape(Tet,(NbrTet, 5)).astype(int)

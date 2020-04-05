@@ -64,7 +64,7 @@ def amg ( config , kind='' ):
                 err += opt + '\n'
         raise AttributeError(err)
     
-    # Print adap options
+    #--- Print adap options
     sys.stdout.write(su2amg.print_adap_options(config, adap_options))
     
     #--- How many iterative loops? Using what prescribed mesh sizes? 
@@ -72,7 +72,7 @@ def amg ( config , kind='' ):
     mesh_sizes   = su2amg.get_mesh_sizes(config)
     sub_iter     = su2amg.get_sub_iterations(config)
     
-    # solver iterations/ residual reduction param for each size level
+    #--- Solver iterations/ residual reduction param for each size level
     adap_flow_iter = su2amg.get_flow_iter(config)
     adap_adj_iter  = su2amg.get_adj_iter(config)
     adap_cfl       = su2amg.get_cfl(config)
@@ -111,7 +111,69 @@ def amg ( config , kind='' ):
     sys.stdout.flush()
     
     os.symlink(os.path.join(cwd, config.MESH_FILENAME), config.MESH_FILENAME)
+        
+    current_mesh     = config['MESH_FILENAME']
+
+    #--- AMG parameters
     
+    config_amg = dict()
+    
+    config_amg['hgrad']       = float(config['PYADAP_HGRAD'])
+    config_amg['hmax']        = float(config['PYADAP_HMAX'])
+    config_amg['hmin']        = float(config['PYADAP_HMIN'])
+    config_amg['Lp']          = float(config['ADAP_NORM'])
+    config_amg['mesh_in']     = 'current.meshb'
+    config_amg['adap_source'] = ''
+
+    #--- Get mesh dimension
+
+    dim = su2amg.get_su2_dim(current_mesh)
+    if ( dim != 2 and dim != 3 ):
+        raise ValueError("Wrong dimension number\n")
+    
+    #--- Generate background surface mesh
+
+    if 'PYADAP_BACK' in config:
+        config_amg['adap_back'] = os.path.join(cwd,config['PYADAP_BACK'])
+    else:
+        config_amg['adap_back'] = config['MESH_FILENAME']
+    
+    back_name, back_extension = os.path.splitext(config_amg['adap_back'])
+    
+    if not os.path.exists(config_amg['adap_back']):
+        raise Exception("\n\n##ERROR : Can't find back mesh: %s.\n\n" % config_amg['adap_back'])
+    
+    if back_extension == ".su2":
+        sys.stdout.write("\nGenerating GMF background surface mesh.\n")
+        sys.stdout.flush()
+        amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
+        config_amg['adap_back'] = "amg_back.meshb"
+
+    if dim == 2:
+        sys.stdout.write("\nPreprocessing background mesh.\n")
+        sys.stdout.flush()
+        su2amg.prepro_back_mesh_2d(config, config_amg)
+
+    #--- Remesh options: background surface mesh
+    config_amg['options'] = "-back " + config_amg['adap_back']
+
+    #--- Remesh options: invert background mesh
+    if 'PYADAP_INV_BACK' in config:
+        if(config['PYADAP_INV_BACK'] == 'YES'):
+            config_amg['options'] = config_amg['options'] + ' -inv-back'
+
+    #--- Remesh options: metric orthogonal adaptation
+    if 'PYADAP_ORTHO' in config:
+        if(config['PYADAP_ORTHO'] == 'YES'):
+            config_amg['options'] = config_amg['options'] + ' -cart3d-only'
+
+    #--- Remesh options: ridge detection
+    if 'PYADAP_RDG' not in config:
+        config_amg['options'] = config_amg['options'] + ' -nordg'
+    else:
+        if(config['PYADAP_RDG'] == 'NO'):
+            config_amg['options'] = config_amg['options'] + ' -nordg'
+
     #--- Compute initial solution if needed, else link current files
     
     config_cfd = copy.deepcopy(config)
@@ -122,9 +184,6 @@ def amg ( config , kind='' ):
     config_cfd.READ_BINARY_RESTART = "NO"
 
     config_cfd.VOLUME_OUTPUT = "(COORDINATES, SOLUTION, PRIMITIVE)"
-        
-    current_mesh     = "Initial_mesh"
-    current_solution = "Initial_solution"
         
     if config['RESTART_SOL'] == 'NO':
         
@@ -241,65 +300,6 @@ def amg ( config , kind='' ):
             if not os.path.exists(fil):
                 err += fil + '\n'
         raise Exception(err)
-        
-    #--- Get mesh dimension
-
-    dim = su2amg.get_su2_dim(current_mesh)
-    if ( dim != 2 and dim != 3 ):
-        raise ValueError("Wrong dimension number\n")
-    
-    #--- AMG parameters
-    
-    config_amg = dict()
-    
-    config_amg['hgrad']       = float(config['PYADAP_HGRAD'])
-    config_amg['hmax']        = float(config['PYADAP_HMAX'])
-    config_amg['hmin']        = float(config['PYADAP_HMIN'])
-    config_amg['Lp']          = float(config['ADAP_NORM'])
-    config_amg['mesh_in']     = 'current.meshb'
-    config_amg['adap_source'] = ''
-    
-    #--- Generate background surface mesh
-    if 'PYADAP_BACK' in config:
-        config_amg['adap_back'] = os.path.join(cwd,config['PYADAP_BACK'])
-    else:
-        config_amg['adap_back'] = config['MESH_FILENAME']
-    
-    back_name, back_extension = os.path.splitext(config_amg['adap_back'])
-    
-    if not os.path.exists(config_amg['adap_back']):
-        raise Exception("\n\n##ERROR : Can't find back mesh: %s.\n\n" % config_amg['adap_back'])
-    
-    if back_extension == ".su2":
-        sys.stdout.write("\nGenerating GMF background surface mesh.\n")
-        sys.stdout.flush()
-        amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
-        config_amg['adap_back'] = "amg_back.meshb"
-
-    if dim == 2:
-        sys.stdout.write("\nPreprocessing background mesh.\n")
-        sys.stdout.flush()
-        su2amg.prepro_back_mesh_2d(config_cfd, config_amg)
-
-    #--- Remesh options: background surface mesh
-    config_amg['options'] = "-back " + config_amg['adap_back']
-
-    #--- Remesh options: invert background mesh
-    if 'PYADAP_INV_BACK' in config:
-        if(config['PYADAP_INV_BACK'] == 'YES'):
-            config_amg['options'] = config_amg['options'] + ' -inv-back'
-
-    #--- Remesh options: metric orthogonal adaptation
-    if 'PYADAP_ORTHO' in config:
-        if(config['PYADAP_ORTHO'] == 'YES'):
-            config_amg['options'] = config_amg['options'] + ' -cart3d-only'
-
-    #--- Remesh options: ridge detection
-    if 'PYADAP_RDG' not in config:
-        config_amg['options'] = config_amg['options'] + ' -nordg'
-    else:
-        if(config['PYADAP_RDG'] == 'NO'):
-            config_amg['options'] = config_amg['options'] + ' -nordg'
     
     #--- Start adaptive loop
 
