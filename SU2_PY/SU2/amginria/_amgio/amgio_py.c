@@ -497,7 +497,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
   {
 		for (i=0; i<NbrMarkers; i++){
 			PyObject *oo = PyList_GetItem(pyMarkers,i);
-			strcpy(Msh->Markers[i], PyUnicode_AS_STRING(oo));	
+			strcpy(Msh->Markers[i], PyUnicode_AS_UNICODE(oo));	
 		}
 		Msh->NbrMarkers = NbrMarkers;
 	}
@@ -523,7 +523,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 				if ( NbrTag == Msh->NbrFld  ) {
 					PyObject *oo = PyList_GetItem(pySolHeader,j);
 		       		if ( PyFloat_Check(oo) ) {
-						sprintf(Msh->SolTag[j], "%s", PyUnicode_AS_STRING(oo));
+						sprintf(Msh->SolTag[j], "%s", PyUnicode_AS_UNICODE(oo));
 					}
 				}
 				else {
@@ -864,7 +864,7 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
   {
 		for (i=0; i<NbrMarkers; i++){
 			PyObject *oo = PyList_GetItem(pyMarkers,i);
-			strcpy(Msh->Markers[i], PyUnicode_AS_STRING(oo));	
+			strcpy(Msh->Markers[i], PyUnicode_AS_UNICODE(oo));	
 		}
 		Msh->NbrMarkers = NbrMarkers;
 	}
@@ -928,7 +928,7 @@ void py_WriteSolution(char *SolNam, PyObject *pyVer, PyObject *pySol, PyObject *
 	       	PyObject *oo = PyList_GetItem(pySolHeader,j);
 	       	if ( PyFloat_Check(oo) )
 	       	{
-						sprintf(SolTag[j], "%s", PyUnicode_AS_STRING(oo));
+						sprintf(SolTag[j], "%s", PyUnicode_AS_UNICODE(oo));
 	       	}
 				}
 				else 
