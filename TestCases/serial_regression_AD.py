@@ -207,7 +207,7 @@ def main():
 
     # deforming pitching NACA0012
     unst_deforming_naca0012           = TestCase('unst_deforming_naca0012')
-    unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
+    unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform_ad.cfg"
     unst_deforming_naca0012.test_iter = 4
     unst_deforming_naca0012.test_vals = [ -1.729032, -1.624138, 1091.500000, 0.000062] #last 4 columns

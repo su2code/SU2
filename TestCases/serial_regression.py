@@ -935,7 +935,7 @@ def main():
 
     # unsteady pitching NACA0012, Euler, Deforming
     unst_deforming_naca0012           = TestCase('unst_deforming_naca0012')
-    unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
+    unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform.cfg"
     unst_deforming_naca0012.test_iter = 5
     unst_deforming_naca0012.test_vals = [ -3.669625, -3.818858, -3.729946, -3.155637] #last 4 columns
