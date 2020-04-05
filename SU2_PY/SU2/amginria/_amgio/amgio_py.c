@@ -497,7 +497,8 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
   {
 		for (i=0; i<NbrMarkers; i++){
 			PyObject *oo = PyList_GetItem(pyMarkers,i);
-			strcpy(Msh->Markers[i], (char*) PyUnicode_AsASCIIString(oo));	
+			Py_ssize_t size;
+			strcpy(Msh->Markers[i], (char*) PyUnicode_AsUTF8AndSize(oo, &size));
 		}
 		Msh->NbrMarkers = NbrMarkers;
 	}
@@ -523,7 +524,8 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pySol, PyObject *py
 				if ( NbrTag == Msh->NbrFld  ) {
 					PyObject *oo = PyList_GetItem(pySolHeader,j);
 		       		if ( PyFloat_Check(oo) ) {
-						sprintf(Msh->SolTag[j], "%s", (char*) PyUnicode_AsASCIIString(oo));
+						Py_ssize_t size;
+			            sprintf(Msh->SolTag[j], "%s", (char*) PyUnicode_AsUTF8AndSize(oo, &size));
 					}
 				}
 				else {
@@ -864,7 +866,8 @@ PyObject *pyQua, PyObject *pyPyr, PyObject *pyPri, PyObject *pyMarkers, int Dim)
   {
 		for (i=0; i<NbrMarkers; i++){
 			PyObject *oo = PyList_GetItem(pyMarkers,i);
-			strcpy(Msh->Markers[i], (char*) PyUnicode_AsASCIIString(oo));	
+			Py_ssize_t size;
+			strcpy(Msh->Markers[i], (char*) PyUnicode_AsUTF8AndSize(oo, &size));
 		}
 		Msh->NbrMarkers = NbrMarkers;
 	}
@@ -928,7 +931,8 @@ void py_WriteSolution(char *SolNam, PyObject *pyVer, PyObject *pySol, PyObject *
 	       	PyObject *oo = PyList_GetItem(pySolHeader,j);
 	       	if ( PyFloat_Check(oo) )
 	       	{
-						sprintf(SolTag[j], "%s", (char*) PyUnicode_AsASCIIString(oo));
+	       		        Py_ssize_t size;
+			            sprintf(SolTag[j], "%s", (char*) PyUnicode_AsUTF8AndSize(oo, &size));
 	       	}
 				}
 				else 
