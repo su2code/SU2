@@ -271,7 +271,7 @@ def amg ( config , kind='' ):
     if back_extension == ".su2":
         sys.stdout.write("\nGenerating GMF background surface mesh.\n")
         sys.stdout.flush()
-        su2amg._amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
+        _amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
         config_amg['adap_back'] = "amg_back.meshb"
 
     if dim == 2:
