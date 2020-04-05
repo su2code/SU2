@@ -95,24 +95,26 @@ def init_submodules(method = 'auto'):
     download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
 
   # Some log and error files
-  alt_name_amgint  = cur_dir + '/SU2_PY/SU2/amginria'
   log = open( 'preconf_inria.log', 'w' )
   err = open( 'preconf_inria.err', 'w' )
 
   # Setup AMG interface
-  cmd = sys.executable
-  subprocess.call([cmd,'setup.py','build_ext'], cwd = alt_name_amgint, stdout = log, stderr = err)
-  subprocess.call([cmd,'setup.py','install','--user'], cwd = alt_name_amgint, stdout = log, stderr = err)
+  # Require at least python 3.7 for pyamg
+  if sys.version_info >= (3, 7):
+    cmd = sys.executable
+    amg_ext_dir  = alt_name_amg + '/su2io'
+    subprocess.call([cmd,'setup.py','build_ext'], cwd = amg_ext_dir, stdout = log, stderr = err)
+    subprocess.call([cmd,'setup.py','install','--user'], cwd = amg_ext_dir, stdout = log, stderr = err)
 
-  # Setup pyamg
-  import pkg_resources
+    # Setup pyamg
+    import pkg_resources
 
-  required = {'pyamg'}
-  installed = {pkg.key for pkg in pkg_resources.working_set}
-  missing = required - installed
+    required = {'pyamg'}
+    installed = {pkg.key for pkg in pkg_resources.working_set}
+    missing = required - installed
 
-  if missing:
-    install_pyamg(log, err)
+    if missing:
+      install_pyamg(log, err)
 
 def is_git_directory(path = '.'):
   try:

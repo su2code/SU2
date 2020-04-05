@@ -119,7 +119,9 @@ def main():
             conf_environ, made_codi  = init_codi(argument_dict,modes,options.mpi_enabled, options.update)
 
         if not options.inria_disabled:
-            made_inria  = init_inria(argument_dict,modes,options.update)
+            # Require at least python 3.7 for pyamg
+            if sys.version_info >= (3, 7):
+                made_inria  = init_inria(argument_dict,modes,options.update)
 
         configure(argument_dict,
                   conf_environ,
@@ -346,7 +348,6 @@ def init_inria(argument_dict, modes, update = False):
     amg_name = 'AMGIO'
 
     alt_name_amg = 'externals/AMGIO'
-    alt_name_amgint  = 'SU2_PY/SU2/amginria'
 
     # Some log and error files
     log = open( 'preconf_inria.log', 'w' )
@@ -365,8 +366,9 @@ def init_inria(argument_dict, modes, update = False):
 
     # Setup AMG interface
     cmd = sys.executable
-    subprocess.call([cmd,'setup.py','build_ext'], cwd = alt_name_amgint, stdout = log, stderr = err)
-    subprocess.call([cmd,'setup.py','install','--user'], cwd = alt_name_amgint, stdout = log, stderr = err)
+    amg_ext_dir  = alt_name_amg + '/su2io'
+    subprocess.call([cmd,'setup.py','build_ext'], cwd = amg_ext_dir, stdout = log, stderr = err)
+    subprocess.call([cmd,'setup.py','install','--user'], cwd = amg_ext_dir, stdout = log, stderr = err)
 
     # Install pyAMG
     import pkg_resources
@@ -384,7 +386,7 @@ def init_inria(argument_dict, modes, update = False):
             print('Installing pyAMG for Mac.')
             pyamg_whl = 'pyamg-1.0.1-cp37-cp37m-macosx_10_9_x86_64.whl'
 
-        pyamg_whl = 'externals/AMGIO/pyamg/Python3/' + pyamg_whl
+        pyamg_whl = alt_name_amg + '/pyamg/Python3/' + pyamg_whl
         try:
           # subprocess.check_call('pip3 install --user externals/AMGIO/pyamg/Python3/' + pyamg_whl, stdout = log, stderr = err, shell = True)
           subprocess.check_call([sys.executable, '-m', 'pip', 'install', pyamg_whl], stdout=log, stderr = err)
