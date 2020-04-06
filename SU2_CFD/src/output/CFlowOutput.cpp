@@ -193,7 +193,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
             if (geometry->node[iPoint]->GetCoord(1) != 0.0)
               AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
             else
-              AxiFactor = 1.0;
+              AxiFactor = 2.0*PI_NUMBER*geometry->node[geometry->vertex[iMarker][iVertex-1]->GetNode()]->GetCoord(1)/2;
           } else {
             AxiFactor = 1.0;
           }
@@ -240,6 +240,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
             TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
             TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
           }
+
 
           /*--- Compute the mass Surface_MassFlow ---*/
 
