@@ -39,12 +39,13 @@ using namespace GeometryToolbox;
 struct DonorInfo {
   su2double isoparams[4] = {0.0};  /*!< \brief Interpolation coefficients. */
   su2double distance = 0.0;        /*!< \brief Distance from target to final mapped point on donor plane. */
+  su2double checkSum = 0.0;        /*!< \brief Sum of absolute coefficients (should be 1). */
   unsigned iElem = 0;              /*!< \brief Identification of the element. */
-  int error = 2;                   /*!< \brief If the mapped point is "outside" of the donor. */
+  int error = 0;                   /*!< \brief If the mapped point is "outside" of the donor. */
 
   bool operator< (const DonorInfo& other) const {
     /*--- Best donor is one for which the mapped point is within bounds and closest to target. ---*/
-    return (error == other.error)? (distance < other.distance) : (error < other.error);
+    return (fabs(checkSum-other.checkSum)<1e-6)? (distance < other.distance) : (checkSum < other.checkSum);
   }
 };
 
@@ -175,11 +176,12 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
     su2double maxDist = 0.0;
     unsigned long errorCount = 0, totalCount = 0;
     vector<unsigned> nearElems(nGlobalElemDonor);
+    vector<DonorInfo> candidateElems(min<unsigned long>(NUM_CANDIDATE_DONORS, nGlobalElemDonor));
 
     SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget,2*omp_get_max_threads()))
-    for (auto iVertex = 0u; iVertex < nVertexTarget; ++iVertex) {
+    for (auto iVertexTarget = 0u; iVertexTarget < nVertexTarget; ++iVertexTarget) {
 
-      auto target_vertex = target_geometry->vertex[markTarget][iVertex];
+      auto target_vertex = target_geometry->vertex[markTarget][iVertexTarget];
       const auto iPoint = target_vertex->GetNode();
 
       if (!target_geometry->node[iPoint]->GetDomain()) continue;
@@ -190,8 +192,7 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
 
       /*--- Find "n" closest candidate donor elements (the naive way). ---*/
       iota(nearElems.begin(), nearElems.end(), 0);
-      auto last = nearElems.begin() + min<unsigned long>(NUM_CANDIDATE_DONORS, nGlobalElemDonor);
-      partial_sort(nearElems.begin(), last, nearElems.end(),
+      partial_sort(nearElems.begin(), nearElems.begin()+candidateElems.size(), nearElems.end(),
         [&](unsigned iElem, unsigned jElem) {
           return SquaredDistance(nDim, coord_i, elemCentroid[iElem]) <
                  SquaredDistance(nDim, coord_i, elemCentroid[jElem]);
@@ -199,9 +200,7 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
       );
 
       /*--- Evaluate interpolation for the candidates. ---*/
-      array<DonorInfo, NUM_CANDIDATE_DONORS> candidateElems;
-
-      for (auto i = 0u; i < min<unsigned long>(NUM_CANDIDATE_DONORS, nGlobalElemDonor); ++i) {
+      for (auto i = 0u; i < candidateElems.size(); ++i) {
         const auto iElem = nearElems[i];
 
         /*--- Fetch element info. ---*/
@@ -229,28 +228,31 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
           for (auto iNode = 0u; iNode < nNode; ++iNode)
             finalCoord[iDim] += coords[iNode][iDim] * candidate.isoparams[iNode];
 
+        candidate.checkSum = 0.0;
+        for (auto iNode = 0u; iNode < nNode; ++iNode)
+          candidate.checkSum += fabs(candidate.isoparams[iNode]);
+
         candidate.distance = Distance(nDim, coord_i, finalCoord);
         if (candidate.distance != candidate.distance) // NaN check
           candidate.error = 2;
       }
 
       /*--- Find best donor. ---*/
-      partial_sort(candidateElems.begin(), candidateElems.begin()+1, candidateElems.end());
-      const auto& donor = candidateElems[0];
+      const auto donor = min_element(candidateElems.begin(), candidateElems.end());
 
-      if (donor.error > 1)
+      if (donor->error > 1)
         SU2_MPI::Error("Isoparametric interpolation failed, NaN detected.", CURRENT_FUNCTION);
 
-      errorCount += donor.error;
-      maxDist = max(maxDist, donor.distance);
+      errorCount += donor->error;
+      maxDist = max(maxDist, donor->distance);
 
-      const auto nNode = elemNumNodes[donor.iElem];
+      const auto nNode = elemNumNodes[donor->iElem];
 
       target_vertex->Allocate_DonorInfo(nNode);
 
       for (auto iNode = 0u; iNode < nNode; ++iNode) {
-        const auto iVertex = elemIdxNodes(donor.iElem, iNode);
-        target_vertex->SetDonorCoeff(iNode, donor.isoparams[iNode]);
+        const auto iVertex = elemIdxNodes(donor->iElem, iNode);
+        target_vertex->SetDonorCoeff(iNode, donor->isoparams[iNode]);
         target_vertex->SetInterpDonorPoint(iNode, donorPoint[iVertex]);
         target_vertex->SetInterpDonorProcessor(iNode, donorProc[iVertex]);
       }
