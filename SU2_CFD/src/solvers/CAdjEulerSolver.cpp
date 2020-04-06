@@ -3837,10 +3837,10 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
   ProjGridVel, *GridVel;
   su2double *V_inlet, *V_domain, *Normal, *Psi_domain, *Psi_inlet;
 
-  unsigned short Kind_Inlet = config->GetKind_Inlet();
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  unsigned short Kind_Inlet = config->GetKind_Inlet(Marker_Tag);
 
   Normal = new su2double[nDim];
   Psi_domain = new su2double[nVar]; Psi_inlet = new su2double[nVar];

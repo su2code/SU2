@@ -364,25 +364,28 @@ public:
    */
   void WriteToFile(CConfig *config, CGeometry *geomery, unsigned short format, string fileName = "");
 
-  inline void AddCustomHistoryOutput(string name){
+  inline void AddCustomHistoryOutput(string name, FieldType type = FieldType::CUSTOM_EVAL){
 
-    HistoryOutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", FieldType::CUSTOM, "");
+    HistoryOutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", type, "");
 
-    string rawName = name;
-    rawName.pop_back();
-    rawName.erase(0,1);
+    if (type == FieldType::CUSTOM_EVAL){
+      string rawName = name;
+      rawName.pop_back();
+      rawName.erase(0,1);
 
-    string funcName = rawName;
-    replace_if(funcName.begin(),funcName.end(),::ispunct,'_');
+      string funcName = rawName;
+      replace_if(funcName.begin(),funcName.end(),::ispunct,'_');
 
-    funcName += to_string(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}).size());
-    std::string func = "function " + funcName + "(){"
-                       " return " + rawName + "; }";
+      funcName += to_string(historyFieldsAll.GetFieldsByType({type}).size());
+      std::string func = "function " + funcName + "(){"
+                                                  " return " + rawName + "; }";
 
-    customField.expParser = CExpressionParser(&historyFieldsAll.GetScope());
-    customField.expParser.CompileAndExec(func, funcName);
+      customField.expParser = CExpressionParser(&historyFieldsAll.GetScope());
+      customField.expParser.CompileAndExec(func, funcName);
 
+    }
     historyFieldsAll.AddItem(name, customField);
+
   }
 
 protected:
@@ -427,7 +430,11 @@ protected:
                                string groupname, string description,
                                FieldType field_type = FieldType::DEFAULT ){
     HistoryOutputField newField(field_name, format, groupname, field_type, description);
-    newField.tokenRef = &historyFieldsAll.GetScope()[name];
+    if (!historyFieldsAll.GetScope().find(name))
+      newField.tokenRef = &historyFieldsAll.GetScope()[name];
+    else {
+      SU2_MPI::Error("Token name " + name + " already in global scope", CURRENT_FUNCTION);
+    }
     historyFieldsAll.AddItem(name, newField);
   }
 
@@ -464,7 +471,7 @@ protected:
 
 
 
-  inline void AddCustomVolumeOutput(string name){
+  inline void AddCustomVolumeOutput(string name, FieldType type = FieldType::CUSTOM_EVAL){
 
     VolumeOutputField customField (name, -1, "CUSTOM", "");
 
@@ -475,16 +482,19 @@ protected:
     string funcName = rawName;
     replace_if(funcName.begin(),funcName.end(),::ispunct,'_');
 
-    funcName += to_string(volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM}).size());
+    funcName += to_string(volumeFieldsAll.GetFieldsByType({type}).size());
     std::string func = "function " + funcName + "(){"
-                       " return " + rawName + "; }";
+                       " var = " + rawName + ";"
+                       " return var; }";
 
-    customField.fieldType = FieldType::CUSTOM;
+    customField.fieldType = type;
     customField.expParser = CExpressionParser(&volumeFieldsAll.GetScope());
     customField.expParser.CompileAndExec(func, funcName);
     volumeFieldsAll.AddItem(name, customField);
 
   }
+
+  void CustomIntegration(CGeometry *geometry, unsigned long iPoint);
 
   /*!
    * \brief Set the value of a history output field for a specific surface marker

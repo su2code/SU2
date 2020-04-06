@@ -172,21 +172,10 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
 
   headerNeeded = false;
 
-  /*--- Make functions defined in file available ---*/
 
-  std::string UserDefinedCode = config->GetUserFunctionCode();
+  historyFieldsAll.SetScope(config->GetGlobalScope());
+  volumeFieldsAll.SetScope(config->GetGlobalScope());
 
-  if (!UserDefinedCode.empty()){
-
-    /*--- Compile and exec code for history and volume exression scope ---*/
-
-    CExpressionParser parserHistExp(&historyFieldsAll.GetScope());
-    parserHistExp.Compile(UserDefinedCode);
-    parserHistExp.ExecCode();
-    CExpressionParser parserVolExp = CExpressionParser(&volumeFieldsAll.GetScope());
-    parserVolExp.Compile(UserDefinedCode);
-    parserVolExp.ExecCode();
-  }
 }
 
 COutput::~COutput(void) {
@@ -1254,6 +1243,7 @@ void COutput::CheckHistoryOutput(){
   vector<string> FieldsToRemove;
   vector<bool> FoundField(nRequestedHistoryFields, false);
   regex exp("\\{\\S*\\}");
+  regex integrateExp("integrate\\{\\S*\\}");
 
   auto addCustomFields = [&](std::vector<string>& fields){
     /*--- Check if any of the fields is a expression ---*/
@@ -1262,6 +1252,11 @@ void COutput::CheckHistoryOutput(){
         /*--- Make sure that the expression is not already there ---*/
         if (!historyFieldsAll.CheckKey(field))
           AddCustomHistoryOutput(field);
+      }
+      if (regex_match(field, integrateExp)){
+        if (!historyFieldsAll.CheckKey(field)){
+          AddCustomHistoryOutput(field, FieldType::CUSTOM_INTEGRATE);
+        }
       }
     }
   };
@@ -1307,7 +1302,7 @@ void COutput::CheckHistoryOutput(){
   printInfo(FieldsToRemove, "Fields ignored: ");
 
   historyFieldsAll.UpdateTokens();
-  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
+  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL}));
 
 }
 
@@ -1340,11 +1335,31 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   vector<string> FieldsToRemove;
 
   regex exp("\\{\\S*\\}");
+  regex integrateExp("integrate\\{\\S*\\}");
 
   /*--- Check if any of the fields is a expression ---*/
   for (auto& field : requestedVolumeFields){
     if (regex_match(field, exp)){
       AddCustomVolumeOutput(field);
+    }
+  }
+
+  for (const auto& field : requestedHistoryFields){
+    if (regex_match(field, integrateExp)){
+      string customField = field;
+      customField.erase(0, 9);
+      cout << "Adding " + customField << endl;
+      if (!volumeFieldsAll.CheckKey(customField))
+        AddCustomVolumeOutput(customField, FieldType::CUSTOM_INTEGRATE);
+    }
+  }
+
+  for (const auto& field : requestedScreenFields){
+    if (regex_match(field, integrateExp)){
+      string customField = field;
+      customField.erase(0, 9);
+      cout << "Adding " + customField << endl;
+      AddCustomVolumeOutput(customField, FieldType::CUSTOM_INTEGRATE);
     }
   }
 
@@ -1405,7 +1420,8 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   }
 
   volumeFieldsAll.UpdateTokens();
-  volumeFieldsAll.EvalCustomFields(volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
+  volumeFieldsAll.EvalCustomFields(volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL}));
+  volumeFieldsAll.IntegrateCustomFields(volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_INTEGRATE}), 0.0);
 
 }
 
@@ -1421,7 +1437,11 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
   curGetFieldIndex = 0;
   fieldGetIndexCache.clear();
 
-  const auto& customFieldRef = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM});
+  const auto& customFieldRef = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL});
+  const auto& customIntegration = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_INTEGRATE});
+  for (const auto& field : customIntegration){
+    field->second.value = 0.0;
+  }
 
   if (femOutput){
 
@@ -1469,11 +1489,13 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
       LoadVolumeData(config, geometry, solver, iPoint);
 
-      if (!customFieldRef.empty()){
+      if (!customFieldRef.empty() || !customIntegration.empty()){
 
         volumeFieldsAll.UpdateTokens();
 
         volumeFieldsAll.EvalCustomFields(customFieldRef);
+
+        volumeFieldsAll.IntegrateCustomFields(customIntegration, geometry->node[iPoint]->GetVolume());
 
       }
 
@@ -1518,6 +1540,10 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
         }
       }
     }
+  }
+
+  for (const auto& field : customIntegration){
+    historyFieldsAll.SetValueByKey("integrate" + field->first, field->second.value);
   }
 }
 
@@ -1665,7 +1691,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
   }
 
   historyFieldsAll.UpdateTokens();
-  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
+  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL}));
 }
 
 void COutput::Postprocess_HistoryFields(CConfig *config){

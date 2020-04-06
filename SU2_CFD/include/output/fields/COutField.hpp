@@ -17,7 +17,8 @@ enum class FieldType {
   AUTO_RESIDUAL,    /*!< \brief An automatically generated residual field type */
   COEFFICIENT,      /*!< \brief User defined coefficient field type  */
   AUTO_COEFFICIENT, /*!< \brief Automatically generated coefficient field type  */
-  CUSTOM,           /*!< \brief Custom field */
+  CUSTOM_EVAL,      /*!< \brief Custom evaluation field */
+  CUSTOM_INTEGRATE, /*!< \brief Custom integration field */
   DEFAULT           /*!< \brief Default field type */
 };
 

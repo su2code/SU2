@@ -34,6 +34,8 @@
 
 #include "../include/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
+#define STATIC_CPARSE_STARTUP
+#include "./builtin-features.inc"
 
 using namespace PrintingToolbox;
 
@@ -286,6 +288,11 @@ void CConfig::addDoubleOption(const string name, su2double & option_field, su2do
   // During configuration, the parsing script will get the option name, and use this map
   // to find how to parse that option.
   option_map.insert(pair<string, COptionBase *>(name, val));
+
+  /* --- Add it to the global scope for usage in user defined functions ---*/
+
+  configTokens[name] = option_field;
+
 }
 
 void CConfig::addStringOption(const string name, string & option_field, string default_value) {
@@ -922,8 +929,8 @@ void CConfig::SetPointersNull(void) {
   MG_PostSmooth             = NULL;
   Int_Coeffs                = NULL;
 
-  Kind_Inc_Inlet = NULL;
-  Kind_Inc_Outlet = NULL;
+  Kind_Inlet = NULL;
+  Kind_Outlet = NULL;
 
   Kind_ObjFunc   = NULL;
 
@@ -1044,6 +1051,9 @@ void CConfig::SetPointersNull(void) {
   Total_UnstTime   = 0.0;
   Total_UnstTimeND = 0.0;
 
+  nInlet = 0;
+  nOutlet = 0;
+
 }
 
 void CConfig::SetRunTime_Options(void) {
@@ -1060,6 +1070,7 @@ void CConfig::SetRunTime_Options(void) {
 
 void CConfig::SetConfig_Options() {
 
+  configTokens = TokenMap();
 
   /*--- Allocate some default arrays needed for lists of doubles. ---*/
 
@@ -1414,9 +1425,8 @@ void CConfig::SetConfig_Options() {
                    ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
 
   /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
-  addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
-  /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET. \ingroup Config*/
-  addEnumListOption("INC_INLET_TYPE", nInc_Inlet, Kind_Inc_Inlet, Inlet_Map);
+  addEnumListOption("INLET_TYPE", nInlet, Kind_Inlet, Inlet_Map);
+
   addBoolOption("SPECIFIED_INLET_PROFILE", Inlet_From_File, false);
   /*!\brief INLET_FILENAME \n DESCRIPTION: Input file for a specified inlet profile (w/ extension) \n DEFAULT: inlet.dat \ingroup Config*/
   addStringOption("INLET_FILENAME", Inlet_Filename, string("inlet.dat"));
@@ -1500,7 +1510,7 @@ void CConfig::SetConfig_Options() {
    Format: ( outlet marker, back pressure (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_OUTLET", nMarker_Outlet, Marker_Outlet, Outlet_Pressure);
   /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET. \ingroup Config*/
-  addEnumListOption("INC_OUTLET_TYPE", nInc_Outlet, Kind_Inc_Outlet, Outlet_Map);
+  addEnumListOption("OUTLET_TYPE", nOutlet, Kind_Outlet, Outlet_Map);
   /*!\brief MARKER_ISOTHERMAL DESCRIPTION: Isothermal wall boundary marker(s)\n
    * Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config  */
   addStringDoubleListOption("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
@@ -1849,6 +1859,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief OBJECTIVE_FUNCTION
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
   addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
+
+  addStringOption("OBJECTIVE_FUNCTION_NEW", Objective_Function, "NONE");
 
   /* DESCRIPTION: parameter for the definition of a complex objective function */
   addDoubleOption("DCD_DCL_VALUE", dCD_dCL, 0.0);
@@ -4640,24 +4652,72 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check that the incompressible inlets are correctly specified. ---*/
 
   if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (nMarker_Inlet != 0)) {
-    if (nMarker_Inlet != nInc_Inlet) {
-      SU2_MPI::Error("Inlet types for incompressible problem improperly specified.\n Use INC_INLET_TYPE= VELOCITY_INLET or PRESSURE_INLET.\n Must list a type for each inlet marker, including duplicates, e.g.,\n INC_INLET_TYPE= VELOCITY_INLET VELOCITY_INLET PRESSURE_INLET", CURRENT_FUNCTION);
+    if (nMarker_Inlet != nInlet) {
+      SU2_MPI::Error("Inlet types for incompressible problem improperly specified.\n Use INLET_TYPE= VELOCITY_INLET or PRESSURE_INLET.\n Must list a type for each inlet marker, including duplicates, e.g.,\n INC_INLET_TYPE= VELOCITY_INLET VELOCITY_INLET PRESSURE_INLET", CURRENT_FUNCTION);
     }
-    for (unsigned short iInlet = 0; iInlet < nInc_Inlet; iInlet++){
-      if ((Kind_Inc_Inlet[iInlet] != VELOCITY_INLET) && (Kind_Inc_Inlet[iInlet] != PRESSURE_INLET)) {
+    for (unsigned short iInlet = 0; iInlet < nInlet; iInlet++){
+      if ((Kind_Inlet[iInlet] != VELOCITY_INLET) && (Kind_Inlet[iInlet] != PRESSURE_INLET)) {
         SU2_MPI::Error("Undefined incompressible inlet type. VELOCITY_INLET or PRESSURE_INLET possible.", CURRENT_FUNCTION);
       }
     }
   }
 
+  /*--- Check that the compressible inlets are correctly specified. ---*/
+  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS)){
+    if (nInlet == 0) {
+      nInlet =  nMarker_Inlet;
+      Kind_Inlet = new unsigned short[nInlet];
+      for (unsigned short iInlet = 0; iInlet < nInlet; iInlet++){
+        Kind_Inlet[iInlet] = TOTAL_CONDITIONS;
+      }
+    }
+    if ((nMarker_Inlet != 0)) {
+      if (nMarker_Inlet != nInlet) {
+        SU2_MPI::Error("Inlet types for compressible problem improperly specified.\n "
+                       "Use INLET_TYPE= TOTAL_CONDITIONS or MASS_FLOW.\n "
+                       "Must list a type for each inlet marker, including duplicates, e.g.,\n"
+                       "INLET_TYPE= TOTAL_CONDITIONS TOTAL_CONDITIONS MASS_FLOW", CURRENT_FUNCTION);
+      }
+      for (unsigned short iInlet = 0; iInlet < nInlet; iInlet++){
+        if ((Kind_Inlet[iInlet] != TOTAL_CONDITIONS) && (Kind_Inlet[iInlet] != MASSFLOW)) {
+          SU2_MPI::Error("Undefined compressible inlet type. TOTAL_CONDITIONS or MASS_FLOW possible.", CURRENT_FUNCTION);
+        }
+      }
+    }
+  }
+
+  /*--- Check that the compressible inlets are correctly specified. ---*/
+
+  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS)){
+    if (nOutlet == 0) {
+      nOutlet =  nMarker_Outlet;
+      Kind_Outlet = new unsigned short[nOutlet];
+      for (unsigned short iInlet = 0; iInlet < nOutlet; iInlet++){
+        Kind_Outlet[iInlet] = PRESSURE_OUTLET;
+      }
+    }
+    if (nMarker_Outlet != 0) {
+      if (nMarker_Outlet != nOutlet) {
+        SU2_MPI::Error("Outlet types for compressible problem improperly specified.\n"
+                       "Use OUTLET_TYPE= PRESSURE_OUTLET.\n "
+                       "Must list a type for each inlet marker, including duplicates, e.g.,\n "
+                       "INC_OUTLET_TYPE= PRESSURE_OUTLET PRESSURE_OUTLET", CURRENT_FUNCTION);
+      }
+      for (unsigned short iInlet = 0; iInlet < nOutlet; iInlet++){
+        if ((Kind_Outlet[iInlet] != PRESSURE_OUTLET)) {
+          SU2_MPI::Error("Undefined compressible outlet type. Only PRESSURE_OUTLET possible.", CURRENT_FUNCTION);
+        }
+      }
+    }
+  }
   /*--- Check that the incompressible inlets are correctly specified. ---*/
 
   if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (nMarker_Outlet != 0)) {
-    if (nMarker_Outlet != nInc_Outlet) {
-      SU2_MPI::Error("Outlet types for incompressible problem improperly specified.\n Use INC_OUTLET_TYPE= PRESSURE_OUTLET or MASS_FLOW_OUTLET.\n Must list a type for each inlet marker, including duplicates, e.g.,\n INC_OUTLET_TYPE= PRESSURE_OUTLET PRESSURE_OUTLET MASS_FLOW_OUTLET", CURRENT_FUNCTION);
+    if (nMarker_Outlet != nOutlet) {
+      SU2_MPI::Error("Outlet types for incompressible problem improperly specified.\n Use OUTLET_TYPE= PRESSURE_OUTLET or MASS_FLOW_OUTLET.\n Must list a type for each inlet marker, including duplicates, e.g.,\n INC_OUTLET_TYPE= PRESSURE_OUTLET PRESSURE_OUTLET MASS_FLOW_OUTLET", CURRENT_FUNCTION);
     }
-    for (unsigned short iInlet = 0; iInlet < nInc_Outlet; iInlet++){
-      if ((Kind_Inc_Outlet[iInlet] != PRESSURE_OUTLET) && (Kind_Inc_Outlet[iInlet] != MASS_FLOW_OUTLET)) {
+    for (unsigned short iInlet = 0; iInlet < nOutlet; iInlet++){
+      if ((Kind_Outlet[iInlet] != PRESSURE_OUTLET) && (Kind_Outlet[iInlet] != MASS_FLOW_OUTLET)) {
         SU2_MPI::Error("Undefined incompressible outlet type. PRESSURE_OUTLET or MASS_FLOW_OUTLET possible.", CURRENT_FUNCTION);
       }
     }
@@ -4958,6 +5018,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     functionFile.close();
   }
+  globalScope["config"] = configTokens;
+  CExpressionParser parser(&globalScope);
+  parser.Compile(UserFunctionCode);
+  parser.ExecCode();
+
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -7154,20 +7219,36 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   // now fill the option value vector
   option_value.clear();
   last_pos = value_part.find_first_not_of(delimiters, 0);
-  if (value_part[last_pos] != '{')
+  if (value_part[last_pos] != '{'){
     pos = value_part.find_first_of(delimiters, last_pos);
-  else
-    pos = value_part.find_first_of('}', last_pos) + 1;
+    string::size_type bracket_pos = value_part.find_first_of('{', last_pos);
+    if (pos > bracket_pos){
+      bracket_pos = value_part.find_first_of('}', bracket_pos);
+      pos = value_part.find_first_of(delimiters, bracket_pos);
+    }
+  }
+  else{
+    pos = value_part.find_first_of('}', last_pos);
+    pos = value_part.find_first_of(delimiters, pos);
+  }
   while (string::npos != pos || string::npos != last_pos) {
     // add token to the vector<string>
     option_value.push_back(value_part.substr(last_pos, pos - last_pos));
     // skip delimiters
     last_pos = value_part.find_first_not_of(delimiters, pos);
     // find next "non-delimiter"
-    if (value_part[last_pos] != '{')
+    if (value_part[last_pos] != '{'){
       pos = value_part.find_first_of(delimiters, last_pos);
-    else
-      pos = value_part.find_first_of('}', last_pos) + 1;
+      string::size_type bracket_pos = value_part.find_first_of('{', last_pos);
+      if (pos > bracket_pos){
+        bracket_pos = value_part.find_first_of('}', bracket_pos);
+        pos = value_part.find_first_of(delimiters, bracket_pos);
+      }
+    }
+    else{
+      pos = value_part.find_first_of('}', last_pos);
+      pos = value_part.find_first_of(delimiters, pos);
+    }
   }
   if (option_value.size() == 0) {
     cerr << "Error in TokenizeString(): "
@@ -7572,8 +7653,8 @@ CConfig::~CConfig(void) {
   if (Marker_PyCustom != NULL)             delete [] Marker_PyCustom;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
 
-  if (Kind_Inc_Inlet != NULL)      delete[] Kind_Inc_Inlet;
-  if (Kind_Inc_Outlet != NULL)      delete[] Kind_Inc_Outlet;
+  if (Kind_Inlet != NULL)      delete[] Kind_Inlet;
+  if (Kind_Outlet != NULL)      delete[] Kind_Outlet;
 
   if (Kind_WallFunctions != NULL) delete[] Kind_WallFunctions;
 
@@ -8535,18 +8616,18 @@ su2double CConfig::GetExhaust_Pressure_Target(string val_marker) {
   return Exhaust_Pressure_Target[iMarker_EngineExhaust];
 }
 
-unsigned short CConfig::GetKind_Inc_Inlet(string val_marker) {
+unsigned short CConfig::GetKind_Inlet(string val_marker) {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
-  return Kind_Inc_Inlet[iMarker_Inlet];
+  return Kind_Inlet[iMarker_Inlet];
 }
 
-unsigned short CConfig::GetKind_Inc_Outlet(string val_marker) {
+unsigned short CConfig::GetKind_Outlet(string val_marker) {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if (Marker_Outlet[iMarker_Outlet] == val_marker) break;
-  return Kind_Inc_Outlet[iMarker_Outlet];
+  return Kind_Outlet[iMarker_Outlet];
 }
 
 su2double CConfig::GetInlet_Ttotal(string val_marker) {
@@ -8735,7 +8816,7 @@ su2double CConfig::GetTotalPressureIn_BC() {
       tot_pres_in = Riemann_Var1[iMarker_BC];
     }
   }
-  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  if(nMarker_Inlet == 1 && Kind_Inlet[0] == TOTAL_CONDITIONS){
     tot_pres_in = Inlet_Ptotal[0];
   }
   return tot_pres_in/Pressure_Ref;
@@ -8755,7 +8836,7 @@ su2double CConfig::GetTotalTemperatureIn_BC() {
     }
   }
 
-  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  if(nMarker_Inlet == 1 && Kind_Inlet[0] == TOTAL_CONDITIONS){
     tot_temp_in = Inlet_Ttotal[0];
   }
   return tot_temp_in/Temperature_Ref;
@@ -8774,7 +8855,7 @@ void CConfig::SetTotalTemperatureIn_BC(su2double val_temp) {
     }
   }
 
-  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  if(nMarker_Inlet == 1 && Kind_Inlet[0] == TOTAL_CONDITIONS){
     Inlet_Ttotal[0] = val_temp*Temperature_Ref;
   }
 }
@@ -8793,7 +8874,7 @@ su2double CConfig::GetFlowAngleIn_BC() {
     }
   }
 
-  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  if(nMarker_Inlet == 1 && Kind_Inlet[0] == TOTAL_CONDITIONS){
     alpha_in = atan(Inlet_FlowDir[0][1]/Inlet_FlowDir[0][0]);
   }
 
@@ -8805,9 +8886,9 @@ su2double CConfig::GetIncInlet_BC() {
   su2double val_out = 0.0;
 
   if (nMarker_Inlet > 0) {
-    if (Kind_Inc_Inlet[0] == VELOCITY_INLET)
+    if (Kind_Inlet[0] == VELOCITY_INLET)
       val_out = Inlet_Ptotal[0]/Velocity_Ref;
-    else if (Kind_Inc_Inlet[0] == PRESSURE_INLET)
+    else if (Kind_Inlet[0] == PRESSURE_INLET)
       val_out = Inlet_Ptotal[0]/Pressure_Ref;
   }
 
@@ -8817,9 +8898,9 @@ su2double CConfig::GetIncInlet_BC() {
 void CConfig::SetIncInlet_BC(su2double val_in) {
 
   if (nMarker_Inlet > 0) {
-    if (Kind_Inc_Inlet[0] == VELOCITY_INLET)
+    if (Kind_Inlet[0] == VELOCITY_INLET)
       Inlet_Ptotal[0] = val_in*Velocity_Ref;
-    else if (Kind_Inc_Inlet[0] == PRESSURE_INLET)
+    else if (Kind_Inlet[0] == PRESSURE_INLET)
       Inlet_Ptotal[0] = val_in*Pressure_Ref;
   }
 

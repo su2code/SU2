@@ -9198,8 +9198,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   su2double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
   su2double Gas_Constant       = config->GetGas_ConstantND();
-  unsigned short Kind_Inlet = config->GetKind_Inlet();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
+  unsigned short Kind_Inlet = config->GetKind_Inlet(Marker_Tag);
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   su2double *Normal = new su2double[nDim];
 

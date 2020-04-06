@@ -36,7 +36,6 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                                                                  val_nZone,
                                                                                                  MPICommunicator) {
 
-
   /*--- Store the number of internal iterations that will be run by the adjoint solver ---*/
   nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
 
@@ -108,8 +107,11 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     break;
 
   }
+  std::string ObjFunction = config->GetObj_Function();
 
- direct_output->PreprocessHistoryOutput(config, false);
+  if (!direct_output->GetHistoryFieldsAll().CheckKey(ObjFunction))
+    direct_output->AddCustomHistoryOutput(ObjFunction);
+  direct_output->PreprocessHistoryOutput(config, false);
 
 }
 
@@ -304,90 +306,94 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
                                    config->GetOuterIter(),
                                    config->GetInnerIter());
 
-  /*--- Specific scalar objective functions ---*/
 
-  switch (config->GetKind_Solver()) {
-  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:
-  case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-  case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
+  std::string ObjFuncString = config->GetObj_Function();
+  ObjFunc = direct_output->GetHistoryFieldsAll().GetFieldsByKey({ObjFuncString})[0]->second.value;
 
-    solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
+//  /*--- Specific scalar objective functions ---*/
 
-//    if (config->GetnMarker_Analyze() != 0)
-//      output->SpecialOutput_AnalyzeSurface(solver[FLOW_SOL], geometry, config, false);
+//  switch (config->GetKind_Solver()) {
+//  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:
+//  case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+//  case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
 
-//    if ((config->GetnMarker_Analyze() != 0) && compressible)
-//      output->SpecialOutput_Distortion(solver[FLOW_SOL], geometry, config, false);
+//    solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
 
-//    if (config->GetnMarker_NearFieldBound() != 0)
-//      output->SpecialOutput_SonicBoom(solver[FLOW_SOL], geometry, config, false);
+////    if (config->GetnMarker_Analyze() != 0)
+////      output->SpecialOutput_AnalyzeSurface(solver[FLOW_SOL], geometry, config, false);
 
-//    if (config->GetPlot_Section_Forces())
-//      output->SpecialOutput_SpanLoad(solver[FLOW_SOL], geometry, config, false);
+////    if ((config->GetnMarker_Analyze() != 0) && compressible)
+////      output->SpecialOutput_Distortion(solver[FLOW_SOL], geometry, config, false);
 
-    /*--- Surface based obj. function ---*/
+////    if (config->GetnMarker_NearFieldBound() != 0)
+////      output->SpecialOutput_SonicBoom(solver[FLOW_SOL], geometry, config, false);
 
-    solver[FLOW_SOL]->Evaluate_ObjFunc(config);
-    ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
-    if (heat){
-      if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
-        ObjFunc += solver[HEAT_SOL]->GetTotal_HeatFlux();
-      }
-      else if (config->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
-        ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
-      }
-    }
+////    if (config->GetPlot_Section_Forces())
+////      output->SpecialOutput_SpanLoad(solver[FLOW_SOL], geometry, config, false);
 
-    /*--- This calls to be moved to a generic framework at a next stage         ---*/
-    /*--- Some things that are currently hacked into output must be reorganized ---*/
-    if (turbo){
+//    /*--- Surface based obj. function ---*/
 
-      solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
-      output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
+//    solver[FLOW_SOL]->Evaluate_ObjFunc(config);
+//    ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
+//    if (heat){
+//      if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
+//        ObjFunc += solver[HEAT_SOL]->GetTotal_HeatFlux();
+//      }
+//      else if (config->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+//        ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
+//      }
+//    }
 
-      unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
-      unsigned short nSpanSections = config->GetnSpanWiseSections();
+//    /*--- This calls to be moved to a generic framework at a next stage         ---*/
+//    /*--- Some things that are currently hacked into output must be reorganized ---*/
+//    if (turbo){
 
-      switch (config_container[ZONE_0]->GetKind_ObjFunc()){
-      case ENTROPY_GENERATION:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetEntropyGen(nMarkerTurboPerf-1, nSpanSections));
-        break;
-      case FLOW_ANGLE_OUT:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetFlowAngleOut(nMarkerTurboPerf-1, nSpanSections));
-        break;
-      case MASS_FLOW_IN:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetMassFlowIn(nMarkerTurboPerf-1, nSpanSections));
-        break;
-      default:
-        break;
-      }
+//      solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
+//      output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
 
-      ObjFunc = solver[FLOW_SOL]->GetTotal_ComboObj();
+//      unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
+//      unsigned short nSpanSections = config->GetnSpanWiseSections();
 
-    }
+//      switch (config_container[ZONE_0]->GetKind_ObjFunc()){
+//      case ENTROPY_GENERATION:
+//        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetEntropyGen(nMarkerTurboPerf-1, nSpanSections));
+//        break;
+//      case FLOW_ANGLE_OUT:
+//        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetFlowAngleOut(nMarkerTurboPerf-1, nSpanSections));
+//        break;
+//      case MASS_FLOW_IN:
+//        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetMassFlowIn(nMarkerTurboPerf-1, nSpanSections));
+//        break;
+//      default:
+//        break;
+//      }
 
-    break;
-  case DISC_ADJ_FEM:
-    switch (config->GetKind_ObjFunc()){
-    case REFERENCE_GEOMETRY:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
-      break;
-    case REFERENCE_NODE:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
-      break;
-    case TOPOL_COMPLIANCE:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFCompliance();
-      break;
-    case VOLUME_FRACTION:
-    case TOPOL_DISCRETENESS:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
-      break;
-    default:
-      ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
-      break;
-    }
-    break;
-  }
+//      ObjFunc = solver[FLOW_SOL]->GetTotal_ComboObj();
+
+//    }
+
+//    break;
+//  case DISC_ADJ_FEM:
+//    switch (config->GetKind_ObjFunc()){
+//    case REFERENCE_GEOMETRY:
+//      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
+//      break;
+//    case REFERENCE_NODE:
+//      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
+//      break;
+//    case TOPOL_COMPLIANCE:
+//      ObjFunc = solver[FEA_SOL]->GetTotal_OFCompliance();
+//      break;
+//    case VOLUME_FRACTION:
+//    case TOPOL_DISCRETENESS:
+//      ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
+//      break;
+//    default:
+//      ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
+//      break;
+//    }
+//    break;
+//  }
 
   if (rank == MASTER_NODE){
     AD::RegisterOutput(ObjFunc);

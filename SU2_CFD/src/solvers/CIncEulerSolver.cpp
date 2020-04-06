@@ -4184,7 +4184,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
-  unsigned short Kind_Inlet = config->GetKind_Inc_Inlet(Marker_Tag);
+  unsigned short Kind_Inlet = config->GetKind_Inlet(Marker_Tag);
 
   su2double *Normal = new su2double[nDim];
 
@@ -4436,7 +4436,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   su2double *Normal = new su2double[nDim];
 
-  unsigned short Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
+  unsigned short Kind_Outlet = config->GetKind_Outlet(Marker_Tag);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -5530,7 +5530,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
   bool Evaluate_BC = false;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
     Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
-    if (config->GetKind_Inc_Outlet(Outlet_TagBound) == MASS_FLOW_OUTLET)
+    if (config->GetKind_Outlet(Outlet_TagBound) == MASS_FLOW_OUTLET)
       Evaluate_BC = true;
   }
 

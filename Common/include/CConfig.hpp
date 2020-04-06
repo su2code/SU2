@@ -45,6 +45,7 @@
 
 #include "./option_structure.hpp"
 #include "./datatype_structure.hpp"
+#include "../include/toolboxes/CExpressionParser.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
@@ -165,6 +166,7 @@ private:
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;        /*!< \brief Kind of adjoint function. */
   unsigned short *Kind_ObjFunc;      /*!< \brief Kind of objective function. */
+  std::string Objective_Function;
   su2double *Weight_ObjFunc;         /*!< \brief Weight applied to objective function. */
   unsigned short Kind_SensSmooth;    /*!< \brief Kind of sensitivity smoothing technique. */
   unsigned short Continuous_Eqns;    /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
@@ -557,12 +559,12 @@ private:
   unsigned short Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
   unsigned short Kind_Trans_Model,  /*!< \brief Transition model definition. */
   Kind_ActDisk, Kind_Engine_Inflow,
-  Kind_Inlet, *Kind_Inc_Inlet,
-  *Kind_Inc_Outlet,
+  *Kind_Inlet,
+  *Kind_Outlet,
   *Kind_Data_Riemann,
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
-  unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
-  unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
+  unsigned short nInlet;       /*!< \brief Number of inlet boundary treatment types listed. */
+  unsigned short nOutlet;      /*!< \brief Number of inlet boundary treatment types listed. */
   su2double Inc_Inlet_Damping;     /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
   su2double Inc_Outlet_Damping;    /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
   bool Inc_Inlet_UseNormal;        /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
@@ -1151,6 +1153,8 @@ private:
 
   string UserFunctionCode; /*!< \brief String containing the user defined function code. */
 
+  GlobalScope globalScope;
+  TokenMap configTokens;
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -4649,12 +4653,6 @@ public:
   bool GetSens_Remove_Sharp(void) const { return Sens_Remove_Sharp; }
 
   /*!
-   * \brief Get the kind of inlet boundary condition treatment (total conditions or mass flow).
-   * \return Kind of inlet boundary condition.
-   */
-  unsigned short GetKind_Inlet(void) const { return Kind_Inlet; }
-
-  /*!
    * \brief Check if the inlet profile(s) are specified in an input file
    * \return True if an input file is to be used for the inlet profile(s)
    */
@@ -4676,13 +4674,13 @@ public:
    * \brief Get the type of incompressible inlet from the list.
    * \return Kind of the incompressible inlet.
    */
-  unsigned short GetKind_Inc_Inlet(string val_marker);
+  unsigned short GetKind_Inlet(string val_marker);
 
   /*!
    * \brief Get the total number of types in Kind_Inc_Inlet list
    * \return Total number of types in Kind_Inc_Inlet list
    */
-  unsigned short GetnInc_Inlet(void) const { return nInc_Inlet;}
+  unsigned short GetnInc_Inlet(void) const { return nInlet;}
 
   /*!
    * \brief Flag for whether the local boundary normal is used as the flow direction for an incompressible pressure inlet.
@@ -4694,7 +4692,7 @@ public:
    * \brief Get the type of incompressible outlet from the list.
    * \return Kind of the incompressible outlet.
    */
-  unsigned short GetKind_Inc_Outlet(string val_marker);
+  unsigned short GetKind_Outlet(string val_marker);
 
   /*!
    * \brief Get the damping factor applied to velocity updates at incompressible pressure inlets.
@@ -4986,6 +4984,8 @@ public:
    */
   bool GetHold_GridFixed(void) const { return Hold_GridFixed; }
 
+
+  std::string GetObj_Function () const {return Objective_Function;}
   /*!
    * \brief Get the kind of objective function. There are several options: Drag coefficient,
    *        Lift coefficient, efficiency, etc.
@@ -9351,5 +9351,9 @@ public:
    */
   string GetUserFunctionCode(){
     return UserFunctionCode;
+  }
+
+  const TokenMap& GetGlobalScope(){
+    return globalScope;
   }
 };
