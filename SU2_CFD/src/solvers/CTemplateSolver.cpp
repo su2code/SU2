@@ -1,6 +1,6 @@
 /*!
  * \file CTemplateSolver.cpp
- * \brief Subrotuines to be implemented for any new solvers
+ * \brief Subroutines to be implemented for any new solvers
  * \author F. Palacios
  * \version 7.0.3 "Blackbird"
  *
