@@ -25,11 +25,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../../Common/include/adt_structure.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 #include "../../include/solvers/CMeshSolver.hpp"
 #include "../../include/variables/CMeshBoundVariable.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+
+using namespace GeometryToolbox;
 
 
 CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true) {
@@ -101,6 +103,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+  System.SetToleranceType(LinearToleranceType::ABSOLUTE);
 
   /*--- Initialize structures for hybrid-parallel mode. ---*/
 
@@ -157,6 +160,19 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   /*--- Compute the wall distance using the reference coordinates ---*/
   SetWallDistance(geometry, config);
 
+  if (size != SINGLE_NODE) {
+    vector<unsigned short> essentialMarkers;
+    /*--- Markers types covered in SetBoundaryDisplacements. ---*/
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) ||
+           (config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
+           (config->GetMarker_All_Moving(iMarker) == YES)) {
+        essentialMarkers.push_back(iMarker);
+      }
+    }
+    Set_VertexEliminationSchedule(geometry, essentialMarkers);
+  }
 }
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
@@ -388,6 +404,8 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
 void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
 
+  if (stiffness_set) return;
+
   /*--- Use the config option as an upper bound on elasticity modulus.
    *    For RANS meshes the range of element volume or wall distance is
    *    very large and leads to an ill-conditioned stiffness matrix.
@@ -396,31 +414,46 @@ void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, 
    *    boundary conditions are essential (Dirichlet). ---*/
   const su2double maxE = config->GetDeform_ElasticityMod();
 
-  if (!stiffness_set) {
-    /*--- All threads must execute the entire loop (no worksharing),
-     *    each sets the stiffnesses for its numerics instance. ---*/
-    SU2_OMP_PARALLEL
-    {
-    CNumerics* myNumerics = numerics[FEA_TERM + omp_get_thread_num()*MAX_TERMS];
+  /*--- All threads must execute the entire loop (no worksharing),
+   *    each sets the stiffnesses for its numerics instance. ---*/
+  SU2_OMP_PARALLEL
+  {
+  CNumerics* myNumerics = numerics[FEA_TERM + omp_get_thread_num()*MAX_TERMS];
 
-    for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+  switch (config->GetDeform_Stiffness_Type()) {
 
-      su2double E = 1.0;
-
-      switch (config->GetDeform_Stiffness_Type()) {
-        /*--- Stiffness inverse of the volume of the element ---*/
-        case INVERSE_VOLUME: E = 1.0 / element[iElem].GetRef_Volume();  break;
-
-        /*--- Stiffness inverse of the distance of the element to the closest wall ---*/
-        case SOLID_WALL_DISTANCE: E = 1.0 / element[iElem].GetWallDistance(); break;
+    /*--- Stiffness inverse of the volume of the element. ---*/
+    case INVERSE_VOLUME:
+      for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+        su2double E = 1.0 / element[iElem].GetRef_Volume();
+        myNumerics->SetMeshElasticProperties(iElem, min(E,maxE));
       }
+    break;
 
-      /*--- Set the element elastic properties in the numerics container ---*/
-      myNumerics->SetMeshElasticProperties(iElem, min(E,maxE));
+    /*--- Stiffness inverse of the distance of the element to the closest wall. ---*/
+    case SOLID_WALL_DISTANCE: {
+      const su2double offset = config->GetDeform_StiffLayerSize();
+      if (fabs(offset) > 0.0) {
+        /*--- With prescribed layer of maximum stiffness (reaches max and holds). ---*/
+        su2double d0 = offset / MaxDistance;
+        su2double dmin = 1.0 / maxE;
+        su2double scale = 1.0 / (1.0 - d0);
+        for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+          su2double E = 1.0 / max(dmin, (element[iElem].GetWallDistance() - d0)*scale);
+          myNumerics->SetMeshElasticProperties(iElem, E);
+        }
+      } else {
+        /*--- Without prescribed layer of maximum stiffness (may not reach max). ---*/
+        for (unsigned long iElem = 0; iElem < nElement; iElem++) {
+          su2double E = 1.0 / element[iElem].GetWallDistance();
+          myNumerics->SetMeshElasticProperties(iElem, min(E,maxE));
+        }
+      }
     }
-    }
-    stiffness_set = true;
+    break;
   }
+  }
+  stiffness_set = true;
 
 }
 
@@ -431,10 +464,9 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Compute the stiffness matrix. ---*/
   Compute_StiffMatrix(geometry[MESH_0], numerics, config);
 
-  /*--- Initialize vectors and clean residual. ---*/
+  /*--- Clean residual, we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL
   {
-    LinSysSol.SetValZero();
     LinSysRes.SetValZero();
   }
 
@@ -549,8 +581,8 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
       if (config->GetTime_Marching() == DT_STEPPING_1ST)
         GridVel = ( Disp_nP1[iDim] - Disp_n[iDim] ) / TimeStep;
       if (config->GetTime_Marching() == DT_STEPPING_2ND)
-        GridVel = ( 3.0*Disp_nP1[iDim] - 4.0*Disp_n[iDim]
-                    +  1.0*Disp_nM1[iDim] ) / (2.0*TimeStep);
+        GridVel = ( 3.0*Disp_nP1[iDim] - 4.0*Disp_n[iDim] +
+                    1.0*Disp_nM1[iDim] ) / (2.0*TimeStep);
 
       /*--- Store grid velocity for this point ---*/
 
@@ -586,12 +618,29 @@ void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config){
 
 void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config){
 
+  /* Surface motions are not applied during discrete adjoint runs as the corresponding
+   * boundary displacements are computed when loading the primal solution, and it
+   * would be complex to account for the incremental nature of these motions.
+   * The derivatives are still correct since the motion does not depend on the solution,
+   * but this means that (for now) we cannot get derivatives w.r.t. motion parameters. */
+
+  if (config->GetSurface_Movement(DEFORMING) && !config->GetDiscrete_Adjoint()) {
+    if (rank == MASTER_NODE)
+      cout << endl << " Updating surface positions." << endl;
+
+    Surface_Translating(geometry, config, config->GetTimeIter());
+    Surface_Plunging(geometry, config, config->GetTimeIter());
+    Surface_Pitching(geometry, config, config->GetTimeIter());
+    Surface_Rotating(geometry, config, config->GetTimeIter());
+  }
+
   unsigned short iMarker;
 
   /*--- Impose zero displacements of all non-moving surfaces (also at nodes in multiple moving/non-moving boundaries). ---*/
   /*--- Exceptions: symmetry plane, the receive boundaries and periodic boundaries should get a different treatment. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
+        (config->GetMarker_All_Moving(iMarker) == NO) &&
         (config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
         (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
@@ -600,9 +649,10 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     }
   }
 
-  /*--- Symmetry plane is, for now, clamped. ---*/
+  /*--- Symmetry plane is clamped, for now. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
+        (config->GetMarker_All_Moving(iMarker) == NO) &&
         (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)) {
 
       BC_Clamped(geometry, numerics, config, iMarker);
@@ -611,7 +661,8 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
   /*--- Impose displacement boundary conditions. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Deform_Mesh(iMarker) == YES) {
+    if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
+        (config->GetMarker_All_Moving(iMarker) == YES)) {
 
       BC_Deforming(geometry, numerics, config, iMarker);
     }
@@ -689,6 +740,13 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
   geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
 
+  /*--- Init the linear system solution. ---*/
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+      LinSysSol(iPoint, iDim) = nodes->GetSolution(iPoint, iDim);
+    }
+  }
+
   /*--- Recompute the edges and dual mesh control volumes in the
    domain and on the boundaries. ---*/
   UpdateDualGrid(geometry[MESH_0], config);
@@ -711,7 +769,8 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetMarker_All_Deform_Mesh(iMarker) == YES) {
+    if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
+        (config->GetMarker_All_Moving(iMarker) == YES)) {
 
       for (unsigned long iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
@@ -762,15 +821,8 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
       if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting known solution" << endl;
 
       /*--- Set loaded solution into correct previous time containers. ---*/
-      unsigned long iPoint;
-      for (iPoint = 0; iPoint < nPoint; iPoint++ ) {
-        for (unsigned short iDim = 0; iDim < nDim; iDim++){
-          if(iStep==1)
-            nodes->Set_Solution_time_n(iPoint, iDim, nodes->GetSolution(iPoint, iDim));
-          else
-            nodes->Set_Solution_time_n1(iPoint, iDim, nodes->GetSolution_time_n(iPoint, iDim));
-        }
-      }
+      if(iStep==1) nodes->Set_Solution_time_n();
+      else nodes->Set_Solution_time_n1();
     }
     else {
       string filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, "");
@@ -837,492 +889,394 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config,
-                                        unsigned long iter, unsigned short iZone) {
-  
-  su2double deltaT, time_new, time_old, Lref, *Coord;
-  su2double Center[3], VarCoord[3], Omega[3], Ampl[3], Phase[3];
-  su2double VarCoordAbs[3] = {0.0, 0.0, 0.0};
-  su2double rotCoord[3], r[3] = {0.0,0.0,0.0};
-  su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
-  su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
-  su2double cosPhi, sinPhi, cosPsi, sinPsi;
-  su2double DEG2RAD = PI_NUMBER/180.0;
-  unsigned short iMarker, jMarker, Moving, iDim, nDim = geometry->GetnDim();
+void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigned long iter) {
+
+  su2double deltaT, time_new, time_old, Lref;
+  const su2double* Coord = nullptr;
+  su2double Center[3] = {0.0}, VarCoord[3] = {0.0}, Omega[3] = {0.0}, Ampl[3] = {0.0}, Phase[3] = {0.0};
+  su2double VarCoordAbs[3] = {0.0};
+  su2double rotCoord[3] = {0.0}, r[3] = {0.0};
+  su2double rotMatrix[3][3] = {{0.0}};
+  su2double dtheta, dphi, dpsi;
+  const su2double DEG2RAD = PI_NUMBER/180.0;
+  unsigned short iMarker, jMarker, iDim;
   unsigned long iPoint, iVertex;
   string Marker_Tag, Moving_Tag;
-  
-  CSolver *solver  = NULL;
 
-  /*--- Initialize the delta variation in coordinates ---*/
-  VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-  
   /*--- Retrieve values from the config file ---*/
-  
+
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
-  
+
   /*--- Compute delta time based on physical time step ---*/
-  time_new = static_cast<su2double>(iter)*deltaT;
-  if (iter == 0) {
-    time_old = time_new;
-  } else {
-    time_old = static_cast<su2double>(iter-1)*deltaT;
-  }
+
+  time_new = iter*deltaT;
+  if (iter == 0) time_old = time_new;
+  else time_old = (iter-1)*deltaT;
 
   /*--- Store displacement of each node on the pitching surface ---*/
-    /*--- Loop over markers and find the particular marker(s) (surface) to pitch ---*/
+  /*--- Loop over markers and find the particular marker(s) (surface) to pitch ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Moving = config->GetMarker_All_Moving(iMarker);
-    if (Moving == YES) {
-      for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
-        
-        Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        
-        if (Marker_Tag == Moving_Tag && (config->GetKind_SurfaceMovement(jMarker) == DEFORMING)) {
-          
-          /*--- Pitching origin, frequency, and amplitude from config. ---*/
-          
-          for (iDim = 0; iDim < 3; iDim++){
-            Ampl[iDim]   = config->GetMarkerPitching_Ampl(jMarker, iDim)*DEG2RAD;
-            Omega[iDim]  = config->GetMarkerPitching_Omega(jMarker, iDim)/config->GetOmega_Ref();
-            Phase[iDim]  = config->GetMarkerPitching_Phase(jMarker, iDim)*DEG2RAD;
-            Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
-          }
-          /*--- Print some information to the console. Be verbose at the first
-           iteration only (mostly for debugging purposes). ---*/
-          // Note that the MASTER_NODE might not contain all the markers being moved.
+    if (config->GetMarker_All_Moving(iMarker) != YES) continue;
 
-          if (rank == MASTER_NODE) {
-            cout << " Storing pitching displacement for marker: ";
-            cout << Marker_Tag << "." << endl;
-            if (iter == 0) {
-              cout << " Pitching frequency: (" << Omega[0] << ", " << Omega[1];
-              cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
-              cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
-              cout << " Pitching amplitude about origin: (" << Ampl[0]/DEG2RAD;
-              cout << ", " << Ampl[1]/DEG2RAD << ", " << Ampl[2]/DEG2RAD;
-              cout << ") degrees."<< endl;
-              cout << " Pitching phase lag about origin: (" << Phase[0]/DEG2RAD;
-              cout << ", " << Phase[1]/DEG2RAD <<", "<< Phase[2]/DEG2RAD;
-              cout << ") degrees."<< endl;
-            }
-          }
-          
-          /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
-          
-          dtheta = -Ampl[0]*(sin(Omega[0]*time_new + Phase[0])
-                             - sin(Omega[0]*time_old + Phase[0]));
-          dphi   = -Ampl[1]*(sin(Omega[1]*time_new + Phase[1])
-                             - sin(Omega[1]*time_old + Phase[1]));
-          dpsi   = -Ampl[2]*(sin(Omega[2]*time_new + Phase[2])
-                             - sin(Omega[2]*time_old + Phase[2]));
-          
-          /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-          
-          cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
-          sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
-          
-          /*--- Compute the rotation matrix. Note that the implicit
-           ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-          
-          rotMatrix[0][0] = cosPhi*cosPsi;
-          rotMatrix[1][0] = cosPhi*sinPsi;
-          rotMatrix[2][0] = -sinPhi;
-          
-          rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-          rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-          rotMatrix[2][1] = sinTheta*cosPhi;
-          
-          rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-          rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-          rotMatrix[2][2] = cosTheta*cosPhi;
-          
-          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            
-            /*--- Index and coordinates of the current point ---*/
-            
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            Coord  = geometry->node[iPoint]->GetCoord();
-            
-            /*--- Calculate non-dim. position from rotation center ---*/
-            
-            for (iDim = 0; iDim < nDim; iDim++)
-              r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-            if (nDim == 2) r[nDim] = 0.0;
-            
-            /*--- Compute transformed point coordinates ---*/
-            
-            rotCoord[0] = rotMatrix[0][0]*r[0]
-                        + rotMatrix[0][1]*r[1]
-                        + rotMatrix[0][2]*r[2] + Center[0];
-            
-            rotCoord[1] = rotMatrix[1][0]*r[0]
-                        + rotMatrix[1][1]*r[1]
-                        + rotMatrix[1][2]*r[2] + Center[1];
-            
-            rotCoord[2] = rotMatrix[2][0]*r[0]
-                        + rotMatrix[2][1]*r[1]
-                        + rotMatrix[2][2]*r[2] + Center[2];
-            
-            /*--- Calculate delta change in the x, y, & z directions ---*/
-            for (iDim = 0; iDim < nDim; iDim++)
-              VarCoord[iDim] = (rotCoord[iDim]-Coord[iDim])/Lref;
-            if (nDim == 2) VarCoord[nDim] = 0.0;
-            
-            // /*--- Set node displacement for volume deformation ---*/
-            // geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-            
-            for (iDim = 0; iDim < 3; iDim++){
-              VarCoordAbs[iDim] = nodes->GetBound_Disp(iPoint, iDim) + VarCoord[iDim];
-            }
-            
-            nodes->SetBound_Disp(iPoint, VarCoordAbs);
-          }
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+    for (jMarker = 0; jMarker < config->GetnMarker_Moving(); jMarker++) {
+
+      Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
+
+      if ((Marker_Tag != Moving_Tag) || (config->GetKind_SurfaceMovement(jMarker) != DEFORMING)) {
+        continue;
+      }
+
+      /*--- Pitching origin, frequency, and amplitude from config. ---*/
+
+      for (iDim = 0; iDim < 3; iDim++){
+        Ampl[iDim]   = config->GetMarkerPitching_Ampl(jMarker, iDim)*DEG2RAD;
+        Omega[iDim]  = config->GetMarkerPitching_Omega(jMarker, iDim)/config->GetOmega_Ref();
+        Phase[iDim]  = config->GetMarkerPitching_Phase(jMarker, iDim)*DEG2RAD;
+        Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+      }
+      /*--- Print some information to the console. Be verbose at the first
+       iteration only (mostly for debugging purposes). ---*/
+      // Note that the MASTER_NODE might not contain all the markers being moved.
+
+      if (rank == MASTER_NODE) {
+        cout << " Storing pitching displacement for marker: ";
+        cout << Marker_Tag << "." << endl;
+        if (iter == 0) {
+          cout << " Pitching frequency: (" << Omega[0] << ", " << Omega[1];
+          cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
+          cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
+          cout << " Pitching amplitude about origin: (" << Ampl[0]/DEG2RAD;
+          cout << ", " << Ampl[1]/DEG2RAD << ", " << Ampl[2]/DEG2RAD;
+          cout << ") degrees."<< endl;
+          cout << " Pitching phase lag about origin: (" << Phase[0]/DEG2RAD;
+          cout << ", " << Phase[1]/DEG2RAD <<", "<< Phase[2]/DEG2RAD;
+          cout << ") degrees."<< endl;
         }
+      }
+
+      /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
+
+      dtheta = -Ampl[0]*(sin(Omega[0]*time_new + Phase[0])
+                       - sin(Omega[0]*time_old + Phase[0]));
+      dphi   = -Ampl[1]*(sin(Omega[1]*time_new + Phase[1])
+                       - sin(Omega[1]*time_old + Phase[1]));
+      dpsi   = -Ampl[2]*(sin(Omega[2]*time_new + Phase[2])
+                       - sin(Omega[2]*time_old + Phase[2]));
+
+      /*--- Compute rotation matrix. ---*/
+
+      RotationMatrix(dtheta, dphi, dpsi, rotMatrix);
+
+      /*--- Apply rotation to the vertices. ---*/
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        /*--- Index and coordinates of the current point ---*/
+
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Coord  = geometry->node[iPoint]->GetCoord();
+
+        /*--- Calculate non-dim. position from rotation center ---*/
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+
+        /*--- Compute transformed point coordinates ---*/
+
+        Rotate(rotMatrix, Center, r, rotCoord);
+
+        /*--- Calculate delta change in the x, y, & z directions ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          VarCoord[iDim] = (rotCoord[iDim]-Coord[iDim])/Lref;
+
+        /*--- Set node displacement for volume deformation ---*/
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          VarCoordAbs[iDim] = nodes->GetBound_Disp(iPoint, iDim) + VarCoord[iDim];
+
+        nodes->SetBound_Disp(iPoint, VarCoordAbs);
       }
     }
   }
   /*--- For pitching we don't update the motion origin and moment reference origin. ---*/
-  
+
 }
 
-void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config,
-                                        unsigned long iter, unsigned short iZone) {
-  su2double deltaT, time_new, time_old, Lref, *Coord;
-  su2double VarCoordAbs[3] = {0.0, 0.0, 0.0};
-  su2double Center[3] = {0.0,0.0,0.0}, VarCoord[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0},
-  rotCoord[3] = {0.0,0.0,0.0}, r[3] = {0.0,0.0,0.0}, Center_Aux[3] = {0.0,0.0,0.0};
-  su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
-  su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
-  su2double cosPhi, sinPhi, cosPsi, sinPsi;
-  unsigned short iMarker, jMarker, Moving, iDim, nDim = geometry->GetnDim();
+void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigned long iter) {
+
+  su2double deltaT, time_new, time_old, Lref;
+  const su2double* Coord = nullptr;
+  su2double VarCoordAbs[3] = {0.0};
+  su2double Center[3] = {0.0}, VarCoord[3] = {0.0}, Omega[3] = {0.0},
+  rotCoord[3] = {0.0}, r[3] = {0.0}, Center_Aux[3] = {0.0};
+  su2double rotMatrix[3][3] = {{0.0}};
+  su2double dtheta, dphi, dpsi;
+  unsigned short iMarker, jMarker, iDim;
   unsigned long iPoint, iVertex;
   string Marker_Tag, Moving_Tag;
-  
-  /*--- Initialize the delta variation in coordinates ---*/
-  VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-  
+
   /*--- Retrieve values from the config file ---*/
-  
+
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
-  
+
   /*--- Compute delta time based on physical time step ---*/
-  time_new = static_cast<su2double>(iter)*deltaT;
-  if (iter == 0) {
-    time_old = time_new;
-  } else {
-    time_old = static_cast<su2double>(iter-1)*deltaT;
-  }
-  
+
+  time_new = iter*deltaT;
+  if (iter == 0) time_old = time_new;
+  else time_old = (iter-1)*deltaT;
+
   /*--- Store displacement of each node on the rotating surface ---*/
-    /*--- Loop over markers and find the particular marker(s) (surface) to rotate ---*/
+  /*--- Loop over markers and find the particular marker(s) (surface) to rotate ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Moving = config->GetMarker_All_Moving(iMarker);
-    if (Moving == YES) {
-      for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
-        
-        Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        
-        if (Marker_Tag == Moving_Tag && (config->GetKind_SurfaceMovement(jMarker) == DEFORMING)) {
-          
-          /*--- Rotation origin and angular velocity from config. ---*/
-          
-          for (iDim = 0; iDim < 3; iDim++){
-            Omega[iDim]  = config->GetMarkerRotationRate(jMarker, iDim)/config->GetOmega_Ref();
-            Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
-          }
-          /*--- Print some information to the console. Be verbose at the first
-           iteration only (mostly for debugging purposes). ---*/
-          // Note that the MASTER_NODE might not contain all the markers being moved.
+    if (config->GetMarker_All_Moving(iMarker) != YES) continue;
 
-          if (rank == MASTER_NODE) {
-            cout << " Storing rotating displacement for marker: ";
-            cout << Marker_Tag << "." << endl;
-            if (iter == 0) {
-              cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
-              cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
-              cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
-            }
-          }
-          
-          /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
-          
-          dtheta = Omega[0]*(time_new-time_old);
-          dphi   = Omega[1]*(time_new-time_old);
-          dpsi   = Omega[2]*(time_new-time_old);
-          
-          /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-          
-          cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
-          sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
-          
-          /*--- Compute the rotation matrix. Note that the implicit
-           ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-          
-          rotMatrix[0][0] = cosPhi*cosPsi;
-          rotMatrix[1][0] = cosPhi*sinPsi;
-          rotMatrix[2][0] = -sinPhi;
-          
-          rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-          rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-          rotMatrix[2][1] = sinTheta*cosPhi;
-          
-          rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-          rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-          rotMatrix[2][2] = cosTheta*cosPhi;
-          
-          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            
-            /*--- Index and coordinates of the current point ---*/
-            
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            Coord  = geometry->node[iPoint]->GetCoord();
-            
-            /*--- Calculate non-dim. position from rotation center ---*/
-            
-            for (iDim = 0; iDim < nDim; iDim++)
-              r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-            if (nDim == 2) r[nDim] = 0.0;
-            
-            /*--- Compute transformed point coordinates ---*/
-            
-            rotCoord[0] = rotMatrix[0][0]*r[0]
-            + rotMatrix[0][1]*r[1]
-            + rotMatrix[0][2]*r[2] + Center[0];
-            
-            rotCoord[1] = rotMatrix[1][0]*r[0]
-            + rotMatrix[1][1]*r[1]
-            + rotMatrix[1][2]*r[2] + Center[1];
-            
-            rotCoord[2] = rotMatrix[2][0]*r[0]
-            + rotMatrix[2][1]*r[1]
-            + rotMatrix[2][2]*r[2] + Center[2];
-            
-            /*--- Calculate delta change in the x, y, & z directions ---*/
-            for (iDim = 0; iDim < nDim; iDim++)
-              VarCoord[iDim] = (rotCoord[iDim]-Coord[iDim])/Lref;
-            if (nDim == 2) VarCoord[nDim] = 0.0;
-            
-            // /*--- Set node displacement for volume deformation ---*/
-            // geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-            
-            for (iDim = 0; iDim < 3; iDim++){
-              VarCoordAbs[iDim] = nodes->GetBound_Disp(iPoint, iDim) + VarCoord[iDim];
-            }
-            
-            nodes->SetBound_Disp(iPoint, VarCoordAbs);
-          }
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+    for (jMarker = 0; jMarker < config->GetnMarker_Moving(); jMarker++) {
+
+      Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
+
+      if ((Marker_Tag != Moving_Tag) || (config->GetKind_SurfaceMovement(jMarker) != DEFORMING)) {
+        continue;
+      }
+
+      /*--- Rotation origin and angular velocity from config. ---*/
+
+      for (iDim = 0; iDim < 3; iDim++){
+        Omega[iDim]  = config->GetMarkerRotationRate(jMarker, iDim)/config->GetOmega_Ref();
+        Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+      }
+
+      /*--- Print some information to the console. Be verbose at the first
+       iteration only (mostly for debugging purposes). ---*/
+      // Note that the MASTER_NODE might not contain all the markers being moved.
+
+      if (rank == MASTER_NODE) {
+        cout << " Storing rotating displacement for marker: ";
+        cout << Marker_Tag << "." << endl;
+        if (iter == 0) {
+          cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
+          cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
+          cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
         }
+      }
+
+      /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
+
+      dtheta = Omega[0]*(time_new-time_old);
+      dphi   = Omega[1]*(time_new-time_old);
+      dpsi   = Omega[2]*(time_new-time_old);
+
+      /*--- Compute rotation matrix. ---*/
+
+      RotationMatrix(dtheta, dphi, dpsi, rotMatrix);
+
+      /*--- Apply rotation to the vertices. ---*/
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        /*--- Index and coordinates of the current point ---*/
+
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Coord  = geometry->node[iPoint]->GetCoord();
+
+        /*--- Calculate non-dim. position from rotation center ---*/
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+
+        /*--- Compute transformed point coordinates ---*/
+
+        Rotate(rotMatrix, Center, r, rotCoord);
+
+        /*--- Calculate delta change in the x, y, & z directions ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          VarCoord[iDim] = (rotCoord[iDim]-Coord[iDim])/Lref;
+
+        /*--- Set node displacement for volume deformation ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          VarCoordAbs[iDim] = nodes->GetBound_Disp(iPoint, iDim) + VarCoord[iDim];
+
+        nodes->SetBound_Disp(iPoint, VarCoordAbs);
       }
     }
   }
-  
+
   /*--- When updating the origins it is assumed that all markers have the
    same rotation movement, because we use the last markers rotation matrix and center ---*/
-  
+
   /*--- Set the mesh motion center to the new location after
    incrementing the position with the rotation. This new
    location will be used for subsequent mesh motion for the given marker.---*/
-  
-  for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
-    
+
+  for (jMarker=0; jMarker < config->GetnMarker_Moving(); jMarker++) {
+
     /*-- Check if we want to update the motion origin for the given marker ---*/
-    
-    if (config->GetMoveMotion_Origin(jMarker) == YES) {
-        
-      for (iDim = 0; iDim < 3; iDim++){
-        Center_Aux[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
-      }
-      
-      /*--- Calculate non-dim. position from rotation center ---*/
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        r[iDim] = (Center_Aux[iDim]-Center[iDim])/Lref;
-      if (nDim == 2) r[nDim] = 0.0;
-      
-      /*--- Compute transformed point coordinates ---*/
-      
-      rotCoord[0] = rotMatrix[0][0]*r[0]
-      + rotMatrix[0][1]*r[1]
-      + rotMatrix[0][2]*r[2] + Center[0];
-      
-      rotCoord[1] = rotMatrix[1][0]*r[0]
-      + rotMatrix[1][1]*r[1]
-      + rotMatrix[1][2]*r[2] + Center[1];
-      
-      rotCoord[2] = rotMatrix[2][0]*r[0]
-      + rotMatrix[2][1]*r[1]
-      + rotMatrix[2][2]*r[2] + Center[2];
-      
-      /*--- Calculate delta change in the x, y, & z directions ---*/
-      for (iDim = 0; iDim < nDim; iDim++)
-        VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
-      if (nDim == 2) VarCoord[nDim] = 0.0;
-      
-      for (iDim = 0; iDim < 3; iDim++){
-        Center_Aux[iDim] += VarCoord[iDim];
-      }
-      config->SetMarkerMotion_Origin(Center_Aux, jMarker);      
-    }
+
+    if (config->GetMoveMotion_Origin(jMarker) != YES) continue;
+
+    for (iDim = 0; iDim < 3; iDim++)
+      Center_Aux[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+
+    /*--- Calculate non-dim. position from rotation center ---*/
+
+    for (iDim = 0; iDim < nDim; iDim++)
+      r[iDim] = (Center_Aux[iDim]-Center[iDim])/Lref;
+
+    /*--- Compute transformed point coordinates ---*/
+
+    Rotate(rotMatrix, Center, r, rotCoord);
+
+    /*--- Calculate delta change in the x, y, & z directions ---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
+
+    for (iDim = 0; iDim < 3; iDim++)
+      Center_Aux[iDim] += VarCoord[iDim];
+
+    config->SetMarkerMotion_Origin(Center_Aux, jMarker);
   }
 
   /*--- Set the moment computation center to the new location after
    incrementing the position with the rotation. ---*/
-  
+
   for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
-      
+
     Center_Aux[0] = config->GetRefOriginMoment_X(jMarker);
     Center_Aux[1] = config->GetRefOriginMoment_Y(jMarker);
     Center_Aux[2] = config->GetRefOriginMoment_Z(jMarker);
 
     /*--- Calculate non-dim. position from rotation center ---*/
-    
+
     for (iDim = 0; iDim < nDim; iDim++)
       r[iDim] = (Center_Aux[iDim]-Center[iDim])/Lref;
-    if (nDim == 2) r[nDim] = 0.0;
-    
+
     /*--- Compute transformed point coordinates ---*/
-    
-    rotCoord[0] = rotMatrix[0][0]*r[0]
-    + rotMatrix[0][1]*r[1]
-    + rotMatrix[0][2]*r[2] + Center[0];
-    
-    rotCoord[1] = rotMatrix[1][0]*r[0]
-    + rotMatrix[1][1]*r[1]
-    + rotMatrix[1][2]*r[2] + Center[1];
-    
-    rotCoord[2] = rotMatrix[2][0]*r[0]
-    + rotMatrix[2][1]*r[1]
-    + rotMatrix[2][2]*r[2] + Center[2];
-    
+
+    Rotate(rotMatrix, Center, r, rotCoord);
+
     /*--- Calculate delta change in the x, y, & z directions ---*/
     for (iDim = 0; iDim < nDim; iDim++)
       VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
-    if (nDim == 2) VarCoord[nDim] = 0.0;
-    
+
     config->SetRefOriginMoment_X(jMarker, Center_Aux[0]+VarCoord[0]);
     config->SetRefOriginMoment_Y(jMarker, Center_Aux[1]+VarCoord[1]);
     config->SetRefOriginMoment_Z(jMarker, Center_Aux[2]+VarCoord[2]);
   }
 }
 
-void CMeshSolver::Surface_Plunging(CGeometry *geometry, CConfig *config,
-                                        unsigned long iter, unsigned short iZone) {
+void CMeshSolver::Surface_Plunging(CGeometry *geometry, CConfig *config, unsigned long iter) {
+
   su2double deltaT, time_new, time_old, Lref;
-  su2double Center[3] = {0.0, 0.0, 0.0}, VarCoord[3], Omega[3], Ampl[3];
-  su2double VarCoordAbs[3] = {0.0, 0.0, 0.0};
-  su2double DEG2RAD = PI_NUMBER/180.0;
-  unsigned short iMarker, jMarker, Moving;
+  su2double Center[3] = {0.0}, VarCoord[3] = {0.0}, Omega[3] = {0.0}, Ampl[3] = {0.0};
+  su2double VarCoordAbs[3] = {0.0};
+  const su2double DEG2RAD = PI_NUMBER/180.0;
+  unsigned short iMarker, jMarker;
   unsigned long iPoint, iVertex;
   string Marker_Tag, Moving_Tag;
   unsigned short iDim;
-  
-  /*--- Initialize the delta variation in coordinates ---*/
-  VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-  
+
   /*--- Retrieve values from the config file ---*/
-  
+
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
-  
+
   /*--- Compute delta time based on physical time step ---*/
-  time_new = static_cast<su2double>(iter)*deltaT;
-  if (iter == 0) {
-    time_old = time_new;
-  } else {
-    time_old = static_cast<su2double>(iter-1)*deltaT;
-  }
-  
+
+  time_new = iter*deltaT;
+  if (iter == 0) time_old = time_new;
+  else time_old = (iter-1)*deltaT;
+
   /*--- Store displacement of each node on the plunging surface ---*/
-    /*--- Loop over markers and find the particular marker(s) (surface) to plunge ---*/
-  
+  /*--- Loop over markers and find the particular marker(s) (surface) to plunge ---*/
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Moving = config->GetMarker_All_Moving(iMarker);
-    if (Moving == YES) {
-      for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
-        
-        Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        
-        if (Marker_Tag == Moving_Tag && (config->GetKind_SurfaceMovement(jMarker) == DEFORMING)) {
-          
-          /*--- Plunging frequency and amplitude from config. ---*/
-          
-          for (iDim = 0; iDim < 3; iDim++){
-            Ampl[iDim]   = config->GetMarkerPlunging_Ampl(jMarker, iDim)/Lref;
-            Omega[iDim]  = config->GetMarkerPlunging_Omega(jMarker, iDim)/config->GetOmega_Ref();
-            Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
-          }
-          /*--- Print some information to the console. Be verbose at the first
-           iteration only (mostly for debugging purposes). ---*/
-          // Note that the MASTER_NODE might not contain all the markers being moved.
+    if (config->GetMarker_All_Moving(iMarker) != YES) continue;
 
-          if (rank == MASTER_NODE) {
-            cout << " Storing plunging displacement for marker: ";
-            cout << Marker_Tag << "." << endl;
-            if (iter == 0) {
-              cout << " Plunging frequency: (" << Omega[0] << ", " << Omega[1];
-              cout << ", " << Omega[2] << ") rad/s." << endl;
-              cout << " Plunging amplitude: (" << Ampl[0]/DEG2RAD;
-              cout << ", " << Ampl[1]/DEG2RAD << ", " << Ampl[2]/DEG2RAD;
-              cout << ") degrees."<< endl;
-            }
-          }
-          
-          /*--- Compute delta change in the position in the x, y, & z directions. ---*/
-          
-          VarCoord[0] = -Ampl[0]*(sin(Omega[0]*time_new) - sin(Omega[0]*time_old));
-          VarCoord[1] = -Ampl[1]*(sin(Omega[1]*time_new) - sin(Omega[1]*time_old));
-          VarCoord[2] = -Ampl[2]*(sin(Omega[2]*time_new) - sin(Omega[2]*time_old));
-          
-          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            
-            // /*--- Set node displacement for volume deformation ---*/
-            // geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    for (jMarker = 0; jMarker < config->GetnMarker_Moving(); jMarker++) {
 
-            for (iDim = 0; iDim < 3; iDim++){
-              VarCoordAbs[iDim] = nodes->GetBound_Disp(iPoint, iDim) + VarCoord[iDim];
-            }
-            
-            nodes->SetBound_Disp(iPoint, VarCoordAbs);
-            
-          }
+      Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
+
+      if ((Marker_Tag != Moving_Tag) || (config->GetKind_SurfaceMovement(jMarker) != DEFORMING)) {
+        continue;
+      }
+
+      /*--- Plunging frequency and amplitude from config. ---*/
+
+      for (iDim = 0; iDim < 3; iDim++){
+        Ampl[iDim]   = config->GetMarkerPlunging_Ampl(jMarker, iDim)/Lref;
+        Omega[iDim]  = config->GetMarkerPlunging_Omega(jMarker, iDim)/config->GetOmega_Ref();
+        Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+      }
+
+      /*--- Print some information to the console. Be verbose at the first
+       iteration only (mostly for debugging purposes). ---*/
+      // Note that the MASTER_NODE might not contain all the markers being moved.
+
+      if (rank == MASTER_NODE) {
+        cout << " Storing plunging displacement for marker: ";
+        cout << Marker_Tag << "." << endl;
+        if (iter == 0) {
+          cout << " Plunging frequency: (" << Omega[0] << ", " << Omega[1];
+          cout << ", " << Omega[2] << ") rad/s." << endl;
+          cout << " Plunging amplitude: (" << Ampl[0]/DEG2RAD;
+          cout << ", " << Ampl[1]/DEG2RAD << ", " << Ampl[2]/DEG2RAD;
+          cout << ") degrees."<< endl;
         }
+      }
+
+      /*--- Compute delta change in the position in the x, y, & z directions. ---*/
+
+      VarCoord[0] = -Ampl[0]*(sin(Omega[0]*time_new) - sin(Omega[0]*time_old));
+      VarCoord[1] = -Ampl[1]*(sin(Omega[1]*time_new) - sin(Omega[1]*time_old));
+      VarCoord[2] = -Ampl[2]*(sin(Omega[2]*time_new) - sin(Omega[2]*time_old));
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        /*--- Set node displacement for volume deformation ---*/
+
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          VarCoordAbs[iDim] = nodes->GetBound_Disp(iPoint, iDim) + VarCoord[iDim];
+
+        nodes->SetBound_Disp(iPoint, VarCoordAbs);
+
       }
     }
   }
-  
+
   /*--- When updating the origins it is assumed that all markers have the
    same plunging movement, because we use the last VarCoord set ---*/
-  
+
   /*--- Set the mesh motion center to the new location after
    incrementing the position with the translation. This new
    location will be used for subsequent mesh motion for the given marker.---*/
-  
+
   for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
-    
+
     /*-- Check if we want to update the motion origin for the given marker ---*/
-    
+
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
-      for (iDim = 0; iDim < 3; iDim++){
+      for (iDim = 0; iDim < 3; iDim++)
         Center[iDim] += VarCoord[iDim];
-      }
-      config->SetMarkerMotion_Origin(Center, jMarker);      
+
+      config->SetMarkerMotion_Origin(Center, jMarker);
     }
   }
-  
+
   /*--- Set the moment computation center to the new location after
    incrementing the position with the plunging. ---*/
-  
-  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+
+  for (jMarker=0; jMarker < config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + VarCoord[0];
     Center[1] = config->GetRefOriginMoment_Y(jMarker) + VarCoord[1];
     Center[2] = config->GetRefOriginMoment_Z(jMarker) + VarCoord[2];
@@ -1332,112 +1286,106 @@ void CMeshSolver::Surface_Plunging(CGeometry *geometry, CConfig *config,
   }
 }
 
-void CMeshSolver::Surface_Translating(CGeometry *geometry, CConfig *config,
-                                        unsigned long iter, unsigned short iZone) {
+void CMeshSolver::Surface_Translating(CGeometry *geometry, CConfig *config, unsigned long iter) {
+
   su2double deltaT, time_new, time_old;
-  su2double Center[3] = {0.0,0.0,0.0}, VarCoord[3] = {0.0,0.0,0.0};
-  su2double VarCoordAbs[3] = {0.0, 0.0, 0.0};
-  su2double xDot[3] = {0.0,0.0,0.0};
-  unsigned short iMarker, jMarker, Moving;
+  su2double Center[3] = {0.0}, VarCoord[3] = {0.0};
+  su2double VarCoordAbs[3] = {0.0};
+  su2double xDot[3] = {0.0};
+  unsigned short iMarker, jMarker;
   unsigned long iPoint, iVertex;
   string Marker_Tag, Moving_Tag;
   unsigned short iDim;
-  
-  /*--- Initialize the delta variation in coordinates ---*/
-  VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-  
+
   /*--- Retrieve values from the config file ---*/
-  
+
   deltaT = config->GetDelta_UnstTimeND();
-  
+
   /*--- Compute delta time based on physical time step ---*/
-  time_new = static_cast<su2double>(iter)*deltaT;
-  if (iter == 0) {
-    time_old = time_new;
-  } else {
-    time_old = static_cast<su2double>(iter-1)*deltaT;
-  }
-  
+
+  time_new = iter*deltaT;
+  if (iter == 0) time_old = time_new;
+  else time_old = (iter-1)*deltaT;
+
   /*--- Store displacement of each node on the translating surface ---*/
-    /*--- Loop over markers and find the particular marker(s) (surface) to translate ---*/
-  
+  /*--- Loop over markers and find the particular marker(s) (surface) to translate ---*/
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Moving = config->GetMarker_All_Moving(iMarker);
-    if (Moving == YES) {
-      for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
-        
-        Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        
-        if (Marker_Tag == Moving_Tag && (config->GetKind_SurfaceMovement(jMarker) == DEFORMING)) {
+    if (config->GetMarker_All_Moving(iMarker) != YES) continue;
 
-          for (iDim = 0; iDim < 3; iDim++){
-            xDot[iDim]   = config->GetMarkerTranslationRate(jMarker, iDim);
-            Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
-          }
-          
-          /*--- Print some information to the console. Be verbose at the first
-           iteration only (mostly for debugging purposes). ---*/
-          // Note that the MASTER_NODE might not contain all the markers being moved.
-          
-          if (rank == MASTER_NODE) {
-            cout << " Storing translating displacement for marker: ";
-            cout << Marker_Tag << "." << endl;
-            if (iter == 0) {
-              cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
-              cout << ", " << xDot[2]*config->GetVelocity_Ref();
-              if (config->GetSystemMeasurements() == SI) cout << ") m/s." << endl;
-              else cout << ") ft/s." << endl;
-            }
-          }
-          
-          /*--- Compute delta change in the position in the x, y, & z directions. ---*/
-          
-          VarCoord[0] = xDot[0]*(time_new-time_old);
-          VarCoord[1] = xDot[1]*(time_new-time_old);
-          VarCoord[2] = xDot[2]*(time_new-time_old);
-          
-          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            
-            // /*--- Set node displacement for volume deformation ---*/
-            // geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-            
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
-            for (iDim = 0; iDim < 3; iDim++){
-              VarCoordAbs[iDim] = nodes->GetBound_Disp(iPoint, iDim) + VarCoord[iDim];
-            }
-            
-            nodes->SetBound_Disp(iPoint, VarCoordAbs);
-          }
+    for (jMarker = 0; jMarker < config->GetnMarker_Moving(); jMarker++) {
+
+      Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
+
+      if ((Marker_Tag != Moving_Tag) || (config->GetKind_SurfaceMovement(jMarker) != DEFORMING)) {
+        continue;
+      }
+
+      for (iDim = 0; iDim < 3; iDim++) {
+        xDot[iDim]   = config->GetMarkerTranslationRate(jMarker, iDim);
+        Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+      }
+
+      /*--- Print some information to the console. Be verbose at the first
+       iteration only (mostly for debugging purposes). ---*/
+      // Note that the MASTER_NODE might not contain all the markers being moved.
+
+      if (rank == MASTER_NODE) {
+        cout << " Storing translating displacement for marker: ";
+        cout << Marker_Tag << "." << endl;
+        if (iter == 0) {
+          cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
+          cout << ", " << xDot[2]*config->GetVelocity_Ref();
+          if (config->GetSystemMeasurements() == SI) cout << ") m/s." << endl;
+          else cout << ") ft/s." << endl;
         }
+      }
+
+      /*--- Compute delta change in the position in the x, y, & z directions. ---*/
+
+      VarCoord[0] = xDot[0]*(time_new-time_old);
+      VarCoord[1] = xDot[1]*(time_new-time_old);
+      VarCoord[2] = xDot[2]*(time_new-time_old);
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        /*--- Set node displacement for volume deformation ---*/
+
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          VarCoordAbs[iDim] = nodes->GetBound_Disp(iPoint, iDim) + VarCoord[iDim];
+
+        nodes->SetBound_Disp(iPoint, VarCoordAbs);
       }
     }
   }
-  
+
   /*--- When updating the origins it is assumed that all markers have the
         same translational velocity, because we use the last VarCoord set ---*/
-  
+
   /*--- Set the mesh motion center to the new location after
    incrementing the position with the translation. This new
    location will be used for subsequent mesh motion for the given marker.---*/
-  
-  for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
-    
+
+  for (jMarker=0; jMarker < config->GetnMarker_Moving(); jMarker++) {
+
     /*-- Check if we want to update the motion origin for the given marker ---*/
-    
+
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
-      for (iDim = 0; iDim < 3; iDim++){
+      for (iDim = 0; iDim < 3; iDim++)
         Center[iDim] += VarCoord[iDim];
-      }
-      config->SetMarkerMotion_Origin(Center, jMarker);      
+
+      config->SetMarkerMotion_Origin(Center, jMarker);
     }
   }
-  
+
   /*--- Set the moment computation center to the new location after
    incrementing the position with the translation. ---*/
-  
-  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+
+  for (jMarker=0; jMarker < config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + VarCoord[0];
     Center[1] = config->GetRefOriginMoment_Y(jMarker) + VarCoord[1];
     Center[2] = config->GetRefOriginMoment_Z(jMarker) + VarCoord[2];
