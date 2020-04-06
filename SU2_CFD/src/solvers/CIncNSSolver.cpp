@@ -2,7 +2,7 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -820,7 +820,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
 
     /*--- Retrieve the value of the kinetic energy (if needed) ---*/
 
-    if (turb_model != NONE) {
+    if (turb_model != NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 

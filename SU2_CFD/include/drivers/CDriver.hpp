@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,20 +39,9 @@
 #include "../../../Common/include/grid_movement_structure.hpp"
 #include "../../../Common/include/interpolation_structure.hpp"
 
-#include "../output/COutputLegacy.hpp"
-#include "../output/COutput.hpp"
-#include "../output/CMultizoneOutput.hpp"
-#include "../output/CElasticityOutput.hpp"
-#include "../output/CAdjElasticityOutput.hpp"
-#include "../output/CFlowCompOutput.hpp"
-#include "../output/CAdjFlowOutput.hpp"
-#include "../output/CFlowCompFEMOutput.hpp"
-#include "../output/CFlowIncOutput.hpp"
-#include "../output/CAdjFlowIncOutput.hpp"
-#include "../output/CHeatOutput.hpp"
-#include "../output/CAdjHeatOutput.hpp"
-
 using namespace std;
+
+class COutputLegacy;
 
 /*!
  * \class CDriver
@@ -197,11 +186,11 @@ protected:
 
   /*!
    * \brief Definition and allocation of all integration classes.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[out] integration - Container vector with all the integration methods.
    */
-  void Integration_Preprocessing(CConfig *config, CIntegration **&integration);
+  void Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration);
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -1098,7 +1087,7 @@ public:
  * \class CDiscAdjFSIDriver
  * \brief Overload: Class for driving a discrete adjoint FSI iteration.
  * \author R. Sanchez.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  */
 class CDiscAdjFSIDriver : public CDriver {
 

@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -79,7 +79,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 10;             /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+const unsigned int MAX_SOLS = 12;             /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
@@ -133,6 +133,8 @@ const int SU2_CONN_SIZE   = 10;  /*!< \brief Size of the connectivity array that
                                              that we read from a mesh file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
 const int SU2_CONN_SKIP   = 2;   /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
 
+const su2double COLORING_EFF_THRESH = 0.875;  /*!< \brief Below this value fallback strategies are used instead. */
+
 /*!
  * \brief Boolean answers
  */
@@ -157,7 +159,7 @@ static const MapType<string, AVERAGE_TYPE> Average_Map = {
 /*!
  * \brief different solver types for the CFD component
  */
-enum ENUM_SOLVER {
+enum ENUM_MAIN_SOLVER {
   NO_SOLVER = 0,                    /*!< \brief Definition of no solver. */
   EULER = 1,                        /*!< \brief Definition of the Euler's solver. */
   NAVIER_STOKES = 2,                /*!< \brief Definition of the Navier-Stokes' solver. */
@@ -189,7 +191,7 @@ enum ENUM_SOLVER {
   FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIPHYSICS = 30
 };
-static const MapType<string, ENUM_SOLVER> Solver_Map = {
+static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", NO_SOLVER)
   MakePair("EULER", EULER)
   MakePair("NAVIER_STOKES", NAVIER_STOKES)
@@ -454,6 +456,9 @@ const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in
 const int RAD_SOL = 7;      /*!< \brief Position of the radiation equation in the solution solver array. */
 const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 
+const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
+const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
+
 const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
 
@@ -472,9 +477,6 @@ const int DE_TERM = 1;       /*!< \brief Position of the dielectric terms in the
 const int MAT_NHCOMP  = 2;   /*!< \brief Position of the Neo-Hookean compressible material model. */
 const int MAT_IDEALDE = 3;   /*!< \brief Position of the Ideal-DE material model. */
 const int MAT_KNOWLES = 4;   /*!< \brief Position of the Knowles material model. */
-
-const int MESH_SOL = 8;      /*!< \brief Position of the mesh solver. */
-const int ADJMESH_SOL = 9;   /*!< \brief Position of the adjoint of the mesh solver. */
 
 /*!
  * \brief Types of finite elements (in 2D or 3D)

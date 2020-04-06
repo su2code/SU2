@@ -2,7 +2,7 @@
  * \file CFEM_DG_Integration.cpp
  * \brief Definition of time and space integration for the DG solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 #include "../../include/integration/CFEM_DG_Integration.hpp"
 
 
-CFEM_DG_Integration::CFEM_DG_Integration(CConfig *config) : CIntegration(config) { }
+CFEM_DG_Integration::CFEM_DG_Integration() : CIntegration() { }
 
 void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
                                                CSolver *****solver_container,

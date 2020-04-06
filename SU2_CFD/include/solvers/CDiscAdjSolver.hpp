@@ -2,7 +2,7 @@
  * \file CDiscAdjSolver.hpp
  * \brief Headers of the CDiscAdjSolver class
  * \author T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -73,7 +73,6 @@ public:
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   CDiscAdjSolver(CGeometry *geometry, CConfig *config);
 
@@ -83,6 +82,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver - Initialize the discrete adjoint solver with the corresponding direct solver.
    * \param[in] Kind_Solver - The kind of direct solver.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
 

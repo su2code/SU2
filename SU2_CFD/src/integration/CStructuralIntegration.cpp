@@ -2,7 +2,7 @@
  * \file CStructuralIntegration.cpp
  * \brief Space and time integration for structural problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 #include "../../include/integration/CStructuralIntegration.hpp"
 
 
-CStructuralIntegration::CStructuralIntegration(CConfig *config) : CIntegration(config) { }
+CStructuralIntegration::CStructuralIntegration() : CIntegration() { }
 
 void CStructuralIntegration::Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                                   CNumerics ******numerics_container, CConfig **config,

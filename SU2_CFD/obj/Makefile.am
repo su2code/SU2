@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.2 "Blackbird"
+# \version 7.0.3 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -59,6 +59,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/integration/CMultiGridIntegration.cpp \
   ../src/integration/CStructuralIntegration.cpp \
   ../src/integration/CFEM_DG_Integration.cpp \
+  ../src/integration/CIntegrationFactory.cpp \
   ../src/drivers/CMultizoneDriver.cpp \
   ../src/drivers/CSinglezoneDriver.cpp \
   ../src/drivers/CDiscAdjSinglezoneDriver.cpp \
@@ -123,7 +124,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/CAdjFlowCompOutput.cpp \
   ../src/output/CAdjFlowIncOutput.cpp \
   ../src/output/CMultizoneOutput.cpp \
+  ../src/output/COutputFactory.cpp \
   ../src/output/output_structure_legacy.cpp \
+  ../src/output/COutputFactory.cpp \
   ../src/python_wrapper_structure.cpp \
   ../src/solvers/CAdjEulerSolver.cpp \
   ../src/solvers/CAdjNSSolver.cpp \
@@ -137,7 +140,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CFEASolver.cpp \
   ../src/solvers/CFEM_DG_EulerSolver.cpp \
   ../src/solvers/CFEM_DG_NSSolver.cpp \
-  ../src/solvers/CHeatSolverFVM.cpp \
+  ../src/solvers/CHeatSolver.cpp \
   ../src/solvers/CIncEulerSolver.cpp \
   ../src/solvers/CIncNSSolver.cpp \
   ../src/solvers/CMeshSolver.cpp \
@@ -150,6 +153,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CTurbSolver.cpp \
   ../src/solvers/CTurbSASolver.cpp \
   ../src/solvers/CTurbSSTSolver.cpp \
+  ../src/solvers/CSolverFactory.cpp \
   ../src/limiters/CLimiterDetails.cpp \
   ../src/CMarkerProfileReaderFVM.cpp \
   ../src/interfaces/CInterface.cpp \
@@ -170,7 +174,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CMeshBoundVariable.cpp \
   ../src/variables/CMeshElement.cpp \
   ../src/variables/CMeshVariable.cpp \
-  ../src/variables/CHeatFVMVariable.cpp \
+  ../src/variables/CHeatVariable.cpp \
   ../src/variables/CVariable.cpp \
   ../src/variables/CAdjNSVariable.cpp \
   ../src/variables/CTurbSSTVariable.cpp \

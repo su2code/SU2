@@ -2,7 +2,7 @@
  * \file interpolation_structure.cpp
  * \brief Main subroutines used by SU2_FSI
  * \author H. Kline
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

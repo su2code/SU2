@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1038,6 +1038,11 @@ void CConfig::SetPointersNull(void) {
   Mesh_Box_Size = NULL;
 
   Time_Ref = 1.0;
+
+  Delta_UnstTime   = 0.0;
+  Delta_UnstTimeND = 0.0;
+  Total_UnstTime   = 0.0;
+  Total_UnstTimeND = 0.0;
 
 }
 
@@ -2802,7 +2807,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Level of fill for PaStiX incomplete LU factorization. */
   addUnsignedShortOption("PASTIX_FILL_LEVEL", pastix_fill_lvl, 1);
 
-  /* DESCRIPTION: Size of the edge groups colored for OpenMP parallelization of edge loops. */
+  /* DESCRIPTION: Size of the edge groups colored for thread parallel edge loops (0 forces the reducer strategy). */
   addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
 
   /* END_CONFIG_OPTIONS */
@@ -3032,7 +3037,7 @@ void CConfig::SetHeader(unsigned short val_software){
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.0.1  \"Blackbird\"                        |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.3 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3672,96 +3677,96 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
         for (iDim = 0; iDim < 3; iDim++){
           MarkerMotion_Origin[3*iMarker+iDim] = 0.0;
-    }
-  }
+        }
+      }
     }
     if (nMarkerMotion_Origin/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_MOTION_ORIGIN must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
-  }
+    }
     if (nMarkerTranslation == 0){
       nMarkerTranslation = 3*nMarker_Moving;
       MarkerTranslation_Rate = new su2double[nMarkerTranslation];
       for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
         for (iDim = 0; iDim < 3; iDim++){
           MarkerTranslation_Rate[3*iMarker+iDim] = 0.0;
-    }
-  }
+        }
+      }
     }
     if (nMarkerTranslation/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_TRANSLATION_RATE must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
-  }
+    }
     if (nMarkerRotation_Rate == 0){
       nMarkerRotation_Rate = 3*nMarker_Moving;
       MarkerRotation_Rate = new su2double[nMarkerRotation_Rate];
       for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
         for (iDim = 0; iDim < 3; iDim++){
           MarkerRotation_Rate[3*iMarker+iDim] = 0.0;
-    }
-  }
+        }
+      }
     }
     if (nMarkerRotation_Rate/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_ROTATION_RATE must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
-  }
+    }
     if (nMarkerPlunging_Ampl == 0){
       nMarkerPlunging_Ampl = 3*nMarker_Moving;
       MarkerPlunging_Ampl = new su2double[nMarkerPlunging_Ampl];
       for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
         for (iDim = 0; iDim < 3; iDim++){
           MarkerPlunging_Ampl[3*iMarker+iDim] = 0.0;
-    }
-  }
+        }
+      }
     }
     if (nMarkerPlunging_Ampl/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_PLUNGING_AMPL must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
-  }
+    }
     if (nMarkerPlunging_Omega == 0){
       nMarkerPlunging_Omega = 3*nMarker_Moving;
       MarkerPlunging_Omega = new su2double[nMarkerPlunging_Omega];
       for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
         for (iDim = 0; iDim < 3; iDim++){
           MarkerPlunging_Omega[3*iMarker+iDim] = 0.0;
-    }
-  }
+        }
+      }
     }
     if (nMarkerPlunging_Omega/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_PLUNGING_OMEGA must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
-  }
+    }
     if (nMarkerPitching_Ampl == 0){
       nMarkerPitching_Ampl = 3*nMarker_Moving;
       MarkerPitching_Ampl = new su2double[nMarkerPitching_Ampl];
       for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
         for (iDim = 0; iDim < 3; iDim++){
           MarkerPitching_Ampl[3*iMarker+iDim] = 0.0;
-    }
-  }
+        }
+      }
     }
     if (nMarkerPitching_Ampl/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_PITCHING_AMPL must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
-  }
+    }
     if (nMarkerPitching_Omega == 0){
       nMarkerPitching_Omega = 3*nMarker_Moving;
       MarkerPitching_Omega = new su2double[nMarkerPitching_Omega];
       for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
         for (iDim = 0; iDim < 3; iDim++){
           MarkerPitching_Omega[3*iMarker+iDim] = 0.0;
-    }
-  }
+        }
+      }
     }
     if (nMarkerPitching_Omega/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_PITCHING_OMEGA must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
-  }
+    }
     if (nMarkerPitching_Phase == 0){
       nMarkerPitching_Phase = 3*nMarker_Moving;
       MarkerPitching_Phase = new su2double[nMarkerPitching_Phase];
       for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
         for (iDim = 0; iDim < 3; iDim++){
           MarkerPitching_Phase[3*iMarker+iDim] = 0.0;
-    }
-  }
+        }
+      }
     }
     if (nMarkerPitching_Phase/3 != nMarker_Moving){
       SU2_MPI::Error("Number of SURFACE_PITCHING_PHASE must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
-  }
+    }
 
     if (nMoveMotion_Origin == 0){
       nMoveMotion_Origin = nMarker_Moving;
@@ -4284,39 +4289,39 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if (nElasticityMod == 0) {
-  nElasticityMod = 1;
-  ElasticityMod = new su2double[1]; ElasticityMod[0] = 2E11;
+    nElasticityMod = 1;
+    ElasticityMod = new su2double[1]; ElasticityMod[0] = 2E11;
   }
 
   if (nPoissonRatio == 0) {
-  nPoissonRatio = 1;
-  PoissonRatio = new su2double[1]; PoissonRatio[0] = 0.30;
+    nPoissonRatio = 1;
+    PoissonRatio = new su2double[1]; PoissonRatio[0] = 0.30;
   }
 
   if (nMaterialDensity == 0) {
-  nMaterialDensity = 1;
-  MaterialDensity = new su2double[1]; MaterialDensity[0] = 7854;
+    nMaterialDensity = 1;
+    MaterialDensity = new su2double[1]; MaterialDensity[0] = 7854;
   }
 
   if (nElectric_Constant == 0) {
-  nElectric_Constant = 1;
-  Electric_Constant = new su2double[1]; Electric_Constant[0] = 0.0;
+    nElectric_Constant = 1;
+    Electric_Constant = new su2double[1]; Electric_Constant[0] = 0.0;
   }
 
   if (nElectric_Field == 0) {
-  nElectric_Field = 1;
-  Electric_Field_Mod = new su2double[1]; Electric_Field_Mod[0] = 0.0;
+    nElectric_Field = 1;
+    Electric_Field_Mod = new su2double[1]; Electric_Field_Mod[0] = 0.0;
   }
 
   if (nDim_RefNode == 0) {
-  nDim_RefNode = 3;
-  RefNode_Displacement = new su2double[3];
-  RefNode_Displacement[0] = 0.0; RefNode_Displacement[1] = 0.0; RefNode_Displacement[2] = 0.0;
+    nDim_RefNode = 3;
+    RefNode_Displacement = new su2double[3];
+    RefNode_Displacement[0] = 0.0; RefNode_Displacement[1] = 0.0; RefNode_Displacement[2] = 0.0;
   }
 
   if (nDim_Electric_Field == 0) {
-  nDim_Electric_Field = 2;
-  Electric_Field_Dir = new su2double[2]; Electric_Field_Dir[0] = 0.0;  Electric_Field_Dir[1] = 1.0;
+    nDim_Electric_Field = 2;
+    Electric_Field_Dir = new su2double[2]; Electric_Field_Dir[0] = 0.0;  Electric_Field_Dir[1] = 1.0;
   }
 
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
@@ -4914,6 +4919,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                    string("Please select CFL_ADAPT = NO."),
                    CURRENT_FUNCTION);
   }
+
+  /*--- 0 in the config file means "disable" which can be done using a very large group. ---*/
+  if (edgeColorGroupSize==0) edgeColorGroupSize = 1<<30;
 
 }
 
@@ -6612,7 +6620,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if(Cauchy_Elems <1){
       SU2_MPI::Error(to_string(Cauchy_Elems) + string(" Cauchy elements are no viable input. Please check your configuration file."), CURRENT_FUNCTION);
     }
-    cout << "Begin windowed time average at iteration " << Wnd_StartConv_Iter << "." << endl;
+    cout << "Begin windowed time average at iteration " << StartWindowIteration << "." << endl;
 
     if(Wnd_Cauchy_Crit){
       cout << "Begin time convergence monitoring at iteration " << Wnd_StartConv_Iter + StartWindowIteration << "." << endl;

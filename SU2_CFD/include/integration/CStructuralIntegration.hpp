@@ -2,7 +2,7 @@
  * \file CStructuralIntegration.hpp
  * \brief Declaration of class for numerical integration of structural problems.
  * \author R. Sanchez.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,9 +36,8 @@ class CStructuralIntegration final : public CIntegration {
 public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
    */
-  CStructuralIntegration(CConfig *config);
+  CStructuralIntegration();
 
   /*!
    * \brief Do the numerical integration (implicit) of the structural solver.

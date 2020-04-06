@@ -2,7 +2,7 @@
  * \file CMultiGridIntegration.hpp
  * \brief Declaration of class for time integration using a multigrid method.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,9 +36,8 @@ class CMultiGridIntegration final : public CIntegration {
 public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
    */
-  CMultiGridIntegration(CConfig *config);
+  CMultiGridIntegration();
 
   /*!
    * \brief This subroutine calls the MultiGrid_Cycle and also prepare the multigrid levels and the monitoring.

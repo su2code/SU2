@@ -2,7 +2,7 @@
  * \file CIntegration.hpp
  * \brief Declaration of the main routines to orchestrate space and time integration.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,18 +47,9 @@ class CIntegration {
 protected:
   int rank,      /*!< \brief MPI Rank. */
   size;          /*!< \brief MPI Size. */
-  su2double
-  Cauchy_Value,              /*!< \brief Summed value of the convergence indicator. */
-  Cauchy_Func;               /*!< \brief Current value of the convergence indicator at one iteration. */
-  unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */
-  vector<su2double> Cauchy_Serie; /*!< \brief Complete Cauchy serial. */
-  su2double
-  Old_Func,           /*!< \brief Old value of the objective function (the function which is monitored). */
-  New_Func;           /*!< \brief Current value of the objective function (the function which is monitored). */
   bool Convergence,   /*!< \brief To indicate if the flow solver (direct, adjoint, or linearized) has converged or not. */
   Convergence_FSI,    /*!< \brief To indicate if the FSI problem has converged or not. */
-  Convergence_FullMG;      /*!< \brief To indicate if the Full Multigrid has converged and it is necessary to add a new level. */
-  su2double InitResidual;  /*!< \brief Initial value of the residual to evaluate the convergence level. */
+  Convergence_FullMG;  /*!< \brief Initial value of the residual to evaluate the convergence level. */
 
   /*!
    * \brief Do the space integration of the numerical system.
@@ -89,18 +80,12 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CIntegration(CConfig *config);
+  CIntegration();
 
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CIntegration(void) = default;
-
-  /*!
-   * \brief Get the value of the convergence.
-   * \return Level of convergence of the solution.
-   */
-  inline su2double GetCauchy_Value(void) const { return Cauchy_Value; }
 
   /*!
    * \brief Get the indicator of the convergence for the direct, adjoint and linearized problem.

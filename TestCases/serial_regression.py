@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.2 "Blackbird"
+#  \version 7.0.3 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -101,7 +101,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-12.129044, -6.702294, 0.300000, 0.019470] #last 4 columns
+    fixedCL_naca0012.test_vals = [-12.128275, -6.700329, 0.300000, 0.019470] #last 4 columns
     fixedCL_naca0012.su2_exec  = "SU2_CFD"
     fixedCL_naca0012.new_output = True
     fixedCL_naca0012.timeout   = 1600
@@ -234,7 +234,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-0.510641, 4.874876, 0.813353, 0.061455] #last 4 columns
+    rae2822_sst.test_vals = [-0.510641, 4.877423, 0.813358, 0.061455] #last 4 columns
     rae2822_sst.su2_exec  = "SU2_CFD"
     rae2822_sst.new_output = True
     rae2822_sst.timeout   = 1600
@@ -246,7 +246,7 @@ def main():
     rae2822_sst_sust.cfg_dir   = "rans/rae2822"
     rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
     rae2822_sst_sust.test_iter = 20
-    rae2822_sst_sust.test_vals = [-2.427577, 4.874876, 0.813353, 0.061455] #last 4 columns
+    rae2822_sst_sust.test_vals = [-2.430811, 4.877422, 0.813358, 0.061455] #last 4 columns
     rae2822_sst_sust.su2_exec  = "SU2_CFD"
     rae2822_sst_sust.timeout   = 1600
     rae2822_sst_sust.tol       = 0.00001
@@ -281,7 +281,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-12.075893, -16.146770, 1.064326, 0.019770] #last 4 columns
+    turb_naca0012_sa.test_vals = [-12.075861, -16.146770, 1.064326, 0.019770] #last 4 columns
     turb_naca0012_sa.su2_exec  = "SU2_CFD"
     turb_naca0012_sa.new_output = True
     turb_naca0012_sa.timeout   = 3200
@@ -293,7 +293,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-15.274504, -6.250399, 1.049989, 0.019166] #last 4 columns
+    turb_naca0012_sst.test_vals = [-15.273739, -6.243814, 1.049988, 0.019165] #last 4 columns
     turb_naca0012_sst.su2_exec  = "SU2_CFD"
     turb_naca0012_sst.new_output  = True
     turb_naca0012_sst.timeout   = 3200
@@ -305,7 +305,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-14.851294, -5.980664, 1.005228, 0.019014] #last 4 columns
+    turb_naca0012_sst_sust.test_vals = [-14.851215, -6.062229, 1.005233, 0.019014] #last 4 columns
     turb_naca0012_sst_sust.su2_exec  = "SU2_CFD"
     turb_naca0012_sst_sust.timeout   = 3200
     turb_naca0012_sst_sust.tol       = 0.00001
@@ -333,7 +333,7 @@ def main():
     turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
     turb_naca0012_sst_restart_mg.test_iter = 50
     turb_naca0012_sst_restart_mg.ntest_vals = 5
-    turb_naca0012_sst_restart_mg.test_vals = [-7.708053, -8.082473, -3.175091, -0.000015, 0.081277] #last 5 columns
+    turb_naca0012_sst_restart_mg.test_vals = [-7.653492, -7.729550, -1.981855, -0.000015, 0.079062] #last 5 columns
     turb_naca0012_sst_restart_mg.su2_exec  = "SU2_CFD"
     turb_naca0012_sst_restart_mg.new_output  = True
     turb_naca0012_sst_restart_mg.timeout   = 3200
@@ -464,7 +464,7 @@ def main():
     inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
     inc_turb_naca0012_sst_sust.test_iter = 20
-    inc_turb_naca0012_sst_sust.test_vals = [-7.276170, 0.145809, 0.000021, 0.312006] #last 4 columns
+    inc_turb_naca0012_sst_sust.test_vals = [-7.276273, 0.145895, 0.000021, 0.312004] #last 4 columns
     inc_turb_naca0012_sst_sust.su2_exec  = "SU2_CFD"
     inc_turb_naca0012_sst_sust.timeout   = 1600
     inc_turb_naca0012_sst_sust.tol       = 0.00001
@@ -754,7 +754,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.910211, 1.337024, 6.085849, 2.414025] #last 4 columns
+    turb_naca0012_1c.test_vals = [-4.910234, 1.336999, 6.085853, 2.414023] #last 4 columns
     turb_naca0012_1c.su2_exec  = "SU2_CFD"
     turb_naca0012_1c.new_output = True
     turb_naca0012_1c.timeout   = 1600
@@ -766,7 +766,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.230242, 1.262219, 6.085926, 2.413617] #last 4 columns
+    turb_naca0012_2c.test_vals = [-5.230242, 1.262219, 6.085930, 2.413616] #last 4 columns
     turb_naca0012_2c.su2_exec  = "SU2_CFD"
     turb_naca0012_2c.new_output = True
     turb_naca0012_2c.timeout   = 1600
@@ -778,7 +778,7 @@ def main():
     turb_naca0012_3c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_3c.cfg_file  = "turb_NACA0012_uq_3c.cfg"
     turb_naca0012_3c.test_iter = 10
-    turb_naca0012_3c.test_vals = [-5.277131, 1.246268, 6.086537, 2.413873] #last 4 columns
+    turb_naca0012_3c.test_vals = [-5.277131, 1.246268, 6.086540, 2.413871] #last 4 columns
     turb_naca0012_3c.su2_exec  = "SU2_CFD"
     turb_naca0012_3c.new_output = True
     turb_naca0012_3c.timeout   = 1600
@@ -790,7 +790,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.003327, 1.312032, 6.085201, 2.413460] #last 4 columns
+    turb_naca0012_p1c1.test_vals = [-5.003243, 1.312116, 6.085204, 2.413457] #last 4 columns
     turb_naca0012_p1c1.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c1.new_output = True
     turb_naca0012_p1c1.timeout   = 1600
@@ -802,7 +802,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.263992, 1.251332, 6.085705, 2.413434] #last 4 columns
+    turb_naca0012_p1c2.test_vals = [-5.264016, 1.251321, 6.085704, 2.413428] #last 4 columns
     turb_naca0012_p1c2.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c2.new_output = True
     turb_naca0012_p1c2.timeout   = 1600
@@ -926,7 +926,7 @@ def main():
     unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
     unst_inc_turb_naca0015_sa.cfg_file  = "config_incomp_turb_sa.cfg"
     unst_inc_turb_naca0015_sa.test_iter = 1
-    unst_inc_turb_naca0015_sa.test_vals = [ -2.994996, -6.865786, 1.434864, 0.416627] #last 4 columns
+    unst_inc_turb_naca0015_sa.test_vals = [-2.994996, -6.869781, 1.434864, 0.416626] #last 4 columns
     unst_inc_turb_naca0015_sa.su2_exec  = "SU2_CFD"
     unst_inc_turb_naca0015_sa.timeout   = 1600
     unst_inc_turb_naca0015_sa.tol       = 0.00001
@@ -983,7 +983,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.316334, 0.355080, 44.772250, 2.269935] #last 4 columns
+    Jones_tc.test_vals = [-5.300315, 0.365965, 44.731520, 2.271338] #last 4 columns
     Jones_tc.su2_exec  = "SU2_CFD"
     Jones_tc.new_output = False
     Jones_tc.timeout   = 1600
@@ -995,7 +995,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-3.034158, 0.013762, 82.263710, 2.792251] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.626481, -1.570875, 34.015260, 10.187090] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
     Jones_tc_rst.new_output = False
     Jones_tc_rst.timeout   = 1600
@@ -1007,7 +1007,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.933250, 5.305273, 73.357650, 1.841297] #last 4 columns
+    axial_stage2D.test_vals = [-1.933218, 5.381191, 73.357940, 1.780224] #last 4 columns
     axial_stage2D.su2_exec  = "SU2_CFD"
     axial_stage2D.new_output  = False
     axial_stage2D.timeout   = 1600
@@ -1019,7 +1019,7 @@ def main():
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 20
-    transonic_stator.test_vals = [-0.560463, 5.828675, 96.594070, 0.062505] #last 4 columns
+    transonic_stator.test_vals = [-0.562939, 5.828438, 96.597350, 0.062502] #last 4 columns
     transonic_stator.su2_exec  = "SU2_CFD"
     transonic_stator.new_output  = False
     transonic_stator.timeout   = 1600
@@ -1031,7 +1031,7 @@ def main():
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
     transonic_stator_rst.test_iter = 20
-    transonic_stator_rst.test_vals = [-6.781212, -0.757588, 5.007406, 0.0029491] #last 4 columns
+    transonic_stator_rst.test_vals = [-6.601169, -0.619939, 5.002986, 0.002951] #last 4 columns
     transonic_stator_rst.su2_exec  = "SU2_CFD"
     transonic_stator_rst.new_output  = False
     transonic_stator_rst.timeout   = 1600
@@ -1134,7 +1134,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.590195, -1.955385] #last 3 columns
+    bars_SST_2D.test_vals = [13.000000, -0.619179, -1.879082] #last 3 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
@@ -1720,7 +1720,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
-    pywrapper_turb_naca0012_sst.test_vals = [-15.274504, -6.250399, 1.049989, 0.019166] #last 4 columns
+    pywrapper_turb_naca0012_sst.test_vals = [-15.273739, -6.243814, 1.049988, 0.019165] #last 4 columns
     pywrapper_turb_naca0012_sst.su2_exec  = "SU2_CFD.py -f"
     pywrapper_turb_naca0012_sst.new_output = True
     pywrapper_turb_naca0012_sst.timeout   = 3200

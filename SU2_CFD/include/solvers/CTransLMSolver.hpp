@@ -2,7 +2,7 @@
  * \file CTransLMSolver.hpp
  * \brief Headers of the CTransLMSolver class
  * \author A. Aranake
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

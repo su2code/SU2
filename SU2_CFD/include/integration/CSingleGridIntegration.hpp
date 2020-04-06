@@ -2,7 +2,7 @@
  * \file CSingleGridIntegration.hpp
  * \brief Declaration of class for numerical integration of fine grid-only problems.
  * \author A. Bueno.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -65,9 +65,8 @@ private:
 public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
    */
-  CSingleGridIntegration(CConfig *config);
+  CSingleGridIntegration();
 
   /*!
    * \brief Do the numerical integration (implicit) of the turbulence solver.

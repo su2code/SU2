@@ -2,7 +2,7 @@
  * \file CTurbSASolver.cpp
  * \brief Main subrotuines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -96,7 +96,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Initialization of the structure of the whole Jacobian ---*/
 
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SA model)." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -105,6 +105,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+    if (ReducerStrategy)
+      EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
 
     if (config->GetExtraOutput()) {
       if (nDim == 2) { nOutputVariables = 13; }
@@ -277,9 +280,12 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   const su2double* Vorticity = nullptr;
   su2double Laminar_Viscosity = 0.0;
 
-  /*--- Clear residual and system matrix. ---*/
-  LinSysRes.SetValZero();
-  Jacobian.SetValZero();
+  /*--- Clear residual and system matrix, not needed for
+   * reducer strategy as we write over the entire matrix. ---*/
+  if (!ReducerStrategy) {
+    LinSysRes.SetValZero();
+    Jacobian.SetValZero();
+  }
 
   /*--- Upwind second order reconstruction and gradients ---*/
 

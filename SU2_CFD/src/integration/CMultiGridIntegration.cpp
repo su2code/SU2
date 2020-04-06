@@ -2,7 +2,7 @@
  * \file CMultiGridIntegration.cpp
  * \brief Implementation of the multigrid integration class.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 #include "../../../Common/include/omp_structure.hpp"
 
 
-CMultiGridIntegration::CMultiGridIntegration(CConfig *config) : CIntegration(config) { }
+CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
 
 void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                 CSolver *****solver_container,

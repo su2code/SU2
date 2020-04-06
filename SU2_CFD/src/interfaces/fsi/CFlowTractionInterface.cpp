@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -121,6 +121,8 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
   bool incompressible     = (flow_config->GetKind_Regime() == INCOMPRESSIBLE);
   bool viscous_flow       = ((flow_config->GetKind_Solver() == NAVIER_STOKES) ||
                              (flow_config->GetKind_Solver() == RANS) ||
+                             (flow_config->GetKind_Solver() == INC_NAVIER_STOKES) ||
+                             (flow_config->GetKind_Solver() == INC_RANS) ||
                              (flow_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
                              (flow_config->GetKind_Solver() == DISC_ADJ_RANS) ||
                              (flow_config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||

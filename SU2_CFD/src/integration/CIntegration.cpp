@@ -2,7 +2,7 @@
  * \file CIntegration.cpp
  * \brief Implementation of the base class for space and time integration.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,19 +29,12 @@
 #include "../../../Common/include/omp_structure.hpp"
 
 
-CIntegration::CIntegration(CConfig *config) {
+CIntegration::CIntegration() {
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
-  Cauchy_Value = 0;
-  Cauchy_Func = 0;
-  Old_Func = 0;
-  New_Func = 0;
-  Cauchy_Counter = 0;
   Convergence = false;
   Convergence_FSI = false;
   Convergence_FullMG = false;
-  Cauchy_Serie.resize(config->GetCauchy_Elems()+1, 0.0);
-  InitResidual = 0.0;
 }
 
 void CIntegration::Space_Integration(CGeometry *geometry,
@@ -134,15 +127,15 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
       case GILES_BOUNDARY:
         solver_container[MainSolver]->BC_Giles(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      	break;
+        break;
       case RIEMANN_BOUNDARY:
-      	if (config->GetBoolTurbomachinery()){
-      		solver_container[MainSolver]->BC_TurboRiemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      	}
-      	else{
+        if (config->GetBoolTurbomachinery()){
+          solver_container[MainSolver]->BC_TurboRiemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        }
+        else{
           solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      	}
-      	break;
+        }
+        break;
       case FAR_FIELD:
         solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
