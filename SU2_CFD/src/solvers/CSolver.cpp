@@ -4982,7 +4982,6 @@ void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
   unsigned long iPoint, nPointDomain = geometry->GetnPointDomain(),
                 iElem, nElem = geometry->GetnElem();
   unsigned short iVar, iDim;
-  unsigned short nMetr = 3;
   su2double vnx[3], vny[3];
   su2double hesTri[3];
   su2double Crd[3][2], Grad[3][2][nVar];
@@ -5181,7 +5180,6 @@ void CSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
       graTet[2] = Sens[0][iVar]*vnz[0] + Sens[1][iVar]*vnz[1] + Sens[2][iVar]*vnz[2] + Sens[3][iVar]*vnz[3];
   
       //--- assembling
-      const unsigned short i = iVar*nDim;
       for (unsigned short iNode=0; iNode<4; ++iNode) {
         const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
         const su2double Vol = geometry->node[kNode]->GetVolume();
@@ -5205,7 +5203,6 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
   unsigned long iPoint, nPointDomain = geometry->GetnPointDomain(),
                 iElem, nElem = geometry->GetnElem();
   unsigned short iVar, iDim;
-  unsigned short nMetr = 6;
   su2double vnx[4], vny[4], vnz[4];
   su2double hesTet[6];
   su2double Crd[4][3], Grad[4][3][nVar];
@@ -5219,7 +5216,6 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
       for (iDim = 0; iDim<3; ++iDim) Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
       //--- store gradient
       for(iVar = 0; iVar < nVar; iVar++){
-        const unsigned short i = iVar*nDim;
         Grad[iNode][0][iVar] = base_nodes->GetGradient_Adaptation(kNode, iVar, 0);
         Grad[iNode][1][iVar] = base_nodes->GetGradient_Adaptation(kNode, iVar, 1);
         Grad[iNode][2][iVar] = base_nodes->GetGradient_Adaptation(kNode, iVar, 2);
@@ -5402,7 +5398,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
           
           //--- Correct if any of the neighbors belong to the volume
           unsigned short iNeigh, counter = 0;
-          su2double hess[nMetr*nVar], dist, distsum = 0.;
+          su2double hess[nMetr*nVar], dist = 0., distsum = 0.;
           for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             if(!geometry->node[jPoint]->GetBoundary()) {
@@ -5486,7 +5482,6 @@ void CSolver::ConvectiveMetric(CSolver           **solver,
                                unsigned long     iPoint,
                                vector<su2double> &weights) {
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
-            *varTur    = solver[TURB_SOL]->GetNodes(),
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
             *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
 
@@ -5501,10 +5496,9 @@ void CSolver::ConvectiveMetric(CSolver           **solver,
                              C(nDim+2, vector<su2double>(nDim+2, 0.0));
 
   //--- Inviscid terms
-  su2double r, u, v, w, e, 
+  su2double u v, w, e,
             v2, g;
 
-  r = varFlo->GetDensity(iPoint);
   u = varFlo->GetVelocity(iPoint, 0);
   v = varFlo->GetVelocity(iPoint, 1);
   if (nDim == 3) w = varFlo->GetVelocity(iPoint, 2);
@@ -5590,14 +5584,13 @@ void CSolver::ViscousMetric(CSolver           **solver,
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
             *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
 
-  const bool turb = (config->GetKind_Turb_Model() != NONE);
   const bool sst  = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
 
   unsigned short iDim, jDim, iVar;
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   //--- First-order terms (error due to viscosity)
-  su2double r, u[3], e, k, omega,
+  su2double r, u[3], e, k,
             T, mu, mut, lam, lamt, dmudT, 
             Tref, S, muref, 
             R, cv, cp, g, Pr, Prt;
