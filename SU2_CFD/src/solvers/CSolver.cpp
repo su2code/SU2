@@ -5549,7 +5549,6 @@ void CSolver::ConvectiveMetric(CSolver           **solver,
 
   for (jVar = 0; jVar < nVarFlo; ++jVar) {
     for (iVar = 0; iVar < nVarFlo; ++iVar) {
-      const unsigned short i = iVar*nDim;
       const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 0),
                       adjy = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 1);
       weights[jVar] -= A[jVar][iVar]*adjx + B[jVar][iVar]*adjy;
@@ -5565,7 +5564,6 @@ void CSolver::ConvectiveMetric(CSolver           **solver,
     const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
     if (sst) {
       for (iVar = 0; iVar < nVarTur; ++iVar){
-        const unsigned short i = iVar*nDim;
         const su2double adjx = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 0),
                         adjy = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 1);
         weights[nVarFlo+iVar] -= u*adjx + v*adjy;
@@ -5596,7 +5594,6 @@ void CSolver::ViscousMetric(CSolver           **solver,
   const bool sst  = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
 
   unsigned short iDim, jDim, iVar;
-  const unsigned short nMetr = 3*(nDim-1);
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   //--- First-order terms (error due to viscosity)
@@ -5610,9 +5607,9 @@ void CSolver::ViscousMetric(CSolver           **solver,
   u[1] = varFlo->GetVelocity(iPoint, 1);
   if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
   e = varFlo->GetEnergy(iPoint);
+  k = 0.;
   if(sst) {
     k     = varTur->GetPrimitive(iPoint, 0);
-    omega = varTur->GetPrimitive(iPoint, 1);
   }
 
   T   = varFlo->GetTemperature(iPoint);
@@ -5633,7 +5630,7 @@ void CSolver::ViscousMetric(CSolver           **solver,
   lam  = cp*mu/Pr;
   lamt = cp*mut/Prt;
 
-  su2double gradu[3][3], gradT[3], gradk[3], gradomega[3], divu, tau[3][3], taut[3][3],
+  su2double gradu[3][3], gradT[3], gradk[3], gradomega[3], divu, tau[3][3],
             delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -5655,13 +5652,7 @@ void CSolver::ViscousMetric(CSolver           **solver,
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       tau[iDim][jDim]  = (mu+mut)*( gradu[jDim][iDim] + gradu[iDim][jDim] ) 
-                       - (2./3.)*(mu+mut)*divu*delta[iDim][jDim];
-      taut[iDim][jDim] = mut*( gradu[jDim][iDim] + gradu[iDim][jDim] ) 
-                       - (2./3.)*mut*divu*delta[iDim][jDim];
-      if (turb) {
-        tau[iDim][jDim]  -= (2./3.)*r*k*delta[iDim][jDim];
-        taut[iDim][jDim] -= (2./3.)*r*k*delta[iDim][jDim];
-      }
+                       - (2./3.)*((mu+mut)*divu+r*k)*delta[iDim][jDim];
     }
   }
 
@@ -5669,16 +5660,9 @@ void CSolver::ViscousMetric(CSolver           **solver,
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       iVar = iDim+1;
-      if(turb) {
-        factor += (tau[iDim][jDim]+(2./3.)*r*k*delta[iDim][jDim])/(mu+mut)
-                * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
-                + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
-      }
-      else {
-        factor += tau[iDim][jDim]/(mu+mut)
-                * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, iDim)
-                + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
-      }
+      factor += (tau[iDim][jDim]+(2./3.)*r*k*delta[iDim][jDim])/(mu+mut)
+              * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
+              + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
     factor += cp/Pr*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
     if (sst) {
