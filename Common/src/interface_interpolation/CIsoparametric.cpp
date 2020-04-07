@@ -306,20 +306,28 @@ int CIsoparametric::LineIsoparameters(const su2double X[][3], const su2double *x
 int CIsoparametric::TriangleIsoparameters(const su2double X[][3], const su2double *xj, su2double *isoparams) {
 
   /*--- The isoparameters are the solution to the determined system X^T * isoparams = xj.
+   *    For which we solve the normal equations to avoid divisions by zero.
    *    This is consistent with the shape functions of the linear triangular element. ---*/
 
   const su2double extrapTol = -0.5;
 
   /*--- Project the target point onto the triangle. ---*/
 
-  su2double normal[3] = {0.0};
+  su2double normal[3] = {0.0}, xproj[3] = {0.0};
   TriangleNormal(X, normal);
-  PointPlaneProjection<su2double,3>(xj, X[0], normal, isoparams); // use isoparams as rhs
+  PointPlaneProjection<su2double,3>(xj, X[0], normal, xproj);
 
-  su2double A[3][3]; // = X^T
-  for (int i = 0; i < 3; ++i)
+  su2double A[3][3] = {0.0}; // = X*X^T
+  for (int i = 0; i < 3; ++i) {
+
     for (int j = 0; j < 3; ++j)
-      A[i][j] = X[j][i];
+      for (int k = 0; k < 3; ++k)
+        A[i][j] += X[i][k] * X[j][k];
+
+    isoparams[i] = 0.0; // use isoparams as rhs
+    for (int k = 0; k < 3; ++k)
+      isoparams[i] += X[i][k] * xproj[k];
+  }
 
   /*--- Solve system by in-place Gaussian elimination without pivoting. ---*/
 
