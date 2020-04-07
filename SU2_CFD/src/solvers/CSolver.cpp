@@ -5676,7 +5676,7 @@ void CSolver::ViscousMetric(CSolver           **solver,
       }
       else {
         factor += tau[iDim][jDim]/(mu+mut)
-                * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar*nDim+iDim)
+                * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, iDim)
                 + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
       }
     }
