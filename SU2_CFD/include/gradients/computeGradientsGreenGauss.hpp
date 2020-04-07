@@ -256,7 +256,8 @@ void computeHessiansGreenGauss(CSolver* solver,
             {
               size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
                                           : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
-              hessian(iPoint, iVar, ind) += (iDim == jDim) ? flux * area[iDim] : 0.5*flux * area[iDim];
+              if (iDim != jDim) flux *= 0.5;
+              hessian(iPoint, iVar, ind) += flux * area[iDim];
             }
           }
         }
@@ -298,7 +299,8 @@ void computeHessiansGreenGauss(CSolver* solver,
               {
                 size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
                                             : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
-                hessian(iPoint, iVar, ind) -= (iDim == jDim) ? flux * area[iDim] : 0.5*flux * area[iDim];
+                if (iDim != jDim) flux *= 0.5;
+                hessian(iPoint, iVar, ind) -= flux * area[iDim];
               }
             }
           }
