@@ -59,6 +59,8 @@ void CIsoparametric::PrintStatistics(void) const {
 
 void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
 
+  const su2double matchingVertexTol = 1e-12; // 1um^2
+
   const int nProcessor = size;
   const auto nMarkerInt = config[donorZone]->GetMarker_n_ZoneInterface()/2;
   const auto nDim = donor_geometry->GetnDim();
@@ -189,6 +191,15 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
           minDist = d;
           iClosestVertex = iVertexDonor;
         }
+      }
+
+      if (minDist < matchingVertexTol) {
+        /*--- Perfect match. ---*/
+        target_vertex->Allocate_DonorInfo(1);
+        target_vertex->SetDonorCoeff(0, 1.0);
+        target_vertex->SetInterpDonorPoint(0, donorPoint[iClosestVertex]);
+        target_vertex->SetInterpDonorProcessor(0, donorProc[iClosestVertex]);
+        continue;
       }
 
       /*--- Evaluate interpolation for the elements connected to the closest vertex. ---*/
