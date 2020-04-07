@@ -213,7 +213,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
       break;
   }//switch
 
-  if (config->GetBool_Error_Estimate()) {
+  if (config->GetBool_Compute_Metric()) {
     /*--- Compute metric for anisotropic mesh adaptation ---*/
     ComputeMetric();
 

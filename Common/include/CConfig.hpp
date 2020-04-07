@@ -1122,7 +1122,7 @@ private:
   unsigned short pastix_verb_lvl;  /*!< \brief Verbosity level for PaStiX */
   unsigned short pastix_fill_lvl;  /*!< \brief Fill level for PaStiX ILU */
 
-  bool Bool_Error_Estimate,          /*!< \brief Determines if error estimation is taking place */
+  bool Bool_Compute_Metric,          /*!< \brief Determines if error estimation is taking place */
        Bool_Adap_Normal_Neighbor;    /*!< \brief Determines if normal neighbors should be shifted */
   unsigned short Kind_Aniso_Sensor;  /*!< \brief Sensor used for anistropy */
   bool Wrt_Aniso_Sensor;             /*!< \brief Whether or not to write sensor files */
@@ -9256,7 +9256,7 @@ public:
    * \brief Check if error estimation is being carried out
    * \return <code>TRUE<\code> if error estimation is taking place
   */
-  bool GetBool_Error_Estimate(void) const { return Bool_Error_Estimate; }
+  bool GetBool_Compute_Metric(void) const { return Bool_Compute_Metric; }
 
   /*!
    * \brief Check if normal neighbors should be shifted

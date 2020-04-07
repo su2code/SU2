@@ -12356,7 +12356,7 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
     }
 
     /*--- Write an Inria format restart file. ---*/
-    // if(config[iZone]->GetBool_Error_Estimate() && config[iZone]->GetKind_SU2() == SU2_MET){
+    // if(config[iZone]->GetBool_Compute_Metric() && config[iZone]->GetKind_SU2() == SU2_MET){
     //   if (rank == MASTER_NODE) cout << "Writing Inria restart file." << endl;
     //   SetInriaRestart(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
     //   if (rank == MASTER_NODE) cout << "Writing Inria sensor files." << endl;
@@ -12794,7 +12794,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
 
     /*--- Plot the metric tensor. ---*/
 
-    if(config->GetBool_Error_Estimate()){
+    if(config->GetBool_Compute_Metric()){
 
       if(nDim == 2){
         Variable_Names.push_back("Aniso_Metric[0]");
@@ -13135,7 +13135,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
 
         /*--- Load data for the metric. ---*/
 
-        if (config->GetBool_Error_Estimate()){
+        if (config->GetBool_Compute_Metric()){
 
           unsigned short iMetr, nMetr;
           if(nDim == 2) nMetr = 3;
@@ -15566,7 +15566,7 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
   nElem_Send[size] = 0; nElem_Recv[size] = 0;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Plotting(iMarker) == YES || config->GetBool_Error_Estimate()) {
+    if (config->GetMarker_All_Plotting(iMarker) == YES || config->GetBool_Compute_Metric()) {
       
       for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
         
@@ -15666,7 +15666,7 @@ void COutputLegacy::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry
    additional data that we will send to the other procs. ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Plotting(iMarker) == YES || config->GetBool_Error_Estimate()) {
+    if (config->GetMarker_All_Plotting(iMarker) == YES || config->GetBool_Compute_Metric()) {
       
       for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
         

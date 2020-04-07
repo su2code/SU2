@@ -2802,7 +2802,7 @@ void CConfig::SetConfig_Options() {
   addUnsignedShortOption("PASTIX_FILL_LEVEL", pastix_fill_lvl, 1);
 
   /* DESCRIPTION: Compute an error estimate */
-  addBoolOption("ERROR_ESTIMATE", Bool_Error_Estimate, false);
+  addBoolOption("COMPUTE_METRIC", Bool_Compute_Metric, false);
 
   /* DESCRIPTION: Whether to shift the normal neighbor (RANS adaptation). */
   addBoolOption("ADAP_SHIFT_NORMAL_NEIGHBOR", Bool_Adap_Normal_Neighbor, false);

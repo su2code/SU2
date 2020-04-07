@@ -207,7 +207,7 @@ def amg ( config , kind='' ):
             
             config_cfd.CONV_FILENAME              = "ini_history"
             config_cfd.RESTART_FILENAME           = current_solution
-            config_cfd.ERROR_ESTIMATE             = 'NO'
+            config_cfd.COMPUTE_METRIC             = 'NO'
             config_cfd.MATH_PROBLEM               = 'DIRECT'
             # config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
             
@@ -221,7 +221,7 @@ def amg ( config , kind='' ):
                 config_cfd.SOLUTION_FILENAME      = current_solution
                 config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
                 config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
-                config_cfd.ERROR_ESTIMATE         = 'YES'
+                config_cfd.COMPUTE_METRIC         = 'YES'
                 config_cfd.ADAP_HMAX              = config.PYADAP_HMAX
                 config_cfd.ADAP_HMIN              = config.PYADAP_HMIN
                 config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[0])
@@ -265,7 +265,7 @@ def amg ( config , kind='' ):
         config_cfd.SOLUTION_FILENAME          = '../' + config['SOLUTION_FILENAME']
         config_cfd.SOLUTION_ADJ_FILENAME      = '../' + config['SOLUTION_ADJ_FILENAME']
         config_cfd.VOLUME_OUTPUT              = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
-        config_cfd.ERROR_ESTIMATE             = 'YES'
+        config_cfd.COMPUTE_METRIC             = 'YES'
         config_cfd.MATH_PROBLEM               = 'DISCRETE_ADJOINT'
         config_cfd.ADAP_HMAX                  = config.PYADAP_HMAX
         config_cfd.ADAP_HMIN                  = config.PYADAP_HMIN
@@ -486,7 +486,7 @@ def amg ( config , kind='' ):
                 config_cfd.SOLUTION_FILENAME = current_solution_ini
                 config_cfd.RESTART_FILENAME  = current_solution
                 config_cfd.VOLUME_OUTPUT     = "(COORDINATES, SOLUTION, PRIMITIVE)"
-                config_cfd.ERROR_ESTIMATE    = 'NO'
+                config_cfd.COMPUTE_METRIC    = 'NO'
                 config_cfd.MATH_PROBLEM      = 'DIRECT'
                 config_cfd.RESTART_SOL       = 'YES'
 
@@ -520,7 +520,7 @@ def amg ( config , kind='' ):
                     config_cfd.RESTART_SOL            = 'NO'
                     config_cfd.ITER                   = int(adap_adj_iter[iSiz])
                     config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
-                    config_cfd.ERROR_ESTIMATE         = 'YES'
+                    config_cfd.COMPUTE_METRIC         = 'YES'
                     config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
                     SU2_CFD(config_cfd)
             
