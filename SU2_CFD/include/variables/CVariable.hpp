@@ -643,6 +643,12 @@ public:
    * \param[in] ivar  - Index value.
    */ 
   inline su2double GetGradient_Adaptation(unsigned long iPoint, unsigned short ivar, unsigned short idim) { return Gradient_Adaptation(iPoint,ivar,idim); }
+  
+  /*!
+   * \brief Get the gradient of the entire solution.
+   * \return Reference to gradient.
+   */
+  inline VectorOfMatrix& GetGradient_Adaptation(void) { return Gradient_Adaptation; }
 
    /*!  
    * \brief Set the value of the sensor Hessian.  
@@ -663,6 +669,12 @@ public:
    * \param[in] ivar  - Index value.
    */ 
   inline su2double GetHessian(unsigned long iPoint, unsigned short ivar, unsigned short ihess) { return Hessian(iPoint,ivar,ihess); }
+  
+  /*!
+   * \brief Get the Hessian of the entire solution.
+   * \return Reference to Hessian.
+   */
+  inline VectorOfMatrix& GetHessian(void) { return Hessian; }
 
    /*!  
    * \brief Set the value of the metric.  

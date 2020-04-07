@@ -317,41 +317,11 @@ public:
   void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Compute the gradient using a L2 Projection method (2D),
-   *        and stores the result in the <i>AnisoGrad</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Make the eigenvalues of the Hessians positive.
    */
-  void SetGradient_L2Proj2(CGeometry *geometry,
-                           CConfig   *config);
-
-  /*!
-   * \brief Compute the Hessian using a L2 Projection method (2D),
-   *        and stores the result in the <i>AnisoHess</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetHessian_L2Proj2(CGeometry *geometry,
-                          CConfig   *config);
-
-  /*!
-   * \brief Compute the gradient using a L2 Projection method (3D),
-   *        and stores the result in the <i>AnisoGrad</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetGradient_L2Proj3(CGeometry *geometry,
-                           CConfig   *config);
-
-  /*!
-   * \brief Compute the Hessian using a L2 Projection method (3D),
-   *        and stores the result in the <i>AnisoHess</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetHessian_L2Proj3(CGeometry *geometry,
-                          CConfig   *config);
-
+  void SetPositiveDefiniteHessian(CGeometry *geometry,
+                                  CConfig   *config);
+  
   /*!
    * \brief Apply a correction to the boundary Hessian using the volume Hessian.
    */
@@ -779,6 +749,22 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
+  
+  /*!
+   * \brief Compute the Green-Gauss Hessian of the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetHessian_GG(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the Least Squares Hessian of the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetHessian_LS(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the Least Squares gradient of the grid velocity.

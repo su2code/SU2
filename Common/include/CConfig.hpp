@@ -1122,16 +1122,17 @@ private:
   unsigned short pastix_verb_lvl;  /*!< \brief Verbosity level for PaStiX */
   unsigned short pastix_fill_lvl;  /*!< \brief Fill level for PaStiX ILU */
 
-  bool Bool_Compute_Metric,          /*!< \brief Determines if error estimation is taking place */
-       Bool_Adap_Normal_Neighbor;    /*!< \brief Determines if normal neighbors should be shifted */
-  unsigned short Kind_Aniso_Sensor;  /*!< \brief Sensor used for anistropy */
-  bool Wrt_Aniso_Sensor;             /*!< \brief Whether or not to write sensor files */
-  bool Wrt_InriaMesh;                /*!< \brief Whether or not to write meshb files */
-  su2double Adap_Norm,               /*!< \brief Lp-norm for mesh adaptation */
-            Adap_Hmax,               /*!< \brief Maximum cell size */
-            Adap_Hmin,               /*!< \brief Minimum cell size */
-            Adap_Max_Yplus;          /*!< \brief Maximum y-plus for RANS mesh adaptation */
-  unsigned long  Adap_Complexity;    /*!< \brief Constraint mesh complexity */
+  bool Bool_Compute_Metric,            /*!< \brief Determines if error estimation is taking place */
+       Bool_Adap_Normal_Neighbor;      /*!< \brief Determines if normal neighbors should be shifted */
+  unsigned short Kind_Aniso_Sensor;    /*!< \brief Sensor used for anistropy */
+  unsigned short Kind_Hessian_Method;  /*!< \brief Numerical method for computation of Hessians. */
+  bool Wrt_Aniso_Sensor;               /*!< \brief Whether or not to write sensor files */
+  bool Wrt_InriaMesh;                  /*!< \brief Whether or not to write meshb files */
+  su2double Adap_Norm,                 /*!< \brief Lp-norm for mesh adaptation */
+            Adap_Hmax,                 /*!< \brief Maximum cell size */
+            Adap_Hmin,                 /*!< \brief Minimum cell size */
+            Adap_Max_Yplus;            /*!< \brief Maximum y-plus for RANS mesh adaptation */
+  unsigned long  Adap_Complexity;      /*!< \brief Constraint mesh complexity */
 
   string caseName;                 /*!< \brief Name of the current case */
 
@@ -9275,6 +9276,12 @@ public:
    * \return Flag for field variable to be used as sensor
    */
   unsigned short GetKind_Aniso_Sensor(void) const { return Wrt_Aniso_Sensor; }
+  
+  /*!
+   * \brief Get the kind of method for computation of Hessians used for anisotropy.
+   * \return Numerical method for computation of Hessians used for anisotropy.
+   */
+  unsigned short GetKind_Hessian_Method(void) const { return Kind_Hessian_Method; }
 
   /*!
    * \brief Get adaptation norm value (Lp)

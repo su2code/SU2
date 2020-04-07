@@ -3076,6 +3076,38 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
                                weighted, solution, 0, nVar, gradient, rmatrix);
 }
 
+void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config) {
+  
+  //--- communicate the solution values via MPI
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
+  const auto& solution = base_nodes->GetSolution();
+  auto& gradient = base_nodes->GetGradient_Adaptation();
+
+  computeGradientsGreenGauss(this, ANISO_GRADIENT, PERIODIC_SOL_GG, *geometry,
+                             *config, solution, 0, nVar, gradient);
+  
+  auto& hessian = base_nodes->GetHessian();
+  
+  computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
+                            *config, gradient, 0, nVar, hessian);
+  
+  //--- compute boundary Hessians from volume Hessians
+  CorrectBoundHessian(geometry, config);
+  
+  //--- make the Hessians positive definite (set positive eigenvalues)
+  SetPositiveDefiniteHessian(geometry, config);
+}
+
+void CSolver::SetHessian_LS(CGeometry *geometry, CConfig *config) {
+  
+  if (rank == MASTER_NODE)
+    cout << "Least squares Hessian computation not currently supported.\n Using Green-Gauss.\n" <<endl;
+  
+  SetHessian_GG(geometry, config);
+}
+
 void CSolver::Add_External_To_Solution() {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->AddSolution(iPoint, base_nodes->Get_External(iPoint));
@@ -4887,486 +4919,6 @@ void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
   base_nodes->Set_BGSSolution_k();
 }
 
-void CSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
-
-  unsigned long iElem, nElem = geometry->GetnElem();
-  unsigned short iVar, iDim;
-  su2double vnx[3], vny[3];
-  su2double graTri[2];
-  su2double Crd[3][2], Sens[3][nVar];
-
-  //--- communicate the solution values via MPI
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  //--- note: currently only implemented for Tri
-
-  for (iElem=0; iElem<nElem; ++iElem) {
-    for (unsigned short iNode=0; iNode<3; ++iNode) {
-      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
-      //--- store coordinates
-      for (iDim = 0; iDim<2; ++iDim) Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
-      //--- store sensors (goal-oriented)
-      for (iVar = 0; iVar < nVar; ++iVar) Sens[iNode][iVar] = base_nodes->GetSolution(kNode,iVar);
-    }
-
-    //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
-    vnx[0] = Crd[1][1]-Crd[2][1];
-    vny[0] = Crd[2][0]-Crd[1][0];
-
-    vnx[1] = Crd[2][1]-Crd[0][1];
-    vny[1] = Crd[0][0]-Crd[2][0];
-
-    vnx[2] = Crd[0][1]-Crd[1][1];
-    vny[2] = Crd[1][0]-Crd[0][0];
-
-    //--- check if inward normal
-    for(unsigned short iNode = 0; iNode < 3; ++iNode) {
-      su2double CrdAvg[2] = {0.0, 0.0};
-      for(unsigned short jNode = 0; jNode < 3; ++jNode) {
-        if(iNode != jNode) {
-          CrdAvg[0] += Crd[jNode][0];
-          CrdAvg[1] += Crd[jNode][1];
-        }
-      }
-      CrdAvg[0] /= 2.;
-      CrdAvg[1] /= 2.;
-      su2double u[2] = {CrdAvg[0]-Crd[iNode][0],
-                        CrdAvg[1]-Crd[iNode][1]};
-      if((vnx[iNode]*u[0] + vny[iNode]*u[1]) > 0.) {
-        vnx[iNode] *= -1.0;
-        vny[iNode] *= -1.0;
-      }
-    }
-
-    //--- loop over conservative variables
-    for(iVar = 0; iVar < nVar; iVar++){
-
-      //--- gradient at the element ( graTri = 2*|T|*gradT ) 
-      graTri[0] = Sens[0][iVar]*vnx[0] + Sens[1][iVar]*vnx[1] + Sens[2][iVar]*vnx[2];
-      graTri[1] = Sens[0][iVar]*vny[0] + Sens[1][iVar]*vny[1] + Sens[2][iVar]*vny[2];
-  
-      //--- assembling
-      for (unsigned short iNode=0; iNode<3; ++iNode) {
-        const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
-        const su2double Area = geometry->node[kNode]->GetVolume();
-        const su2double rap = 1./(Area*6.);
-        // const su2double rap = Area/6.;
-        base_nodes->AddGradient_Adaptation(kNode, iVar, 0, graTri[0] * rap);
-        base_nodes->AddGradient_Adaptation(kNode, iVar, 1, graTri[1] * rap);
-      }
-    }
-  }
-
-  //--- communicate the gradient values via MPI
-  
-  InitiateComms(geometry, config, ANISO_GRADIENT);
-  CompleteComms(geometry, config, ANISO_GRADIENT);
-}
-
-void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
-
-  unsigned long iPoint, nPointDomain = geometry->GetnPointDomain(),
-                iElem, nElem = geometry->GetnElem();
-  unsigned short iVar, iDim;
-  su2double vnx[3], vny[3];
-  su2double hesTri[3];
-  su2double Crd[3][2], Grad[3][2][nVar];
-
-  su2double **A      = new su2double*[nDim],
-            **EigVec = new su2double*[nDim], 
-            *EigVal  = new su2double[nDim];
-
-  for(iDim = 0; iDim < nDim; ++iDim){
-    A[iDim]      = new su2double[nDim];
-    EigVec[iDim] = new su2double[nDim];
-  }
-  
-  //--- note: currently only implemented for Tri
-
-  for (iElem=0; iElem<nElem; ++iElem) {
-    for (unsigned short iNode=0; iNode<3; ++iNode) {
-      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
-      //--- store coordinates
-      for (iDim = 0; iDim<2; ++iDim) Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
-      //--- store gradient
-      for(iVar = 0; iVar < nVar; iVar++){
-        Grad[iNode][0][iVar] = base_nodes->GetGradient_Adaptation(kNode, iVar, 0);
-        Grad[iNode][1][iVar] = base_nodes->GetGradient_Adaptation(kNode, iVar, 1);
-      }
-    }
-
-    //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
-    vnx[0] = Crd[1][1]-Crd[2][1];
-    vny[0] = Crd[2][0]-Crd[1][0];
-
-    vnx[1] = Crd[2][1]-Crd[0][1];
-    vny[1] = Crd[0][0]-Crd[2][0];
-
-    vnx[2] = Crd[0][1]-Crd[1][1];
-    vny[2] = Crd[1][0]-Crd[0][0];
-
-    //--- check if inward normal
-    for(unsigned short iNode = 0; iNode < 3; ++iNode) {
-      su2double CrdAvg[2] = {0.0, 0.0};
-      for(unsigned short jNode = 0; jNode < 3; ++jNode) {
-        if(iNode != jNode) {
-          CrdAvg[0] += Crd[jNode][0];
-          CrdAvg[1] += Crd[jNode][1];
-        }
-      }
-      CrdAvg[0] /= 2.;
-      CrdAvg[1] /= 2.;
-      su2double u[2] = {CrdAvg[0]-Crd[iNode][0],
-                        CrdAvg[1]-Crd[iNode][1]};
-      if((vnx[iNode]*u[0] + vny[iNode]*u[1]) > 0.) {
-        vnx[iNode] *= -1.0;
-        vny[iNode] *= -1.0;
-      }
-    }
-
-    //--- loop over conservative variables
-    for(iVar = 0; iVar < nVar; iVar++){
-
-      //--- hessian at the element ( hesTri = 2*|T|*hessienT ) 
-      hesTri[0] =         Grad[0][0][iVar]*vnx[0] 
-                        + Grad[1][0][iVar]*vnx[1] 
-                        + Grad[2][0][iVar]*vnx[2];
-      hesTri[1] = 0.5 * ( Grad[0][0][iVar]*vny[0] 
-                        + Grad[1][0][iVar]*vny[1] 
-                        + Grad[2][0][iVar]*vny[2]
-                        + Grad[0][1][iVar]*vnx[0] 
-                        + Grad[1][1][iVar]*vnx[1] 
-                        + Grad[2][1][iVar]*vnx[2] );
-      hesTri[2] =         Grad[0][1][iVar]*vny[0] 
-                        + Grad[1][1][iVar]*vny[1] 
-                        + Grad[2][1][iVar]*vny[2];
-      
-      //--- assembling
-      for (unsigned short iNode=0; iNode<3; ++iNode) {
-        const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
-        const su2double Area = geometry->node[kNode]->GetVolume();
-        const su2double rap = 1./(Area*6.);
-        // const su2double rap = Area/6.;
-        base_nodes->AddHessian(kNode, iVar, 0, hesTri[0] * rap);
-        base_nodes->AddHessian(kNode, iVar, 1, hesTri[1] * rap);
-        base_nodes->AddHessian(kNode, iVar, 2, hesTri[2] * rap);
-      }
-    }
-  }
-
-  //--- communicate the Hessian values via MPI
-  
-  InitiateComms(geometry, config, HESSIAN);
-  CompleteComms(geometry, config, HESSIAN);
-
-  CorrectBoundHessian(geometry, config);
-
-  //--- make positive definite matrix
-  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    for(iVar = 0; iVar < nVar; iVar++){
-
-      const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
-      const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
-      const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
-      
-      A[0][0] = a; A[0][1] = b;
-      A[1][0] = b; A[1][1] = c;
-
-      CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
-
-      for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
-
-      CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
-
-      base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
-      base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
-      base_nodes->SetHessian(iPoint, iVar, 2, A[1][1]);
-    }
-  }
-
-  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
-    delete [] A[iDim];
-    delete [] EigVec[iDim];
-  }
-  delete [] A;
-  delete [] EigVec;
-  delete [] EigVal;
-}
-
-void CSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
-
-  unsigned long iElem, nElem = geometry->GetnElem();
-  unsigned short iVar, iDim;
-  su2double vnx[4], vny[4], vnz[4];
-  su2double graTet[3];
-  su2double Crd[4][3], Sens[4][nVar];
-
-  //--- communicate the solution values via MPI
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  //--- note: currently only implemented for Tet
-
-  for (iElem=0; iElem<nElem; ++iElem) {
-    for (unsigned short iNode=0; iNode<4; ++iNode) {
-      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
-      //--- store coordinates
-      for (iDim = 0; iDim<3; ++iDim) Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
-      //--- store sensors (goal-oriented)
-      for (iVar = 0; iVar < nVar; ++iVar) Sens[iNode][iVar] = base_nodes->GetSolution(kNode,iVar);
-    }
-
-    //--- inward face's normals : fac[0]=P1P2P3, fac[1]=P2P3P0, fac[2]=P3P0P1, fac[3]=P0P1P2
-    vnx[0] = (Crd[2][1]-Crd[1][1])*(Crd[3][2]-Crd[1][2]) - (Crd[2][2]-Crd[1][2])*(Crd[3][1]-Crd[1][1]);
-    vny[0] = (Crd[2][2]-Crd[1][2])*(Crd[3][0]-Crd[1][0]) - (Crd[2][0]-Crd[1][0])*(Crd[3][2]-Crd[1][2]);
-    vnz[0] = (Crd[2][0]-Crd[1][0])*(Crd[3][1]-Crd[1][1]) - (Crd[2][1]-Crd[1][1])*(Crd[3][0]-Crd[1][0]);
-
-    vnx[1] = (Crd[3][1]-Crd[2][1])*(Crd[0][2]-Crd[2][2]) - (Crd[3][2]-Crd[2][2])*(Crd[0][1]-Crd[2][1]);
-    vny[1] = (Crd[3][2]-Crd[2][2])*(Crd[0][0]-Crd[2][0]) - (Crd[3][0]-Crd[2][0])*(Crd[0][2]-Crd[2][2]);
-    vnz[1] = (Crd[3][0]-Crd[2][0])*(Crd[0][1]-Crd[2][1]) - (Crd[3][1]-Crd[2][1])*(Crd[0][0]-Crd[2][0]);
-
-    vnx[2] = (Crd[0][1]-Crd[3][1])*(Crd[1][2]-Crd[3][2]) - (Crd[0][2]-Crd[3][2])*(Crd[1][1]-Crd[3][1]);
-    vny[2] = (Crd[0][2]-Crd[3][2])*(Crd[1][0]-Crd[3][0]) - (Crd[0][0]-Crd[3][0])*(Crd[1][2]-Crd[3][2]);
-    vnz[2] = (Crd[0][0]-Crd[3][0])*(Crd[1][1]-Crd[3][1]) - (Crd[0][1]-Crd[3][1])*(Crd[1][0]-Crd[3][0]);
-
-    vnx[3] = (Crd[1][1]-Crd[0][1])*(Crd[2][2]-Crd[0][2]) - (Crd[1][2]-Crd[0][2])*(Crd[2][1]-Crd[0][1]);
-    vny[3] = (Crd[1][2]-Crd[0][2])*(Crd[2][0]-Crd[0][0]) - (Crd[1][0]-Crd[0][0])*(Crd[2][2]-Crd[0][2]);
-    vnz[3] = (Crd[1][0]-Crd[0][0])*(Crd[2][1]-Crd[0][1]) - (Crd[1][1]-Crd[0][1])*(Crd[2][0]-Crd[0][0]);
-
-    //--- check if inward normal
-    for(unsigned short iNode = 0; iNode < 4; ++iNode) {
-      su2double CrdAvg[3] = {0.0, 0.0, 0.0};
-      for(unsigned short jNode = 0; jNode < 4; ++jNode) {
-        if(iNode != jNode) {
-          CrdAvg[0] += Crd[jNode][0];
-          CrdAvg[1] += Crd[jNode][1];
-          CrdAvg[2] += Crd[jNode][2];
-        }
-      }
-      CrdAvg[0] /= 3.;
-      CrdAvg[1] /= 3.;
-      CrdAvg[2] /= 3.;
-      su2double u[3] = {CrdAvg[0]-Crd[iNode][0],
-                        CrdAvg[1]-Crd[iNode][1],
-                        CrdAvg[2]-Crd[iNode][2]};
-      if((vnx[iNode]*u[0] + vny[iNode]*u[1] + vnz[iNode]*u[2]) > 0.) {
-        vnx[iNode] *= -1.0;
-        vny[iNode] *= -1.0;
-        vnz[iNode] *= -1.0;
-      }
-    }
-
-    //--- loop over conservative variables
-    for(iVar = 0; iVar < nVar; iVar++){
-
-      //--- gradient at the element ( graTet = 6*|T|*gradT ) 
-      graTet[0] = Sens[0][iVar]*vnx[0] + Sens[1][iVar]*vnx[1] + Sens[2][iVar]*vnx[2] + Sens[3][iVar]*vnx[3];
-      graTet[1] = Sens[0][iVar]*vny[0] + Sens[1][iVar]*vny[1] + Sens[2][iVar]*vny[2] + Sens[3][iVar]*vny[3];
-      graTet[2] = Sens[0][iVar]*vnz[0] + Sens[1][iVar]*vnz[1] + Sens[2][iVar]*vnz[2] + Sens[3][iVar]*vnz[3];
-  
-      //--- assembling
-      for (unsigned short iNode=0; iNode<4; ++iNode) {
-        const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
-        const su2double Vol = geometry->node[kNode]->GetVolume();
-        const su2double rap = 1./(Vol*24.);
-        // const su2double rap = Vol/24.;
-        base_nodes->AddGradient_Adaptation(kNode, iVar, 0, graTet[0] * rap);
-        base_nodes->AddGradient_Adaptation(kNode, iVar, 1, graTet[1] * rap);
-        base_nodes->AddGradient_Adaptation(kNode, iVar, 2, graTet[2] * rap);
-      }
-    }
-  }
-
-  //--- communicate the gradient values via MPI
-  
-  InitiateComms(geometry, config, ANISO_GRADIENT);
-  CompleteComms(geometry, config, ANISO_GRADIENT);
-}
-
-void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
-
-  unsigned long iPoint, nPointDomain = geometry->GetnPointDomain(),
-                iElem, nElem = geometry->GetnElem();
-  unsigned short iVar, iDim;
-  su2double vnx[4], vny[4], vnz[4];
-  su2double hesTet[6];
-  su2double Crd[4][3], Grad[4][3][nVar];
-
-  //--- note: currently only implemented for Tet
-
-  for (iElem=0; iElem<nElem; ++iElem) {
-    for (unsigned short iNode=0; iNode<4; ++iNode) {
-      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
-      //--- store coordinates
-      for (iDim = 0; iDim<3; ++iDim) Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
-      //--- store gradient
-      for(iVar = 0; iVar < nVar; iVar++){
-        Grad[iNode][0][iVar] = base_nodes->GetGradient_Adaptation(kNode, iVar, 0);
-        Grad[iNode][1][iVar] = base_nodes->GetGradient_Adaptation(kNode, iVar, 1);
-        Grad[iNode][2][iVar] = base_nodes->GetGradient_Adaptation(kNode, iVar, 2);
-      }
-    }
-
-    //--- inward face's normals : fac[0]=P1P2P3, fac[1]=P2P3P0, fac[2]=P3P0P1, fac[3]=P0P1P2
-    vnx[0] = (Crd[2][1]-Crd[1][1])*(Crd[3][2]-Crd[1][2]) - (Crd[2][2]-Crd[1][2])*(Crd[3][1]-Crd[1][1]);
-    vny[0] = (Crd[2][2]-Crd[1][2])*(Crd[3][0]-Crd[1][0]) - (Crd[2][0]-Crd[1][0])*(Crd[3][2]-Crd[1][2]);
-    vnz[0] = (Crd[2][0]-Crd[1][0])*(Crd[3][1]-Crd[1][1]) - (Crd[2][1]-Crd[1][1])*(Crd[3][0]-Crd[1][0]);
-
-    vnx[1] = (Crd[3][1]-Crd[2][1])*(Crd[0][2]-Crd[2][2]) - (Crd[3][2]-Crd[2][2])*(Crd[0][1]-Crd[2][1]);
-    vny[1] = (Crd[3][2]-Crd[2][2])*(Crd[0][0]-Crd[2][0]) - (Crd[3][0]-Crd[2][0])*(Crd[0][2]-Crd[2][2]);
-    vnz[1] = (Crd[3][0]-Crd[2][0])*(Crd[0][1]-Crd[2][1]) - (Crd[3][1]-Crd[2][1])*(Crd[0][0]-Crd[2][0]);
-
-    vnx[2] = (Crd[0][1]-Crd[3][1])*(Crd[1][2]-Crd[3][2]) - (Crd[0][2]-Crd[3][2])*(Crd[1][1]-Crd[3][1]);
-    vny[2] = (Crd[0][2]-Crd[3][2])*(Crd[1][0]-Crd[3][0]) - (Crd[0][0]-Crd[3][0])*(Crd[1][2]-Crd[3][2]);
-    vnz[2] = (Crd[0][0]-Crd[3][0])*(Crd[1][1]-Crd[3][1]) - (Crd[0][1]-Crd[3][1])*(Crd[1][0]-Crd[3][0]);
-
-    vnx[3] = (Crd[1][1]-Crd[0][1])*(Crd[2][2]-Crd[0][2]) - (Crd[1][2]-Crd[0][2])*(Crd[2][1]-Crd[0][1]);
-    vny[3] = (Crd[1][2]-Crd[0][2])*(Crd[2][0]-Crd[0][0]) - (Crd[1][0]-Crd[0][0])*(Crd[2][2]-Crd[0][2]);
-    vnz[3] = (Crd[1][0]-Crd[0][0])*(Crd[2][1]-Crd[0][1]) - (Crd[1][1]-Crd[0][1])*(Crd[2][0]-Crd[0][0]);
-
-    //--- check if inward normal
-    for(unsigned short iNode = 0; iNode < 4; ++iNode) {
-      su2double CrdAvg[3] = {0.0, 0.0, 0.0};
-      for(unsigned short jNode = 0; jNode < 4; ++jNode) {
-        if(iNode != jNode) {
-          CrdAvg[0] += Crd[jNode][0];
-          CrdAvg[1] += Crd[jNode][1];
-          CrdAvg[2] += Crd[jNode][2];
-        }
-      }
-      CrdAvg[0] /= 3.;
-      CrdAvg[1] /= 3.;
-      CrdAvg[2] /= 3.;
-      su2double u[3] = {CrdAvg[0]-Crd[iNode][0],
-                        CrdAvg[1]-Crd[iNode][1],
-                        CrdAvg[2]-Crd[iNode][2]};
-      if((vnx[iNode]*u[0] + vny[iNode]*u[1] + vnz[iNode]*u[2]) > 0.) {
-        vnx[iNode] *= -1.0;
-        vny[iNode] *= -1.0;
-        vnz[iNode] *= -1.0;
-      }
-    }
-
-    //--- loop over conservative variables
-    for(iVar = 0; iVar < nVar; iVar++){
-
-      //--- hessian at the element ( hesTet = 6*|T|*hessienT ) 
-      hesTet[0] =         Grad[0][0][iVar]*vnx[0] 
-                        + Grad[1][0][iVar]*vnx[1] 
-                        + Grad[2][0][iVar]*vnx[2]
-                        + Grad[3][0][iVar]*vnx[3];
-
-      hesTet[1] = 0.5 * ( Grad[0][0][iVar]*vny[0] 
-                        + Grad[1][0][iVar]*vny[1] 
-                        + Grad[2][0][iVar]*vny[2]
-                        + Grad[3][0][iVar]*vny[3]
-                        + Grad[0][1][iVar]*vnx[0] 
-                        + Grad[1][1][iVar]*vnx[1] 
-                        + Grad[2][1][iVar]*vnx[2]
-                        + Grad[3][1][iVar]*vnx[3] );
-
-      hesTet[2] = 0.5 * ( Grad[0][0][iVar]*vnz[0] 
-                        + Grad[1][0][iVar]*vnz[1] 
-                        + Grad[2][0][iVar]*vnz[2]
-                        + Grad[3][0][iVar]*vnz[3]
-                        + Grad[0][2][iVar]*vnx[0] 
-                        + Grad[1][2][iVar]*vnx[1] 
-                        + Grad[2][2][iVar]*vnx[2]
-                        + Grad[3][2][iVar]*vnx[3] );
-
-      hesTet[3] =         Grad[0][1][iVar]*vny[0] 
-                        + Grad[1][1][iVar]*vny[1] 
-                        + Grad[2][1][iVar]*vny[2]
-                        + Grad[3][1][iVar]*vny[3];
-
-      hesTet[4] = 0.5 * ( Grad[0][1][iVar]*vnz[0] 
-                        + Grad[1][1][iVar]*vnz[1] 
-                        + Grad[2][1][iVar]*vnz[2]
-                        + Grad[3][1][iVar]*vnz[3]
-                        + Grad[0][2][iVar]*vny[0] 
-                        + Grad[1][2][iVar]*vny[1] 
-                        + Grad[2][2][iVar]*vny[2]
-                        + Grad[3][2][iVar]*vny[3] );
-
-      hesTet[5] =         Grad[0][2][iVar]*vnz[0] 
-                        + Grad[1][2][iVar]*vnz[1] 
-                        + Grad[2][2][iVar]*vnz[2]
-                        + Grad[3][2][iVar]*vnz[3];
-      
-      //--- assembling
-      for (unsigned short iNode=0; iNode<4; ++iNode) {
-        const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
-        const su2double Vol = geometry->node[kNode]->GetVolume();
-        const su2double rap = 1./(Vol*24.);
-        // const su2double rap = Vol/24.;
-        base_nodes->AddHessian(kNode, iVar, 0, hesTet[0] * rap);
-        base_nodes->AddHessian(kNode, iVar, 1, hesTet[1] * rap);
-        base_nodes->AddHessian(kNode, iVar, 2, hesTet[2] * rap);
-        base_nodes->AddHessian(kNode, iVar, 3, hesTet[3] * rap);
-        base_nodes->AddHessian(kNode, iVar, 4, hesTet[4] * rap);
-        base_nodes->AddHessian(kNode, iVar, 5, hesTet[5] * rap);
-      }
-    }
-  }
-
-  //--- communicate the Hessian values via MPI
-  
-  InitiateComms(geometry, config, HESSIAN);
-  CompleteComms(geometry, config, HESSIAN);
-
-  CorrectBoundHessian(geometry, config);
-
-  //--- make positive definite matrix
-  su2double **A      = new su2double*[nDim],
-            **EigVec = new su2double*[nDim], 
-            *EigVal  = new su2double[nDim];
-
-  for(iDim = 0; iDim < nDim; ++iDim){
-    A[iDim]      = new su2double[nDim];
-    EigVec[iDim] = new su2double[nDim];
-  }
-
-  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    for(iVar = 0; iVar < nVar; iVar++){
-
-      const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
-      const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
-      const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
-      const su2double d = base_nodes->GetHessian(iPoint, iVar, 3);
-      const su2double e = base_nodes->GetHessian(iPoint, iVar, 4);
-      const su2double f = base_nodes->GetHessian(iPoint, iVar, 5);
-
-      A[0][0] = a; A[0][1] = b; A[0][2] = c;
-      A[1][0] = b; A[1][1] = d; A[1][2] = e;
-      A[2][0] = c; A[2][1] = e; A[2][2] = f;
-
-      CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
-
-      for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
-
-      CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
-
-      base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
-      base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
-      base_nodes->SetHessian(iPoint, iVar, 2, A[0][2]);
-      base_nodes->SetHessian(iPoint, iVar, 3, A[1][1]);
-      base_nodes->SetHessian(iPoint, iVar, 4, A[1][2]);
-      base_nodes->SetHessian(iPoint, iVar, 5, A[2][2]);
-    }
-  }
-
-  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
-    delete [] A[iDim];
-    delete [] EigVec[iDim];
-  }
-  delete [] A;
-  delete [] EigVec;
-  delete [] EigVal;
-}
-
 void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iVar, iMetr, iMarker;
   unsigned short nMetr = 3*(nDim-1);
@@ -5427,6 +4979,76 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
       }// iVertex
     }// if KindBC
   }// iMarker
+}
+
+void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config) {
+  
+  unsigned long iPoint;
+  unsigned short iDim, iVar;
+  su2double **A      = new su2double*[nDim],
+            **EigVec = new su2double*[nDim],
+            *EigVal  = new su2double[nDim];
+
+  for(iDim = 0; iDim < nDim; ++iDim){
+    A[iDim]      = new su2double[nDim];
+    EigVec[iDim] = new su2double[nDim];
+  }
+
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+    for(iVar = 0; iVar < nVar; iVar++){
+      if (nDim == 2) {
+        const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
+        const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
+        const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
+        
+        A[0][0] = a; A[0][1] = b;
+        A[1][0] = b; A[1][1] = c;
+
+        CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+
+        for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
+
+        CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+        base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
+        base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
+        base_nodes->SetHessian(iPoint, iVar, 2, A[1][1]);
+      }
+      else {
+        const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
+        const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
+        const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
+        const su2double d = base_nodes->GetHessian(iPoint, iVar, 3);
+        const su2double e = base_nodes->GetHessian(iPoint, iVar, 4);
+        const su2double f = base_nodes->GetHessian(iPoint, iVar, 5);
+
+        A[0][0] = a; A[0][1] = b; A[0][2] = c;
+        A[1][0] = b; A[1][1] = d; A[1][2] = e;
+        A[2][0] = c; A[2][1] = e; A[2][2] = f;
+
+        CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+
+        for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
+
+        CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+        base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
+        base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
+        base_nodes->SetHessian(iPoint, iVar, 2, A[0][2]);
+        base_nodes->SetHessian(iPoint, iVar, 3, A[1][1]);
+        base_nodes->SetHessian(iPoint, iVar, 4, A[1][2]);
+        base_nodes->SetHessian(iPoint, iVar, 5, A[2][2]);
+      }
+    }
+  }
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    delete [] A[iDim];
+    delete [] EigVec[iDim];
+  }
+  delete [] A;
+  delete [] EigVec;
+  delete [] EigVal;
 }
 
 void CSolver::ComputeMetric(CSolver   **solver,

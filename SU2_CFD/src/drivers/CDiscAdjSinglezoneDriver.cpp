@@ -574,70 +574,22 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
 
   if (rank == MASTER_NODE)
     cout << endl <<"----------------------------- Compute Metric ----------------------------" << endl;
-
-  //--- 2D
-  if(nDim == 2){
-    //--- Volume flow grad
-    if(rank == MASTER_NODE) cout << "Computing flow volume gradient via L2 Projection." << endl;
-    solver_flow->SetGradient_L2Proj2(geometry, config);
-
-    //--- Volume flow Hess
-    if(rank == MASTER_NODE) cout << "Computing flow volume Hessian via L2 Projection." << endl;
-    solver_flow->SetHessian_L2Proj2(geometry, config);
-
-    //--- Volume adj grad
-    if(rank == MASTER_NODE) cout << "Computing adjoint volume gradient via L2 Projection." << endl;
-    solver_adjflow->SetGradient_L2Proj2(geometry, config);
-
-    if(config->GetViscous()) {
-      //--- Volume adj Hess
-      if(rank == MASTER_NODE) cout << "Computing adjoint volume Hessian via L2 Projection." << endl;
-      solver_adjflow->SetHessian_L2Proj2(geometry, config);
-
-      //--- Volume turb grad
-      if(rank == MASTER_NODE) cout << "Computing turbulent volume gradient via L2 Projection." << endl;
-      solver_turb->SetGradient_L2Proj2(geometry, config);
-
-      //--- Volume turb Hess
-      if(rank == MASTER_NODE) cout << "Computing turbulent volume Hessian via L2 Projection." << endl;
-      solver_turb->SetHessian_L2Proj2(geometry, config);
-
-      //--- Volume adj turb grad
-      if(rank == MASTER_NODE) cout << "Computing turbulent adjoint volume gradient via L2 Projection." << endl;
-      solver_adjturb->SetGradient_L2Proj2(geometry, config);
-    }
-  }
-
-  //--- 3D
-  else{
-    //--- Volume flow grad
-    if(rank == MASTER_NODE) cout << "Computing flow volume gradient via L2 Projection." << endl;
-    solver_flow->SetGradient_L2Proj3(geometry, config);
-
-    //--- Volume flow Hess
-    if(rank == MASTER_NODE) cout << "Computing flow volume Hessian via L2 Projection." << endl;
-    solver_flow->SetHessian_L2Proj3(geometry, config);
-
-    //--- Volume adj grad
-    if(rank == MASTER_NODE) cout << "Computing adjoint volume gradient via L2 Projection." << endl;
-    solver_adjflow->SetGradient_L2Proj3(geometry, config);
-
-    if(config->GetViscous()) {
-      //--- Volume adj Hess
-      if(rank == MASTER_NODE) cout << "Computing adjoint volume Hessian via L2 Projection." << endl;
-      solver_adjflow->SetHessian_L2Proj3(geometry, config);
-
-      //--- Volume turb grad
-      if(rank == MASTER_NODE) cout << "Computing turbulent volume gradient via L2 Projection." << endl;
-      solver_turb->SetGradient_L2Proj3(geometry, config);
-
-      //--- Volume turb Hess
-      if(rank == MASTER_NODE) cout << "Computing turbulent volume Hessian via L2 Projection." << endl;
-      solver_turb->SetHessian_L2Proj3(geometry, config);
-
-      //--- Volume adj turb grad
-      if(rank == MASTER_NODE) cout << "Computing turbulent adjoint volume gradient via L2 Projection." << endl;
-      solver_adjturb->SetGradient_L2Proj3(geometry, config);
+  
+  if (config->GetKind_Hessian_Method() == GREEN_GAUSS) {
+    if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
+    
+    if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
+    solver_flow->SetHessian_GG(geometry, config);
+    
+    if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
+    solver_adjflow->SetHessian_GG(geometry, config);
+    
+    if ( config->GetKind_Turb_Model() != NONE) {
+      if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
+      solver_turb->SetHessian_GG(geometry, config);
+      
+      if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
+      solver_adjturb->SetHessian_GG(geometry, config);
     }
   }
 
