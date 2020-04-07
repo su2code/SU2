@@ -1,7 +1,7 @@
 ﻿/*!
  * \file CMirror.hpp
  * \brief Mirror interpolation for the conservative (work-wise) approach in FSI problems.
- * \author H. Kline
+ * \author H. Kline, P. Gomes
  * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -29,8 +29,8 @@
 #include "CInterpolator.hpp"
 
 /*!
- * \brief Mirror interpolation: copy point linking and coefficient values from the opposing mesh.
- * \note Assumes that the oppoosing mesh has already run interpolation, otherwise will result in empty/trivial interpolation.
+ * \brief Mirror interpolation, transpose interpolation matrix of opposing mesh.
+ * \note Requires that the opposing mesh has already run interpolation (jZone > iZone), otherwise throws.
  */
 class CMirror final : public CInterpolator {
 public:

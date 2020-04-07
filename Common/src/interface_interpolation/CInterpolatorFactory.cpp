@@ -58,7 +58,7 @@ CInterpolator* createInterpolator(CGeometry ****geometry_container,
     interpolator = new CSlidingMesh(geometry_container, config, iZone, jZone);
   }
   else if (config[jZone]->GetConservativeInterpolation()) {
-    if (verbose) cout << "using a mirror approach, \"transposing\" coefficients from opposite mesh." << endl;
+    if (verbose) cout << "using the mirror approach, \"transposing\" coefficients from opposite mesh." << endl;
     interpolator = new CMirror(geometry_container, config, iZone, jZone);
   }
   else {
@@ -69,7 +69,7 @@ CInterpolator* createInterpolator(CGeometry ****geometry_container,
       break;
 
     case NEAREST_NEIGHBOR:
-      if (verbose) cout << "using a nearest-neighbor approach." << endl;
+      if (verbose) cout << "using a nearest neighbor approach." << endl;
       interpolator = new CNearestNeighbor(geometry_container, config, iZone, jZone);
       break;
 

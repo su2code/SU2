@@ -49,46 +49,29 @@ protected:
   const unsigned targetZone; /*!< \brief Index of target zone. */
 
   unsigned long
-  MaxLocalVertex_Donor,      /*!< \brief Maximum vertices per processor*/
-  nGlobalFace_Donor,         /*!< \brief Number of global donor faces*/
-  nGlobalFaceNodes_Donor,    /*!< \brief Number of global donor face nodes*/
-  MaxFace_Donor,             /*!< \brief Maximum faces per processor*/
-  MaxFaceNodes_Donor;        /*!< \brief Maximum nodes associated with faces per processor*/
+  MaxLocalVertex_Donor,              /*!< \brief Maximum vertices per processor. */
+  Buffer_Send_nVertex_Donor[1],      /*!< \brief Buffer to send number of vertices on the local processor. */
+  *Buffer_Receive_nVertex_Donor;     /*!< \brief Buffer to store the number of vertices per processor on the Donor domain. */
+
+  long *Buffer_Send_GlobalPoint,     /*!< \brief Buffer to send global point indices. */
+  *Buffer_Receive_GlobalPoint;       /*!< \brief Buffer to receive global point indices. */
+
+  su2double *Buffer_Send_Coord,      /*!< \brief Buffer to send coordinate values. */
+  *Buffer_Receive_Coord;             /*!< \brief Buffer to receive coordinate values. */
 
   unsigned long
-  *Buffer_Receive_nVertex_Donor,     /*!< \brief Buffer to store the number of vertices per processor on the Donor domain */
-  *Buffer_Receive_nFace_Donor,       /*!< \brief Buffer to store the number of faces per processor*/
-  *Buffer_Receive_nFaceNodes_Donor,  /*!< \brief Buffer to store the number of nodes associated with faces per processor*/
-  Buffer_Send_nVertex_Donor[1],      /*!< \brief Buffer to send number of vertices on the local processor*/
-  Buffer_Send_nFace_Donor[1],        /*!< \brief Buffer to send number of faces on the local processor*/
-  Buffer_Send_nFaceNodes_Donor[1],   /*!< \brief Buffer to send the number of nodes assocated with faces per processor*/
-  *Buffer_Send_FaceIndex,            /*!< \brief Buffer to send indices pointing to the node indices that define the faces*/
-  *Buffer_Receive_FaceIndex,         /*!< \brief Buffer to receive indices pointing to the node indices that define the faces*/
-  *Buffer_Send_FaceNodes,            /*!< \brief Buffer to send indices pointing to the location of node information in other buffers, defining faces*/
-  *Buffer_Receive_FaceNodes;         /*!< \brief Buffer to receive indices pointing to the location of node information in other buffers, defining faces*/
-
-  long *Buffer_Send_GlobalPoint,     /*!< \brief Buffer to send global point indices*/
-  *Buffer_Receive_GlobalPoint;       /*!< \brief Buffer to receive global point indices*/
-
-  su2double *Buffer_Send_Coord,      /*!< \brief Buffer to send coordinate values*/
-  *Buffer_Send_Normal,               /*!< \brief Buffer to send normal vector values */
-  *Buffer_Receive_Coord,             /*!< \brief Buffer to receive coordinate values*/
-  *Buffer_Receive_Normal;            /*!< \brief Buffer to receive normal vector values*/
+  *Buffer_Receive_nLinkedNodes,      /*!< \brief Buffer to receive the number of edges connected to each node. */
+  *Buffer_Receive_LinkedNodes,       /*!< \brief Buffer to receive the list of notes connected to the nodes through an edge. */
+  *Buffer_Receive_StartLinkedNodes,  /*!< \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins. */
+  *Buffer_Receive_Proc;              /*!< \brief Buffer to receive the thread that owns the node. */
 
   unsigned long
-  *Receive_GlobalPoint,              /*!< \brief Buffer to receive Global point indexes*/
-  *Buffer_Receive_nLinkedNodes,      /*!< \brief Buffer to receive the number of edges connected to each node*/
-  *Buffer_Receive_LinkedNodes,       /*!< \brief Buffer to receive the list of notes connected to the nodes through an edge*/
-  *Buffer_Receive_StartLinkedNodes,  /*!< \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins */
-  *Buffer_Receive_Proc;              /*!< \brief Buffer to receive the thread that owns the node*/
-
-  unsigned long
-  nGlobalVertex_Target,              /*!< \brief Global number of vertex of the target boundary*/
-  nLocalVertex_Target,               /*!< \brief Number of vertex of the target boundary owned by the thread*/
-  nGlobalVertex_Donor,               /*!< \brief Global number of vertex of the donor boundary*/
-  nLocalVertex_Donor,                /*!< \brief Number of vertex of the donor boundary owned by the thread*/
-  nGlobalVertex,                     /*!< \brief Dummy variable to temporarily store the global number of vertex of a boundary*/
-  nLocalLinkedNodes;                 /*!< \brief Dummy variable to temporarily store the number of vertex of a boundary*/
+  nGlobalVertex_Target,              /*!< \brief Global number of vertex of the target boundary. */
+  nLocalVertex_Target,               /*!< \brief Number of vertex of the target boundary owned by the thread. */
+  nGlobalVertex_Donor,               /*!< \brief Global number of vertex of the donor boundary. */
+  nLocalVertex_Donor,                /*!< \brief Number of vertex of the donor boundary owned by the thread. */
+  nGlobalVertex,                     /*!< \brief Dummy variable to temporarily store the global number of vertex of a boundary. */
+  nLocalLinkedNodes;                 /*!< \brief Dummy variable to temporarily store the number of vertex of a boundary. */
 
   CGeometry**** const Geometry;      /*! \brief Vector which stores n zones of geometry. */
   CGeometry* const donor_geometry;   /*! \brief Donor geometry. */

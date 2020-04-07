@@ -1,7 +1,7 @@
 /*!
  * \file CMirror.cpp
  * \brief Implementation of mirror interpolation (conservative approach in FSI problems).
- * \author H. Kline
+ * \author H. Kline, P. Gomes
  * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -45,18 +45,19 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
 
   const int nProcessor = size;
 
-  Buffer_Receive_nFace_Donor = new unsigned long [nProcessor];
-  Buffer_Receive_nFaceNodes_Donor = new unsigned long [nProcessor];
+  vector<unsigned long> allNumVertexTarget(nProcessor);
+  vector<unsigned long> allNumVertexDonor(nProcessor);
+  vector<unsigned long> allNumNodeDonor(nProcessor);
 
   /*--- Number of markers on the interface ---*/
   const auto nMarkerInt = (config[targetZone]->GetMarker_n_ZoneInterface())/2;
 
   /*--- For the number of markers on the interface... ---*/
   for (unsigned short iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
-   /*--- Procedure:
-    * - Loop through vertices of the aero grid
-    * - Find nearest element and allocate enough space in the aero grid donor point info
-    * - Set the transfer coefficient values
+
+   /* High level procedure:
+    * - Gather the interpolation matrix of the donor geometry;
+    * - Set the interpolation matrix of the target as the transpose.
     */
 
     /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
@@ -66,135 +67,166 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
     const auto markTarget = FindInterfaceMarker(config[targetZone], iMarkerInt);
 
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
-    if(!CheckInterfaceBoundary(markDonor, markTarget)) continue;
+    if (!CheckInterfaceBoundary(markDonor, markTarget)) continue;
 
     unsigned long nVertexDonor = 0, nVertexTarget = 0;
     if (markDonor != -1) nVertexDonor = donor_geometry->GetnVertex( markDonor );
     if (markTarget != -1) nVertexTarget = target_geometry->GetnVertex( markTarget );
 
-    /*-- Collect the number of donor nodes: re-use 'Face' containers --*/
-    auto nLocalFace_Donor = 0ul;
-    auto nLocalFaceNodes_Donor = 0ul;
-    for (auto jVertex = 0ul; jVertex<nVertexDonor; jVertex++) {
-      auto Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode(); // Local index of jVertex
+    /*--- Count the number of donor nodes on the donor geometry. ---*/
+    unsigned long nVertexDonorLocal = 0;
+    unsigned long nNodeDonorLocal = 0;
+    for (auto iVertex = 0ul; iVertex < nVertexDonor; iVertex++) {
 
-      if (donor_geometry->node[Point_Donor]->GetDomain()) {
-        auto nNodes = donor_geometry->vertex[markDonor][jVertex]->GetnDonorPoints();
-        nLocalFaceNodes_Donor += nNodes;
-        nLocalFace_Donor++;
+      auto donor_vertex = donor_geometry->vertex[markDonor][iVertex];
+
+      if (donor_geometry->node[donor_vertex->GetNode()]->GetDomain()) {
+        nNodeDonorLocal += donor_vertex->GetnDonorPoints();
+        nVertexDonorLocal++;
       }
     }
 
-    Buffer_Send_nFace_Donor[0] = nLocalFace_Donor;
-    Buffer_Send_nFaceNodes_Donor[0] = nLocalFaceNodes_Donor;
+    /*--- Communicate vertex and donor node counts. ---*/
+    SU2_MPI::Allgather(&nVertexTarget, 1, MPI_UNSIGNED_LONG,
+                       allNumVertexTarget.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(&nVertexDonorLocal, 1, MPI_UNSIGNED_LONG,
+                       allNumVertexDonor.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(&nNodeDonorLocal, 1, MPI_UNSIGNED_LONG,
+                       allNumNodeDonor.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 
-    /*--- Send Interface vertex information --*/
-    SU2_MPI::Allreduce(&nLocalFaceNodes_Donor, &MaxFaceNodes_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&nLocalFace_Donor, &MaxFace_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_nFace_Donor, 1, MPI_UNSIGNED_LONG,
-                       Buffer_Receive_nFace_Donor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_nFaceNodes_Donor, 1, MPI_UNSIGNED_LONG,
-                       Buffer_Receive_nFaceNodes_Donor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    MaxFace_Donor++;
+    /*--- Copy donor interpolation matrix and info. ---*/
+    const auto sizeRowPtr = nVertexDonorLocal + 1;
+    vector<long> sendGlobalIndex(nVertexDonorLocal);
+    vector<long> sendDonorRowPtr(sizeRowPtr);
+    vector<long> sendDonorIndex(nNodeDonorLocal);
+    vector<su2double> sendDonorCoeff(nNodeDonorLocal);
 
-    /*-- Send donor info and init to 0 --*/
-    Buffer_Send_FaceIndex = new unsigned long[MaxFace_Donor] ();
-    Buffer_Send_FaceNodes = new unsigned long[MaxFaceNodes_Donor] ();
-    Buffer_Send_GlobalPoint = new long[MaxFaceNodes_Donor] ();
-    auto Buffer_Send_Coeff = new su2double[MaxFaceNodes_Donor] ();
+    sendDonorRowPtr[0] = 0;
+    for (auto iVertex = 0ul, iVertexLocal = 0ul, iDonor = 0ul; iVertex < nVertexDonor; ++iVertex) {
 
-    Buffer_Receive_FaceIndex = new unsigned long[MaxFace_Donor*nProcessor];
-    Buffer_Receive_FaceNodes = new unsigned long[MaxFaceNodes_Donor*nProcessor];
-    Buffer_Receive_GlobalPoint = new long[MaxFaceNodes_Donor*nProcessor];
-    auto Buffer_Receive_Coeff = new su2double[MaxFaceNodes_Donor*nProcessor];
+      auto donor_vertex = donor_geometry->vertex[markDonor][iVertex];
+      const auto iPoint = donor_vertex->GetNode();
 
-    Buffer_Send_FaceIndex[0]=rank*MaxFaceNodes_Donor;
-    nLocalFace_Donor=0;
-    nLocalFaceNodes_Donor=0;
+      if (!donor_geometry->node[iPoint]->GetDomain()) continue;
 
-    for (auto jVertex = 0ul; jVertex < nVertexDonor; jVertex++) {
+      const auto nDonor = donor_vertex->GetnDonorPoints();
+      sendGlobalIndex[iVertexLocal] = donor_geometry->node[iPoint]->GetGlobalIndex();
+      sendDonorRowPtr[iVertexLocal+1] = sendDonorRowPtr[iVertexLocal] + nDonor;
 
-      auto Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode(); // Local index of jVertex
-
-      if (!donor_geometry->node[Point_Donor]->GetDomain()) continue;
-
-      auto nNodes = donor_geometry->vertex[markDonor][jVertex]->GetnDonorPoints();
-      for (auto iDonor = 0; iDonor < nNodes; iDonor++) {
-        Buffer_Send_FaceNodes[nLocalFaceNodes_Donor] = donor_geometry->node[Point_Donor]->GetGlobalIndex();
-        Buffer_Send_GlobalPoint[nLocalFaceNodes_Donor] =
-            donor_geometry->vertex[markDonor][jVertex]->GetInterpDonorPoint(iDonor);
-        Buffer_Send_Coeff[nLocalFaceNodes_Donor] =
-            donor_geometry->vertex[markDonor][jVertex]->GetDonorCoeff(iDonor);
-        nLocalFaceNodes_Donor++;
+      for (auto i = 0u; i < nDonor; ++i) {
+        sendDonorIndex[iDonor] = donor_vertex->GetInterpDonorPoint(i);
+        sendDonorCoeff[iDonor] = donor_vertex->GetDonorCoeff(i);
+        ++iDonor;
       }
-      Buffer_Send_FaceIndex[nLocalFace_Donor+1] =Buffer_Send_FaceIndex[nLocalFace_Donor]+nNodes;
-      nLocalFace_Donor++;
+      ++iVertexLocal;
     }
 
-    SU2_MPI::Allgather(Buffer_Send_FaceNodes, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG,
-                       Buffer_Receive_FaceNodes, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_GlobalPoint, MaxFaceNodes_Donor, MPI_LONG,
-                       Buffer_Receive_GlobalPoint, MaxFaceNodes_Donor, MPI_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_Coeff, MaxFaceNodes_Donor, MPI_DOUBLE,
-                       Buffer_Receive_Coeff, MaxFaceNodes_Donor, MPI_DOUBLE, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_FaceIndex, MaxFace_Donor, MPI_UNSIGNED_LONG,
-                       Buffer_Receive_FaceIndex, MaxFace_Donor, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    /*--- Communicate donor interpolation matrix and info. We only gather the
+     *    matrix in ranks that need it, i.e. have target vertices, to avoid
+     *    potentially huge memory usage when running in parallel. This is an
+     *    in-place Gatherv (done manually due to AD issues in the past). ---*/
 
-    /*--- Loop over the vertices on the target Marker ---*/
-    SU2_OMP_PARALLEL_(for schedule(dynamic,roundUpDiv(nVertexTarget,2*omp_get_max_threads())))
-    for (auto iVertex = 0ul; iVertex < nVertexTarget; iVertex++) {
+    vector<int> iSendProcessor;
+    for (int iProcessor = 0; iProcessor < nProcessor; ++iProcessor)
+      if (allNumVertexDonor[iProcessor] != 0)
+        iSendProcessor.push_back(iProcessor);
+
+    const int nSend = iSendProcessor.size();
+
+    vector<long*> GlobalIndex(nSend,nullptr), DonorRowPtr(nSend,nullptr), DonorIndex(nSend,nullptr);
+    vector<su2double*> DonorCoeff(nSend,nullptr);
+
+    /*--- For each "target processor" that needs the interpolation matrix. ---*/
+    for (int iProcessor = 0; iProcessor < nProcessor; ++iProcessor) {
+      if (allNumVertexTarget[iProcessor] == 0) continue;
+
+      /*--- For each "donor processor that contain a part of the matrix. ---*/
+      for (int iSend = 0; iSend < nSend; ++iSend) {
+        const auto jProcessor = iSendProcessor[iSend];
+
+        const auto numRows = allNumVertexDonor[jProcessor];
+        const auto numCoeff = allNumNodeDonor[jProcessor];
+
+        if ((rank == iProcessor) && (rank == jProcessor)) {
+          /*--- "Self" communication. ---*/
+          GlobalIndex[iSend] = sendGlobalIndex.data();
+          DonorRowPtr[iSend] = sendDonorRowPtr.data();
+          DonorIndex[iSend] = sendDonorIndex.data();
+          DonorCoeff[iSend] = sendDonorCoeff.data();
+        }
+        else if (rank == iProcessor) {
+          /*--- "I'm" the target, allocate and receive. ---*/
+          GlobalIndex[iSend] = new long [numRows];
+          DonorRowPtr[iSend] = new long [numRows+1];
+          DonorIndex[iSend] = new long [numCoeff];
+          DonorCoeff[iSend] = new su2double [numCoeff];
+          SU2_MPI::Recv(GlobalIndex[iSend], numRows,   MPI_LONG, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          SU2_MPI::Recv(DonorRowPtr[iSend], numRows+1, MPI_LONG, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          SU2_MPI::Recv(DonorIndex[iSend],  numCoeff,  MPI_LONG, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          SU2_MPI::Recv(DonorCoeff[iSend], numCoeff, MPI_DOUBLE, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+        else if (rank == jProcessor) {
+          /*--- "I'm" the donor, send. ---*/
+          SU2_MPI::Send(sendGlobalIndex.data(), numRows,   MPI_LONG, iProcessor, 0, MPI_COMM_WORLD);
+          SU2_MPI::Send(sendDonorRowPtr.data(), numRows+1, MPI_LONG, iProcessor, 0, MPI_COMM_WORLD);
+          SU2_MPI::Send(sendDonorIndex.data(),  numCoeff,  MPI_LONG, iProcessor, 0, MPI_COMM_WORLD);
+          SU2_MPI::Send(sendDonorCoeff.data(), numCoeff, MPI_DOUBLE, iProcessor, 0, MPI_COMM_WORLD);
+        }
+      }
+    }
+
+    /*--- Loop over the vertices on the target marker, define one row of the transpose matrix. ---*/
+
+    SU2_OMP_PARALLEL_(for schedule(dynamic,roundUpDiv(nVertexTarget, 2*omp_get_max_threads())))
+    for (auto iVertex = 0ul; iVertex < nVertexTarget; ++iVertex) {
 
       auto target_vertex = target_geometry->vertex[markTarget][iVertex];
-      auto iPoint = target_vertex->GetNode();
+      const auto iPoint = target_vertex->GetNode();
 
       if (!target_geometry->node[iPoint]->GetDomain()) continue;
 
-      const long Global_Point = target_geometry->node[iPoint]->GetGlobalIndex();
+      /*--- Any point of the donor geometry, that has this target point as a donor, becomes a donor. ---*/
+      const long targetGlobalIndex = target_geometry->node[iPoint]->GetGlobalIndex();
 
-      auto nNodes = 0;
-      for (int iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-        for (auto iFace = 0ul; iFace < Buffer_Receive_nFace_Donor[iProcessor]; iFace++) {
-          auto faceindex = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace]; // first index of this face
-          auto iNodes = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1] - faceindex;
-          for (auto iTarget = 0ul; iTarget<iNodes; iTarget++)
-            nNodes += (Global_Point == long(Buffer_Receive_GlobalPoint[faceindex+iTarget]));
-        }
+      /*--- Traverse entire matrix to count donors. ---*/
+      auto nDonor = 0ul;
+      for (int iSend = 0; iSend < nSend; ++iSend) {
+        const auto iProcessor = iSendProcessor[iSend];
+        for (auto iCoeff = 0ul; iCoeff < allNumNodeDonor[iProcessor]; ++iCoeff)
+          nDonor += (targetGlobalIndex == DonorIndex[iSend][iCoeff]);
       }
 
-      target_vertex->Allocate_DonorInfo(nNodes);
+      target_vertex->Allocate_DonorInfo(nDonor);
 
-      for (int iProcessor = 0, iDonor = 0; iProcessor < nProcessor; iProcessor++) {
-        for (auto iFace = 0ul; iFace < Buffer_Receive_nFace_Donor[iProcessor]; iFace++) {
+      /*--- Traverse matrix again to set interpolation coefficients. ---*/
+      auto iDonor = 0ul;
+      for (int iSend = 0; iSend < nSend; ++iSend) {
+        const auto iProcessor = iSendProcessor[iSend];
 
-          auto faceindex = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace]; // first index of this face
-          auto iNodes = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1] - faceindex;
+        for (auto iVertexDonor = 0ul; iVertexDonor < allNumVertexDonor[iProcessor]; ++iVertexDonor) {
+          for (auto iCoeff = DonorRowPtr[iSend][iVertexDonor];
+               iCoeff < DonorRowPtr[iSend][iVertexDonor+1]; ++iCoeff)
+          {
+            if (targetGlobalIndex != DonorIndex[iSend][iCoeff]) continue;
 
-          for (auto iTarget = 0ul; iTarget < iNodes; iTarget++) {
-            if (Global_Point == long(Buffer_Receive_GlobalPoint[faceindex+iTarget])) {
-              auto coeff = Buffer_Receive_Coeff[faceindex+iTarget];
-              auto pGlobalPoint = Buffer_Receive_FaceNodes[faceindex+iTarget];
-              target_vertex->SetInterpDonorPoint(iDonor,pGlobalPoint);
-              target_vertex->SetDonorCoeff(iDonor,coeff);
-              target_vertex->SetInterpDonorProcessor(iDonor, iProcessor);
-              iDonor++;
-            }
+            target_vertex->SetInterpDonorProcessor(iDonor, iProcessor);
+            target_vertex->SetDonorCoeff(iDonor, DonorCoeff[iSend][iCoeff]);
+            target_vertex->SetInterpDonorPoint(iDonor, GlobalIndex[iSend][iVertexDonor]);
+            ++iDonor;
+            /*--- we could break here on the assumption that donors do not repeat, but... ---*/
           }
+          if (iDonor == nDonor) break;
         }
       }
-    }
 
-    delete[] Buffer_Send_FaceIndex;
-    delete[] Buffer_Send_FaceNodes;
-    delete[] Buffer_Send_GlobalPoint;
-    delete[] Buffer_Send_Coeff;
+    } // end target loop
 
-    delete[] Buffer_Receive_FaceIndex;
-    delete[] Buffer_Receive_FaceNodes;
-    delete[] Buffer_Receive_GlobalPoint;
-    delete[] Buffer_Receive_Coeff;
-  }
+    /*--- Free the heap allocations. ---*/
+    for (auto ptr : GlobalIndex) if (ptr != sendGlobalIndex.data()) delete [] ptr;
+    for (auto ptr : DonorRowPtr) if (ptr != sendDonorRowPtr.data()) delete [] ptr;
+    for (auto ptr : DonorIndex) if (ptr != sendDonorIndex.data()) delete [] ptr;
+    for (auto ptr : DonorCoeff) if (ptr != sendDonorCoeff.data()) delete [] ptr;
 
-  delete[] Buffer_Receive_nFace_Donor;
-  delete[] Buffer_Receive_nFaceNodes_Donor;
+  } // end marker loop
 
 }
