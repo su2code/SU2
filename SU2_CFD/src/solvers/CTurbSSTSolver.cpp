@@ -1903,11 +1903,11 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
   vector<su2double> TmpWeights(weights.size(), 0.0);
   su2double factor = 0.0;
   for (iDim = 0; iDim < nDim; ++iDim) {
-    factor = -(2./3.)*(mut/r*varAdjTur->GetAnisoGrad(iPoint, 0*nDim+iDim)
-                                +alfa*varAdjTur->GetAnisoGrad(iPoint, 1*nDim+iDim));
+    factor = -(2./3.)*(mut/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
+                                +alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim));
     for (jDim = 0; jDim < nDim; ++jDim) {
-      factor += (taut[iDim][jDim]+mut*gradu[iDim][jDim])*(1./r*varAdjTur->GetAnisoGrad(iPoint, 0*nDim+jDim)
-                                                         +alfa/mut*varAdjTur->GetAnisoGrad(iPoint, 1*nDim+jDim));
+      factor += (taut[iDim][jDim]+mut*gradu[iDim][jDim])*(1./r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim)
+                                                         +alfa/mut*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim));
     }
     TmpWeights[iDim+1] += factor;
   }
@@ -1918,19 +1918,19 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
     for (jDim = 0; jDim < nDim; ++jDim) {
       iVar = iDim+1;
       factor += (taut[iDim][jDim]+(2./3.)*r*k*delta[iDim][jDim])/mut
-              * (varAdjFlo->GetAnisoGrad(iPoint, iVar*nDim+jDim)
-              + u[jDim]*varAdjFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim));
+              * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
+              + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
-    factor += cp/Prt*gradT[iDim]*varAdjFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim);
-    factor += sigmak*gradk[iDim]*varAdjTur->GetAnisoGrad(iPoint, 0*nDim+iDim)
-            + sigmaomega*gradomega[iDim]*varAdjTur->GetAnisoGrad(iPoint, 1*nDim+iDim);
+    factor += cp/Prt*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
+    factor += sigmak*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
+            + sigmaomega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
   }
 
   TmpWeights[nVarFlo+0] += 1./omega*factor;
   TmpWeights[nVarFlo+1] += -k/pow(omega,2.)*factor;
   for (iDim = 0; iDim < nDim; ++iDim) {
-    TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetAnisoGrad(iPoint, 1*nDim+iDim);
-    TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetAnisoGrad(iPoint, 1*nDim+iDim);
+    TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+    TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
   }
 
   //--- Density weight
@@ -1944,21 +1944,21 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
 
   //--- Second-order terms (error due to gradients)
   if(nDim == 3) {
-    const unsigned short rki = 0*nMetr, romegai = 1*nMetr, xxi = 0, yyi = 3, zzi = 5;
-    TmpWeights[nVarFlo+0] -= (mu+sigmak*mut)*(varAdjTur->GetAnisoHess(iPoint, rki+xxi)
-                                             +varAdjTur->GetAnisoHess(iPoint, rki+yyi)
-                                             +varAdjTur->GetAnisoHess(iPoint, rki+zzi)); // Hk
-    TmpWeights[nVarFlo+1] -= (mu+sigmaomega*mut)*(varAdjTur->GetAnisoHess(iPoint, romegai+xxi)
-                                                 +varAdjTur->GetAnisoHess(iPoint, romegai+yyi)
-                                                 +varAdjTur->GetAnisoHess(iPoint, romegai+zzi)); // Homega
+    const unsigned short rki = 0, romegai = 1, xxi = 0, yyi = 3, zzi = 5;
+    TmpWeights[nVarFlo+0] -= (mu+sigmak*mut)*(varAdjTur->GetHessian(iPoint, rki, xxi)
+                                             +varAdjTur->GetHessian(iPoint, rki, yyi)
+                                             +varAdjTur->GetHessian(iPoint, rki, zzi)); // Hk
+    TmpWeights[nVarFlo+1] -= (mu+sigmaomega*mut)*(varAdjTur->GetHessian(iPoint, romegai, xxi)
+                                                 +varAdjTur->GetHessian(iPoint, romegai, yyi)
+                                                 +varAdjTur->GetHessian(iPoint, romegai, zzi)); // Homega
 
   }
   else {
-    const unsigned short rki = 0*nMetr, romegai = 1*nMetr, xxi = 0, yyi = 2;
-    TmpWeights[nVarFlo+0] -= (mu+sigmak*mut)*(varAdjTur->GetAnisoHess(iPoint, rki+xxi)
-                                             +varAdjTur->GetAnisoHess(iPoint, rki+yyi)); // Hk
-    TmpWeights[nVarFlo+1] -= (mu+sigmaomega*mut)*(varAdjTur->GetAnisoHess(iPoint, romegai+xxi)
-                                                 +varAdjTur->GetAnisoHess(iPoint, romegai+yyi)); // Homega
+    const unsigned short rki = 0, romegai = 1, xxi = 0, yyi = 2;
+    TmpWeights[nVarFlo+0] -= (mu+sigmak*mut)*(varAdjTur->GetHessian(iPoint, rki, xxi)
+                                             +varAdjTur->GetHessian(iPoint, rki, yyi)); // Hk
+    TmpWeights[nVarFlo+1] -= (mu+sigmaomega*mut)*(varAdjTur->GetHessian(iPoint, romegai, xxi)
+                                                 +varAdjTur->GetHessian(iPoint, romegai, yyi)); // Homega
   }
   TmpWeights[0] -= k*TmpWeights[nVarFlo+0]+omega*TmpWeights[nVarFlo+1];
 

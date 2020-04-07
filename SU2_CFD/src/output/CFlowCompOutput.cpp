@@ -412,24 +412,24 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   // Anisotropic metric
   if(config->GetBool_Error_Estimate()) {
     if (nDim == 2){
-      AddVolumeOutput("ANISO_GRADRHO_X", "Aniso_GradRho_x", "ANISOTROPIC_GRADIENT", "x-component of the density gradient");
-      AddVolumeOutput("ANISO_GRADRHO_Y", "Aniso_GradRho_y", "ANISOTROPIC_GRADIENT", "y-component of the density gradient");
+      AddVolumeOutput("GRADIENT_RHO_X", "Aniso_GradRho_x", "ANISOTROPIC_GRADIENT", "x-component of the density gradient");
+      AddVolumeOutput("GRADIENT_RHO_Y", "Aniso_GradRho_y", "ANISOTROPIC_GRADIENT", "y-component of the density gradient");
 
-      AddVolumeOutput("ANISO_METR_XX", "Aniso_Metric_xx", "ANISOTROPIC_METRIC", "x-x-component of the metric");
-      AddVolumeOutput("ANISO_METR_XY", "Aniso_Metric_xy", "ANISOTROPIC_METRIC", "x-y-component of the metric");
-      AddVolumeOutput("ANISO_METR_YY", "Aniso_Metric_yy", "ANISOTROPIC_METRIC", "y-y-component of the metric");
+      AddVolumeOutput("METRIC_XX", "Aniso_Metric_xx", "ANISOTROPIC_METRIC", "x-x-component of the metric");
+      AddVolumeOutput("METRIC_XY", "Aniso_Metric_xy", "ANISOTROPIC_METRIC", "x-y-component of the metric");
+      AddVolumeOutput("METRIC_YY", "Aniso_Metric_yy", "ANISOTROPIC_METRIC", "y-y-component of the metric");
     }
     else{
-      AddVolumeOutput("ANISO_GRADRHO_X", "Aniso_GradRho_x", "ANISOTROPIC_GRADIENT", "x-component of the density gradient");
-      AddVolumeOutput("ANISO_GRADRHO_Y", "Aniso_GradRho_y", "ANISOTROPIC_GRADIENT", "y-component of the density gradient");
-      AddVolumeOutput("ANISO_GRADRHO_Z", "Aniso_GradRho_z", "ANISOTROPIC_GRADIENT", "z-component of the density gradient");
+      AddVolumeOutput("GRADIENT_RHO_X", "Aniso_GradRho_x", "ANISOTROPIC_GRADIENT", "x-component of the density gradient");
+      AddVolumeOutput("GRADIENT_RHO_Y", "Aniso_GradRho_y", "ANISOTROPIC_GRADIENT", "y-component of the density gradient");
+      AddVolumeOutput("GRADIENT_RHO_Z", "Aniso_GradRho_z", "ANISOTROPIC_GRADIENT", "z-component of the density gradient");
 
-      AddVolumeOutput("ANISO_METR_XX", "Aniso_Metric_xx", "ANISOTROPIC_METRIC", "x-x-component of the metric");
-      AddVolumeOutput("ANISO_METR_XY", "Aniso_Metric_xy", "ANISOTROPIC_METRIC", "x-y-component of the metric");
-      AddVolumeOutput("ANISO_METR_YY", "Aniso_Metric_yy", "ANISOTROPIC_METRIC", "y-y-component of the metric");
-      AddVolumeOutput("ANISO_METR_XZ", "Aniso_Metric_xz", "ANISOTROPIC_METRIC", "x-z-component of the metric");
-      AddVolumeOutput("ANISO_METR_YZ", "Aniso_Metric_yz", "ANISOTROPIC_METRIC", "y-z-component of the metric");
-      AddVolumeOutput("ANISO_METR_ZZ", "Aniso_Metric_zz", "ANISOTROPIC_METRIC", "z-z-component of the metric");
+      AddVolumeOutput("METRIC_XX", "Aniso_Metric_xx", "ANISOTROPIC_METRIC", "x-x-component of the metric");
+      AddVolumeOutput("METRIC_XY", "Aniso_Metric_xy", "ANISOTROPIC_METRIC", "x-y-component of the metric");
+      AddVolumeOutput("METRIC_YY", "Aniso_Metric_yy", "ANISOTROPIC_METRIC", "y-y-component of the metric");
+      AddVolumeOutput("METRIC_XZ", "Aniso_Metric_xz", "ANISOTROPIC_METRIC", "x-z-component of the metric");
+      AddVolumeOutput("METRIC_YZ", "Aniso_Metric_yz", "ANISOTROPIC_METRIC", "y-z-component of the metric");
+      AddVolumeOutput("METRIC_ZZ", "Aniso_Metric_zz", "ANISOTROPIC_METRIC", "z-z-component of the metric");
     }
   }
   
@@ -574,24 +574,24 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if(config->GetBool_Error_Estimate()) {
     if (nDim == 2){
-      SetVolumeOutputValue("ANISO_GRADRHO_X", iPoint, Node_Flow->GetAnisoGrad(iPoint, 0));
-      SetVolumeOutputValue("ANISO_GRADRHO_Y", iPoint, Node_Flow->GetAnisoGrad(iPoint, 1));
+      SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 0));
+      SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 1));
       
-      SetVolumeOutputValue("ANISO_METR_XX", iPoint, Node_Flow->GetAnisoMetr(iPoint, 0));
-      SetVolumeOutputValue("ANISO_METR_XY", iPoint, Node_Flow->GetAnisoMetr(iPoint, 1));
-      SetVolumeOutputValue("ANISO_METR_YY", iPoint, Node_Flow->GetAnisoMetr(iPoint, 2));
+      SetVolumeOutputValue("METRIC_XX", iPoint, Node_Flow->GetMetric(iPoint, 0));
+      SetVolumeOutputValue("METRIC_XY", iPoint, Node_Flow->GetMetric(iPoint, 1));
+      SetVolumeOutputValue("METRIC_YY", iPoint, Node_Flow->GetMetric(iPoint, 2));
     }
     else{
-      SetVolumeOutputValue("ANISO_GRADRHO_X", iPoint, Node_Flow->GetAnisoGrad(iPoint, 0));
-      SetVolumeOutputValue("ANISO_GRADRHO_Y", iPoint, Node_Flow->GetAnisoGrad(iPoint, 1));
-      SetVolumeOutputValue("ANISO_GRADRHO_Z", iPoint, Node_Flow->GetAnisoGrad(iPoint, 2));
+      SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 0));
+      SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 1));
+      SetVolumeOutputValue("GRADIENT_RHO_Z", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 2));
 
-      SetVolumeOutputValue("ANISO_METR_XX", iPoint, Node_Flow->GetAnisoMetr(iPoint, 0));
-      SetVolumeOutputValue("ANISO_METR_XY", iPoint, Node_Flow->GetAnisoMetr(iPoint, 1));
-      SetVolumeOutputValue("ANISO_METR_YY", iPoint, Node_Flow->GetAnisoMetr(iPoint, 2));
-      SetVolumeOutputValue("ANISO_METR_XZ", iPoint, Node_Flow->GetAnisoMetr(iPoint, 3));
-      SetVolumeOutputValue("ANISO_METR_YZ", iPoint, Node_Flow->GetAnisoMetr(iPoint, 4));
-      SetVolumeOutputValue("ANISO_METR_ZZ", iPoint, Node_Flow->GetAnisoMetr(iPoint, 5));
+      SetVolumeOutputValue("METRIC_XX", iPoint, Node_Flow->GetMetric(iPoint, 0));
+      SetVolumeOutputValue("METRIC_XY", iPoint, Node_Flow->GetMetric(iPoint, 1));
+      SetVolumeOutputValue("METRIC_YY", iPoint, Node_Flow->GetMetric(iPoint, 2));
+      SetVolumeOutputValue("METRIC_XZ", iPoint, Node_Flow->GetMetric(iPoint, 3));
+      SetVolumeOutputValue("METRIC_YZ", iPoint, Node_Flow->GetMetric(iPoint, 4));
+      SetVolumeOutputValue("METRIC_ZZ", iPoint, Node_Flow->GetMetric(iPoint, 5));
     }
   }
   

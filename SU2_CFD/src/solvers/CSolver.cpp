@@ -2154,16 +2154,16 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case ANISO_GRADIENT:
             for (iDim = 0; iDim < nDim; iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
-                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetAnisoGrad(iPoint, iVar*nDim+iDim);
+                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetGradient_Adaptation(iPoint, iVar, iDim);
             break;
           case ANISO_HESSIAN:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
-                bufDSend[buf_offset+iVar*3*(nDim-1)+iDim] = base_nodes->GetAnisoHess(iPoint, iVar*3*(nDim-1)+iDim);
+                bufDSend[buf_offset+iVar*3*(nDim-1)+iDim] = base_nodes->GetHessian(iPoint, iVar, iDim);
             break;
           case ANISO_METRIC:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
-              bufDSend[buf_offset+iDim] = base_nodes->GetAnisoMetr(iPoint, iDim);
+              bufDSend[buf_offset+iDim] = base_nodes->GetMetric(iPoint, iDim);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -2340,16 +2340,16 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case ANISO_GRADIENT:
             for (iDim = 0; iDim < nDim; iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
-                base_nodes->SetAnisoGrad(iPoint, iVar*nDim+iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+                base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
             break;
           case ANISO_HESSIAN:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
-                base_nodes->SetAnisoHess(iPoint, iVar*3*(nDim-1)+iDim, bufDRecv[buf_offset+iVar*3*(nDim-1)+iDim]);
+                base_nodes->SetHessian(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*3*(nDim-1)+iDim]);
             break;
           case ANISO_METRIC:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
-              base_nodes->SetAnisoMetr(iPoint, iDim, bufDRecv[buf_offset+iDim]);
+              base_nodes->SetMetric(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -4960,14 +4960,13 @@ void CSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
       graTri[1] = Sens[0][iVar]*vny[0] + Sens[1][iVar]*vny[1] + Sens[2][iVar]*vny[2];
   
       //--- assembling
-      const unsigned short i = iVar*nDim;
       for (unsigned short iNode=0; iNode<3; ++iNode) {
         const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
         const su2double Area = geometry->node[kNode]->GetVolume();
         const su2double rap = 1./(Area*6.);
         // const su2double rap = Area/6.;
-        base_nodes->AddAnisoGrad(kNode, i+0, graTri[0] * rap);
-        base_nodes->AddAnisoGrad(kNode, i+1, graTri[1] * rap);
+        base_nodes->AddGradient_Adaptation(kNode, iVar, 0, graTri[0] * rap);
+        base_nodes->AddGradient_Adaptation(kNode, iVar, 1, graTri[1] * rap);
       }
     }
   }
@@ -5006,9 +5005,8 @@ void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
       for (iDim = 0; iDim<2; ++iDim) Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
       //--- store gradient
       for(iVar = 0; iVar < nVar; iVar++){
-        const unsigned short i = iVar*nDim;
-        Grad[iNode][0][iVar] = base_nodes->GetAnisoGrad(kNode, i+0);
-        Grad[iNode][1][iVar] = base_nodes->GetAnisoGrad(kNode, i+1);
+        Grad[iNode][0][iVar] = base_nodes->GetGradient_Adaptation(kNode, iVar, 0);
+        Grad[iNode][1][iVar] = base_nodes->GetGradient_Adaptation(kNode, iVar, 1);
       }
     }
 
@@ -5059,15 +5057,14 @@ void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
                         + Grad[2][1][iVar]*vny[2];
       
       //--- assembling
-      const unsigned short i = iVar*nMetr;
       for (unsigned short iNode=0; iNode<3; ++iNode) {
         const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
         const su2double Area = geometry->node[kNode]->GetVolume();
         const su2double rap = 1./(Area*6.);
         // const su2double rap = Area/6.;
-        base_nodes->AddAnisoHess(kNode, i+0, hesTri[0] * rap);
-        base_nodes->AddAnisoHess(kNode, i+1, hesTri[1] * rap);
-        base_nodes->AddAnisoHess(kNode, i+2, hesTri[2] * rap);
+        base_nodes->AddHessian(kNode, iVar, 0, hesTri[0] * rap);
+        base_nodes->AddHessian(kNode, iVar, 1, hesTri[1] * rap);
+        base_nodes->AddHessian(kNode, iVar, 2, hesTri[2] * rap);
       }
     }
   }
@@ -5077,16 +5074,15 @@ void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
   InitiateComms(geometry, config, ANISO_HESSIAN);
   CompleteComms(geometry, config, ANISO_HESSIAN);
 
-  CorrectBoundAnisoHess(geometry, config);
+  CorrectBoundHessian(geometry, config);
 
   //--- make positive definite matrix
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     for(iVar = 0; iVar < nVar; iVar++){
-      const unsigned short i = iVar*nMetr;
 
-      const su2double a = base_nodes->GetAnisoHess(iPoint, i+0);
-      const su2double b = base_nodes->GetAnisoHess(iPoint, i+1);
-      const su2double c = base_nodes->GetAnisoHess(iPoint, i+2);
+      const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
+      const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
+      const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
       
       A[0][0] = a; A[0][1] = b;
       A[1][0] = b; A[1][1] = c;
@@ -5097,9 +5093,9 @@ void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
       CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-      base_nodes->SetAnisoHess(iPoint, i+0, A[0][0]);
-      base_nodes->SetAnisoHess(iPoint, i+1, A[0][1]);
-      base_nodes->SetAnisoHess(iPoint, i+2, A[1][1]);
+      base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
+      base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
+      base_nodes->SetHessian(iPoint, iVar, 2, A[1][1]);
     }
   }
 
@@ -5191,9 +5187,9 @@ void CSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
         const su2double Vol = geometry->node[kNode]->GetVolume();
         const su2double rap = 1./(Vol*24.);
         // const su2double rap = Vol/24.;
-        base_nodes->AddAnisoGrad(kNode, i+0, graTet[0] * rap);
-        base_nodes->AddAnisoGrad(kNode, i+1, graTet[1] * rap);
-        base_nodes->AddAnisoGrad(kNode, i+2, graTet[2] * rap);
+        base_nodes->AddGradient_Adaptation(kNode, iVar, 0, graTet[0] * rap);
+        base_nodes->AddGradient_Adaptation(kNode, iVar, 1, graTet[1] * rap);
+        base_nodes->AddGradient_Adaptation(kNode, iVar, 2, graTet[2] * rap);
       }
     }
   }
@@ -5224,9 +5220,9 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
       //--- store gradient
       for(iVar = 0; iVar < nVar; iVar++){
         const unsigned short i = iVar*nDim;
-        Grad[iNode][0][iVar] = base_nodes->GetAnisoGrad(kNode, i+0);
-        Grad[iNode][1][iVar] = base_nodes->GetAnisoGrad(kNode, i+1);
-        Grad[iNode][2][iVar] = base_nodes->GetAnisoGrad(kNode, i+2);
+        Grad[iNode][0][iVar] = base_nodes->GetGradient_Adaptation(kNode, iVar, 0);
+        Grad[iNode][1][iVar] = base_nodes->GetGradient_Adaptation(kNode, iVar, 1);
+        Grad[iNode][2][iVar] = base_nodes->GetGradient_Adaptation(kNode, iVar, 2);
       }
     }
 
@@ -5317,18 +5313,17 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
                         + Grad[3][2][iVar]*vnz[3];
       
       //--- assembling
-      const unsigned short i = iVar*nMetr;
       for (unsigned short iNode=0; iNode<4; ++iNode) {
         const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
         const su2double Vol = geometry->node[kNode]->GetVolume();
         const su2double rap = 1./(Vol*24.);
         // const su2double rap = Vol/24.;
-        base_nodes->AddAnisoHess(kNode, i+0, hesTet[0] * rap);
-        base_nodes->AddAnisoHess(kNode, i+1, hesTet[1] * rap);
-        base_nodes->AddAnisoHess(kNode, i+2, hesTet[2] * rap);
-        base_nodes->AddAnisoHess(kNode, i+3, hesTet[3] * rap);
-        base_nodes->AddAnisoHess(kNode, i+4, hesTet[4] * rap);
-        base_nodes->AddAnisoHess(kNode, i+5, hesTet[5] * rap);
+        base_nodes->AddHessian(kNode, iVar, 0, hesTet[0] * rap);
+        base_nodes->AddHessian(kNode, iVar, 1, hesTet[1] * rap);
+        base_nodes->AddHessian(kNode, iVar, 2, hesTet[2] * rap);
+        base_nodes->AddHessian(kNode, iVar, 3, hesTet[3] * rap);
+        base_nodes->AddHessian(kNode, iVar, 4, hesTet[4] * rap);
+        base_nodes->AddHessian(kNode, iVar, 5, hesTet[5] * rap);
       }
     }
   }
@@ -5338,7 +5333,7 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
   InitiateComms(geometry, config, ANISO_HESSIAN);
   CompleteComms(geometry, config, ANISO_HESSIAN);
 
-  CorrectBoundAnisoHess(geometry, config);
+  CorrectBoundHessian(geometry, config);
 
   //--- make positive definite matrix
   su2double **A      = new su2double*[nDim],
@@ -5352,14 +5347,13 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
 
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     for(iVar = 0; iVar < nVar; iVar++){
-      const unsigned short i = iVar*nMetr;
 
-      const su2double a = base_nodes->GetAnisoHess(iPoint, i+0);
-      const su2double b = base_nodes->GetAnisoHess(iPoint, i+1);
-      const su2double c = base_nodes->GetAnisoHess(iPoint, i+2);
-      const su2double d = base_nodes->GetAnisoHess(iPoint, i+3);
-      const su2double e = base_nodes->GetAnisoHess(iPoint, i+4);
-      const su2double f = base_nodes->GetAnisoHess(iPoint, i+5);
+      const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
+      const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
+      const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
+      const su2double d = base_nodes->GetHessian(iPoint, iVar, 3);
+      const su2double e = base_nodes->GetHessian(iPoint, iVar, 4);
+      const su2double f = base_nodes->GetHessian(iPoint, iVar, 5);
 
       A[0][0] = a; A[0][1] = b; A[0][2] = c;
       A[1][0] = b; A[1][1] = d; A[1][2] = e;
@@ -5371,12 +5365,12 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
 
       CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-      base_nodes->SetAnisoHess(iPoint, i+0, A[0][0]);
-      base_nodes->SetAnisoHess(iPoint, i+1, A[0][1]);
-      base_nodes->SetAnisoHess(iPoint, i+2, A[0][2]);
-      base_nodes->SetAnisoHess(iPoint, i+3, A[1][1]);
-      base_nodes->SetAnisoHess(iPoint, i+4, A[1][2]);
-      base_nodes->SetAnisoHess(iPoint, i+5, A[2][2]);
+      base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
+      base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
+      base_nodes->SetHessian(iPoint, iVar, 2, A[0][2]);
+      base_nodes->SetHessian(iPoint, iVar, 3, A[1][1]);
+      base_nodes->SetHessian(iPoint, iVar, 4, A[1][2]);
+      base_nodes->SetHessian(iPoint, iVar, 5, A[2][2]);
     }
   }
 
@@ -5389,7 +5383,7 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
   delete [] EigVal;
 }
 
-void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
+void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iVar, iMetr, iMarker;
   unsigned short nMetr = 3*(nDim-1);
   unsigned long iVertex;
@@ -5428,8 +5422,8 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
                   dist += (coord1-coord0)*(coord1-coord0);
                 }// iDim
                 for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                  // hess[i+iMetr] += base_nodes->GetAnisoHess(jPoint, i+iMetr);
-                  hess[i+iMetr] += base_nodes->GetAnisoHess(jPoint, i+iMetr)/max(dist,1e-10);
+                  // hess[i+iMetr] += base_nodes->GetHessian(jPoint, i+iMetr);
+                  hess[i+iMetr] += base_nodes->GetHessian(jPoint, iVar, iMetr)/max(dist,1e-10);
                 }// iMetr
               }// iVar
               distsum += dist;
@@ -5440,8 +5434,8 @@ void CSolver::CorrectBoundAnisoHess(CGeometry *geometry, CConfig *config) {
             for(iVar = 0; iVar < nVar; iVar++){
               const unsigned short i = iVar*nMetr;
               for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                // base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]/su2double(counter));
-                base_nodes->SetAnisoHess(iPoint, i+iMetr, hess[i+iMetr]*distsum);
+                // base_nodes->SetHessian(iPoint, i+iMetr, hess[i+iMetr]/su2double(counter));
+                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]*distsum);
               }// iMetr
             }// iVar
           }// if counter
@@ -5556,11 +5550,11 @@ void CSolver::ConvectiveMetric(CSolver           **solver,
   for (jVar = 0; jVar < nVarFlo; ++jVar) {
     for (iVar = 0; iVar < nVarFlo; ++iVar) {
       const unsigned short i = iVar*nDim;
-      const su2double adjx = varAdjFlo->GetAnisoGrad(iPoint, i+0),
-                      adjy = varAdjFlo->GetAnisoGrad(iPoint, i+1);
+      const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 0),
+                      adjy = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 1);
       weights[jVar] -= A[jVar][iVar]*adjx + B[jVar][iVar]*adjy;
       if(nDim == 3) {
-        const su2double adjz = varAdjFlo->GetAnisoGrad(iPoint, i+2);
+        const su2double adjz = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 2);
         weights[jVar] -= C[jVar][iVar]*adjz;
       }
     }
@@ -5572,11 +5566,11 @@ void CSolver::ConvectiveMetric(CSolver           **solver,
     if (sst) {
       for (iVar = 0; iVar < nVarTur; ++iVar){
         const unsigned short i = iVar*nDim;
-        const su2double adjx = varAdjTur->GetAnisoGrad(iPoint, i+0),
-                        adjy = varAdjTur->GetAnisoGrad(iPoint, i+1);
+        const su2double adjx = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 0),
+                        adjy = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 1);
         weights[nVarFlo+iVar] -= u*adjx + v*adjy;
         if (nDim == 3) {
-          const su2double adjz = varAdjTur->GetAnisoGrad(iPoint, i+2);
+          const su2double adjz = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 2);
           weights[nVarFlo+iVar] -= w*adjz;
         }
       }
@@ -5677,19 +5671,19 @@ void CSolver::ViscousMetric(CSolver           **solver,
       iVar = iDim+1;
       if(turb) {
         factor += (tau[iDim][jDim]+(2./3.)*r*k*delta[iDim][jDim])/(mu+mut)
-                * (varAdjFlo->GetAnisoGrad(iPoint, iVar*nDim+jDim)
-                + u[jDim]*varAdjFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim));
+                * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
+                + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
       }
       else {
         factor += tau[iDim][jDim]/(mu+mut)
-                * (varAdjFlo->GetAnisoGrad(iPoint, iVar*nDim+iDim)
-                + u[jDim]*varAdjFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim));
+                * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar*nDim+iDim)
+                + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
       }
     }
-    factor += cp/Pr*gradT[iDim]*varAdjFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+iDim);
+    factor += cp/Pr*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
     if (sst) {
-      factor += gradk[iDim]*varAdjTur->GetAnisoGrad(iPoint, 0*nDim+iDim)
-              + gradomega[iDim]*varAdjTur->GetAnisoGrad(iPoint, 1*nDim+iDim);
+      factor += gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
+              + gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
     }
   }
   factor *= dmudT;
@@ -5701,7 +5695,7 @@ void CSolver::ViscousMetric(CSolver           **solver,
   if(nDim == 3) weights[3] += u[2]*factor;
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
-      TmpWeights[iDim+1] += 1./r*tau[iDim][jDim]*varAdjFlo->GetAnisoGrad(iPoint, (nVarFlo-1)*nDim+jDim);
+      TmpWeights[iDim+1] += 1./r*tau[iDim][jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), jDim);
     }
   }
 
@@ -5718,73 +5712,73 @@ void CSolver::ViscousMetric(CSolver           **solver,
 
   //--- Second-order terms (error due to gradients)
   if(nDim == 3) {
-    const unsigned short rui = 1*nMetr, rvi = 2*nMetr, rwi = 3*nMetr, rei = 4*nMetr,
+    const unsigned short rui = 1, rvi = 2, rwi = 3, rei = 4,
                          xxi = 0, xyi = 1, xzi = 2, yyi = 3, yzi = 4, zzi = 5;
-    TmpWeights[1] -= (mu+mut)/(3.*r)*(4.*varAdjFlo->GetAnisoHess(iPoint, rui+xxi)
-                                     +3.*varAdjFlo->GetAnisoHess(iPoint, rui+yyi)
-                                     +3.*varAdjFlo->GetAnisoHess(iPoint, rui+zzi)
-                                     +varAdjFlo->GetAnisoHess(iPoint, rvi+xyi)
-                                     +varAdjFlo->GetAnisoHess(iPoint, rwi+xzi)
-                                     +4.*u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                     +3.*u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-                                     +3.*u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+zzi)
-                                     +u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+xyi)
-                                     +u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+xzi))
-                   - (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                            +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-                                            +varAdjFlo->GetAnisoHess(iPoint, rei+zzi)); // Hrhou
-    TmpWeights[2] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetAnisoHess(iPoint, rui+xxi)
-                                     +4.*varAdjFlo->GetAnisoHess(iPoint, rui+yyi)
-                                     +3.*varAdjFlo->GetAnisoHess(iPoint, rui+zzi)
-                                     +varAdjFlo->GetAnisoHess(iPoint, rvi+xyi)
-                                     +varAdjFlo->GetAnisoHess(iPoint, rwi+yzi)
-                                     +3.*u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                     +4.*u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-                                     +3.*u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+zzi)
-                                     +u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+xyi)
-                                     +u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+yzi))
-                   - (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                            +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-                                            +varAdjFlo->GetAnisoHess(iPoint, rei+zzi)); // Hrhov
-    TmpWeights[3] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetAnisoHess(iPoint, rui+xxi)
-                                     +3.*varAdjFlo->GetAnisoHess(iPoint, rui+yyi)
-                                     +4.*varAdjFlo->GetAnisoHess(iPoint, rui+zzi)
-                                     +varAdjFlo->GetAnisoHess(iPoint, rvi+xzi)
-                                     +varAdjFlo->GetAnisoHess(iPoint, rwi+yzi)
-                                     +3.*u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                     +3.*u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-                                     +4.*u[2]*varAdjFlo->GetAnisoHess(iPoint, rei+zzi)
-                                     +u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+xzi)
-                                     +u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+yzi))
-                   - (lam+lamt)/(r*cv)*u[2]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                            +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-                                            +varAdjFlo->GetAnisoHess(iPoint, rei+zzi)); // Hrhow
-    TmpWeights[4] -= (lam+lamt)/(r*cv)*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                       +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-                                       +varAdjFlo->GetAnisoHess(iPoint, rei+zzi)); // Hrhoe
+    TmpWeights[1] -= (mu+mut)/(3.*r)*(4.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+                                     +3.*varAdjFlo->GetHessian(iPoint, rui, yyi)
+                                     +3.*varAdjFlo->GetHessian(iPoint, rui, zzi)
+                                     +varAdjFlo->GetHessian(iPoint, rvi, xyi)
+                                     +varAdjFlo->GetHessian(iPoint, rwi, xzi)
+                                     +4.*u[0]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                     +3.*u[0]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                     +3.*u[0]*varAdjFlo->GetHessian(iPoint, rei, zzi)
+                                     +u[1]*varAdjFlo->GetHessian(iPoint, rei, xyi)
+                                     +u[2]*varAdjFlo->GetHessian(iPoint, rei, xzi))
+                   - (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhou
+    TmpWeights[2] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+                                     +4.*varAdjFlo->GetHessian(iPoint, rui, yyi)
+                                     +3.*varAdjFlo->GetHessian(iPoint, rui, zzi)
+                                     +varAdjFlo->GetHessian(iPoint, rvi, xyi)
+                                     +varAdjFlo->GetHessian(iPoint, rwi, yzi)
+                                     +3.*u[1]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                     +4.*u[1]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                     +3.*u[1]*varAdjFlo->GetHessian(iPoint, rei, zzi)
+                                     +u[0]*varAdjFlo->GetHessian(iPoint, rei, xyi)
+                                     +u[2]*varAdjFlo->GetHessian(iPoint, rei, yzi))
+                   - (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhov
+    TmpWeights[3] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+                                     +3.*varAdjFlo->GetHessian(iPoint, rui, yyi)
+                                     +4.*varAdjFlo->GetHessian(iPoint, rui, zzi)
+                                     +varAdjFlo->GetHessian(iPoint, rvi, xzi)
+                                     +varAdjFlo->GetHessian(iPoint, rwi, yzi)
+                                     +3.*u[2]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                     +3.*u[2]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                     +4.*u[2]*varAdjFlo->GetHessian(iPoint, rei, zzi)
+                                     +u[0]*varAdjFlo->GetHessian(iPoint, rei, xzi)
+                                     +u[1]*varAdjFlo->GetHessian(iPoint, rei, yzi))
+                   - (lam+lamt)/(r*cv)*u[2]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhow
+    TmpWeights[4] -= (lam+lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                       +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                       +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhoe
     TmpWeights[0] -= u[0]*TmpWeights[1]+u[1]*TmpWeights[2]+u[2]*TmpWeights[3]+e*TmpWeights[4]; // Hrho
   }
   else {
-    const unsigned short rui = 1*nMetr, rvi = 2*nMetr, rei = 3*nMetr,
+    const unsigned short rui = 1, rvi = 2, rei = 3,
                          xxi = 0, xyi = 1, yyi = 2;
-    TmpWeights[1] -= (mu+mut)/(3.*r)*(4.*varAdjFlo->GetAnisoHess(iPoint, rui+xxi)
-                                     +3.*varAdjFlo->GetAnisoHess(iPoint, rui+yyi)
-                                     +varAdjFlo->GetAnisoHess(iPoint, rvi+xyi)
-                                     +4.*u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                     +3.*u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-                                     +u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+xyi))
-                   - (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                            +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)); // Hrhou
-    TmpWeights[2] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetAnisoHess(iPoint, rui+xxi)
-                                     +4.*varAdjFlo->GetAnisoHess(iPoint, rui+yyi)
-                                     +varAdjFlo->GetAnisoHess(iPoint, rvi+xyi)
-                                     +3.*u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                     +4.*u[1]*varAdjFlo->GetAnisoHess(iPoint, rei+yyi)
-                                     +u[0]*varAdjFlo->GetAnisoHess(iPoint, rei+xyi))
-                   - (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                            +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)); // Hrhov
-    TmpWeights[3] -= (lam+lamt)/(r*cv)*(varAdjFlo->GetAnisoHess(iPoint, rei+xxi)
-                                       +varAdjFlo->GetAnisoHess(iPoint, rei+yyi)); // Hrhoe
+    TmpWeights[1] -= (mu+mut)/(3.*r)*(4.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+                                     +3.*varAdjFlo->GetHessian(iPoint, rui, yyi)
+                                     +varAdjFlo->GetHessian(iPoint, rvi, xyi)
+                                     +4.*u[0]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                     +3.*u[0]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                     +u[1]*varAdjFlo->GetHessian(iPoint, rei, xyi))
+                   - (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hrhou
+    TmpWeights[2] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+                                     +4.*varAdjFlo->GetHessian(iPoint, rui, yyi)
+                                     +varAdjFlo->GetHessian(iPoint, rvi, xyi)
+                                     +3.*u[1]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                     +4.*u[1]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                     +u[0]*varAdjFlo->GetHessian(iPoint, rei, xyi))
+                   - (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hrhov
+    TmpWeights[3] -= (lam+lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                       +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hrhoe
     TmpWeights[0] -= u[0]*TmpWeights[1]+u[1]*TmpWeights[2]+e*TmpWeights[3]; // Hrho
   }
 
@@ -5811,10 +5805,9 @@ void CSolver::SumWeightedHessians(CSolver           **solver,
   for (iVar = 0; iVar < nVarFlo; ++iVar) {
 
     for (im = 0; im < nMetr; ++im) {
-      const unsigned short ih = iVar*nMetr + im;  
-      const su2double hess = varFlo->GetAnisoHess(iPoint, ih);
+      const su2double hess = varFlo->GetHessian(iPoint, iVar, im);
       const su2double part = abs(weights[iVar])*hess;
-      varFlo->AddAnisoMetr(iPoint, im, part);
+      varFlo->AddMetric(iPoint, im, part);
     }
   }
 
@@ -5824,10 +5817,9 @@ void CSolver::SumWeightedHessians(CSolver           **solver,
     for (iVar = 0; iVar < nVarTur; ++iVar) {
 
       for (im = 0; im < nMetr; ++im) {
-        const unsigned short ih = iVar*nMetr + im;  
-        const su2double hess = varTur->GetAnisoHess(iPoint, ih);
+        const su2double hess = varTur->GetHessian(iPoint, iVar, im);
         const su2double part = abs(weights[nVarFlo+iVar])*hess;
-        varFlo->AddAnisoMetr(iPoint, im, part);
+        varFlo->AddMetric(iPoint, im, part);
       }
     }
   }
@@ -5861,9 +5853,9 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = base_nodes->GetAnisoMetr(iPoint, 0);
-    const su2double b = base_nodes->GetAnisoMetr(iPoint, 1);
-    const su2double c = base_nodes->GetAnisoMetr(iPoint, 2);
+    const su2double a = base_nodes->GetMetric(iPoint, 0);
+    const su2double b = base_nodes->GetMetric(iPoint, 1);
+    const su2double c = base_nodes->GetMetric(iPoint, 2);
     
     if (fabs(a*c - b*b) < 1.0E-16) {
       A[0][0] = a+1.0E-16; A[0][1] = b;
@@ -5890,9 +5882,9 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = base_nodes->GetAnisoMetr(iPoint, 0);
-    const su2double b = base_nodes->GetAnisoMetr(iPoint, 1);
-    const su2double c = base_nodes->GetAnisoMetr(iPoint, 2);
+    const su2double a = base_nodes->GetMetric(iPoint, 0);
+    const su2double b = base_nodes->GetMetric(iPoint, 1);
+    const su2double c = base_nodes->GetMetric(iPoint, 2);
     
     if (fabs(a*c - b*b) < 1.0E-16) {
       A[0][0] = a+1.0E-16; A[0][1] = b;
@@ -5911,9 +5903,9 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    base_nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
-    base_nodes->SetAnisoMetr(iPoint, 1, A[0][1]);
-    base_nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
+    base_nodes->SetMetric(iPoint, 0, A[0][0]);
+    base_nodes->SetMetric(iPoint, 1, A[0][1]);
+    base_nodes->SetMetric(iPoint, 2, A[1][1]);
 
     //--- compute min, max, total complexity
     const su2double Vol = geometry->node[iPoint]->GetVolume();
@@ -5977,12 +5969,12 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
   //--- set tolerance and obtain global scaling
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = base_nodes->GetAnisoMetr(iPoint, 0);
-    const su2double b = base_nodes->GetAnisoMetr(iPoint, 1);
-    const su2double c = base_nodes->GetAnisoMetr(iPoint, 2);
-    const su2double d = base_nodes->GetAnisoMetr(iPoint, 3);
-    const su2double e = base_nodes->GetAnisoMetr(iPoint, 4);
-    const su2double f = base_nodes->GetAnisoMetr(iPoint, 5);
+    const su2double a = base_nodes->GetMetric(iPoint, 0);
+    const su2double b = base_nodes->GetMetric(iPoint, 1);
+    const su2double c = base_nodes->GetMetric(iPoint, 2);
+    const su2double d = base_nodes->GetMetric(iPoint, 3);
+    const su2double e = base_nodes->GetMetric(iPoint, 4);
+    const su2double f = base_nodes->GetMetric(iPoint, 5);
 
     if (fabs(a*(d*f-e*e) - b*(b*f-e*c) + c*(b*e-d*c)) < 1.0E-16) {
       A[0][0] = a+1.0E-16; A[0][1] = b;         A[0][2] = c;
@@ -6011,12 +6003,12 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = base_nodes->GetAnisoMetr(iPoint, 0);
-    const su2double b = base_nodes->GetAnisoMetr(iPoint, 1);
-    const su2double c = base_nodes->GetAnisoMetr(iPoint, 2);
-    const su2double d = base_nodes->GetAnisoMetr(iPoint, 3);
-    const su2double e = base_nodes->GetAnisoMetr(iPoint, 4);
-    const su2double f = base_nodes->GetAnisoMetr(iPoint, 5);
+    const su2double a = base_nodes->GetMetric(iPoint, 0);
+    const su2double b = base_nodes->GetMetric(iPoint, 1);
+    const su2double c = base_nodes->GetMetric(iPoint, 2);
+    const su2double d = base_nodes->GetMetric(iPoint, 3);
+    const su2double e = base_nodes->GetMetric(iPoint, 4);
+    const su2double f = base_nodes->GetMetric(iPoint, 5);
 
     if (fabs(a*(d*f-e*e) - b*(b*f-e*c) + c*(b*e-d*c)) < 1.0E-16) {
       A[0][0] = a+1.0E-16; A[0][1] = b;         A[0][2] = c;
@@ -6038,12 +6030,12 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
     //--- store lower triangle to be consistent with AMG
-    base_nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
-    base_nodes->SetAnisoMetr(iPoint, 1, A[1][0]);
-    base_nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
-    base_nodes->SetAnisoMetr(iPoint, 3, A[2][0]);
-    base_nodes->SetAnisoMetr(iPoint, 4, A[2][1]);
-    base_nodes->SetAnisoMetr(iPoint, 5, A[2][2]);
+    base_nodes->SetMetric(iPoint, 0, A[0][0]);
+    base_nodes->SetMetric(iPoint, 1, A[1][0]);
+    base_nodes->SetMetric(iPoint, 2, A[1][1]);
+    base_nodes->SetMetric(iPoint, 3, A[2][0]);
+    base_nodes->SetMetric(iPoint, 4, A[2][1]);
+    base_nodes->SetMetric(iPoint, 5, A[2][2]);
 
     //--- compute min, max, total complexity
     const su2double Vol = geometry->node[iPoint]->GetVolume();

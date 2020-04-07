@@ -144,7 +144,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   Non_Physical_Counter.resize(nPoint) = 0;
 
   if (config->GetBool_Error_Estimate()) {
-    AnisoMetr.resize(nPoint,3*(nDim-1)) = su2double(0.0);
+    Metric.resize(nPoint,3*(nDim-1)) = su2double(0.0);
   }
   
 }

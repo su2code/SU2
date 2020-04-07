@@ -355,8 +355,8 @@ public:
   /*!
    * \brief Apply a correction to the boundary Hessian using the volume Hessian.
    */
-  void CorrectBoundAnisoHess(CGeometry *geometry,
-                             CConfig   *config);
+  void CorrectBoundHessian(CGeometry *geometry,
+                           CConfig   *config);
 
   /*!
    * \brief Compute the goal-oriented metric.
