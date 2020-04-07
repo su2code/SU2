@@ -4980,9 +4980,9 @@ void CSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
 
 void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, nPoint = geometry->GetnPoint(), nPointDomain = geometry->GetnPointDomain(), 
+  unsigned long iPoint, nPointDomain = geometry->GetnPointDomain(),
                 iElem, nElem = geometry->GetnElem();
-  unsigned short iVar, iDim, iMarker;
+  unsigned short iVar, iDim;
   unsigned short nMetr = 3;
   su2double vnx[3], vny[3];
   su2double hesTri[3];
@@ -5206,9 +5206,9 @@ void CSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
 
 void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, nPoint = geometry->GetnPoint(), nPointDomain = geometry->GetnPointDomain(), 
+  unsigned long iPoint, nPointDomain = geometry->GetnPointDomain(),
                 iElem, nElem = geometry->GetnElem();
-  unsigned short iVar, iDim, iMarker;
+  unsigned short iVar, iDim;
   unsigned short nMetr = 6;
   su2double vnx[4], vny[4], vnz[4];
   su2double hesTet[6];
@@ -5849,10 +5849,6 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
                   eigmin = 1./(pow(config->GetAdap_Hmax(),2.0)),
                   outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
 
-  // const su2double eigyplusmax = 1./(pow(GetYPlusHmax(config),2.));
-
-  // const bool turb = (config->GetKind_Turb_Model() != NONE);
-
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
             *EigVal  = new su2double[nDim];
@@ -5879,24 +5875,6 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
     }
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
-
-    // //--- set viscous wall spacing
-    // if(turb && geometry->node[iPoint]->GetSolidBoundary()) {
-    //   for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
-    //     if((geometry->node[iPoint]->GetVertex(iMarker) >= 0) &&
-    //        (config->GetViscous_Wall(iMarker))) {
-    //       const su2double eigmax_i = max(EigVal[0],EigVal[1]);
-    //       if(eigyplusmax > eigmax_i) {
-    //         const su2double scale = eigyplusmax/eigmax_i;
-    //         for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= scale;
-    //         CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
-    //         base_nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
-    //         base_nodes->SetAnisoMetr(iPoint, 1, A[0][1]);
-    //         base_nodes->SetAnisoMetr(iPoint, 2, A[1][1]);
-    //       } // if eigyplusmax
-    //     } // if Viscous_Wall
-    //   } // for iMarker
-    // } // if turb
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
@@ -5987,10 +5965,6 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
                   eigmin = 1./(pow(config->GetAdap_Hmax(),2.0)),
                   outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
 
-  // const su2double eigyplusmax = 1./(pow(GetYPlusHmax(config),2.));
-
-  // const bool turb = (config->GetKind_Turb_Model() != NONE);
-
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim], 
             *EigVal  = new su2double[nDim];
@@ -6022,27 +5996,6 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
     }
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
-
-    // //--- set viscous wall spacing
-    // if(turb && geometry->node[iPoint]->GetSolidBoundary()) {
-    //   for(unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
-    //     if((geometry->node[iPoint]->GetVertex(iMarker) >= 0) &&
-    //        (config->GetViscous_Wall(iMarker))) {
-    //       const su2double eigmax_i = max(max(EigVal[0],EigVal[1]),EigVal[2]);
-    //       if(eigyplusmax > eigmax_i) {
-    //         const su2double scale = eigyplusmax/eigmax_i;
-    //         for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] *= scale;
-    //         CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
-    //         base_nodes->SetAnisoMetr(iPoint, 0, A[0][0]);
-    //         base_nodes->SetAnisoMetr(iPoint, 1, A[0][1]);
-    //         base_nodes->SetAnisoMetr(iPoint, 2, A[0][2]);
-    //         base_nodes->SetAnisoMetr(iPoint, 3, A[1][1]);
-    //         base_nodes->SetAnisoMetr(iPoint, 4, A[1][2]);
-    //         base_nodes->SetAnisoMetr(iPoint, 5, A[2][2]);
-    //       } // if eigyplusmax
-    //     } // if Viscous_Wall
-    //   } // for iMarker
-    // } // if turb
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
