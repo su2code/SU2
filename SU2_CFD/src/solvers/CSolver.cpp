@@ -1995,12 +1995,8 @@ void CSolver::InitiateComms(CGeometry *geometry,
       COUNT_PER_POINT  = nDim*nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case ANISO_HESSIAN:
+    case HESSIAN:
       COUNT_PER_POINT  = 3*(nDim-1)*nVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
-    case ANISO_METRIC:
-      COUNT_PER_POINT  = 3*(nDim-1);
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     default:
@@ -2156,14 +2152,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
               for (iVar = 0; iVar < nVar; iVar++)
                 bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetGradient_Adaptation(iPoint, iVar, iDim);
             break;
-          case ANISO_HESSIAN:
+          case HESSIAN:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
                 bufDSend[buf_offset+iVar*3*(nDim-1)+iDim] = base_nodes->GetHessian(iPoint, iVar, iDim);
-            break;
-          case ANISO_METRIC:
-            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
-              bufDSend[buf_offset+iDim] = base_nodes->GetMetric(iPoint, iDim);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -2342,14 +2334,10 @@ void CSolver::CompleteComms(CGeometry *geometry,
               for (iVar = 0; iVar < nVar; iVar++)
                 base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
             break;
-          case ANISO_HESSIAN:
+          case HESSIAN:
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
                 base_nodes->SetHessian(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*3*(nDim-1)+iDim]);
-            break;
-          case ANISO_METRIC:
-            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
-              base_nodes->SetMetric(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -5070,8 +5058,8 @@ void CSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
   //--- communicate the Hessian values via MPI
   
-  InitiateComms(geometry, config, ANISO_HESSIAN);
-  CompleteComms(geometry, config, ANISO_HESSIAN);
+  InitiateComms(geometry, config, HESSIAN);
+  CompleteComms(geometry, config, HESSIAN);
 
   CorrectBoundHessian(geometry, config);
 
@@ -5326,8 +5314,8 @@ void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
 
   //--- communicate the Hessian values via MPI
   
-  InitiateComms(geometry, config, ANISO_HESSIAN);
-  CompleteComms(geometry, config, ANISO_HESSIAN);
+  InitiateComms(geometry, config, HESSIAN);
+  CompleteComms(geometry, config, HESSIAN);
 
   CorrectBoundHessian(geometry, config);
 

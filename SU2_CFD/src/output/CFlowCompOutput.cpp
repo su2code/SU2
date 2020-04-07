@@ -412,24 +412,24 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   // Anisotropic metric
   if(config->GetBool_Error_Estimate()) {
     if (nDim == 2){
-      AddVolumeOutput("GRADIENT_RHO_X", "Aniso_GradRho_x", "ANISOTROPIC_GRADIENT", "x-component of the density gradient");
-      AddVolumeOutput("GRADIENT_RHO_Y", "Aniso_GradRho_y", "ANISOTROPIC_GRADIENT", "y-component of the density gradient");
+      AddVolumeOutput("GRADIENT_RHO_X", "Grad(Rho)_x", "ANISOTROPIC_GRADIENT", "x-component of the density gradient");
+      AddVolumeOutput("GRADIENT_RHO_Y", "Grad(Rho)_y", "ANISOTROPIC_GRADIENT", "y-component of the density gradient");
 
-      AddVolumeOutput("METRIC_XX", "Aniso_Metric_xx", "ANISOTROPIC_METRIC", "x-x-component of the metric");
-      AddVolumeOutput("METRIC_XY", "Aniso_Metric_xy", "ANISOTROPIC_METRIC", "x-y-component of the metric");
-      AddVolumeOutput("METRIC_YY", "Aniso_Metric_yy", "ANISOTROPIC_METRIC", "y-y-component of the metric");
+      AddVolumeOutput("METRIC_XX", "Metric_xx", "ANISOTROPIC_METRIC", "x-x-component of the metric");
+      AddVolumeOutput("METRIC_XY", "Metric_xy", "ANISOTROPIC_METRIC", "x-y-component of the metric");
+      AddVolumeOutput("METRIC_YY", "Metric_yy", "ANISOTROPIC_METRIC", "y-y-component of the metric");
     }
     else{
-      AddVolumeOutput("GRADIENT_RHO_X", "Aniso_GradRho_x", "ANISOTROPIC_GRADIENT", "x-component of the density gradient");
-      AddVolumeOutput("GRADIENT_RHO_Y", "Aniso_GradRho_y", "ANISOTROPIC_GRADIENT", "y-component of the density gradient");
-      AddVolumeOutput("GRADIENT_RHO_Z", "Aniso_GradRho_z", "ANISOTROPIC_GRADIENT", "z-component of the density gradient");
+      AddVolumeOutput("GRADIENT_RHO_X", "Grad(Rho)_x", "ANISOTROPIC_GRADIENT", "x-component of the density gradient");
+      AddVolumeOutput("GRADIENT_RHO_Y", "Grad(Rho)_y", "ANISOTROPIC_GRADIENT", "y-component of the density gradient");
+      AddVolumeOutput("GRADIENT_RHO_Z", "Grad(Rho)_z", "ANISOTROPIC_GRADIENT", "z-component of the density gradient");
 
-      AddVolumeOutput("METRIC_XX", "Aniso_Metric_xx", "ANISOTROPIC_METRIC", "x-x-component of the metric");
-      AddVolumeOutput("METRIC_XY", "Aniso_Metric_xy", "ANISOTROPIC_METRIC", "x-y-component of the metric");
-      AddVolumeOutput("METRIC_YY", "Aniso_Metric_yy", "ANISOTROPIC_METRIC", "y-y-component of the metric");
-      AddVolumeOutput("METRIC_XZ", "Aniso_Metric_xz", "ANISOTROPIC_METRIC", "x-z-component of the metric");
-      AddVolumeOutput("METRIC_YZ", "Aniso_Metric_yz", "ANISOTROPIC_METRIC", "y-z-component of the metric");
-      AddVolumeOutput("METRIC_ZZ", "Aniso_Metric_zz", "ANISOTROPIC_METRIC", "z-z-component of the metric");
+      AddVolumeOutput("METRIC_XX", "Metric_xx", "ANISOTROPIC_METRIC", "x-x-component of the metric");
+      AddVolumeOutput("METRIC_XY", "Metric_xy", "ANISOTROPIC_METRIC", "x-y-component of the metric");
+      AddVolumeOutput("METRIC_YY", "Metric_yy", "ANISOTROPIC_METRIC", "y-y-component of the metric");
+      AddVolumeOutput("METRIC_XZ", "Metric_xz", "ANISOTROPIC_METRIC", "x-z-component of the metric");
+      AddVolumeOutput("METRIC_YZ", "Metric_yz", "ANISOTROPIC_METRIC", "y-z-component of the metric");
+      AddVolumeOutput("METRIC_ZZ", "Metric_zz", "ANISOTROPIC_METRIC", "z-z-component of the metric");
     }
   }
   
