@@ -111,7 +111,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
 void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output){
 
   unsigned short iDim, iMarker, iMarker_Analyze;
-  unsigned long iVertex, iPoint;
+  unsigned long iVertex, iPoint, iVertex_Normal, iPoint_Normal;
   su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
   Enthalpy, Velocity[3] = {}, TangVel[3], Velocity2, MassFlow, Density, Area,
   AxiFactor = 1.0, SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
@@ -192,9 +192,12 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           if (axisymmetric) {
             if (geometry->node[iPoint]->GetCoord(1) != 0.0)
               AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
-            else
-              AxiFactor = PI_NUMBER*geometry->node[geometry->vertex[iMarker][iVertex-1]->GetNode()]->GetCoord(1); //if y = 0 use y = 0.5*y[i-1], works when loop ends at y=0
-          } else {
+            else {
+			  if (iVertex != 0) iVertex_Normal = iVertex-1; else iVertex_Normal = iVertex+1;
+			  iPoint_Normal = geometry->vertex[iMarker][iVertex_Normal]->GetNode();
+			  AxiFactor = PI_NUMBER*geometry->node[iPoint_Normal]->GetCoord(1);
+	        }
+		  } else {
             AxiFactor = 1.0;
           }
 
@@ -269,7 +272,6 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
         }
       }
-	  config->SetSurface_MassFlow(0, Surface_MassFlow[iMarker]);
     }
 
   }

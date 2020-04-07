@@ -6701,7 +6701,6 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       break;
     case SURFACE_MASSFLOW:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
-	  if (rank == MASTER_NODE) {std::cout << "Objective MassFlow: " << config->GetSurface_MassFlow(0) << " kg/s" << std::endl;}
       break;
     case SURFACE_MACH:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
