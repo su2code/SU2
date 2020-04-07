@@ -4962,7 +4962,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
                   hess[i+iMetr] += base_nodes->GetHessian(jPoint, iVar, iMetr)/max(dist,1e-10);
                 }// iMetr
               }// iVar
-              distsum += dist;
+              distsum += 1./max(dist,1e-10);
               counter ++;
             }// if boundary
           }// iNeigh
@@ -4971,7 +4971,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
               const unsigned short i = iVar*nMetr;
               for(iMetr = 0; iMetr < nMetr; iMetr++) {
                 // base_nodes->SetHessian(iPoint, i+iMetr, hess[i+iMetr]/su2double(counter));
-                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]*distsum);
+                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/distsum);
               }// iMetr
             }// iVar
           }// if counter
