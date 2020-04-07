@@ -150,7 +150,6 @@ def amg_call_python(mesh, config):
     
     remesh_options                = {}
 
-    remesh_options['Lp']          = config['Lp']
     remesh_options['gradation']   = config['hgrad']
     remesh_options['logfile']     = config['amg_log']
     remesh_options['options']     = config['options']
@@ -179,9 +178,13 @@ def amg_call_python(mesh, config):
     if 'Triangles' in mesh:  mesh['Triangles']  = mesh['Triangles'].tolist()
     if 'Tetrahedra' in mesh: mesh['Tetrahedra'] = mesh['Tetrahedra'].tolist()   
 
-    if 'sensor' in mesh: mesh['sensor'] = mesh['sensor'].tolist()
     if 'metric' in mesh: mesh['metric'] = mesh['metric'].tolist()
-    
+    if 'sensor' in mesh:
+        mesh['sensor']         = mesh['sensor'].tolist()
+        remesh_options['Lp']   = config['Lp']
+        remesh_options['hmax'] = config['hmax']
+        remesh_options['hmin'] = config['hmin']
+
     try:
         mesh_new = pyamg.adapt_mesh(mesh, remesh_options)        
     except:
