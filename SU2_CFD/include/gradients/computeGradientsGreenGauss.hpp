@@ -188,7 +188,7 @@ void computeGradientsGreenGauss(CSolver* solver,
 
 }
 
-template<class FieldType, class GradientType>
+template<class GradientType>
 void computeHessiansGreenGauss(CSolver* solver,
                                MPI_QUANTITIES kindMpiComm,
                                PERIODIC_QUANTITIES kindPeriodicComm,
