@@ -196,7 +196,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
               if (iVertex != 0) iVertex_Normal = iVertex-1; else iVertex_Normal = iVertex+1;
               iPoint_Normal = geometry->vertex[iMarker][iVertex_Normal]->GetNode();
               AxiFactor = PI_NUMBER*geometry->node[iPoint_Normal]->GetCoord(1);
-	        }
+            }
           } else {
             AxiFactor = 1.0;
           }
