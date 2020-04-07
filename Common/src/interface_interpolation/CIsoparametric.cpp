@@ -317,7 +317,7 @@ int CIsoparametric::TriangleIsoparameters(const su2double X[][3], const su2doubl
   TriangleNormal(X, normal);
   PointPlaneProjection<su2double,3>(xj, X[0], normal, xproj);
 
-  su2double A[3][3] = {0.0}; // = X*X^T
+  su2double A[3][3] = {{0.0}}; // = X*X^T
   for (int i = 0; i < 3; ++i) {
 
     for (int j = 0; j < 3; ++j)
