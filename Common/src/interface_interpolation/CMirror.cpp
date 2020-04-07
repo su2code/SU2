@@ -1,7 +1,7 @@
 /*!
  * \file CMirror.cpp
  * \brief Implementation of mirror interpolation (conservative approach in FSI problems).
- * \author H. Kline, P. Gomes
+ * \author P. Gomes
  * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -94,15 +94,12 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
     SU2_MPI::Allgather(&nNodeDonorLocal, 1, MPI_UNSIGNED_LONG,
                        allNumNodeDonor.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 
-    /*--- Copy donor interpolation matrix and info. ---*/
-    const auto sizeRowPtr = nVertexDonorLocal + 1;
-    vector<long> sendGlobalIndex(nVertexDonorLocal);
-    vector<long> sendDonorRowPtr(sizeRowPtr);
+    /*--- Copy donor interpolation matrix (triplet format). ---*/
+    vector<long> sendGlobalIndex(nNodeDonorLocal);
     vector<long> sendDonorIndex(nNodeDonorLocal);
     vector<su2double> sendDonorCoeff(nNodeDonorLocal);
 
-    sendDonorRowPtr[0] = 0;
-    for (auto iVertex = 0ul, iVertexLocal = 0ul, iDonor = 0ul; iVertex < nVertexDonor; ++iVertex) {
+    for (auto iVertex = 0ul, iDonor = 0ul; iVertex < nVertexDonor; ++iVertex) {
 
       auto donor_vertex = donor_geometry->vertex[markDonor][iVertex];
       const auto iPoint = donor_vertex->GetNode();
@@ -110,16 +107,33 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
       if (!donor_geometry->node[iPoint]->GetDomain()) continue;
 
       const auto nDonor = donor_vertex->GetnDonorPoints();
-      sendGlobalIndex[iVertexLocal] = donor_geometry->node[iPoint]->GetGlobalIndex();
-      sendDonorRowPtr[iVertexLocal+1] = sendDonorRowPtr[iVertexLocal] + nDonor;
+      const auto donorGlobalIndex = donor_geometry->node[iPoint]->GetGlobalIndex();
 
       for (auto i = 0u; i < nDonor; ++i) {
+        sendGlobalIndex[iDonor] = donorGlobalIndex;
         sendDonorIndex[iDonor] = donor_vertex->GetInterpDonorPoint(i);
         sendDonorCoeff[iDonor] = donor_vertex->GetDonorCoeff(i);
         ++iDonor;
       }
-      ++iVertexLocal;
     }
+
+    /*--- Sort the matrix by donor index, effectively transposing the triplets. ---*/
+    vector<int> order(nNodeDonorLocal);
+    iota(order.begin(), order.end(), 0);
+    sort(order.begin(), order.end(),
+      [&sendDonorIndex](int i, int j) {
+         return sendDonorIndex[i] < sendDonorIndex[j];
+      }
+    );
+    for (int i = 0; i < int(nNodeDonorLocal); ++i) {
+      int j = order[i];
+      while (j < i) j = order[j];
+      if (i == j) continue;
+      swap(sendGlobalIndex[i], sendGlobalIndex[j]);
+      swap(sendDonorIndex[i], sendDonorIndex[j]);
+      swap(sendDonorCoeff[i], sendDonorCoeff[j]);
+    }
+    vector<int>().swap(order); // no longer needed
 
     /*--- Communicate donor interpolation matrix and info. We only gather the
      *    matrix in ranks that need it, i.e. have target vertices, to avoid
@@ -133,7 +147,7 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
 
     const int nSend = iSendProcessor.size();
 
-    vector<long*> GlobalIndex(nSend,nullptr), DonorRowPtr(nSend,nullptr), DonorIndex(nSend,nullptr);
+    vector<long*> GlobalIndex(nSend,nullptr), DonorIndex(nSend,nullptr);
     vector<su2double*> DonorCoeff(nSend,nullptr);
 
     /*--- For each "target processor" that needs the interpolation matrix. ---*/
@@ -143,33 +157,27 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
       /*--- For each "donor processor that contain a part of the matrix. ---*/
       for (int iSend = 0; iSend < nSend; ++iSend) {
         const auto jProcessor = iSendProcessor[iSend];
-
-        const auto numRows = allNumVertexDonor[jProcessor];
         const auto numCoeff = allNumNodeDonor[jProcessor];
 
         if ((rank == iProcessor) && (rank == jProcessor)) {
           /*--- "Self" communication. ---*/
           GlobalIndex[iSend] = sendGlobalIndex.data();
-          DonorRowPtr[iSend] = sendDonorRowPtr.data();
           DonorIndex[iSend] = sendDonorIndex.data();
           DonorCoeff[iSend] = sendDonorCoeff.data();
         }
         else if (rank == iProcessor) {
           /*--- "I'm" the target, allocate and receive. ---*/
-          GlobalIndex[iSend] = new long [numRows];
-          DonorRowPtr[iSend] = new long [numRows+1];
+          GlobalIndex[iSend] = new long [numCoeff];
           DonorIndex[iSend] = new long [numCoeff];
           DonorCoeff[iSend] = new su2double [numCoeff];
-          SU2_MPI::Recv(GlobalIndex[iSend], numRows,   MPI_LONG, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-          SU2_MPI::Recv(DonorRowPtr[iSend], numRows+1, MPI_LONG, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-          SU2_MPI::Recv(DonorIndex[iSend],  numCoeff,  MPI_LONG, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          SU2_MPI::Recv(GlobalIndex[iSend], numCoeff, MPI_LONG, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          SU2_MPI::Recv(DonorIndex[iSend],  numCoeff, MPI_LONG, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           SU2_MPI::Recv(DonorCoeff[iSend], numCoeff, MPI_DOUBLE, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
         else if (rank == jProcessor) {
           /*--- "I'm" the donor, send. ---*/
-          SU2_MPI::Send(sendGlobalIndex.data(), numRows,   MPI_LONG, iProcessor, 0, MPI_COMM_WORLD);
-          SU2_MPI::Send(sendDonorRowPtr.data(), numRows+1, MPI_LONG, iProcessor, 0, MPI_COMM_WORLD);
-          SU2_MPI::Send(sendDonorIndex.data(),  numCoeff,  MPI_LONG, iProcessor, 0, MPI_COMM_WORLD);
+          SU2_MPI::Send(sendGlobalIndex.data(), numCoeff, MPI_LONG, iProcessor, 0, MPI_COMM_WORLD);
+          SU2_MPI::Send(sendDonorIndex.data(),  numCoeff, MPI_LONG, iProcessor, 0, MPI_COMM_WORLD);
           SU2_MPI::Send(sendDonorCoeff.data(), numCoeff, MPI_DOUBLE, iProcessor, 0, MPI_COMM_WORLD);
         }
       }
@@ -188,34 +196,31 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
       /*--- Any point of the donor geometry, that has this target point as a donor, becomes a donor. ---*/
       const long targetGlobalIndex = target_geometry->node[iPoint]->GetGlobalIndex();
 
-      /*--- Traverse entire matrix to count donors. ---*/
+      /*--- Count donors and safe the binary search results (this is why we sorted the matrix). ---*/
       auto nDonor = 0ul;
+      vector<pair<long*,long*> > ranges(nSend);
       for (int iSend = 0; iSend < nSend; ++iSend) {
         const auto iProcessor = iSendProcessor[iSend];
-        for (auto iCoeff = 0ul; iCoeff < allNumNodeDonor[iProcessor]; ++iCoeff)
-          nDonor += (targetGlobalIndex == DonorIndex[iSend][iCoeff]);
+        const auto numCoeff = allNumNodeDonor[iProcessor];
+        auto p = equal_range(DonorIndex[iSend], DonorIndex[iSend]+numCoeff, targetGlobalIndex);
+        nDonor += (p.second - p.first);
+        ranges[iSend] = p;
       }
 
       target_vertex->Allocate_DonorInfo(nDonor);
 
-      /*--- Traverse matrix again to set interpolation coefficients. ---*/
-      auto iDonor = 0ul;
-      for (int iSend = 0; iSend < nSend; ++iSend) {
+      /*--- Use the search results to set the interpolation coefficients. ---*/
+      for (int iSend = 0, iDonor = 0; iSend < nSend; ++iSend) {
         const auto iProcessor = iSendProcessor[iSend];
 
-        for (auto iVertexDonor = 0ul; iVertexDonor < allNumVertexDonor[iProcessor]; ++iVertexDonor) {
-          for (auto iCoeff = DonorRowPtr[iSend][iVertexDonor];
-               iCoeff < DonorRowPtr[iSend][iVertexDonor+1]; ++iCoeff)
-          {
-            if (targetGlobalIndex != DonorIndex[iSend][iCoeff]) continue;
+        const auto first = ranges[iSend].first - DonorIndex[iSend];
+        const auto last = ranges[iSend].second - DonorIndex[iSend];
 
-            target_vertex->SetInterpDonorProcessor(iDonor, iProcessor);
-            target_vertex->SetDonorCoeff(iDonor, DonorCoeff[iSend][iCoeff]);
-            target_vertex->SetInterpDonorPoint(iDonor, GlobalIndex[iSend][iVertexDonor]);
-            ++iDonor;
-            /*--- we could break here on the assumption that donors do not repeat, but... ---*/
-          }
-          if (iDonor == nDonor) break;
+        for (auto iCoeff = first; iCoeff < last; ++iCoeff) {
+          target_vertex->SetInterpDonorProcessor(iDonor, iProcessor);
+          target_vertex->SetDonorCoeff(iDonor, DonorCoeff[iSend][iCoeff]);
+          target_vertex->SetInterpDonorPoint(iDonor, GlobalIndex[iSend][iCoeff]);
+          ++iDonor;
         }
       }
 
@@ -223,7 +228,6 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
 
     /*--- Free the heap allocations. ---*/
     for (auto ptr : GlobalIndex) if (ptr != sendGlobalIndex.data()) delete [] ptr;
-    for (auto ptr : DonorRowPtr) if (ptr != sendDonorRowPtr.data()) delete [] ptr;
     for (auto ptr : DonorIndex) if (ptr != sendDonorIndex.data()) delete [] ptr;
     for (auto ptr : DonorCoeff) if (ptr != sendDonorCoeff.data()) delete [] ptr;
 
