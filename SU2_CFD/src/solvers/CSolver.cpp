@@ -5496,7 +5496,7 @@ void CSolver::ConvectiveMetric(CSolver           **solver,
                              C(nDim+2, vector<su2double>(nDim+2, 0.0));
 
   //--- Inviscid terms
-  su2double u v, w, e,
+  su2double u, v, w, e,
             v2, g;
 
   u = varFlo->GetVelocity(iPoint, 0);
