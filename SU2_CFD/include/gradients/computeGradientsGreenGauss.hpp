@@ -188,6 +188,7 @@ void computeGradientsGreenGauss(CSolver* solver,
 
 }
 
+template<class FieldType, class GradientType>
 void computeHessiansGreenGauss(CSolver* solver,
                                MPI_QUANTITIES kindMpiComm,
                                PERIODIC_QUANTITIES kindPeriodicComm,
@@ -252,9 +253,11 @@ void computeHessiansGreenGauss(CSolver* solver,
             su2double flux = weight * (gradient(iPoint,iVar,jDim) + gradient(jPoint,iVar,jDim));
 
             for (size_t iDim = 0; iDim < nDim; ++iDim)
+            {
               size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
                                           : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
-              hessian(iPoint, iVar, iDim) += (iDim == jDim) ? flux * area[iDim] : 0.5*flux * area[iDim];
+              hessian(iPoint, iVar, ind) += (iDim == jDim) ? flux * area[iDim] : 0.5*flux * area[iDim];
+            }
           }
         }
 
@@ -291,8 +294,12 @@ void computeHessiansGreenGauss(CSolver* solver,
             {
               su2double flux = gradient(iPoint,iVar,jDim) / volume;
 
-              for (size_t iDim = 0; iDim < 3*(nDim-1); iDim++)
-                hessian(iPoint, iVar, iDim) -= flux * area[iDim];
+              for (size_t iDim = 0; iDim < nDim; ++iDim)
+              {
+                size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
+                                            : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+                hessian(iPoint, iVar, ind) -= (iDim == jDim) ? flux * area[iDim] : 0.5*flux * area[iDim];
+              }
             }
           }
         }

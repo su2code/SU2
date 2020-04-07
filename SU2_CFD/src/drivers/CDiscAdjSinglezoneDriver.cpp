@@ -592,6 +592,23 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
       solver_adjturb->SetHessian_GG(geometry, config);
     }
   }
+  else {
+    if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
+    
+    if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
+    solver_flow->SetHessian_LS(geometry, config);
+    
+    if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
+    solver_adjflow->SetHessian_LS(geometry, config);
+    
+    if ( config->GetKind_Turb_Model() != NONE) {
+      if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
+      solver_turb->SetHessian_LS(geometry, config);
+      
+      if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
+      solver_adjturb->SetHessian_LS(geometry, config);
+    }
+  }
 
   //--- Metric
   if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
