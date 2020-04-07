@@ -269,8 +269,10 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
           Surface_StreamVelocity2[iMarker]   += Vn2*Weight;
           Surface_TransvVelocity2[iMarker]   += Vtang2*Weight;
+          
         }
       }
+      
     }
 
   }
