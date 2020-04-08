@@ -38,7 +38,11 @@ public:
     code.exec(*scope);
   }
 
-  su2double Eval(){
+  void Eval(){
+    tokenRef->asFunc()->exec(*scope);
+  }
+
+  su2double EvalAsDouble(){
     return tokenRef->asFunc()->exec(*scope).asDouble();
   }
 };

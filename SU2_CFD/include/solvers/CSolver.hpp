@@ -139,6 +139,7 @@ protected:
 
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
 
+  TokenMap SolverScope;
   /*!
    * \brief Pure virtual function, all derived solvers MUST implement a method returning their "nodes".
    * \note Don't forget to call SetBaseClassPointerToNodes() in the constructor of the derived CSolver.
@@ -4719,6 +4720,8 @@ public:
    * \return Should return true if "yes", false if "no".
    */
   inline virtual bool GetHasHybridParallel() const { return false; }
+
+  virtual void SetUnsteadyBCs(CConfig *config, CGeometry* geometry) {}
 
 protected:
   /*!

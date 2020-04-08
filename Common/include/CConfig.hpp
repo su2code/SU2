@@ -226,7 +226,8 @@ private:
   nMarker_Max,                    /*!< \brief Max number of number of markers using the grid information. */
   nMarker_CfgFile;                /*!< \brief Total number of markers using the config file (note that in
                                         parallel computations this number can be different from nMarker_All). */
-
+  unsigned short nInletFunctions, nOutletFunctions;
+  string *InletFunctions, *OutletFunctions;
   bool Inlet_From_File;         /*!< \brief True if the inlet profile is to be loaded from a file. */
   string Inlet_Filename;        /*!< \brief Filename specifying an inlet profile. */
   su2double Inlet_Matching_Tol; /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
@@ -9355,5 +9356,27 @@ public:
 
   const TokenMap& GetGlobalScope(){
     return globalScope;
+  }
+
+
+  std::string GetInletFunction(std::string val_marker){
+    unsigned short iMarker_Inlet;
+    for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
+      if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
+    return InletFunctions[iMarker_Inlet];
+  }
+
+  std::string GetOutletFunction(std::string val_marker){
+    unsigned short iMarker_Outlet;
+    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
+      if (Marker_Outlet[iMarker_Outlet] == val_marker) break;
+    return OutletFunctions[iMarker_Outlet];
+  }
+  int GetnInletFunction(){
+    return nInletFunctions;
+  }
+
+  int GetnOutletFunction(){
+    return nOutletFunctions;
   }
 };
