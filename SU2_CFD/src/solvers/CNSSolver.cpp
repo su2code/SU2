@@ -110,6 +110,38 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Prandtl_Turb    = config->GetPrandtl_Turb();
   Tke_Inf         = config->GetTke_FreeStreamND();
 
+
+  /*--- Set the SGS model in case an LES simulation is carried out ---*/
+  /* Make a distinction between the SGS models used and set SGSModel and
+  SGSModelUsed accordingly. */
+  switch( config->GetKind_SGS_Model() ) {
+    /* No LES, so no SGS model needed.
+     Set the pointer to NULL and the boolean to false. */
+    case NO_SGS_MODEL:
+    case IMPLICIT_LES:
+     SGSModel     = NULL;
+     SGSModelUsed = false;
+     break;
+
+    case SMAGORINSKY:
+      SGSModel     = new CSmagorinskyModel;
+      SGSModelUsed = true;
+      break;
+
+    case WALE:
+      SGSModel     = new CWALEModel;
+      SGSModelUsed = true;
+      break;
+
+    case VREMAN:
+      SGSModel     = new CVremanModel;
+      SGSModelUsed = true;
+      break;
+
+    default:
+      SU2_MPI::Error("Unknown SGS model encountered", CURRENT_FUNCTION);
+ }
+
   /*--- Initialize the seed values for forward mode differentiation. ---*/
 
   switch(config->GetDirectDiff()) {
@@ -163,6 +195,8 @@ CNSSolver::~CNSSolver(void) {
     }
     delete [] Buffet_Sensor;
   }
+
+  if( SGSModel != NULL) delete SGSModel;
 
 }
 
@@ -261,6 +295,13 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SU2_OMP_BARRIER
   }
 
+  /*--- IF needed calculate the eddy viscosity using a SGS model ---*/
+
+  if (SGSModelUsed){
+    SU2_OMP_MASTER
+    Setmut_LES(geometry, solver_container, config);
+    SU2_OMP_BARRIER
+  }
 }
 
 unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
@@ -288,6 +329,9 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
         nodes->SetDES_LengthScale(iPoint, DES_LengthScale);
       }
     }
+
+    if (turb_model == NONE && SGSModelUsed)
+        eddy_visc = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(iPoint);
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
 
@@ -2056,5 +2100,51 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
 
     }
   }
+
+}
+
+void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+  unsigned long iPoint;
+  su2double Grad_Vel[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
+  su2double lenScale, muTurb, rho;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /* Get Density */
+    rho = nodes->GetSolution(iPoint, 0);
+
+    /* Velocity Gradients */
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
+        Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, iDim+1, jDim);
+
+    /* Distance to the wall. */
+    su2double dist = geometry->node[iPoint]->GetWall_Distance(); // Is the distance to the wall used in any SGS calculation?
+
+    /* Length Scale for the SGS model: Cubic root of the volume. */
+    su2double Vol = geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume();
+    lenScale = pow(Vol,1./3.);
+
+    /* Compute the eddy viscosity. */
+    if (nDim == 2){
+      muTurb = SGSModel->ComputeEddyViscosity_2D(rho, Grad_Vel[0][0], Grad_Vel[1][0],
+                                                 Grad_Vel[0][1], Grad_Vel[1][1],
+                                                 lenScale, dist);
+    }
+    else{
+      muTurb = SGSModel->ComputeEddyViscosity_3D(rho, Grad_Vel[0][0], Grad_Vel[1][0], Grad_Vel[2][0],
+                                               Grad_Vel[0][1], Grad_Vel[1][1], Grad_Vel[2][1],
+                                               Grad_Vel[0][2], Grad_Vel[1][2], Grad_Vel[2][2],
+                                               lenScale, dist);
+    }
+    /* Set eddy viscosity. */
+    nodes->SetEddyViscosity(iPoint, muTurb);
+  }
+
+  /*--- MPI parallelization ---*/
+
+//  InitiateComms(geometry, config, SGS_MODEL);
+//  CompleteComms(geometry, config, SGS_MODEL);
 
 }
