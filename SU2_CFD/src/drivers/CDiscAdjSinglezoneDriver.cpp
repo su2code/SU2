@@ -580,6 +580,7 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     
     if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
     solver_flow->SetHessian_GG(geometry, config);
+    solver_flow->SetPositiveDefiniteHessian(geometry, config);
     
     if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
     solver_adjflow->SetHessian_GG(geometry, config);
@@ -587,6 +588,7 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     if ( config->GetKind_Turb_Model() != NONE) {
       if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
       solver_turb->SetHessian_GG(geometry, config);
+      solver_turb->SetPositiveDefiniteHessian(geometry, config);
       
       if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
       solver_adjturb->SetHessian_GG(geometry, config);
@@ -597,6 +599,7 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     
     if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
     solver_flow->SetHessian_LS(geometry, config);
+    solver_flow->SetPositiveDefiniteHessian(geometry, config);
     
     if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
     solver_adjflow->SetHessian_LS(geometry, config);
@@ -604,6 +607,7 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     if ( config->GetKind_Turb_Model() != NONE) {
       if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
       solver_turb->SetHessian_LS(geometry, config);
+      solver_turb->SetPositiveDefiniteHessian(geometry, config);
       
       if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
       solver_adjturb->SetHessian_LS(geometry, config);

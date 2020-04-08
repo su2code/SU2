@@ -3095,9 +3095,6 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config) {
   
   //--- compute boundary Hessians from volume Hessians
   CorrectBoundHessian(geometry, config);
-  
-  //--- make the Hessians positive definite (set positive eigenvalues)
-  SetPositiveDefiniteHessian(geometry, config);
 }
 
 void CSolver::SetHessian_LS(CGeometry *geometry, CConfig *config) {
@@ -5212,7 +5209,7 @@ void CSolver::ViscousMetric(CSolver           **solver,
   e = varFlo->GetEnergy(iPoint);
   k = 0.;
   if(sst) {
-    k     = varTur->GetPrimitive(iPoint, 0);
+    k = varTur->GetPrimitive(iPoint, 0);
   }
 
   T   = varFlo->GetTemperature(iPoint);

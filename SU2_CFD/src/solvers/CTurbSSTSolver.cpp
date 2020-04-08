@@ -1831,14 +1831,12 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
             *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
 
   unsigned short iDim, jDim, iVar;
-  const unsigned short nMetr = 3*(nDim-1);
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
   const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
 
   //--- First-order terms (error due to viscosity)
   su2double r, u[3], e, k, omega,
-            T, mu, mut, lam, lamt, dmudT, 
-            Tref, S, muref, 
+            T, mu, mut, lam, lamt,
             R, cv, cp, g, Pr, Prt;
 
   r = varFlo->GetDensity(iPoint);
@@ -1852,11 +1850,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
   T   = varFlo->GetTemperature(iPoint);
   mu  = varFlo->GetLaminarViscosity(iPoint);
   mut = varFlo->GetEddyViscosity(iPoint);
-
-  Tref  = config->GetMu_Temperature_RefND();
-  S     = config->GetMu_SND();
-  muref = config->GetMu_RefND();
-  dmudT = muref*(Tref+S)/pow(Tref,1.5) * (3.*S*sqrt(T) + pow(T,1.5))/(2.*pow((T+S),2.));
 
   g    = config->GetGamma();
   R    = config->GetGas_ConstantND();
