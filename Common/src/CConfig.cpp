@@ -4682,7 +4682,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                        "INLET_TYPE= TOTAL_CONDITIONS TOTAL_CONDITIONS MASS_FLOW", CURRENT_FUNCTION);
       }
       for (unsigned short iInlet = 0; iInlet < nInlet; iInlet++){
-        if ((Kind_Inlet[iInlet] != TOTAL_CONDITIONS) && (Kind_Inlet[iInlet] != MASSFLOW)) {
+        if ((Kind_Inlet[iInlet] != TOTAL_CONDITIONS) && (Kind_Inlet[iInlet] != MASS_FLOW)) {
           SU2_MPI::Error("Undefined compressible inlet type. TOTAL_CONDITIONS or MASS_FLOW possible.", CURRENT_FUNCTION);
         }
       }

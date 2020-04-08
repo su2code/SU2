@@ -6664,7 +6664,7 @@ void CEulerSolver::SetUnsteadyBCs(CConfig *config, CGeometry *geometry){
           parser.Eval();
 
           switch(InletType){
-            case MASS_FLOW_OUTLET:
+            case MASS_FLOW:
               Inlet_Ttotal[iMarker][iVertex] = SolverScope["DENSITY"].asDouble();
               Inlet_Ptotal[iMarker][iVertex] = SolverScope["VELOCITY_MAGNITUDE"].asDouble();
               break;
@@ -6680,7 +6680,7 @@ void CEulerSolver::SetUnsteadyBCs(CConfig *config, CGeometry *geometry){
         }
 
         switch(InletType){
-          case MASS_FLOW_OUTLET:
+          case MASS_FLOW:
             SolverScope.erase("DENSITY");
             SolverScope.erase("VELOCITY_MAGNITUDE");
             break;
