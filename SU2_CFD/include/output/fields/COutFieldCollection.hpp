@@ -201,7 +201,7 @@ public:
   void EvalCustomFields(const InsertionVector& customFields){
     for (const auto& field : customFields){
       try {
-        field->second.value = field->second.expParser.Eval();
+        field->second.value = field->second.expParser.EvalAsDouble();
       }  catch (msg_exception err) {
         SU2_MPI::Error(std::string("In expression ") + field->first
                        + std::string(": ") + std::string(err.what()), CURRENT_FUNCTION);
@@ -212,7 +212,7 @@ public:
   void IntegrateCustomFields(const InsertionVector& customFields, su2double Volume){
     for (const auto& field : customFields){
       try {
-        field->second.value += field->second.expParser.Eval()*Volume;
+        field->second.value += field->second.expParser.EvalAsDouble()*Volume;
       }  catch (msg_exception err) {
         SU2_MPI::Error(std::string("In expression ") + field->first
                        + std::string(": ") + std::string(err.what()), CURRENT_FUNCTION);

@@ -260,6 +260,8 @@ protected:
   su2double ****SlidingState = nullptr;
   int **SlidingStateNodes = nullptr;
 
+  std::map<string, CExpressionParser> BCExpressions;
+
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
 #ifdef HAVE_OMP
@@ -2888,5 +2890,7 @@ public:
    * \brief The Euler and NS solvers support MPI+OpenMP (except the BC bits).
    */
   inline bool GetHasHybridParallel() const final { return true; }
+
+  void SetUnsteadyBCs(CConfig *config, CGeometry *geometry) override;
 
 };

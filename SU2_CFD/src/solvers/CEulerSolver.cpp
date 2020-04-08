@@ -567,6 +567,33 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
    *    check at the bottom to make sure we consider the "final" values). ---*/
   if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR) || (nSecondaryVar > MAXNVAR))
     SU2_MPI::Error("Oops! The CEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
+
+  SolverScope = config->GetGlobalScope();
+
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_CfgFile(); iMarker++){
+    CExpressionParser parser (&SolverScope);
+    string exp = "";
+    string MarkerTag = config->GetMarker_CfgFile_TagBound(iMarker);
+    switch(config->GetMarker_CfgFile_KindBC(MarkerTag)){
+      case INLET_FLOW:
+        if (config->GetnInletFunction() != 0)
+          exp = config->GetInletFunction(MarkerTag);
+        break;
+      case OUTLET_FLOW:
+        if (config->GetnOutletFunction() != 0)
+          exp = config->GetOutletFunction(MarkerTag);
+        break;
+    }
+    if (!exp.empty()){
+      exp.erase(0,1);
+      exp.pop_back();
+      if (!exp.empty()){
+        std::string name = PrintingToolbox::split(exp,'(')[0];
+        parser.CompileAndExec(exp, name);
+        BCExpressions[MarkerTag] = parser;
+      }
+    }
+  }
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -6584,6 +6611,110 @@ void CEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
     }
   }
 
+}
+
+
+void CEulerSolver::SetUnsteadyBCs(CConfig *config, CGeometry *geometry){
+
+  SolverScope["CUR_TIME"]  = su2double(config->GetPhysicalTime()*config->GetTime_Ref());
+  SolverScope["TIME_STEP"] = su2double(config->GetTime_Step()*config->GetTime_Ref());
+  SolverScope["TIME_ITER"] = su2double(config->GetTimeIter());
+
+  for (unsigned int iMarker = 0; iMarker < nMarker; iMarker++){
+
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW){
+      std::string MarkerTag = config->GetMarker_All_TagBound(iMarker);
+      su2double p_total   = config->GetInlet_Ptotal(MarkerTag);
+      su2double t_total   = config->GetInlet_Ttotal(MarkerTag);
+      su2double* flow_dir = config->GetInlet_FlowDir(MarkerTag);
+
+      if (BCExpressions.count(MarkerTag) > 0){
+        CExpressionParser & parser = BCExpressions[MarkerTag];
+
+        unsigned short InletType = config->GetKind_Inlet(MarkerTag);
+
+        switch(InletType){
+          case MASS_FLOW_OUTLET:
+            SolverScope["DENSITY"] = t_total;
+            SolverScope["VELOCITY_MAGNITUDE"] = p_total;
+
+            break;
+          case TOTAL_CONDITIONS:
+            SolverScope["TOTAL_PRESSURE"] = p_total;
+            SolverScope["TOTAL_TEMPERATURE"] = t_total;
+            break;
+        }
+        SolverScope["FLOW_DIR_X"] = flow_dir[0];
+        SolverScope["FLOW_DIR_Y"] = flow_dir[1];
+        if (nDim == 2){
+          SolverScope["FLOW_DIR_Z"] = 0.0;
+        } else {
+          SolverScope["FLOW_DIR_Z"] = flow_dir[2];
+        }
+
+        for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++){
+          auto Coords = geometry->vertex[iMarker][iVertex]->GetCoord();
+          SolverScope["COORD_X"] = Coords[0];
+          SolverScope["COORD_Y"] = Coords[1];
+          if (nDim == 3){
+            SolverScope["COORD_Z"] = Coords[2];
+          } else {
+            SolverScope["COORD_Z"] = 0;
+          }
+          parser.Eval();
+
+          switch(InletType){
+            case MASS_FLOW_OUTLET:
+              Inlet_Ttotal[iMarker][iVertex] = SolverScope["DENSITY"].asDouble();
+              Inlet_Ptotal[iMarker][iVertex] = SolverScope["VELOCITY_MAGNITUDE"].asDouble();
+              break;
+            case TOTAL_CONDITIONS:
+              Inlet_Ttotal[iMarker][iVertex] = SolverScope["TOTAL_TEMPERATURE"].asDouble();
+              Inlet_Ptotal[iMarker][iVertex] = SolverScope["TOTAL_PRESSURE"].asDouble();
+              break;
+          }
+          Inlet_FlowDir[iMarker][iVertex][0] = SolverScope["FLOW_DIR_X"].asDouble();
+          Inlet_FlowDir[iMarker][iVertex][1] = SolverScope["FLOW_DIR_Y"].asDouble();
+          if (nDim == 3)
+            Inlet_FlowDir[iMarker][iVertex][2] = SolverScope["FLOW_DIR_Z"].asDouble();
+        }
+
+        switch(InletType){
+          case MASS_FLOW_OUTLET:
+            SolverScope.erase("DENSITY");
+            SolverScope.erase("VELOCITY_MAGNITUDE");
+            break;
+          case TOTAL_CONDITIONS:
+            SolverScope.erase("TOTAL_TEMPERATURE");
+            SolverScope.erase("TOTAL_PRESSURE");
+            break;
+        }
+        SolverScope.erase("FLOW_DIR_X");
+        SolverScope.erase("FLOW_DIR_Y");
+        SolverScope.erase("FLOW_DIR_Z");
+      }
+    }
+    if (config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW){
+
+      std::string MarkerTag = config->GetMarker_All_TagBound(iMarker);
+
+      su2double pressure = config->GetOutlet_Pressure(MarkerTag);
+
+      if (BCExpressions.count(MarkerTag) > 0){
+        CExpressionParser & parser = BCExpressions[MarkerTag];
+
+        SolverScope["PRESSURE"] = pressure;
+
+        parser.Eval();
+
+        pressure = SolverScope["PRESSURE"].asDouble();
+
+        config->SetOutlet_Pressure(pressure, MarkerTag);
+
+        SolverScope.erase("PRESSURE");
+      }
+    }
+  }
 }
 
 void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config){

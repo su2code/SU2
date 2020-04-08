@@ -140,6 +140,10 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
 
+  for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++){
+    solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->SetUnsteadyBCs(config_container[ZONE_0], geometry_container[ZONE_0][INST_0][iMesh]);
+  }
+
   /*--- Run a predictor step ---*/
   if (config_container[ZONE_0]->GetPredictor())
     iteration_container[ZONE_0][INST_0]->Predictor(output_container[ZONE_0], integration_container, geometry_container, solver_container,

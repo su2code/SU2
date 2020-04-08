@@ -1444,6 +1444,9 @@ void CConfig::SetConfig_Options() {
    a unit vector. \ingroup Config*/
   addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
 
+  addStringListOption("INLET_FUNCTIONS", nInletFunctions, InletFunctions);
+  addStringListOption("OUTLET_FUNCTIONS", nOutletFunctions, OutletFunctions);
+
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
@@ -5031,6 +5034,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   parser.Compile(UserFunctionCode);
   parser.ExecCode();
 
+
+  if ((nInletFunctions != 0) && (nInletFunctions != nMarker_Inlet)){
+    SU2_MPI::Error("If custom inlet functions are used, option INLET_FUNCTIONS must provide functions for all inlets in MARKER_INLET", CURRENT_FUNCTION);
+  }
+  if ((nOutletFunctions != 0)  && (nOutletFunctions != nMarker_Outlet)){
+    SU2_MPI::Error("If custom outlet functions are used, option OUTLET_FUNCTIONS must provide functions for all outlets in MARKER_OUTLET", CURRENT_FUNCTION);
+  }
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
