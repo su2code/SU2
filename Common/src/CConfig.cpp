@@ -3256,6 +3256,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  /* Check for the correct use of SGS Models */
+
+  if ((Kind_Turb_Model != NONE) && (Kind_SGS_Model != NO_SGS_MODEL) && (TimeMarching != NO)){
+    if (Kind_Solver!=NAVIER_STOKES)
+      SU2_MPI::Error("SGS models are only available in the NAVIER STOKES solver.", CURRENT_FUNCTION);
+  }
+
+
   /*--- Fixed CM mode requires a static movement of the grid ---*/
 
   if (Fixed_CM_Mode) {
@@ -5687,6 +5695,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
+        cout << "Subgrid Scale model: ";
+        switch (Kind_SGS_Model) {
+          case IMPLICIT_LES: cout << "Implicit LES" << endl; break;
+          case SMAGORINSKY:  cout << "Smagorinsky " << endl; break;
+          case WALE:         cout << "WALE"         << endl; break;
+          case VREMAN:       cout << "VREMAN"         << endl; break;
+          default:
+            SU2_MPI::Error("Subgrid Scale model not specified.", CURRENT_FUNCTION);
+        }
         break;
       case RANS:     case DISC_ADJ_RANS:
       case INC_RANS: case DISC_ADJ_INC_RANS:
@@ -5728,7 +5745,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case VREMAN:       cout << "VREMAN"         << endl; break;
           default:
             SU2_MPI::Error("Subgrid Scale model not specified.", CURRENT_FUNCTION);
-
         }
         break;
       case FEM_ELASTICITY: case DISC_ADJ_FEM:
