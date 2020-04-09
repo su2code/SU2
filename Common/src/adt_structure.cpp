@@ -977,7 +977,7 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
   su2double weights[4];
   Dist2ToElement(jj, coor, dist, weights);
   dist = sqrt(dist);
-  std::memcpy(weightsInterpol, weights, 4*sizeof(su2double));
+  memcpy(weightsInterpol, weights, 4*sizeof(su2double));
 }
 
 bool CADTElemClass::CoorInElement(const unsigned long elemID,
