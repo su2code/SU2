@@ -116,5 +116,11 @@ public:
    * \return Value of the DES length Scale
    */
   inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
+  
+  /*!
+  * \brief This function does nothing (it comes from a pure virtual function, that implies the
+  *        definition of the function in all the derived classes).
+  */
+  inline const MatrixType& GetPrimitive(void) const override = 0;
 
 };

@@ -1835,30 +1835,25 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
   const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
 
   //--- First-order terms (error due to viscosity)
-  su2double r, u[3], e, k, omega,
-            T, mu, mut, lam, lamt,
-            R, cv, cp, g, Pr, Prt;
+  su2double r, u[3], k, omega,
+            mu, mut,
+            R, cp, g, Pr, Prt;
 
   r = varFlo->GetDensity(iPoint);
   u[0] = varFlo->GetVelocity(iPoint, 0);
   u[1] = varFlo->GetVelocity(iPoint, 1);
   if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
-  e = varFlo->GetEnergy(iPoint);
   k = varTur->GetPrimitive(iPoint, 0);
   omega = varTur->GetPrimitive(iPoint, 1);
   
-  T   = varFlo->GetTemperature(iPoint);
   mu  = varFlo->GetLaminarViscosity(iPoint);
   mut = varFlo->GetEddyViscosity(iPoint);
 
   g    = config->GetGamma();
   R    = config->GetGas_ConstantND();
   cp   = (g/(g-1.))*R;
-  cv   = cp/g;
   Pr   = config->GetPrandtl_Lam();
   Prt  = config->GetPrandtl_Turb();
-  lam  = cp*mu/Pr;
-  lamt = cp*mut/Prt;
 
   su2double gradu[3][3], gradT[3], gradk[3], gradomega[3], divu, taut[3][3],
             delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
