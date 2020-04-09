@@ -342,7 +342,7 @@ def init_inria(argument_dict, modes, update = False):
     
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_amg = '6ea7c0c2dcbf7662d6be4c53df8e5d4a5276ed17'
+    sha_version_amg = '70bd7b07e28f700ebc14068ef2e101bd20b14039'
     github_repo_amg = 'https://github.com/bmunguia/AMGIO'
 
     amg_name = 'AMGIO'
