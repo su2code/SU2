@@ -3100,7 +3100,7 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config) {
 void CSolver::SetHessian_LS(CGeometry *geometry, CConfig *config) {
   
   if (rank == MASTER_NODE)
-    cout << "Least squares Hessian computation not currently supported.\n Using Green-Gauss.\n" <<endl;
+    cout << "Least squares Hessian computation not currently supported.\nUsing Green-Gauss instead.\n" <<endl;
   
   SetHessian_GG(geometry, config);
 }
