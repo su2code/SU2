@@ -61,6 +61,9 @@ private:
   StrainMag_Max,
   Omega_Max;             /*!< \brief Maximum Strain Rate magnitude and Omega. */
 
+  CSGSModel *SGSModel;     /*!< \brief LES Subgrid Scale model. */
+  bool SGSModelUsed;       /*!< \brief Whether or not an LES Subgrid Scale model is used. */
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
@@ -511,6 +514,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetTauWall_WF(CGeometry *geometry,
+                     CSolver** solver_container,
+                     CConfig* config) override;
+
+  /*!
+   * \brief Computes eddy viscosity (SGS model) for LES problems.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Setmut_LES(CGeometry *geometry,
                      CSolver** solver_container,
                      CConfig* config) override;
 
