@@ -73,10 +73,4 @@ public:
    * \brief Correction for separation-induced transition.
    */
   inline void SetGammaEff(unsigned long iPoint) override { Solution(iPoint,0) = max(Solution(iPoint,0), gamma_sep(iPoint)); }
-  
-  /*!
-  * \brief This function does nothing (it comes from a pure virtual function, that implies the
-  *        definition of the function in all the derived classes).
-  */
-  inline const MatrixType& GetPrimitive(void) const { return CTurbVariable::GetPrimitive(); }
 };
