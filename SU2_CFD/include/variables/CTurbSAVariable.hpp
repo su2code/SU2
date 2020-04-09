@@ -121,6 +121,6 @@ public:
   * \brief This function does nothing (it comes from a pure virtual function, that implies the
   *        definition of the function in all the derived classes).
   */
-  inline const MatrixType& GetPrimitive(void) const final { return CTurbVariable::GetPrimitive(); }
+  inline const MatrixType& GetPrimitive(void) const { return CTurbVariable::GetPrimitive(); }
 
 };
