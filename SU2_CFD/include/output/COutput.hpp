@@ -375,6 +375,7 @@ public:
 
       string funcName = rawName;
       replace_if(funcName.begin(),funcName.end(),::ispunct,'_');
+      replace_if(funcName.begin(),funcName.end(),::isblank,'_');
 
       funcName += to_string(historyFieldsAll.GetFieldsByType({type}).size());
       std::string func = "function " + funcName + "(){"
