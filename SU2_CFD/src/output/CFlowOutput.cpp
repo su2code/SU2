@@ -111,7 +111,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
 void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output){
 
   unsigned short iDim, iMarker, iMarker_Analyze;
-  unsigned long iVertex, iPoint, iVertex_Normal, iPoint_Normal;
+  unsigned long iVertex, iPoint;
   su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
   Enthalpy, Velocity[3] = {}, TangVel[3], Velocity2, MassFlow, Density, Area,
   AxiFactor = 1.0, SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
@@ -184,7 +184,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         if (geometry->node[iPoint]->GetDomain()) {
 
           geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
@@ -192,10 +192,11 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           if (axisymmetric) {
             if (geometry->node[iPoint]->GetCoord(1) != 0.0)
               AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
-            else {
-              if (iVertex != 0) iVertex_Normal = iVertex-1; else iVertex_Normal = iVertex+1;
-              iPoint_Normal = geometry->vertex[iMarker][iVertex_Normal]->GetNode();
-              AxiFactor = PI_NUMBER*geometry->node[iPoint_Normal]->GetCoord(1);
+            else{
+              auto y_neighbor0 = geometry->node[geometry->node[iPoint]->GetPoint(0)]->GetCoord(1);
+              auto y_neighbor1 = geometry->node[geometry->node[iPoint]->GetPoint(1)]->GetCoord(1);
+              auto y_neighbor = (y_neighbor0 != 0.0)? y_neighbor0 : y_neighbor1;
+              AxiFactor = PI_NUMBER*y_neighbor;
             }
           } else {
             AxiFactor = 1.0;
@@ -272,9 +273,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           
         }
       }
-      
     }
-
   }
 
   /*--- Copy to the appropriate structure ---*/
