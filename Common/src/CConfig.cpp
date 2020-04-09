@@ -1863,7 +1863,7 @@ void CConfig::SetConfig_Options() {
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
   addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
 
-  addStringOption("OBJECTIVE_FUNCTION_NEW", Objective_Function, "NONE");
+  addStringOption("OBJECTIVE_FUNCTION_NEW", Objective_Function, "{DRAG}");
 
   /* DESCRIPTION: parameter for the definition of a complex objective function */
   addDoubleOption("DCD_DCL_VALUE", dCD_dCL, 0.0);

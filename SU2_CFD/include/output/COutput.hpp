@@ -430,11 +430,7 @@ protected:
                                string groupname, string description,
                                FieldType field_type = FieldType::DEFAULT ){
     HistoryOutputField newField(field_name, format, groupname, field_type, description);
-    if (!historyFieldsAll.GetScope().find(name))
-      newField.tokenRef = &historyFieldsAll.GetScope()[name];
-    else {
-      SU2_MPI::Error("Token name " + name + " already in global scope", CURRENT_FUNCTION);
-    }
+    newField.tokenRef = &historyFieldsAll.GetScope()[name];
     historyFieldsAll.AddItem(name, newField);
   }
 
