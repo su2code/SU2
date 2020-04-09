@@ -193,10 +193,10 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
             if (geometry->node[iPoint]->GetCoord(1) != 0.0)
               AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
             else{
-              auto y_neighbor0 = geometry->node[geometry->node[iPoint]->GetPoint(0)]->GetCoord(1);
-              auto y_neighbor1 = geometry->node[geometry->node[iPoint]->GetPoint(1)]->GetCoord(1);
-              auto y_neighbor = (y_neighbor0 != 0.0)? y_neighbor0 : y_neighbor1;
-              AxiFactor = PI_NUMBER*y_neighbor;
+              auto neighbor0 = geometry->node[iPoint]->GetPoint(0);
+              auto neighbor1 = geometry->node[iPoint]->GetPoint(1);
+              auto neighbor_normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+              AxiFactor = PI_NUMBER*((neighbor0 != neighbor_normal)? geometry->node[neighbor0]->GetCoord(1) : geometry->node[neighbor1]->GetCoord(1));
             }
           } else {
             AxiFactor = 1.0;
