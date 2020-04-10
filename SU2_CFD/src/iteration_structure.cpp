@@ -2306,6 +2306,8 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver,
 
     geometry[iZone][iInst][MESH_0]->UpdateGeometry(geometry[iZone][iInst], config[iZone]);
 
+    CGeometry::ComputeWallDistance(config, geometry);
+
   }
 
   /*--- Compute coupling between flow and turbulent equations ---*/
@@ -3299,6 +3301,8 @@ void CDiscAdjHeatIteration::SetDependencies(CSolver *****solver,
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
     geometry[iZone][iInst][MESH_0]->UpdateGeometry(geometry[iZone][iInst], config[iZone]);
+
+    CGeometry::ComputeWallDistance(config, geometry);
 
   }
 

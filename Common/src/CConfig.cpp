@@ -7204,7 +7204,7 @@ int CConfig::GetMarker_ZoneInterface(string val_marker) {
 }
 
 
-bool CConfig::GetSolid_Wall(unsigned short iMarker){
+bool CConfig::GetSolid_Wall(unsigned short iMarker) const{
 
   if (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
       Marker_All_KindBC[iMarker] == ISOTHERMAL ||
@@ -7216,7 +7216,7 @@ bool CConfig::GetSolid_Wall(unsigned short iMarker){
   return false;
 }
 
-bool CConfig::GetViscous_Wall(unsigned short iMarker){
+bool CConfig::GetViscous_Wall(unsigned short iMarker) const{
 
   if (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
       Marker_All_KindBC[iMarker] == ISOTHERMAL ||

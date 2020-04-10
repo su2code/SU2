@@ -162,6 +162,20 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
       Geometrical_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], dry_run);
 
+    }
+  }
+
+  /*--- Before we proceed with the zone loop we have to compute the wall distances.
+     * This computation depends on all zones at once. ---*/
+  if (rank == MASTER_NODE)
+    cout << "Computing wall distances." << endl;
+
+  CGeometry::ComputeWallDistance(config_container, geometry_container);
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
       /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
        The solver classes are specific to a particular set of governing equations,
        and they contain the subroutines with instructions for computing each spatial
@@ -208,6 +222,12 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
     }
 
   }
+
+  /*! --- Compute the wall distance again to correctly compute the derivatives if we are running direct diff mode --- */
+  if (driver_config->GetDirectDiff() == D_DESIGN){
+    CGeometry::ComputeWallDistance(config_container, geometry_container);
+  }
+
 
   /*--- Definition of the interface and transfer conditions between different zones.
    *--- The transfer container is defined for zones paired one to one.
@@ -673,26 +693,10 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
         geometry[iMGlevel] = new CDummyGeometry(config);
       }
     } else {
-      geometry[ZONE_0] = new CDummyMeshFEM_DG(config);
+      geometry[MESH_0] = new CDummyMeshFEM_DG(config);
     }
 
-    nDim = geometry[ZONE_0]->GetnDim();
-  }
-
-  /*--- Computation of wall distances for turbulence modeling ---*/
-
-  if ((config->GetKind_Solver() == RANS) ||
-      (config->GetKind_Solver() == INC_RANS) ||
-      (config->GetKind_Solver() == ADJ_RANS) ||
-      (config->GetKind_Solver() == DISC_ADJ_INC_RANS) ||
-      (config->GetKind_Solver() == DISC_ADJ_RANS) ||
-      (config->GetKind_Solver() == FEM_RANS) ||
-      (config->GetKind_Solver() == FEM_LES) ) {
-
-    if (rank == MASTER_NODE)
-      cout << "Computing wall distances." << endl;
-
-    geometry[MESH_0]->ComputeWall_Distance(config);
+    nDim = geometry[MESH_0]->GetnDim();
   }
 
   /*--- Computation of positive surface area in the z-plane which is used for
@@ -2475,21 +2479,12 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
     /*--- Call the volume deformation routine with derivative mode enabled.
        This computes the derivative of the volume mesh with respect to the surface nodes ---*/
 
-
     grid_movement->SetVolume_Deformation(geometry[MESH_0],config, true, true);
 
     /*--- Update the multi-grid structure to propagate the derivative information to the coarser levels ---*/
 
     geometry[MESH_0]->UpdateGeometry(geometry,config);
 
-    /*--- Set the derivative of the wall-distance with respect to the surface nodes ---*/
-
-    if ( (config->GetKind_Solver() == RANS) ||
-         (config->GetKind_Solver() == ADJ_RANS) ||
-         (config->GetKind_Solver() == DISC_ADJ_RANS) ||
-         (config->GetKind_Solver() == INC_RANS) ||
-         (config->GetKind_Solver() == DISC_ADJ_INC_RANS))
-      geometry[MESH_0]->ComputeWall_Distance(config);
   }
 
 }
