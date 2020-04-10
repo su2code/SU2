@@ -98,10 +98,10 @@ for imarker in range(nmarker):
                 ielem += 1
             # Other element
             else:
-                raise RuntimeError , "\n\n##ERROR : Unknown marker type in marker %s, line %s.\n\n" % (str(imarker), str(num))
+                raise ValueError("\n\n##ERROR : Unknown marker type in marker %s, line %s.\n\n" % (str(imarker), str(num)))
 
     if ielem != nelem:
-        raise RuntimeError , "\n\n##ERROR : Incorrect MARKER_ELEMS= %s in marker %s, found %s elements.\n\n" % (str(nelem), str(imarker), str(ielem))
+        raise ValueError("\n\n##ERROR : Incorrect MARKER_ELEMS= %s in marker %s, found %s elements.\n\n" % (str(nelem), str(imarker), str(ielem)))
 
 # Close mesh
 meshfile.close()
