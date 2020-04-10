@@ -1007,11 +1007,11 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.625262, -1.569571, 34.014130, 10.187660] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.625262, -1.569571, 34.014130, 10.187670] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
     Jones_tc_rst.new_output = False
     Jones_tc_rst.timeout   = 1600
-    Jones_tc_rst.tol       = 0.00001
+    Jones_tc_rst.tol       = 0.0001
     test_list.append(Jones_tc_rst)
 
     # 2D axial stage
