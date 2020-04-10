@@ -154,6 +154,9 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
       case CLAMPED_BOUNDARY:
         solver_container[MainSolver]->BC_Clamped(geometry, numerics[FEA_TERM], config, iMarker);
         break;
+      case SYMMETRY_PLANE:
+        solver_container[MainSolver]->BC_Sym_Plane(geometry, numerics[FEA_TERM], config, iMarker);
+        break;
       case DISP_DIR_BOUNDARY:
         solver_container[MainSolver]->BC_DispDir(geometry, numerics[FEA_TERM], config, iMarker);
         break;
@@ -163,7 +166,7 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
     }
   }
 
-  /*--- Solver linearized system ---*/
+  /*--- Solver linear system ---*/
 
   solver_container[MainSolver]->Solve_System(geometry, config);
 

@@ -273,7 +273,7 @@ public:
    * \param[in] indexNode - Index of the node.
    * \param[in] iDim - Dimension required.
    */
-  inline virtual su2double Get_ValCoord(CGeometry *geometry,
+  inline virtual su2double Get_ValCoord(const CGeometry *geometry,
                                         unsigned long indexNode,
                                         unsigned short iDim) const {
     return geometry->node[indexNode]->GetCoord(iDim);
@@ -282,61 +282,58 @@ public:
   /*!
    * \brief Compute the stiffness matrix of the problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   void Compute_StiffMatrix(CGeometry *geometry,
                            CNumerics **numerics,
-                           CConfig *config) final;
+                           const CConfig *config) final;
 
   /*!
    * \brief Compute the stiffness matrix of the problem and the nodal stress terms at the same time.
    * \note This is more efficient for full Newton Raphson.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry,
                                           CNumerics **numerics,
-                                          CConfig *config) final;
+                                          const CConfig *config) final;
 
   /*!
    * \brief Compute the mass matrix of the problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   void Compute_MassMatrix(CGeometry *geometry,
                           CNumerics **numerics,
-                          CConfig *config) final;
+                          const CConfig *config) final;
 
   /*!
    * \brief Compute the mass residual of the problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   void Compute_MassRes(CGeometry *geometry,
                        CNumerics **numerics,
-                       CConfig *config) final;
+                       const CConfig *config) final;
 
   /*!
    * \brief Compute the nodal stress terms and add them to the residual.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   void Compute_NodalStressRes(CGeometry *geometry,
                               CNumerics **numerics,
-                              CConfig *config) final;
+                              const CConfig *config) final;
 
   /*!
    * \brief Compute the stress at the nodes for output purposes.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   void Compute_NodalStress(CGeometry *geometry,
@@ -346,36 +343,48 @@ public:
   /*!
    * \brief Compute the dead loads.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   void Compute_DeadLoad(CGeometry *geometry,
                         CNumerics **numerics,
-                        CConfig *config) final;
+                        const CConfig *config) final;
 
   /*!
    * \brief Clamped boundary conditions.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Clamped(CGeometry *geometry,
                   CNumerics *numerics,
-                  CConfig *config,
+                  const CConfig *config,
                   unsigned short val_marker) final;
 
   /*!
    * \brief Enforce the solution to be 0 in the clamped nodes - Avoids accumulation of numerical error.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Clamped_Post(CGeometry *geometry,
                        CNumerics *numerics,
-                       CConfig *config,
+                       const CConfig *config,
                        unsigned short val_marker) final;
+
+  /*!
+   * \brief Symmetry boundary conditions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Sym_Plane(CGeometry *geometry,
+                    CNumerics *numerics,
+                    const CConfig *config,
+                    unsigned short val_marker) final;
 
   /*!
    * \brief A virtual member.
@@ -384,10 +393,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-
   void BC_DispDir(CGeometry *geometry,
                   CNumerics *numerics,
-                  CConfig *config,
+                  const CConfig *config,
                   unsigned short val_marker) final;
 
   /*!
@@ -399,7 +407,7 @@ public:
    */
   inline void BC_Normal_Displacement(CGeometry *geometry,
                                      CNumerics *numerics,
-                                     CConfig *config,
+                                     const CConfig *config,
                                      unsigned short val_marker) final { }
 
   /*!
@@ -411,7 +419,7 @@ public:
    */
   void BC_Normal_Load(CGeometry *geometry,
                       CNumerics *numerics,
-                      CConfig *config,
+                      const CConfig *config,
                       unsigned short val_marker) final;
 
   /*!
@@ -423,7 +431,7 @@ public:
    */
   void BC_Dir_Load(CGeometry *geometry,
                    CNumerics *numerics,
-                   CConfig *config,
+                   const CConfig *config,
                    unsigned short val_marker) final;
 
   /*!
@@ -435,7 +443,7 @@ public:
    */
   inline void BC_Sine_Load(CGeometry *geometry,
                            CNumerics *numerics,
-                           CConfig *config,
+                           const CConfig *config,
                            unsigned short val_marker) final { }
 
   /*!
@@ -447,7 +455,7 @@ public:
    */
   void BC_Damper(CGeometry *geometry,
                  CNumerics *numerics,
-                 CConfig *config,
+                 const CConfig *config,
                  unsigned short val_marker) final;
 
   /*!
@@ -459,7 +467,7 @@ public:
    */
   void BC_Deforming(CGeometry *geometry,
                     CNumerics *numerics,
-                    CConfig *config,
+                    const CConfig *config,
                     unsigned short val_marker) final;
 
   /*!
@@ -841,7 +849,7 @@ public:
    */
   su2double Compute_LoadCoefficient(su2double CurrentTime,
                                     su2double RampTime,
-                                    CConfig *config) final;
+                                    const CConfig *config) final;
 
   /*!
    * \brief A virtual member.

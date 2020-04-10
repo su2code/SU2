@@ -8627,7 +8627,7 @@ public:
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The pointer to the sine load values.
    */
-  su2double* GetLoad_Sine(void) { return SineLoad_Coeff; }
+  const su2double* GetLoad_Sine(void) const { return SineLoad_Coeff; }
 
   /*!
    * \brief Get the kind of load transfer method we want to use for dynamic problems

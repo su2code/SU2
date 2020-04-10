@@ -705,7 +705,13 @@ public:
    * \param[in,out] b - The rhs vector (b := b - A_{*,i} * x_i;  b_i = x_i).
    */
   template<class OtherType>
-  void EnforceSolutionAtNode(const unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b);
+  void EnforceSolutionAtNode(unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b);
+
+  /*!
+   * \brief Version of EnforceSolutionAtNode for a single degree of freedom.
+   */
+  template<class OtherType>
+  void EnforceSolutionAtDOF(unsigned long node_i, unsigned long iVar, OtherType x_i, CSysVector<OtherType> & b);
 
   /*!
    * \brief Sets the diagonal entries of the matrix as the sum of the blocks in the corresponding column.

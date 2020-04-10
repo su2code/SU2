@@ -860,23 +860,21 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-
   inline virtual void BC_Clamped(CGeometry *geometry,
                                  CNumerics *numerics,
-                                 CConfig *config,
+                                 const CConfig *config,
                                  unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-
   inline virtual void BC_Clamped_Post(CGeometry *geometry,
                                       CNumerics *numerics,
-                                      CConfig *config,
+                                      const CConfig *config,
                                       unsigned short val_marker) { }
 
   /*!
@@ -886,10 +884,21 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
+  inline virtual void BC_Sym_Plane(CGeometry *geometry,
+                                   CNumerics *numerics,
+                                   const CConfig *config,
+                                   unsigned short val_marker) { }
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
   inline virtual void BC_DispDir(CGeometry *geometry,
                                  CNumerics *numerics,
-                                 CConfig *config,
+                                 const CConfig *config,
                                  unsigned short val_marker) { }
 
   /*!
@@ -899,12 +908,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-
   inline virtual void BC_Normal_Displacement(CGeometry *geometry,
                                              CNumerics *numerics,
-                                             CConfig *config,
+                                             const CConfig *config,
                                              unsigned short val_marker) { }
-
 
   /*!
    * \brief A virtual member.
@@ -915,7 +922,7 @@ public:
    */
   inline virtual void BC_Normal_Load(CGeometry *geometry,
                                      CNumerics *numerics,
-                                     CConfig *config,
+                                     const CConfig *config,
                                      unsigned short val_marker) { }
 
   /*!
@@ -925,10 +932,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-
   inline virtual void BC_Dir_Load(CGeometry *geometry,
                                   CNumerics *numerics,
-                                  CConfig *config,
+                                  const CConfig *config,
                                   unsigned short val_marker) { }
 
   /*!
@@ -941,7 +947,7 @@ public:
 
   inline virtual void BC_Sine_Load(CGeometry *geometry,
                                    CNumerics *numerics,
-                                   CConfig *config,
+                                   const CConfig *config,
                                    unsigned short val_marker) { }
 
   /*!
@@ -953,7 +959,7 @@ public:
    */
   inline virtual void BC_Damper(CGeometry *geometry,
                                 CNumerics *numerics,
-                                CConfig *config,
+                                const CConfig *config,
                                 unsigned short val_marker) { }
 
   /*!
@@ -963,10 +969,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-
   inline virtual void BC_Deforming(CGeometry *geometry,
                                    CNumerics *numerics,
-                                   CConfig *config,
+                                   const CConfig *config,
                                    unsigned short val_marker) { }
 
   /*!
@@ -3951,62 +3956,62 @@ public:
    */
   inline virtual su2double Compute_LoadCoefficient(su2double CurrentTime,
                                                    su2double RampTime,
-                                                   CConfig *config) { return 0.0; }
+                                                   const CConfig *config) { return 0.0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_StiffMatrix(CGeometry *geometry,
                                           CNumerics **numerics,
-                                          CConfig *config) { }
+                                          const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry,
                                                          CNumerics **numerics,
-                                                         CConfig *config) { }
+                                                         const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_MassMatrix(CGeometry *geometry,
                                          CNumerics **numerics,
-                                         CConfig *config) { }
+                                         const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_MassRes(CGeometry *geometry,
                                       CNumerics **numerics,
-                                      CConfig *config) { }
+                                      const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_NodalStressRes(CGeometry *geometry,
                                              CNumerics **numerics,
-                                             CConfig *config) { }
+                                             const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
 
@@ -4017,13 +4022,12 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_DeadLoad(CGeometry *geometry,
                                        CNumerics **numerics,
-                                       CConfig *config) { }
+                                       const CConfig *config) { }
 
   /*!
    * \brief A virtual member. Set the volumetric heat source

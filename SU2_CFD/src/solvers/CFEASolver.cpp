@@ -849,7 +849,7 @@ void CFEASolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
 }
 
-void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   const bool topology_mode = config->GetTopology_Optimization();
   const su2double simp_exponent = config->GetSIMP_Exponent();
@@ -938,7 +938,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
 
 }
 
-void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   const bool prestretch_fem = config->GetPrestretch();
   const bool de_effects = config->GetDE_Effects();
@@ -1078,7 +1078,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
 
 }
 
-void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   const bool topology_mode = config->GetTopology_Optimization();
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
@@ -1158,7 +1158,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, C
 
 }
 
-void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   const bool topology_mode = config->GetTopology_Optimization();
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
@@ -1239,7 +1239,7 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CCon
 
 }
 
-void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   const bool prestretch_fem = config->GetPrestretch();
 
@@ -1611,7 +1611,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
 }
 
-void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   /*--- Start OpenMP parallel region. ---*/
 
@@ -1737,7 +1737,7 @@ void CFEASolver::Compute_IntegrationConstants(CConfig *config) {
 }
 
 
-void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
 
   const bool dynamic = config->GetTime_Domain();
   const su2double zeros[3] = {0.0, 0.0, 0.0};
@@ -1769,7 +1769,7 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *c
 
 }
 
-void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
 
   bool dynamic = config->GetTime_Domain();
 
@@ -1791,7 +1791,70 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConf
 
 }
 
-void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+
+  if (geometry->GetnElem_Bound(val_marker) == 0) return;
+
+  const bool dynamic = config->GetTime_Domain();
+
+  /*--- Determine axis of symmetry based on the normal of the first element in the marker. ---*/
+
+  const su2double* nodeCoord[4] = {nullptr};
+
+  const bool quad = (geometry->bound[val_marker][0]->GetVTK_Type() == QUADRILATERAL);
+  const unsigned short nNodes = quad? 4 : nDim;
+
+  for (auto iNode = 0u; iNode < nNodes; iNode++) {
+    auto iPoint = geometry->bound[val_marker][0]->GetNode(iNode);
+    nodeCoord[iNode] = geometry->node[iPoint]->GetCoord();
+  }
+
+  su2double normal[3] = {0.0};
+
+  switch (nNodes) {
+    case 2: LineNormal(nodeCoord, normal); break;
+    case 3: TriangleNormal(nodeCoord, normal); break;
+    case 4: QuadrilateralNormal(nodeCoord, normal); break;
+  }
+
+  auto axis = 0u;
+  for (auto iDim = 1u; iDim < 3; ++iDim)
+    axis = (fabs(normal[iDim]) > fabs(normal[axis]))? iDim : axis;
+
+  if (fabs(normal[axis]) < 0.99*Norm(3,normal)) {
+    SU2_MPI::Error("The structural solver only supports axis-aligned symmetry planes.",CURRENT_FUNCTION);
+  }
+
+  /*--- Impose zero displacement perpendicular to the symmetry plane. ---*/
+
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    /*--- Get node index ---*/
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Set and enforce solution at current and previous time-step ---*/
+    nodes->SetSolution(iPoint, axis, 0.0);
+
+    if (dynamic) {
+      nodes->SetSolution_Vel(iPoint, axis, 0.0);
+      nodes->SetSolution_Accel(iPoint, axis, 0.0);
+      nodes->Set_Solution_time_n(iPoint, axis, 0.0);
+      nodes->SetSolution_Vel_time_n(iPoint, axis, 0.0);
+      nodes->SetSolution_Accel_time_n(iPoint, axis, 0.0);
+    }
+
+    /*--- Set and enforce 0 solution for mesh deformation ---*/
+    nodes->SetBound_Disp(iPoint, axis, 0.0);
+
+    LinSysSol(iPoint, axis) = 0.0;
+    LinSysReact(iPoint, axis) = 0.0;
+    Jacobian.EnforceSolutionAtDOF(iPoint, axis, su2double(0.0), LinSysRes);
+
+  }
+
+}
+
+void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
 
@@ -1909,7 +1972,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
 }
 
-void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
 
   /*--- Determine whether the load conditions are applied in the reference or in the current configuration. ---*/
 
@@ -2007,7 +2070,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfi
 
 }
 
-void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
 
   auto TagBound = config->GetMarker_All_TagBound(val_marker);
   su2double LoadDirVal = config->GetLoad_Dir_Value(TagBound);
@@ -2015,15 +2078,15 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *
   const su2double* Load_Dir_Local = config->GetLoad_Dir(TagBound);
 
   /*--- Compute the norm of the vector that was passed in the config file. ---*/
-  su2double Norm = pow(Load_Dir_Local[0],2) + pow(Load_Dir_Local[1],2);
-  if (nDim==3) Norm += pow(Load_Dir_Local[2],2);
-  Norm = sqrt(Norm);
+  su2double LoadNorm = pow(Load_Dir_Local[0],2) + pow(Load_Dir_Local[1],2);
+  if (nDim==3) LoadNorm += pow(Load_Dir_Local[2],2);
+  LoadNorm = sqrt(LoadNorm);
 
   su2double CurrentTime=config->GetCurrent_DynTime();
   su2double Ramp_Time = config->GetRamp_Time();
   su2double ModAmpl = Compute_LoadCoefficient(CurrentTime, Ramp_Time, config);
 
-  const su2double TotalLoad = ModAmpl * LoadDirVal * LoadDirMult / Norm;
+  const su2double TotalLoad = ModAmpl * LoadDirVal * LoadDirMult / LoadNorm;
 
 
   for (unsigned long iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
@@ -2055,7 +2118,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *
       case 4: QuadrilateralNormal(nodeCoord, normal); break;
     }
 
-    su2double area = sqrt(pow(normal[0],2) + pow(normal[1],2) + pow(normal[2],2));
+    su2double area = Norm(3,normal);
 
     /*--- Compute load vector and update surface load for each node of the boundary element. ---*/
 
@@ -2070,7 +2133,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *
 
 }
 
-void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
 
   const su2double dampConst = config->GetDamper_Constant(config->GetMarker_All_TagBound(val_marker));
 
@@ -2105,7 +2168,7 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *co
       case 4: QuadrilateralNormal(nodeCoord, normal); break;
     }
 
-    su2double area = sqrt(pow(normal[0],2) + pow(normal[1],2) + pow(normal[2],2));
+    su2double area = Norm(3,normal);
 
     /*--- Compute damping forces. ---*/
 
@@ -2127,7 +2190,7 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *co
 
 }
 
-void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker){
+void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker){
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -2191,7 +2254,7 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config)
         case 4: QuadrilateralNormal(coords, normal); break;
       }
 
-      su2double area = sqrt(pow(normal[0],2) + pow(normal[1],2) + pow(normal[2],2)) / nNode;
+      su2double area = Norm(3,normal) / nNode;
 
       /*--- Update area of nodes. ---*/
       for (auto iNode = 0u; iNode < nNode; ++iNode) {
@@ -2217,7 +2280,7 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config)
 
 }
 
-su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config){
+su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, const CConfig *config){
 
   su2double LoadCoeff = 1.0;
 
