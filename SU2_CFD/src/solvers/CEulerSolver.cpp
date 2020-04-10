@@ -5192,17 +5192,15 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   /*--- Container for reduced residual ---*/
   
-  vector<double> r_red(m,0.0);
+  vector<double> r_red(n,0.0);
   double ReducedRes = 0.0;
-  
+  unsigned long testcount = 0;
+  double testmax = 0.0;
   /*--- Compute Test Basis: W = J * Phi and reduced residual ---*/
   
   vector<double> TestBasis2(m*n, 0.0);
   su2double* prod   = new su2double[nVar]();
-  //su2double* prod_t = new su2double[nVar]();
-  
-  //for (iPoint_mask = 0; iPoint_mask < accumulate(Mask.begin(), Mask.end(), 0); iPoint_mask++)
-    // how to find iPoint?
+
   for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
     iPoint = Mask[iPoint_mask];
   //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -5233,13 +5231,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
           TestBasis2[jPoint*m + iPoint_mask*nVar + i] += prod[i];
         }
         
-        /*--- Calculate reduced residual ---*/
-        
-        for (unsigned long i = 0; i < nVar; i++){
-          r_red[jPoint] = r[iPoint_mask*nVar + i] * prod[i];
-          ReducedRes += r_red[jPoint] * r_red[jPoint];
-        }
-        
         // Jacobian is defined for (iPoint, k=iPoint) but won't be listed as a neighbor
         if (kNeigh == 0) {
           unsigned long k = iPoint;
@@ -5265,7 +5256,21 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     }
   }
   
-  // Output reduced residual norm
+  /*--- Calculate reduced residual ---*/
+  
+  for (jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
+    
+    for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+      iPoint = Mask[iPoint_mask];
+      
+      for (unsigned long i = 0; i < nVar; i++){
+        double prod2 = r[iPoint_mask*nVar + i] * TestBasis2[jPoint*m + iPoint_mask*nVar + i];
+        r_red[jPoint] += prod2;
+      }
+    }
+  }
+  
+  // Output reduced residual norm, compute dot product of r_red
   ofstream fs;
   std::string fname = "check_reduced_residual.csv";
   fs.open(fname);
@@ -5274,13 +5279,18 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   }
   fs.close();
   
+  for(int i=0; i < n; i++){
+    ReducedRes += r_red[i] * r_red[i];
+  }
+  
   if (sqrt(ReducedRes) == ReducedResNorm_Old) {
     RomConverged = true;
     std::cout << "ROM Converged." << std::endl;
     
   }
-  else if (sqrt(ReducedRes) > ReducedResNorm_Old) {
+  else if (sqrt(ReducedRes) > ReducedResNorm_Old*1.1) {
     RomConverged = true;
+    SetRes_ROM(sqrt(ReducedRes));
     std::cout << "ROM Diverged." << std::endl;
   }
   else {
