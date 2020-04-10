@@ -256,6 +256,70 @@ def read_mesh_and_sol(mesh_name, solution_name):
     
     return mesh
 
+# --- Read mesh and solution using amgio module
+def read_mesh_and_primal_dual_sol(mesh_name, solution_flow_name, solution_adj_name):
+    
+    Ver = []
+    Tri = []
+    Tet = []
+    Edg = []
+    Cor = []
+    Hex = []
+    Pyr = []
+    Pri = []
+    Qua = []
+    Sol = []
+    SolTag = []
+    
+    Markers = []
+    
+    amgio.py_ReadMeshAndPrimalDualSol(mesh_name, solution_flow_name, solution_adj_name,
+                                      Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, 
+                                      Sol, SolTag, Markers)
+        
+    NbrTet = int(len(Tet)/5)
+    Tet = np.reshape(Tet,(NbrTet, 5)).astype(int)
+    
+    NbrTri = int(len(Tri)/4)
+    Tri = np.reshape(Tri,(NbrTri, 4)).astype(int)
+    
+    NbrEdg = int(len(Edg)/3)
+    Edg = np.reshape(Edg,(NbrEdg, 3)).astype(int)
+
+    NbrCor = int(len(Cor))
+    Cor = np.reshape(Cor,(NbrCor, 1)).astype(int)
+
+    NbrVer = int(len(Ver)/3)
+    Ver = np.reshape(Ver,(NbrVer, 3))
+    
+    SolSiz = int(len(Sol)/NbrVer)
+    Sol = np.array(Sol).reshape(NbrVer,SolSiz).tolist()
+    
+    # First row of Markers contains dimension
+    Dim = int(Markers[0])
+    
+    mesh = dict()
+    
+    mesh['dimension']    = Dim
+    
+    mesh['xyz']          = Ver 
+    
+    mesh['Triangles']    = Tri
+    mesh['Tetrahedra']   = Tet
+    mesh['Edges']        = Edg
+    mesh['Corners']      = Cor
+    mesh['solution']     = Sol
+    
+    mesh['solution_tag'] = SolTag
+    
+    mesh['id_solution_tag'] = dict()
+    for i in range(len(SolTag)):
+        mesh['id_solution_tag'][SolTag[i]] = i
+        
+    mesh['markers'] = Markers    
+    
+    return mesh
+
 # --- Read mesh using amgio module
 def read_mesh(mesh_name):
     
