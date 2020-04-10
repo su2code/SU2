@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -314,8 +314,7 @@ void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT)
                 and do so. ---*/
           for(unsigned short i=0; i<nInt; ++i) {
 
-            const su2double *coor = surfElem[l].coorIntegrationPoints.data()
-                + i*nDim;
+            const su2double *coor = surfElem[l].coorIntegrationPoints.data() + i*nDim;
             unsigned short markerID;
             unsigned long  elemID;
             int            rankID;
