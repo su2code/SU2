@@ -1383,7 +1383,7 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 #endif
 }
 
-#ifdef CODI_REVERSE_TYPE
+#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
 template<>
 void CSysMatrix<su2double>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config,
                                                       unsigned short kind_fact, bool transposed) {
