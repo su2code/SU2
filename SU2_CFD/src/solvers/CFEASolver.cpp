@@ -28,55 +28,13 @@
 #include "../../include/solvers/CFEASolver.hpp"
 #include "../../include/variables/CFEABoundVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include <algorithm>
+#include <unordered_set>
+#include <unordered_map>
 
-/*!
- * \brief Anonymous namespace with helper functions of the FEA solver.
- */
-namespace {
+using namespace GeometryToolbox;
 
-  template<class T>
-  void CrossProduct(const T* a, const T* b, T* c) {
-    c[0] = a[1]*b[2] - a[2]*b[1];
-    c[1] = a[2]*b[0] - a[0]*b[2];
-    c[2] = a[0]*b[1] - a[1]*b[0];
-  }
-
-  template<class T, class U>
-  void LineNormal(const T& coords, U* normal) {
-    normal[0] = coords[0][1] - coords[1][1];
-    normal[1] = coords[1][0] - coords[0][0];
-  }
-
-  template<class T, class U>
-  void TriangleNormal(const T& coords, U* normal) {
-    /*--- Cross product of two sides. ---*/
-    U a[3], b[3];
-
-    for (int iDim = 0; iDim < 3; iDim++) {
-      a[iDim] = coords[1][iDim] - coords[0][iDim];
-      b[iDim] = coords[2][iDim] - coords[0][iDim];
-    }
-
-    CrossProduct(a, b, normal);
-    normal[0] *= 0.5; normal[1] *= 0.5; normal[2] *= 0.5;
-  }
-
-  template<class T, class U>
-  void QuadrilateralNormal(const T& coords, U* normal) {
-    /*--- Cross product of the two diagonals. ---*/
-    U a[3], b[3];
-
-    for (int iDim = 0; iDim < 3; iDim++) {
-      a[iDim] = coords[2][iDim] - coords[0][iDim];
-      b[iDim] = coords[3][iDim] - coords[1][iDim];
-    }
-
-    CrossProduct(a, b, normal);
-    normal[0] *= 0.5; normal[1] *= 0.5; normal[2] *= 0.5;
-  }
-
-}
 
 CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
 
@@ -96,15 +54,10 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++)
     element_container[iTerm] = new CElement* [MAX_FE_KINDS*omp_get_max_threads()]();
 
-  nodes = nullptr;
-
-  element_properties = nullptr;
-
-  iElem_iDe = nullptr;
-
   topol_filter_applied = false;
-
   element_based = false;
+  initial_calc = true;
+
 }
 
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
@@ -118,8 +71,8 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- A priori we don't have an element-based input file (most of the applications will be like this) ---*/
   element_based = false;
-
   topol_filter_applied = false;
+  initial_calc = true;
 
   nElement      = geometry->GetnElem();
   nDim          = geometry->GetnDim();
@@ -243,8 +196,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Initialize structures for hybrid-parallel mode. ---*/
   HybridParallelInitialization(geometry);
 
-  iElem_iDe = nullptr;
-
   /*--- Initialize the value of the total objective function ---*/
   Total_OFRefGeom = 0.0;
   Total_OFRefNode = 0.0;
@@ -291,9 +242,22 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- If dynamic, we also need to communicate the old solution ---*/
 
-  if(dynamic) {
+  if (dynamic) {
     InitiateComms(geometry, config, SOLUTION_FEA_OLD);
     CompleteComms(geometry, config, SOLUTION_FEA_OLD);
+  }
+
+  if (size != SINGLE_NODE) {
+    vector<unsigned short> essentialMarkers;
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      const auto kindBnd = config->GetMarker_All_KindBC(iMarker);
+      if ((kindBnd == CLAMPED_BOUNDARY) ||
+          (kindBnd == DISP_DIR_BOUNDARY) ||
+          (kindBnd == DISPLACEMENT_BOUNDARY)) {
+        essentialMarkers.push_back(iMarker);
+      }
+    }
+    Set_VertexEliminationSchedule(geometry, essentialMarkers);
   }
 
   /*--- Add the solver name (max 8 characters) ---*/
@@ -312,15 +276,15 @@ CFEASolver::~CFEASolver(void) {
     delete [] element_container;
   }
 
-  if (element_properties != nullptr){
+  if (element_properties != nullptr) {
     for (unsigned long iElem = 0; iElem < nElement; iElem++)
-      if (element_properties[iElem] != nullptr) delete element_properties[iElem];
+      delete element_properties[iElem];
     delete [] element_properties;
   }
 
-  if (iElem_iDe != nullptr) delete [] iElem_iDe;
+  delete [] iElem_iDe;
 
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 
   if (LockStrategy) {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
@@ -755,29 +719,66 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
 }
 
+void CFEASolver::Set_VertexEliminationSchedule(CGeometry *geometry, const vector<unsigned short>& markers) {
+
+  /*--- Store global point indices of essential BC markers. ---*/
+  vector<unsigned long> myPoints;
+
+  for (auto iMarker : markers) {
+    for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      myPoints.push_back(geometry->node[iPoint]->GetGlobalIndex());
+    }
+  }
+
+  const unordered_set<unsigned long> markerPoints(myPoints.begin(), myPoints.end());
+
+  vector<unsigned long> numPoints(size);
+  unsigned long num = myPoints.size();
+  SU2_MPI::Allgather(&num, 1, MPI_UNSIGNED_LONG, numPoints.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+  /*--- Global to local map for the halo points of the rank (not covered by the CGeometry map). ---*/
+  unordered_map<unsigned long, unsigned long> Global2Local;
+  for (auto iPoint = nPointDomain; iPoint < nPoint; ++iPoint) {
+    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+
+  /*--- Populate elimination list. ---*/
+  ExtraVerticesToEliminate.clear();
+
+  for (int i = 0; i < size; ++i) {
+    /*--- Send our point list. ---*/
+    if (rank == i) {
+      SU2_MPI::Bcast(myPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, rank, MPI_COMM_WORLD);
+      continue;
+    }
+
+    /*--- Receive point list. ---*/
+    vector<unsigned long> theirPoints(numPoints[i]);
+    SU2_MPI::Bcast(theirPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, i, MPI_COMM_WORLD);
+
+    for (auto iPointGlobal : theirPoints) {
+      /*--- Check if the rank has the point. ---*/
+      auto it = Global2Local.find(iPointGlobal);
+      if (it == Global2Local.end()) continue;
+
+      /*--- If the point is not covered by this rank's markers, mark it for elimination. ---*/
+      if (markerPoints.count(iPointGlobal) == 0)
+        ExtraVerticesToEliminate.push_back(it->second);
+    }
+  }
+
+}
 
 void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics,
                                unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
-  bool dynamic = config->GetTime_Domain();
-  bool first_iter = (config->GetInnerIter() == 0);
-
-  /*--- Initial calculation, different logic for restarted simulations. ---*/
-  bool initial_calc = false;
-  if (config->GetRestart())
-    initial_calc = (config->GetTimeIter() == config->GetRestart_Iter()) && first_iter;
-  else
-    initial_calc = (config->GetTimeIter() == 0) && first_iter;
-
-  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
-
-  bool body_forces = config->GetDeadLoad();
-
-  bool fsi = config->GetFSI_Simulation();
-  bool consistent_interpolation = (!config->GetConservativeInterpolation() ||
-                                  (config->GetKindInterpolation() == WEIGHTED_AVERAGE));
-
-  bool topology_mode = config->GetTopology_Optimization();
+  const bool dynamic = config->GetTime_Domain();
+  const bool first_iter = (config->GetInnerIter() == 0);
+  const bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
+  const bool body_forces = config->GetDeadLoad();
+  const bool fsi = config->GetFSI_Simulation();
+  const bool topology_mode = config->GetTopology_Optimization();
 
   /*
    * For topology optimization we apply a filter on the design density field to avoid
@@ -789,7 +790,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    */
   if (topology_mode && !topol_filter_applied) {
     geometry->SetElemVolume(config);
-    FilterElementDensities(geometry,config);
+    FilterElementDensities(geometry, config);
     topol_filter_applied = true;
   }
 
@@ -810,7 +811,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    *
    * Only initialized once, at the first iteration of the first time step.
    */
-  if (body_forces && initial_calc)
+  if (body_forces && (initial_calc || disc_adj_fem))
     Compute_DeadLoad(geometry, numerics, config);
 
   /*--- Clear the linear system solution. ---*/
@@ -825,7 +826,10 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   /*
    * FSI loads (computed upstream) need to be integrated if a nonconservative interpolation scheme is in use
    */
-  if (fsi && first_iter && consistent_interpolation) Integrate_FSI_Loads(geometry,config);
+  if (fsi && first_iter) Integrate_FSI_Loads(geometry, config);
+
+  /*--- Next call to Preprocessing will not be "initial_calc" and linear operations will not be repeated. ---*/
+  initial_calc = false;
 
 }
 
@@ -2075,7 +2079,7 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *co
     unsigned short iNode, iDim;
     unsigned long indexNode[4] = {0};
 
-    su2double nodeCoord[4][3] = {0.0};
+    su2double nodeCoord[4][3] = {{0.0}};
 
     bool quad = (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL);
     unsigned short nNodes = quad? 4 : nDim;
@@ -2143,46 +2147,43 @@ void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig 
 
 }
 
-void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, CConfig *config) {
+void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config) {
 
-  unsigned short iDim, iNode, nNode;
-  unsigned long iPoint, iElem, nElem;
+  /*--- The conservative approach transfers forces directly, no integration needed. ---*/
+  if (config->GetConservativeInterpolation()) return;
 
-  unsigned short iMarkerInt, nMarkerInt = config->GetMarker_n_ZoneInterface()/2,
-                 iMarker, nMarker = config->GetnMarker_All();
+  const auto nMarker = config->GetnMarker_All();
+  const auto nMarkerInt = config->GetMarker_n_ZoneInterface()/2u;
 
-  /*--- Temporary storage to store the forces on the element faces ---*/
-  vector<su2double> forces;
+  unordered_map<unsigned long, su2double> vertexArea;
 
-  /*--- Loop through the FSI interface pairs ---*/
-  /*--- 1st pass to compute forces ---*/
-  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
-    /*--- Find the marker index associated with the pair ---*/
+  /*--- Compute current area associated with each vertex. ---*/
+
+  for (auto iMarkerInt = 1u; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
+    /*--- Find the marker index associated with the pair. ---*/
+    unsigned short iMarker;
     for (iMarker = 0; iMarker < nMarker; ++iMarker)
       if (config->GetMarker_All_ZoneInterface(iMarker) == iMarkerInt)
         break;
-    /*--- The current mpi rank may not have this marker ---*/
+    /*--- The current mpi rank may not have this marker. ---*/
     if (iMarker == nMarker) continue;
 
-    nElem = geometry->GetnElem_Bound(iMarker);
-
-    for (iElem = 0; iElem < nElem; ++iElem) {
-      /*--- Define the boundary element ---*/
-      unsigned long nodeList[4];
-      su2double coords[4][3];
+    for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); ++iElem) {
+      /*--- Define the boundary element. ---*/
+      unsigned long nodeList[4] = {0};
+      su2double coords[4][3] = {{0.0}};
       bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
-      nNode = quad? 4 : nDim;
+      auto nNode = quad? 4u : nDim;
 
-      for (iNode = 0; iNode < nNode; ++iNode) {
+      for (auto iNode = 0u; iNode < nNode; ++iNode) {
         nodeList[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
-        for (iDim = 0; iDim < nDim; ++iDim)
+        for (auto iDim = 0u; iDim < nDim; ++iDim)
           coords[iNode][iDim] = geometry->node[nodeList[iNode]]->GetCoord(iDim)+
                                 nodes->GetSolution(nodeList[iNode],iDim);
       }
 
-      /*--- Compute the area ---*/
-
-      su2double normal[3] = {0.0, 0.0, 0.0};
+      /*--- Compute the area contribution to each node. ---*/
+      su2double normal[3] = {0.0};
 
       switch (nNode) {
         case 2: LineNormal(coords, normal); break;
@@ -2190,125 +2191,30 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, CConfig *config) {
         case 4: QuadrilateralNormal(coords, normal); break;
       }
 
-      su2double area = sqrt(pow(normal[0],2) + pow(normal[1],2) + pow(normal[2],2));
+      su2double area = sqrt(pow(normal[0],2) + pow(normal[1],2) + pow(normal[2],2)) / nNode;
 
-      /*--- Integrate ---*/
-      passivedouble weight = 1.0/nNode;
-      su2double force[3] = {0.0, 0.0, 0.0};
-
-      for (iNode = 0; iNode < nNode; ++iNode)
-        for (iDim = 0; iDim < nDim; ++iDim)
-          force[iDim] += weight*area*nodes->Get_FlowTraction(nodeList[iNode],iDim);
-
-      for (iDim = 0; iDim < nDim; ++iDim) forces.push_back(force[iDim]);
-    }
-  }
-
-  /*--- 2nd pass to set values. This is to account for overlap in the markers. ---*/
-  /*--- By putting the integrated values back into the nodes no changes have to be made elsewhere. ---*/
-  nodes->Clear_FlowTraction();
-
-  vector<su2double>::iterator force_it = forces.begin();
-
-  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
-    /*--- Find the marker index associated with the pair ---*/
-    for (iMarker = 0; iMarker < nMarker; ++iMarker)
-      if (config->GetMarker_All_ZoneInterface(iMarker) == iMarkerInt)
-        break;
-    /*--- The current mpi rank may not have this marker ---*/
-    if (iMarker == nMarker) continue;
-
-    nElem = geometry->GetnElem_Bound(iMarker);
-
-    for (iElem = 0; iElem < nElem; ++iElem) {
-      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
-      nNode = quad? 4 : nDim;
-      passivedouble weight = 1.0/nNode;
-
-      su2double force[3];
-      for (iDim = 0; iDim < nDim; ++iDim) force[iDim] = *(force_it++)*weight;
-
-      for (iNode = 0; iNode < nNode; ++iNode) {
-        iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
-        nodes->Add_FlowTraction(iPoint,force);
+      /*--- Update area of nodes. ---*/
+      for (auto iNode = 0u; iNode < nNode; ++iNode) {
+        auto iPoint = nodeList[iNode];
+        if (vertexArea.count(iPoint) == 0)
+          vertexArea[iPoint] = area;
+        else
+          vertexArea[iPoint] += area;
       }
     }
   }
 
-#ifdef HAVE_MPI
-  /*--- Perform a global reduction, every rank will get the nodal values of all halo elements ---*/
-  /*--- This should be cheaper than the "normal" way, since very few points are both halo and interface ---*/
-  vector<unsigned long> halo_point_loc, halo_point_glb;
-  vector<su2double> halo_force;
+  /*--- Integrate tractions. ---*/
 
-  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
-    /*--- Find the marker index associated with the pair ---*/
-    for (iMarker = 0; iMarker < nMarker; ++iMarker)
-      if (config->GetMarker_All_ZoneInterface(iMarker) == iMarkerInt)
-        break;
-    /*--- The current mpi rank may not have this marker ---*/
-    if (iMarker == nMarker) continue;
-
-    nElem = geometry->GetnElem_Bound(iMarker);
-
-    for (iElem = 0; iElem < nElem; ++iElem) {
-      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
-      nNode = quad? 4 : nDim;
-
-      /*--- If this is an halo element we share the nodal forces ---*/
-      for (iNode = 0; iNode < nNode; ++iNode)
-        if (!geometry->node[geometry->bound[iMarker][iElem]->GetNode(iNode)]->GetDomain())
-          break;
-
-      if (iNode < nNode) {
-        for (iNode = 0; iNode < nNode; ++iNode) {
-          iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
-          /*--- local is for when later we update the values in this rank ---*/
-          halo_point_loc.push_back(iPoint);
-          halo_point_glb.push_back(geometry->node[iPoint]->GetGlobalIndex());
-          for (iDim = 0; iDim < nDim; ++iDim)
-            halo_force.push_back(nodes->Get_FlowTraction(iPoint,iDim));
-        }
-      }
-    }
-  }
-  /*--- Determine the size of the arrays we need ---*/
-  unsigned long nHaloLoc = halo_point_loc.size();
-  unsigned long nHaloMax;
-  MPI_Allreduce(&nHaloLoc,&nHaloMax,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD);
-
-  /*--- Shared arrays, all the: number of halo points; halo point global indices; respective forces ---*/
-  unsigned long *halo_point_num = new unsigned long[size];
-  unsigned long *halo_point_all = new unsigned long[size*nHaloMax];
-  su2double *halo_force_all = new su2double[size*nHaloMax*nDim];
-
-  /*--- Make "allgathers" extra safe by resizing all vectors to the same size (some
-        issues observed when nHaloLoc = 0, especially with the discrete adjoint. ---*/
-  halo_point_glb.resize(nHaloMax,0);
-  halo_force.resize(nHaloMax*nDim,0.0);
-
-  MPI_Allgather(&nHaloLoc,1,MPI_UNSIGNED_LONG,halo_point_num,1,MPI_UNSIGNED_LONG,MPI_COMM_WORLD);
-  MPI_Allgather(halo_point_glb.data(),nHaloMax,MPI_UNSIGNED_LONG,halo_point_all,nHaloMax,MPI_UNSIGNED_LONG,MPI_COMM_WORLD);
-  SU2_MPI::Allgather(halo_force.data(),nHaloMax*nDim,MPI_DOUBLE,halo_force_all,nHaloMax*nDim,MPI_DOUBLE,MPI_COMM_WORLD);
-
-  /*--- Find shared points with other ranks and update our values ---*/
-  for (int proc = 0; proc < size; ++proc)
-  if (proc != rank) {
-    unsigned long offset = proc*nHaloMax;
-    for (iPoint = 0; iPoint < halo_point_num[proc]; ++iPoint) {
-      unsigned long iPoint_glb = halo_point_all[offset+iPoint];
-      ptrdiff_t pos = find(halo_point_glb.begin(),halo_point_glb.end(),iPoint_glb)-halo_point_glb.begin();
-      if (pos < long(halo_point_glb.size())) {
-        unsigned long iPoint_loc = halo_point_loc[pos];
-        nodes->Add_FlowTraction(iPoint_loc,&halo_force_all[(offset+iPoint)*nDim]);
-      }
-    }
+  for (auto it = vertexArea.begin(); it != vertexArea.end(); ++it) {
+    auto iPoint = it->first;
+    su2double area = it->second;
+    su2double force[3] = {0.0};
+    for (auto iDim = 0u; iDim < nDim; ++iDim)
+      force[iDim] = nodes->Get_FlowTraction(iPoint,iDim)*area;
+    nodes->Set_FlowTraction(iPoint, force);
   }
 
-  delete [] halo_point_num;
-  delete [] halo_point_all;
-  delete [] halo_force_all;
-#endif
 }
 
 su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config){
@@ -2781,20 +2687,20 @@ void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **sol
 
 void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
+  /*--- Enforce solution at some halo points possibly not covered by essential BC markers. ---*/
+
+  Jacobian.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+  Jacobian.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+
+  for (auto iPoint : ExtraVerticesToEliminate) {
+    Jacobian.EnforceSolutionAtNode(iPoint, LinSysSol.GetBlock(iPoint), LinSysRes);
+  }
+
   SU2_OMP_PARALLEL
   {
-  /*--- Initialize residual and solution at the ghost points ---*/
-
-  SU2_OMP(sections)
-  {
-    SU2_OMP(section)
-    for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      LinSysRes.SetBlock_Zero(iPoint);
-
-    SU2_OMP(section)
-    for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      LinSysSol.SetBlock_Zero(iPoint);
-  }
+  /*--- This is required for the discrete adjoint. ---*/
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (auto i = nPointDomain*nVar; i < nPoint*nVar; ++i) LinSysRes[i] = 0.0;
 
   /*--- Solve or smooth the linear system. ---*/
 
@@ -2804,9 +2710,9 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
     SetIterLinSolver(iter);
     SetResLinSolver(System.GetResidual());
   }
-  SU2_OMP_BARRIER
-
+  //SU2_OMP_BARRIER
   } // end SU2_OMP_PARALLEL
+
 }
 
 

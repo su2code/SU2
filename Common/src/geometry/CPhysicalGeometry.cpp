@@ -3070,61 +3070,32 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 
   /*--- Initialize pointers for turbomachinery computations  ---*/
 
-  nSpanWiseSections       = new unsigned short[2];
-	nSpanSectionsByMarker   = new unsigned short[nMarker];
-  SpanWiseValue           = new su2double*[2];
-  for (unsigned short iMarker = 0; iMarker < 2; iMarker++){
-    nSpanWiseSections[iMarker]      = 0;
-    SpanWiseValue[iMarker]          = NULL;
-  }
+  nSpanWiseSections       = new unsigned short[2] ();
+  SpanWiseValue           = new su2double*[2] ();
 
-  nVertexSpan                       = new long* [nMarker];
-  nTotVertexSpan                    = new unsigned long* [nMarker];
-  turbovertex                       = new CTurboVertex***[nMarker];
-  AverageTurboNormal                = new su2double**[nMarker];
-  AverageNormal                     = new su2double**[nMarker];
-  AverageGridVel                    = new su2double**[nMarker];
-  AverageTangGridVel                = new su2double*[nMarker];
-  SpanArea                          = new su2double*[nMarker];
-  TurboRadius                       = new su2double*[nMarker];
-  MaxAngularCoord                   = new su2double*[nMarker];
-  MinAngularCoord                   = new su2double*[nMarker];
-  MinRelAngularCoord                = new su2double*[nMarker];
-
-  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++){
-		nSpanSectionsByMarker[iMarker]  = 0;
-    nVertexSpan[iMarker]            = NULL;
-    nTotVertexSpan[iMarker]         = NULL;
-    turbovertex[iMarker]            = NULL;
-    AverageTurboNormal[iMarker]     = NULL;
-    AverageNormal[iMarker]          = NULL;
-    AverageGridVel[iMarker]         = NULL;
-    AverageTangGridVel[iMarker]     = NULL;
-    SpanArea[iMarker]               = NULL;
-    TurboRadius[iMarker]            = NULL;
-    MaxAngularCoord[iMarker]        = NULL;
-    MinAngularCoord[iMarker]        = NULL;
-    MinRelAngularCoord[iMarker]     = NULL;
-  }
+  nSpanSectionsByMarker             = new unsigned short[nMarker] ();
+  nVertexSpan                       = new long* [nMarker] ();
+  nTotVertexSpan                    = new unsigned long* [nMarker] ();
+  turbovertex                       = new CTurboVertex***[nMarker] ();
+  AverageTurboNormal                = new su2double**[nMarker] ();
+  AverageNormal                     = new su2double**[nMarker] ();
+  AverageGridVel                    = new su2double**[nMarker] ();
+  AverageTangGridVel                = new su2double*[nMarker] ();
+  SpanArea                          = new su2double*[nMarker] ();
+  TurboRadius                       = new su2double*[nMarker] ();
+  MaxAngularCoord                   = new su2double*[nMarker] ();
+  MinAngularCoord                   = new su2double*[nMarker] ();
+  MinRelAngularCoord                = new su2double*[nMarker] ();
 
   /*--- Initialize pointers for turbomachinery performance computation  ---*/
 
   nTurboPerf     = config->GetnMarker_TurboPerformance();
-  TangGridVelIn  = new su2double*[config->GetnMarker_TurboPerformance()];
-  SpanAreaIn     = new su2double*[config->GetnMarker_TurboPerformance()];
-  TurboRadiusIn  = new su2double*[config->GetnMarker_TurboPerformance()];
-  TangGridVelOut = new su2double*[config->GetnMarker_TurboPerformance()];
-  SpanAreaOut    = new su2double*[config->GetnMarker_TurboPerformance()];
-  TurboRadiusOut = new su2double*[config->GetnMarker_TurboPerformance()];
-
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_TurboPerformance(); iMarker++){
-    TangGridVelIn[iMarker]	= NULL;
-    SpanAreaIn[iMarker]			= NULL;
-    TurboRadiusIn[iMarker]  = NULL;
-    TangGridVelOut[iMarker] = NULL;
-    SpanAreaOut[iMarker]    = NULL;
-    TurboRadiusOut[iMarker] = NULL;
-  }
+  TangGridVelIn  = new su2double*[nTurboPerf] ();
+  SpanAreaIn     = new su2double*[nTurboPerf] ();
+  TurboRadiusIn  = new su2double*[nTurboPerf] ();
+  TangGridVelOut = new su2double*[nTurboPerf] ();
+  SpanAreaOut    = new su2double*[nTurboPerf] ();
+  TurboRadiusOut = new su2double*[nTurboPerf] ();
 
 }
 
