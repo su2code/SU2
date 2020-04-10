@@ -58,7 +58,7 @@ for num, line in enumerate(meshfile, 1):
     if "NMARK" in line:
         num_mark = num+1
         if not "=" in line:
-            raise RuntimeError , "\n\n##ERROR : NMARK has no equals sign, line %s.\n\n" % str(num_mark-1)
+            raise Exception("\n\n##ERROR : NMARK has no equals sign, line %s.\n\n" % str(num_mark-1))
         # split across equals sign
         line    = line.split("=",1)
         nmarker = int(line[1].strip())
@@ -71,7 +71,7 @@ for imarker in range(nmarker):
         if "MARKER_ELEMS" in line:
             num_mark = num+1
             if not "=" in line:
-                raise RuntimeError , "\n\n##ERROR : MARKER_ELEMS has no equals sign, line %s.\n\n" % str(num_mark-1)
+                raise Exception("\n\n##ERROR : MARKER_ELEMS has no equals sign, line %s.\n\n" % str(num_mark-1))
             # split across equals sign
             line  = line.split("=",1)
             nelem = int(line[1].strip())
