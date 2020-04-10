@@ -112,7 +112,7 @@ def amg ( config , kind='' ):
     
     os.symlink(os.path.join(cwd, config.MESH_FILENAME), config.MESH_FILENAME)
         
-    current_mesh     = config['MESH_FILENAME']
+    current_mesh = config['MESH_FILENAME']
 
     #--- AMG parameters
     
@@ -134,8 +134,9 @@ def amg ( config , kind='' ):
     #--- Generate background surface mesh
 
     if 'PYADAP_BACK' in config:
-        os.symlink(os.path.join(cwd, config.PYADAP_BACK), config.PYADAP_BACK)
-        config_amg['adap_back'] = os.path.join(cwd,config['PYADAP_BACK'])
+        if not config['PYADAP_BACK'] == config['MESH_FILENAME']:
+            os.symlink(os.path.join(cwd, config.PYADAP_BACK), config.PYADAP_BACK)
+            config_amg['adap_back'] = os.path.join(cwd,config['PYADAP_BACK'])
     else:
         config_amg['adap_back'] = config['MESH_FILENAME']
     
