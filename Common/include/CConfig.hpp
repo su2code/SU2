@@ -6117,14 +6117,14 @@ public:
    * \param iMarker
    * \return <TRUE> it marker with index iMarker is a solid boundary.
    */
-  bool GetSolid_Wall(unsigned short iMarker);
+  bool GetSolid_Wall(unsigned short iMarker) const;
 
   /*!
    * \brief Determines whether a marker with index iMarker is a viscous no-slip boundary.
    * \param iMarker
    * \return <TRUE> it marker with index iMarker is a viscous no-slip boundary.
    */
-  bool GetViscous_Wall(unsigned short iMarker);
+  bool GetViscous_Wall(unsigned short iMarker) const;
 
   /*!
    * \brief Determines if problem is adjoint
