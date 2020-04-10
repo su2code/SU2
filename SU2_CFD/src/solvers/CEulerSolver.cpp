@@ -5164,6 +5164,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   unsigned short iVar, jVar;
   unsigned long iPoint, kNeigh, kPoint, jPoint, iPoint_mask;
   su2double *local_Residual, *local_Res_TruncError, Res;
+  unsigned long InnerIter = config->GetInnerIter();
   
   //int m = (int)nPointDomain * nVar;
   int m = (int)Mask.size() * nVar;
@@ -5270,7 +5271,8 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     }
   }
   
-  // Output reduced residual norm, compute dot product of r_red
+  /*--- Check for convergence ---*/
+  
   ofstream fs;
   std::string fname = "check_reduced_residual.csv";
   fs.open(fname);
@@ -5283,19 +5285,28 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     ReducedRes += r_red[i] * r_red[i];
   }
   
-  if (sqrt(ReducedRes) == ReducedResNorm_Old) {
-    RomConverged = true;
-    std::cout << "ROM Converged." << std::endl;
-    
-  }
-  else if (sqrt(ReducedRes) > ReducedResNorm_Old*1.1) {
-    RomConverged = true;
+  if (InnerIter == 0) {
+    RomConverged = false;
+    SetResOld_ROM(sqrt(ReducedRes));
     SetRes_ROM(sqrt(ReducedRes));
-    std::cout << "ROM Diverged." << std::endl;
   }
   else {
-    RomConverged = false;
-    SetRes_ROM(sqrt(ReducedRes));
+    if (ReducedResNorm_Old / sqrt(ReducedRes) >= 1e8) {
+      RomConverged = true;
+      SetRes_ROM(sqrt(ReducedRes));
+      std::cout << "ROM Converged." << std::endl;
+      return;
+    }
+    else if (sqrt(ReducedRes) > ReducedResNorm_Old) {
+      RomConverged = true;
+      SetRes_ROM(sqrt(ReducedRes));
+      std::cout << "ROM Diverged." << std::endl;
+      return;
+    }
+    else {
+      SetRes_ROM(sqrt(ReducedRes));
+      RomConverged = false;
+    }
   }
   
   // Set up variables for QR decomposition, A = QR

@@ -180,6 +180,7 @@ public:
   vector<unsigned long> Edge_masked;        /*!<\brief vector to store masked edges (rom) */
   unsigned long nEdge_masked;               /*!<\brief number of masked edges (rom) */
   su2double ReducedResNorm_Old;             /*!<\brief previous value of the reduced residual norm (rom) */
+  su2double ReducedResNorm_Cur;             /*!<\brief previous value of the reduced residual norm (rom) */
   bool RomConverged;                        /*!<\brief whether or not the reduced order model has converged (rom) */
 
   CSysMatrix<su2double> StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
@@ -1581,16 +1582,22 @@ public:
   bool GetRom_Convergence(void);
   
   /*!
-   * \brief Set the reduced residual, this is useful for the convergence history.
-   * \param[in] val_residual - Value of the norm of the reduced  residual to store.
+   * \brief Set the initial reduced residual, this is useful for the convergence history.
+   * \param[in] val_residual - Value of the norm of the reduced residual to store.
    */
-  inline void SetRes_ROM(su2double val_residual) { ReducedResNorm_Old = val_residual; }
+  inline void SetResOld_ROM(su2double val_residual) { ReducedResNorm_Old = val_residual; }
+  
+  /*!
+    * \brief Set the current reduced residual, this is useful for the convergence history.
+    * \param[in] val_residual - Value of the norm of the reduced residual to store.
+    */
+   inline void SetRes_ROM(su2double val_residual) { ReducedResNorm_Cur = val_residual; }
 
   /*!
-   * \brief Get the reduced residual, this is useful for the convergence history.
-   * \return Value of the norm of the reduced  residual.
+   * \brief Get the current reduced residual, this is useful for the convergence history.
+   * \return Value of the norm of the reduced residual.
    */
-  inline su2double GetRes_ROM(void) const { return ReducedResNorm_Old; }
+  inline su2double GetRes_ROM(void) const { return ReducedResNorm_Cur; }
   
   /*!
    * \brief Create mask for hyper-reduction.

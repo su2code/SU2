@@ -4668,7 +4668,7 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
   
   std::cout << "Setting up ROM variables" << std::endl;
   
-  ReducedResNorm_Old = 1e30;
+  ReducedResNorm_Old = 0;
   
   /*--- Get solver nodes ---*/
   CVariable* nodes = GetNodes();
