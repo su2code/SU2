@@ -346,18 +346,18 @@ def split_adj_sol(mesh):
 
     adj_sol = dict()
 
-    adj_sol['solution'] = mesh['solution'][:,iAdj:]
+    adj_sol['solution'] = mesh['solution'][:][iAdj:]
     adj_sol['solution_tag'] = mesh['solution_tag'][iAdj:]
 
     if 'xyz' in mesh:
-        adj_sol['xyz'] = mesh['xyz'][:,:]
+        adj_sol['xyz'] = mesh['xyz']
     elif 'xy' in mesh:
-        adj_sol['xy'] = mesh['xy'][:,:]
+        adj_sol['xy'] = mesh['xy']
 
     adj_sol['dimension'] = mesh['dimension']
 
-    np.delete(mesh['solution'], np.s_[iAdj:nsol], axis=1)
-    np.delete(mesh['solution_tag'], np.s_[iAdj:nsol])
+    np.delete(np.array(mesh['solution']), np.s_[iAdj:nsol], axis=1).tolist()
+    np.delete(np.array(mesh['solution_tag']), np.s_[iAdj:nsol]).tolist()
 
     return adj_sol
     
