@@ -366,6 +366,8 @@ def split_adj_sol(mesh):
             print(mesh['solution_tag'])
             sys.stdout.flush()
 
+            break
+
     return adj_sol
     
 # --- Write mesh and solution using amgio module
