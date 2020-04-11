@@ -6634,7 +6634,7 @@ void CEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 
 void CEulerSolver::SetUnsteadyBCs(CConfig *config, CGeometry *geometry){
 
-  SolverScope["CUR_TIME"]  = su2double(config->GetPhysicalTime()*config->GetTime_Ref());
+  SolverScope["CUR_TIME"]  = su2double(config->GetTimeIter()*config->GetTime_Step());
   SolverScope["TIME_STEP"] = su2double(config->GetTime_Step());
   SolverScope["TIME_ITER"] = su2double(config->GetTimeIter());
   SolverScope["CP"] = GetFluidModel()->GetCp();
