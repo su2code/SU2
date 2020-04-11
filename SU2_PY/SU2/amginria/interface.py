@@ -356,8 +356,8 @@ def split_adj_sol(mesh):
 
     adj_sol['dimension'] = mesh['dimension']
 
-    np.delete(np.array(mesh['solution']), np.s_[iAdj:nsol], axis=1).tolist()
-    np.delete(np.array(mesh['solution_tag']), np.s_[iAdj:nsol]).tolist()
+    np.delete(np.array(mesh['solution']), np.s_[iAdj:nsol-1], axis=1).tolist()
+    np.delete(np.array(mesh['solution_tag']), np.s_[iAdj:nsol-1]).tolist()
 
     return adj_sol
     
