@@ -349,6 +349,7 @@ def split_adj_sol(mesh):
         adj_sol['xyz'] = mesh['xyz']
     elif 'xy' in mesh:
         adj_sol['xy'] = mesh['xy']
+    adj_sol['dimension'] = mesh['dimension']
 
     mesh['solution'] = [mesh['solution'][:][i] for i in range(0,iAdj)]
     mesh['solution_tag'] = [mesh['solution_tag'][i] for i in range(0,iAdj)]
