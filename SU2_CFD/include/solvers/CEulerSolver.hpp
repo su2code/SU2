@@ -153,7 +153,8 @@ protected:
   **ActDisk_DeltaT = nullptr,    /*!< \brief Value of the Delta T. */
   **Inlet_Ptotal = nullptr,      /*!< \brief Value of the Total P. */
   **Inlet_Ttotal = nullptr,      /*!< \brief Value of the Total T. */
-  ***Inlet_FlowDir = nullptr;    /*!< \brief Value of the Flow Direction. */
+  ***Inlet_FlowDir = nullptr,    /*!< \brief Value of the Flow Direction. */
+  **Outlet_Pstat = nullptr;
 
   su2double
   Total_ComboObj = 0.0,       /*!< \brief Total 'combo' objective for all monitored boundaries */
@@ -896,6 +897,20 @@ public:
                 CConfig *config,
                 unsigned short val_marker) final;
 
+
+  void BC_Inlet_TotalConditions(CGeometry *geometry,
+                                CSolver **solver_container,
+                                CNumerics *conv_numerics,
+                                CNumerics *visc_numerics,
+                                CConfig *config,
+                                unsigned short val_marker);
+
+  void BC_Inlet_Massflow(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CNumerics *conv_numerics,
+                         CNumerics *visc_numerics,
+                         CConfig *config,
+                         unsigned short val_marker);
   /*!
    * \brief Impose a supersonic inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -993,6 +1008,11 @@ public:
                          CNumerics *visc_numerics,
                          CConfig *config,
                          unsigned short val_marker) final;
+
+  void BC_Expression(CGeometry *geometry, CSolver **solver,
+                     CNumerics *visc_numerics, CNumerics *conv_numerics,
+                     CConfig *config,
+                     unsigned short val_marker) final;
 
   /*!
    * \brief Set the new solution variables to the current solution value for classical RK.

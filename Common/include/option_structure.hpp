@@ -1093,6 +1093,7 @@ enum BC_TYPE {
   DISP_DIR_BOUNDARY = 40,     /*!< \brief Boundary displacement definition. */
   DAMPER_BOUNDARY = 41,       /*!< \brief Damper. */
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
+  EXPRESSION_BOUNDARY = 51,
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */
 };
 

@@ -140,6 +140,9 @@ protected:
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
 
   TokenMap SolverScope;
+
+  std::vector<std::string> expressionBCType;
+
   /*!
    * \brief Pure virtual function, all derived solvers MUST implement a method returning their "nodes".
    * \note Don't forget to call SetBaseClassPointerToNodes() in the constructor of the derived CSolver.
@@ -950,6 +953,10 @@ public:
                                    CConfig *config,
                                    unsigned short val_marker) { }
 
+  virtual void BC_Expression(CGeometry *geometry, CSolver **solver,
+                            CNumerics *visc_numerics, CNumerics *conv_numerics,
+                            CConfig *config,
+                            unsigned short val_marker) { };
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.

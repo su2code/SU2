@@ -209,6 +209,7 @@ private:
   nMarker_Supersonic_Inlet,       /*!< \brief Number of supersonic inlet flow markers. */
   nMarker_Supersonic_Outlet,      /*!< \brief Number of supersonic outlet flow markers. */
   nMarker_Outlet,                 /*!< \brief Number of outlet flow markers. */
+  nMarker_Expression,
   nMarker_Isothermal,             /*!< \brief Number of isothermal wall boundaries. */
   nMarker_HeatFlux,               /*!< \brief Number of constant heat flux wall boundaries. */
   nMarker_EngineExhaust,          /*!< \brief Number of nacelle exhaust flow markers. */
@@ -226,8 +227,8 @@ private:
   nMarker_Max,                    /*!< \brief Max number of number of markers using the grid information. */
   nMarker_CfgFile;                /*!< \brief Total number of markers using the config file (note that in
                                         parallel computations this number can be different from nMarker_All). */
-  unsigned short nInletFunctions, nOutletFunctions;
-  string *InletFunctions, *OutletFunctions;
+  unsigned short nBCExpressions;
+  string *BCExpressions;
   bool Inlet_From_File;         /*!< \brief True if the inlet profile is to be loaded from a file. */
   string Inlet_Filename;        /*!< \brief Filename specifying an inlet profile. */
   su2double Inlet_Matching_Tol; /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
@@ -255,6 +256,7 @@ private:
   *Marker_Supersonic_Inlet,       /*!< \brief Supersonic inlet flow markers. */
   *Marker_Supersonic_Outlet,      /*!< \brief Supersonic outlet flow markers. */
   *Marker_Outlet,                 /*!< \brief Outlet flow markers. */
+  *Marker_Expression,
   *Marker_Isothermal,             /*!< \brief Isothermal wall markers. */
   *Marker_HeatFlux,               /*!< \brief Constant heat flux wall markers. */
   *Marker_EngineInflow,           /*!< \brief Engine Inflow flow markers. */
@@ -2889,6 +2891,13 @@ public:
   unsigned short GetnMarker_Outlet(void) const { return nMarker_Outlet; }
 
   /*!
+   * \brief Get the total number of boundary markers.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_Expression(void) const { return nMarker_Expression; }
+
+
+  /*!
    * \brief Get the total number of monitoring markers.
    * \return Total number of monitoring markers.
    */
@@ -3214,6 +3223,15 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Outlet_TagBound(unsigned short val_marker) const { return Marker_Outlet[val_marker]; }
+
+  /*!
+   * \brief Get the index of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Value of the index that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_Expression_TagBound(unsigned short val_marker) const { return Marker_Expression[val_marker]; }
+
 
   /*!
    * \brief Get the index of the surface defined in the geometry file.
@@ -9359,24 +9377,11 @@ public:
   }
 
 
-  std::string GetInletFunction(std::string val_marker){
-    unsigned short iMarker_Inlet;
-    for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
-      if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
-    return InletFunctions[iMarker_Inlet];
+  std::string GetBCExpression(std::string val_marker){
+    unsigned short iMarker_Expression;
+    for (iMarker_Expression = 0; iMarker_Expression < nMarker_Expression; iMarker_Expression++)
+      if (Marker_Expression[iMarker_Expression] == val_marker) break;
+    return BCExpressions[iMarker_Expression];
   }
 
-  std::string GetOutletFunction(std::string val_marker){
-    unsigned short iMarker_Outlet;
-    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
-      if (Marker_Outlet[iMarker_Outlet] == val_marker) break;
-    return OutletFunctions[iMarker_Outlet];
-  }
-  int GetnInletFunction(){
-    return nInletFunctions;
-  }
-
-  int GetnOutletFunction(){
-    return nOutletFunctions;
-  }
 };
