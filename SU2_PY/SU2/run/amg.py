@@ -259,10 +259,10 @@ def amg ( config , kind='' ):
 
         current_mesh         = config['MESH_FILENAME']
         current_solution     = "ini_restart_flow.csv"
-        current_adj_solution = "ini_restart_adj.csv"
+        current_solution_adj = "ini_restart_adj.csv"
 
         config_cfd.RESTART_FILENAME           = current_solution
-        config_cfd.RESTART_ADJ_FILENAME       = current_adj_solution
+        config_cfd.RESTART_ADJ_FILENAME       = current_solution_adj
         config_cfd.SOLUTION_FILENAME          = '../' + config['SOLUTION_FILENAME']
         config_cfd.SOLUTION_ADJ_FILENAME      = '../' + config['SOLUTION_ADJ_FILENAME']
         config_cfd.VOLUME_OUTPUT              = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
