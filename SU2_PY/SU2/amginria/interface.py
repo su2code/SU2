@@ -353,6 +353,8 @@ def split_adj_sol(mesh):
 
     mesh['solution'] = [mesh['solution'][:][i] for i in range(0,iAdj)]
     mesh['solution_tag'] = [mesh['solution_tag'][i] for i in range(0,iAdj)]
+
+    return adj_sol
     
 # --- Write mesh and solution using amgio module
 def write_mesh_and_sol(mesh_name, solution_name, mesh):
