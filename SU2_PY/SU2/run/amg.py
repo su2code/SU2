@@ -263,6 +263,7 @@ def amg ( config , kind='' ):
 
         current_mesh         = config['MESH_FILENAME']
         current_solution     = "ini_restart_flow.csv"
+        current_solution_adj = "ini_restart_adj.csv"
 
         config_cfd.RESTART_FILENAME           = current_solution
         config_cfd.RESTART_ADJ_FILENAME       = current_solution_adj
@@ -277,7 +278,7 @@ def amg ( config , kind='' ):
         # config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
 
         #--- Run an adjoint if the adjoint solution file doesn't exist
-        solution_adj_ini  = config_cfd.SOLUTION_ADJ_FILENAME           
+        solution_adj_ini  = config_cfd.SOLUTION_ADJ_FILENAME    
         func_name         = config.OBJECTIVE_FUNCTION
         suffix            = su2io.get_adjointSuffix(func_name)
         solution_adj_ini  = su2io.add_suffix(solution_adj_ini,suffix)
