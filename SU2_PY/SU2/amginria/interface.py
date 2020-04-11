@@ -360,12 +360,6 @@ def split_adj_sol(mesh):
             mesh['solution'] = np.delete(np.array(mesh['solution']), np.s_[iAdj:nsol], axis=1).tolist()
             mesh['solution_tag'] = np.delete(np.array(mesh['solution_tag']), np.s_[iAdj:nsol], axis=0).tolist()
 
-            print('len0: %d\nlen1; %d'%(len(adj_sol['solution']),len(adj_sol['solution_tag'])))
-            print(adj_sol['solution_tag'])
-            print('len0: %d\nlen1; %d'%(len(mesh['solution']),len(mesh['solution_tag'])))
-            print(mesh['solution_tag'])
-            sys.stdout.flush()
-
             break
 
     return adj_sol
