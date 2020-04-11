@@ -341,31 +341,30 @@ def merge_sol(mesh0, mesh1):
 def split_adj_sol(mesh):
     nsol = len(mesh['solution_tag'])
 
+    adj_sol = dict()
+
     for i in range(nsol):
         if "Adjoint" in mesh['solution_tag'][i]:
             iAdj = i
-            break
 
-    adj_sol = dict()
+            adj_sol['solution'] = np.delete(np.array(mesh['solution']), np.s_[0:iAdj], axis=1).tolist()
+            adj_sol['solution_tag'] = np.delete(np.array(mesh['solution_tag']), np.s_[0:iAdj], axis=0).tolist()
 
-    adj_sol['solution'] = np.delete(np.array(mesh['solution']), np.s_[0:iAdj], axis=1).tolist()
-    adj_sol['solution_tag'] = np.delete(np.array(mesh['solution_tag']), np.s_[0:iAdj], axis=0).tolist()
+            if 'xyz' in mesh:
+                adj_sol['xyz'] = mesh['xyz']
+            elif 'xy' in mesh:
+                adj_sol['xy'] = mesh['xy']
 
-    if 'xyz' in mesh:
-        adj_sol['xyz'] = mesh['xyz']
-    elif 'xy' in mesh:
-        adj_sol['xy'] = mesh['xy']
+            adj_sol['dimension'] = mesh['dimension']
 
-    adj_sol['dimension'] = mesh['dimension']
+            mesh['solution'] = np.delete(np.array(mesh['solution']), np.s_[iAdj:nsol], axis=1).tolist()
+            mesh['solution_tag'] = np.delete(np.array(mesh['solution_tag']), np.s_[iAdj:nsol], axis=0).tolist()
 
-    mesh['solution'] = np.delete(np.array(mesh['solution']), np.s_[iAdj:nsol], axis=1).tolist()
-    mesh['solution_tag'] = np.delete(np.array(mesh['solution_tag']), np.s_[iAdj:nsol], axis=0).tolist()
-
-    print('len0: %d\nlen1; %d'%(len(adj_sol['solution']),len(adj_sol['solution_tag'])))
-    print(adj_sol['solution_tag'])
-    print('len0: %d\nlen1; %d'%(len(mesh['solution']),len(mesh['solution_tag'])))
-    print(mesh['solution_tag'])
-    sys.stdout.flush()
+            print('len0: %d\nlen1; %d'%(len(adj_sol['solution']),len(adj_sol['solution_tag'])))
+            print(adj_sol['solution_tag'])
+            print('len0: %d\nlen1; %d'%(len(mesh['solution']),len(mesh['solution_tag'])))
+            print(mesh['solution_tag'])
+            sys.stdout.flush()
 
     return adj_sol
     
