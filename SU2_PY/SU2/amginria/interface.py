@@ -457,9 +457,9 @@ def write_sol(solution_name, solution):
     Sol = solution['solution']
 
     if Dim == 3:
-        NbrVer = int(len(mesh['xyz']))
+        NbrVer = int(len(solution['xyz']))
     else:
-        NbrVer = int(len(mesh['xy']))
+        NbrVer = int(len(solution['xy']))
     
     if 'xyz' in solution:
         Ver = solution['xyz']
@@ -471,9 +471,7 @@ def write_sol(solution_name, solution):
         Ver = np.array(Ver).reshape(3*len(Ver)).tolist()
     
     solution_tag = solution['solution_tag']
-    
-    NbrVer = len(Ver)
-    
+        
     if len(Sol) > 1 :
         SolSiz = len(Sol[1])
         Sol = np.array(Sol).reshape(SolSiz*len(Sol)).tolist()
