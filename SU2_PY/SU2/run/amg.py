@@ -228,6 +228,10 @@ def amg ( config , kind='' ):
                 config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[0])
                 SU2_CFD(config_cfd)
 
+                func_name            = config.OBJECTIVE_FUNCTION
+                suffix               = su2io.get_adjointSuffix(func_name)
+                current_solution_adj = su2io.add_suffix(current_solution_adj,suffix)
+
         except:
             sys.stdout = sav_stdout
             sys.stderr = sav_stderr
@@ -259,7 +263,6 @@ def amg ( config , kind='' ):
 
         current_mesh         = config['MESH_FILENAME']
         current_solution     = "ini_restart_flow.csv"
-        current_solution_adj = "ini_restart_adj.csv"
 
         config_cfd.RESTART_FILENAME           = current_solution
         config_cfd.RESTART_ADJ_FILENAME       = current_solution_adj
@@ -274,7 +277,7 @@ def amg ( config , kind='' ):
         # config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
 
         #--- Run an adjoint if the adjoint solution file doesn't exist
-        solution_adj_ini = config_cfd.SOLUTION_ADJ_FILENAME           
+        solution_adj_ini  = config_cfd.SOLUTION_ADJ_FILENAME           
         func_name         = config.OBJECTIVE_FUNCTION
         suffix            = su2io.get_adjointSuffix(func_name)
         solution_adj_ini  = su2io.add_suffix(solution_adj_ini,suffix)
@@ -282,12 +285,16 @@ def amg ( config , kind='' ):
             config_cfd.RESTART_SOL= 'NO'
             SU2_CFD(config_cfd)
 
+            current_solution_adj = su2io.add_suffix(current_solution_adj,suffix)
+
         #--- Otherwise just compute the metric
         else:
             config_cfd.ITER = 1
             SU2_CFD(config_cfd)
             sav_stdout.write('Initial adjoint CFD solution is provided.\n')
             sav_stdout.flush()
+
+            current_solution_adj = solution_adj_ini
 
         sys.stdout = sav_stdout
         sys.stderr = sav_stderr
@@ -495,6 +502,11 @@ def amg ( config , kind='' ):
                 
                 current_solution_ini = "ite%d_ini.csv" % (global_iter)
                 os.rename(current_solution, current_solution_ini)
+
+                current_solution_adj_ini = "ite%d_adj_ini.csv" % (global_iter)
+                current_solution_adj_ini = su2io.add_suffix(current_solution_adj_ini,suffix)
+                os.rename(current_solution_adj, current_solution_adj_ini)
+                current_solution_adj_ini = "ite%d_adj_ini.csv" % (global_iter)
                 
                 config_cfd.MESH_FILENAME     = current_mesh
                 config_cfd.CONV_FILENAME     = "ite%d_history" % (global_iter)
@@ -504,8 +516,7 @@ def amg ( config , kind='' ):
                 config_cfd.COMPUTE_METRIC    = 'NO'
                 config_cfd.MATH_PROBLEM      = 'DIRECT'
                 config_cfd.RESTART_SOL       = 'YES'
-
-                
+ 
                 # config_cfd.RESIDUAL_REDUCTION = float(adap_res[iSiz])
                 config_cfd.ITER               = int(adap_flow_iter[iSiz])
                 config_cfd.CFL_NUMBER         = float(adap_cfl[iSiz])
@@ -522,6 +533,7 @@ def amg ( config , kind='' ):
 
                     config_cfd.CONV_FILENAME          = "ite%d_history_adj" % (global_iter)
                     config_cfd.RESTART_ADJ_FILENAME   = current_solution_adj
+                    config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj_ini
                     config_cfd.SOLUTION_FILENAME      = current_solution
                     config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
                     # config_cfd.RESTART_SOL            = 'NO'
