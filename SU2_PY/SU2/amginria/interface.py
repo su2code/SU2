@@ -246,7 +246,7 @@ def read_mesh_and_sol(mesh_name, solution_name):
     mesh['Corners']      = Cor
     mesh['solution']     = Sol
     
-    mesh['solution_tag'] = SolTag
+    mesh['solution_tag'] = SolTag[:-1]
     
     mesh['id_solution_tag'] = dict()
     for i in range(len(SolTag)):
@@ -322,7 +322,7 @@ def read_sol(solution_name, mesh):
     sol = dict()
 
     sol['solution']     = Sol
-    sol['solution_tag'] = SolTag
+    sol['solution_tag'] = SolTag[:-1]
     
     sol['id_solution_tag'] = dict()
     for i in range(len(SolTag)):
@@ -341,30 +341,23 @@ def split_adj_sol(mesh):
 
     for i in range(nsol):
         if "Adjoint" in mesh['solution_tag'][i]:
-            iAdj = i-1
+            iAdj = i
             break
 
     adj_sol = dict()
-    # adj_sol['solution'] = []
-    # adj_sol['solution_tag'] = []
-    # for i in range(len(mesh['solution'])):
-        # adj_sol['solution'] = mesh['solution'][i,iAdj:]
+
     adj_sol['solution'] = mesh['solution'][:,iAdj:]
     adj_sol['solution_tag'] = mesh['solution_tag'][iAdj:]
+
     if 'xyz' in mesh:
-        # adj_sol['xyz'] = []
-        # for i in range(len(mesh['solution'])):
-        #     adj_sol['xyz'].append(mesh['xyz'][i])
         adj_sol['xyz'] = mesh['xyz'][:,:]
     elif 'xy' in mesh:
-        # adj_sol['xy'] = []
-        # for i in range(len(mesh['solution'])):
-        #     adj_sol['xy'].append(mesh['xy'][i])
         adj_sol['xy'] = mesh['xy'][:,:]
+
     adj_sol['dimension'] = mesh['dimension']
 
     np.delete(mesh['solution'], np.s_[iAdj:nsol], axis=1)
-    np.delete(mesh['solution_tag'], np.s_[iAdj:nsol], axis=0)
+    np.delete(mesh['solution_tag'], np.s_[iAdj:nsol])
 
     return adj_sol
     
@@ -453,35 +446,35 @@ def write_mesh(mesh_name, mesh):
     amgio.py_WriteMesh(mesh_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Markers, Dim)
     
 # --- Write solution using amgio module
-def write_sol(solution_name, solution):
+def write_sol(sol_name, sol):
     
-    Dim = solution['dimension']
-    Sol = solution['solution']
+    Dim = sol['dimension']
+    Sol = sol['solution']
 
     if Dim == 3:
-        NbrVer = int(len(solution['xyz']))
+        NbrVer = int(len(sol['xyz']))
     else:
-        NbrVer = int(len(solution['xy']))
+        NbrVer = int(len(sol['xy']))
     
-    if 'xyz' in solution:
-        Ver = solution['xyz']
+    if 'xyz' in sol:
+        Ver = sol['xyz']
         Ver = np.array(Ver).reshape(3*len(Ver)).tolist()
-    elif 'xy' in solution:
-        Ver = np.array(solution['xy'])
-        z = np.zeros(len(solution['xy']))
+    elif 'xy' in sol:
+        Ver = np.array(sol['xy'])
+        z = np.zeros(len(sol['xy']))
         Ver = np.c_[Ver, z]
         Ver = np.array(Ver).reshape(3*len(Ver)).tolist()
     
-    solution_tag = solution['solution_tag']
+    SolTag = sol['solution_tag']
         
     if len(Sol) > 1 :
         SolSiz = len(Sol[1])
         Sol = np.array(Sol).reshape(SolSiz*len(Sol)).tolist()
     else:
-        sys.stderr.write("## ERROR write_solution : No solution.\n")
+        sys.stderr.write("## ERROR write_sol : No solution.\n")
         sys.exit(1)
         
-    amgio.py_WriteSol(solution_name, Ver, Sol, solution_tag, NbrVer, Dim)
+    amgio.py_WriteSol(sol_name, Ver, Sol, SolTag, NbrVer, Dim)
 
 
 def create_sensor(solution, sensor):
