@@ -337,7 +337,9 @@ def merge_sol(mesh0, mesh1):
 
 # --- Split adjoint solution
 def split_adj_sol(mesh):
-    for i in range(len(mesh['solution_tag'])):
+    nsol = len(mesh['solution_tag'])
+
+    for i in range(nsol):
         if "Adjoint" in mesh['solution_tag'][i]:
             iAdj = i-1
             break
@@ -361,8 +363,8 @@ def split_adj_sol(mesh):
         adj_sol['xy'] = mesh['xy'][:,:]
     adj_sol['dimension'] = mesh['dimension']
 
-    mesh['solution'] = mesh['solution'][:,:iAdj]
-    mesh['solution_tag'] = mesh['solution_tag'][:iAdj]
+    np.delete(mesh['solution'], np.s_[iAdj:nsol], axis=1)
+    np.delete(mesh['solution_tag'], np.s_[iAdj:nsol], axis=0)
 
     return adj_sol
     
