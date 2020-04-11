@@ -439,6 +439,7 @@ def amg ( config , kind='' ):
                                     
                     mesh_new['markers'] = mesh['markers']
                     mesh_new['dimension'] = mesh['dimension']
+                    mesh_new['solution_tag'] = mesh['solution_tag']
                     
                     current_mesh = "ite%d.su2" % (global_iter)
                     current_solution = "ite%d.csv" % (global_iter)
