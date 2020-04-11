@@ -346,7 +346,7 @@ def split_adj_sol(mesh):
     adj_sol['solution'] = []
     adj_sol['solution_tag'] = []
     for i in range(len(mesh['solution'])):
-        adj_sol['solution'][i].append(mesh['solution'][i][iAdj:])
+        adj_sol['solution'].append(mesh['solution'][i][iAdj:])
     adj_sol['solution_tag'].append(mesh['solution_tag'][iAdj:])
     if 'xyz' in mesh:
         adj_sol['xyz'] = []
