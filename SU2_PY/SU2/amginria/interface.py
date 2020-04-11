@@ -334,8 +334,8 @@ def read_sol(solution_name, mesh):
 def merge_sol(mesh0, mesh1):
     mesh0['solution'] = np.hstack((mesh0['solution'], \
                                    mesh1['solution'])).tolist()
-    mesh0['solution_tag'] = np.hstack((np.array(mesh0['solution_tag'],dtype=object), \
-                                       np.array(mesh1['solution_tag'],dtype=object))).tolist()
+    mesh0['solution_tag'] = np.hstack((np.array(mesh0['solution_tag'],dtype=str), \
+                                       np.array(mesh1['solution_tag'],dtype=str))).tolist()
 
 # --- Split adjoint solution
 def split_adj_sol(mesh):
@@ -349,7 +349,7 @@ def split_adj_sol(mesh):
     adj_sol = dict()
 
     adj_sol['solution'] = np.delete(np.array(mesh['solution']), np.s_[0:iAdj], axis=1).tolist()
-    adj_sol['solution_tag'] = np.delete(np.array(mesh['solution_tag'],dtype=object), np.s_[0:iAdj], axis=0).tolist()
+    adj_sol['solution_tag'] = np.delete(np.array(mesh['solution_tag'],dtype=str), np.s_[0:iAdj], axis=0).tolist()
 
     if 'xyz' in mesh:
         adj_sol['xyz'] = mesh['xyz']
@@ -359,7 +359,7 @@ def split_adj_sol(mesh):
     adj_sol['dimension'] = mesh['dimension']
 
     mesh['solution'] = np.delete(np.array(mesh['solution']), np.s_[iAdj:nsol], axis=1).tolist()
-    mesh['solution_tag'] = np.delete(np.array(mesh['solution_tag'],dtype=object), np.s_[iAdj:nsol], axis=0).tolist()
+    mesh['solution_tag'] = np.delete(np.array(mesh['solution_tag'],dtype=str), np.s_[iAdj:nsol], axis=0).tolist()
 
     print('len0: %d\nlen1; %d'%(len(adj_sol['solution']),len(adj_sol['solution_tag'])))
     print(adj_sol['solution_tag'])
