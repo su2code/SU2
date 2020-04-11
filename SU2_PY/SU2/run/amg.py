@@ -455,7 +455,7 @@ def amg ( config , kind='' ):
                         current_gmf_solution = "ite%d_itp.solb" % global_iter
                         current_gmf_solution_adj = "ite%d_adj_itp.solb" % global_iter
                         su2amg.write_mesh_and_sol(current_gmf_mesh, current_gmf_solution, mesh_new)
-                        su2amg.write_sol(current_gmf_solution_adj, mesh_new)
+                        su2amg.write_sol(current_gmf_solution_adj, sol_adj)
 
                     del sol_adj
 

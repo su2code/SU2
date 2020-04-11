@@ -339,7 +339,7 @@ def merge_sol(mesh0, mesh1):
 def split_adj_sol(mesh):
     for i in range(len(mesh['solution_tag'])):
         if "Adjoint" in mesh['solution_tag'][i]:
-            iAdj = i
+            iAdj = i-1
             break
 
     adj_sol = dict()
