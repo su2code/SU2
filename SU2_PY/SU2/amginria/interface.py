@@ -246,7 +246,7 @@ def read_mesh_and_sol(mesh_name, solution_name):
     mesh['Corners']      = Cor
     mesh['solution']     = Sol
     
-    mesh['solution_tag'] = SolTag[:-1]
+    mesh['solution_tag'] = SolTag
     
     mesh['id_solution_tag'] = dict()
     for i in range(len(SolTag)):
@@ -322,7 +322,7 @@ def read_sol(solution_name, mesh):
     sol = dict()
 
     sol['solution']     = Sol
-    sol['solution_tag'] = SolTag[:-1]
+    sol['solution_tag'] = SolTag
     
     sol['id_solution_tag'] = dict()
     for i in range(len(SolTag)):
