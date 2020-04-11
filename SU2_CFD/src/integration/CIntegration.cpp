@@ -148,6 +148,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case DIELEC_BOUNDARY:
         solver_container[MainSolver]->BC_Dielec(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
+      case EXPRESSION_BOUNDARY:
+        solver_container[MainSolver]->BC_Expression(geometry, solver_container, numerics[VISC_BOUND_TERM], numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
     }
   }
 
