@@ -446,7 +446,14 @@ def write_sol(solution_name, solution):
     Dim     = solution['dimension']
     Sol     = solution['solution']
     
-    Ver = solution['xyz']
+    if 'xyz' in solution:
+        Ver = solution['xyz']
+        Ver = np.array(Ver).reshape(3*len(Ver)).tolist()
+    elif 'xy' in solution:
+        Ver = np.array(solution['xy'])
+        z = np.zeros(len(solution['xy']))
+        Ver = np.c_[Ver, z]
+        Ver = np.array(Ver).reshape(3*len(Ver)).tolist()
     
     solution_tag = solution['solution_tag']
     
