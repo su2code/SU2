@@ -343,8 +343,8 @@ def split_adj_sol(mesh):
             break
 
     adj_sol = dict()
-    adl_sol['solution'] = mesh['solution'][:][iAdj:]
-    adl_sol['solution_tag'] = mesh['solution_tag'][iAdj:]
+    adj_sol['solution'] = mesh['solution'][:][iAdj:]
+    adj_sol['solution_tag'] = mesh['solution_tag'][iAdj:]
     if 'xyz' in mesh:
         adj_sol['xyz'] = mesh['xyz'][:][:]
     elif 'xy' in mesh:
