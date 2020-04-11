@@ -346,9 +346,9 @@ def split_adj_sol(mesh):
     adj_sol['solution'] = [mesh['solution'][:][i] for i in range(iAdj,len(mesh['solution'][1]))]
     adj_sol['solution_tag'] = [mesh['solution_tag'][i] for i in range(iAdj,len(mesh['solution'][1]))]
     if 'xyz' in mesh:
-        adj_sol['xyz'] = mesh['xyz']
+        adj_sol['xyz'] = [mesh['xyz'][:][i] for i in range(3)]
     elif 'xy' in mesh:
-        adj_sol['xy'] = mesh['xy']
+        adj_sol['xy'] = [mesh['xy'][:][i] for i in range(2)]
     adj_sol['dimension'] = mesh['dimension']
 
     mesh['solution'] = [mesh['solution'][:][i] for i in range(0,iAdj)]
@@ -443,8 +443,8 @@ def write_mesh(mesh_name, mesh):
 # --- Write solution using amgio module
 def write_sol(solution_name, solution):
     
-    Dim     = solution['dimension']
-    Sol     = solution['solution']
+    Dim = solution['dimension']
+    Sol = solution['solution']
     
     if 'xyz' in solution:
         Ver = solution['xyz']
