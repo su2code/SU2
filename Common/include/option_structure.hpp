@@ -2020,15 +2020,10 @@ static const MapType<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = {
 
 
 enum ENUM_RECORDING {
-  FLOW_CONS_VARS   = 1,
+  CONS_VARS = 1,
   MESH_COORDS = 2,
-  COMBINED    = 3,
-  FEA_DISP_VARS = 4,
-  FLOW_CROSS_TERM = 5,
-  FEM_CROSS_TERM_GEOMETRY = 6,
-  GEOMETRY_CROSS_TERM = 7,
-  ALL_VARIABLES = 8,
-  MESH_DEFORM = 9
+  MESH_DEFORM = 3,
+  COMBINED = 4
 };
 
 /*!

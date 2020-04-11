@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -75,7 +75,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     else       direct_iteration = new CFluidIteration(config);
     if (compressible) direct_output = COutputFactory::createOutput(EULER, config, nDim);
     else direct_output =  COutputFactory::createOutput(INC_EULER, config, nDim);
-    MainVariables = FLOW_CONS_VARS;
+    MainVariables = CONS_VARS;
     if (mesh_def) SecondaryVariables = MESH_DEFORM;
     else          SecondaryVariables = MESH_COORDS;
     break;
@@ -85,7 +85,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     direct_iteration = new CFEMFluidIteration(config);
     direct_output = COutputFactory::createOutput(FEM_EULER, config, nDim);
-    MainVariables = FLOW_CONS_VARS;
+    MainVariables = CONS_VARS;
     SecondaryVariables = MESH_COORDS;
     break;
 
@@ -94,7 +94,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: elasticity equation." << endl;
     direct_iteration = new CFEAIteration(config);
     direct_output = COutputFactory::createOutput(FEM_ELASTICITY, config, nDim);
-    MainVariables = FEA_DISP_VARS;
+    MainVariables = CONS_VARS;
     SecondaryVariables = MESH_COORDS;
     break;
 
@@ -103,7 +103,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: heat equation." << endl;
     direct_iteration = new CHeatIteration(config);
     direct_output = COutputFactory::createOutput(HEAT_EQUATION, config, nDim);
-    MainVariables = FLOW_CONS_VARS;
+    MainVariables = CONS_VARS;
     SecondaryVariables = MESH_COORDS;
     break;
 

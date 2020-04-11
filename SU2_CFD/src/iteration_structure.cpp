@@ -2194,7 +2194,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver, CGeometry ****ge
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
 
-  if (kind_recording == FLOW_CONS_VARS || kind_recording == COMBINED){
+  if (kind_recording == CONS_VARS || kind_recording == COMBINED) {
 
     /*--- Register flow and turbulent variables as input ---*/
 
@@ -2218,29 +2218,8 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver, CGeometry ****ge
       solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
     }
   }
+
   if (kind_recording == MESH_COORDS){
-
-    /*--- Register node coordinates as input ---*/
-
-    geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
-
-  }
-
-  if (kind_recording == FLOW_CROSS_TERM){
-
-    /*--- Register flow and turbulent variables as input ---*/
-
-    solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
-
-    if (turbulent && !frozen_visc){
-      solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
-    }
-    if (config[iZone]->AddRadiation()) {
-      solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
-    }
-  }
-
-  if (kind_recording == GEOMETRY_CROSS_TERM){
 
     /*--- Register node coordinates as input ---*/
 
@@ -2299,8 +2278,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver,
 
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
-  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE)  ||
-      (kind_recording == GEOMETRY_CROSS_TERM) || (kind_recording == ALL_VARIABLES)){
+  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == COMBINED)){
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
@@ -2670,7 +2648,7 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
 
     /*--- Clear indices of coupling variables ---*/
 
-    SetDependencies(solver, geometry, numerics, config, val_iZone, val_iInst, ALL_VARIABLES);
+    SetDependencies(solver, geometry, numerics, config, val_iZone, val_iInst, COMBINED);
 
     /*--- Run one iteration while tape is passive - this clears all indices ---*/
 
@@ -2751,9 +2729,6 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver, CGeometry ****geom
     /*--- Register variables as input ---*/
 
     solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
-
-    /*--- Both need to be registered regardless of kind_recording for structural shape derivatives to work properly.
-          Otherwise, the code simply diverges as the FEM_CROSS_TERM_GEOMETRY breaks! (no idea why) for this term we register but do not extract! ---*/
   }
   else {
     /*--- Register topology optimization densities (note direct solver) ---*/
@@ -3270,7 +3245,7 @@ void CDiscAdjHeatIteration::RegisterInput(CSolver *****solver,
                                           unsigned short iZone, unsigned short iInst,
                                           unsigned short kind_recording){
 
-  if (kind_recording == FLOW_CONS_VARS || kind_recording == COMBINED){
+  if (kind_recording == CONS_VARS || kind_recording == COMBINED){
 
     /*--- Register flow and turbulent variables as input ---*/
 
@@ -3295,8 +3270,7 @@ void CDiscAdjHeatIteration::SetDependencies(CSolver *****solver,
                                             unsigned short iZone, unsigned short iInst,
                                             unsigned short kind_recording){
 
-  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE)  ||
-      (kind_recording == GEOMETRY_CROSS_TERM) || (kind_recording == ALL_VARIABLES)){
+  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == COMBINED)){
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
