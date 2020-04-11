@@ -571,7 +571,21 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     SU2_MPI::Error("Oops! The CEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
 
   SolverScope = config->GetGlobalScope();
+  expressionBCType = std::vector<std::string>(nMarker, "OUTLET_PRESSURE");
 
+  SolverScope["CUR_TIME"]  = su2double(config->GetPhysicalTime()*config->GetTime_Ref());
+  SolverScope["TIME_STEP"] = su2double(config->GetTime_Step());
+  SolverScope["TIME_ITER"] = su2double(config->GetTimeIter());
+  SolverScope["DENSITY"]            = 0.0;
+  SolverScope["VELOCITY_MAGNITUDE"] = 0.0;
+  SolverScope["TOTAL_PRESSURE"]     = 0.0;
+  SolverScope["TOTAL_TEMPERATURE"]  = 0.0;
+  SolverScope["FLOW_DIR_X"] = 0.0;
+  SolverScope["FLOW_DIR_Y"] = 0.0;
+  SolverScope["FLOW_DIR_Z"] = 0.0;
+  SolverScope["PRESSURE"] = 0.0;
+  SolverScope["CP"] = 0.0;
+  SolverScope["TYPE"] = "OUTLET_PRESSURE";
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_CfgFile(); iMarker++){
     CExpressionParser parser (&SolverScope);
     string exp = "";
@@ -590,17 +604,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     }
   }
 
-  expressionBCType = std::vector<std::string>(nMarker, "OUTLET_PRESSURE");
 
-  SolverScope["DENSITY"]            = 0.0;
-  SolverScope["VELOCITY_MAGNITUDE"] = 0.0;
-  SolverScope["TOTAL_PRESSURE"]     = 0.0;
-  SolverScope["TOTAL_TEMPERATURE"]  = 0.0;
-  SolverScope["FLOW_DIR_X"] = 0.0;
-  SolverScope["FLOW_DIR_Y"] = 0.0;
-  SolverScope["FLOW_DIR_Z"] = 0.0;
-  SolverScope["PRESSURE"] = 0.0;
-  SolverScope["TYPE"] = "OUTLET_PRESSURE";
 
 }
 
@@ -6631,9 +6635,9 @@ void CEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 void CEulerSolver::SetUnsteadyBCs(CConfig *config, CGeometry *geometry){
 
   SolverScope["CUR_TIME"]  = su2double(config->GetPhysicalTime()*config->GetTime_Ref());
-  SolverScope["TIME_STEP"] = su2double(config->GetTime_Step()*config->GetTime_Ref());
+  SolverScope["TIME_STEP"] = su2double(config->GetTime_Step());
   SolverScope["TIME_ITER"] = su2double(config->GetTimeIter());
-
+  SolverScope["CP"] = GetFluidModel()->GetCp();
   for (unsigned int iMarker = 0; iMarker < nMarker; iMarker++){
     if (config->GetMarker_All_KindBC(iMarker) == EXPRESSION_BOUNDARY){
       std::string MarkerTag = config->GetMarker_All_TagBound(iMarker);
