@@ -413,6 +413,12 @@ def amg ( config , kind='' ):
                     
                     mesh['metric'] = metric_wrap['solution']
 
+                    #--- Read and merge adjoint solution to be interpolated
+                    sol_adj = su2amg.read_sol(current_solution_adj, mesh)
+                    su2amg.merge_sol(mesh, sol_adj)
+
+                    del sol_adj
+
                     sys.stdout.write(' %s Generating adapted mesh using AMG\n' % pad_cpt)
                     sys.stdout.flush()
                     
@@ -428,13 +434,21 @@ def amg ( config , kind='' ):
                     
                     current_mesh = "ite%d.su2" % (global_iter)
                     current_solution = "ite%d.csv" % (global_iter)
+                    current_solution_adj = "ite%d_adj.csv" % (global_iter)
+
+                    sol_adj = su2amg.split_adj_sol(mesh_new)
                                     
                     su2amg.write_mesh_and_sol(current_mesh, current_solution, mesh_new)
+                    su2amg.write_sol(current_solution_adj, sol_adj)
 
                     if config_cfd.WRT_INRIA_MESH == 'YES':
                         current_gmf_mesh = "ite%d_itp.meshb" % global_iter
                         current_gmf_solution = "ite%d_itp.solb" % global_iter
+                        current_gmf_solution_adj = "ite%d_adj_itp.solb" % global_iter
                         su2amg.write_mesh_and_sol(current_gmf_mesh, current_gmf_solution, mesh_new)
+                        su2amg.write_sol(current_gmf_solution_adj, mesh_new)
+
+                    del sol_adj
 
                 else:
                 
@@ -491,9 +505,6 @@ def amg ( config , kind='' ):
                 config_cfd.MATH_PROBLEM      = 'DIRECT'
                 config_cfd.RESTART_SOL       = 'YES'
 
-                # if ('ADAP_SHIFT_NORMAL_NEIGHBOR' in config):
-                #     config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'YES'
-                #     config_cfd.RESTART_SOL                = 'NO'
                 
                 # config_cfd.RESIDUAL_REDUCTION = float(adap_res[iSiz])
                 config_cfd.ITER               = int(adap_flow_iter[iSiz])
@@ -503,22 +514,17 @@ def amg ( config , kind='' ):
                 config_cfd.READ_BINARY_RESTART = "NO"
                 
                 SU2_CFD(config_cfd)
-
-                # if ('ADAP_SHIFT_NORMAL_NEIGHBOR' in config):
-                #     os.rename('volume.su2', current_mesh)
-                #     config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
                 
                 if not os.path.exists(current_solution) :
                     raise Exception("\n##ERROR : SU2_CFD Failed.\n")
                     
                 if adap_sensor == 'GOAL':
-                    current_solution_adj = "ite%d_adj.csv" % (global_iter)
 
                     config_cfd.CONV_FILENAME          = "ite%d_history_adj" % (global_iter)
                     config_cfd.RESTART_ADJ_FILENAME   = current_solution_adj
                     config_cfd.SOLUTION_FILENAME      = current_solution
                     config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
-                    config_cfd.RESTART_SOL            = 'NO'
+                    # config_cfd.RESTART_SOL            = 'NO'
                     config_cfd.ITER                   = int(adap_adj_iter[iSiz])
                     config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
                     config_cfd.COMPUTE_METRIC         = 'YES'
