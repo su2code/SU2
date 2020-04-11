@@ -332,8 +332,8 @@ def read_sol(solution_name, mesh):
 
 # --- Merge 2 solutions (e.g. primal and dual)
 def merge_sol(mesh0, mesh1):
-    mesh0['solution'] = np.stack((mesh0['solution'],mesh1['solution']),axis=0).tolist()
-    mesh0['solution_tag'] = np.stack((mesh0['solution_tag'],mesh1['solution_tag'])).tolist()
+    mesh0['solution'] = np.hstack((mesh0['solution'],mesh1['solution'])).tolist()
+    mesh0['solution_tag'] = np.hstack((mesh0['solution_tag'],mesh1['solution_tag'])).tolist()
 
 # --- Split adjoint solution
 def split_adj_sol(mesh):
