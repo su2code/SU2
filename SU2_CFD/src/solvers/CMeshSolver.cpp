@@ -461,10 +461,16 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   if (multizone) nodes->Set_BGSSolution_k();
 
-  /*--- Compute the stiffness matrix. ---*/
+  /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
+
+  const bool ActiveTape = AD::TapeActive();
+  AD::StopRecording();
+
   Compute_StiffMatrix(geometry[MESH_0], numerics, config);
 
-  /*--- Clean residual, we do not want an incremental solution. ---*/
+  if (ActiveTape) AD::StartRecording();
+
+  /*--- Clear residual, we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL
   {
     LinSysRes.SetValZero();
@@ -499,7 +505,9 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   /*--- Check for failed deformation (negative volumes). ---*/
   /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh using the current coordinates. ---*/
+  AD::StopRecording();
   SetMinMaxVolume(geometry[MESH_0], config, true);
+  if (ActiveTape) AD::StartRecording();
 
   /*--- The Grid Velocity is only computed if the problem is time domain ---*/
   if (time_domain) ComputeGridVelocity(geometry[MESH_0], config);
