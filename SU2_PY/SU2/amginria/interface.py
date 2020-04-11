@@ -361,8 +361,8 @@ def split_adj_sol(mesh):
         adj_sol['xy'] = mesh['xy'][:,:]
     adj_sol['dimension'] = mesh['dimension']
 
-    mesh['solution'] = mesh['solution'][:][:iAdj]
-    mesh['solution_tag'] = mesh['solution_tag'][i][:iAdj]
+    mesh['solution'] = mesh['solution'][:,:iAdj]
+    mesh['solution_tag'] = mesh['solution_tag'][:iAdj]
 
     return adj_sol
     
