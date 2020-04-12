@@ -393,8 +393,8 @@ def amg ( config , kind='' ):
 
             old_dir = cur_dir
             cur_dir = './ite%d' % (global_iter)
-            os.makedirs(os.join.path('..',cur_dir))
-            os.chdir(os.join.path('..',cur_dir))
+            os.makedirs(os.path.join('..',cur_dir))
+            os.chdir(os.path.join('..',cur_dir))
             
             cur_meshfil = "adap.su2"
             cur_solfil  = "flo.csv"
