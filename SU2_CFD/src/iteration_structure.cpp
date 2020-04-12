@@ -1515,11 +1515,6 @@ void CFEAIteration::Relaxation(COutput *output,
 
   feaSolver->SetAitken_Relaxation(geometry[val_iZone][INST_0], config[val_iZone]);
 
-  /*----------------- Communicate the predicted solution and the old one ------------------*/
-
-  feaSolver->InitiateComms(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], SOLUTION_PRED_OLD);
-  feaSolver->CompleteComms(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], SOLUTION_PRED_OLD);
-
 }
 
 bool CFEAIteration::Monitor(COutput *output,

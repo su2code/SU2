@@ -2919,7 +2919,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **geometry, CConfig *config
 
 }
 
-void CFEASolver::SetAitken_Relaxation(CGeometry **geometry, const CConfig *config) {
+void CFEASolver::SetAitken_Relaxation(CGeometry **geometry, CConfig *config) {
 
   const su2double WAitken = GetWAitken_Dyn();
 
@@ -2942,6 +2942,9 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **geometry, const CConfig *confi
       dispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
     }
   }
+
+  InitiateComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
+  CompleteComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
 
 }
 

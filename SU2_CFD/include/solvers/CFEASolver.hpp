@@ -663,7 +663,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetAitken_Relaxation(CGeometry **geometry, const CConfig *config) final;
+  void SetAitken_Relaxation(CGeometry **geometry, CConfig *config) final;
 
   /*!
    * \brief Aitken's relaxation of the solution.

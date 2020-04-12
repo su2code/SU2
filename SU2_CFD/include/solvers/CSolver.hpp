@@ -3612,7 +3612,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetAitken_Relaxation(CGeometry **geometry,
-                                           const CConfig *config) { }
+                                           CConfig *config) { }
 
   /*!
    * \brief A virtual member.
