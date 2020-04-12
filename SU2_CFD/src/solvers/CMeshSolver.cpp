@@ -343,8 +343,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
     /*--- No solid wall boundary nodes in the entire mesh.
      Set the wall distance to zero for all nodes. ---*/
 
-    for (iPoint=0; iPoint<geometry->GetnPoint(); ++iPoint)
-      geometry->node[iPoint]->SetWall_Distance(0.0);
+    geometry->SetWallDistance(0.0);
   }
   else {
 
@@ -464,6 +463,16 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   if (multizone) nodes->Set_BGSSolution_k();
 
+  /*--- Capture a few MPI dependencies for AD. ---*/
+  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+
+  InitiateComms(geometry[MESH_0], config, SOLUTION);
+  CompleteComms(geometry[MESH_0], config, SOLUTION);
+
+  InitiateComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
+  CompleteComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
+
   /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
 
   const bool ActiveTape = AD::TapeActive();
@@ -473,25 +482,11 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   if (ActiveTape) AD::StartRecording();
 
-  /*--- Clear residual, we do not want an incremental solution. ---*/
+  /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL
   {
     LinSysRes.SetValZero();
   }
-
-  /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
-   Hence we still need a communication of the transformed coordinates, otherwise periodicity
-   is not maintained. ---*/
-  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
-  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
-
-  /*--- In the same way, communicate the displacements in the solver to make sure the halo
-   nodes receive the correct value of the displacement. ---*/
-  InitiateComms(geometry[MESH_0], config, SOLUTION);
-  CompleteComms(geometry[MESH_0], config, SOLUTION);
-
-  InitiateComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
-  CompleteComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
 
   /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
   SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
@@ -526,11 +521,10 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
 
   /*--- LinSysSol contains the absolute x, y, z displacements. ---*/
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      auto total_index = iPoint*nDim + iDim;
       /*--- Retrieve the displacement from the solution of the linear system ---*/
-      su2double val_disp = LinSysSol[total_index];
+      su2double val_disp = LinSysSol(iPoint, iDim);
       /*--- Store the displacement of the mesh node ---*/
       nodes->SetSolution(iPoint, iDim, val_disp);
       /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
@@ -540,14 +534,10 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
-   Hence we still need a communication of the transformed coordinates, otherwise periodicity
-   is not maintained. ---*/
+  /*--- Communicate the updated displacements and mesh coordinates. ---*/
   geometry->InitiateComms(geometry, config, COORDINATES);
   geometry->CompleteComms(geometry, config, COORDINATES);
 
-  /*--- In the same way, communicate the displacements in the solver to make sure the halo
-   nodes receive the correct value of the displacement. ---*/
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
 

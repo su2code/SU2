@@ -2677,8 +2677,8 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CConfig *confi
 
   /*--- Perform the MPI communication of the solution, displacements only. ---*/
 
-  InitiateComms(geometry, config, SOLUTION_DISPONLY);
-  CompleteComms(geometry, config, SOLUTION_DISPONLY);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
 
 }
 
@@ -2957,8 +2957,8 @@ void CFEASolver::Update_StructSolution(CGeometry **geometry, CConfig *config) {
 
   /*--- Perform the MPI communication of the solution, displacements only ---*/
 
-  InitiateComms(geometry[MESH_0], config, SOLUTION_DISPONLY);
-  CompleteComms(geometry[MESH_0], config, SOLUTION_DISPONLY);
+  InitiateComms(geometry[MESH_0], config, SOLUTION);
+  CompleteComms(geometry[MESH_0], config, SOLUTION);
 
 }
 
