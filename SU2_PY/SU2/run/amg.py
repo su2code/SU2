@@ -96,11 +96,11 @@ def amg ( config , kind='' ):
     #--- Change current directory
     
     warn = False
-    adap_dir = './ADAP'
+    adap_dir = './adap'
     cwd = os.getcwd()
         
     if os.path.exists(adap_dir):
-        sys.stdout.write('./ADAP exists. Removing old mesh adaptation in 10s.\n')
+        sys.stdout.write('./adap exists. Removing old mesh adaptation in 10s.\n')
         sys.stdout.flush()
         if warn : time.sleep(10)
         shutil.rmtree(adap_dir)
