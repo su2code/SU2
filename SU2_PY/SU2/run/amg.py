@@ -110,6 +110,9 @@ def amg ( config , kind='' ):
     sys.stdout.write('The %s folder was deleted\n' % adap_dir)
     sys.stdout.flush()
     
+    cur_dir = './ini'
+    os.makedirs(cur_dir)
+    os.chdir(cur_dir)
     os.symlink(os.path.join(cwd, config.MESH_FILENAME), config.MESH_FILENAME)
         
     cur_meshfil = config['MESH_FILENAME']
@@ -123,6 +126,7 @@ def amg ( config , kind='' ):
     config_amg['hmin']        = float(config['PYADAP_HMIN'])
     config_amg['Lp']          = float(config['ADAP_NORM'])
     config_amg['mesh_in']     = 'current.meshb'
+    config_amg['amg_log']     = 'amg.out'
     config_amg['adap_source'] = ''
 
     #--- Get mesh dimension
@@ -189,8 +193,8 @@ def amg ( config , kind='' ):
         
     if config['RESTART_SOL'] == 'NO':
         
-        stdout_hdl = open('ini.out','w') # new targets
-        stderr_hdl = open('ini.err','w')
+        stdout_hdl = open('log.out','w') # new targets
+        stderr_hdl = open('log.err','w')
         
         success = False
         val_out = [False]
@@ -203,33 +207,32 @@ def amg ( config , kind='' ):
             sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
             sav_stderr, sys.stderr = sys.stderr, stderr_hdl
         
-            cur_meshfil     = config['MESH_FILENAME']
-            cur_solfil = "ini_restart_flow.csv"
+            cur_meshfil = config['MESH_FILENAME']
+            cur_solfil  = "restart_flow.csv"
             
-            config_cfd.CONV_FILENAME              = "ini_history"
-            config_cfd.RESTART_FILENAME           = cur_solfil
-            config_cfd.COMPUTE_METRIC             = 'NO'
-            config_cfd.MATH_PROBLEM               = 'DIRECT'
-            # config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
+            config_cfd.CONV_FILENAME    = "history"
+            config_cfd.RESTART_FILENAME = cur_solfil
+            config_cfd.COMPUTE_METRIC   = 'NO'
+            config_cfd.MATH_PROBLEM     = 'DIRECT'
             
             SU2_CFD(config_cfd)
                         
             if adap_sensor == 'GOAL':
-                cur_solfil_adj = "ini_restart_adj.csv"
+                cur_solfil_adj = "restart_adj.csv"
 
-                config_cfd.CONV_FILENAME          = "ini_history_adj"
-                config_cfd.RESTART_ADJ_FILENAME   = cur_solfil_adj
-                config_cfd.SOLUTION_FILENAME      = cur_solfil
-                config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
-                config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
-                config_cfd.COMPUTE_METRIC         = 'YES'
-                config_cfd.ADAP_HMAX              = config.PYADAP_HMAX
-                config_cfd.ADAP_HMIN              = config.PYADAP_HMIN
-                config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[0])
+                config_cfd.CONV_FILENAME        = "history_adj"
+                config_cfd.RESTART_ADJ_FILENAME = cur_solfil_adj
+                config_cfd.SOLUTION_FILENAME    = cur_solfil
+                config_cfd.MATH_PROBLEM         = 'DISCRETE_ADJOINT'
+                config_cfd.VOLUME_OUTPUT        = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
+                config_cfd.COMPUTE_METRIC       = 'YES'
+                config_cfd.ADAP_HMAX            = config.PYADAP_HMAX
+                config_cfd.ADAP_HMIN            = config.PYADAP_HMIN
+                config_cfd.ADAP_COMPLEXITY      = int(mesh_sizes[0])
                 SU2_CFD(config_cfd)
 
-                func_name            = config.OBJECTIVE_FUNCTION
-                suffix               = su2io.get_adjointSuffix(func_name)
+                func_name      = config.OBJECTIVE_FUNCTION
+                suffix         = su2io.get_adjointSuffix(func_name)
                 cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
 
         except:
@@ -249,11 +252,13 @@ def amg ( config , kind='' ):
                     err += opt + '\n'
             raise AttributeError(err)
 
+        os.symlink(os.path.join(cwd, config.SOLUTION_FILENAME), config.SOLUTION_FILENAME)
+
         sys.stdout.write('Initial CFD solution is provided.\n')
         sys.stdout.flush()
 
-        stdout_hdl = open('ini.out','w') # new targets
-        stderr_hdl = open('ini.err','w')
+        stdout_hdl = open('log.out','w') # new targets
+        stderr_hdl = open('log.err','w')
 
         success = False
         val_out = [False]
@@ -261,27 +266,26 @@ def amg ( config , kind='' ):
         sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
         sav_stderr, sys.stderr = sys.stderr, stderr_hdl
 
-        cur_meshfil         = config['MESH_FILENAME']
-        cur_solfil     = "ini_restart_flow.csv"
-        cur_solfil_adj = "ini_restart_adj.csv"
+        cur_meshfil    = config['MESH_FILENAME']
+        cur_solfil     = "restart_flow.csv"
+        cur_solfil_adj = "restart_adj.csv"
 
-        config_cfd.RESTART_FILENAME           = cur_solfil
-        config_cfd.RESTART_ADJ_FILENAME       = cur_solfil_adj
-        config_cfd.SOLUTION_FILENAME          = '../' + config['SOLUTION_FILENAME']
-        config_cfd.SOLUTION_ADJ_FILENAME      = '../' + config['SOLUTION_ADJ_FILENAME']
-        config_cfd.VOLUME_OUTPUT              = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
-        config_cfd.COMPUTE_METRIC             = 'YES'
-        config_cfd.MATH_PROBLEM               = 'DISCRETE_ADJOINT'
-        config_cfd.ADAP_HMAX                  = config.PYADAP_HMAX
-        config_cfd.ADAP_HMIN                  = config.PYADAP_HMIN
-        config_cfd.ADAP_COMPLEXITY            = int(mesh_sizes[0])
-        # config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
+        config_cfd.RESTART_FILENAME      = cur_solfil
+        config_cfd.RESTART_ADJ_FILENAME  = cur_solfil_adj
+        config_cfd.SOLUTION_FILENAME     = config['SOLUTION_FILENAME']
+        config_cfd.SOLUTION_ADJ_FILENAME = config['SOLUTION_ADJ_FILENAME']
+        config_cfd.VOLUME_OUTPUT         = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
+        config_cfd.COMPUTE_METRIC        = 'YES'
+        config_cfd.MATH_PROBLEM          = 'DISCRETE_ADJOINT'
+        config_cfd.ADAP_HMAX             = config.PYADAP_HMAX
+        config_cfd.ADAP_HMIN             = config.PYADAP_HMIN
+        config_cfd.ADAP_COMPLEXITY       = int(mesh_sizes[0])
 
         #--- Run an adjoint if the adjoint solution file doesn't exist
-        cur_solfil_adj_ini  = config_cfd.SOLUTION_ADJ_FILENAME    
-        func_name         = config.OBJECTIVE_FUNCTION
-        suffix            = su2io.get_adjointSuffix(func_name)
-        cur_solfil_adj_ini  = su2io.add_suffix(cur_solfil_adj_ini,suffix)
+        cur_solfil_adj_ini = config_cfd.SOLUTION_ADJ_FILENAME    
+        func_name          = config.OBJECTIVE_FUNCTION
+        suffix             = su2io.get_adjointSuffix(func_name)
+        cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
         if not (os.path.exists(cur_solfil_adj_ini)):
             config_cfd.RESTART_SOL= 'NO'
             SU2_CFD(config_cfd)
@@ -290,6 +294,7 @@ def amg ( config , kind='' ):
 
         #--- Otherwise just compute the metric
         else:
+            os.symlink(os.path.join(cwd, config.SOLUTION_ADJ_FILENAME), config.SOLUTION_ADJ_FILENAME)
             config_cfd.ITER = 1
             SU2_CFD(config_cfd)
             sav_stdout.write('Initial adjoint CFD solution is provided.\n')
@@ -328,9 +333,6 @@ def amg ( config , kind='' ):
         
         for iSub in range(nSub):
             
-            config_amg['size']        = mesh_size
-            config_amg['amg_log']     = 'ite%d.amg.out' % (global_iter)
-            
             # Prints
             pad_cpt = ("(%d/%d)" % (iSub+1, nSub)).ljust(9)
             pad_nul = "".ljust(9)
@@ -340,156 +342,83 @@ def amg ( config , kind='' ):
             mesh = su2amg.read_mesh_and_sol(cur_meshfil, cur_solfil)
 
             #--- Write solution
-            if global_iter == 0 :
-                su2amg.write_mesh_and_sol("ini.meshb", "ini.solb", mesh)
-            else :
-                cur_meshfil_gmf = "ite%d.meshb" % (global_iter-1)
-                cur_solfil_gmf = "ite%d.solb" % (global_iter-1)
-                su2amg.write_mesh_and_sol(cur_meshfil_gmf, cur_solfil_gmf, mesh)
-                                    
-            if not amg_python : 
+            su2amg.write_mesh_and_sol("flo.meshb", "flo.solb", mesh)
+
+            config_amg['size']    = mesh_size
                 
-                #--- If not using the amg python interface, convert the mesh and make system call
+            #--- Use pyAmg interface
+            
+            try :
+                import pyamg 
+            except:
+                sys.stderr.write("## ERROR : Unable to import pyamg module.\n")
+                sys.exit(1)
+            
+            if adap_sensor == 'GOAL':
+
+                #--- Use metric computed from SU2 to drive the adaptation
+
+                metric_wrap = su2amg.create_sensor(mesh, adap_sensor)
+                mesh['metric'] = metric_wrap['solution']
+
+                #--- Read and merge adjoint solution to be interpolated
+
+                sol_adj = su2amg.read_sol(cur_solfil_adj, mesh)
+                su2amg.merge_sol(mesh, sol_adj)
+
+                del sol_adj
+
+            else:        
+
+                #--- Create sensor used to drive the adaptation  
+
+                sensor_wrap = su2amg.create_sensor(mesh, adap_sensor)
+                mesh['sensor'] = sensor_wrap['solution']
                 
-                su2amg.write_mesh_and_sol("current.meshb", "current.solb", mesh)
-                
-                if not os.path.exists("current.solb"):
-                    raise Exception("\n##ERROR : Can't find solution.\n")
-                if not os.path.exists("current.meshb"):
-                    raise Exception("\n##ERROR : Can't find mesh.\n")
-                
-                #--- Get sensor
-                                
-                sensor = su2amg.create_sensor(mesh, adap_sensor)
-                su2amg.write_sol("current_sensor.solb", sensor)
-                
-                if not os.path.exists("current_sensor.solb"):
-                    raise Exception("\n##ERROR : Can't find adap sensor.\n")
-                
-                #--- Run amg
-                                
-                sys.stdout.write("Running amg. Log : %s\n" % config_amg['amg_log'])
-                sys.stdout.flush()
-                
-                if os.path.exists("current.itp.solb"):
-                    os.remove("current.itp.solb")
+            #--- Call pyAMG
+
+            sys.stdout.write(' %s Generating adapted mesh using AMG\n' % pad_cpt)
+            sys.stdout.flush()
+            
+            mesh_new = su2amg.amg_call_python(mesh, config_amg)
                             
-                try :
-                    su2amg.amg_call(config_amg)
-                except:
-                    raise Exception("\n##ERROR : Call to AMG failed.\n")
-                
-                if not os.path.exists(config_amg['mesh_out']):
-                    raise Exception("\n##ERROR : Mesh adaptation failed.\n")
-                
-                if not os.path.exists("current.itp.solb"):
-                    raise Exception("\n##ERROR AMG: Solution interpolation failed.\n")         
-                
-                #--- Convert output from Inria mesh format to su2
-                # Deal with markers
-                
-                save_markers = mesh['markers']
-                del mesh
-                
-                # Read Inria mesh
-                mesh = su2amg.read_mesh_and_sol(config_amg['mesh_out'], "current.itp.solb")
-                mesh['markers'] = save_markers
-                
-                cur_meshfil = "ite%d.su2" % (global_iter)
-                cur_solfil = "ite%d.csv" % (global_iter)    
-                
-                su2amg.write_mesh_and_sol(cur_meshfil, cur_solfil, mesh)
-                
-                if not os.path.exists(cur_meshfil) or not os.path.exists(cur_solfil) :
-                    raise Exception("\n##ERROR : Conversion to SU2 failed.\n")
+            #--- print mesh size
+            
+            sys.stdout.write(' %s AMG done: %s\n' % (pad_nul, su2amg.return_mesh_size(mesh_new)))
+            sys.stdout.flush()
 
-            else :
-                
-                #--- Use pyAmg interface
-                
-                try :
-                    import pyamg 
-                except:
-                    sys.stderr.write("## ERROR : Unable to import pyamg module.\n")
-                    sys.exit(1)
-                
-                if adap_sensor == 'GOAL':
+            mesh_new['markers'] = mesh['markers']
+            mesh_new['dimension'] = mesh['dimension']
+            mesh_new['solution_tag'] = mesh['solution_tag']
 
-                    #--- Use metric computed from SU2 to drive the adaptation
+            old_dir = cur_dir
+            cur_dir = './ite%d' % (global_iter)
+            os.makedirs(os.join.path('..',cur_dir))
+            os.chdir(os.join.path('..',cur_dir))
+            
+            cur_meshfil = "adap.su2"
+            cur_solfil  = "flo.csv"
+                            
+            su2amg.write_mesh_and_sol(cur_meshfil, cur_solfil, mesh_new)
 
-                    metric_wrap = su2amg.create_sensor(mesh, adap_sensor)
-                    
-                    mesh['metric'] = metric_wrap['solution']
+            if adap_sensor == 'GOAL':
+                cur_solfil_adj = "adj.csv"
+                sol_adj = su2amg.split_adj_sol(mesh_new)
+                su2amg.write_sol(cur_solfil_adj, sol_adj)
 
-                    #--- Read and merge adjoint solution to be interpolated
-                    sol_adj = su2amg.read_sol(cur_solfil_adj, mesh)
-                    su2amg.merge_sol(mesh, sol_adj)
+            cur_meshfil_gmf    = "flo_itp.meshb"
+            cur_solfil_gmf     = "flo_itp.solb"
+            su2amg.write_mesh_and_sol(cur_meshfil_gmf, cur_solfil_gmf, mesh_new)
 
-                    del sol_adj
-
-                    sys.stdout.write(' %s Generating adapted mesh using AMG\n' % pad_cpt)
-                    sys.stdout.flush()
-                    
-                    mesh_new = su2amg.amg_call_python(mesh, config_amg)
-                                    
-                    #--- print mesh size
-                    
-                    sys.stdout.write(' %s AMG done: %s\n' % (pad_nul, su2amg.return_mesh_size(mesh_new)))
-                    sys.stdout.flush()
-                                    
-                    mesh_new['markers'] = mesh['markers']
-                    mesh_new['dimension'] = mesh['dimension']
-                    mesh_new['solution_tag'] = mesh['solution_tag']
-                    
-                    cur_meshfil = "ite%d.su2" % (global_iter)
-                    cur_solfil = "ite%d.csv" % (global_iter)
-                    cur_solfil_adj = "ite%d_adj.csv" % (global_iter)
-
-                    sol_adj = su2amg.split_adj_sol(mesh_new)
-                                    
-                    su2amg.write_mesh_and_sol(cur_meshfil, cur_solfil, mesh_new)
-                    su2amg.write_sol(cur_solfil_adj, sol_adj)
-
-                    if config_cfd.WRT_INRIA_MESH == 'YES':
-                        cur_meshfil_gmf = "ite%d_itp.meshb" % global_iter
-                        cur_solfil_gmf = "ite%d_itp.solb" % global_iter
-                        cur_solfil_gmf_adj = "ite%d_adj_itp.solb" % global_iter
-                        su2amg.write_mesh_and_sol(cur_meshfil_gmf, cur_solfil_gmf, mesh_new)
-                        su2amg.write_sol(cur_solfil_gmf_adj, sol_adj)
-
-                    del sol_adj
-
-                else:
-                
-                    #--- Create sensor used to drive the adaptation
-                    
-                    sensor_wrap = su2amg.create_sensor(mesh, adap_sensor)
-                    
-                    mesh['sensor'] = sensor_wrap['solution']
-                    
-                    sys.stdout.write(' %s Generating adapted mesh using AMG\n' % pad_cpt)
-                    sys.stdout.flush()
-                    
-                    mesh_new = su2amg.amg_call_python(mesh, config_amg)
-                                    
-                    #--- print mesh size
-                    
-                    sys.stdout.write(' %s AMG done: %s\n' % (pad_nul, su2amg.return_mesh_size(mesh_new)))
-                    sys.stdout.flush()
-                                    
-                    mesh_new['markers'] = mesh['markers']
-                    mesh_new['dimension'] = mesh['dimension']
-                    
-                    cur_meshfil = "ite%d.su2" % (global_iter)
-                    cur_solfil = "ite%d.csv" % (global_iter)
-                                    
-                    su2amg.write_mesh_and_sol(cur_meshfil, cur_solfil, mesh_new)
+            if adap_sensor == 'GOAL':
+                cur_solfil_gmf_adj = "adj_itp.solb"
+                su2amg.write_sol(cur_solfil_gmf_adj, sol_adj)
+                del sol_adj
                 
             #--- Run su2
             
-            log = 'ite%d.SU2.' % (global_iter)
-            stdout_hdl = open('%sout'%log,'w') # new targets
-            stderr_hdl = open('%serr'%log,'w')
+            stdout_hdl = open('log.out','w') # new targets
+            stderr_hdl = open('log.err','w')
             
             success = False
             val_out = [False]
@@ -502,16 +431,16 @@ def amg ( config , kind='' ):
                 sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
                 sav_stderr, sys.stderr = sys.stderr, stderr_hdl
                 
-                cur_solfil_ini = "ite%d_ini.csv" % (global_iter)
+                cur_solfil_ini = "flo_ini.csv"
                 os.rename(cur_solfil, cur_solfil_ini)
 
-                cur_solfil_adj_ini = "ite%d_adj_ini.csv" % (global_iter)
+                cur_solfil_adj_ini = "adj_ini.csv"
                 cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
                 os.rename(cur_solfil_adj, cur_solfil_adj_ini)
-                cur_solfil_adj_ini = "ite%d_adj_ini.csv" % (global_iter)
+                cur_solfil_adj_ini = "adj_ini.csv"
                 
                 config_cfd.MESH_FILENAME     = cur_meshfil
-                config_cfd.CONV_FILENAME     = "ite%d_history" % (global_iter)
+                config_cfd.CONV_FILENAME     = "history"
                 config_cfd.SOLUTION_FILENAME = cur_solfil_ini
                 config_cfd.RESTART_FILENAME  = cur_solfil
                 config_cfd.VOLUME_OUTPUT     = "(COORDINATES, SOLUTION, PRIMITIVE)"
@@ -533,12 +462,11 @@ def amg ( config , kind='' ):
                     
                 if adap_sensor == 'GOAL':
 
-                    config_cfd.CONV_FILENAME          = "ite%d_history_adj" % (global_iter)
+                    config_cfd.CONV_FILENAME          = "history_adj"
                     config_cfd.RESTART_ADJ_FILENAME   = cur_solfil_adj
                     config_cfd.SOLUTION_ADJ_FILENAME  = cur_solfil_adj_ini
                     config_cfd.SOLUTION_FILENAME      = cur_solfil
                     config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
-                    # config_cfd.RESTART_SOL            = 'NO'
                     config_cfd.ITER                   = int(adap_adj_iter[iSiz])
                     config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
                     config_cfd.COMPUTE_METRIC         = 'YES'
@@ -581,9 +509,8 @@ def amg ( config , kind='' ):
 
     #--- Write final files
 
-    if config_cfd.WRT_INRIA_MESH == 'YES':
-        mesh = su2amg.read_mesh_and_sol(cur_meshfil, cur_solfil)
-        su2amg.write_mesh_and_sol("fin.meshb", "fin.solb", mesh)
+    mesh = su2amg.read_mesh_and_sol(cur_meshfil, cur_solfil)
+    su2amg.write_mesh_and_sol("flo.meshb", "flo.solb", mesh)
     
     os.rename(cur_solfil,os.path.join(cwd,config.RESTART_FILENAME))
     os.rename(cur_meshfil,os.path.join(cwd,config.MESH_OUT_FILENAME))
