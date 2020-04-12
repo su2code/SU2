@@ -724,8 +724,7 @@ public:
    * \param[in] alpha - The scaling constant.
    * \param[in] B - Matrix being.
    */
-  template<class OtherType>
-  void MatrixMatrixAddition(OtherType alpha, const CSysMatrix<OtherType>& B);
+  void MatrixMatrixAddition(ScalarType alpha, const CSysMatrix& B);
 
   /*!
    * \brief Performs the product of a sparse matrix by a CSysVector.

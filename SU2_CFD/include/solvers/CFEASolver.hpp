@@ -79,7 +79,11 @@ protected:
   CSysVector<su2double> TimeRes;      /*!< \brief Vector for adding mass and damping contributions to the residual */
   CSysVector<su2double> LinSysReact;  /*!< \brief Vector to store the residual before applying the BCs */
 
-  CSysMatrix<su2double> MassMatrix;   /*!< \brief Sparse structure for storing the mass matrix. */
+#ifndef CODI_FORWARD_TYPE
+  CSysMatrix<passivedouble> MassMatrix;   /*!< \brief Sparse structure for storing the mass matrix. */
+#else
+  CSysMatrix<su2double> MassMatrix;
+#endif
 
   CElement*** element_container = nullptr;  /*!< \brief Vector which the define the finite element structure for each problem. */
   CProperty** element_properties = nullptr; /*!< \brief Vector which stores the properties of each element */
@@ -172,7 +176,7 @@ protected:
    * \brief Compute constants for time integration.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_IntegrationConstants(CConfig *config);
+  void Compute_IntegrationConstants(const CConfig *config);
 
   /*!
    * \brief Write the forward mode gradient to file.
@@ -183,7 +187,7 @@ protected:
    * \param[in] der - Value of the derivative.
    * \param[in] der_avg - Time-averaged value of the derivative.
    */
-  void OutputForwardModeGradient(CConfig *config,
+  void OutputForwardModeGradient(const CConfig *config,
                                  bool newFile,
                                  su2double fun,
                                  su2double fun_avg,
@@ -334,7 +338,7 @@ public:
    */
   void Compute_NodalStress(CGeometry *geometry,
                            CNumerics **numerics,
-                           CConfig *config) final;
+                           const CConfig *config) final;
 
   /*!
    * \brief Compute the dead loads.
@@ -393,18 +397,6 @@ public:
                   CNumerics *numerics,
                   const CConfig *config,
                   unsigned short val_marker) final;
-
-  /*!
-   * \brief Impose a displacement (constraint) boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline void BC_Normal_Displacement(CGeometry *geometry,
-                                     CNumerics *numerics,
-                                     const CConfig *config,
-                                     unsigned short val_marker) final { }
 
   /*!
    * \brief Impose a load boundary condition normal to the boundary.
@@ -474,84 +466,59 @@ public:
   void Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config);
 
   /*!
-   * \brief Update the solution using an implicit solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline void ImplicitEuler_Iteration(CGeometry *geometry,
-                                      CSolver **solver_container,
-                                      CConfig *config) final { };
-
-  /*!
    * \brief Iterate using an implicit Newmark solver.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
   void ImplicitNewmark_Iteration(CGeometry *geometry,
-                                 CSolver **solver_container,
-                                 CConfig *config) final;
+                                 CNumerics **numerics,
+                                 const CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Newmark solver.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Update(CGeometry *geometry,
-                              CSolver **solver_container,
-                              CConfig *config) final;
+  void ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Relaxation(CGeometry *geometry,
-                                  CSolver **solver_container,
-                                  CConfig *config) final;
+  void ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Iterate using an implicit Generalized Alpha solver.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
   void GeneralizedAlpha_Iteration(CGeometry *geometry,
-                                  CSolver **solver_container,
-                                  CConfig *config) final;
+                                  CNumerics **numerics,
+                                  const CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateDisp(CGeometry *geometry,
-                                   CSolver **solver_container,
-                                   CConfig *config) final;
+  void GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateSolution(CGeometry *geometry,
-                                       CSolver **solver_container,
-                                       CConfig *config) final;
+  void GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateLoads(CGeometry *geometry,
-                                    CSolver **solver_container,
-                                    CConfig *config) final;
+  void GeneralizedAlpha_UpdateLoads(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Postprocessing.
@@ -676,45 +643,34 @@ public:
 
   /*!
    * \brief Predictor for structural displacements based on previous iterations
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] fea_grid_movement - Geometrical definition of the problem.
-   * \param[in] fea_config - Geometrical definition of the problem.
-   * \param[in] flow_geometry - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Configuration of the problem.
    */
-  void PredictStruct_Displacement(CGeometry **fea_geometry,
-                                  CConfig *fea_config,
-                                  CSolver ***fea_solution) final;
+  void PredictStruct_Displacement(CGeometry **geometry, const CConfig *config) final;
 
   /*!
    * \brief Computation of Aitken's coefficient.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] fea_config - Geometrical definition of the problem.
-   * \param[in] fea_geometry - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iOuterIter - Current outer iteration.
    */
-  void ComputeAitken_Coefficient(CGeometry **fea_geometry,
-                                 CConfig *fea_config,
-                                 CSolver ***fea_solution,
+  void ComputeAitken_Coefficient(CGeometry **geometry,
+                                 CConfig *config,
                                  unsigned long iOuterIter) final;
 
   /*!
    * \brief Aitken's relaxation of the solution.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] fea_config - Geometrical definition of the problem.
-   * \param[in] fea_geometry - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  void SetAitken_Relaxation(CGeometry **fea_geometry,
-                            CConfig *fea_config,
-                            CSolver ***fea_solution) final;
+  void SetAitken_Relaxation(CGeometry **geometry, const CConfig *config) final;
 
   /*!
    * \brief Aitken's relaxation of the solution.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] fea_config - Geometrical definition of the problem.
-   * \param[in] fea_geometry - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  void Update_StructSolution(CGeometry **fea_geometry,
-                             CConfig *fea_config,
-                             CSolver ***fea_solution) final;
+  void Update_StructSolution(CGeometry **geometry, CConfig *config) final;
 
   /*!
    * \brief Compute the objective function for a reference geometry
@@ -869,6 +825,6 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void FilterElementDensities(CGeometry *geometry, CConfig *config);
+  void FilterElementDensities(CGeometry *geometry, const CConfig *config);
 
 };

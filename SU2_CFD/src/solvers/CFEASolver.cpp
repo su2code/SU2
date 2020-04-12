@@ -1083,6 +1083,10 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, c
   const bool topology_mode = config->GetTopology_Optimization();
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
+  /*--- Never record this method as the mass matrix is passive (but the mass residual is not). ---*/
+  const bool ActiveTape = AD::TapeActive();
+  AD::StopRecording();
+
   /*--- Start OpenMP parallel region. ---*/
 
   SU2_OMP_PARALLEL
@@ -1141,10 +1145,10 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, c
           for (jNode = 0; jNode < nNodes; jNode++) {
 
             auto Mij = MassMatrix.GetBlock(indexNode[iNode], indexNode[jNode]);
-            su2double Mab = element->Get_Mab(iNode, jNode);
+            su2double Mab = simp_penalty * element->Get_Mab(iNode, jNode);
 
             for (iVar = 0; iVar < nVar; iVar++)
-              Mij[iVar*(nVar+1)] += simp_penalty*Mab;
+              Mij[iVar*(nVar+1)] += SU2_TYPE::GetValue(Mab);
           }
 
           if (LockStrategy) omp_unset_lock(&UpdateLocks[indexNode[iNode]]);
@@ -1156,6 +1160,8 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, c
 
   } // end SU2_OMP_PARALLEL
 
+  if (ActiveTape) AD::StartRecording();
+
 }
 
 void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
@@ -1163,79 +1169,73 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, cons
   const bool topology_mode = config->GetTopology_Optimization();
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
-  /*--- Start OpenMP parallel region. ---*/
+  /*--- Clear vector before calculation. ---*/
+  TimeRes.SetValZero();
+  SU2_OMP_BARRIER
 
-  SU2_OMP_PARALLEL
-  {
-    /*--- Clear vector before calculation. ---*/
-    TimeRes.SetValZero();
-    SU2_OMP_BARRIER
+  for(auto color : ElemColoring) {
 
-    for(auto color : ElemColoring) {
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+    for(auto k = 0ul; k < color.size; ++k) {
 
-      /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-      for(auto k = 0ul; k < color.size; ++k) {
+      auto iElem = color.indices[k];
 
-        auto iElem = color.indices[k];
+      unsigned short iNode, jNode, iDim, iVar;
 
-        unsigned short iNode, jNode, iDim, iVar;
+      int thread = omp_get_thread_num();
 
-        int thread = omp_get_thread_num();
+      /*--- Convert VTK type to index in the element container. ---*/
+      int EL_KIND;
+      unsigned short nNodes;
+      GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
-        /*--- Convert VTK type to index in the element container. ---*/
-        int EL_KIND;
-        unsigned short nNodes;
-        GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
+      /*--- Each thread needs a dedicated element. ---*/
+      CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
 
-        /*--- Each thread needs a dedicated element. ---*/
-        CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
+      /*--- For the number of nodes, get the coordinates and cache the point indices. ---*/
+      unsigned long indexNode[MAXNNODE];
 
-        /*--- For the number of nodes, get the coordinates and cache the point indices. ---*/
-        unsigned long indexNode[MAXNNODE];
+      for (iNode = 0; iNode < nNodes; iNode++) {
+        indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+          element->SetRef_Coord(iNode, iDim, val_Coord);
+        }
+      }
 
-        for (iNode = 0; iNode < nNodes; iNode++) {
-          indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-          for (iDim = 0; iDim < nDim; iDim++) {
-            su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-            element->SetRef_Coord(iNode, iDim, val_Coord);
-          }
+      /*--- In topology mode determine the penalty to apply to the mass,
+       *    linear function of the physical density. ---*/
+      su2double simp_penalty = 1.0;
+      if (topology_mode) {
+        simp_penalty = simp_minstiff+(1.0-simp_minstiff)*element_properties[iElem]->GetPhysicalDensity();
+      }
+
+      /*--- Set the properties of the element and compute its mass matrix. ---*/
+      element->Set_ElProperties(element_properties[iElem]);
+
+      numerics[FEA_TERM + thread*MAX_TERMS]->Compute_Mass_Matrix(element, config);
+
+      /*--- Add contributions of this element to the mass residual.
+       *    Equiv. to a matrix vector product with the mass matrix. ---*/
+      for (iNode = 0; iNode < nNodes; iNode++) {
+
+        if (LockStrategy) omp_set_lock(&UpdateLocks[indexNode[iNode]]);
+
+        for (jNode = 0; jNode < nNodes; jNode++) {
+
+          su2double Mab = simp_penalty * element->Get_Mab(iNode, jNode);
+
+          for (iVar = 0; iVar < nVar; iVar++)
+            TimeRes(indexNode[iNode], iVar) += Mab * TimeRes_Aux(indexNode[jNode], iVar);
         }
 
-        /*--- In topology mode determine the penalty to apply to the mass,
-         *    linear function of the physical density. ---*/
-        su2double simp_penalty = 1.0;
-        if (topology_mode) {
-          simp_penalty = simp_minstiff+(1.0-simp_minstiff)*element_properties[iElem]->GetPhysicalDensity();
-        }
+        if (LockStrategy) omp_unset_lock(&UpdateLocks[indexNode[iNode]]);
+      }
 
-        /*--- Set the properties of the element and compute its mass matrix. ---*/
-        element->Set_ElProperties(element_properties[iElem]);
+    } // end iElem loop
 
-        numerics[FEA_TERM + thread*MAX_TERMS]->Compute_Mass_Matrix(element, config);
-
-        /*--- Add contributions of this element to the mass matrix.
-         * In case we need to use locks we guard the entire update. ---*/
-        if (LockStrategy) omp_set_lock(&UpdateLocks[0]);
-
-        for (iNode = 0; iNode < nNodes; iNode++) {
-          for (jNode = 0; jNode < nNodes; jNode++) {
-
-            su2double Mab = simp_penalty * element->Get_Mab(iNode, jNode);
-
-            for (iVar = 0; iVar < nVar; iVar++) {
-              TimeRes[indexNode[iNode]*nVar+iVar] += Mab * TimeRes_Aux(indexNode[iNode],iVar);
-              TimeRes[indexNode[jNode]*nVar+iVar] += Mab * TimeRes_Aux(indexNode[jNode],iVar);
-            }
-          }
-        }
-        if (LockStrategy) omp_unset_lock(&UpdateLocks[0]);
-
-      } // end iElem loop
-
-    } // end color loop
-
-  } // end SU2_OMP_PARALLEL
+  } // end color loop
 
 }
 
@@ -1330,7 +1330,11 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
 
 }
 
-void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
+
+  /*--- Never record this method as atm it is not differentiable. ---*/
+  const bool ActiveTape = AD::TapeActive();
+  AD::StopRecording();
 
   const bool prestretch_fem = config->GetPrestretch();
 
@@ -1558,7 +1562,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
           }
 
           /*--- Once computed, compute M*TimeRes_Aux ---*/
-          MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
+          Compute_MassRes(geometry, numerics, config);
 
           /*--- Loop over all the markers  ---*/
           for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -1608,6 +1612,8 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     myfile.close();
 
   }
+
+  if (ActiveTape) AD::StartRecording();
 
 }
 
@@ -1686,7 +1692,7 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, con
 
 }
 
-void CFEASolver::Compute_IntegrationConstants(CConfig *config) {
+void CFEASolver::Compute_IntegrationConstants(const CConfig *config) {
 
   su2double Delta_t= config->GetDelta_DynTime();
 
@@ -2353,7 +2359,7 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
 
 }
 
-void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   const bool first_iter = (config->GetInnerIter() == 0);
   const bool dynamic = (config->GetTime_Domain());
@@ -2413,7 +2419,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
        *
        */
       if ((nonlinear_analysis && (newton_raphson || first_iter)) || linear_analysis) {
-        Jacobian.MatrixMatrixAddition(a_dt[0], MassMatrix);
+        Jacobian.MatrixMatrixAddition(SU2_TYPE::GetValue(a_dt[0]), MassMatrix);
       }
 
       /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
@@ -2429,8 +2435,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
       }
 
       /*--- Add M*TimeRes_Aux to the residual. ---*/
-
-      MassMatrix.MatrixVectorProduct(TimeRes_Aux, TimeRes, geometry, config);
+      Compute_MassRes(geometry, numerics, config);
       LinSysRes += TimeRes;
     }
 
@@ -2438,7 +2443,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
 
 }
 
-void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) {
 
   const bool dynamic = (config->GetTime_Domain());
 
@@ -2492,7 +2497,7 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
 
 }
 
-void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config) {
 
   const bool dynamic = (config->GetTime_Domain());
 
@@ -2556,7 +2561,7 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solve
 }
 
 
-void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   const bool first_iter = (config->GetInnerIter() == 0);
   const bool dynamic = (config->GetTime_Domain());
@@ -2612,7 +2617,7 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
 
       /*--- See notes on logic in ImplicitNewmark_Iteration(). ---*/
       if ((nonlinear_analysis && (newton_raphson || first_iter)) || linear_analysis) {
-        Jacobian.MatrixMatrixAddition(a_dt[0], MassMatrix);
+        Jacobian.MatrixMatrixAddition(SU2_TYPE::GetValue(a_dt[0]), MassMatrix);
       }
 
       /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
@@ -2628,8 +2633,7 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
       }
 
       /*--- Add M*TimeRes_Aux to the residual. ---*/
-
-      MassMatrix.MatrixVectorProduct(TimeRes_Aux, TimeRes, geometry, config);
+      Compute_MassRes(geometry, numerics, config);
       LinSysRes += TimeRes;
       SU2_OMP_BARRIER
 
@@ -2665,7 +2669,7 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
 
 }
 
-void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CConfig *config) {
 
   /*--- Update displacement components of the solution. ---*/
 
@@ -2681,7 +2685,7 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solv
 
 }
 
-void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CConfig *config) {
 
   const su2double alpha_f = config->Get_Int_Coeffs(2);
   const su2double alpha_m = config->Get_Int_Coeffs(3);
@@ -2740,7 +2744,7 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **
 
 }
 
-void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, const CConfig *config) {
 
   /*--- Set the load conditions of the time step n+1 as the load conditions for time step n ---*/
   nodes->Set_SurfaceLoad_Res_n();
@@ -2779,14 +2783,10 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 }
 
 
-void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry,
-                                            CConfig *fea_config,
-                                            CSolver ***fea_solution) {
+void CFEASolver::PredictStruct_Displacement(CGeometry **geometry, const CConfig *config) {
 
-  const unsigned short predOrder = fea_config->GetPredictorOrder();
-  const su2double Delta_t = fea_config->GetDelta_DynTime();
-
-  auto fea_nodes = fea_solution[MESH_0][FEA_SOL]->GetNodes();
+  const unsigned short predOrder = config->GetPredictorOrder();
+  const su2double Delta_t = config->GetDelta_DynTime();
 
   if(predOrder > 2 && rank == MASTER_NODE)
     cout << "Higher order predictor not implemented. Solving with order 0." << endl;
@@ -2799,9 +2799,9 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry,
 
     switch (predOrder) {
       case 1: {
-        const su2double* solDisp = fea_nodes->GetSolution(iPoint);
-        const su2double* solVel = fea_nodes->GetSolution_Vel(iPoint);
-        su2double* valPred = fea_nodes->GetSolution_Pred(iPoint);
+        const su2double* solDisp = nodes->GetSolution(iPoint);
+        const su2double* solVel = nodes->GetSolution_Vel(iPoint);
+        su2double* valPred = nodes->GetSolution_Pred(iPoint);
 
         for (iDim=0; iDim < nDim; iDim++) {
           valPred[iDim] = solDisp[iDim] + Delta_t*solVel[iDim];
@@ -2809,10 +2809,10 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry,
       } break;
 
       case 2: {
-        const su2double* solDisp = fea_nodes->GetSolution(iPoint);
-        const su2double* solVel = fea_nodes->GetSolution_Vel(iPoint);
-        const su2double* solVel_tn = fea_nodes->GetSolution_Vel_time_n(iPoint);
-        su2double* valPred = fea_nodes->GetSolution_Pred(iPoint);
+        const su2double* solDisp = nodes->GetSolution(iPoint);
+        const su2double* solVel = nodes->GetSolution_Vel(iPoint);
+        const su2double* solVel_tn = nodes->GetSolution_Vel_time_n(iPoint);
+        su2double* valPred = nodes->GetSolution_Pred(iPoint);
 
         for (iDim=0; iDim < nDim; iDim++) {
           valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*solVel[iDim]-solVel_tn[iDim]);
@@ -2820,7 +2820,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry,
       } break;
 
       default: {
-        fea_nodes->SetSolution_Pred(iPoint);
+        nodes->SetSolution_Pred(iPoint);
       } break;
     }
 
@@ -2828,8 +2828,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry,
 
 }
 
-void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config,
-                                           CSolver ***fea_solution, unsigned long iOuterIter) {
+void CFEASolver::ComputeAitken_Coefficient(CGeometry **geometry, CConfig *config, unsigned long iOuterIter) {
 
   unsigned long iPoint, iDim;
   su2double rbuf_numAitk = 0, sbuf_numAitk = 0;
@@ -2843,7 +2842,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
   su2double delta_deltaU[3] = {0.0, 0.0, 0.0};
   su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn_Min, WAitkDyn;
 
-  unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
+  unsigned short RelaxMethod_FSI = config->GetRelaxation_Method_FSI();
 
   /*--- Only when there is movement, and a dynamic coefficient is requested, it makes sense to compute the Aitken's coefficient ---*/
 
@@ -2854,7 +2853,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
   }
   else if (RelaxMethod_FSI == FIXED_PARAMETER) {
 
-    SetWAitken_Dyn(fea_config->GetAitkenStatRelax());
+    SetWAitken_Dyn(config->GetAitkenStatRelax());
 
   }
   else if (RelaxMethod_FSI == AITKEN_DYNAMIC) {
@@ -2862,8 +2861,8 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
     if (iOuterIter == 0) {
 
       WAitkDyn_tn1 = GetWAitken_Dyn_tn1();
-      WAitkDyn_Max = fea_config->GetAitkenDynMaxInit();
-      WAitkDyn_Min = fea_config->GetAitkenDynMinInit();
+      WAitkDyn_Max = config->GetAitkenDynMaxInit();
+      WAitkDyn_Min = config->GetAitkenDynMinInit();
 
       WAitkDyn = min(WAitkDyn_tn1, WAitkDyn_Max);
       WAitkDyn = max(WAitkDyn, WAitkDyn_Min);
@@ -2875,10 +2874,10 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
       // To nPointDomain; we need to communicate the values
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-        dispPred     = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred(iPoint);
-        dispPred_Old = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred_Old(iPoint);
-        dispCalc     = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution(iPoint);
-        dispCalc_Old = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Old(iPoint);
+        dispPred     = nodes->GetSolution_Pred(iPoint);
+        dispPred_Old = nodes->GetSolution_Pred_Old(iPoint);
+        dispCalc     = nodes->GetSolution(iPoint);
+        dispCalc_Old = nodes->GetSolution_Old(iPoint);
 
         for (iDim = 0; iDim < nDim; iDim++) {
 
@@ -2920,9 +2919,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
 
 }
 
-void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry,
-                                      CConfig *fea_config,
-                                      CSolver ***fea_solution) {
+void CFEASolver::SetAitken_Relaxation(CGeometry **geometry, const CConfig *config) {
 
   const su2double WAitken = GetWAitken_Dyn();
 
@@ -2931,14 +2928,14 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry,
   for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Retrieve pointers to the predicted and calculated solutions ---*/
-    su2double* dispPred = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred(iPoint);
-    const su2double* dispCalc = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution(iPoint);
+    su2double* dispPred = nodes->GetSolution_Pred(iPoint);
+    const su2double* dispCalc = nodes->GetSolution(iPoint);
 
     /*--- Set predicted solution as the old predicted solution ---*/
-    fea_solution[MESH_0][FEA_SOL]->GetNodes()->SetSolution_Pred_Old(iPoint);
+    nodes->SetSolution_Pred_Old(iPoint);
 
     /*--- Set calculated solution as the old solution (needed for dynamic Aitken relaxation) ---*/
-    fea_solution[MESH_0][FEA_SOL]->GetNodes()->SetSolution_Old(iPoint, dispCalc);
+    nodes->SetSolution_Old(iPoint, dispCalc);
 
     /*--- Apply the Aitken relaxation ---*/
     for (unsigned short iDim=0; iDim < nDim; iDim++) {
@@ -2948,26 +2945,24 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry,
 
 }
 
-void CFEASolver::Update_StructSolution(CGeometry **fea_geometry,
-                                       CConfig *fea_config,
-                                       CSolver ***fea_solution) {
+void CFEASolver::Update_StructSolution(CGeometry **geometry, CConfig *config) {
 
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
 
-    auto valSolutionPred = fea_solution[MESH_0][FEA_SOL]->GetNodes()->GetSolution_Pred(iPoint);
+    auto valSolutionPred = nodes->GetSolution_Pred(iPoint);
 
-    fea_solution[MESH_0][FEA_SOL]->GetNodes()->SetSolution(iPoint, valSolutionPred);
+    nodes->SetSolution(iPoint, valSolutionPred);
   }
 
   /*--- Perform the MPI communication of the solution, displacements only ---*/
 
-  InitiateComms(fea_geometry[MESH_0], fea_config, SOLUTION_DISPONLY);
-  CompleteComms(fea_geometry[MESH_0], fea_config, SOLUTION_DISPONLY);
+  InitiateComms(geometry[MESH_0], config, SOLUTION_DISPONLY);
+  CompleteComms(geometry[MESH_0], config, SOLUTION_DISPONLY);
 
 }
 
-void CFEASolver::OutputForwardModeGradient(CConfig *config, bool newFile,
+void CFEASolver::OutputForwardModeGradient(const CConfig *config, bool newFile,
                                            su2double fun, su2double fun_avg,
                                            su2double der, su2double der_avg) const {
   if (rank != MASTER_NODE) return;
@@ -3523,7 +3518,7 @@ void CFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config)
 
 }
 
-void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
+void CFEASolver::FilterElementDensities(CGeometry *geometry, const CConfig *config)
 {
   /*--- Apply a filter to the design densities of the elements to generate the
   physical densities which are the ones used to penalize their stiffness. ---*/

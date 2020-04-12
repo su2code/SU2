@@ -1525,12 +1525,12 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void ImplicitNewmark_Iteration(CGeometry *geometry,
-                                                CSolver **solver_container,
-                                                CConfig *config) { }
+                                                CNumerics **numerics,
+                                                const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1539,7 +1539,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void ImplicitNewmark_Update(CGeometry *geometry,
-                                             CSolver **solver_container,
                                              CConfig *config) { }
 
   /*!
@@ -1549,18 +1548,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void ImplicitNewmark_Relaxation(CGeometry *geometry,
-                                                 CSolver **solver_container,
                                                  CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void GeneralizedAlpha_Iteration(CGeometry *geometry,
-                                                 CSolver **solver_container,
-                                                 CConfig *config) { }
+                                                 CNumerics **numerics,
+                                                 const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1569,7 +1567,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void GeneralizedAlpha_UpdateDisp(CGeometry *geometry,
-                                                  CSolver **solver_container,
                                                   CConfig *config) { }
 
   /*!
@@ -1579,7 +1576,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void GeneralizedAlpha_UpdateSolution(CGeometry *geometry,
-                                                      CSolver **solver_container,
                                                       CConfig *config) { }
 
   /*!
@@ -1589,8 +1585,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void GeneralizedAlpha_UpdateLoads(CGeometry *geometry,
-                                                   CSolver **solver_container,
-                                                   CConfig *config) { }
+                                                   const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -3594,45 +3589,38 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] fea_config - Geometrical definition of the problem.
-   * \param[in] fea_geometry - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the problem.
    */
-  inline virtual void PredictStruct_Displacement(CGeometry **fea_geometry,
-                                                 CConfig *fea_config,
-                                                 CSolver ***fea_solution) { }
+  inline virtual void PredictStruct_Displacement(CGeometry **geometry,
+                                                 const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] fea_config - Geometrical definition of the problem.
-   * \param[in] fea_geometry - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the problem.
+   * \param[in] iOuterIter - Current outer iteration.
    */
-  inline virtual void ComputeAitken_Coefficient(CGeometry **fea_geometry,
-                                                CConfig *fea_config,
-                                                CSolver ***fea_solution,
+  inline virtual void ComputeAitken_Coefficient(CGeometry **geometry,
+                                                CConfig *config,
                                                 unsigned long iOuterIter) { }
 
 
   /*!
    * \brief A virtual member.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] fea_config - Geometrical definition of the problem.
-   * \param[in] fea_geometry - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetAitken_Relaxation(CGeometry **fea_geometry,
-                                           CConfig *fea_config,
-                                           CSolver ***fea_solution) { }
+  inline virtual void SetAitken_Relaxation(CGeometry **geometry,
+                                           const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] fea_config - Geometrical definition of the problem.
-   * \param[in] fea_geometry - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Update_StructSolution(CGeometry **fea_geometry,
-                                            CConfig *fea_config,
-                                            CSolver ***fea_solution) { }
+  inline virtual void Update_StructSolution(CGeometry **geometry,
+                                            CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -4015,7 +4003,7 @@ public:
 
   inline virtual void Compute_NodalStress(CGeometry *geometry,
                                           CNumerics **numerics,
-                                          CConfig *config) { }
+                                          const CConfig *config) { }
 
   /*!
    * \brief A virtual member.

@@ -1473,8 +1473,7 @@ void CFEAIteration::Update(COutput *output,
 
     /*--- For FSI problems, output the relaxed result, which is the one transferred into the fluid domain (for restart purposes) ---*/
     if (config[val_iZone]->GetKind_TimeIntScheme_FEA() == NEWMARK_IMPLICIT) {
-      feaSolver->ImplicitNewmark_Relaxation(geometry[val_iZone][val_iInst][MESH_0],
-                                            solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+      feaSolver->ImplicitNewmark_Relaxation(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
     }
   }
 
@@ -1496,7 +1495,7 @@ void CFEAIteration::Predictor(COutput *output,
 
   /*--- Predict displacements ---*/
 
-  feaSolver->PredictStruct_Displacement(geometry[val_iZone][val_iInst], config[val_iZone], solver[val_iZone][val_iInst]);
+  feaSolver->PredictStruct_Displacement(geometry[val_iZone][val_iInst], config[val_iZone]);
 
   /*--- For parallel simulations we need to communicate the predicted solution before updating the fluid mesh ---*/
 
@@ -1522,12 +1521,11 @@ void CFEAIteration::Relaxation(COutput *output,
 
   /*------------------- Compute the coefficient ---------------------*/
 
-  feaSolver->ComputeAitken_Coefficient(geometry[val_iZone][INST_0], config[val_iZone],
-                                       solver[val_iZone][INST_0], config[val_iZone]->GetOuterIter());
+  feaSolver->ComputeAitken_Coefficient(geometry[val_iZone][INST_0], config[val_iZone], config[val_iZone]->GetOuterIter());
 
   /*----------------- Set the relaxation parameter ------------------*/
 
-  feaSolver->SetAitken_Relaxation(geometry[val_iZone][INST_0], config[val_iZone], solver[val_iZone][INST_0]);
+  feaSolver->SetAitken_Relaxation(geometry[val_iZone][INST_0], config[val_iZone]);
 
   /*----------------- Communicate the predicted solution and the old one ------------------*/
 
@@ -2825,7 +2823,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
   /*--- FSI specific dependencies. ---*/
   if (fsi) {
     /*--- Set relation between solution and predicted displacements, which are the transferred ones. ---*/
-    dir_solver->PredictStruct_Displacement(nullptr, config[iZone], solver[iZone][iInst]);
+    dir_solver->PredictStruct_Displacement(nullptr, config[iZone]);
   }
 
   /*--- MPI dependencies. ---*/

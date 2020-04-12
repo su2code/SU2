@@ -1368,8 +1368,7 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
 }
 
 template<class ScalarType>
-template<class OtherType>
-void CSysMatrix<ScalarType>::MatrixMatrixAddition(OtherType alpha, const CSysMatrix<OtherType>& B) {
+void CSysMatrix<ScalarType>::MatrixMatrixAddition(ScalarType alpha, const CSysMatrix<ScalarType>& B) {
 
   /*--- Check that the sparse structure is shared between the two matrices,
    *    comparing pointers is ok as they are obtained from CGeometry. ---*/
@@ -1383,7 +1382,7 @@ void CSysMatrix<ScalarType>::MatrixMatrixAddition(OtherType alpha, const CSysMat
 
   SU2_OMP_FOR_STAT(omp_light_size)
   for (auto i = 0ul; i < nnz*nVar*nEqn; ++i)
-    matrix[i] += PassiveAssign<ScalarType,OtherType>(alpha*B.matrix[i]);
+    matrix[i] += alpha*B.matrix[i];
 
 }
 
@@ -1443,7 +1442,6 @@ template void  CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&
 template void  CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
 template void  CSysMatrix<su2double>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
-template void  CSysMatrix<su2double>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysMatrix<passivedouble>;
@@ -1455,6 +1453,4 @@ template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, c
 template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
 template void  CSysMatrix<passivedouble>::EnforceSolutionAtDOF(unsigned long, unsigned long, passivedouble, CSysVector<passivedouble>&);
 template void  CSysMatrix<passivedouble>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
-template void  CSysMatrix<passivedouble>::MatrixMatrixAddition(passivedouble, const CSysMatrix<passivedouble>&);
-template void  CSysMatrix<passivedouble>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
 #endif
