@@ -112,7 +112,7 @@ def amg ( config , kind='' ):
     
     os.symlink(os.path.join(cwd, config.MESH_FILENAME), config.MESH_FILENAME)
         
-    current_mesh = config['MESH_FILENAME']
+    cur_meshfil = config['MESH_FILENAME']
 
     #--- AMG parameters
     
@@ -127,7 +127,7 @@ def amg ( config , kind='' ):
 
     #--- Get mesh dimension
 
-    dim = su2amg.get_su2_dim(current_mesh)
+    dim = su2amg.get_su2_dim(cur_meshfil)
     if ( dim != 2 and dim != 3 ):
         raise ValueError("Wrong dimension number\n")
     
@@ -203,11 +203,11 @@ def amg ( config , kind='' ):
             sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
             sav_stderr, sys.stderr = sys.stderr, stderr_hdl
         
-            current_mesh     = config['MESH_FILENAME']
-            current_solution = "ini_restart_flow.csv"
+            cur_meshfil     = config['MESH_FILENAME']
+            cur_solfil = "ini_restart_flow.csv"
             
             config_cfd.CONV_FILENAME              = "ini_history"
-            config_cfd.RESTART_FILENAME           = current_solution
+            config_cfd.RESTART_FILENAME           = cur_solfil
             config_cfd.COMPUTE_METRIC             = 'NO'
             config_cfd.MATH_PROBLEM               = 'DIRECT'
             # config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
@@ -215,11 +215,11 @@ def amg ( config , kind='' ):
             SU2_CFD(config_cfd)
                         
             if adap_sensor == 'GOAL':
-                current_solution_adj = "ini_restart_adj.csv"
+                cur_solfil_adj = "ini_restart_adj.csv"
 
                 config_cfd.CONV_FILENAME          = "ini_history_adj"
-                config_cfd.RESTART_ADJ_FILENAME   = current_solution_adj
-                config_cfd.SOLUTION_FILENAME      = current_solution
+                config_cfd.RESTART_ADJ_FILENAME   = cur_solfil_adj
+                config_cfd.SOLUTION_FILENAME      = cur_solfil
                 config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
                 config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
                 config_cfd.COMPUTE_METRIC         = 'YES'
@@ -230,7 +230,7 @@ def amg ( config , kind='' ):
 
                 func_name            = config.OBJECTIVE_FUNCTION
                 suffix               = su2io.get_adjointSuffix(func_name)
-                current_solution_adj = su2io.add_suffix(current_solution_adj,suffix)
+                cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
 
         except:
             sys.stdout = sav_stdout
@@ -261,12 +261,12 @@ def amg ( config , kind='' ):
         sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
         sav_stderr, sys.stderr = sys.stderr, stderr_hdl
 
-        current_mesh         = config['MESH_FILENAME']
-        current_solution     = "ini_restart_flow.csv"
-        current_solution_adj = "ini_restart_adj.csv"
+        cur_meshfil         = config['MESH_FILENAME']
+        cur_solfil     = "ini_restart_flow.csv"
+        cur_solfil_adj = "ini_restart_adj.csv"
 
-        config_cfd.RESTART_FILENAME           = current_solution
-        config_cfd.RESTART_ADJ_FILENAME       = current_solution_adj
+        config_cfd.RESTART_FILENAME           = cur_solfil
+        config_cfd.RESTART_ADJ_FILENAME       = cur_solfil_adj
         config_cfd.SOLUTION_FILENAME          = '../' + config['SOLUTION_FILENAME']
         config_cfd.SOLUTION_ADJ_FILENAME      = '../' + config['SOLUTION_ADJ_FILENAME']
         config_cfd.VOLUME_OUTPUT              = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
@@ -278,15 +278,15 @@ def amg ( config , kind='' ):
         # config_cfd.ADAP_SHIFT_NORMAL_NEIGHBOR = 'NO'
 
         #--- Run an adjoint if the adjoint solution file doesn't exist
-        solution_adj_ini  = config_cfd.SOLUTION_ADJ_FILENAME    
+        cur_solfil_adj_ini  = config_cfd.SOLUTION_ADJ_FILENAME    
         func_name         = config.OBJECTIVE_FUNCTION
         suffix            = su2io.get_adjointSuffix(func_name)
-        solution_adj_ini  = su2io.add_suffix(solution_adj_ini,suffix)
-        if not (os.path.exists(solution_adj_ini)):
+        cur_solfil_adj_ini  = su2io.add_suffix(cur_solfil_adj_ini,suffix)
+        if not (os.path.exists(cur_solfil_adj_ini)):
             config_cfd.RESTART_SOL= 'NO'
             SU2_CFD(config_cfd)
 
-            current_solution_adj = su2io.add_suffix(current_solution_adj,suffix)
+            cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
 
         #--- Otherwise just compute the metric
         else:
@@ -295,14 +295,14 @@ def amg ( config , kind='' ):
             sav_stdout.write('Initial adjoint CFD solution is provided.\n')
             sav_stdout.flush()
 
-            current_solution_adj = solution_adj_ini
+            cur_solfil_adj = cur_solfil_adj_ini
 
         sys.stdout = sav_stdout
         sys.stderr = sav_stderr
         
     #--- Check existence of initial mesh, solution
     
-    required_files = [current_mesh,current_solution]
+    required_files = [cur_meshfil,cur_solfil]
     
     if not all (os.path.exists(fil) for fil in required_files):
         err = '\n\n## ERROR : Can\'t find:\n'
@@ -337,15 +337,15 @@ def amg ( config , kind='' ):
             
             #--- Load su2 mesh 
             
-            mesh = su2amg.read_mesh_and_sol(current_mesh, current_solution)
+            mesh = su2amg.read_mesh_and_sol(cur_meshfil, cur_solfil)
 
             #--- Write solution
             if global_iter == 0 :
                 su2amg.write_mesh_and_sol("ini.meshb", "ini.solb", mesh)
             else :
-                current_gmf_mesh = "ite%d.meshb" % (global_iter-1)
-                current_gmf_solution = "ite%d.solb" % (global_iter-1)
-                su2amg.write_mesh_and_sol(current_gmf_mesh, current_gmf_solution, mesh)
+                cur_meshfil_gmf = "ite%d.meshb" % (global_iter-1)
+                cur_solfil_gmf = "ite%d.solb" % (global_iter-1)
+                su2amg.write_mesh_and_sol(cur_meshfil_gmf, cur_solfil_gmf, mesh)
                                     
             if not amg_python : 
                 
@@ -395,12 +395,12 @@ def amg ( config , kind='' ):
                 mesh = su2amg.read_mesh_and_sol(config_amg['mesh_out'], "current.itp.solb")
                 mesh['markers'] = save_markers
                 
-                current_mesh = "ite%d.su2" % (global_iter)
-                current_solution = "ite%d.csv" % (global_iter)    
+                cur_meshfil = "ite%d.su2" % (global_iter)
+                cur_solfil = "ite%d.csv" % (global_iter)    
                 
-                su2amg.write_mesh_and_sol(current_mesh, current_solution, mesh)
+                su2amg.write_mesh_and_sol(cur_meshfil, cur_solfil, mesh)
                 
-                if not os.path.exists(current_mesh) or not os.path.exists(current_solution) :
+                if not os.path.exists(cur_meshfil) or not os.path.exists(cur_solfil) :
                     raise Exception("\n##ERROR : Conversion to SU2 failed.\n")
 
             else :
@@ -422,7 +422,7 @@ def amg ( config , kind='' ):
                     mesh['metric'] = metric_wrap['solution']
 
                     #--- Read and merge adjoint solution to be interpolated
-                    sol_adj = su2amg.read_sol(current_solution_adj, mesh)
+                    sol_adj = su2amg.read_sol(cur_solfil_adj, mesh)
                     su2amg.merge_sol(mesh, sol_adj)
 
                     del sol_adj
@@ -441,21 +441,21 @@ def amg ( config , kind='' ):
                     mesh_new['dimension'] = mesh['dimension']
                     mesh_new['solution_tag'] = mesh['solution_tag']
                     
-                    current_mesh = "ite%d.su2" % (global_iter)
-                    current_solution = "ite%d.csv" % (global_iter)
-                    current_solution_adj = "ite%d_adj.csv" % (global_iter)
+                    cur_meshfil = "ite%d.su2" % (global_iter)
+                    cur_solfil = "ite%d.csv" % (global_iter)
+                    cur_solfil_adj = "ite%d_adj.csv" % (global_iter)
 
                     sol_adj = su2amg.split_adj_sol(mesh_new)
                                     
-                    su2amg.write_mesh_and_sol(current_mesh, current_solution, mesh_new)
-                    su2amg.write_sol(current_solution_adj, sol_adj)
+                    su2amg.write_mesh_and_sol(cur_meshfil, cur_solfil, mesh_new)
+                    su2amg.write_sol(cur_solfil_adj, sol_adj)
 
                     if config_cfd.WRT_INRIA_MESH == 'YES':
-                        current_gmf_mesh = "ite%d_itp.meshb" % global_iter
-                        current_gmf_solution = "ite%d_itp.solb" % global_iter
-                        current_gmf_solution_adj = "ite%d_adj_itp.solb" % global_iter
-                        su2amg.write_mesh_and_sol(current_gmf_mesh, current_gmf_solution, mesh_new)
-                        su2amg.write_sol(current_gmf_solution_adj, sol_adj)
+                        cur_meshfil_gmf = "ite%d_itp.meshb" % global_iter
+                        cur_solfil_gmf = "ite%d_itp.solb" % global_iter
+                        cur_solfil_gmf_adj = "ite%d_adj_itp.solb" % global_iter
+                        su2amg.write_mesh_and_sol(cur_meshfil_gmf, cur_solfil_gmf, mesh_new)
+                        su2amg.write_sol(cur_solfil_gmf_adj, sol_adj)
 
                     del sol_adj
 
@@ -480,10 +480,10 @@ def amg ( config , kind='' ):
                     mesh_new['markers'] = mesh['markers']
                     mesh_new['dimension'] = mesh['dimension']
                     
-                    current_mesh = "ite%d.su2" % (global_iter)
-                    current_solution = "ite%d.csv" % (global_iter)
+                    cur_meshfil = "ite%d.su2" % (global_iter)
+                    cur_solfil = "ite%d.csv" % (global_iter)
                                     
-                    su2amg.write_mesh_and_sol(current_mesh, current_solution, mesh_new)
+                    su2amg.write_mesh_and_sol(cur_meshfil, cur_solfil, mesh_new)
                 
             #--- Run su2
             
@@ -502,18 +502,18 @@ def amg ( config , kind='' ):
                 sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
                 sav_stderr, sys.stderr = sys.stderr, stderr_hdl
                 
-                current_solution_ini = "ite%d_ini.csv" % (global_iter)
-                os.rename(current_solution, current_solution_ini)
+                cur_solfil_ini = "ite%d_ini.csv" % (global_iter)
+                os.rename(cur_solfil, cur_solfil_ini)
 
-                current_solution_adj_ini = "ite%d_adj_ini.csv" % (global_iter)
-                current_solution_adj_ini = su2io.add_suffix(current_solution_adj_ini,suffix)
-                os.rename(current_solution_adj, current_solution_adj_ini)
-                current_solution_adj_ini = "ite%d_adj_ini.csv" % (global_iter)
+                cur_solfil_adj_ini = "ite%d_adj_ini.csv" % (global_iter)
+                cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
+                os.rename(cur_solfil_adj, cur_solfil_adj_ini)
+                cur_solfil_adj_ini = "ite%d_adj_ini.csv" % (global_iter)
                 
-                config_cfd.MESH_FILENAME     = current_mesh
+                config_cfd.MESH_FILENAME     = cur_meshfil
                 config_cfd.CONV_FILENAME     = "ite%d_history" % (global_iter)
-                config_cfd.SOLUTION_FILENAME = current_solution_ini
-                config_cfd.RESTART_FILENAME  = current_solution
+                config_cfd.SOLUTION_FILENAME = cur_solfil_ini
+                config_cfd.RESTART_FILENAME  = cur_solfil
                 config_cfd.VOLUME_OUTPUT     = "(COORDINATES, SOLUTION, PRIMITIVE)"
                 config_cfd.COMPUTE_METRIC    = 'NO'
                 config_cfd.MATH_PROBLEM      = 'DIRECT'
@@ -528,15 +528,15 @@ def amg ( config , kind='' ):
                 
                 SU2_CFD(config_cfd)
                 
-                if not os.path.exists(current_solution) :
+                if not os.path.exists(cur_solfil) :
                     raise Exception("\n##ERROR : SU2_CFD Failed.\n")
                     
                 if adap_sensor == 'GOAL':
 
                     config_cfd.CONV_FILENAME          = "ite%d_history_adj" % (global_iter)
-                    config_cfd.RESTART_ADJ_FILENAME   = current_solution_adj
-                    config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj_ini
-                    config_cfd.SOLUTION_FILENAME      = current_solution
+                    config_cfd.RESTART_ADJ_FILENAME   = cur_solfil_adj
+                    config_cfd.SOLUTION_ADJ_FILENAME  = cur_solfil_adj_ini
+                    config_cfd.SOLUTION_FILENAME      = cur_solfil
                     config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
                     # config_cfd.RESTART_SOL            = 'NO'
                     config_cfd.ITER                   = int(adap_adj_iter[iSiz])
@@ -545,7 +545,7 @@ def amg ( config , kind='' ):
                     config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
                     SU2_CFD(config_cfd)
 
-                    current_solution_adj = su2io.add_suffix(current_solution_adj,suffix)
+                    cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
             
             except:
                 sys.stdout = sav_stdout
@@ -582,11 +582,11 @@ def amg ( config , kind='' ):
     #--- Write final files
 
     if config_cfd.WRT_INRIA_MESH == 'YES':
-        mesh = su2amg.read_mesh_and_sol(current_mesh, current_solution)
+        mesh = su2amg.read_mesh_and_sol(cur_meshfil, cur_solfil)
         su2amg.write_mesh_and_sol("fin.meshb", "fin.solb", mesh)
     
-    os.rename(current_solution,os.path.join(cwd,config.RESTART_FILENAME))
-    os.rename(current_mesh,os.path.join(cwd,config.MESH_OUT_FILENAME))
+    os.rename(cur_solfil,os.path.join(cwd,config.RESTART_FILENAME))
+    os.rename(cur_meshfil,os.path.join(cwd,config.MESH_OUT_FILENAME))
     
     sys.stdout.write("\nMesh adaptation successfully ended. Results files:\n")
     sys.stdout.write("%s\n%s\n\n" % (config.MESH_OUT_FILENAME,config.RESTART_FILENAME))
