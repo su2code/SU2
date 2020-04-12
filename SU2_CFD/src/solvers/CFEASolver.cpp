@@ -2081,9 +2081,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, const CCo
   const su2double* Load_Dir_Local = config->GetLoad_Dir(TagBound);
 
   /*--- Compute the norm of the vector that was passed in the config file. ---*/
-  su2double LoadNorm = pow(Load_Dir_Local[0],2) + pow(Load_Dir_Local[1],2);
-  if (nDim==3) LoadNorm += pow(Load_Dir_Local[2],2);
-  LoadNorm = sqrt(LoadNorm);
+  su2double LoadNorm = Norm(nDim, Load_Dir_Local);
 
   su2double CurrentTime=config->GetCurrent_DynTime();
   su2double Ramp_Time = config->GetRamp_Time();
@@ -3035,10 +3033,9 @@ void CFEASolver::OutputForwardModeGradient(const CConfig *config, bool newFile,
 
 }
 
-void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config){
+void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, const CConfig *config){
 
   bool fsi = config->GetFSI_Simulation();
-  bool dynamic = config->GetTime_Domain();
   unsigned long TimeIter = config->GetTimeIter();
 
   su2double objective_function = 0.0;
@@ -3070,17 +3067,18 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
   Total_OFRefGeom += PenaltyValue;
 
   Global_OFRefGeom += Total_OFRefGeom;
-  su2double objective_function_averaged = Global_OFRefGeom / (TimeIter + 1.0 + EPS);
 
-  /// TODO: Temporary output files for the objective function. Will be integrated in the output once it is refactored.
+  /*--- To be accessible from the output. ---*/
+  Total_OFCombo = Total_OFRefGeom;
 
-  if (rank != MASTER_NODE) return;
+  /// TODO: Temporary output files for the direct mode.
 
-  if (config->GetDirectDiff() != NO_DERIVATIVE) {
+  if ((rank == MASTER_NODE) && (config->GetDirectDiff() != NO_DERIVATIVE)) {
 
     /*--- Forward mode AD results. ---*/
 
     su2double local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefGeom);
+    su2double objective_function_averaged = Global_OFRefGeom / (TimeIter + 1.0 + EPS);
 
     if (fsi) Total_ForwardGradient  = local_forward_gradient;
     else     Total_ForwardGradient += local_forward_gradient;
@@ -3090,32 +3088,15 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
     OutputForwardModeGradient(config, false, Total_OFRefGeom, objective_function_averaged,
                               local_forward_gradient, averaged_gradient);
   }
-  else {
-    cout << "Objective function: " << Total_OFRefGeom << "." << endl;
-    ofstream myfile_res;
-    myfile_res.open ("of_refgeom.dat");
-    myfile_res.precision(15);
-    if (dynamic) myfile_res << scientific << objective_function_averaged << endl;
-    else myfile_res << scientific << Total_OFRefGeom << endl;
-    myfile_res.close();
-    if (fsi) {
-      ofstream myfile_his;
-      myfile_his.open ("history_refgeom.dat",ios::app);
-      myfile_his.precision(15);
-      myfile_his << scientific << Total_OFRefGeom << endl;
-      myfile_his.close();
-    }
-  }
 
 }
 
-void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config){
+void CFEASolver::Compute_OFRefNode(CGeometry *geometry, const CConfig *config){
 
   bool fsi = config->GetFSI_Simulation();
-  bool dynamic = config->GetTime_Domain();
   unsigned long TimeIter = config->GetTimeIter();
 
-  su2double dist[3] = {0.0, 0.0, 0.0}, dist_reduce[3];
+  su2double dist[3] = {0.0}, dist_reduce[3];
 
   /*--- Convert global point index to local. ---*/
   long iPoint = geometry->GetGlobal_to_Local_Point(config->GetRefNode_ID());
@@ -3129,24 +3110,21 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
 
   SU2_MPI::Allreduce(dist, dist_reduce, 3, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-  Total_OFRefNode = 0.0;
-  for (unsigned short iVar = 0; iVar < 3; ++iVar)
-    Total_OFRefNode += pow(dist_reduce[iVar],2);
-
-  Total_OFRefNode = config->GetRefNode_Penalty()*sqrt(Total_OFRefNode) + PenaltyValue;
+  Total_OFRefNode = config->GetRefNode_Penalty() * Norm(3,dist_reduce) + PenaltyValue;
 
   Global_OFRefNode += Total_OFRefNode;
-  su2double objective_function_averaged = Global_OFRefNode / (TimeIter + 1.0 + EPS);
 
-  /// TODO: Temporary output files for the objective function. Will be integrated in the output once it is refactored.
+  /*--- To be accessible from the output. ---*/
+  Total_OFCombo = Total_OFRefNode;
 
-  if (rank != MASTER_NODE) return;
+  /// TODO: Temporary output files for the direct mode.
 
-  if (config->GetDirectDiff() != NO_DERIVATIVE) {
+  if ((rank == MASTER_NODE) && (config->GetDirectDiff() != NO_DERIVATIVE)) {
 
     /*--- Forward mode AD results. ---*/
 
     su2double local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefNode);
+    su2double objective_function_averaged = Global_OFRefNode / (TimeIter + 1.0 + EPS);
 
     if (fsi) Total_ForwardGradient  = local_forward_gradient;
     else     Total_ForwardGradient += local_forward_gradient;
@@ -3156,30 +3134,10 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
     OutputForwardModeGradient(config, false, Total_OFRefNode, objective_function_averaged,
                               local_forward_gradient, averaged_gradient);
   }
-  else {
-    cout << "Objective function: " << Total_OFRefNode << "." << endl;
-    ofstream myfile_res;
-    myfile_res.open ("of_refnode.dat");
-    myfile_res.precision(15);
-    if (dynamic) myfile_res << scientific << objective_function_averaged << endl;
-    else myfile_res << scientific << Total_OFRefNode << endl;
-    myfile_res.close();
-
-    ofstream myfile_his;
-    myfile_his.open ("history_refnode.dat",ios::app);
-    myfile_his.precision(15);
-    myfile_his << TimeIter << "\t";
-    myfile_his << scientific << Total_OFRefNode << "\t";
-    myfile_his << scientific << objective_function_averaged << "\t";
-    myfile_his << scientific << dist_reduce[0] << "\t";
-    myfile_his << scientific << dist_reduce[1] << "\t";
-    myfile_his << scientific << dist_reduce[2] << endl;
-    myfile_his.close();
-  }
 
 }
 
-void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config)
+void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, const CConfig *config)
 {
   /*--- Perform a volume average of the physical density of the elements for topology optimization ---*/
 
@@ -3218,24 +3176,12 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_contain
   else
     Total_OFVolFrac = integral/total_volume;
 
-  /// TODO: Temporary output files for the objective function. Will be integrated in the output once it is refactored.
+  /*--- To be accessible from the output. ---*/
+  Total_OFCombo = Total_OFVolFrac;
 
-  if (rank == MASTER_NODE) {
-    cout << "Objective function: " << Total_OFVolFrac << "." << endl;
-
-    ofstream myfile_res;
-    if (config->GetKind_ObjFunc() == TOPOL_DISCRETENESS)
-      myfile_res.open ("of_topdisc.dat");
-    else
-      myfile_res.open ("of_volfrac.dat");
-
-    myfile_res.precision(15);
-    myfile_res << scientific << Total_OFVolFrac << endl;
-    myfile_res.close();
-  }
 }
 
-void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_container, CConfig *config)
+void CFEASolver::Compute_OFCompliance(CGeometry *geometry, const CConfig *config)
 {
   /*--- Types of loads to consider ---*/
   const bool body_forces = config->GetDeadLoad();
@@ -3285,17 +3231,9 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_cont
 
   SU2_MPI::Allreduce(&compliance, &Total_OFCompliance, 1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 
-  /// TODO: Temporary output files for the objective function. Will be integrated in the output once it is refactored.
+  /*--- To be accessible from the output. ---*/
+  Total_OFCombo = Total_OFCompliance;
 
-  if (rank == MASTER_NODE) {
-    cout << "Objective function: " << Total_OFCompliance << "." << endl;
-
-    ofstream file;
-    file.open("of_topcomp.dat");
-    file.precision(15);
-    file << scientific << Total_OFCompliance << endl;
-    file.close();
-  }
 }
 
 void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumerics **numerics, CConfig *config){

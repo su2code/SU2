@@ -3687,42 +3687,34 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_OFRefGeom(CGeometry *geometry,
-                                        CSolver **solver_container,
-                                        CConfig *config) { }
+                                        const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_OFRefNode(CGeometry *geometry,
-                                        CSolver **solver_container,
-                                        CConfig *config) { }
+                                        const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_OFVolFrac(CGeometry *geometry,
-                                        CSolver **solver_container,
-                                        CConfig *config) { }
+                                        const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Compute_OFCompliance(CGeometry *geometry,
-                                          CSolver **solver_container,
-                                          CConfig *config) { }
+                                           const CConfig *config) { }
 
   /*!
    * \brief A virtual member.

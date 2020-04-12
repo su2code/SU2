@@ -734,21 +734,21 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
         switch(config->GetKind_ObjFunc()) {
 
           case REFERENCE_NODE:
-            solvers[FEA_SOL]->Compute_OFRefNode(geometry, solvers, config);
+            solvers[FEA_SOL]->Compute_OFRefNode(geometry, config);
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFRefNode()*Weight_ObjFunc;
             break;
           case REFERENCE_GEOMETRY:
-            solvers[FEA_SOL]->Compute_OFRefGeom(geometry, solvers, config);
+            solvers[FEA_SOL]->Compute_OFRefGeom(geometry, config);
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFRefGeom()*Weight_ObjFunc;
             break;
           case TOPOL_COMPLIANCE:
             static_cast<CFEASolver*>(solvers[FEA_SOL])->Integrate_FSI_Loads(geometry, config);
-            solvers[FEA_SOL]->Compute_OFCompliance(geometry, solvers, config);
+            solvers[FEA_SOL]->Compute_OFCompliance(geometry, config);
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFCompliance()*Weight_ObjFunc;
             break;
           case VOLUME_FRACTION:
           case TOPOL_DISCRETENESS:
-            solvers[FEA_SOL]->Compute_OFVolFrac(geometry, solvers, config);
+            solvers[FEA_SOL]->Compute_OFVolFrac(geometry, config);
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFVolFrac()*Weight_ObjFunc;
             break;
 

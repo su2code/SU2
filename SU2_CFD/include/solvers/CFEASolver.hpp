@@ -65,6 +65,7 @@ protected:
   su2double Total_OFRefNode;        /*!< \brief Total Objective Function: Reference Node. */
   su2double Total_OFVolFrac;        /*!< \brief Total Objective Function: Volume fraction (topology optimization). */
   su2double Total_OFCompliance;     /*!< \brief Total Objective Function: Compliance (topology optimization). */
+  su2double Total_OFCombo = 0.0;    /*!< \brief One of the above, for output/history purposes. */
 
   su2double Global_OFRefGeom;       /*!< \brief Global Objective Function (added over time steps): Reference Geometry. */
   su2double Global_OFRefNode;       /*!< \brief Global Objective Function (added over time steps): Reference Node. */
@@ -579,6 +580,12 @@ public:
   inline su2double GetTotal_OFCompliance(void) const final { return Total_OFCompliance; }
 
   /*!
+   * \brief Retrieve the value of the combined objective function
+   * \note For now there is no combination, this is just a seletion.
+   */
+  inline su2double GetTotal_ComboObj(void) const final { return Total_OFCombo; }
+
+  /*!
    * \brief Determines whether there is an element-based file or not.
    * \return Bool that defines whether the solution has an element-based file or not
    */
@@ -675,42 +682,30 @@ public:
   /*!
    * \brief Compute the objective function for a reference geometry
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_OFRefGeom(CGeometry *geometry,
-                         CSolver **solver_container,
-                         CConfig *config) final;
+  void Compute_OFRefGeom(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Compute the objective function for a reference node
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_OFRefNode(CGeometry *geometry,
-                         CSolver **solver_container,
-                         CConfig *config) final;
+  void Compute_OFRefNode(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Compute the objective function for a volume fraction
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_OFVolFrac(CGeometry *geometry,
-                         CSolver **solver_container,
-                         CConfig *config) final;
+  void Compute_OFVolFrac(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Compute the compliance objective function
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_OFCompliance(CGeometry *geometry,
-                            CSolver **solver_container,
-                            CConfig *config) final;
+  void Compute_OFCompliance(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Compute the penalty due to the stiffness increase

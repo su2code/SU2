@@ -1398,7 +1398,7 @@ void CFEAIteration::Iterate(COutput *output,
 
   }
 
-  /*--- Finally, we need to compute the objective function, in case that we are running a discrete adjoint solver... ---*/
+  /*--- Finally, we need to compute the objective function, in case we are running the discrete adjoint solver. ---*/
 
   switch (config[val_iZone]->GetKind_ObjFunc()) {
     case REFERENCE_GEOMETRY:
@@ -1406,25 +1406,21 @@ void CFEAIteration::Iterate(COutput *output,
         feaSolver->Stiffness_Penalty(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                                      numerics[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone]);
       }
-      feaSolver->Compute_OFRefGeom(geometry[val_iZone][val_iInst][MESH_0],
-                                   solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+      feaSolver->Compute_OFRefGeom(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
       break;
     case REFERENCE_NODE:
       if ((config[val_iZone]->GetDV_FEA() == YOUNG_MODULUS) || (config[val_iZone]->GetDV_FEA() == DENSITY_VAL)) {
         feaSolver->Stiffness_Penalty(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                                      numerics[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone]);
       }
-      feaSolver->Compute_OFRefNode(geometry[val_iZone][val_iInst][MESH_0],
-                                   solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+      feaSolver->Compute_OFRefNode(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
       break;
     case VOLUME_FRACTION:
     case TOPOL_DISCRETENESS:
-      feaSolver->Compute_OFVolFrac(geometry[val_iZone][val_iInst][MESH_0],
-                                   solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+      feaSolver->Compute_OFVolFrac(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
       break;
     case TOPOL_COMPLIANCE:
-      feaSolver->Compute_OFCompliance(geometry[val_iZone][val_iInst][MESH_0],
-                                      solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+      feaSolver->Compute_OFCompliance(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
       break;
   }
 
