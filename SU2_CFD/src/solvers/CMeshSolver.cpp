@@ -284,11 +284,9 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
 
 void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
-  unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID, iElem;
-  unsigned short iNodes, nNodes = 0;
+  unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID;
   unsigned short iMarker, iDim;
   su2double dist, MaxDistance_Local, MinDistance_Local;
-  su2double nodeDist, ElemDist;
   int rankID;
 
   /*--- Initialize min and max distance ---*/
@@ -375,29 +373,34 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
   }
 
+  SU2_OMP_PARALLEL
+  {
   /*--- Normalize distance from 0 to 1 ---*/
-  for (iPoint=0; iPoint < nPoint; ++iPoint) {
-    nodeDist = nodes->GetWallDistance(iPoint)/MaxDistance;
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+    su2double nodeDist = nodes->GetWallDistance(iPoint)/MaxDistance;
     nodes->SetWallDistance(iPoint,nodeDist);
   }
 
   /*--- Compute the element distances ---*/
-  for (iElem = 0; iElem < nElement; iElem++) {
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iElem = 0ul; iElem < nElement; iElem++) {
 
     int EL_KIND;
+    unsigned short nNodes = 0;
     GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
     /*--- Average the distance of the nodes in the element ---*/
 
-    ElemDist = 0.0;
-    for (iNodes = 0; iNodes < nNodes; iNodes++){
-      iPoint = geometry->elem[iElem]->GetNode(iNodes);
+    su2double ElemDist = 0.0;
+    for (auto iNode = 0u; iNode < nNodes; iNode++) {
+      auto iPoint = geometry->elem[iElem]->GetNode(iNode);
       ElemDist += nodes->GetWallDistance(iPoint);
     }
     ElemDist = ElemDist/su2double(nNodes);
 
     element[iElem].SetWallDistance(ElemDist);
-
+  }
   }
 
 }
@@ -504,7 +507,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   UpdateDualGrid(geometry[MESH_0], config);
 
   /*--- Check for failed deformation (negative volumes). ---*/
-  /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh using the current coordinates. ---*/
+  /*--- This is not recorded as it does not influence the solution. ---*/
   AD::StopRecording();
   SetMinMaxVolume(geometry[MESH_0], config, true);
   if (ActiveTape) AD::StartRecording();
@@ -673,6 +676,22 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
         (config->GetMarker_All_Moving(iMarker) == YES)) {
 
       BC_Deforming(geometry, numerics, config, iMarker);
+    }
+  }
+
+  /*--- Clamp far away nodes according to deform limit. ---*/
+  if ((config->GetDeform_Stiffness_Type() == SOLID_WALL_DISTANCE) &&
+      (config->GetDeform_Limit() < MaxDistance)) {
+
+    const su2double limit = config->GetDeform_Limit() / MaxDistance;
+
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      if (nodes->GetWallDistance(iPoint) <= limit) continue;
+
+      su2double zeros[MAXNVAR] = {0.0};
+      nodes->SetSolution(iPoint, zeros);
+      LinSysSol.SetBlock(iPoint, zeros);
+      Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
     }
   }
 
