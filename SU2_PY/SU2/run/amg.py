@@ -286,7 +286,7 @@ def amg ( config , kind='' ):
         func_name          = config.OBJECTIVE_FUNCTION
         suffix             = su2io.get_adjointSuffix(func_name)
         cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
-        if not (os.path.exists(cur_solfil_adj_ini)):
+        if not (os.path.exists(os.path.join(cwd, cur_solfil_adj_ini))):
             config_cfd.RESTART_SOL= 'NO'
             SU2_CFD(config_cfd)
 
