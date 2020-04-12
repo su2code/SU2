@@ -191,9 +191,4 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
     }
   }
 
-  /*--- Perform the MPI communication of the solution ---*/
-
-  solver_container[MainSolver]->InitiateComms(geometry, config, SOLUTION_FEA);
-  solver_container[MainSolver]->CompleteComms(geometry, config, SOLUTION_FEA);
-
 }

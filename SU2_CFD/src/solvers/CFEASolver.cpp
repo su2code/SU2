@@ -1910,6 +1910,8 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
 
+  Compute_NodalStress(geometry, numerics, config);
+
   if (disc_adj_fem && nonlinear_analysis) {
 
     /*--- For nonlinear discrete adjoint, we have 3 convergence criteria ---*/
@@ -1970,11 +1972,6 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     SetResidual_RMS(geometry, config);
 
   }
-
-  /*--- MPI solution (common to every mode). ---*/
-
-  InitiateComms(geometry, config, SOLUTION_FEA);
-  CompleteComms(geometry, config, SOLUTION_FEA);
 
 }
 
@@ -2783,7 +2780,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 }
 
 
-void CFEASolver::PredictStruct_Displacement(CGeometry **geometry, const CConfig *config) {
+void CFEASolver::PredictStruct_Displacement(CGeometry **geometry, CConfig *config) {
 
   const unsigned short predOrder = config->GetPredictorOrder();
   const su2double Delta_t = config->GetDelta_DynTime();
@@ -2825,6 +2822,9 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **geometry, const CConfig 
     }
 
   }
+
+  InitiateComms(geometry[MESH_0], config, SOLUTION_PRED);
+  CompleteComms(geometry[MESH_0], config, SOLUTION_PRED);
 
 }
 

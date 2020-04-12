@@ -1442,17 +1442,11 @@ void CFEAIteration::Update(COutput *output,
                            unsigned short val_iZone,
                            unsigned short val_iInst) {
 
-  su2double Physical_dt, Physical_t;
-  unsigned long TimeIter = config[val_iZone]->GetTimeIter();
-  bool dynamic = (config[val_iZone]->GetTime_Domain());       // Dynamic problems
-  bool fsi = config[val_iZone]->GetFSI_Simulation();          // Fluid-Structure Interaction problems
+  const auto TimeIter = config[val_iZone]->GetTimeIter();
+  const bool dynamic = (config[val_iZone]->GetTime_Domain());
+  const bool fsi = config[val_iZone]->GetFSI_Simulation();
 
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
-
-  /*----------------- Compute averaged nodal stress and reactions ------------------------*/
-
-  feaSolver->Compute_NodalStress(geometry[val_iZone][val_iInst][MESH_0],
-                                 numerics[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone]);
 
   /*----------------- Update structural solver ----------------------*/
 
@@ -1464,9 +1458,9 @@ void CFEAIteration::Update(COutput *output,
 
     /*--- Verify convergence criteria (based on total time) ---*/
 
-    Physical_dt = config[val_iZone]->GetDelta_DynTime();
-    Physical_t  = (TimeIter+1)*Physical_dt;
-    if (Physical_t >=  config[val_iZone]->GetTotal_DynTime())
+    su2double Physical_dt = config[val_iZone]->GetDelta_DynTime();
+    su2double Physical_t  = (TimeIter+1)*Physical_dt;
+    if (Physical_t >= config[val_iZone]->GetTotal_DynTime())
       integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(true);
 
   } else if (fsi) {
@@ -1493,16 +1487,10 @@ void CFEAIteration::Predictor(COutput *output,
 
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
-  /*--- Predict displacements ---*/
-
   feaSolver->PredictStruct_Displacement(geometry[val_iZone][val_iInst], config[val_iZone]);
 
-  /*--- For parallel simulations we need to communicate the predicted solution before updating the fluid mesh ---*/
-
-  feaSolver->InitiateComms(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], SOLUTION_PRED);
-  feaSolver->CompleteComms(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], SOLUTION_PRED);
-
 }
+
 void CFEAIteration::Relaxation(COutput *output,
                                CIntegration ****integration,
                                CGeometry ****geometry,
@@ -1552,10 +1540,6 @@ bool CFEAIteration::Monitor(COutput *output,
   StopTime = MPI_Wtime();
 #endif
   UsedTime = StopTime - StartTime;
-
-  solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_NodalStress(geometry[val_iZone][val_iInst][MESH_0],
-                                                                     numerics[val_iZone][val_iInst][MESH_0][FEA_SOL],
-                                                                     config[val_iZone]);
 
   if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()){
     output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0],

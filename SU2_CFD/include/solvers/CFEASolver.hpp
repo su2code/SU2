@@ -338,7 +338,7 @@ public:
    */
   void Compute_NodalStress(CGeometry *geometry,
                            CNumerics **numerics,
-                           const CConfig *config) final;
+                           const CConfig *config);
 
   /*!
    * \brief Compute the dead loads.
@@ -646,7 +646,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Configuration of the problem.
    */
-  void PredictStruct_Displacement(CGeometry **geometry, const CConfig *config) final;
+  void PredictStruct_Displacement(CGeometry **geometry, CConfig *config) final;
 
   /*!
    * \brief Computation of Aitken's coefficient.

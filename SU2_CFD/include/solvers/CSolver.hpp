@@ -3593,7 +3593,7 @@ public:
    * \param[in] config - Definition of the problem.
    */
   inline virtual void PredictStruct_Displacement(CGeometry **geometry,
-                                                 const CConfig *config) { }
+                                                 CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -3993,17 +3993,6 @@ public:
   inline virtual void Compute_NodalStressRes(CGeometry *geometry,
                                              CNumerics **numerics,
                                              const CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-
-  inline virtual void Compute_NodalStress(CGeometry *geometry,
-                                          CNumerics **numerics,
-                                          const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
