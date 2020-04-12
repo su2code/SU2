@@ -75,6 +75,15 @@ protected:
   su2double RelaxCoeff;             /*!< \brief Relaxation coefficient . */
   su2double FSI_Residual;           /*!< \brief FSI residual. */
 
+  CSysVector<su2double> TimeRes_Aux;  /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
+  CSysVector<su2double> TimeRes;      /*!< \brief Vector for adding mass and damping contributions to the residual */
+  CSysVector<su2double> LinSysReact;  /*!< \brief Vector to store the residual before applying the BCs */
+
+  CSysMatrix<su2double> MassMatrix;   /*!< \brief Sparse structure for storing the mass matrix. */
+
+  CElement*** element_container = nullptr;  /*!< \brief Vector which the define the finite element structure for each problem. */
+  CProperty** element_properties = nullptr; /*!< \brief Vector which stores the properties of each element */
+
 #ifdef HAVE_OMP
   vector<GridColor<> > ElemColoring;   /*!< \brief Element colors. */
   bool LockStrategy = false;           /*!< \brief Whether to use an OpenMP lock to guard updates of the Jacobian. */
@@ -182,19 +191,6 @@ protected:
                                  su2double der_avg) const;
 
 public:
-
-  CSysVector<su2double> TimeRes_Aux;    /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
-  CSysVector<su2double> TimeRes;        /*!< \brief Vector for adding mass and damping contributions to the residual */
-  CSysVector<su2double> LinSysReact;    /*!< \brief Vector to store the residual before applying the BCs */
-
-  CSysVector<su2double> LinSysSol_Adj;  /*!< \brief Vector to store the solution of the adjoint problem */
-  CSysVector<su2double> LinSysRes_Adj;  /*!< \brief Vector to store the residual of the adjoint problem */
-
-  CSysMatrix<su2double> MassMatrix;     /*!< \brief Sparse structure for storing the mass matrix. */
-
-  CElement*** element_container = nullptr;  /*!< \brief Vector which the define the finite element structure for each problem. */
-  CProperty** element_properties = nullptr; /*!< \brief Vector which stores the properties of each element */
-
   /*!
    * \brief Constructor of the class.
    */
