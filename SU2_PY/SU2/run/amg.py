@@ -544,6 +544,8 @@ def amg ( config , kind='' ):
                     config_cfd.COMPUTE_METRIC         = 'YES'
                     config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
                     SU2_CFD(config_cfd)
+
+                    current_solution_adj = su2io.add_suffix(current_solution_adj,suffix)
             
             except:
                 sys.stdout = sav_stdout
