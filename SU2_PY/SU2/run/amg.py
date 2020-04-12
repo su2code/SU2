@@ -380,7 +380,7 @@ def amg ( config , kind='' ):
             sys.stdout.write(' %s Generating adapted mesh using AMG\n' % pad_cpt)
             sys.stdout.flush()
             
-            mesh_new = su2amg.amg_call_python(mesh, config_amg)
+            mesh_new = su2amg.call_pyamg(mesh, config_amg)
                             
             #--- print mesh size
             

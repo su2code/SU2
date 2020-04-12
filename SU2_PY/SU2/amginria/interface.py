@@ -111,42 +111,7 @@ def prepro_back_mesh_2d(config_cfd, config_amg):
 
     del mesh_bak
 
-
-def amg_call(config):
-    
-    cmd = ''
-    cmd = "amg -in %s -sol %s -p 1 \
-         -c %f -hgrad %.2f -hmin %le -hmax %le -out %s \
-        -itp  %s  -nordg " \
-        % (config['mesh_in'], config['sol_in'],  \
-        config['size'],  config['hgrad'], config['hmin'], config['hmax'], \
-        config['mesh_out'], config['sol_itp_in'])
-        
-    if config['adap_source'] != "":
-        cmd += ' -source %s ' % config['adap_source']
-    
-    if config['adap_back'] != "":
-        cmd += ' -back %s ' % config['adap_back']
-    
-    cmd += ' > %s' % config['amg_log']
-    os.system(cmd)
-
-
-def amg_call_met(config):
-    
-    cmd = ''
-    cmd = "amg -in %s -met %s \
-        -hgrad %.2f -hmin %le -hmax %le -out %s \
-        -itp  %s  -nordg " \
-        % (config['mesh_in'], config['sol_in'],  \
-        config['hgrad'], config['hmin'], config['hmax'], \
-        config['mesh_out'], config['sol_itp_in'])
-            
-    cmd += ' > %s' % config['amg_log']
-    os.system(cmd)
-
-
-def amg_call_python(mesh, config):
+def call_pyamg(mesh, config):
     
     remesh_options                = {}
 
