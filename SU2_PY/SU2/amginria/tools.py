@@ -4,7 +4,7 @@
 
 import numpy as np
 from itertools import islice
-import sys
+import sys, os
 
 # --- Prescribed mesh complexities, i.e. desired mesh sizes
 def get_mesh_sizes(config):
@@ -219,4 +219,55 @@ def create_sensor(solution, sensor):
     sensor_wrap['solution']     = sensor
     
     return sensor_wrap
+
+def plot_results(config, iter):
+    """ writes a Tecplot or CSV file for plotting adaptation results
+    """
+
+    #--- Format and file name
+    history_format = config.TABULAR_FORMAT
+    if (history_format == 'TECPLOT'):
+        filename = 'history_adap.dat'
+        solname  = 'history.dat'
+    else:
+        filename = 'history_adap.csv'
+        solname  = 'history.csv'
+        
+    #--- Write header on first adaptive iteration
+    if iter == 0:
+        #--- Get header from solution history
+        header = ''
+
+        if (history_format == 'TECPLOT'):
+            header     = 'VARIABLES='
+            headerline = 1
+        else:
+            headerline = 0
+
+        with open(solname, 'rb') as f:
+            for i, line in enumerate(f):
+                if i == headerline:
+                    break
+
+        header = header + line
+
+        plotfile = open(filename,'w')
+        plotfile.write(header)
+        plotfile.write('\n')
+
+    # --- Append data on all other iterations
+    else:
+        plotfile = open(filename,'a')
+
+    #--- Get data from last line of file
+    with open(solname, 'rb') as f:
+        f.seek(-2, os.SEEK_END). 
+        while f.read(1) != b'\n':
+            f.seek(-2, os.SEEK_CUR) 
+        last_line = f.readline().decode()
+
+    plotfile.write(last_line)
+    plotfile.write('\n')
+
+    plotfile.close()
         
