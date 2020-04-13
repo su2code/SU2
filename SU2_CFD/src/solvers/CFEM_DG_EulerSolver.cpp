@@ -7345,39 +7345,146 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     cout << "ResRatio = " << ResRatio << endl;
   }
 
-  /*--- Convert Jacobian and mass matrix into a CSR format using Eigen library. ---*/
-  // Jacobian
-  vector<T> tripletList;
-  unsigned int iJac = 0;
-  for (unsigned int i = 0; i < nonZeroEntriesJacobian.size(); ++i) {
-    for (unsigned int j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
-      for (unsigned int iVar = 0; iVar<nVar*nVar; ++iVar) {
-        if (SpatialJacobian[iJac] != 0) {
-          tripletList.push_back(T(i*nVar+iVar/nVar,nonZeroEntriesJacobian[i][j]*nVar+iVar%nVar,SpatialJacobian[iJac]));
+  /*------------------------------------------------------------------------------------*/
+  /*---  Please choose one of the following 2 options for CSC/CSR format by setting  ---*/
+  /*---  the boolean variable StorageCSR. Only CSR can be used for superlu.          ---*/
+  /*------------------------------------------------------------------------------------*/
+  const bool StorageCSR = true;
+  const Eigen::StorageOptions storage = StorageCSR ? Eigen::RowMajor : Eigen::ColMajor;
+  vector<T> tripletList, tripletList_massMatrix;
+  unsigned long m_Global, n_Global;
+
+  if (StorageCSR) {
+    /*--- Option 1. Convert Jacobian and mass matrix into a CSR format. ---*/
+    m_Global = nDOFsLocOwned*nVar;
+    n_Global = nDOFsGlobal*nVar;
+    // Jacobian CSR
+    unsigned int iJac = 0;
+    for (unsigned int i = 0; i < nonZeroEntriesJacobian.size(); ++i) {
+      for (unsigned int j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
+        for (unsigned int iVar = 0; iVar<nVar*nVar; ++iVar) {
+          if (SpatialJacobian[iJac] != 0) {
+            tripletList.push_back(T(i*nVar+iVar/nVar,nonZeroEntriesJacobian[i][j]*nVar+iVar%nVar,SpatialJacobian[iJac]));
+          }
+          iJac++;
         }
-        iJac++;
+      }
+    }
+    
+    // MassMatrix CSR
+    for(unsigned long l=0; l<nVolElemOwned; ++l) {
+      const unsigned long nDOFs  = volElem[l].nDOFsSol;
+      const unsigned long offset = volElem[l].offsetDOFsSolLocal*nVar;
+      for (unsigned int j = 0; j < nDOFs; ++j) {
+        for (unsigned int k = 0; k < nDOFs; ++k) {
+          for (unsigned int iVar = 0; iVar<nVar; ++iVar) {
+            tripletList_massMatrix.push_back(T(offset+j*nVar+iVar,
+            offset+k*nVar+iVar+fst_row[rank],
+            SU2_TYPE::GetValue(1/(ResRatio*Min_Delta_Time)*volElem[l].massMatrix[j*nDOFs+k])));
+          }
+        }
       }
     }
   }
-  Eigen::SparseMatrix<double, Eigen::RowMajor> Jacobian_global(nDOFsLocOwned*nVar, nDOFsGlobal*nVar);
+  else {
+    /*--- Option 2. Convert Jacobian and mass matrix into a CSC format. ---*/
+    m_Global = nDOFsGlobal*nVar;
+    n_Global = nDOFsLocOwned*nVar;
+    // Communication for Jacobian CSC
+    vector<int> sendcounts(size, 0);
+    vector<int> sdispls(size+1, 0);
+    vector<unsigned long> rank_offset(size, 0);
+    std::map<unsigned long, std::map<unsigned long, unsigned long>> adj_list;
+    std::vector<std::vector<double>> Jacobian_sendbuf(size);
+
+    vector<unsigned long> nNonZeroEntries(nDOFsLocOwned+1);
+    vector<unsigned long> fst_row_vec(fst_row, fst_row+size);
+    nNonZeroEntries[0] = 0;
+    for(unsigned i=0; i<nDOFsLocOwned; ++i)
+      nNonZeroEntries[i+1] = nNonZeroEntries[i] + nonZeroEntriesJacobian[i].size();
+
+    for (int i = 0; i < nonZeroEntriesJacobian.size(); ++i){
+      std::cout<< "[i] = " << i << ": ";
+      for (int j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
+        std::cout << nonZeroEntriesJacobian[i][j] << " ";
+        std::cout << "( ";
+        int rank_dest = upper_bound(fst_row_vec.begin(), fst_row_vec.end(), nonZeroEntriesJacobian[i][j]*nVar) - fst_row_vec.begin() - 1;
+        unsigned long block_i = fst_row[rank]/nVar + i;
+        unsigned long block_j = nonZeroEntriesJacobian[i][j];
+        unsigned long offset = nNonZeroEntries[i] + j;
+        adj_list[block_j][block_i] = rank_offset[rank_dest];
+        Jacobian_sendbuf[rank_dest].insert(Jacobian_sendbuf[rank_dest].end(), SpatialJacobian.data() + offset*nVar*nVar, SpatialJacobian.data() + (offset+1)*nVar*nVar);
+        std::cout << rank_offset[rank_dest] << " ";
+        std::cout << ") ";
+        ++rank_offset[rank_dest];
+      }
+      std::cout << std::endl;
+    }
+
+    for (int i = 0; i < size; ++i) {
+      sendcounts[i] = Jacobian_sendbuf[i].size();
+      sdispls[i + 1] = sdispls[i] + sendcounts[i];
+    }
+
+    vector<double> Jacobian_recvbuf(SpatialJacobian.size(), -1.0);
+
+    for (int i = 1; i < size; ++i) {
+      Jacobian_sendbuf[0].insert(Jacobian_sendbuf[0].end(), Jacobian_sendbuf[i].begin(), Jacobian_sendbuf[i].end());
+    }
+
+    MPI_Alltoallv(Jacobian_sendbuf[0].data(), sendcounts.data(), sdispls.data(), MPI_DOUBLE,
+                          Jacobian_recvbuf.data(), sendcounts.data(), sdispls.data(), MPI_DOUBLE,
+                          MPI_COMM_WORLD);
+
+    // Jacobian CSC
+    fill(rank_offset.begin(), rank_offset.end(), 0.0);
+    for (auto j = adj_list.begin(); j != adj_list.end(); ++j) {
+      int rank_dest = upper_bound(fst_row_vec.begin(), fst_row_vec.end(), j->first*nVar) - fst_row_vec.begin() - 1;
+      for (auto i = j->second.begin(); i != j->second.end(); ++i) {
+        unsigned long block_i, block_j, Jacobian_offset;
+        if (rank == rank_dest) {
+          block_i = i->first;
+          block_j = j->first;
+          Jacobian_offset = adj_list[block_j][block_i]*nVar*nVar + sdispls[rank_dest];
+        }
+        else {
+          block_i = j->first;
+          block_j = i->first;
+          Jacobian_offset = rank_offset[rank_dest]*nVar*nVar + sdispls[rank_dest];
+          rank_offset[rank_dest]++;
+        }
+        std::cout << "(" << block_i << ", " << block_j << ") = " << Jacobian_offset/nVar/nVar  << ": " << Jacobian_recvbuf[Jacobian_offset]<< std::endl;
+        for (int iVar = 0; iVar < nVar*nVar; ++iVar) {
+          tripletList.push_back(T(block_i*nVar + iVar/nVar, block_j*nVar - fst_row[rank] + iVar%nVar, Jacobian_recvbuf[Jacobian_offset+iVar]));
+        }
+      }
+    }
+    // MassMatrix CSC
+    for(unsigned long l=0; l<nVolElemOwned; ++l) {
+      const unsigned long nDOFs  = volElem[l].nDOFsSol;
+      const unsigned long offset = volElem[l].offsetDOFsSolLocal*nVar;
+      for (unsigned int j = 0; j < nDOFs; ++j) {
+        for (unsigned int k = 0; k < nDOFs; ++k) {
+          for (unsigned int iVar = 0; iVar<nVar; ++iVar) {
+            tripletList_massMatrix.push_back(T(offset+j*nVar+iVar+fst_row[rank],
+            offset+k*nVar+iVar,
+            SU2_TYPE::GetValue(1/(ResRatio*Min_Delta_Time)*volElem[l].massMatrix[j*nDOFs+k])));
+          }
+        }
+      }
+    }
+  }
+  Eigen::SparseMatrix<double, storage> Jacobian_global(m_Global, n_Global);
   Jacobian_global.setFromTriplets(tripletList.begin(),tripletList.end());
-  // MassMatrix
-  vector<T> tripletList_massMatrix;
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
-    const unsigned long nDOFs  = volElem[l].nDOFsSol;
-    const unsigned long offset = volElem[l].offsetDOFsSolLocal*nVar;
-    for (unsigned int j = 0; j < nDOFs; ++j) {
-      for (unsigned int k = 0; k < nDOFs; ++k) {
-        for (unsigned int iVar = 0; iVar<nVar; ++iVar) {
-          tripletList_massMatrix.push_back(T(offset+j*nVar+iVar,
-          offset+k*nVar+iVar+fst_row[rank],
-          SU2_TYPE::GetValue(1/(ResRatio*Min_Delta_Time)*volElem[l].massMatrix[j*nDOFs+k])));
-        }
-      }
-    }
-  }
-  Eigen::SparseMatrix<double, Eigen::RowMajor> MassMatrix_global(nDOFsLocOwned*nVar, nDOFsGlobal*nVar);
+  Eigen::SparseMatrix<double, storage> MassMatrix_global(m_Global, n_Global);
   MassMatrix_global.setFromTriplets(tripletList_massMatrix.begin(),tripletList_massMatrix.end());
+
+  // Save matrix for debugging if necessary
+  // std::string Jacobian_name;
+  // Jacobian_name = "Jacobian" + std::to_string(rank) + ".mtx";
+  // Eigen::saveMarket(Jacobian_global, Jacobian_name);
+  // Jacobian_name = "MassMatrix" + std::to_string(rank) + ".mtx";
+  // Eigen::saveMarket(MassMatrix_global, Jacobian_name);
 
   Jacobian_global += MassMatrix_global;
 
