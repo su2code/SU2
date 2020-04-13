@@ -224,11 +224,16 @@ def plot_results(history_format, filename, iter):
     """ writes a Tecplot or CSV file for plotting adaptation results
     """
 
+    default_spacing = 16
+    indent_spacing  = 0
+
     #--- Format and file name
     if (history_format == 'TECPLOT'):
         solname  = 'history.dat'
+        indent_spacing += 10
     else:
         solname  = 'history.csv'
+    indent_spacing = ' '*indent_spacing
         
     #--- Write header on first adaptive iteration
     if iter == 0:
@@ -249,6 +254,7 @@ def plot_results(history_format, filename, iter):
         header = header + line.decode('ascii')
 
         plotfile = open(filename,'w')
+        plotfile.write('"Adap_Iter", ')
         plotfile.write(header)
         plotfile.write('\n')
 
@@ -263,6 +269,8 @@ def plot_results(history_format, filename, iter):
             f.seek(-2, os.SEEK_CUR) 
         last_line = f.readline().decode('ascii')
 
+    plotfile.write(indent_spacing)
+    plotfile.write('%d, '%iter)
     plotfile.write(last_line)
     plotfile.write('\n')
 
