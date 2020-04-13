@@ -213,7 +213,7 @@ def amg ( config , kind='' ):
             
             config_cfd.CONV_FILENAME    = "history"
             config_cfd.RESTART_FILENAME = cur_solfil
-            config_cfd.HISTORY_OUTPUT   = "(ITER, RMS_RES, AERO_COEFF, FLOW_COEFF)"
+            config_cfd.HISTORY_OUTPUT   = "ITER, RMS_RES, AERO_COEFF, FLOW_COEFF"
             config_cfd.COMPUTE_METRIC   = 'NO'
             config_cfd.MATH_PROBLEM     = 'DIRECT'
             
@@ -226,8 +226,8 @@ def amg ( config , kind='' ):
                 config_cfd.RESTART_ADJ_FILENAME = cur_solfil_adj
                 config_cfd.SOLUTION_FILENAME    = cur_solfil
                 config_cfd.MATH_PROBLEM         = 'DISCRETE_ADJOINT'
-                config_cfd.VOLUME_OUTPUT        = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
-                config_cfd.HISTORY_OUTPUT       = "(ITER, RMS_RES, SENSITIVITY)"
+                config_cfd.VOLUME_OUTPUT        = "COORDINATES, SOLUTION, PRIMITIVE, METRIC"
+                config_cfd.HISTORY_OUTPUT       = "ITER, RMS_RES, SENSITIVITY"
                 config_cfd.COMPUTE_METRIC       = 'YES'
                 config_cfd.ADAP_HMAX            = config.PYADAP_HMAX
                 config_cfd.ADAP_HMIN            = config.PYADAP_HMIN
@@ -274,10 +274,10 @@ def amg ( config , kind='' ):
         cur_solfil_adj = "restart_adj.csv"
 
         #--- Run an iteration of the flow to get history info
-        config_cfd.ITER             = 2
+        config_cfd.ITER             = 1
         config_cfd.CONV_FILENAME    = "history"
         config_cfd.RESTART_FILENAME = cur_solfil
-        config_cfd.HISTORY_OUTPUT   = "(ITER, RMS_RES, AERO_COEFF, FLOW_COEFF)"
+        config_cfd.HISTORY_OUTPUT   = "ITER, RMS_RES, AERO_COEFF, FLOW_COEFF"
         config_cfd.COMPUTE_METRIC   = 'NO'
         config_cfd.MATH_PROBLEM     = 'DIRECT'
         SU2_CFD(config_cfd)
@@ -287,8 +287,8 @@ def amg ( config , kind='' ):
         config_cfd.RESTART_ADJ_FILENAME  = cur_solfil_adj
         config_cfd.SOLUTION_FILENAME     = config['SOLUTION_FILENAME']
         config_cfd.SOLUTION_ADJ_FILENAME = config['SOLUTION_ADJ_FILENAME']
-        config_cfd.VOLUME_OUTPUT         = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
-        config_cfd.HISTORY_OUTPUT        = "(ITER, RMS_RES, SENSITIVITY)"
+        config_cfd.VOLUME_OUTPUT         = "COORDINATES, SOLUTION, PRIMITIVE, METRIC"
+        config_cfd.HISTORY_OUTPUT        = "ITER, RMS_RES, SENSITIVITY"
         config_cfd.COMPUTE_METRIC        = 'YES'
         config_cfd.MATH_PROBLEM          = 'DISCRETE_ADJOINT'
         config_cfd.ADAP_HMAX             = config.PYADAP_HMAX
@@ -467,8 +467,8 @@ def amg ( config , kind='' ):
                 config_cfd.CONV_FILENAME     = "history"
                 config_cfd.SOLUTION_FILENAME = cur_solfil_ini
                 config_cfd.RESTART_FILENAME  = cur_solfil
-                config_cfd.VOLUME_OUTPUT     = "(COORDINATES, SOLUTION, PRIMITIVE)"
-                config_cfd.HISTORY_OUTPUT    = "(ITER, RMS_RES, AERO_COEFF, FLOW_COEFF)"
+                config_cfd.VOLUME_OUTPUT     = "COORDINATES, SOLUTION, PRIMITIVE"
+                config_cfd.HISTORY_OUTPUT    = "ITER, RMS_RES, AERO_COEFF, FLOW_COEFF"
                 config_cfd.COMPUTE_METRIC    = 'NO'
                 config_cfd.MATH_PROBLEM      = 'DIRECT'
                 config_cfd.RESTART_SOL       = 'YES'
@@ -493,8 +493,8 @@ def amg ( config , kind='' ):
                     config_cfd.SOLUTION_FILENAME      = cur_solfil
                     config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
                     config_cfd.ITER                   = int(adap_adj_iter[iSiz])
-                    config_cfd.VOLUME_OUTPUT          = "(COORDINATES, SOLUTION, PRIMITIVE, METRIC)"
-                    config_cfd.HISTORY_OUTPUT         = "(ITER, RMS_RES, SENSITIVITY)"
+                    config_cfd.VOLUME_OUTPUT          = "COORDINATES, SOLUTION, PRIMITIVE, METRIC"
+                    config_cfd.HISTORY_OUTPUT         = "ITER, RMS_RES, SENSITIVITY"
                     config_cfd.COMPUTE_METRIC         = 'YES'
                     config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
                     SU2_CFD(config_cfd)
