@@ -512,9 +512,9 @@ def amg ( config , kind='' ):
                     
             #--- Print convergence history
 
+            global_iter += 1
             su2amg.plot_results(history_format, history_filename, global_iter)
             
-            global_iter += 1
 
     #--- Write final files
 
