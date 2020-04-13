@@ -331,7 +331,7 @@ def amg ( config , kind='' ):
         history_filename = os.path.join(cwd,'history_adap.dat')
     else:
         history_filename = os.path.join(cwd,'history_adap.csv')
-    plot_results(history_format, history_filename, global_iter)
+    su2amg.plot_results(history_format, history_filename, global_iter)
     
     sys.stdout.write("\nStarting mesh adaptation process.\n")
     sys.stdout.flush()
@@ -501,7 +501,7 @@ def amg ( config , kind='' ):
                     
             #--- Print convergence history
 
-            plot_results(history_format, history_filename, global_iter)
+            su2amg.plot_results(history_format, history_filename, global_iter)
             
             global_iter += 1
 
