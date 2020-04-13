@@ -1483,7 +1483,7 @@ void CFEAIteration::Predictor(COutput *output,
 
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
-  feaSolver->PredictStruct_Displacement(geometry[val_iZone][val_iInst], config[val_iZone]);
+  feaSolver->PredictStruct_Displacement(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
 }
 
@@ -1505,11 +1505,12 @@ void CFEAIteration::Relaxation(COutput *output,
 
   /*------------------- Compute the coefficient ---------------------*/
 
-  feaSolver->ComputeAitken_Coefficient(geometry[val_iZone][INST_0], config[val_iZone], config[val_iZone]->GetOuterIter());
+  feaSolver->ComputeAitken_Coefficient(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone],
+                                       config[val_iZone]->GetOuterIter());
 
   /*----------------- Set the relaxation parameter ------------------*/
 
-  feaSolver->SetAitken_Relaxation(geometry[val_iZone][INST_0], config[val_iZone]);
+  feaSolver->SetAitken_Relaxation(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
 }
 
@@ -1533,7 +1534,8 @@ bool CFEAIteration::Monitor(COutput *output,
   UsedTime = StopTime - StartTime;
 
   if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()){
-    output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0],
+    output->SetHistory_Output(geometry[val_iZone][val_iInst][MESH_0],
+                              solver[val_iZone][val_iInst][MESH_0],
                               config[val_iZone], config[val_iZone]->GetTimeIter(),
                               config[val_iZone]->GetOuterIter(), config[val_iZone]->GetInnerIter());
   }
@@ -1569,13 +1571,13 @@ void CFEAIteration::Solve(COutput *output,
 
   /*------------------ Structural subiteration ----------------------*/
   Iterate(output, integration, geometry, solver, numerics, config,
-          surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+          surface_movement, grid_movement, FFDBox, val_iZone, val_iInst);
 
   /*--- Write the convergence history for the structure (only screen output) ---*/
 //  if (multizone) output->SetConvHistory_Body(geometry, solver, config, integration, false, 0.0, val_iZone, INST_0);
 
   /*--- Set the structural convergence to false (to make sure outer subiterations converge) ---*/
-  integration[val_iZone][INST_0][FEA_SOL]->SetConvergence(false);
+  integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);
 
 }
 
@@ -2798,7 +2800,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
   /*--- FSI specific dependencies. ---*/
   if (fsi) {
     /*--- Set relation between solution and predicted displacements, which are the transferred ones. ---*/
-    dir_solver->PredictStruct_Displacement(nullptr, config[iZone]);
+    dir_solver->PredictStruct_Displacement(structural_geometry, config[iZone]);
   }
 
   /*--- MPI dependencies. ---*/

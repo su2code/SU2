@@ -653,7 +653,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Configuration of the problem.
    */
-  void PredictStruct_Displacement(CGeometry **geometry, CConfig *config) final;
+  void PredictStruct_Displacement(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Computation of Aitken's coefficient.
@@ -661,7 +661,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iOuterIter - Current outer iteration.
    */
-  void ComputeAitken_Coefficient(CGeometry **geometry,
+  void ComputeAitken_Coefficient(CGeometry *geometry,
                                  CConfig *config,
                                  unsigned long iOuterIter) final;
 
@@ -670,14 +670,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetAitken_Relaxation(CGeometry **geometry, CConfig *config) final;
+  void SetAitken_Relaxation(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Aitken's relaxation of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Update_StructSolution(CGeometry **geometry, CConfig *config) final;
+  void Update_StructSolution(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Compute the objective function for a reference geometry

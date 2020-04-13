@@ -3592,7 +3592,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the problem.
    */
-  inline virtual void PredictStruct_Displacement(CGeometry **geometry,
+  inline virtual void PredictStruct_Displacement(CGeometry *geometry,
                                                  CConfig *config) { }
 
   /*!
@@ -3601,7 +3601,7 @@ public:
    * \param[in] config - Definition of the problem.
    * \param[in] iOuterIter - Current outer iteration.
    */
-  inline virtual void ComputeAitken_Coefficient(CGeometry **geometry,
+  inline virtual void ComputeAitken_Coefficient(CGeometry *geometry,
                                                 CConfig *config,
                                                 unsigned long iOuterIter) { }
 
@@ -3611,7 +3611,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetAitken_Relaxation(CGeometry **geometry,
+  inline virtual void SetAitken_Relaxation(CGeometry *geometry,
                                            CConfig *config) { }
 
   /*!
@@ -3619,7 +3619,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Update_StructSolution(CGeometry **geometry,
+  inline virtual void Update_StructSolution(CGeometry *geometry,
                                             CConfig *config) { }
 
   /*!

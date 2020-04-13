@@ -2778,7 +2778,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 }
 
 
-void CFEASolver::PredictStruct_Displacement(CGeometry **geometry, CConfig *config) {
+void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, CConfig *config) {
 
   const unsigned short predOrder = config->GetPredictorOrder();
   const su2double Delta_t = config->GetDelta_DynTime();
@@ -2821,12 +2821,12 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **geometry, CConfig *confi
 
   }
 
-  InitiateComms(geometry[MESH_0], config, SOLUTION_PRED);
-  CompleteComms(geometry[MESH_0], config, SOLUTION_PRED);
+  InitiateComms(geometry, config, SOLUTION_PRED);
+  CompleteComms(geometry, config, SOLUTION_PRED);
 
 }
 
-void CFEASolver::ComputeAitken_Coefficient(CGeometry **geometry, CConfig *config, unsigned long iOuterIter) {
+void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config, unsigned long iOuterIter) {
 
   unsigned long iPoint, iDim;
   su2double rbuf_numAitk = 0, sbuf_numAitk = 0;
@@ -2917,7 +2917,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **geometry, CConfig *config
 
 }
 
-void CFEASolver::SetAitken_Relaxation(CGeometry **geometry, CConfig *config) {
+void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, CConfig *config) {
 
   const su2double WAitken = GetWAitken_Dyn();
 
@@ -2941,12 +2941,12 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **geometry, CConfig *config) {
     }
   }
 
-  InitiateComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
-  CompleteComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
+  InitiateComms(geometry, config, SOLUTION_PRED_OLD);
+  CompleteComms(geometry, config, SOLUTION_PRED_OLD);
 
 }
 
-void CFEASolver::Update_StructSolution(CGeometry **geometry, CConfig *config) {
+void CFEASolver::Update_StructSolution(CGeometry *geometry, CConfig *config) {
 
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
@@ -2958,8 +2958,8 @@ void CFEASolver::Update_StructSolution(CGeometry **geometry, CConfig *config) {
 
   /*--- Perform the MPI communication of the solution, displacements only ---*/
 
-  InitiateComms(geometry[MESH_0], config, SOLUTION);
-  CompleteComms(geometry[MESH_0], config, SOLUTION);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
 
 }
 
