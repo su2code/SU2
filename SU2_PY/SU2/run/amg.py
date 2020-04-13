@@ -191,7 +191,7 @@ def amg ( config , kind='' ):
     config_cfd.READ_BINARY_RESTART = "NO"
 
     config_cfd.VOLUME_OUTPUT = "(COORDINATES, SOLUTION, PRIMITIVE)"
-    
+
     if 'HISTORY_WRT_FREQ_INNER' not in config:
         config_cfd.HISTORY_WRT_FREQ_INNER = 1
         
@@ -277,7 +277,7 @@ def amg ( config , kind='' ):
         cur_solfil_adj = "restart_adj.csv"
 
         #--- Run an iteration of the flow to get history info
-        config_cfd.ITER             = 1
+        config_cfd.ITER             = 2
         config_cfd.CONV_FILENAME    = "history"
         config_cfd.RESTART_FILENAME = cur_solfil
         config_cfd.HISTORY_OUTPUT   = "(ITER, RMS_RES, AERO_COEFF, FLOW_COEFF)"
