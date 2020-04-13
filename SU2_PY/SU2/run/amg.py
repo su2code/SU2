@@ -492,7 +492,12 @@ def amg ( config , kind='' ):
                     
             #--- Print convergence history
 
-            plot_results(config_cfd, global_iter)
+            history_format = config.TABULAR_FORMAT
+            if (history_format == 'TECPLOT'):
+                history_filename = os.path.join(cwd,'history_adap.dat')
+            else:
+                history_filename = os.path.join(cwd,'history_adap.csv')
+            plot_results(history_format, history_filename, global_iter)
             
             global_iter += 1
 

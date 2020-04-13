@@ -220,17 +220,14 @@ def create_sensor(solution, sensor):
     
     return sensor_wrap
 
-def plot_results(config, iter):
+def plot_results(history_format, filename, iter):
     """ writes a Tecplot or CSV file for plotting adaptation results
     """
 
     #--- Format and file name
-    history_format = config.TABULAR_FORMAT
     if (history_format == 'TECPLOT'):
-        filename = 'history_adap.dat'
         solname  = 'history.dat'
     else:
-        filename = 'history_adap.csv'
         solname  = 'history.csv'
         
     #--- Write header on first adaptive iteration
