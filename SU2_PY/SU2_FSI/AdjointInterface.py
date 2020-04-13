@@ -578,9 +578,9 @@ class AdjointInterface:
 
     def transferDisplacementAdjoint_SourceTerm(self, FSIConfig, FluidSolver, SolidSolver, MLSSolver):
         """
-        Transfer fluid tractions.
-        Gathers the fluid tractions from the interface into the root process.
-        Interpolates the tractions using the transposed matrix.
+        Transfer displacement adjoints coming from the structural solver.
+        Gathers the displacement adjoints from the interface into the root process.
+        Interpolates the displacement adjoints using the transposed matrix.
         Applies the tractions into the solid solver.
         """
 
@@ -826,10 +826,11 @@ class AdjointInterface:
             self.MPIBarrier()
             self.transferFluidTractions(FluidSolver, SolidSolver, MLSSolver)
 
-            # --- Surface fluid loads interpolation and communication ---#
+            # --- Displacement adjoints interpolation and communication ---#
             self.MPIPrint('\n##### Transferring displacement adjoint to the beam solver\n')
             self.MPIBarrier()
             self.transferDisplacementAdjoint_SourceTerm(FSIconfig, FluidSolver, SolidSolver, MLSSolver)
+            self.printDisplDisplacementAdjoint(True)
 
             # --- Solid solver call for FSI subiteration --- #
 
@@ -864,3 +865,22 @@ class AdjointInterface:
         globalIndex = globalStartIndex + iLocalVertex
 
         return globalIndex
+
+
+    def printDisplDisplacementAdjoint(printing = False):
+       """
+           Print into exit file fluid displacement adjoints which are memorized in the root processor.
+       """
+       
+       if printing == True:
+          if myid == self.rootProcess: 
+             print("Saving displacement adjoints to check convergence")              
+             s = open("Boundary_Nodes_Sensitivity_" + str(int(self.FSIIter)) + ".dat", "w")    
+             for i in range(0, self.nFluidInterfacePhysicalNodes):
+                s.write(str(i) + "\t") 
+                s.write(str(self.globalFluidCoordinates[i][0]) + "\t" + str(self.globalFluidCoordinates[i][1]) + "\t" + str(self.globalFluidCoordinates[i][2]) + "\t")
+                s.write(str(self.globalDispFlowAdjointX[i]) + "\t" + str(self.globalDispFlowAdjointY[i]) + "\t" + str(self.globalDispFlowAdjointZ[i]) )
+                s.write("\n")
+             s.close()    
+                 
+        
