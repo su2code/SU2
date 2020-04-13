@@ -273,6 +273,16 @@ def amg ( config , kind='' ):
         cur_solfil     = "restart_flow.csv"
         cur_solfil_adj = "restart_adj.csv"
 
+        #--- Run an iteration of the flow to get history info
+        config_cfd.ITER             = 1
+        config_cfd.CONV_FILENAME    = "history"
+        config_cfd.RESTART_FILENAME = cur_solfil
+        config_cfd.HISTORY_OUTPUT   = "(ITER, RMS_RES, AERO_COEFF, FLOW_COEFF)"
+        config_cfd.COMPUTE_METRIC   = 'NO'
+        config_cfd.MATH_PROBLEM     = 'DIRECT'
+        SU2_CFD(config_cfd)
+
+        config_cfd.CONV_FILENAME         = "history_adj"
         config_cfd.RESTART_FILENAME      = cur_solfil
         config_cfd.RESTART_ADJ_FILENAME  = cur_solfil_adj
         config_cfd.SOLUTION_FILENAME     = config['SOLUTION_FILENAME']
@@ -291,7 +301,8 @@ def amg ( config , kind='' ):
         suffix             = su2io.get_adjointSuffix(func_name)
         cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
         if not (os.path.exists(os.path.join(cwd, cur_solfil_adj_ini))):
-            config_cfd.RESTART_SOL= 'NO'
+            config_cfd.ITER        = config.ITER
+            config_cfd.RESTART_SOL = 'NO'
             SU2_CFD(config_cfd)
 
             cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
