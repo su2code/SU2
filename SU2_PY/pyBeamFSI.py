@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ## \file fsi_computation.py
 #  \brief Python wrapper code for FSI computation by coupling pyBeam and SU2.
@@ -175,7 +175,8 @@ def main():
     
     # Get drag coefficient
     drag = FluidSolver.Get_DragCoeff()
-    print('DRAG COEFFICIENT: ', drag)
+    if myid == rootProcess:    
+       print('DRAG COEFFICIENT: ', drag)
 
     # Postprocess the solver and exit cleanly
     FluidSolver.Postprocessing()
