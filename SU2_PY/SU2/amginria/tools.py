@@ -251,10 +251,9 @@ def plot_results(history_format, filename, iter):
                 if i == headerline:
                     break
 
-        header = header + line.decode('ascii')
+        header = header + '"Adap_Iter", ' + line.decode('ascii')
 
         plotfile = open(filename,'w')
-        plotfile.write('"Adap_Iter", ')
         plotfile.write(header)
         plotfile.write('\n')
 
