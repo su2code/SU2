@@ -2848,6 +2848,9 @@ void CConfig::SetConfig_Options() {
   addPythonOption("PYADAP_CFL");
   
   /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_BACK");
+  
+  /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("PYADAP_RESIDUAL_REDUCTION");
   
   /* DESCRIPTION: A mesh adaptation option */
