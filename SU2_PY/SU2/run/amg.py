@@ -191,10 +191,6 @@ def amg ( config , kind='' ):
     config_cfd.READ_BINARY_RESTART = "NO"
 
     config_cfd.VOLUME_OUTPUT = "(COORDINATES, SOLUTION, PRIMITIVE)"
-
-    config_cfd.HISTORY_WRT_FREQ_INNER = 1
-    config_cfd.HISTORY_WRT_FREQ_OUTER = 1
-    config_cfd.HISTORY_WRT_FREQ_TIME  = 1
         
     if config['RESTART_SOL'] == 'NO':
         
