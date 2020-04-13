@@ -5289,6 +5289,14 @@ void CSolver::ViscousMetric(CSolver           **solver,
   //--- Density weight
   for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] -= u[iDim]*TmpWeights[iDim+1];
   TmpWeights[0] -= e*TmpWeights[nVarFlo-1];
+  
+  //--- k weight
+  if (sst) {
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      weights[nVarFlo] -= (2./3.)*(varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim)
+                                    + u[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
+    }
+  }
 
   //--- Add TmpWeights to weights, then reset for second-order terms
   for (iVar = 0; iVar < nVarFlo; ++iVar) weights[iVar] += TmpWeights[iVar];
