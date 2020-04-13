@@ -258,7 +258,7 @@ def plot_results(history_format, filename, iter):
 
     #--- Get data from last line of file
     with open(solname, 'rb') as f:
-        f.seek(-2, os.SEEK_END). 
+        f.seek(-2, os.SEEK_END)
         while f.read(1) != b'\n':
             f.seek(-2, os.SEEK_CUR) 
         last_line = f.readline().decode()
