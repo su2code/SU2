@@ -5700,12 +5700,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         cout << "Subgrid Scale model: ";
         switch (Kind_SGS_Model) {
+          case NO_SGS_MODEL: cout << "No SGS Model" << endl; break;
           case IMPLICIT_LES: cout << "Implicit LES" << endl; break;
           case SMAGORINSKY:  cout << "Smagorinsky " << endl; break;
           case WALE:         cout << "WALE"         << endl; break;
           case VREMAN:       cout << "VREMAN"         << endl; break;
-          default:
-            SU2_MPI::Error("Subgrid Scale model not specified.", CURRENT_FUNCTION);
         }
         break;
       case RANS:     case DISC_ADJ_RANS:
