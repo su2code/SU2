@@ -1945,7 +1945,11 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     /*--- If the problem is linear, the only check we do is the RMS of the residuals. ---*/
     /*---  Compute the residual Ax-f ---*/
 
+#ifndef CODI_FORWARD_TYPE
     CSysVector<passivedouble> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
+#else
+    CSysVector<su2double> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
+#endif
 
     SU2_OMP_PARALLEL
     {
