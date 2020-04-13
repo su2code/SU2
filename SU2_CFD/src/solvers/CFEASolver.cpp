@@ -188,9 +188,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Initialization of linear solver structures ---*/
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-
-  LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
-
   LinSysReact.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
   /*--- Initialize structures for hybrid-parallel mode. ---*/
@@ -1904,13 +1901,30 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, const CCon
 void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, CNumerics **numerics, unsigned short iMesh) {
 
-  unsigned short iVar;
-  unsigned long iPoint, total_index;
+  const bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
+  const bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
 
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
-  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
+  /*--- Compute stresses for monitoring and output. ---*/
 
   Compute_NodalStress(geometry, numerics, config);
+
+  /*--- Compute the objective function to be able to monitor it. ---*/
+
+  const auto kindObjFunc = config->GetKind_ObjFunc();
+
+  if (((kindObjFunc == REFERENCE_GEOMETRY) || (kindObjFunc == REFERENCE_NODE)) &&
+      ((config->GetDV_FEA() == YOUNG_MODULUS) || (config->GetDV_FEA() == DENSITY_VAL))) {
+
+    Stiffness_Penalty(geometry, solver_container, numerics, config);
+  }
+
+  switch (kindObjFunc) {
+    case REFERENCE_GEOMETRY: Compute_OFRefGeom(geometry, config); break;
+    case REFERENCE_NODE:     Compute_OFRefNode(geometry, config); break;
+    case VOLUME_FRACTION:    Compute_OFVolFrac(geometry, config); break;
+    case TOPOL_DISCRETENESS: Compute_OFVolFrac(geometry, config); break;
+    case TOPOL_COMPLIANCE:   Compute_OFCompliance(geometry, config); break;
+  }
 
   if (disc_adj_fem && nonlinear_analysis) {
 
@@ -1931,45 +1945,58 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     /*--- If the problem is linear, the only check we do is the RMS of the residuals. ---*/
     /*---  Compute the residual Ax-f ---*/
 
+    CSysVector<passivedouble> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
+
     SU2_OMP_PARALLEL
     {
 #ifndef CODI_REVERSE_TYPE
-      Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+    Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
 #else
-      /*---  We need temporaries to interface with the matrix ---*/
-      {
-        CSysVector<passivedouble> sol, res;
-        sol.PassiveCopy(LinSysSol);
-        res.PassiveCopy(LinSysRes);
-        CSysVector<passivedouble> aux(res);
-        Jacobian.ComputeResidual(sol, res, aux);
-        LinSysAux.PassiveCopy(aux);
-      }
+    /*---  We need temporaries to interface with the passive matrix. ---*/
+    CSysVector<passivedouble> sol, res;
+    sol.PassiveCopy(LinSysSol);
+    res.PassiveCopy(LinSysRes);
+    Jacobian.ComputeResidual(sol, res, LinSysAux);
 #endif
-    } // end SU2_OMP_PARALLEL
 
     /*--- Set maximum residual to zero. ---*/
 
-    for (iVar = 0; iVar < nVar; iVar++) {
+    SU2_OMP_MASTER
+    for (auto iVar = 0ul; iVar < nVar; iVar++) {
       SetRes_RMS(iVar, 0.0);
       SetRes_Max(iVar, 0.0, 0);
     }
 
     /*--- Compute the residual. ---*/
 
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar+iVar;
-        AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
-        AddRes_Max(iVar, fabs(LinSysAux[total_index]),
-                   geometry->node[iPoint]->GetGlobalIndex(),
-                   geometry->node[iPoint]->GetCoord());
+    su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+    const su2double* coordMax[MAXNVAR] = {nullptr};
+    unsigned long idxMax[MAXNVAR] = {0};
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+      for (auto iVar = 0ul; iVar < nVar; iVar++) {
+        su2double Res = fabs(LinSysAux(iPoint, iVar));
+        resRMS[iVar] += Res*Res;
+        if (Res > resMax[iVar]) {
+          resMax[iVar] = Res;
+          idxMax[iVar] = iPoint;
+          coordMax[iVar] = geometry->node[iPoint]->GetCoord();
+        }
       }
     }
+    SU2_OMP_CRITICAL
+    for (auto iVar = 0ul; iVar < nVar; iVar++) {
+      AddRes_RMS(iVar, resRMS[iVar]);
+      AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
+    }
+    SU2_OMP_BARRIER
 
     /*--- Compute the root mean square residual. ---*/
-
+    SU2_OMP_MASTER
     SetResidual_RMS(geometry, config);
+
+    } // end SU2_OMP_PARALLEL
 
   }
 
@@ -3237,6 +3264,12 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, const CConfig *config
 }
 
 void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumerics **numerics, CConfig *config){
+
+  if (config->GetTotalDV_Penalty() == 0.0) {
+    /*--- No need to go into expensive computations. ---*/
+    PenaltyValue = 0.0;
+    return;
+  }
 
   su2double weightedValue = 0.0;
   su2double weightedValue_reduce = 0.0;

@@ -164,7 +164,6 @@ public:
 
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector<su2double> LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
-  CSysVector<su2double> LinSysAux;    /*!< \brief vector to store iterative residual of implicit linear system. */
 #ifndef CODI_FORWARD_TYPE
   CSysMatrix<passivedouble> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   CSysSolve<passivedouble>  System;   /*!< \brief Linear solver/smoother. */
@@ -3715,18 +3714,6 @@ public:
    */
   inline virtual void Compute_OFCompliance(CGeometry *geometry,
                                            const CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Stiffness_Penalty(CGeometry *geometry,
-                                        CSolver **solver_container,
-                                        CNumerics **numerics_container,
-                                        CConfig *config) { }
 
   /*!
    * \brief A virtual member.

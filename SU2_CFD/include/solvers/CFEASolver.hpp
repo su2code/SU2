@@ -717,7 +717,7 @@ public:
   void Stiffness_Penalty(CGeometry *geometry,
                          CSolver **solver_container,
                          CNumerics **numerics_container,
-                         CConfig *config) final;
+                         CConfig *config);
 
   /*!
    * \brief Get the value of the FSI convergence.
