@@ -246,7 +246,7 @@ def plot_results(history_format, filename, iter):
                 if i == headerline:
                     break
 
-        header = header + line
+        header = header + line.decode('ascii')
 
         plotfile = open(filename,'w')
         plotfile.write(header)
