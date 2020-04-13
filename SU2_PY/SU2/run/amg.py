@@ -192,8 +192,9 @@ def amg ( config , kind='' ):
 
     config_cfd.VOLUME_OUTPUT = "(COORDINATES, SOLUTION, PRIMITIVE)"
 
-    if 'HISTORY_WRT_FREQ_INNER' not in config:
-        config_cfd.HISTORY_WRT_FREQ_INNER = 1
+    config_cfd.HISTORY_WRT_FREQ_INNER = 1
+    config_cfd.HISTORY_WRT_FREQ_OUTER = 1
+    config_cfd.HISTORY_WRT_FREQ_TIME  = 1
         
     if config['RESTART_SOL'] == 'NO':
         
