@@ -2029,13 +2029,8 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, const 
   for (unsigned long iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
     unsigned short iNode, iDim;
-    unsigned long indexNode[4] = {0,0,0,0};
-
-    su2double nodeCoord_ref[4][3], nodeCoord_curr[4][3];
-
-    for (iNode = 0; iNode < 4; iNode++)
-      for (iDim = 0; iDim < 3; iDim++)
-        nodeCoord_ref[iNode][iDim] = nodeCoord_curr[iNode][iDim] = 0.0;
+    unsigned long indexNode[4] = {0};
+    su2double nodeCoord_ref[4][3] = {{0.0}}, nodeCoord_curr[4][3] = {{0.0}};
 
     /*--- Identify the kind of boundary element. ---*/
 
@@ -2061,8 +2056,8 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, const 
 
     /*--- Compute area vectors in reference and current configurations. ---*/
 
-    su2double normal_ref[3] = {0.0, 0.0, 0.0};
-    su2double normal_curr[3] = {0.0, 0.0, 0.0};
+    su2double normal_ref[3] = {0.0};
+    su2double normal_curr[3] = {0.0};
 
     switch (nNodes) {
       case 2: LineNormal(nodeCoord_ref, normal_ref); break;
@@ -2124,9 +2119,9 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, const CCo
   for (unsigned long iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
     unsigned short iNode, iDim;
-    unsigned long indexNode[4] = {0,0,0,0};
+    unsigned long indexNode[4] = {0};
 
-    const su2double* nodeCoord[4] = {nullptr, nullptr, nullptr, nullptr};
+    const su2double* nodeCoord[4] = {nullptr};
 
     /*--- Identify the kind of boundary element. ---*/
 
@@ -2142,7 +2137,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, const CCo
 
     /*--- Compute area of the boundary element. ---*/
 
-    su2double normal[3] = {0.0, 0.0, 0.0};
+    su2double normal[3] = {0.0};
 
     switch (nNodes) {
       case 2: LineNormal(nodeCoord, normal); break;
@@ -2230,7 +2225,7 @@ void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, const CC
     auto iNode = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Retrieve the boundary displacement ---*/
-    su2double Disp[3] = {0.0, 0.0, 0.0};
+    su2double Disp[3] = {0.0};
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Disp[iDim] = nodes->GetBound_Disp(iNode,iDim);
 
