@@ -121,7 +121,8 @@ def amg ( config , kind='' ):
     
     config_amg = dict()
     
-    config_amg['hgrad']       = float(config['PYADAP_HGRAD'])
+    if 'PYADAP_HGRAD' in config: config_amg['hgrad'] = float(config['PYADAP_HGRAD'])
+
     config_amg['hmax']        = float(config['PYADAP_HMAX'])
     config_amg['hmin']        = float(config['PYADAP_HMIN'])
     config_amg['Lp']          = float(config['ADAP_NORM'])
