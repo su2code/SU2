@@ -93,10 +93,11 @@ def prepro_back_mesh_2d(config_cfd, config_amg):
     del mesh_bak
 
 def call_pyamg(mesh, config):
-    
+
     remesh_options                = {}
 
-    remesh_options['gradation']   = config['hgrad']
+    if 'hgrad' in config: remesh_options['gradation'] = config['hgrad']
+    
     remesh_options['logfile']     = config['amg_log']
     remesh_options['options']     = config['options']
     
@@ -114,7 +115,6 @@ def call_pyamg(mesh, config):
       'sol_in': 'current_sensor.solb', 'sol_itp_in': 'current.solb', 'metric_in': '', 'adap_source': '', 
      'mesh_in': 'current.meshb', 'mesh_out': 'current.new.meshb'}
     ''' 
-    
     
     if 'xy' in mesh:    mesh['xy']  = mesh['xy'].tolist()
     if 'xyz' in mesh:   mesh['xyz'] = mesh['xyz'].tolist()
