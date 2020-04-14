@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -186,12 +186,6 @@ protected:
    * \param[in] jZone - Target zone (the one that transfers to iZone in the primal problem).
    */
   void Update_Cross_Term(unsigned short iZone, unsigned short jZone);
-
-  /*!
-   * \brief Saves the current (adjoint) Solution vector to Solution_BGS_k.
-   * \param[in] iZone - Zone index.
-   */
-  void Set_BGSSolution(unsigned short iZone);
 
   /*!
    * \brief Compute BGS residuals.

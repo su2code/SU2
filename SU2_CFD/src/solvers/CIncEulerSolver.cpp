@@ -6211,24 +6211,18 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iDim, iVar, iMesh, iMeshFine;
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
-  bool static_fsi = ((config->GetTime_Marching() == STEADY) &&
-                     (config->GetFSI_Simulation()));
+  su2double Area_Children, Area_Parent, Coord[3] = {0.0}, *Solution_Fine;
+  bool static_fsi = ((config->GetTime_Marching() == STEADY) && config->GetFSI_Simulation());
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool steady_restart = config->GetSteadyRestart();
-  bool turbulent     = (config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
+  bool turbulent = (config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
 
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
-
-  Coord = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    Coord[iDim] = 0.0;
 
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- Skip coordinates ---*/
 
@@ -6291,13 +6285,12 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
         /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
 
+        /*--- Rewind the index to retrieve the Coords. ---*/
+        index = counter*Restart_Vars[1];
+        for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
+
         su2double GridVel[3] = {0.0,0.0,0.0};
         if (!steady_restart) {
-
-          /*--- Rewind the index to retrieve the Coords. ---*/
-          index = counter*Restart_Vars[1];
-          for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
-
           /*--- Move the index forward to get the grid velocities. ---*/
           index = counter*Restart_Vars[1] + skipVars + nVar_Restart + turbVars;
           for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
@@ -6308,7 +6301,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
           geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
         }
       }
-
 
       /*--- For static FSI problems, grid_movement is 0 but we need to read in and store the
        grid coordinates for each node (but not the grid velocities, as there are none). ---*/
@@ -6331,14 +6323,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (rbuf_NotMatching != 0) {
+  if (iPoint_Global_Local < nPointDomain) {
     SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
@@ -6435,10 +6420,11 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   }
 
   /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy ---*/
-  if (dual_time && config->GetGrid_Movement() && (config->GetKind_GridMovement() != RIGID_MOTION))
-    Restart_OldGeometry(geometry[MESH_0], config);
-
-  delete [] Coord;
+  if (dual_time && config->GetGrid_Movement() && (config->GetKind_GridMovement() != RIGID_MOTION)) {
+    if (!config->GetDeform_Mesh()) {
+      Restart_OldGeometry(geometry[MESH_0], config);
+    }
+  }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 

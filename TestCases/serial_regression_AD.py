@@ -95,7 +95,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.220785, -0.491929, 0.558190, 0.000027] #last 4 columns
+    discadj_rans_naca0012_sst.test_vals = [-2.221040, -0.492202, 0.557470, 0.000027] #last 4 columns
     discadj_rans_naca0012_sst.su2_exec  = "SU2_CFD_AD"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
@@ -151,7 +151,7 @@ def main():
     discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
     discadj_incomp_turb_NACA0012_sst.test_iter = 10
-    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.846768, -2.403601, -8.418993, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.845577, -2.414021, -8.420183, 0.000000] #last 4 columns
     discadj_incomp_turb_NACA0012_sst.su2_exec  = "SU2_CFD_AD"
     discadj_incomp_turb_NACA0012_sst.timeout   = 1600
     discadj_incomp_turb_NACA0012_sst.tol       = 0.00001
@@ -204,6 +204,18 @@ def main():
     discadj_pitchingNACA0012.tol       = 0.00001
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
+
+    # deforming pitching NACA0012
+    unst_deforming_naca0012           = TestCase('unst_deforming_naca0012')
+    unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
+    unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform_ad.cfg"
+    unst_deforming_naca0012.test_iter = 4
+    unst_deforming_naca0012.test_vals = [ -1.729032, -1.624138, 1091.500000, 0.000062] #last 4 columns
+    unst_deforming_naca0012.su2_exec  = "SU2_CFD_AD"
+    unst_deforming_naca0012.timeout   = 1600
+    unst_deforming_naca0012.tol       = 0.00001
+    unst_deforming_naca0012.unsteady  = True
+    test_list.append(unst_deforming_naca0012)
 
     ###################################
     ### Structural Adjoint          ###
@@ -258,8 +270,8 @@ def main():
     discadj_fsi           = TestCase('discadj_fsi')
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
-    discadj_fsi.test_iter = 3000
-    discadj_fsi.test_vals = [0.958848,-0.157601,2.726147,1.798362] #last 4 columns
+    discadj_fsi.test_iter = 6
+    discadj_fsi.test_vals = [6, -1.572702, -3.084381, 4.3990e-04, -1.0631] #last 5 columns
     discadj_fsi.su2_exec  = "SU2_CFD_AD"
     discadj_fsi.timeout   = 1600
     discadj_fsi.tol       = 0.00001

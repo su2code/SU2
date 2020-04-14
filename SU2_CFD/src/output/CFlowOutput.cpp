@@ -193,8 +193,18 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           if (axisymmetric) {
             if (geometry->node[iPoint]->GetCoord(1) != 0.0)
               AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
-            else
-              AxiFactor = 1.0;
+            else {
+              /*--- Find the point "above" by finding the neighbor of iPoint that is also a vertex of iMarker. ---*/
+              AxiFactor = 0.0;
+              for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
+                auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+                if (geometry->node[jPoint]->GetVertex(iMarker) >= 0) {
+                  /*--- Not multiplied by two since we need to half the y coordinate. ---*/
+                  AxiFactor = PI_NUMBER * geometry->node[jPoint]->GetCoord(1);
+                  break;    
+                }
+              }
+            }
           } else {
             AxiFactor = 1.0;
           }
@@ -271,9 +281,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
         }
       }
-
     }
-
   }
 
   /*--- Copy to the appropriate structure ---*/
