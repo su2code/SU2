@@ -649,16 +649,10 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
     }
   }
 
-  /*--- Determine whether or not the FEM solver is used, which decides the
- type of geometry classes that are instantiated. Only adapted for single-zone problems ---*/
+  /*--- Determine whether or not the FEM solver is used, which decides the type of
+   *    geometry classes that are instantiated. Only adapted for single-zone problems ---*/
 
-  fem_solver = ((config_container[ZONE_0]->GetKind_Solver() == FEM_EULER)          ||
-                (config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
-                (config_container[ZONE_0]->GetKind_Solver() == FEM_RANS)           ||
-                (config_container[ZONE_0]->GetKind_Solver() == FEM_LES)            ||
-                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
-                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
-                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+  fem_solver = config_container[ZONE_0]->GetFEMSolver();
 
   fsi = config_container[ZONE_0]->GetFSI_Simulation();
 }

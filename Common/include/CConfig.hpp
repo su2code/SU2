@@ -3643,6 +3643,19 @@ public:
   }
 
   /*!
+   * \brief Return true if a high order FEM solver is in use.
+   */
+  bool GetFEMSolver(void) const {
+    switch (Kind_Solver) {
+      case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
+      case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /*!
    * \brief Kind of Multizone Solver.
    * \return Governing equation that we are solving.
    */
