@@ -1928,7 +1928,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
   //--- Density weight
   for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] -= u[iDim]*TmpWeights[iDim+1];
   TmpWeights[0] -= k*TmpWeights[nVarFlo+0] + omega*TmpWeights[nVarFlo+1]
-                 + k/omega*factor;
+                 - k/omega*factor;
 
   //--- Add TmpWeights to weights, then reset for second-order terms
   for (iVar = 0; iVar < nVarFlo+nVarTur; ++iVar) weights[iVar] += TmpWeights[iVar];
