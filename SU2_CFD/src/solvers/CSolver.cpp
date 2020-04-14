@@ -5152,10 +5152,10 @@ void CSolver::ConvectiveMetric(CSolver           **solver,
     for (iVar = 0; iVar < nVarFlo; ++iVar) {
       const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 0),
                       adjy = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 1);
-      weights[jVar] -= A[jVar][iVar]*adjx + B[jVar][iVar]*adjy;
+      weights[jVar] += -A[jVar][iVar]*adjx - B[jVar][iVar]*adjy;
       if(nDim == 3) {
         const su2double adjz = varAdjFlo->GetGradient_Adaptation(iPoint, iVar, 2);
-        weights[jVar] -= C[jVar][iVar]*adjz;
+        weights[jVar] += -C[jVar][iVar]*adjz;
       }
     }
   }
@@ -5167,10 +5167,10 @@ void CSolver::ConvectiveMetric(CSolver           **solver,
       for (iVar = 0; iVar < nVarTur; ++iVar){
         const su2double adjx = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 0),
                         adjy = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 1);
-        weights[nVarFlo+iVar] -= u*adjx + v*adjy;
+        weights[nVarFlo+iVar] += - u*adjx - v*adjy;
         if (nDim == 3) {
           const su2double adjz = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 2);
-          weights[nVarFlo+iVar] -= w*adjz;
+          weights[nVarFlo+iVar] += -w*adjz;
         }
       }
     }
@@ -5284,17 +5284,17 @@ void CSolver::ViscousMetric(CSolver           **solver,
   }
 
   //--- Energy weight
-  TmpWeights[nVarFlo-1] -= factor;
+  TmpWeights[nVarFlo-1] += -factor;
 
   //--- Density weight
-  for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] -= u[iDim]*TmpWeights[iDim+1];
-  TmpWeights[0] -= e*TmpWeights[nVarFlo-1];
+  for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] += -u[iDim]*TmpWeights[iDim+1];
+  TmpWeights[0] += -e*TmpWeights[nVarFlo-1];
   
   //--- k weight
   if (sst) {
     for (iDim = 0; iDim < nDim; ++iDim) {
-      weights[nVarFlo] -= (2./3.)*(varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim)
-                                    + u[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
+      weights[nVarFlo] += -(2./3.)*(varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim)
+                                  + u[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
   }
 
@@ -5306,72 +5306,72 @@ void CSolver::ViscousMetric(CSolver           **solver,
   if(nDim == 3) {
     const unsigned short rui = 1, rvi = 2, rwi = 3, rei = 4,
                          xxi = 0, xyi = 1, xzi = 2, yyi = 3, yzi = 4, zzi = 5;
-    TmpWeights[1] -= (mu+mut)/(3.*r)*(4.*varAdjFlo->GetHessian(iPoint, rui, xxi)
-                                     +3.*varAdjFlo->GetHessian(iPoint, rui, yyi)
-                                     +3.*varAdjFlo->GetHessian(iPoint, rui, zzi)
-                                     +varAdjFlo->GetHessian(iPoint, rvi, xyi)
-                                     +varAdjFlo->GetHessian(iPoint, rwi, xzi)
-                                     +4.*u[0]*varAdjFlo->GetHessian(iPoint, rei, xxi)
-                                     +3.*u[0]*varAdjFlo->GetHessian(iPoint, rei, yyi)
-                                     +3.*u[0]*varAdjFlo->GetHessian(iPoint, rei, zzi)
-                                     +u[1]*varAdjFlo->GetHessian(iPoint, rei, xyi)
-                                     +u[2]*varAdjFlo->GetHessian(iPoint, rei, xzi))
-                   - (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+    TmpWeights[1] += -(mu+mut)/(3.*r)*(4.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+                                      +3.*varAdjFlo->GetHessian(iPoint, rui, yyi)
+                                      +3.*varAdjFlo->GetHessian(iPoint, rui, zzi)
+                                      +varAdjFlo->GetHessian(iPoint, rvi, xyi)
+                                      +varAdjFlo->GetHessian(iPoint, rwi, xzi)
+                                      +4.*u[0]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                      +3.*u[0]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                      +3.*u[0]*varAdjFlo->GetHessian(iPoint, rei, zzi)
+                                      +u[1]*varAdjFlo->GetHessian(iPoint, rei, xyi)
+                                      +u[2]*varAdjFlo->GetHessian(iPoint, rei, xzi))
+                   + (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                             +varAdjFlo->GetHessian(iPoint, rei, yyi)
                                             +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhou
-    TmpWeights[2] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rui, xxi)
-                                     +4.*varAdjFlo->GetHessian(iPoint, rui, yyi)
-                                     +3.*varAdjFlo->GetHessian(iPoint, rui, zzi)
-                                     +varAdjFlo->GetHessian(iPoint, rvi, xyi)
-                                     +varAdjFlo->GetHessian(iPoint, rwi, yzi)
-                                     +3.*u[1]*varAdjFlo->GetHessian(iPoint, rei, xxi)
-                                     +4.*u[1]*varAdjFlo->GetHessian(iPoint, rei, yyi)
-                                     +3.*u[1]*varAdjFlo->GetHessian(iPoint, rei, zzi)
-                                     +u[0]*varAdjFlo->GetHessian(iPoint, rei, xyi)
-                                     +u[2]*varAdjFlo->GetHessian(iPoint, rei, yzi))
-                   - (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+    TmpWeights[2] += -(mu+mut)/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+                                      +4.*varAdjFlo->GetHessian(iPoint, rui, yyi)
+                                      +3.*varAdjFlo->GetHessian(iPoint, rui, zzi)
+                                      +varAdjFlo->GetHessian(iPoint, rvi, xyi)
+                                      +varAdjFlo->GetHessian(iPoint, rwi, yzi)
+                                      +3.*u[1]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                      +4.*u[1]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                      +3.*u[1]*varAdjFlo->GetHessian(iPoint, rei, zzi)
+                                      +u[0]*varAdjFlo->GetHessian(iPoint, rei, xyi)
+                                      +u[2]*varAdjFlo->GetHessian(iPoint, rei, yzi))
+                   + (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                             +varAdjFlo->GetHessian(iPoint, rei, yyi)
                                             +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhov
-    TmpWeights[3] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rui, xxi)
-                                     +3.*varAdjFlo->GetHessian(iPoint, rui, yyi)
-                                     +4.*varAdjFlo->GetHessian(iPoint, rui, zzi)
-                                     +varAdjFlo->GetHessian(iPoint, rvi, xzi)
-                                     +varAdjFlo->GetHessian(iPoint, rwi, yzi)
-                                     +3.*u[2]*varAdjFlo->GetHessian(iPoint, rei, xxi)
-                                     +3.*u[2]*varAdjFlo->GetHessian(iPoint, rei, yyi)
-                                     +4.*u[2]*varAdjFlo->GetHessian(iPoint, rei, zzi)
-                                     +u[0]*varAdjFlo->GetHessian(iPoint, rei, xzi)
-                                     +u[1]*varAdjFlo->GetHessian(iPoint, rei, yzi))
-                   - (lam+lamt)/(r*cv)*u[2]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+    TmpWeights[3] += -(mu+mut)/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+                                      +3.*varAdjFlo->GetHessian(iPoint, rui, yyi)
+                                      +4.*varAdjFlo->GetHessian(iPoint, rui, zzi)
+                                      +varAdjFlo->GetHessian(iPoint, rvi, xzi)
+                                      +varAdjFlo->GetHessian(iPoint, rwi, yzi)
+                                      +3.*u[2]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                      +3.*u[2]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                      +4.*u[2]*varAdjFlo->GetHessian(iPoint, rei, zzi)
+                                      +u[0]*varAdjFlo->GetHessian(iPoint, rei, xzi)
+                                      +u[1]*varAdjFlo->GetHessian(iPoint, rei, yzi))
+                   + (lam+lamt)/(r*cv)*u[2]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                             +varAdjFlo->GetHessian(iPoint, rei, yyi)
                                             +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhow
-    TmpWeights[4] -= (lam+lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
-                                       +varAdjFlo->GetHessian(iPoint, rei, yyi)
-                                       +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhoe
-    TmpWeights[0] -= u[0]*TmpWeights[1]+u[1]*TmpWeights[2]+u[2]*TmpWeights[3]+e*TmpWeights[4]; // Hrho
+    TmpWeights[4] += -(lam+lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                        +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                        +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhoe
+    TmpWeights[0] += -u[0]*TmpWeights[1]-u[1]*TmpWeights[2]-u[2]*TmpWeights[3]-e*TmpWeights[4]; // Hrho
   }
   else {
     const unsigned short rui = 1, rvi = 2, rei = 3,
                          xxi = 0, xyi = 1, yyi = 2;
-    TmpWeights[1] -= (mu+mut)/(3.*r)*(4.*varAdjFlo->GetHessian(iPoint, rui, xxi)
-                                     +3.*varAdjFlo->GetHessian(iPoint, rui, yyi)
-                                     +varAdjFlo->GetHessian(iPoint, rvi, xyi)
-                                     +4.*u[0]*varAdjFlo->GetHessian(iPoint, rei, xxi)
-                                     +3.*u[0]*varAdjFlo->GetHessian(iPoint, rei, yyi)
-                                     +u[1]*varAdjFlo->GetHessian(iPoint, rei, xyi))
-                   - (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+    TmpWeights[1] += -(mu+mut)/(3.*r)*(4.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+                                      +3.*varAdjFlo->GetHessian(iPoint, rui, yyi)
+                                      +varAdjFlo->GetHessian(iPoint, rvi, xyi)
+                                      +4.*u[0]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                      +3.*u[0]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                      +u[1]*varAdjFlo->GetHessian(iPoint, rei, xyi))
+                   + (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                             +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hrhou
-    TmpWeights[2] -= (mu+mut)/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rui, xxi)
-                                     +4.*varAdjFlo->GetHessian(iPoint, rui, yyi)
-                                     +varAdjFlo->GetHessian(iPoint, rvi, xyi)
-                                     +3.*u[1]*varAdjFlo->GetHessian(iPoint, rei, xxi)
-                                     +4.*u[1]*varAdjFlo->GetHessian(iPoint, rei, yyi)
-                                     +u[0]*varAdjFlo->GetHessian(iPoint, rei, xyi))
-                   - (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+    TmpWeights[2] += -(mu+mut)/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+                                      +4.*varAdjFlo->GetHessian(iPoint, rui, yyi)
+                                      +varAdjFlo->GetHessian(iPoint, rvi, xyi)
+                                      +3.*u[1]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                      +4.*u[1]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                      +u[0]*varAdjFlo->GetHessian(iPoint, rei, xyi))
+                   + (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                             +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hrhov
-    TmpWeights[3] -= (lam+lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
-                                       +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hrhoe
-    TmpWeights[0] -= u[0]*TmpWeights[1]+u[1]*TmpWeights[2]+e*TmpWeights[3]; // Hrho
+    TmpWeights[3] += -(lam+lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                        +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hrhoe
+    TmpWeights[0] += -u[0]*TmpWeights[1]-u[1]*TmpWeights[2]-e*TmpWeights[3]; // Hrho
   }
 
   //--- Add TmpWeights to weights
