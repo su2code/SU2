@@ -3093,8 +3093,8 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config) {
   computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
                             *config, gradient, 0, nVar, hessian);
   
-  //--- compute boundary Hessians from volume Hessians
-  CorrectBoundHessian(geometry, config);
+//  //--- compute boundary Hessians from volume Hessians
+//  CorrectBoundHessian(geometry, config);
 }
 
 void CSolver::SetHessian_LS(CGeometry *geometry, CConfig *config) {
