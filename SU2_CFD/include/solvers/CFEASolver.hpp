@@ -46,7 +46,7 @@ protected:
 
   su2double Total_CFEA;             /*!< \brief Total FEA coefficient for all the boundaries. */
 
-  unsigned short *iElem_iDe;        /*!< \brief For DE cases, ID of the region considered for each iElem. */
+  unsigned short *iElem_iDe = nullptr; /*!< \brief For DE cases, ID of the region considered for each iElem. */
 
   su2double a_dt[9];                /*!< \brief Integration constants. */
 
@@ -87,8 +87,12 @@ protected:
 
   bool element_based;          /*!< \brief Bool to determine if an element-based file is used. */
   bool topol_filter_applied;   /*!< \brief True if density filtering has been performed. */
+  bool initial_calc = true;    /*!< \brief Becomes false after first call to Preprocessing. */
 
   unsigned long nElement;      /*!< \brief Number of elements. */
+
+  /*--- Extra vertices for row/column elimination, see Set_VertexEliminationSchedule. ---*/
+  vector<unsigned long> ExtraVerticesToEliminate;
 
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use,
@@ -147,6 +151,15 @@ protected:
   void Set_Prestretch(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Mitigation for an issue with Dirichlet boundary conditions and MPI,
+   * some ranks do not get enough of the markers to cover their halo points.
+   * This breaks the symmetry of the global matrix as columns are not fully eliminated.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] markers - List of essential BC markers.
+   */
+  void Set_VertexEliminationSchedule(CGeometry *geometry, const vector<unsigned short>& markers);
+
+  /*!
    * \brief Compute constants for time integration.
    * \param[in] config - Definition of the particular problem.
    */
@@ -179,8 +192,8 @@ public:
 
   CSysMatrix<su2double> MassMatrix;     /*!< \brief Sparse structure for storing the mass matrix. */
 
-  CElement*** element_container;   /*!< \brief Vector which the define the finite element structure for each problem. */
-  CProperty** element_properties;  /*!< \brief Vector which stores the properties of each element */
+  CElement*** element_container = nullptr;  /*!< \brief Vector which the define the finite element structure for each problem. */
+  CProperty** element_properties = nullptr; /*!< \brief Vector which stores the properties of each element */
 
   /*!
    * \brief Constructor of the class.
@@ -454,7 +467,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Integrate_FSI_Loads(CGeometry *geometry, CConfig *config);
+  void Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Update the solution using an implicit solver.

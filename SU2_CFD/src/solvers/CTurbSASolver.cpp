@@ -225,9 +225,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   SetImplicitPeriodic(true);
 
-  /* Store the initial CFL number for all grid points. */
+  /*--- Store the initial CFL number for all grid points. ---*/
 
-  const su2double CFL = config->GetCFL(MGLevel);
+  const su2double CFL = config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Turb();
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     nodes->SetLocalCFL(iPoint, CFL);
   }
