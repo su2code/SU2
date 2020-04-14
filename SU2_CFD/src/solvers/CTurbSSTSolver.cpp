@@ -1895,8 +1895,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
   vector<su2double> TmpWeights(weights.size(), 0.0);
   su2double factor = 0.0;
   for (iDim = 0; iDim < nDim; ++iDim) {
-    factor = -(2./3.)*(mut/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
-                                +alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim));
+    factor = -(2./3.)*divu*(mut/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
+                           +alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim));
     for (jDim = 0; jDim < nDim; ++jDim) {
       factor += (taut[iDim][jDim]+mut*gradu[iDim][jDim])*(1./r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim)
                                                          +alfa/mut*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim));
@@ -1952,7 +1952,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
     TmpWeights[nVarFlo+1] += -(mu+sigmaomega*mut)*(varAdjTur->GetHessian(iPoint, romegai, xxi)
                                                   +varAdjTur->GetHessian(iPoint, romegai, yyi)); // Homega
   }
-  TmpWeights[0] -= k*TmpWeights[nVarFlo+0]+omega*TmpWeights[nVarFlo+1];
+  TmpWeights[0] += -k*TmpWeights[nVarFlo+0]-omega*TmpWeights[nVarFlo+1];
 
   //--- Add TmpWeights to weights
   weights[0]         += TmpWeights[0];
