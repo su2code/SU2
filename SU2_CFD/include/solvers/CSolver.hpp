@@ -3577,18 +3577,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] ExtIter - External iteration.
-   */
-  inline virtual void ResetInitialCondition(CGeometry **geometry,
-                                            CSolver ***solver_container,
-                                            CConfig *config,
-                                            unsigned long TimeIter) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the problem.
    */
   inline virtual void PredictStruct_Displacement(CGeometry *geometry,
@@ -4025,15 +4013,16 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] Value of the load increment for nonlinear structural analysis
+   * \param[in] Index of the increment.
+   * \param[in] Value of the load increment for nonlinear structural analysis.
    */
-  inline virtual void SetLoad_Increment(su2double val_loadIncrement) {  }
+  inline virtual void SetLoad_Increment(unsigned long iInc, su2double loadInc) {  }
 
   /*!
    * \brief A virtual member.
    * \param[in] Value of the load increment for nonlinear structural analysis
    */
-  inline virtual su2double GetLoad_Increment() const { return 0; }
+  inline virtual su2double GetLoad_Increment() const { return 0.0; }
 
   /*!
    * \brief A virtual member.

@@ -48,18 +48,18 @@ protected:
 
   unsigned short *iElem_iDe = nullptr; /*!< \brief For DE cases, ID of the region considered for each iElem. */
 
-  su2double a_dt[9];                /*!< \brief Integration constants. */
+  su2double a_dt[9];                /*!< \brief Time integration constants. */
 
-  su2double Conv_Ref[3];            /*!< \brief Reference values for convergence check: DTOL, RTOL, ETOL */
-  su2double Conv_Check[3];          /*!< \brief Current values for convergence check: DTOL, RTOL, ETOL */
+  su2double Conv_Check[3];          /*!< \brief Current values for convergence check: UTOL, RTOL, ETOL. */
   su2double FSI_Conv[2];            /*!< \brief Values to check the convergence of the FSI problem. */
 
-  su2double loadIncrement;          /*!< \brief Coefficient that determines the amount of load which is applied */
+  unsigned long idxIncrement;       /*!< \brief Index of the current load increment */
+  su2double loadIncrement;          /*!< \brief Coefficient that determines the amount of load which is applied. */
 
-  su2double WAitken_Dyn;            /*!< \brief Aitken's dynamic coefficient */
-  su2double WAitken_Dyn_tn1;        /*!< \brief Aitken's dynamic coefficient in the previous iteration */
+  su2double WAitken_Dyn;            /*!< \brief Aitken's dynamic coefficient. */
+  su2double WAitken_Dyn_tn1;        /*!< \brief Aitken's dynamic coefficient in the previous iteration. */
 
-  su2double PenaltyValue;           /*!< \brief Penalty value to maintain total stiffness constant */
+  su2double PenaltyValue;           /*!< \brief Penalty value to maintain total stiffness constant. */
 
   su2double Total_OFRefGeom;        /*!< \brief Total Objective Function: Reference Geometry. */
   su2double Total_OFRefNode;        /*!< \brief Total Objective Function: Reference Node. */
@@ -241,18 +241,6 @@ public:
                            CSolver ***solver_container,
                            CConfig *config,
                            unsigned long TimeIter) override;
-
-  /*!
-   * \brief Reset the initial condition for the FEM structural problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] ExtIter - External iteration.
-   */
-  void ResetInitialCondition(CGeometry **geometry,
-                             CSolver ***solver_container,
-                             CConfig *config,
-                             unsigned long TimeIter) override;
 
   /*!
    * \brief Compute the time step for solving the FEM equations.
@@ -760,7 +748,10 @@ public:
    * \brief Set the value of the load increment for nonlinear structural analysis
    * \param[in] Value of the coefficient
    */
-  inline void SetLoad_Increment(su2double val_loadIncrement) final { loadIncrement = val_loadIncrement; }
+  inline void SetLoad_Increment(unsigned long iInc, su2double loadInc) final {
+    idxIncrement = iInc;
+    loadIncrement = loadInc;
+  }
 
   /*!
    * \brief Get the value of the load increment for nonlinear structural analysis

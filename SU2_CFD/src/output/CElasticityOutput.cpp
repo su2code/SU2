@@ -115,10 +115,9 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
       SetHistoryOutputValue("RMS_DISP_Z", log10(fea_solver->GetRes_RMS(2)));
     }
   } else if (nonlinear_analysis){
-    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->LinSysSol.norm()));
-    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->LinSysRes.norm()));
-    SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->LinSysSol.dot(fea_solver->LinSysRes)));
-
+    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->GetRes_FEM(0)));
+    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->GetRes_FEM(1)));
+    SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->GetRes_FEM(2)));
   }
 
   if (multiZone){

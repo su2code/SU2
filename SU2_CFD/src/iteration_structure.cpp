@@ -1212,17 +1212,18 @@ void CFEAIteration::Iterate(COutput *output,
                             unsigned short val_iZone,
                             unsigned short val_iInst) {
 
-  su2double loadIncrement;
+  bool StopCalc = false;
   unsigned long IntIter = 0;
-  unsigned long TimeIter = config[val_iZone]->GetTimeIter();
-  bool StopCalc;
-  unsigned long iIncrement;
-  unsigned long nIncrements = config[val_iZone]->GetNumberIncrements();
 
-  bool nonlinear = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);
-  bool linear = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);
-  bool disc_adj_fem = (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM);
-  bool incremental_load = config[val_iZone]->GetIncrementalLoad();  // Loads applied in steps
+  const unsigned long TimeIter = config[val_iZone]->GetTimeIter();
+  const unsigned long nIncrements = config[val_iZone]->GetNumberIncrements();
+
+  const bool nonlinear = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);
+  const bool linear = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);
+  const bool disc_adj_fem = config[val_iZone]->GetDiscrete_Adjoint();
+
+  /*--- Loads applied in steps (not used for discrete adjoint). ---*/
+  const bool incremental_load = config[val_iZone]->GetIncrementalLoad() && !disc_adj_fem;
 
   CIntegration* feaIntegration = integration[val_iZone][val_iInst][FEA_SOL];
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
@@ -1234,10 +1235,9 @@ void CFEAIteration::Iterate(COutput *output,
   config[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS);
 
   if (linear) {
+    /*--- Run the (one) iteration ---*/
 
     config[val_iZone]->SetInnerIter(0);
-
-    /*--- Run the iteration ---*/
 
     feaIntegration->Structural_Iteration(geometry, solver, numerics, config,
                                          RUNTIME_FEA_SYS, val_iZone, val_iInst);
@@ -1285,16 +1285,10 @@ void CFEAIteration::Iterate(COutput *output,
 
     /*--- THIS IS THE INCREMENTAL LOAD APPROACH (only makes sense for nonlinear) ---*/
 
-    /*--- Set the initial condition: store the current solution as Solution_Old ---*/
-
-    feaSolver->SetInitialCondition(geometry[val_iZone][val_iInst],
-                                   solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
-
     /*--- Assume the initial load increment as 1.0 ---*/
 
-    loadIncrement = 1.0;
-    feaSolver->SetLoad_Increment(loadIncrement);
-    feaSolver->SetForceCoeff(loadIncrement);
+    feaSolver->SetLoad_Increment(0, 1.0);
+    feaSolver->SetForceCoeff(1.0);
 
     /*--- Run two nonlinear iterations to check if incremental loading can be skipped ---*/
 
@@ -1302,34 +1296,23 @@ void CFEAIteration::Iterate(COutput *output,
 
       config[val_iZone]->SetInnerIter(IntIter);
 
-      /*--- Run the first iteration ---*/
-
       feaIntegration->Structural_Iteration(geometry, solver, numerics, config,
                                            RUNTIME_FEA_SYS, val_iZone, val_iInst);
 
-      /*--- Write the convergence history (first computes Von Mises stress) ---*/
-
-      Monitor(output, integration, geometry, solver, numerics, config,
-              surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+      StopCalc = Monitor(output, integration, geometry, solver, numerics, config,
+                         surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
     }
 
-    bool meetCriteria;
-    su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
-    su2double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
+    /*--- Early return if we already meet the convergence criteria. ---*/
+    if (StopCalc) return;
 
-    Criteria_UTOL = config[val_iZone]->GetIncLoad_Criteria(0);
-    Criteria_RTOL = config[val_iZone]->GetIncLoad_Criteria(1);
-    Criteria_ETOL = config[val_iZone]->GetIncLoad_Criteria(2);
+    /*--- Check user-defined criteria to either increment loads or continue with NR iterations. ---*/
 
-    Residual_UTOL = log10(feaSolver->LinSysSol.norm());
-    Residual_RTOL = log10(feaSolver->LinSysRes.norm());
-    Residual_ETOL = log10(feaSolver->LinSysSol.dot(feaSolver->LinSysRes));
+    bool meetCriteria = true;
+    for (int i = 0; i < 3; ++i)
+      meetCriteria &= (feaSolver->GetRes_FEM(i) < config[val_iZone]->GetIncLoad_Criteria(i));
 
-    meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
-                     ( Residual_RTOL <  Criteria_RTOL ) &&
-                     ( Residual_ETOL <  Criteria_ETOL ) );
-
-    /*--- If the criteria is met, i.e. the load is not "too big", continue the regular calculation ---*/
+    /*--- If the criteria is met, i.e. the load is not too large, continue the regular calculation. ---*/
 
     if (meetCriteria) {
 
@@ -1350,30 +1333,31 @@ void CFEAIteration::Iterate(COutput *output,
 
     }
 
-    /*--- If the criteria is not met, a whole set of subiterations for the different loads must be done ---*/
+    /*--- If the criteria is not met, a whole set of subiterations for the different loads must be done. ---*/
 
     else {
 
-      /*--- Here we have to restore the solution to the one before testing the criteria ---*/
-      /*--- Retrieve the Solution_Old as the current solution before subiterating ---*/
+      /*--- Restore solution to initial. Because we ramp the load from zero, in multizone cases it is not
+       * adequate to take "old values" as those will be for maximum loading on the previous outer iteration. ---*/
 
-      feaSolver->ResetInitialCondition(geometry[val_iZone][val_iInst],
-                                       solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
+      feaSolver->SetInitialCondition(geometry[val_iZone][val_iInst],
+                                     solver[val_iZone][val_iInst],
+                                     config[val_iZone], TimeIter);
 
       /*--- For the number of increments ---*/
-      for (iIncrement = 0; iIncrement < nIncrements; iIncrement++) {
+      for (auto iIncrement = 1ul; iIncrement <= nIncrements; iIncrement++) {
 
         /*--- Set the load increment and the initial condition, and output the
          *    parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
 
-        loadIncrement = (iIncrement + 1.0) * (1.0 / nIncrements);
-        feaSolver->SetLoad_Increment(loadIncrement);
+        su2double loadIncrement = su2double(iIncrement) / nIncrements;
+        feaSolver->SetLoad_Increment(iIncrement, loadIncrement);
 
         /*--- Set the convergence monitor to false, to force the solver to converge every subiteration ---*/
         output->SetConvergence(false);
 
         if (rank == MASTER_NODE)
-          cout << "\nIncremental load: increment " << iIncrement + 1 << endl;
+          cout << "\nIncremental load: increment " << iIncrement << endl;
 
         /*--- Newton-Raphson subiterations ---*/
 
@@ -1393,7 +1377,8 @@ void CFEAIteration::Iterate(COutput *output,
         }
 
       }
-
+      /*--- Just to be sure, set default increment settings. ---*/
+      feaSolver->SetLoad_Increment(0, 1.0);
     }
 
   }

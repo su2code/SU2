@@ -48,6 +48,7 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   Total_CFEA = 0.0;
   WAitken_Dyn = 0.0;
   WAitken_Dyn_tn1 = 0.0;
+  idxIncrement = 0;
   loadIncrement = 1.0;
 
   element_container = new CElement** [MAX_TERMS]();
@@ -123,6 +124,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   Total_CFEA        = 0.0;
   WAitken_Dyn       = 0.0;
   WAitken_Dyn_tn1   = 0.0;
+  idxIncrement      = 0;
   loadIncrement     = 0.0;
 
   SetFSI_ConvValue(0,0.0);
@@ -823,7 +825,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   /*
    * FSI loads (computed upstream) need to be integrated if a nonconservative interpolation scheme is in use
    */
-  if (fsi && first_iter) Integrate_FSI_Loads(geometry, config);
+  if (fsi && first_iter && (idxIncrement==0)) Integrate_FSI_Loads(geometry, config);
 
   /*--- Next call to Preprocessing will not be "initial_calc" and linear operations will not be repeated. ---*/
   initial_calc = false;
@@ -832,18 +834,20 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
 
 void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
-  /*--- We store the current solution as "Solution Old", for the case that we need to retrieve it ---*/
-
-  if (config->GetIncrementalLoad()) nodes->Set_OldSolution();
-
-}
-
-void CFEASolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
-
-  /*--- We store the current solution as "Solution Old", for the case that we need to retrieve it ---*/
-
-  if (config->GetIncrementalLoad()) nodes->Set_Solution();
-
+  SU2_OMP_PARALLEL
+  {
+  if (!config->GetPrestretch()) {
+    su2double zeros[MAXNVAR] = {0.0};
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+      nodes->SetSolution(iPoint, zeros);
+  }
+  else {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+      nodes->SetSolution(iPoint, nodes->GetPrestretch(iPoint));
+  }
+  } // end parallel
 }
 
 void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
@@ -1902,7 +1906,6 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, CNumerics **numerics, unsigned short iMesh) {
 
   const bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
-  const bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
 
   /*--- Compute stresses for monitoring and output. ---*/
 
@@ -1926,21 +1929,28 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     case TOPOL_COMPLIANCE:   Compute_OFCompliance(geometry, config); break;
   }
 
-  if (disc_adj_fem && nonlinear_analysis) {
+  if (nonlinear_analysis) {
 
-    /*--- For nonlinear discrete adjoint, we have 3 convergence criteria ---*/
+    /*--- For nonlinear analysis we have 3 convergence criteria: ---*/
+    /*--- UTOL = norm(Delta_U(k)): ABSOLUTE, norm of the incremental displacements ---*/
+    /*--- RTOL = norm(Residual(k): ABSOLUTE, norm of the residual (T-F) ---*/
+    /*--- ETOL = Delta_U(k) * Residual(k): ABSOLUTE, energy norm ---*/
 
-    /*--- UTOL = norm(Delta_U(k)): ABSOLUTE, norm of the incremental displacements ------------*/
-    /*--- RTOL = norm(Residual(k): ABSOLUTE, norm of the residual (T-F) -----------------------*/
-    /*--- ETOL = Delta_U(k) * Residual(k): ABSOLUTE, norm of the product disp * res -----------*/
+    SU2_OMP_PARALLEL
+    {
+    su2double utol = LinSysSol.norm();
+    su2double rtol = LinSysRes.norm();
+    su2double etol = LinSysSol.dot(LinSysRes);
 
-    Conv_Check[0] = LinSysSol.norm();               // Norm of the delta-solution vector
-    Conv_Check[1] = LinSysRes.norm();               // Norm of the residual
-    Conv_Check[2] = LinSysSol.dot(LinSysRes);       // Position for the energy tolerance
-
+    SU2_OMP_MASTER
+    {
+      Conv_Check[0] = utol;
+      Conv_Check[1] = rtol;
+      Conv_Check[2] = etol;
+    }
+    } // end parallel
   }
-
-  if (!nonlinear_analysis) {
+  else {
 
     /*--- If the problem is linear, the only check we do is the RMS of the residuals. ---*/
     /*---  Compute the residual Ax-f ---*/
