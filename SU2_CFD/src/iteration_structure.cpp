@@ -1412,8 +1412,8 @@ void CFEAIteration::Update(COutput *output,
 
     /*--- Verify convergence criteria (based on total time) ---*/
 
-    su2double Physical_dt = config[val_iZone]->GetDelta_DynTime();
-    su2double Physical_t  = (TimeIter+1)*Physical_dt;
+    const su2double Physical_dt = config[val_iZone]->GetDelta_DynTime();
+    const su2double Physical_t  = (TimeIter+1)*Physical_dt;
     if (Physical_t >= config[val_iZone]->GetTotal_DynTime())
       integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(true);
 
@@ -2127,7 +2127,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver, CGeometry ****ge
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
 
-  if (kind_recording == CONS_VARS || kind_recording == COMBINED) {
+  if (kind_recording == SOLUTION_VARIABLES || kind_recording == SOLUTION_AND_MESH) {
 
     /*--- Register flow and turbulent variables as input ---*/
 
@@ -2211,7 +2211,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver,
 
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
-  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == COMBINED)){
+  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == SOLUTION_AND_MESH)){
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
@@ -2581,7 +2581,7 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
 
     /*--- Clear indices of coupling variables ---*/
 
-    SetDependencies(solver, geometry, numerics, config, val_iZone, val_iInst, COMBINED);
+    SetDependencies(solver, geometry, numerics, config, val_iZone, val_iInst, SOLUTION_AND_MESH);
 
     /*--- Run one iteration while tape is passive - this clears all indices ---*/
 
@@ -3178,7 +3178,7 @@ void CDiscAdjHeatIteration::RegisterInput(CSolver *****solver,
                                           unsigned short iZone, unsigned short iInst,
                                           unsigned short kind_recording){
 
-  if (kind_recording == CONS_VARS || kind_recording == COMBINED){
+  if (kind_recording == SOLUTION_VARIABLES || kind_recording == SOLUTION_AND_MESH){
 
     /*--- Register flow and turbulent variables as input ---*/
 
@@ -3203,7 +3203,7 @@ void CDiscAdjHeatIteration::SetDependencies(CSolver *****solver,
                                             unsigned short iZone, unsigned short iInst,
                                             unsigned short kind_recording){
 
-  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == COMBINED)){
+  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == SOLUTION_AND_MESH)){
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 

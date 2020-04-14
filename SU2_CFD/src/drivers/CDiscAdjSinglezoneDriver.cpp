@@ -75,7 +75,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     else       direct_iteration = new CFluidIteration(config);
     if (compressible) direct_output = COutputFactory::createOutput(EULER, config, nDim);
     else direct_output =  COutputFactory::createOutput(INC_EULER, config, nDim);
-    MainVariables = CONS_VARS;
+    MainVariables = SOLUTION_VARIABLES;
     if (mesh_def) SecondaryVariables = MESH_DEFORM;
     else          SecondaryVariables = MESH_COORDS;
     break;
@@ -85,7 +85,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     direct_iteration = new CFEMFluidIteration(config);
     direct_output = COutputFactory::createOutput(FEM_EULER, config, nDim);
-    MainVariables = CONS_VARS;
+    MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
     break;
 
@@ -94,7 +94,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: elasticity equation." << endl;
     direct_iteration = new CFEAIteration(config);
     direct_output = COutputFactory::createOutput(FEM_ELASTICITY, config, nDim);
-    MainVariables = CONS_VARS;
+    MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
     break;
 
@@ -103,7 +103,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: heat equation." << endl;
     direct_iteration = new CHeatIteration(config);
     direct_output = COutputFactory::createOutput(HEAT_EQUATION, config, nDim);
-    MainVariables = CONS_VARS;
+    MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
     break;
 

@@ -529,7 +529,7 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
       iPoint_Local = Global2Local[iPoint_Global];
 
-      su2double Sol[3] = {0.0, 0.0, 0.0};
+      su2double Sol[MAXNVAR] = {0.0};
 
       if (nDim == 2) point_line >> Sol[0] >> Sol[1] >> index;
       if (nDim == 3) point_line >> Sol[0] >> Sol[1] >> Sol[2] >> index;
@@ -682,7 +682,7 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
     if (iPoint_Local >= 0) {
 
-      su2double Sol[3] = {0.0, 0.0, 0.0};
+      su2double Sol[MAXNVAR] = {0.0};
 
       if (nDim == 2){
         Sol[0] = PrintingToolbox::stod(point_line[3]);
@@ -885,7 +885,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
         CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
 
         /*--- For the number of nodes, get the coordinates and cache the point indices. ---*/
-        unsigned long indexNode[MAXNNODE];
+        unsigned long indexNode[MAXNNODE_3D];
 
         for (iNode = 0; iNode < nNodes; iNode++) {
 
@@ -978,7 +978,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
         CElement* de_elem = element_container[DE_TERM][EL_KIND+thread*MAX_FE_KINDS];
 
         /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
-        unsigned long indexNode[MAXNNODE];
+        unsigned long indexNode[MAXNNODE_3D];
 
         for (iNode = 0; iNode < nNodes; iNode++) {
 
@@ -1116,7 +1116,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, c
         CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
 
         /*--- For the number of nodes, get the coordinates and cache the point indices. ---*/
-        unsigned long indexNode[MAXNNODE];
+        unsigned long indexNode[MAXNNODE_3D];
 
         for (iNode = 0; iNode < nNodes; iNode++) {
           indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
@@ -1195,7 +1195,7 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, cons
       CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
 
       /*--- For the number of nodes, get the coordinates and cache the point indices. ---*/
-      unsigned long indexNode[MAXNNODE];
+      unsigned long indexNode[MAXNNODE_3D];
 
       for (iNode = 0; iNode < nNodes; iNode++) {
         indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
@@ -1277,7 +1277,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
         CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
 
         /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
-        unsigned long indexNode[MAXNNODE];
+        unsigned long indexNode[MAXNNODE_3D];
 
         for (iNode = 0; iNode < nNodes; iNode++) {
 
@@ -1382,7 +1382,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
         CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
 
         /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
-        unsigned long indexNode[MAXNNODE];
+        unsigned long indexNode[MAXNNODE_3D];
 
         for (iNode = 0; iNode < nNodes; iNode++) {
 
@@ -1650,7 +1650,7 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, con
         CElement* element = element_container[FEA_TERM][EL_KIND+thread*MAX_FE_KINDS];
 
         /*--- For the number of nodes, get the coordinates and cache the point indices. ---*/
-        unsigned long indexNode[MAXNNODE];
+        unsigned long indexNode[MAXNNODE_3D];
 
         for (iNode = 0; iNode < nNodes; iNode++) {
           indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
@@ -1747,7 +1747,7 @@ void CFEASolver::Compute_IntegrationConstants(const CConfig *config) {
 void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
 
   const bool dynamic = config->GetTime_Domain();
-  const su2double zeros[3] = {0.0, 0.0, 0.0};
+  const su2double zeros[MAXNVAR] = {0.0};
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -1780,7 +1780,7 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, const
 
   bool dynamic = config->GetTime_Domain();
 
-  su2double zeros[3] = {0.0, 0.0, 0.0};
+  su2double zeros[MAXNVAR] = {0.0};
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -1806,7 +1806,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
 
   /*--- Determine axis of symmetry based on the normal of the first element in the marker. ---*/
 
-  const su2double* nodeCoord[4] = {nullptr};
+  const su2double* nodeCoord[MAXNNODE_2D] = {nullptr};
 
   const bool quad = (geometry->bound[val_marker][0]->GetVTK_Type() == QUADRILATERAL);
   const unsigned short nNodes = quad? 4 : nDim;
@@ -1816,7 +1816,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
     nodeCoord[iNode] = geometry->node[iPoint]->GetCoord();
   }
 
-  su2double normal[3] = {0.0};
+  su2double normal[MAXNDIM] = {0.0};
 
   switch (nNodes) {
     case 2: LineNormal(nodeCoord, normal); break;
@@ -1825,10 +1825,10 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
   }
 
   auto axis = 0u;
-  for (auto iDim = 1u; iDim < 3; ++iDim)
+  for (auto iDim = 1u; iDim < MAXNDIM; ++iDim)
     axis = (fabs(normal[iDim]) > fabs(normal[axis]))? iDim : axis;
 
-  if (fabs(normal[axis]) < 0.99*Norm(3,normal)) {
+  if (fabs(normal[axis]) < 0.99*Norm(int(MAXNDIM),normal)) {
     SU2_MPI::Error("The structural solver only supports axis-aligned symmetry planes.",CURRENT_FUNCTION);
   }
 
@@ -1869,13 +1869,7 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, const CCon
   su2double DispDirVal = config->GetDisp_Dir_Value(TagBound);
   su2double DispDirMult = config->GetDisp_Dir_Multiplier(TagBound);
   const su2double *DispDirLocal = config->GetDisp_Dir(TagBound);
-
-  su2double DispDir[3] = {0.0};
-
-  su2double DispDirMod = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    DispDirMod += DispDirLocal[iDim]*DispDirLocal[iDim];
-  DispDirMod = sqrt(DispDirMod);
+  su2double DispDirMod = Norm(nDim, DispDirLocal);
 
   su2double CurrentTime = config->GetCurrent_DynTime();
   su2double RampTime = config->GetRamp_Time();
@@ -1883,6 +1877,7 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, const CCon
 
   su2double TotalDisp = ModAmpl * DispDirVal * DispDirMult / DispDirMod;
 
+  su2double DispDir[MAXNVAR] = {0.0};
   for (iDim = 0; iDim < nDim; iDim++)
     DispDir[iDim] = TotalDisp * DispDirLocal[iDim];
 
@@ -2039,8 +2034,9 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, const 
   for (unsigned long iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
     unsigned short iNode, iDim;
-    unsigned long indexNode[4] = {0};
-    su2double nodeCoord_ref[4][3] = {{0.0}}, nodeCoord_curr[4][3] = {{0.0}};
+    unsigned long indexNode[MAXNNODE_2D] = {0};
+    su2double nodeCoord_ref[MAXNNODE_2D][MAXNDIM] = {{0.0}};
+    su2double nodeCoord_curr[MAXNNODE_2D][MAXNDIM] = {{0.0}};
 
     /*--- Identify the kind of boundary element. ---*/
 
@@ -2066,8 +2062,8 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, const 
 
     /*--- Compute area vectors in reference and current configurations. ---*/
 
-    su2double normal_ref[3] = {0.0};
-    su2double normal_curr[3] = {0.0};
+    su2double normal_ref[MAXNDIM] = {0.0};
+    su2double normal_curr[MAXNDIM] = {0.0};
 
     switch (nNodes) {
       case 2: LineNormal(nodeCoord_ref, normal_ref); break;
@@ -2129,9 +2125,9 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, const CCo
   for (unsigned long iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
     unsigned short iNode, iDim;
-    unsigned long indexNode[4] = {0};
+    unsigned long indexNode[MAXNNODE_2D] = {0};
 
-    const su2double* nodeCoord[4] = {nullptr};
+    const su2double* nodeCoord[MAXNNODE_2D] = {nullptr};
 
     /*--- Identify the kind of boundary element. ---*/
 
@@ -2147,7 +2143,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, const CCo
 
     /*--- Compute area of the boundary element. ---*/
 
-    su2double normal[3] = {0.0};
+    su2double normal[MAXNDIM] = {0.0};
 
     switch (nNodes) {
       case 2: LineNormal(nodeCoord, normal); break;
@@ -2155,7 +2151,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, const CCo
       case 4: QuadrilateralNormal(nodeCoord, normal); break;
     }
 
-    su2double area = Norm(3,normal);
+    su2double area = Norm(int(MAXNDIM),normal);
 
     /*--- Compute load vector and update surface load for each node of the boundary element. ---*/
 
@@ -2177,9 +2173,9 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, const CConf
   for (auto iElem = 0ul; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
     unsigned short iNode, iDim;
-    unsigned long indexNode[4] = {0};
+    unsigned long indexNode[MAXNNODE_2D] = {0};
 
-    su2double nodeCoord[4][3] = {{0.0}};
+    su2double nodeCoord[MAXNNODE_2D][MAXNDIM] = {{0.0}};
 
     bool quad = (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL);
     unsigned short nNodes = quad? 4 : nDim;
@@ -2197,7 +2193,7 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, const CConf
 
     /*--- Compute the area of the surface element. ---*/
 
-    su2double normal[3] = {0.0};
+    su2double normal[MAXNDIM] = {0.0};
 
     switch (nNodes) {
       case 2: LineNormal(nodeCoord, normal); break;
@@ -2205,7 +2201,7 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, const CConf
       case 4: QuadrilateralNormal(nodeCoord, normal); break;
     }
 
-    su2double area = Norm(3,normal);
+    su2double area = Norm(int(MAXNDIM),normal);
 
     /*--- Compute damping forces. ---*/
 
@@ -2235,7 +2231,7 @@ void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, const CC
     auto iNode = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Retrieve the boundary displacement ---*/
-    su2double Disp[3] = {0.0};
+    su2double Disp[MAXNVAR] = {0.0};
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Disp[iDim] = nodes->GetBound_Disp(iNode,iDim);
 
@@ -2270,8 +2266,8 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config)
 
     for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); ++iElem) {
       /*--- Define the boundary element. ---*/
-      unsigned long nodeList[4] = {0};
-      su2double coords[4][3] = {{0.0}};
+      unsigned long nodeList[MAXNNODE_2D] = {0};
+      su2double coords[MAXNNODE_2D][MAXNDIM] = {{0.0}};
       bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
       auto nNode = quad? 4u : nDim;
 
@@ -2283,7 +2279,7 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config)
       }
 
       /*--- Compute the area contribution to each node. ---*/
-      su2double normal[3] = {0.0};
+      su2double normal[MAXNDIM] = {0.0};
 
       switch (nNode) {
         case 2: LineNormal(coords, normal); break;
@@ -2291,7 +2287,7 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config)
         case 4: QuadrilateralNormal(coords, normal); break;
       }
 
-      su2double area = Norm(3,normal) / nNode;
+      su2double area = Norm(int(MAXNDIM),normal) / nNode;
 
       /*--- Update area of nodes. ---*/
       for (auto iNode = 0u; iNode < nNode; ++iNode) {
@@ -2309,7 +2305,7 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config)
   for (auto it = vertexArea.begin(); it != vertexArea.end(); ++it) {
     auto iPoint = it->first;
     su2double area = it->second;
-    su2double force[3] = {0.0};
+    su2double force[MAXNDIM] = {0.0};
     for (auto iDim = 0u; iDim < nDim; ++iDim)
       force[iDim] = nodes->Get_FlowTraction(iPoint,iDim)*area;
     nodes->Set_FlowTraction(iPoint, force);
@@ -2872,8 +2868,8 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config,
   const su2double *dispCalc = nullptr;
   const su2double *dispPred_Old = nullptr;
   const su2double *dispCalc_Old = nullptr;
-  su2double deltaU[3] = {0.0, 0.0, 0.0}, deltaU_p1[3] = {0.0, 0.0, 0.0};
-  su2double delta_deltaU[3] = {0.0, 0.0, 0.0};
+  su2double deltaU[MAXNVAR] = {0.0}, deltaU_p1[MAXNVAR] = {0.0};
+  su2double delta_deltaU[MAXNVAR] = {0.0};
   su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn_Min, WAitkDyn;
 
   unsigned short RelaxMethod_FSI = config->GetRelaxation_Method_FSI();
@@ -2979,23 +2975,6 @@ void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, CConfig *config) {
 
   InitiateComms(geometry, config, SOLUTION_PRED_OLD);
   CompleteComms(geometry, config, SOLUTION_PRED_OLD);
-
-}
-
-void CFEASolver::Update_StructSolution(CGeometry *geometry, CConfig *config) {
-
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
-  for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
-
-    auto valSolutionPred = nodes->GetSolution_Pred(iPoint);
-
-    nodes->SetSolution(iPoint, valSolutionPred);
-  }
-
-  /*--- Perform the MPI communication of the solution, displacements only ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
 
 }
 
@@ -3132,7 +3111,7 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, const CConfig *config){
   bool fsi = config->GetFSI_Simulation();
   unsigned long TimeIter = config->GetTimeIter();
 
-  su2double dist[3] = {0.0}, dist_reduce[3];
+  su2double dist[MAXNVAR] = {0.0}, dist_reduce[MAXNVAR];
 
   /*--- Convert global point index to local. ---*/
   long iPoint = geometry->GetGlobal_to_Local_Point(config->GetRefNode_ID());
@@ -3144,9 +3123,9 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, const CConfig *config){
     }
   }
 
-  SU2_MPI::Allreduce(dist, dist_reduce, 3, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(dist, dist_reduce, MAXNVAR, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-  Total_OFRefNode = config->GetRefNode_Penalty() * Norm(3,dist_reduce) + PenaltyValue;
+  Total_OFRefNode = config->GetRefNode_Penalty() * Norm(int(MAXNVAR),dist_reduce) + PenaltyValue;
 
   Global_OFRefNode += Total_OFRefNode;
 
@@ -3297,7 +3276,7 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
     int EL_KIND;
     unsigned short iNode, nNodes, iDim;
-    unsigned long indexNode[MAXNNODE];
+    unsigned long indexNode[MAXNNODE_3D];
 
     GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
 

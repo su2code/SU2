@@ -334,7 +334,6 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver **solver_co
       if (fsi) solver_container[FEA_SOL]->ImplicitNewmark_Relaxation(geometry, config);
       break;
     case (GENERALIZED_ALPHA):
-      //if (fsi)  solver_container[FEA_SOL]->Update_StructSolution(geometry, config);
       solver_container[FEA_SOL]->GeneralizedAlpha_UpdateSolution(geometry, config);
       solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, config);
       break;

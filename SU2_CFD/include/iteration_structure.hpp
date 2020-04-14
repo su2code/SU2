@@ -1195,7 +1195,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    * \param[in] iInst - Index of the instance.
-   * \param[in] kind_recording - Kind of recording, either FLOW_CONS_VARS or MESH_COORDS
+   * \param[in] kind_recording - Kind of recording, either FLOW_SOLUTION_VARIABLES or MESH_COORDS
    */
   void RegisterInput(CSolver *****solver,
                      CGeometry ****geometry,

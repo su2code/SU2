@@ -37,8 +37,10 @@
  */
 class CFEASolver : public CSolver {
 protected:
-  enum : size_t {MAXNNODE = 8};
+  enum : size_t {MAXNNODE_2D = 4};
+  enum : size_t {MAXNNODE_3D = 8};
   enum : size_t {MAXNVAR = 3};
+  enum : size_t {MAXNDIM = 3};
   enum : size_t {OMP_MIN_SIZE = 32};
   enum : size_t {OMP_MAX_SIZE = 512};
 
@@ -659,13 +661,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetAitken_Relaxation(CGeometry *geometry, CConfig *config) final;
-
-  /*!
-   * \brief Aitken's relaxation of the solution.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Update_StructSolution(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Compute the objective function for a reference geometry

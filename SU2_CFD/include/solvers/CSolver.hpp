@@ -3592,7 +3592,6 @@ public:
                                                 CConfig *config,
                                                 unsigned long iOuterIter) { }
 
-
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3600,14 +3599,6 @@ public:
    */
   inline virtual void SetAitken_Relaxation(CGeometry *geometry,
                                            CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Update_StructSolution(CGeometry *geometry,
-                                            CConfig *config) { }
 
   /*!
    * \brief A virtual member.
