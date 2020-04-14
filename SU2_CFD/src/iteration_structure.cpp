@@ -1310,7 +1310,7 @@ void CFEAIteration::Iterate(COutput *output,
 
     bool meetCriteria = true;
     for (int i = 0; i < 3; ++i)
-      meetCriteria &= (feaSolver->GetRes_FEM(i) < config[val_iZone]->GetIncLoad_Criteria(i));
+      meetCriteria &= (log10(feaSolver->GetRes_FEM(i)) < config[val_iZone]->GetIncLoad_Criteria(i));
 
     /*--- If the criteria is met, i.e. the load is not too large, continue the regular calculation. ---*/
 
@@ -1368,7 +1368,6 @@ void CFEAIteration::Iterate(COutput *output,
           feaIntegration->Structural_Iteration(geometry, solver, numerics, config,
                                                RUNTIME_FEA_SYS, val_iZone, val_iInst);
 
-          /*--- Write the convergence history (first, compute Von Mises stress) ---*/
           StopCalc = Monitor(output, integration, geometry,  solver, numerics, config,
                              surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
