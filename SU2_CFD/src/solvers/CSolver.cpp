@@ -5270,7 +5270,7 @@ void CSolver::ViscousMetric(CSolver           **solver,
               + gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
     }
   }
-  factor *= dmudT;
+  factor *= dmudT/(r*cv);
 
   //--- Momentum weights
   vector<su2double> TmpWeights(weights.size(), 0.0);
@@ -5284,7 +5284,7 @@ void CSolver::ViscousMetric(CSolver           **solver,
   }
 
   //--- Energy weight
-  TmpWeights[nVarFlo-1] += factor/(r*cv);
+  TmpWeights[nVarFlo-1] -= factor;
 
   //--- Density weight
   for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] -= u[iDim]*TmpWeights[iDim+1];
