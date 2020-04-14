@@ -1898,8 +1898,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
     factor = -(2./3.)*divu*(mut/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
                            +alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim));
     for (jDim = 0; jDim < nDim; ++jDim) {
-      factor += (taut[iDim][jDim]+mut*gradu[iDim][jDim])*(1./r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim)
-                                                         +alfa/mut*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim));
+      factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))*(1./r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim)
+                                                                            +alfa/mut*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim));
     }
     TmpWeights[iDim+1] += factor;
   }
@@ -1926,7 +1926,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
   }
 
   //--- Density weight
-  for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] -= u[iDim]*TmpWeights[iDim+1];
+  for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] += -u[iDim]*TmpWeights[iDim+1];
   TmpWeights[0] += -k*TmpWeights[nVarFlo+0] - omega*TmpWeights[nVarFlo+1]
                  + k/omega*factor;
 
