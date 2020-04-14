@@ -5155,7 +5155,7 @@ void CSolver::ConvectiveMetric(CSolver           **solver,
       weights[iVar] += -A[iVar][jVar]*adjx - B[iVar][jVar]*adjy;
       if(nDim == 3) {
         const su2double adjz = varAdjFlo->GetGradient_Adaptation(iPoint, jVar, 2);
-        weights[jVar] += -C[iVar][jVar]*adjz;
+        weights[iVar] += -C[iVar][jVar]*adjz;
       }
     }
   }
