@@ -4162,10 +4162,7 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
 
   /*--- Determine whether or not the FEM solver is used, which decides the
    type of geometry classes that are instantiated. ---*/
-  bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)         ||
-                (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                (config->GetKind_Solver() == FEM_RANS)          ||
-                (config->GetKind_Solver() == FEM_LES));
+  const bool fem_solver = config->GetFEMSolver();
 
   unsigned long nPointTotal = 0;
   if ( fem_solver ) {
@@ -11880,11 +11877,7 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
   for (iZone = 0; iZone < val_nZone; iZone++) {
 
     /*--- Bool to distinguish between the FVM and FEM solvers. ---*/
-    unsigned short KindSolver = config[iZone]->GetKind_Solver();
-    bool fem_solver = ((KindSolver == FEM_EULER) ||
-                       (KindSolver == FEM_NAVIER_STOKES) ||
-                       (KindSolver == FEM_RANS) ||
-                       (KindSolver == FEM_LES));
+    const bool fem_solver = config[iZone]->GetFEMSolver();
 
     /*--- Get the file output format ---*/
 
@@ -20393,11 +20386,7 @@ void COutputLegacy::PrepareOffsets(CConfig *config, CGeometry *geometry) {
 
   /*--- Bool to distinguish between the FVM and FEM solvers. ---*/
 
-  unsigned short KindSolver = config->GetKind_Solver();
-  bool fem_solver = ((KindSolver == FEM_EULER) ||
-                     (KindSolver == FEM_NAVIER_STOKES) ||
-                     (KindSolver == FEM_RANS) ||
-                     (KindSolver == FEM_LES));
+  const bool fem_solver = config->GetFEMSolver();
 
   /*--- Reset point sorting counters ---*/
 
