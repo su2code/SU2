@@ -867,7 +867,7 @@ class AdjointInterface:
         return globalIndex
 
 
-    def printDisplDisplacementAdjoint(printing = False):
+    def printDisplDisplacementAdjoint(self, printing = False):
        """
            Print into exit file fluid displacement adjoints which are memorized in the root processor.
        """

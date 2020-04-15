@@ -161,6 +161,9 @@ class Interface:
         self.solidLoads_array_Y = None
         self.solidLoads_array_Z = None
 
+
+        self.FD_sens = None                            # contains a delta to evaluate boundary node sensitivity [node, coord, Delta]
+
         self.FSIIter = 0  # current FSI iteration
         self.unsteady = False  # flag for steady or unsteady simulation (default is steady)
 
@@ -639,6 +642,18 @@ class Interface:
             self.MPIPrint('Solid side (Wx, Wy, Wz) = ({}, {}, {})'.format(WSX, WSY, WSZ))
             self.MPIPrint('Fluid side (Wx, Wy, Wz) = ({}, {}, {})'.format(WFX, WFY, WFZ))
 
+
+        # Add design parameter for sensitivity evaluation with finite differences
+        if myid == self.rootProcess:
+           print("Adding design parameter ") 
+           if self.FD_sens is not None:
+              if self.FD_sens[1] == 0:
+                 self.globalFluidDispX[self.FD_sens[0]] +=  self.FD_sens[2]
+              elif self.FD_sens[1] == 1:   
+                 self.globalFluidDispY[self.FD_sens[0]] +=  self.FD_sens[2]
+              elif self.FD_sens[1] == 2:  
+                 self.globalFluidDispZ[self.FD_sens[0]] +=  self.FD_sens[2]
+
         ################################################################################################################
         # --- STEP 4: Transfer to the fluid solver
         ################################################################################################################
@@ -677,11 +692,14 @@ class Interface:
         if myid == self.rootProcess:
             del relaxedSolidDispX, relaxedSolidDispY, relaxedSolidDispZ
 
-    def SteadyFSI(self, FSIconfig, FluidSolver, SolidSolver, MLSSolver):
+    def SteadyFSI(self, FSIconfig, FluidSolver, SolidSolver, MLSSolver, FD_sens = None):
         """
         Runs the steady FSI computation
         Synchronizes the fluid and solid solver with data exchange at the f/s interface.
         """
+
+        # Stores FD sensitivity variable
+        self.FD_sens = FD_sens;
 
         # Recover the process and the size of the parallelization
         myid, MPIsize = self.checkMPI()
