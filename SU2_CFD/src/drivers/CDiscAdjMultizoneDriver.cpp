@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -288,7 +288,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
       for (unsigned short jZone = 0; jZone < nZone; jZone++) {
 
-        if (jZone != iZone && interface_container[jZone][iZone] != NULL) {
+        if (jZone != iZone && interface_container[jZone][iZone] != nullptr) {
 
           /*--- Extracting adjoints for solvers in jZone w.r.t. to the output of all solvers in iZone,
            *    that is, for the cases iZone != jZone we are evaluating cross derivatives between zones. ---*/
@@ -303,14 +303,10 @@ void CDiscAdjMultizoneDriver::Run() {
         }
       }
 
-      /*--- Save Solution to Solution_BGS and compute residual from Solution_BGS and Solution_BGS_k. ---*/
+      /*--- Compute residual from Solution and Solution_BGS_k and update the latter. ---*/
 
       SetResidual_BGS(iZone);
 
-      /*--- Save Solution to Solution_BGS_k for a next outer iteration.
-       *    (Solution might be overwritten when entering another zone because of cross derivatives.) ---*/
-
-      Set_BGSSolution(iZone);
     }
 
     /*--- Set the multizone output. ---*/
@@ -424,11 +420,8 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
   for(iZone = 0; iZone < nZone; iZone++) {
     for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
       auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (solver != NULL) {
-        if (solver->GetAdjoint()) {
-          solver->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-        }
-      }
+      if (solver && solver->GetAdjoint())
+        solver->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
     }
   }
 
@@ -792,12 +785,12 @@ void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
   unsigned long IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 
-  CWindowingTools windowEvaluator = CWindowingTools();
-
   if (time_stepping){
     if (TimeIter < IterAvg_Obj){
       // Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0
-      seeding = windowEvaluator.GetWndWeight(config_container[ZONE_0]->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));
+      auto windowEvaluator = CWindowingTools();
+      su2double weight = windowEvaluator.GetWndWeight(config_container[ZONE_0]->GetKindWindow(), TimeIter, IterAvg_Obj-1);
+      seeding = weight / IterAvg_Obj;
     }
     else{
       seeding = 0.0;
@@ -844,7 +837,7 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 
   for(unsigned short iZone = 0; iZone < nZone; iZone++) {
     for (unsigned short jZone = 0; jZone < nZone; jZone++) {
-      if (iZone != jZone || interface_container[jZone][iZone] != NULL) {
+      if (iZone != jZone || interface_container[jZone][iZone] != nullptr) {
 
         /*--- If jZone contributes to iZone in the primal problem, then
          *    iZone contributes to jZone in the adjoint problem. ---*/
@@ -853,12 +846,10 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 
         for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
           CSolver* solver = solver_container[jZone][INST_0][MESH_0][iSol];
-          if (solver != NULL) {
-            if (solver->GetAdjoint()) {
-              unsigned long nPoint = geometry_container[jZone][INST_0][MESH_0]->GetnPoint();
-              unsigned short nVar = solver->GetnVar();
-              Cross_Terms[iZone][jZone][iSol].resize(nPoint,nVar) = 0.0;
-            }
+          if (solver && solver->GetAdjoint()) {
+            unsigned long nPoint = geometry_container[jZone][INST_0][MESH_0]->GetnPoint();
+            unsigned short nVar = solver->GetnVar();
+            Cross_Terms[iZone][jZone][iSol].resize(nPoint,nVar) = 0.0;
           }
         }
       }
@@ -878,7 +869,7 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer() {
     /*--- Transfer from all the remaining zones ---*/
     for (unsigned short jZone = 0; jZone < nZone; jZone++){
       /*--- The target zone is iZone ---*/
-      if (jZone != iZone && interface_container[iZone][jZone] != NULL) {
+      if (jZone != iZone && interface_container[iZone][jZone] != nullptr) {
         DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
       }
     }
@@ -893,11 +884,8 @@ void CDiscAdjMultizoneDriver::Add_Solution_To_External(unsigned short iZone) {
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver != nullptr) {
-      if (solver->GetAdjoint()) {
-        solver->Add_Solution_To_External();
-      }
-    }
+    if (solver && solver->GetAdjoint())
+      solver->Add_Solution_To_External();
   }
 }
 
@@ -905,11 +893,8 @@ void CDiscAdjMultizoneDriver::Add_External_To_Solution(unsigned short iZone) {
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver != nullptr) {
-      if (solver->GetAdjoint()) {
-        solver->Add_External_To_Solution();
-      }
-    }
+    if (solver && solver->GetAdjoint())
+      solver->Add_External_To_Solution();
   }
 }
 
@@ -917,23 +902,8 @@ void CDiscAdjMultizoneDriver::Update_Cross_Term(unsigned short iZone, unsigned s
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[jZone][INST_0][MESH_0][iSol];
-    if (solver != nullptr) {
-      if (solver->GetAdjoint()) {
-        solver->Update_Cross_Term(config_container[jZone], Cross_Terms[iZone][jZone][iSol]);
-      }
-    }
-  }
-}
-
-void CDiscAdjMultizoneDriver::Set_BGSSolution(unsigned short iZone) {
-
-  for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-    auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver != nullptr) {
-      if (solver->GetAdjoint()) {
-        solver->UpdateSolution_BGS(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-      }
-    }
+    if (solver && solver->GetAdjoint())
+      solver->Update_Cross_Term(config_container[jZone], Cross_Terms[iZone][jZone][iSol]);
   }
 }
 
@@ -941,11 +911,8 @@ void CDiscAdjMultizoneDriver::Set_Solution_To_BGSSolution_k(unsigned short iZone
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver != nullptr) {
-      if (solver->GetAdjoint()) {
-        solver->GetNodes()->Restore_BGSSolution_k();
-      }
-    }
+    if (solver && solver->GetAdjoint())
+      solver->GetNodes()->Restore_BGSSolution_k();
   }
 }
 
@@ -953,11 +920,8 @@ void CDiscAdjMultizoneDriver::Set_BGSSolution_k_To_Solution(unsigned short iZone
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver != nullptr) {
-      if (solver->GetAdjoint()) {
-        solver->GetNodes()->Set_BGSSolution_k();
-      }
-    }
+    if (solver && solver->GetAdjoint())
+      solver->GetNodes()->Set_BGSSolution_k();
   }
 }
 
@@ -965,11 +929,7 @@ void CDiscAdjMultizoneDriver::SetResidual_BGS(unsigned short iZone) {
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver != nullptr) {
-      if (solver->GetAdjoint()) {
-        solver->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0],
-                                          config_container[iZone]);
-      }
-    }
+    if (solver && solver->GetAdjoint())
+      solver->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
   }
 }

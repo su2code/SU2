@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -626,6 +626,26 @@ public:
    * \brief Constructor of the class.
    */
   CQUAD4();
+
+  /*!
+   * \brief Shape functions (Ni) evaluated at point Xi,Eta.
+   */
+  inline static void ShapeFunctions(su2double Xi, su2double Eta, su2double* Ni) {
+    Ni[0] = 0.25*(1.0-Xi)*(1.0-Eta);
+    Ni[1] = 0.25*(1.0+Xi)*(1.0-Eta);
+    Ni[2] = 0.25*(1.0+Xi)*(1.0+Eta);
+    Ni[3] = 0.25*(1.0-Xi)*(1.0+Eta);
+  }
+
+  /*!
+   * \brief Shape function Jacobian (dNi) evaluated at point Xi,Eta.
+   */
+  inline static void ShapeFunctionJacobian(su2double Xi, su2double Eta, su2double dNi[][2]) {
+    dNi[0][0] = -0.25*(1.0-Eta);  dNi[0][1] = -0.25*(1.0-Xi);
+    dNi[1][0] =  0.25*(1.0-Eta);  dNi[1][1] = -0.25*(1.0+Xi);
+    dNi[2][0] =  0.25*(1.0+Eta);  dNi[2][1] =  0.25*(1.0+Xi);
+    dNi[3][0] = -0.25*(1.0+Eta);  dNi[3][1] =  0.25*(1.0-Xi);
+  }
 
   /*!
    * \brief Compute the value of the area of the element.
