@@ -32,8 +32,6 @@
 #include "../../../Common/include/geometry/dual_grid/CVertex.hpp"
 
 TEST_CASE("Volume Computation", "[Dual Grid]") {
-
-  const int nDim = 3;
   
   su2double Coord_FaceiPoint[3];
   su2double Coord_FaceElem_CG[3];
@@ -46,28 +44,31 @@ TEST_CASE("Volume Computation", "[Dual Grid]") {
   Coord_Elem_CG[0]     = scaling*0.653846; Coord_Elem_CG[1]     = scaling*1.12927; Coord_Elem_CG[2]     = scaling*0.00835789;
   Coord_Edge_CG[0]     = scaling*0.664943; Coord_Edge_CG[1]     = scaling*1.14623; Coord_Edge_CG[2]     = scaling*0.00935524;
 
-  CEdge edge(0, 1, nDim);
+  CEdge edge2d(0, 1, 2);
   SECTION("2D Edge"){
-    su2double volume = edge.GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);    
+    su2double volume = edge2d.GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
     REQUIRE(volume == Approx(0.00607415));
   }
-  
+
+  CEdge edge3d(0, 1, 3);
   SECTION("3D Edge"){
-    su2double volume = edge.GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);    
+    su2double volume = edge3d.GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
     REQUIRE(volume == Approx(0.000546832));
   }
   
-  CVertex vertex(0, nDim);
+  CVertex vertex2d(0, 2);
   SECTION("2D Vertex"){
-    vertex.SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG);
-    REQUIRE(vertex.GetNormal()[0] == Approx(-1.696));
-    REQUIRE(vertex.GetNormal()[1] == Approx(1.1097));
+    vertex2d.SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG);
+    REQUIRE(vertex2d.GetNormal()[0] == Approx(-1.696));
+    REQUIRE(vertex2d.GetNormal()[1] == Approx(1.1097));
   }
+
+  CVertex vertex3d(0, 3);
   SECTION("3D Vertex"){
-    vertex.SetNodes_Coord(Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
-    REQUIRE(vertex.GetNormal()[0] == Approx(-0.0864312));
-    REQUIRE(vertex.GetNormal()[1] == Approx(0.0499696));
-    REQUIRE(vertex.GetNormal()[2] == Approx(0.111938));
+    vertex3d.SetNodes_Coord(Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+    REQUIRE(vertex3d.GetNormal()[0] == Approx(-0.0864312));
+    REQUIRE(vertex3d.GetNormal()[1] == Approx(0.0499696));
+    REQUIRE(vertex3d.GetNormal()[2] == Approx(0.111938));
   }
   
 }
