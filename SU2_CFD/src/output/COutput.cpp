@@ -1639,7 +1639,7 @@ void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2doub
 
     const su2double old_value = volumeFieldsAll.GetItemByIndex(index).value;
     const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
-    volumeFieldsAll.SetValueByIndex(fieldIndexCache.back(), new_value);
+    volumeFieldsAll.SetValueByIndex(index, new_value);
 
     if (cachePosition == fieldIndexCache.size()){
       cachePosition = 0;
