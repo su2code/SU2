@@ -3439,14 +3439,14 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   string text_line;
   long iPoint_Local;
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0;
-  unsigned short rbuf_NotMatching, sbuf_NotMatching;
 
   /*--- First, we load the restart file for time n ---*/
 
   /*-------------------------------------------------------------------------------------------*/
 
   /*--- Modify file name for an unsteady restart ---*/
-  Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+  if (config->GetRestart()) Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+  else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
   filename_n = config->GetFilename(filename, ".csv", Unst_RestartIter);
 
   /*--- Open the restart file, throw an error if this fails. ---*/
@@ -3490,13 +3490,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Detect a wrong solution file ---*/
 
-  rbuf_NotMatching = 0; sbuf_NotMatching = 0;
-
-  if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
-
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-  if (rbuf_NotMatching != 0) {
+  if (iPoint_Global_Local < geometry->GetnPointDomain()) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
@@ -3516,7 +3510,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     string filename_n1;
 
     /*--- Modify file name for an unsteady restart ---*/
-    Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+    if (config->GetRestart()) Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+    else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-2;
     filename_n1 = config->GetFilename(filename, ".csv", Unst_RestartIter);
 
     /*--- Open the restart file, throw an error if this fails. ---*/
@@ -3563,13 +3558,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Detect a wrong solution file ---*/
 
-    rbuf_NotMatching = 0; sbuf_NotMatching = 0;
-
-    if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
-
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-
-    if (rbuf_NotMatching != 0) {
+    if (iPoint_Global_Local < geometry->GetnPointDomain()) {
       SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
     }
@@ -4747,28 +4736,22 @@ void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
   su2double residual;
 
   /*--- Set Residuals to zero ---*/
-
   for (iVar = 0; iVar < nVar; iVar++){
     SetRes_BGS(iVar,0.0);
     SetRes_Max_BGS(iVar,0.0,0);
   }
 
-  /*--- Set the residuals ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++){
-      residual = base_nodes->GetSolution(iPoint,iVar) - base_nodes->Get_BGSSolution_k(iPoint,iVar);
-      AddRes_BGS(iVar,residual*residual);
-      AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+  /*--- Set the residuals and BGSSolution_k to solution for next multizone outer iteration. ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    const su2double domain = (iPoint < nPointDomain);
+    for (iVar = 0; iVar < nVar; iVar++) {
+      residual = (base_nodes->Get_BGSSolution(iPoint,iVar) - base_nodes->Get_BGSSolution_k(iPoint,iVar))*domain;
+      base_nodes->Set_BGSSolution_k(iPoint,iVar, base_nodes->Get_BGSSolution(iPoint,iVar));
+      AddRes_BGS(iVar, residual*residual);
+      AddRes_Max_BGS(iVar, fabs(residual), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
     }
   }
 
   SetResidual_BGS(geometry, config);
 
-}
-
-
-void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
-
-  /*--- To nPoint: The solution must be communicated beforehand ---*/
-  base_nodes->Set_BGSSolution_k();
 }
