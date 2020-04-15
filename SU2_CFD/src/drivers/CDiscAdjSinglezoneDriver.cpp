@@ -115,6 +115,9 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
 CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {
 
+  delete direct_iteration;
+  delete direct_output;
+
 }
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {

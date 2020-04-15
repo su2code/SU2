@@ -166,13 +166,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   /*--- Determine whether or not a FEM discretization is used ---*/
 
-  const bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)          ||
-                           (config->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
-                           (config->GetKind_Solver() == FEM_RANS)           ||
-                           (config->GetKind_Solver() == FEM_LES)            ||
-                           (config->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
-                           (config->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
-                           (config->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+  const bool fem_solver = config->GetFEMSolver();
 
   /*--- Initialize counters for local/global points & elements ---*/
 
