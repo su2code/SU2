@@ -5059,11 +5059,10 @@ void CSolver::ComputeMetric(CSolver   **solver,
   //--- Vector to store weights from various error contributions
   unsigned long nVarTot = solver[FLOW_SOL]->GetnVar();
   if(turb) nVarTot += solver[TURB_SOL]->GetnVar();
-  vector<su2double> HessianWeights(nVarTot, 0.0);
 
   //--- Compute weights for Hessians
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    fill(HessianWeights.begin(), HessianWeights.end(), 0.0);
+    vector<vector<su2double> > HessianWeights(3, vector<su2double>(nVarTot, 0.0));
 
     //--- Convective terms
     ConvectiveMetric(solver, geometry, config, iPoint, HessianWeights);
@@ -5083,11 +5082,11 @@ void CSolver::ComputeMetric(CSolver   **solver,
 
 }
 
-void CSolver::ConvectiveMetric(CSolver           **solver,
-                               CGeometry         *geometry,
-                               CConfig           *config,
-                               unsigned long     iPoint,
-                               vector<su2double> &weights) {
+void CSolver::ConvectiveMetric(CSolver                    **solver,
+                               CGeometry                  *geometry,
+                               CConfig                    *config,
+                               unsigned long              iPoint,
+                               vector<vector<su2double> > &weights) {
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
             *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
@@ -5152,10 +5151,10 @@ void CSolver::ConvectiveMetric(CSolver           **solver,
     for (jVar = 0; jVar < nVarFlo; ++jVar) {
       const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, jVar, 0),
                       adjy = varAdjFlo->GetGradient_Adaptation(iPoint, jVar, 1);
-      weights[iVar] += -A[iVar][jVar]*adjx - B[iVar][jVar]*adjy;
+      weights[1][iVar] += -A[iVar][jVar]*adjx - B[iVar][jVar]*adjy;
       if(nDim == 3) {
         const su2double adjz = varAdjFlo->GetGradient_Adaptation(iPoint, jVar, 2);
-        weights[iVar] += -C[iVar][jVar]*adjz;
+        weights[1][iVar] += -C[iVar][jVar]*adjz;
       }
     }
   }
@@ -5167,10 +5166,10 @@ void CSolver::ConvectiveMetric(CSolver           **solver,
       for (iVar = 0; iVar < nVarTur; ++iVar){
         const su2double adjx = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 0),
                         adjy = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 1);
-        weights[nVarFlo+iVar] += - u*adjx - v*adjy;
+        weights[1][nVarFlo+iVar] += - u*adjx - v*adjy;
         if (nDim == 3) {
           const su2double adjz = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 2);
-          weights[nVarFlo+iVar] += -w*adjz;
+          weights[1][nVarFlo+iVar] += -w*adjz;
         }
       }
     }
@@ -5181,11 +5180,11 @@ void CSolver::ConvectiveMetric(CSolver           **solver,
 
 }
 
-void CSolver::ViscousMetric(CSolver           **solver,
-                            CGeometry         *geometry,
-                            CConfig           *config,
-                            unsigned long     iPoint,
-                            vector<su2double> &weights) {
+void CSolver::ViscousMetric(CSolver                    **solver,
+                            CGeometry                  *geometry,
+                            CConfig                    *config,
+                            unsigned long              iPoint,
+                            vector<vector<su2double> > &weights) {
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varTur    = solver[TURB_SOL]->GetNodes(),
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
@@ -5273,10 +5272,10 @@ void CSolver::ViscousMetric(CSolver           **solver,
   factor *= dmudT/(r*cv);
 
   //--- Momentum weights
-  vector<su2double> TmpWeights(weights.size(), 0.0);
+  vector<su2double> TmpWeights(weights[0].size(), 0.0);
   TmpWeights[1] += u[0]*factor;
   TmpWeights[2] += u[1]*factor;
-  if(nDim == 3) weights[3] += u[2]*factor;
+  if(nDim == 3) TmpWeights[3] += u[2]*factor;
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       TmpWeights[iDim+1] += 1./r*tau[iDim][jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), jDim);
@@ -5289,8 +5288,8 @@ void CSolver::ViscousMetric(CSolver           **solver,
   //--- k weight
   if (sst) {
     for (iDim = 0; iDim < nDim; ++iDim) {
-      weights[nVarFlo] += -(2./3.)*(varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim)
-                                  + u[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
+      weights[1][nVarFlo] += -(2./3.)*(varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim)
+                                     + u[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
       TmpWeights[iDim+1] += -(2./3.)*r*k*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
     }
   }
@@ -5300,7 +5299,7 @@ void CSolver::ViscousMetric(CSolver           **solver,
   TmpWeights[0] += -e*TmpWeights[nVarFlo-1];
 
   //--- Add TmpWeights to weights, then reset for second-order terms
-  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[iVar] += TmpWeights[iVar];
+  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[1][iVar] += TmpWeights[iVar];
   fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
 
   //--- Second-order terms (error due to gradients)
@@ -5376,15 +5375,15 @@ void CSolver::ViscousMetric(CSolver           **solver,
   }
 
   //--- Add TmpWeights to weights
-  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[iVar] += TmpWeights[iVar];
+  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[2][iVar] += TmpWeights[iVar];
 
 }
 
-void CSolver::SumWeightedHessians(CSolver           **solver,
-                                  CGeometry         *geometry,
-                                  CConfig           *config,
-                                  unsigned long     iPoint,
-                                  vector<su2double> &weights) {
+void CSolver::SumWeightedHessians(CSolver                    **solver,
+                                  CGeometry                  *geometry,
+                                  CConfig                    *config,
+                                  unsigned long              iPoint,
+                                  vector<vector<su2double> > &weights) {
   CVariable *varFlo = solver[FLOW_SOL]->GetNodes(),
             *varTur = solver[TURB_SOL]->GetNodes();
 
@@ -5399,7 +5398,9 @@ void CSolver::SumWeightedHessians(CSolver           **solver,
 
     for (im = 0; im < nMetr; ++im) {
       const su2double hess = varFlo->GetHessian(iPoint, iVar, im);
-      const su2double part = abs(weights[iVar])*hess;
+      const su2double part = (abs(weights[0][iVar])
+                             +abs(weights[1][iVar])
+                             +abs(weights[2][iVar]))*hess;
       varFlo->AddMetric(iPoint, im, part);
     }
   }
@@ -5411,7 +5412,9 @@ void CSolver::SumWeightedHessians(CSolver           **solver,
 
       for (im = 0; im < nMetr; ++im) {
         const su2double hess = varTur->GetHessian(iPoint, iVar, im);
-        const su2double part = abs(weights[nVarFlo+iVar])*hess;
+        const su2double part = (abs(weights[0][nVarFlo+iVar])
+                               +abs(weights[1][nVarFlo+iVar])
+                               +abs(weights[2][nVarFlo+iVar]))*hess;
         varFlo->AddMetric(iPoint, im, part);
       }
     }

@@ -380,10 +380,10 @@ public:
    * \param[in] iPoint - Index of current node.
    * \param[in] weights - Weights of each Hessian in the metric.
    */
-  void TurbulentMetric(CSolver           **solver,
-                       CGeometry         *geometry,
-                       CConfig           *config,
-                       unsigned long     iPoint,
-                       vector<su2double> &weights);
+  void TurbulentMetric(CSolver                    **solver,
+                       CGeometry                  *geometry,
+                       CConfig                    *config,
+                       unsigned long              iPoint,
+                       vector<vector<su2double> > &weights);
 
 };

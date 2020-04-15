@@ -1824,11 +1824,11 @@ void CTurbSSTSolver::WF_Comms(CGeometry *geometry,
   
 }
 
-void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
-                                     CGeometry         *geometry,
-                                     CConfig           *config,
-                                     unsigned long     iPoint,
-                                     vector<su2double> &weights) {
+void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
+                                     CGeometry                  *geometry,
+                                     CConfig                    *config,
+                                     unsigned long              iPoint,
+                                     vector<vector<su2double> > &weights) {
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varTur    = solver[TURB_SOL]->GetNodes(),
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
@@ -1892,7 +1892,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
   const su2double betastar    = constants[6];
 
   //--- Momentum weights
-  vector<su2double> TmpWeights(weights.size(), 0.0);
+  vector<su2double> TmpWeights(weights[0].size(), 0.0);
   su2double factor = 0.0;
   for (iDim = 0; iDim < nDim; ++iDim) {
     factor = -(2./3.)*divu*(mut/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
@@ -1931,7 +1931,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
                  + k/omega*factor;
 
   //--- Add TmpWeights to weights, then reset for second-order terms
-  for (iVar = 0; iVar < nVarFlo+nVarTur; ++iVar) weights[iVar] += TmpWeights[iVar];
+  for (iVar = 0; iVar < nVarFlo+nVarTur; ++iVar) weights[1][iVar] += TmpWeights[iVar];
   fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
 
   //--- Second-order terms (error due to gradients)
@@ -1955,18 +1955,18 @@ void CTurbSSTSolver::TurbulentMetric(CSolver           **solver,
   TmpWeights[0] += -k*TmpWeights[nVarFlo+0]-omega*TmpWeights[nVarFlo+1];
 
   //--- Add TmpWeights to weights
-  weights[0]         += TmpWeights[0];
-  weights[nVarFlo+0] += TmpWeights[nVarFlo+0];
-  weights[nVarFlo+1] += TmpWeights[nVarFlo+1];
+  weights[2][0]         += TmpWeights[0];
+  weights[2][nVarFlo+0] += TmpWeights[nVarFlo+0];
+  weights[2][nVarFlo+1] += TmpWeights[nVarFlo+1];
 
   //--- Zeroth-order terms (due to production, dissipation, and cross-diffusion)
-  weights[0]         += -betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
-                      - beta*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);
-  weights[nVarFlo+0] += betastar*omega*varAdjTur->GetSolution(iPoint,0)
-                      + (2./3.)*divu*varAdjTur->GetSolution(iPoint,0);
-  weights[nVarFlo+1] += betastar*k*varAdjTur->GetSolution(iPoint,0)
-                      + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1)
-                      + (2./3.)*alfa*divu*varAdjTur->GetSolution(iPoint,1)
-                      +(1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
+  weights[0][0]         += -betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
+                         - beta*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);
+  weights[0][nVarFlo+0] += betastar*omega*varAdjTur->GetSolution(iPoint,0)
+                         + (2./3.)*divu*varAdjTur->GetSolution(iPoint,0);
+  weights[0][nVarFlo+1] += betastar*k*varAdjTur->GetSolution(iPoint,0)
+                         + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1)
+                         + (2./3.)*alfa*divu*varAdjTur->GetSolution(iPoint,1)
+                         +(1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
 
 }

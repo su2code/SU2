@@ -346,11 +346,11 @@ public:
    * \param[in] iPoint - Index of current node.
    * \param[in] weights - Weights of each Hessian in the metric.
    */
-  void ConvectiveMetric(CSolver           **solver,
-                        CGeometry         *geometry,
-                        CConfig           *config,
-                        unsigned long     iPoint,
-                        vector<su2double> &weights);
+  void ConvectiveMetric(CSolver                    **solver,
+                        CGeometry                  *geometry,
+                        CConfig                    *config,
+                        unsigned long              iPoint,
+                        vector<vector<su2double> > &weights);
 
   /*!
    * \brief Compute the viscous terms of the goal-oriented metric.
@@ -360,11 +360,11 @@ public:
    * \param[in] iPoint - Index of current node.
    * \param[in] weights - Weights of each Hessian in the metric.
    */
-  void ViscousMetric(CSolver           **solver,
-                     CGeometry         *geometry,
-                     CConfig           *config,
-                     unsigned long     iPoint,
-                     vector<su2double> &weights);
+  void ViscousMetric(CSolver                    **solver,
+                     CGeometry                  *geometry,
+                     CConfig                    *config,
+                     unsigned long              iPoint,
+                     vector<vector<su2double> > &weights);
 
   /*!
    * \brief Compute the turbulent terms of the goal-oriented metric.
@@ -374,11 +374,11 @@ public:
    * \param[in] iPoint - Index of current node.
    * \param[in] weights - Weights of each Hessian in the metric.
    */
-  virtual void TurbulentMetric(CSolver           **solver,
-                               CGeometry         *geometry,
-                               CConfig           *config,
-                               unsigned long     iPoint,
-                               vector<su2double> &weights) { }
+  virtual void TurbulentMetric(CSolver                    **solver,
+                               CGeometry                  *geometry,
+                               CConfig                    *config,
+                               unsigned long              iPoint,
+                               vector<vector<su2double> > &weights) { }
 
   /*!
    * \brief Sum up the weighted Hessians to obtain the goal-oriented metric.
@@ -388,11 +388,11 @@ public:
    * \param[in] iPoint - Index of current node.
    * \param[in] weights - Weights of each Hessian in the metric.
    */
-  void SumWeightedHessians(CSolver           **solver,
-                           CGeometry         *geometry,
-                           CConfig           *config,
-                           unsigned long     iPoint,
-                           vector<su2double> &weights);
+  void SumWeightedHessians(CSolver                    **solver,
+                           CGeometry                  *geometry,
+                           CConfig                    *config,
+                           unsigned long              iPoint,
+                           vector<vector<su2double> > &weights);
 
   /*!
    * \brief Perform an Lp-norm normalization of the metric (2D).
