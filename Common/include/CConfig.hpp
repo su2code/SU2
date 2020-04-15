@@ -1304,15 +1304,26 @@ public:
    */
   ~CConfig(void);
   
-  
- void Init();
- 
-  
- void SetnZone();
- 
- void SetnDim();
- 
- void SetHeader(unsigned short val_software);
+  /*!
+  * \brief Initialize common fields of the config structure.
+  */
+  void Init();
+
+  /*!
+  * \brief Set the number of zones
+  */
+  void SetnZone();
+
+  /*!
+  * \brief Set the physical dimension of the problem
+  */
+  void SetnDim();
+
+  /*!
+  * \brief Print the header to screen
+  * \param val_software - Kind of software component
+  */
+  void SetHeader(unsigned short val_software);
 
   /*!
    * \brief Get the MPI communicator of SU2.
