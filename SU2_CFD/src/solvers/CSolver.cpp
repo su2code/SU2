@@ -5222,7 +5222,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   
   eps_2 = kappa_2*sensor*lambda;
   
-  //--- First-order terms (errors due to eigenvalue)
+  //--- Zeroth-order terms (errors due to eigenvalue)
   vector<su2double> TmpWeights(nVarFlo, 0.0);
   su2double factor = 0.;
   for (iVar = 0; iVar < nVarFlo; ++iVar) {
@@ -5247,7 +5247,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   TmpWeights[nVarFlo-1] += -1./r*sqrt(g*R/(cv*(4*e-2*v2)))*factor;
   TmpWeights[0]         += -e*TmpWeights[nVarFlo-1];
   
-  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[1][iVar] += TmpWeights[iVar];
+  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[0][iVar] += TmpWeights[iVar];
   fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
   
   //--- Second-order terms (errors due to second-order JST dissipation)
