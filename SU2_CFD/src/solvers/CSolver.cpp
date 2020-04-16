@@ -5071,8 +5071,8 @@ void CSolver::ComputeMetric(CSolver   **solver,
     
     //--- Scalar dissipation terms
     if (cjst) {
-      InitiateComms(geometry, config, SENSOR);
-      CompleteComms(geometry, config, SENSOR);
+      solver[FLOW_SOL]->InitiateComms(geometry, config, SENSOR);
+      solver[FLOW_SOL]->CompleteComms(geometry, config, SENSOR);
       DissipativeMetric(solver, geometry, config, iPoint, HessianWeights);
     }
 
