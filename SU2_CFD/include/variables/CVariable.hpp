@@ -120,9 +120,12 @@ protected:
 
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
-  VectorOfMatrix Gradient_Adaptation;  /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */
-  VectorOfMatrix Hessian;              /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
-  MatrixType Metric;                   /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
+  VectorOfMatrix Gradient_Adaptation;        /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */
+  VectorOfMatrix Hessian;                    /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
+  MatrixType AuxVar_Adaptation;              /*!< \brief Auxiliary variable of the problem. */
+  VectorOfMatrix GradientAuxVar_Adaptation;  /*!< \brief Gradient of auxiliary variables. */
+  VectorOfMatrix HessianAuxVar;              /*!< \brief Hessian of auxiliary variables. */
+  MatrixType Metric;                         /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
 
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
@@ -675,6 +678,66 @@ public:
    * \return Reference to Hessian.
    */
   inline VectorOfMatrix& GetHessian(void) { return Hessian; }
+  
+  /*!
+   * \brief Set the value of the auxiliary variable, one variable.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] solution - Value of the solution for the index <i>iVar</i>.
+   */
+  inline void SetAuxVar_Adaptation(unsigned long iPoint, unsigned long iVar, su2double valaux) { AuxVar_Adaptation(iPoint,iVar) = valaux; }
+  
+  /*!
+   * \brief Get the auxiliary variable.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \return Value of the solution for the index <i>iVar</i>.
+   */
+  inline su2double GetAuxVar_Adaptation(unsigned long iPoint, unsigned long iVar) const { return AuxVar_Adaptation(iPoint,iVar); }
+  
+  /*!
+   * \brief Get the entire auxiliary variable matrix of the problem.
+   * \return Reference to the solution matrix.
+   */
+  inline const MatrixType& GetAuxVar_Adaptation(void) { return AuxVar_Adaptation; }
+  
+  /*!
+   * \brief Set the value of the sensor gradient.
+   * \param[in] ivar  - Index value.
+   * \param[in] val_sens - Sensor gradient value.
+   */
+  inline void SetGradientAuxVar_Adaptation(unsigned long iPoint, unsigned short ivar, unsigned short idim, su2double val_grad) { GradientAuxVar_Adaptation(iPoint,ivar,idim) = val_grad; }
+  
+  /*!
+   * \brief Get the value of the sensor gradient.
+   * \param[in] ivar  - Index value.
+   */
+  inline su2double GetGradientAuxVar_Adaptation(unsigned long iPoint, unsigned short ivar, unsigned short idim) { return GradientAuxVar_Adaptation(iPoint,ivar,idim); }
+  
+  /*!
+   * \brief Get the gradient of the entire solution.
+   * \return Reference to gradient.
+   */
+  inline VectorOfMatrix& GetGradientAuxVar_Adaptation(void) { return GradientAuxVar_Adaptation; }
+  
+  /*!
+   * \brief Set the value of the sensor Hessian.
+   * \param[in] ivar  - Index value.
+   * \param[in] val_sens - Sensor Hessian value.
+   */
+  inline void SetHessianAuxVar(unsigned long iPoint, unsigned short ivar, unsigned short ihess, su2double val_hess) { HessianAuxVar(iPoint,ivar,ihess) = val_hess; }
+  
+  /*!
+   * \brief Get the value of the sensor Hessian.
+   * \param[in] ivar  - Index value.
+   */
+  inline su2double GetHessianAuxVar(unsigned long iPoint, unsigned short ivar, unsigned short ihess) { return HessianAuxVar(iPoint,ivar,ihess); }
+  
+  /*!
+   * \brief Get the Hessian of the entire solution.
+   * \return Reference to Hessian.
+   */
+  inline VectorOfMatrix& GetHessianAuxVar(void) { return HessianAuxVar; }
 
    /*!  
    * \brief Set the value of the metric.  

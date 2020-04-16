@@ -2080,7 +2080,10 @@ enum MPI_QUANTITIES {
   SOLUTION_TIME_N1     = 29,  /*!< \brief Solution at time n-1. */
   PRIMITIVE            = 30,  /*!< \brief Primitive variables. */
   ANISO_GRADIENT       = 31,  /*!< \brief Gradient vectors for anisotropic mesh adaptation. */
-  HESSIAN              = 32   /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
+  HESSIAN              = 32,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
+  ANISO_AUX_VAR        = 33,  /*!< \brief Auxliary variable vectors for anisotropic mesh adaptation. */
+  ANISO_AUX_GRADIENT   = 34,  /*!< \brief Auxiliary gradient vectors for anisotropic mesh adaptation. */
+  AUX_HESSIAN          = 35   /*!< \brief Auxiliary essian vectors for anisotropic mesh adaptation. */
 };
 
 /*!

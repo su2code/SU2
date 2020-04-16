@@ -1999,6 +1999,18 @@ void CSolver::InitiateComms(CGeometry *geometry,
       COUNT_PER_POINT  = 3*(nDim-1)*nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case ANISO_AUX_VAR:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case ANISO_AUX_GRADIENT:
+      COUNT_PER_POINT  = nDim*1;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case AUX_HESSIAN:
+      COUNT_PER_POINT  = 3*(nDim-1)*1;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                      CURRENT_FUNCTION);
@@ -2156,6 +2168,20 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
                 bufDSend[buf_offset+iVar*3*(nDim-1)+iDim] = base_nodes->GetHessian(iPoint, iVar, iDim);
+            break;
+          case ANISO_AUX_VAR:
+            for (iVar = 0; iVar < 1; iVar++)
+              bufDSend[buf_offset+iVar] = base_nodes->GetAuxVar_Adaptation(iPoint, iVar);
+          break;
+          case ANISO_AUX_GRADIENT:
+            for (iDim = 0; iDim < nDim; iDim++)
+              for (iVar = 0; iVar < 1; iVar++)
+                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetGradientAuxVar_Adaptation(iPoint, iVar, iDim);
+            break;
+          case AUX_HESSIAN:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < 1; iVar++)
+                bufDSend[buf_offset+iVar*3*(nDim-1)+iDim] = base_nodes->GetHessianAuxVar(iPoint, iVar, iDim);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -2338,6 +2364,20 @@ void CSolver::CompleteComms(CGeometry *geometry,
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
               for (iVar = 0; iVar < nVar; iVar++)
                 base_nodes->SetHessian(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*3*(nDim-1)+iDim]);
+            break;
+          case ANISO_AUX_VAR:
+            for (iVar = 0; iVar < 1; iVar++)
+              base_nodes->SetAuxVar_Adaptation(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+          break;
+          case ANISO_AUX_GRADIENT:
+            for (iDim = 0; iDim < nDim; iDim++)
+              for (iVar = 0; iVar < 1; iVar++)
+                base_nodes->SetGradientAuxVar_Adaptation(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+            break;
+          case AUX_HESSIAN:
+            for (iDim = 0; iDim < 3*(nDim-1); iDim++)
+              for (iVar = 0; iVar < 1; iVar++)
+                base_nodes->SetHessianAuxVar(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*3*(nDim-1)+iDim]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -3092,6 +3132,30 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config) {
   
   computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
                             *config, gradient, 0, nVar, hessian);
+  
+//  //--- compute boundary Hessians from volume Hessians
+//  CorrectBoundHessian(geometry, config);
+}
+
+void CSolver::SetAuxVar_Hessian_GG(CGeometry *geometry, CConfig *config) {
+  
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+    base_nodes->SetAuxVar_Adaptation(iPoint,0,base_nodes->GetEnthalpy(iPoint));
+  
+  //--- communicate the solution values via MPI
+  InitiateComms(geometry, config, ANISO_AUX_VAR);
+  CompleteComms(geometry, config, ANISO_AUX_VAR);
+
+  const auto& solution = base_nodes->GetAuxVar();
+  auto& gradient = base_nodes->GetGradientAuxVar_Adaptation();
+
+  computeGradientsGreenGauss(this, ANISO_AUX_GRADIENT, PERIODIC_SOL_GG, *geometry,
+                             *config, solution, 0, 1, gradient);
+  
+  auto& hessian = base_nodes->GetHessianAuxVar();
+  
+  computeHessiansGreenGauss(this, AUX_HESSIAN, PERIODIC_SOL_GG, *geometry,
+                            *config, gradient, 0, 1, hessian);
   
 //  //--- compute boundary Hessians from volume Hessians
 //  CorrectBoundHessian(geometry, config);
@@ -5226,7 +5290,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   //--- Zeroth-order terms (errors due to eigenvalue)
   vector<su2double> TmpWeights(nVarFlo, 0.0);
   su2double factor = 0.;
-  for (iVar = 0; iVar < nVarFlo; ++iVar) {
+  for (iVar = 0; iVar < nVarFlo-1; ++iVar) {
     if (nDim == 3) {
       const unsigned short xxi = 0, yyi = 3, zzi = 5;
       factor += (varFlo->GetHessian(iPoint, iVar, xxi)
@@ -5238,6 +5302,19 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
       factor += (varFlo->GetHessian(iPoint, iVar, xxi)
                 +varFlo->GetHessian(iPoint, iVar, yyi))*varAdjFlo->GetSolution(iPoint, iVar);
     }
+  }
+  
+  //--- Energy dissipation uses enthalpy
+  if (nDim == 3) {
+    const unsigned short xxi = 0, yyi = 3, zzi = 5;
+    factor += (varFlo->GetHessianAuxVar(iPoint, 0, xxi)
+              +varFlo->GetHessianAuxVar(iPoint, 0, yyi)
+              +varFlo->GetHessianAuxVar(iPoint, 0, zzi))*varAdjFlo->GetSolution(iPoint, (nVarFlo-1));
+  }
+  else {
+    const unsigned short xxi = 0, yyi = 2;
+    factor += (varFlo->GetHessianAuxVar(iPoint, 0, xxi)
+              +varFlo->GetHessianAuxVar(iPoint, 0, yyi))*varAdjFlo->GetSolution(iPoint, (nVarFlo-1));
   }
   factor *= kappa_2*sensor;
   

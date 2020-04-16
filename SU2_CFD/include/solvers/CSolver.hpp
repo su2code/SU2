@@ -772,6 +772,14 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetHessian_GG(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Compute the Green-Gauss Hessian of the auxiliary variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetAuxVar_Hessian_GG(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the Least Squares Hessian of the solution.
