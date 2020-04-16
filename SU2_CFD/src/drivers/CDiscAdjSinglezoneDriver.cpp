@@ -584,6 +584,12 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
     solver_flow->SetHessian_GG(geometry, config);
     
+    if ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) &&
+        (config->GetKind_Centered_Flow() == JST)) {
+      if(rank == MASTER_NODE) cout << "Computing enthalpy Hessians." << endl;
+      solver_flow->SetAuxVar_Hessian_GG(geometry, config);
+    }
+    
     if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
     solver_adjflow->SetHessian_GG(geometry, config);
     
