@@ -5192,26 +5192,62 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
                                 vector<vector<su2double> > &weights) {
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
+  
+  unsigned short iVar, iDim;
+  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   //--- Flow variables and JST coefficients
-  su2double u[3], c, v2, g,
+  su2double r, u[3], e, c, v2,
+            R, cv, cp, g,
             kappa_2, sensor, lambda, eps_2;
 
+  r = varFlo->GetDensity(iPoint);
   u[0] = varFlo->GetVelocity(iPoint, 0);
   u[1] = varFlo->GetVelocity(iPoint, 1);
   if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
   else           u[2] = 0.;
+  e = varFlo->GetEnergy(iPoint);
   
   c  = varFlo->GetSoundSpeed(iPoint);
   v2 = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
   
   g = config->GetGamma();
+  R  = config->GetGas_ConstantND();
+  cp = (g/(g-1.))*R;
+  cv = cp/g;
   
   kappa_2 = config->GetKappa_2nd_Flow();
   sensor  = varFlo->GetSensor(iPoint);
   lambda  = sqrt(v2)+c;
   
   eps_2 = kappa_2*sensor*lambda;
+  
+  //--- First-order terms (errors due to eigenvalue)
+  vector<su2double> TmpWeights(nVarFlo, 0.0);
+  su2double factor = 0.;
+  for (iVar = 0; iVar < nVarFlo; ++iVar) {
+    if (nDim == 3) {
+      const unsigned short xxi = 0, yyi = 3, zzi = 5;
+      factor += (varFlo->GetHessian(iPoint, iVar, xxi)
+                +varFlo->GetHessian(iPoint, iVar, yyi)
+                +varFlo->GetHessian(iPoint, iVar, zzi))*varAdjFlo->GetSolution(iPoint, iVar);
+    }
+    else {
+      const unsigned short xxi = 0, yyi = 2;
+      factor += (varFlo->GetHessian(iPoint, iVar, xxi)
+                +varFlo->GetHessian(iPoint, iVar, yyi))*varAdjFlo->GetSolution(iPoint, iVar);
+    }
+  }
+  
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    TmpWeights[iDim+1] += -u[iDim]*(1./(r*sqrt(v2)) - 1./r*sqrt(g*R/(cv*(4*e-2*v2))))*factor;
+    TmpWeights[0]      += -u[iDim]*TmpWeights[iDim+1];
+  }
+  TmpWeights[nVarFlo-1] += -1./r*sqrt(g*R/(cv*(4*e-2*v2)))*factor;
+  TmpWeights[0]         += -e*TmpWeights[nVarFlo-1];
+  
+  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[1][iVar] += TmpWeights[iVar];
+  fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
   
   //--- Second-order terms (errors due to second-order JST dissipation)
   if(nDim == 3) {
@@ -5358,7 +5394,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
   factor *= dmudT/(r*cv);
 
   //--- Momentum weights
-  vector<su2double> TmpWeights(weights[0].size(), 0.0);
+  vector<su2double> TmpWeights(nVarFlo, 0.0);
   TmpWeights[1] += u[0]*factor;
   TmpWeights[2] += u[1]*factor;
   if(nDim == 3) TmpWeights[3] += u[2]*factor;
