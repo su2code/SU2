@@ -5193,11 +5193,8 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
 
-  unsigned short iVar, jVar;
-  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
-
   //--- Flow variables and JST coefficients
-  su2double u[3], v2, g,
+  su2double u[3], c, v2, g,
             kappa_2, sensor, lambda, eps_2;
 
   u[0] = varFlo->GetVelocity(iPoint, 0);
@@ -5205,13 +5202,14 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
   else           u[2] = 0.;
   
+  c  = varFlo->GetSoundSpeed(iPoint);
   v2 = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
   
   g = config->GetGamma();
   
   kappa_2 = config->GetKappa_2nd_Flow();
   sensor  = varFlo->GetSensor(iPoint);
-  lambda  = varFlo->GetLambda(iPoint);
+  lambda  = sqrt(v2)+c;
   
   eps_2 = kappa_2*sensor*lambda;
   
