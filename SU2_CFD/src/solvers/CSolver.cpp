@@ -5077,6 +5077,10 @@ void CSolver::ComputeMetric(CSolver   **solver,
 
     //--- Turbulent terms
     if (turb) solver[TURB_SOL]->TurbulentMetric(solver, geometry, config, iPoint, HessianWeights);
+    
+    //--- Make Hessians positive definite
+    SetPositiveDefiniteHessian(geometry, config);
+    if (turb) solver[TURB_SOL]->SetPositiveDefiniteHessian(geometry, config);
 
     //--- Add Hessians
     SumWeightedHessians(solver, geometry, config, iPoint, HessianWeights);
