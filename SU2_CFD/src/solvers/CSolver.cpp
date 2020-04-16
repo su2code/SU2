@@ -5054,7 +5054,9 @@ void CSolver::ComputeMetric(CSolver   **solver,
   unsigned long iPoint, 
                 nPointDomain = geometry->GetnPointDomain();
 
+  bool visc = (config->GetViscous());
   bool turb = (config->GetKind_Turb_Model() != NONE);
+  bool cjst = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) && (config->GetKind_Centered_Flow() == JST);
 
   //--- Vector to store weights from various error contributions
   unsigned long nVarTot = solver[FLOW_SOL]->GetnVar();
@@ -5066,9 +5068,12 @@ void CSolver::ComputeMetric(CSolver   **solver,
 
     //--- Convective terms
     ConvectiveMetric(solver, geometry, config, iPoint, HessianWeights);
+    
+    //--- Scalar dissipation terms
+    if (cjst) DissipativeMetric(solver, geometry, config, iPoint, HessianWeights);
 
     //--- Viscous terms
-    ViscousMetric(solver, geometry, config, iPoint, HessianWeights);
+    if (visc) ViscousMetric(solver, geometry, config, iPoint, HessianWeights);
 
     //--- Turbulent terms
     if (turb) solver[TURB_SOL]->TurbulentMetric(solver, geometry, config, iPoint, HessianWeights);
@@ -5176,6 +5181,89 @@ void CSolver::ConvectiveMetric(CSolver                    **solver,
     else {
       //--- TODO: Code SA
     }
+  }
+
+}
+
+void CSolver::DissipativeMetric(CSolver                    **solver,
+                                CGeometry                  *geometry,
+                                CConfig                    *config,
+                                unsigned long              iPoint,
+                                vector<vector<su2double> > &weights) {
+  CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
+            *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
+
+  unsigned short iVar, jVar;
+  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+
+  //--- Flow variables and JST coefficients
+  su2double u[3], v2, g,
+            kappa_2, sensor, lambda, eps_2;
+
+  u[0] = varFlo->GetVelocity(iPoint, 0);
+  u[1] = varFlo->GetVelocity(iPoint, 1);
+  if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
+  else           u[2] = 0.;
+  
+  v2 = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
+  
+  g = config->GetGamma();
+  
+  kappa_2 = config->GetKappa_2nd_Flow();
+  sensor  = varFlo->GetSensor(iPoint);
+  lambda  = varFlo->GetLambda(iPoint);
+  
+  eps_2 = kappa_2*sensor*lambda;
+  
+  //--- Second-order terms (errors due to second-order JST dissipation)
+  if(nDim == 3) {
+    const unsigned short ri = 0, rui = 1, rvi = 2, rwi = 3, rei = 4,
+                         xxi = 0, yyi = 3, zzi = 5;
+    weights[2][0] += -eps_2*(varAdjFlo->GetHessian(iPoint, ri, xxi)
+                            +varAdjFlo->GetHessian(iPoint, ri, yyi)
+                            +varAdjFlo->GetHessian(iPoint, ri, zzi))
+                      -eps_2*(g-1)*v2*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                      +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                      +varAdjFlo->GetHessian(iPoint, rei, zzi));
+    weights[2][1] += -eps_2*(varAdjFlo->GetHessian(iPoint, rui, xxi)
+                            +varAdjFlo->GetHessian(iPoint, rui, yyi)
+                            +varAdjFlo->GetHessian(iPoint, rui, zzi))
+                     +eps_2*(g-1)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                       +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                       +varAdjFlo->GetHessian(iPoint, rei, zzi));
+    weights[2][2] += -eps_2*(varAdjFlo->GetHessian(iPoint, rvi, xxi)
+                            +varAdjFlo->GetHessian(iPoint, rvi, yyi)
+                            +varAdjFlo->GetHessian(iPoint, rvi, zzi))
+                     +eps_2*(g-1)*u[1]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                       +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                       +varAdjFlo->GetHessian(iPoint, rei, zzi));
+    weights[2][3] += -eps_2*(varAdjFlo->GetHessian(iPoint, rwi, xxi)
+                            +varAdjFlo->GetHessian(iPoint, rwi, yyi)
+                            +varAdjFlo->GetHessian(iPoint, rwi, zzi))
+                     +eps_2*(g-1)*u[2]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                       +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                       +varAdjFlo->GetHessian(iPoint, rei, zzi));
+    weights[2][4] += -eps_2*g*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                              +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                              +varAdjFlo->GetHessian(iPoint, rei, zzi));
+  }
+  else {
+    const unsigned short ri = 0, rui = 1, rvi = 2, rei = 3,
+                         xxi = 0, yyi = 2;
+    weights[2][0] += -eps_2*(varAdjFlo->GetHessian(iPoint, ri, xxi)
+                            +varAdjFlo->GetHessian(iPoint, ri, yyi))
+                     -eps_2*(g-1)*v2*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                     +varAdjFlo->GetHessian(iPoint, rei, yyi));
+    weights[2][1] += -eps_2*(varAdjFlo->GetHessian(iPoint, rui, xxi)
+                            +varAdjFlo->GetHessian(iPoint, rui, yyi))
+                     +eps_2*(g-1)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                       +varAdjFlo->GetHessian(iPoint, rei, yyi));
+    weights[2][2] += -eps_2*(varAdjFlo->GetHessian(iPoint, rvi, xxi)
+                            +varAdjFlo->GetHessian(iPoint, rvi, yyi))
+                     +eps_2*(g-1)*u[1]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                       +varAdjFlo->GetHessian(iPoint, rei, yyi));
+    weights[2][3] += -eps_2*g*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                              +varAdjFlo->GetHessian(iPoint, rei, yyi));
   }
 
 }
