@@ -83,7 +83,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
     Hessian.resize(nPoint,nVar,3*(nDim-1),0.0);
     if ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) &&
         (config->GetKind_Centered_Flow() == JST)) {
-      AuxVar_Adaptation.resize(nPoint,1) = 0.0;
+      AuxVar_Adaptation.resize(nPoint,1) = su2double(0.0);
       GradientAuxVar_Adaptation.resize(nPoint,1,nDim,0.0);
       HessianAuxVar.resize(nPoint,1,3*(nDim-1),0.0);
     }

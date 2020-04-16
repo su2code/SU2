@@ -3146,7 +3146,7 @@ void CSolver::SetAuxVar_Hessian_GG(CGeometry *geometry, CConfig *config) {
   InitiateComms(geometry, config, ANISO_AUX_VAR);
   CompleteComms(geometry, config, ANISO_AUX_VAR);
 
-  const auto& solution = base_nodes->GetAuxVar();
+  const auto& solution = base_nodes->GetAuxVar_Adaptation();
   auto& gradient = base_nodes->GetGradientAuxVar_Adaptation();
 
   computeGradientsGreenGauss(this, ANISO_AUX_GRADIENT, PERIODIC_SOL_GG, *geometry,
