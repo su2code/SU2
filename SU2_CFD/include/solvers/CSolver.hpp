@@ -319,8 +319,9 @@ public:
   /*!
    * \brief Make the eigenvalues of the Hessians positive.
    */
-  void SetPositiveDefiniteHessian(CGeometry *geometry,
-                                  CConfig   *config);
+  void SetPositiveDefiniteHessian(CGeometry     *geometry,
+                                  CConfig       *config,
+                                  unsigned long iPoint);
   
   /*!
    * \brief Apply a correction to the boundary Hessian using the volume Hessian.

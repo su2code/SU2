@@ -4978,9 +4978,8 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
   }// iMarker
 }
 
-void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config) {
+void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config, unsigned long iPoint) {
   
-  unsigned long iPoint;
   unsigned short iDim, iVar;
   su2double **A      = new su2double*[nDim],
             **EigVec = new su2double*[nDim],
@@ -4991,51 +4990,49 @@ void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config) {
     EigVec[iDim] = new su2double[nDim];
   }
 
-  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    for(iVar = 0; iVar < nVar; iVar++){
-      if (nDim == 2) {
-        const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
-        const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
-        const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
-        
-        A[0][0] = a; A[0][1] = b;
-        A[1][0] = b; A[1][1] = c;
+  for(iVar = 0; iVar < nVar; iVar++){
+    if (nDim == 2) {
+      const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
+      const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
+      const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
+      
+      A[0][0] = a; A[0][1] = b;
+      A[1][0] = b; A[1][1] = c;
 
-        CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+      CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-        for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
+      for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
 
-        CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+      CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-        base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
-        base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
-        base_nodes->SetHessian(iPoint, iVar, 2, A[1][1]);
-      }
-      else {
-        const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
-        const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
-        const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
-        const su2double d = base_nodes->GetHessian(iPoint, iVar, 3);
-        const su2double e = base_nodes->GetHessian(iPoint, iVar, 4);
-        const su2double f = base_nodes->GetHessian(iPoint, iVar, 5);
+      base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
+      base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
+      base_nodes->SetHessian(iPoint, iVar, 2, A[1][1]);
+    }
+    else {
+      const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
+      const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
+      const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
+      const su2double d = base_nodes->GetHessian(iPoint, iVar, 3);
+      const su2double e = base_nodes->GetHessian(iPoint, iVar, 4);
+      const su2double f = base_nodes->GetHessian(iPoint, iVar, 5);
 
-        A[0][0] = a; A[0][1] = b; A[0][2] = c;
-        A[1][0] = b; A[1][1] = d; A[1][2] = e;
-        A[2][0] = c; A[2][1] = e; A[2][2] = f;
+      A[0][0] = a; A[0][1] = b; A[0][2] = c;
+      A[1][0] = b; A[1][1] = d; A[1][2] = e;
+      A[2][0] = c; A[2][1] = e; A[2][2] = f;
 
-        CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+      CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-        for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
+      for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
 
-        CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+      CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-        base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
-        base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
-        base_nodes->SetHessian(iPoint, iVar, 2, A[0][2]);
-        base_nodes->SetHessian(iPoint, iVar, 3, A[1][1]);
-        base_nodes->SetHessian(iPoint, iVar, 4, A[1][2]);
-        base_nodes->SetHessian(iPoint, iVar, 5, A[2][2]);
-      }
+      base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
+      base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
+      base_nodes->SetHessian(iPoint, iVar, 2, A[0][2]);
+      base_nodes->SetHessian(iPoint, iVar, 3, A[1][1]);
+      base_nodes->SetHessian(iPoint, iVar, 4, A[1][2]);
+      base_nodes->SetHessian(iPoint, iVar, 5, A[2][2]);
     }
   }
 
@@ -5079,8 +5076,8 @@ void CSolver::ComputeMetric(CSolver   **solver,
     if (turb) solver[TURB_SOL]->TurbulentMetric(solver, geometry, config, iPoint, HessianWeights);
     
     //--- Make Hessians positive definite
-    SetPositiveDefiniteHessian(geometry, config);
-    if (turb) solver[TURB_SOL]->SetPositiveDefiniteHessian(geometry, config);
+    SetPositiveDefiniteHessian(geometry, config, iPoint);
+    if (turb) solver[TURB_SOL]->SetPositiveDefiniteHessian(geometry, config, iPoint);
 
     //--- Add Hessians
     SumWeightedHessians(solver, geometry, config, iPoint, HessianWeights);
