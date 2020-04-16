@@ -5336,9 +5336,9 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
     weights[2][0] += -eps_2*(varAdjFlo->GetHessian(iPoint, ri, xxi)
                             +varAdjFlo->GetHessian(iPoint, ri, yyi)
                             +varAdjFlo->GetHessian(iPoint, ri, zzi))
-                      -eps_2*(g-1)*v2*(varAdjFlo->GetHessian(iPoint, rei, xxi)
-                                      +varAdjFlo->GetHessian(iPoint, rei, yyi)
-                                      +varAdjFlo->GetHessian(iPoint, rei, zzi));
+                     -eps_2*(g-1)*v2/2.*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                        +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                        +varAdjFlo->GetHessian(iPoint, rei, zzi));
     weights[2][1] += -eps_2*(varAdjFlo->GetHessian(iPoint, rui, xxi)
                             +varAdjFlo->GetHessian(iPoint, rui, yyi)
                             +varAdjFlo->GetHessian(iPoint, rui, zzi))
@@ -5366,8 +5366,8 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
                          xxi = 0, yyi = 2;
     weights[2][0] += -eps_2*(varAdjFlo->GetHessian(iPoint, ri, xxi)
                             +varAdjFlo->GetHessian(iPoint, ri, yyi))
-                     -eps_2*(g-1)*v2*(varAdjFlo->GetHessian(iPoint, rei, xxi)
-                                     +varAdjFlo->GetHessian(iPoint, rei, yyi));
+                     -eps_2*(g-1)*v2/2.*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                        +varAdjFlo->GetHessian(iPoint, rei, yyi));
     weights[2][1] += -eps_2*(varAdjFlo->GetHessian(iPoint, rui, xxi)
                             +varAdjFlo->GetHessian(iPoint, rui, yyi))
                      +eps_2*(g-1)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
