@@ -830,7 +830,7 @@ class AdjointInterface:
             self.MPIPrint('\n##### Transferring displacement adjoint to the beam solver\n')
             self.MPIBarrier()
             self.transferDisplacementAdjoint_SourceTerm(FSIconfig, FluidSolver, SolidSolver, MLSSolver)
-            self.printDisplDisplacementAdjoint(True)
+            self.printDisplDisplacementAdjoint(False)
 
             # --- Solid solver call for FSI subiteration --- #
 
@@ -844,6 +844,9 @@ class AdjointInterface:
             self.FSIIter += 1
 
         self.MPIBarrier()
+
+        # -- Outputting Displacement Adjoints on the Fluid Boundary
+        self.printDisplDisplacementAdjoint(True)
 
         self.MPIPrint('\nBGS is converged (strong coupling)')
         self.MPIPrint(' ')
