@@ -499,6 +499,8 @@ def amg ( config , kind='' ):
                     config_cfd.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
                     SU2_CFD(config_cfd)
 
+                    cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
+
                     #--- If SU2_CFD_AD fails on interpolated restart
                     if not os.path.exists(cur_solfil_adj) :
                         config_cfd.RESTART_SOL = 'NO'
@@ -506,8 +508,6 @@ def amg ( config , kind='' ):
 
                         if not os.path.exists(cur_solfil_adj) :
                             raise Exception("\n##ERROR : SU2_CFD_AD Failed.\n")
-
-                    cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
             
             except:
                 sys.stdout = sav_stdout
