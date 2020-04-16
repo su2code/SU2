@@ -133,6 +133,12 @@ protected:
   ***DonorPrimVar = nullptr;     /*!< \brief Value of the donor variables at each boundary. */
 
   su2double
+  **TauWall_WMLES = nullptr,        /*!< \brief Wall shear stress for each boundary and vertex (WMLES). */
+  **HeatFlux_WMLES = nullptr,       /*!< \brief Heat transfer coefficient for each boundary and vertex (WMLES). */
+  ***FlowDirTan_WMLES = nullptr,    /*!< \brief Velocity unit tangent for each boundary and vertex (WMLES). */
+  ***VelTimeFilter_WMLES = nullptr; /*!< \brief Input time filter Velocity for each boundary and vertex (WMLES). */
+
+  su2double
   *Inflow_MassFlow = nullptr,    /*!< \brief Mass flow rate for each boundary. */
   *Exhaust_MassFlow = nullptr,   /*!< \brief Mass flow rate for each boundary. */
   *Inflow_Pressure = nullptr,    /*!< \brief Fan face pressure for each boundary. */

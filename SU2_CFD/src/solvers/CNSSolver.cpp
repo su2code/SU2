@@ -61,6 +61,17 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       X[i] = new su2double [N[i]] ();
   };
 
+  /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
+
+  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, su2double***& X) {
+    X = new su2double** [M];
+    for(unsigned long i = 0; i < M; ++i) {
+      X[i] = new su2double* [N[i]];
+      for(unsigned long j = 0; j < N[i]; ++j)
+        X[i][j] = new su2double [P] ();
+    }
+  };
+
   /*--- Heat flux in all the markers ---*/
 
   Alloc2D(nMarker, nVertex, HeatFlux);
@@ -109,6 +120,91 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Prandtl_Lam     = config->GetPrandtl_Lam();
   Prandtl_Turb    = config->GetPrandtl_Turb();
   Tke_Inf         = config->GetTke_FreeStreamND();
+
+
+  /*--- Set the SGS model in case an LES simulation is carried out.
+   Make a distinction between the SGS models used and set SGSModel and
+  SGSModelUsed accordingly. ---*/
+
+  SGSModel = NULL;
+  SGSModelUsed = false;
+
+  switch( config->GetKind_SGS_Model() ) {
+    /* No LES, so no SGS model needed.
+     Set the pointer to NULL and the boolean to false. */
+    case SMAGORINSKY:
+      SGSModel     = new CSmagorinskyModel;
+      SGSModelUsed = true;
+      break;
+    case WALE:
+      SGSModel     = new CWALEModel;
+      SGSModelUsed = true;
+      break;
+    case VREMAN:
+      SGSModel     = new CVremanModel;
+      SGSModelUsed = true;
+      break;
+    default:
+      SU2_MPI::Error("Unknown SGS model encountered", CURRENT_FUNCTION);
+  }
+
+  /*--- Set the wall model to NULL ---*/
+
+  WallModel = NULL;
+
+  if (config->GetWall_Models()){
+
+    /*--- Set the WMLES class  ---*/
+    /*--- First allocate the auxiliary variables ---*/
+
+    Alloc2D(nMarker, nVertex, TauWall_WMLES);
+    Alloc2D(nMarker, nVertex, HeatFlux_WMLES);
+    Alloc3D(nMarker, nVertex, nDim, FlowDirTan_WMLES);
+    Alloc3D(nMarker, nVertex, nDim, VelTimeFilter_WMLES);
+
+    /*--- Check if the Wall models or Wall functions are unique. ---*/
+    /*--- OBS: All the markers must have the same wall model/function ---*/
+
+    vector<unsigned short> WallFunctions_;
+    vector<string> WallFunctionsMarker_;
+    for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+      switch (config->GetMarker_All_KindBC(iMarker)) {
+        case ISOTHERMAL:
+        case HEAT_FLUX: {
+          string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION){
+            WallFunctions_.push_back(config->GetWallFunction_Treatment(Marker_Tag));
+            WallFunctionsMarker_.push_back(Marker_Tag);
+          }
+          break;
+        }
+        default:  /* Just to avoid a compiler warning. */
+          break;
+      }
+    }
+
+    if (!WallFunctions_.empty()){
+      sort(WallFunctions_.begin(), WallFunctions_.end());
+      vector<unsigned short>::iterator it = std::unique( WallFunctions_.begin(), WallFunctions_.end() );
+      WallFunctions_.erase(it, WallFunctions_.end());
+
+      if(WallFunctions_.size() == 1) {
+        switch (config->GetWallFunction_Treatment(WallFunctionsMarker_[0])) {
+          case EQUILIBRIUM_WALL_MODEL:
+            WallModel = new CWallModel1DEQ(config,WallFunctionsMarker_[0]);
+            break;
+          case LOGARITHMIC_WALL_MODEL:
+            WallModel = new CWallModelLogLaw(config,WallFunctionsMarker_[0]);
+            break;
+          default:
+            break;
+        }
+      }
+      else{
+        SU2_MPI::Error("Wall function/model type must be the same in all wall BCs", CURRENT_FUNCTION);
+      }
+    }
+  }
 
   /*--- Initialize the seed values for forward mode differentiation. ---*/
 
@@ -164,6 +260,9 @@ CNSSolver::~CNSSolver(void) {
     delete [] Buffet_Sensor;
   }
 
+  if( SGSModel  != NULL) delete SGSModel;
+  if( WallModel != NULL) delete WallModel;
+
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
@@ -176,6 +275,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool wall_functions       = config->GetWall_Functions();
+  bool wall_models          = config->GetWall_Models();
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
@@ -253,11 +353,28 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SU2_OMP_BARRIER
   }
 
-  /*--- Compute the TauWall from the wall functions ---*/
+  /*--- Calculate the eddy viscosity using a SGS model ---*/
+
+  if (SGSModelUsed){
+    SU2_OMP_MASTER
+    Setmut_LES(geometry, solver_container, config);
+    SU2_OMP_BARRIER
+  }
+
+  /*--- Compute the wall shear stress from the wall functions ---*/
 
   if (wall_functions) {
     SU2_OMP_MASTER
     SetTauWall_WF(geometry, solver_container, config);
+    SetEddyViscFirstPoint(geometry, solver_container, config);
+    SU2_OMP_BARRIER
+  }
+
+  /*--- Compute the wall shear stress from the wall model ---*/
+
+  if (wall_models){
+    SU2_OMP_MASTER
+    SetTauWallHeatFlux_WMLES1stPoint(geometry, solver_container, config, iRKStep);
     SU2_OMP_BARRIER
   }
 
@@ -288,6 +405,9 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
         nodes->SetDES_LengthScale(iPoint, DES_LengthScale);
       }
     }
+
+    if (turb_model == NONE && SGSModelUsed)
+        eddy_visc = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(iPoint);
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
 
@@ -345,7 +465,10 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
   /*--- Wall shear stress values (wall functions) ---*/
 
   numerics->SetTauWall(nodes->GetTauWall(iPoint),
-                       nodes->GetTauWall(iPoint));
+                       nodes->GetTauWall(jPoint));
+
+  numerics->SetTauWall_Flag(nodes->GetTauWall_Flag(iPoint),
+                            nodes->GetTauWall_Flag(jPoint));
 
   /*--- Compute and update residual ---*/
 
@@ -1488,6 +1611,230 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   }
 }
 
+void CNSSolver::BC_WallModel(CGeometry      *geometry,
+                                CSolver        **solver_container,
+                                CNumerics      *conv_numerics,
+                                CNumerics      *visc_numerics,
+                                CConfig        *config,
+                                unsigned short val_marker) {
+
+  unsigned short iDim, iVar;
+  unsigned long iVertex, iPoint, total_index;
+
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool HeatFlux_Prescribed = false;
+
+  /*--- Allocation of variables necessary for convective fluxes. ---*/
+  su2double Area, ProjVelocity_i, Wall_HeatFlux;
+  su2double *V_reflected, *V_domain;
+  su2double *Normal     = new su2double[nDim];
+  su2double *UnitNormal = new su2double[nDim];
+
+  /*--- Identify the boundary by string name ---*/
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  if(config->GetMarker_All_KindBC(val_marker) == HEAT_FLUX) {
+    HeatFlux_Prescribed = true;
+  }
+
+  /*--- Loop over all the vertices on this boundary marker. ---*/
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      /*-------------------------------------------------------------------------------*/
+      /*--- Step 1: For the convective fluxes, create a reflected state of the      ---*/
+      /*---         Primitive variables by copying all interior values to the       ---*/
+      /*---         reflected. Only the velocity is mirrored for the wall model     ---*/
+      /*---         and negative for wall functions (weakly impose v = 0)           ---*/
+      /*---         axis. Based on the Upwind_Residual routine.                     ---*/
+      /*-------------------------------------------------------------------------------*/
+
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        UnitNormal[iDim] = -Normal[iDim]/Area;
+      }
+
+      /*--- Allocate the reflected state at the symmetry boundary. ---*/
+      V_reflected = GetCharacPrimVar(val_marker, iVertex);
+
+      /*--- Grid movement ---*/
+      if (config->GetGrid_Movement())
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+      /*--- Normal vector for this vertex (negate for outward convention). ---*/
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+
+      /*--- Get current solution at this boundary node ---*/
+      V_domain = nodes->GetPrimitive(iPoint);
+
+      /*--- Set the reflected state based on the boundary node. ---*/
+      for(iVar = 0; iVar < nPrimVar; iVar++)
+        V_reflected[iVar] = nodes->GetPrimitive(iPoint,iVar);
+
+      /*--- Compute velocity in normal direction (ProjVelcity_i=(v*n)) and substract from
+       velocity in normal direction: v_r = v - (v*n)n ---*/
+      ProjVelocity_i = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        ProjVelocity_i += nodes->GetVelocity(iPoint,iDim)*UnitNormal[iDim];
+
+
+      if (nodes->GetTauWall_Flag(iPoint)){
+        /*--- Scalars are copied and the velocity is mirrored along the wall boundary,
+         i.e. the velocity in normal direction is substracted twice. ---*/
+
+        /*--- Force the velocity to be tangential ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_reflected[iDim+1] = nodes->GetVelocity(iPoint,iDim) - 2.0 * ProjVelocity_i*UnitNormal[iDim];
+
+        /*--- Set Primitive and Secondary for numerics class. ---*/
+
+        conv_numerics->SetPrimitive(V_domain, V_reflected);
+        conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+
+        /*--- Compute the residual using an upwind scheme. ---*/
+
+        auto residual = conv_numerics->ComputeResidual(config);
+
+        LinSysRes.AddBlock(iPoint, residual);
+
+        /*--- Jacobian contribution for implicit integration. ---*/
+        if (implicit)
+          Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      }
+      else{
+
+        for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar] = 0.0;
+
+        /*--- Store the corrected velocity at the wall which will
+         be zero (v = 0), unless there are moving walls (v = u_wall)---*/
+        /*--- TODO: Before adding the moving walls capability make sure that it is running correctly. ---*/
+
+        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
+
+        /*--- Impose the value of the velocity as a strong boundary
+         condition (Dirichlet). Fix the velocity and remove any
+         contribution to the residual at this node. ---*/
+
+        nodes->SetVelocity_Old(iPoint,Vector);
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+        nodes->SetVel_ResTruncError_Zero(iPoint);
+
+        /*--- Update residual value ---*/
+        LinSysRes.AddBlock(iPoint, Res_Conv);
+
+        /*--- Enforce the no-slip boundary condition in a strong way by
+         modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+        if (implicit){
+          for (iVar = 1; iVar <= nDim; iVar++) {
+            total_index = iPoint*nVar+iVar;
+            Jacobian.DeleteValsRowi(total_index);
+          }
+        }
+      }
+
+
+      /*-------------------------------------------------------*/
+      /*-------------------------------------------------------*/
+      /*--- Viscous residual contribution of the wall model ---*/
+      /*--- TODO: Build the jacobian contribution of the WM ---*/
+      /*-------------------------------------------------------*/
+      /*-------------------------------------------------------*/
+
+      if (config->GetWall_Models() && nodes->GetTauWall_Flag(iPoint)){
+
+        /*--- Weakly enforce the WM heat flux for the energy equation---*/
+        su2double velWall_tan = 0.;
+        su2double DirTanWM[3] = {0.,0.,0.};
+
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          DirTanWM[iDim] = GetFlowDirTan_WMLES(val_marker,iVertex,iDim);
+
+        const su2double TauWall = GetTauWall_WMLES(val_marker,iVertex);
+        const su2double Wall_HeatFlux = GetHeatFlux_WMLES(val_marker, iVertex);
+
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          velWall_tan +=  nodes->GetVelocity(iPoint,iDim) * DirTanWM[iDim];
+
+        Res_Visc[0] = 0.0;
+        Res_Visc[nDim+1] = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          Res_Visc[iDim+1] = 0.0;
+
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          Res_Visc[iDim+1] = - TauWall * DirTanWM[iDim] * Area;
+
+        Res_Visc[nDim+1] = (Wall_HeatFlux - TauWall * velWall_tan) * Area;
+      }
+      else{
+
+        /*--- If it is isothermal wall, calculate the heat flux---*/
+        if (!HeatFlux_Prescribed){
+
+          su2double Prandtl_Lam  = config->GetPrandtl_Lam();
+          su2double Prandtl_Turb = config->GetPrandtl_Turb();
+          su2double Gas_Constant = config->GetGas_ConstantND();
+          su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+
+          /*--- Retrieve the specified wall temperature from config
+                as well as the wall function treatment.---*/
+          su2double Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+
+          /*--- Compute closest normal neighbor ---*/
+          unsigned long Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+          /*--- Get coordinates of i & nearest normal and compute distance ---*/
+          su2double *Coord_i = geometry->node[iPoint]->GetCoord();
+          su2double *Coord_j = geometry->node[Point_Normal]->GetCoord();
+          su2double dist_ij = 0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+          dist_ij = sqrt(dist_ij);
+
+
+          /*--- Compute the normal gradient in temperature using Twall ---*/
+          su2double dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
+
+          /*--- Get transport coefficients ---*/
+          su2double laminar_viscosity    = nodes->GetLaminarViscosity(iPoint);
+          su2double eddy_viscosity       = nodes->GetEddyViscosity(iPoint);
+          su2double thermal_conductivity = Cp * ( laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
+
+          Wall_HeatFlux = thermal_conductivity * dTdn;
+        }else{
+
+          Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) /config->GetHeat_Flux_Ref();
+        }
+        for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar] = 0.0;
+
+        /*--- Weakly impose the WM heat flux for the energy equation---*/
+        Res_Visc[nDim+1] = Wall_HeatFlux * Area;
+
+      }
+
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+  delete [] Normal;
+  delete [] UnitNormal;
+
+}
+
 void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
 
   const unsigned short kind_roe_dissipation = config->GetKind_RoeLowDiss();
@@ -1831,23 +2178,28 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
 void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
+  /*---  The wall function implemented herein is based on Nichols and Nelson AIAAJ v32 n6 2004.
+   At this moment, the wall function is only available for adiabatic flows.
+   ---*/
+
+  bool debug = false;
   unsigned short iDim, jDim, iMarker;
   unsigned long iVertex, iPoint, Point_Normal, counter;
 
   su2double Area, div_vel, UnitNormal[3], *Normal;
   su2double **grad_primvar, tau[3][3];
 
-  su2double Vel[3] = {0.0, 0.0, 0.0}, VelNormal, VelTang[3], VelTangMod, VelInfMod, WallDist[3], WallDistMod;
+  su2double Vel[3], VelNormal, VelTang[3], VelTangMod, VelInfMod, WallDist[3], WallDistMod;
   su2double T_Normal, P_Normal;
-  su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall = 0.0, Tau_Wall_Old = 0.0;
+  su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall = 0.0;
   su2double *Coord, *Coord_Normal;
-  su2double diff, Delta;
+  su2double diff, Delta, grad_diff;
   su2double U_Tau, U_Plus, Gam, Beta, Phi, Q, Y_Plus_White, Y_Plus;
   su2double TauElem[3], TauNormal, TauTangent[3], WallShearStress;
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
-  unsigned short max_iter = 10;
+  unsigned short max_iter = 50;
   su2double tol = 1e-6;
 
   /*--- Get the freestream velocity magnitude for non-dim. purposes ---*/
@@ -1864,8 +2216,9 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Typical constants from boundary layer theory ---*/
 
-  su2double kappa = 0.4;
-  su2double B = 5.5;
+  su2double kappa = 0.41;
+  su2double B = 5.0;
+  bool converged = true;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -1875,6 +2228,11 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
       /*--- Identify the boundary by string name ---*/
 
       string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+      /*--- Jump to another BC if it is not wall function ---*/
+
+      if (config->GetWallFunction_Treatment(Marker_Tag) != STANDARD_WALL_FUNCTION)
+        continue;
 
       /*--- Get the specified wall heat flux from config ---*/
 
@@ -1954,11 +2312,11 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
 
           P_Wall = P_Normal;
           Density_Wall = P_Wall/(Gas_Constant*T_Wall);
+          Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
 
           /*--- Compute the shear stress at the wall in the regular fashion
            by using the stress tensor on the surface ---*/
 
-          Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
           grad_primvar  = nodes->GetGradient_Primitive(iPoint);
 
           div_vel = 0.0;
@@ -1996,14 +2354,23 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
            iteratively solve for a new wall shear stress. Use the current wall
            shear stress as a starting guess for the wall function. ---*/
 
-          Tau_Wall_Old = WallShearStress;
           counter = 0; diff = 1.0;
+          U_Tau = sqrt(WallShearStress/Density_Wall);
+          Y_Plus = 0.0; // to avoid warning
 
-          while (diff > tol) {
+          su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
+
+          /*--- Automatic switch off when y+ < 5 according to Nichols & Nelson (2004) ---*/
+
+          if (Y_Plus_Start < 5.0) {
+            nodes->SetTauWall_Flag(iPoint,false);
+            continue;
+          }
+
+          while (fabs(diff) > tol) {
 
             /*--- Friction velocity and u+ ---*/
 
-            U_Tau = sqrt(Tau_Wall_Old/Density_Wall);
             U_Plus = VelTangMod/U_Tau;
 
             /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) ---*/
@@ -2024,37 +2391,443 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
                                               (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0 +
                                                kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
 
-            /*--- Calculate an updated value for the wall shear stress
-             using the y+ value, the definition of y+, and the definition of
-             the friction velocity. ---*/
+            /* --- Define function for Newton method to zero --- */
 
-            Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
+            diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
 
-            /*--- Difference between the old and new Tau. Update old value. ---*/
+            /* --- Gradient of function defined above --- */
+            grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
+                      kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
+                      exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
+                      pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
 
-            diff = fabs(Tau_Wall-Tau_Wall_Old);
-            Tau_Wall_Old += 0.25*(Tau_Wall-Tau_Wall_Old);
+            /* --- Newton Step --- */
+
+            U_Tau = U_Tau - diff / grad_diff;
 
             counter++;
-            if (counter > max_iter) {
-              cout << "WARNING: Tau_Wall evaluation has not converged in solver_direct_mean.cpp" << endl;
-              cout << Tau_Wall_Old << " " << Tau_Wall << " " << diff << endl;
+            if (counter == max_iter) {
+              if (debug){
+                cout << "WARNING: Y_Plus evaluation has not converged in solver_direct_mean.cpp" << endl;
+                cout << rank << " " << iPoint;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  cout << " " << Coord[iDim];
+                cout << endl;
+              }
+              converged = false;
+              nodes->SetTauWall_Flag(iPoint,false);
               break;
             }
 
           }
+          /* --- If not converged jump to the next point. --- */
 
+          if (!converged) continue;
+
+          /*--- Calculate an updated value for the wall shear stress
+            using the y+ value, the definition of y+, and the definition of
+            the friction velocity. ---*/
+
+          Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
 
           /*--- Store this value for the wall shear stress at the node.  ---*/
 
+          nodes->SetTauWall_Flag(iPoint,true);
           nodes->SetTauWall(iPoint,Tau_Wall);
-
+          nodes->SetTemperature(iPoint,T_Wall);
+          //nodes->SetDensity(iPoint,Density_Wall);
 
         }
-
       }
-
     }
   }
 
+}
+void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+  unsigned short iDim;
+  unsigned long iPoint, iVertex, Point_Normal;
+  su2double Lam_Visc_Normal, Vel[3] = {0.,0.,0.}, P_Normal, T_Normal;
+  su2double VelTang[3] = {0.,0.,0.}, VelTangMod, VelNormal;
+  su2double WallDist[3] = {0.,0.,0.}, WallDistMod;
+  su2double *Coord, *Coord_Normal, Tau_Wall;
+  su2double *Normal, Area, UnitNormal[3] = {0.,0.,0.};
+  su2double T_Wall, P_Wall, Density_Wall, Lam_Visc_Wall;
+  su2double dypw_dyp, Y_Plus_White, Eddy_Visc;
+  su2double U_Plus, U_Tau, Gam, Beta, Q, Phi;
+  su2double Gas_Constant = config->GetGas_ConstantND();
+  su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+
+  /*--- Typical constants from boundary layer theory ---*/
+
+  su2double kappa = 0.41;
+  su2double B = 5.0;
+
+  /*--- Compute the recovery factor ---*/
+  // su2double-check: laminar or turbulent Pr for this?
+  su2double Recovery = pow(config->GetPrandtl_Lam(),(1.0/3.0));
+
+  /* Loop over the markers and select the ones for which a wall model
+    treatment is carried out. */
+
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case ISOTHERMAL:
+      case HEAT_FLUX:{
+        const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+        /* Set the Eddy Viscosity at the first point off the wall */
+
+        if ((config->GetWallFunction_Treatment(Marker_Tag) == STANDARD_WALL_FUNCTION)){
+
+          for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            iPoint       = geometry->vertex[iMarker][iVertex]->GetNode();
+            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+            Coord        = geometry->node[iPoint]->GetCoord();
+            Coord_Normal = geometry->node[Point_Normal]->GetCoord();
+
+            /*--- Compute dual-grid area and boundary normal ---*/
+
+            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt (Area);
+
+            for (iDim = 0; iDim < nDim; iDim++)
+              UnitNormal[iDim] = -Normal[iDim]/Area;
+
+            /*--- Check if the node belongs to the domain (i.e, not a halo node)
+             and the neighbor is not part of the physical boundary ---*/
+
+            if (geometry->node[iPoint]->GetDomain()) {
+
+              Tau_Wall = nodes->GetTauWall(iPoint);
+
+              /*--- Verify the wall function flag on the node. If false,
+               jump to the next iPoint.---*/
+
+              if (!nodes->GetTauWall_Flag(iPoint)) continue;
+
+              /*--- Get the velocity, pressure, and temperature at the nearest
+               (normal) interior point. ---*/
+
+              for (iDim = 0; iDim < nDim; iDim++)
+                Vel[iDim]    = nodes->GetVelocity(Point_Normal,iDim);
+              P_Normal       = nodes->GetPressure(Point_Normal);
+              T_Normal       = nodes->GetTemperature(Point_Normal);
+
+              /*--- Compute the wall-parallel velocity at first point off the wall ---*/
+
+              VelNormal = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++)
+                VelNormal += Vel[iDim] * UnitNormal[iDim];
+              for (iDim = 0; iDim < nDim; iDim++)
+                VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
+
+              VelTangMod = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++)
+                VelTangMod += VelTang[iDim]*VelTang[iDim];
+              VelTangMod = sqrt(VelTangMod);
+
+              /*--- Compute normal distance of the interior point from the wall ---*/
+
+              for (iDim = 0; iDim < nDim; iDim++)
+                WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+
+              WallDistMod = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++)
+                WallDistMod += WallDist[iDim]*WallDist[iDim];
+              WallDistMod = sqrt(WallDistMod);
+
+              /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
+
+              //T_Wall = T_Normal * (1.0 + 0.5*Gamma_Minus_One*Recovery*M_Normal*M_Normal);
+              T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
+
+              /*--- Extrapolate the pressure from the interior & compute the
+               wall density using the equation of state ---*/
+
+              P_Wall       = P_Normal;
+              Density_Wall = P_Wall/(Gas_Constant*T_Wall);
+              Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
+
+              /*--- Friction velocity and u+ ---*/
+
+              U_Tau  = sqrt(Tau_Wall / Density_Wall);
+              U_Plus = VelTangMod/U_Tau;
+
+              Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
+              Beta = 0.0; // For adiabatic flows only
+              Q    = sqrt(Beta*Beta + 4.0*Gam);
+              Phi  = asin(-1.0*Beta/Q);
+
+              /*--- Y+ defined by White & Christoph (compressibility and heat transfer) ---*/
+
+              Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
+
+              /*--- If the Y+ defined by White & Christoph is too high so the eddy viscosity.
+                Disable the wall function calculation on this point and do not set the eddy viscosity
+                at the first point off the wall. ---*/
+
+              if (Y_Plus_White > 1e4){
+                cout << "WARNING: Y+ is too high (>1e4). The muT computation at the 1st point off the wall is disable." << endl;
+                cout << rank << " " << iPoint;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  cout << " " << Coord[iDim];
+                cout << endl;
+                nodes->SetTauWall_Flag(iPoint,false);
+                continue;
+              }
+
+              /*--- Now compute the Eddy viscosity at the first point off of the wall ---*/
+
+              Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
+
+              dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*pow(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q), -0.5);
+
+              Eddy_Visc = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
+                                         (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
+                                         - Lam_Visc_Normal/Lam_Visc_Wall);
+
+              nodes->SetEddyViscosity(Point_Normal,Eddy_Visc);
+
+            }
+          }
+        }
+      }
+        break;
+      default:
+        break;
+    }
+  }
+}
+void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+  unsigned long iPoint;
+  su2double Grad_Vel[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
+  su2double lenScale, muTurb, rho;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /* Get Density */
+    rho = nodes->GetSolution(iPoint, 0);
+
+    /* Velocity Gradients */
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
+        Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, iDim+1, jDim);
+
+    /* Distance to the wall. */
+    su2double dist = geometry->node[iPoint]->GetWall_Distance(); // Is the distance to the wall used in any SGS calculation?
+
+    /* Length Scale for the SGS model: Cubic root of the volume. */
+    su2double Vol = geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume();
+    lenScale = pow(Vol,1./3.);
+
+    /* Compute the eddy viscosity. */
+    if (nDim == 2){
+      muTurb = SGSModel->ComputeEddyViscosity_2D(rho, Grad_Vel[0][0], Grad_Vel[1][0],
+                                                 Grad_Vel[0][1], Grad_Vel[1][1],
+                                                 lenScale, dist);
+    }
+    else{
+      muTurb = SGSModel->ComputeEddyViscosity_3D(rho, Grad_Vel[0][0], Grad_Vel[1][0], Grad_Vel[2][0],
+                                               Grad_Vel[0][1], Grad_Vel[1][1], Grad_Vel[2][1],
+                                               Grad_Vel[0][2], Grad_Vel[1][2], Grad_Vel[2][2],
+                                               lenScale, dist);
+    }
+    /* Set eddy viscosity. */
+    nodes->SetEddyViscosity(iPoint, muTurb);
+  }
+
+  /*--- MPI parallelization ---*/
+
+//  InitiateComms(geometry, config, SGS_MODEL);
+//  CompleteComms(geometry, config, SGS_MODEL);
+
+}
+
+void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep) {
+
+  /*---
+  List TODO here:
+   - For each vertex (point):
+   - Load the interpolation coefficients.
+   - Extract the LES quantities at the exchange points.
+   - Call the Wall Model: Calculate Tau_Wall and Heat_Flux.
+   - Set Tau_Wall and Heat_Flux in the node structure for future use.
+  ---*/
+
+  unsigned short iDim, iMarker;
+  unsigned long iVertex, iPoint, Point_Normal;
+  bool CalculateWallModel = false;
+
+  su2double Vel[3], VelNormal, VelTang[3], VelTangMod, WallDist[3], WallDistMod;
+  su2double T_Normal, P_Normal, mu_Normal;
+  su2double *Coord, *Coord_Normal, UnitNormal[3], *Normal, Area;
+  su2double TimeFilter = config->GetDelta_UnstTimeND()/ (config->GetTimeFilter_WMLES() / config->GetTime_Ref());
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+
+     /*--- Identify the boundary by string name ---*/
+     string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+     /*--- Identify if this marker is a wall model one---*/
+     switch (config->GetWallFunction_Treatment(Marker_Tag)) {
+       case EQUILIBRIUM_WALL_MODEL:
+       case LOGARITHMIC_WALL_MODEL:
+         CalculateWallModel = true;
+         break;
+
+       case NO_WALL_FUNCTION:
+       case STANDARD_WALL_FUNCTION:
+         CalculateWallModel = false;
+       default:
+         break;
+     }
+
+     /*--- If not just continue to the next---*/
+     if (!CalculateWallModel) continue;
+
+     /*--- Determine the prescribed heat flux or prescribed temperature. ---*/
+     bool HeatFlux_Prescribed = false, Temperature_Prescribed = false;
+     su2double Wall_HeatFlux = 0.0, Wall_Temperature = 0.0;
+
+     if(config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
+       HeatFlux_Prescribed = true;
+       Wall_HeatFlux       = config->GetWall_HeatFlux(Marker_Tag);
+     }
+     else {
+       Temperature_Prescribed = true;
+       Wall_Temperature       = config->GetIsothermal_Temperature(Marker_Tag);
+     }
+
+     /*--- Loop over all of the vertices on this boundary marker ---*/
+     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+       Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+       /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+       if (!geometry->node[iPoint]->GetDomain()) continue;
+
+       /*--- Get coordinates of the current vertex and nearest normal point ---*/
+
+       Coord = geometry->node[iPoint]->GetCoord();
+       Coord_Normal = geometry->node[Point_Normal]->GetCoord();
+
+       /*--- Compute normal distance of the interior point from the wall ---*/
+
+       for (iDim = 0; iDim < nDim; iDim++)
+         WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+
+       WallDistMod = 0.0;
+       for (iDim = 0; iDim < nDim; iDim++)
+         WallDistMod += WallDist[iDim]*WallDist[iDim];
+       WallDistMod = sqrt(WallDistMod);
+
+       /*--- Compute dual-grid area and boundary normal ---*/
+
+       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+       Area = 0.0;
+       for (iDim = 0; iDim < nDim; iDim++)
+         Area += Normal[iDim]*Normal[iDim];
+       Area = sqrt (Area);
+
+       for (iDim = 0; iDim < nDim; iDim++)
+         UnitNormal[iDim] = -Normal[iDim]/Area;
+
+       /*--- Get the velocity, pressure, and temperature at the nearest
+        (normal) interior point. ---*/
+
+       for (iDim = 0; iDim < nDim; iDim++)
+         Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
+       P_Normal  = nodes->GetPressure(Point_Normal);
+       T_Normal  = nodes->GetTemperature(Point_Normal);
+       mu_Normal = nodes->GetLaminarViscosity(Point_Normal);
+
+       /*--- Filter the input LES velocity (implement here)---*/
+
+       long curAbsTimeIter = (config->GetTimeIter() - config->GetRestart_Iter());
+       if (curAbsTimeIter > 0){
+
+         /*--- Old input LES velocity ---*/
+         su2double Vel_old[3] = {0.,0.,0.};
+         for (iDim = 0; iDim < nDim; iDim++)
+           Vel_old[iDim] = VelTimeFilter_WMLES[iMarker][iVertex][iDim];
+
+         /*--- Now filter the LES velocity ---*/
+         for (iDim = 0; iDim < nDim; iDim++)
+           Vel[iDim] = (1.0 - TimeFilter) * Vel_old[iDim] + TimeFilter * Vel[iDim];
+       }
+
+       /*--- Update input LES velocity if it is the 1st inner iteration---*/
+       if (config->GetInnerIter() == 0){
+         for (iDim = 0; iDim < nDim; iDim++)
+           VelTimeFilter_WMLES[iMarker][iVertex][iDim] = Vel[iDim];
+       }
+
+       /*--- Compute dimensional variables before calling the Wall Model ---*/
+       for (iDim = 0; iDim < nDim; iDim++ ){
+         Vel[iDim] *= config->GetVelocity_Ref();
+       }
+       P_Normal *= config->GetPressure_Ref();
+       T_Normal *= config->GetTemperature_Ref();
+       mu_Normal *= (config->GetPressure_Ref()/config->GetVelocity_Ref());
+
+       /*--- Compute the wall-parallel velocity at first point off the wall ---*/
+
+       VelNormal = 0.0;
+       for (iDim = 0; iDim < nDim; iDim++)
+         VelNormal += Vel[iDim] * UnitNormal[iDim];
+       for (iDim = 0; iDim < nDim; iDim++)
+         VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
+
+       VelTangMod = 0.0;
+       for (iDim = 0; iDim < nDim; iDim++)
+         VelTangMod += VelTang[iDim]*VelTang[iDim];
+       VelTangMod = sqrt(VelTangMod);
+       VelTangMod = max(VelTangMod,1.e-25);
+
+       su2double dirTan[3] = {0.0, 0.0, 0.0};
+       for(iDim = 0; iDim<nDim; iDim++) dirTan[iDim] = VelTang[iDim]/VelTangMod;
+
+       if (iRKStep == 0){
+         /* Compute the wall shear stress and heat flux vector using
+          the wall model. */
+         su2double tauWall, qWall, ViscosityWall, kOverCvWall;
+         WallModel->UpdateExchangeLocation(WallDistMod);
+         WallModel->WallShearStressAndHeatFlux(T_Normal, VelTangMod, mu_Normal, P_Normal,
+                                               Wall_HeatFlux, HeatFlux_Prescribed,
+                                               Wall_Temperature, Temperature_Prescribed,
+                                               GetFluidModel(), tauWall, qWall, ViscosityWall,
+                                               kOverCvWall);
+
+         /*--- Compute the non-dimensional values if necessary. ---*/
+         tauWall /= config->GetPressure_Ref();
+         qWall   /= (config->GetPressure_Ref() * config->GetVelocity_Ref());
+         ViscosityWall /= (config->GetPressure_Ref()/config->GetVelocity_Ref());
+         nodes->SetLaminarViscosity(iPoint, ViscosityWall);
+
+         /*--- Set tau wall value and flag for flux computation---*/
+         nodes->SetTauWall_Flag(iPoint,true);
+         nodes->SetTauWall(iPoint, tauWall);
+
+         /*--- Set tau wall value and heat flux for boundary conditions---*/
+         TauWall_WMLES[iMarker][iVertex] = tauWall;
+         HeatFlux_WMLES[iMarker][iVertex] = qWall;
+         for (iDim = 0; iDim < nDim; iDim++)
+           FlowDirTan_WMLES[iMarker][iVertex][iDim] = dirTan[iDim];
+
+       }
+     }
+   }
+ }
 }

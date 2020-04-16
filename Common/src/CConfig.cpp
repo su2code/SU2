@@ -2690,6 +2690,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
+  /* DESCRIPTION: DES Constant */
+  addDoubleOption("TIMEFILTER_WMLES", TimeFilter_WMLES, 1.0);
+
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
   addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
 
@@ -3182,17 +3185,32 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    definition for the wall founctions ---*/
 
   Wall_Functions = false;
+  Wall_Models    = false;
   if (nMarker_WallFunctions > 0) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
-      if (Kind_WallFunctions[iMarker] != NO_WALL_FUNCTION)
-        Wall_Functions = true;
-
-      if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == SCALABLE_WALL_FUNCTION)
-        || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
-
-        SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
-
+      if (Kind_WallFunctions[iMarker] == STANDARD_WALL_FUNCTION){
+        Wall_Functions = true; break;
+      }
+      else if (Kind_WallFunctions[iMarker] == LOGARITHMIC_WALL_MODEL ||
+               Kind_WallFunctions[iMarker] == EQUILIBRIUM_WALL_MODEL){
+        Wall_Models = true; break;
+      }
     }
+  }
+
+  if (Wall_Models && TimeMarching == NO){
+    SU2_MPI::Error("TIME_MARCHING must be different than NO with using WMLES", CURRENT_FUNCTION);
+  }
+
+  if (Wall_Models && Kind_Turb_Model != NONE){
+    SU2_MPI::Error("KIND_TURB_MODEL must be NONE if using WMLES", CURRENT_FUNCTION);
+  }
+
+  /* Check for the correct use of SGS Models */
+
+  if ((Kind_Turb_Model != NONE) && (Kind_SGS_Model != NO_SGS_MODEL) && (TimeMarching != NO)){
+    if (Kind_Solver!=NAVIER_STOKES)
+      SU2_MPI::Error("SGS models are only available in the NAVIER STOKES solver.", CURRENT_FUNCTION);
   }
 
   /*--- Fixed CM mode requires a static movement of the grid ---*/
@@ -5433,6 +5451,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
+        cout << "Subgrid Scale model: ";
+        switch (Kind_SGS_Model) {
+          case NO_SGS_MODEL: cout << "No SGS Model" << endl; break;
+          case IMPLICIT_LES: cout << "Implicit LES" << endl; break;
+          case SMAGORINSKY:  cout << "Smagorinsky " << endl; break;
+          case WALE:         cout << "WALE"         << endl; break;
+          case VREMAN:       cout << "VREMAN"         << endl; break;
+        }
         break;
       case RANS:     case DISC_ADJ_RANS:
       case INC_RANS: case DISC_ADJ_INC_RANS:

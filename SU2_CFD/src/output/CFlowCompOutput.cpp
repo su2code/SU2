@@ -339,6 +339,16 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
+  if (config->GetKind_Solver() == NAVIER_STOKES){
+    switch (config->GetKind_SGS_Model()) {
+      case VREMAN: case WALE: case SMAGORINSKY:
+        AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
+        break;
+      case NONE: case IMPLICIT_LES:
+        break;
+    }
+  }
+
   if (config->GetKind_Solver() == RANS) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
@@ -410,8 +420,13 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
   }
 
+  // Wall functions
+  if(config->GetWall_Functions()||config->GetWall_Models()){
+    AddVolumeOutput("TAU_WALL", "Tau_wall", "WALL_FUNCTION", "Shear stress at the wall as predicted by the wall function");
+  }
+
   if (config->GetTime_Domain()){
-    SetTimeAveragedFields();
+    SetTimeAveragedFields(config);
   }
 }
 
@@ -475,6 +490,16 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
+  }
+
+  if (config->GetKind_Solver() == NAVIER_STOKES){
+    switch (config->GetKind_SGS_Model()) {
+      case VREMAN: case WALE: case SMAGORINSKY:
+        SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
+        break;
+      case NONE: case IMPLICIT_LES:
+        break;
+    }
   }
 
   if (config->GetKind_Solver() == RANS) {
@@ -549,8 +574,12 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
   }
 
+  if(config->GetWall_Functions() || config->GetWall_Models()){
+    SetVolumeOutputValue("TAU_WALL", iPoint, Node_Flow->GetTauWall(iPoint));
+  }
+
   if (config->GetTime_Domain()){
-    LoadTimeAveragedData(iPoint, Node_Flow);
+    LoadTimeAveragedData(iPoint, Node_Flow, config);
   }
 }
 

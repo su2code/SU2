@@ -2854,7 +2854,7 @@ bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool f
   return false || force_writing;
 }
 
-void CFlowOutput::SetTimeAveragedFields(){
+void CFlowOutput::SetTimeAveragedFields(CConfig *config){
   AddVolumeOutput("MEAN_DENSITY", "MeanDensity", "TIME_AVERAGE", "Mean density");
   AddVolumeOutput("MEAN_VELOCITY-X", "MeanVelocity_x", "TIME_AVERAGE", "Mean velocity x-component");
   AddVolumeOutput("MEAN_VELOCITY-Y", "MeanVelocity_y", "TIME_AVERAGE", "Mean velocity y-component");
@@ -2878,9 +2878,13 @@ void CFlowOutput::SetTimeAveragedFields(){
     AddVolumeOutput("UWPRIME", "w'u'", "TIME_AVERAGE", "Mean Reynolds-stress component w'u'");
     AddVolumeOutput("VWPRIME", "w'v'", "TIME_AVERAGE", "Mean Reynolds-stress component w'v'");
   }
+
+  if (config->GetWall_Models() || config->GetWall_Functions()){
+    AddVolumeOutput("MEAN_TAUWALL_WM",  "MeanTauWall_WM",   "TIME_AVERAGE", "Shear stress at the wall as predicted by the wall function/model");
+  }
 }
 
-void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flow){
+void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flow, CConfig *config){
   SetAvgVolumeOutputValue("MEAN_DENSITY", iPoint, Node_Flow->GetDensity(iPoint));
   SetAvgVolumeOutputValue("MEAN_VELOCITY-X", iPoint, Node_Flow->GetVelocity(iPoint,0));
   SetAvgVolumeOutputValue("MEAN_VELOCITY-Y", iPoint, Node_Flow->GetVelocity(iPoint,1));
@@ -2919,5 +2923,9 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flo
     SetVolumeOutputValue("WWPRIME", iPoint, -(wmean*wmean - wwmean));
     SetVolumeOutputValue("UWPRIME", iPoint, -(umean*wmean - uwmean));
     SetVolumeOutputValue("VWPRIME",  iPoint, -(vmean*wmean - vwmean));
+  }
+
+  if (config->GetWall_Models() || config->GetWall_Functions()){
+    SetAvgVolumeOutputValue("MEAN_TAUWALL_WM", iPoint, Node_Flow->GetTauWall(iPoint));
   }
 }

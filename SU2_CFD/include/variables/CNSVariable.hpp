@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -45,6 +45,7 @@ private:
   VectorType DES_LengthScale; /*!< \brief DES Length Scale. */
   VectorType Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
   VectorType Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
+  VectorType Tau_Wall_Flag;   /*!< \brief Boolean for the wall function calculation. */
 
 public:
   /*!
@@ -189,6 +190,17 @@ public:
    * \return Value of the wall shear stress computed by a wall function.
    */
   inline su2double GetTauWall(unsigned long iPoint) const override { return Tau_Wall(iPoint); }
+
+  /*!
+   * \brief Set the flag to use (or not) the wall shear stress computed by a wall function.
+   */
+  inline void SetTauWall_Flag(unsigned long iPoint,  bool val_tau_wall_flag) override { Tau_Wall_Flag(iPoint) = val_tau_wall_flag; }
+
+  /*!
+   * \brief Get the flag  to use (or not) the the wall shear stress computed by a wall function.
+   * \return Flag of the wall shear stress computed by a wall function.
+   */
+  inline bool GetTauWall_Flag(unsigned long iPoint) const override { return Tau_Wall_Flag(iPoint); }
 
   /*!
    * \brief Get the DES length scale

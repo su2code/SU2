@@ -2686,6 +2686,10 @@ public:
 
   inline virtual su2double GetTauWall(unsigned long iPoint) const { return 0.0; }
 
+  inline virtual void SetTauWall_Flag(unsigned long iPoint, bool val_tau_wall_flag) { }
+
+  inline virtual bool GetTauWall_Flag(unsigned long iPoint) const { return false; }
+
   inline virtual void SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
                                         const su2double* Vorticity, su2double LaminarViscosity) {}
 

@@ -148,6 +148,13 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case DIELEC_BOUNDARY:
         solver_container[MainSolver]->BC_Dielec(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
+
+      case ISOTHERMAL: case HEAT_FLUX:
+      if ( (config->GetWall_Models()) && (MainSolver == FLOW_SOL) && (config->GetKind_Regime() == COMPRESSIBLE) ) {
+        solver_container[MainSolver]->BC_WallModel(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+      }
+      break;
+
     }
   }
 
@@ -156,10 +163,14 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case ISOTHERMAL:
-        solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        if (!config->GetWall_Models()){
+          solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        }
         break;
       case HEAT_FLUX:
-        solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        if (!config->GetWall_Models()){
+          solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        }
         break;
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);

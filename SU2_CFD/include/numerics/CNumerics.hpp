@@ -1242,6 +1242,13 @@ public:
   inline virtual void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) { }
 
   /*!
+   * \brief Set the value of the bollean flag to use (or not) the wall shear stress from the wall function.
+   * \param[in] val_tauwallflag_i - Flag for Tauwall at point i
+   * \param[in] val_tauwallflag_j - Flag for Tauwall at point j
+   */
+  inline virtual void SetTauWall_Flag(bool val_tauwallflag_i, bool val_tauwallflag_j) { }
+
+  /*!
    * \brief - Calculate the central/upwind blending function for a face
    *
    * At its simplest level, this function will calculate the average

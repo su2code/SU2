@@ -63,6 +63,7 @@ protected:
   dist_ij_2,                              /*!< \brief Length of the edge and face, squared */
   Edge_Vector[MAXNDIM] = {0.0},           /*!< \brief Vector from point i to point j. */
   *Proj_Mean_GradPrimVar_Edge = nullptr;  /*!< \brief Inner product of the Mean gradient and the edge vector. */
+  bool TauWallFlag_i, TauWallFlag_j;      /*!< \brief Flag for Wall shear stress at point i and j (wall functions/models). */
 
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
@@ -224,6 +225,18 @@ public:
     TauWall_i = val_tauwall_i;
     TauWall_j = val_tauwall_j;
   }
+
+
+  /*!
+   * \brief Set the value of the bollean flag to use (or not) the wall shear stress from the wall function.
+   * \param[in] val_tauwallflag_i - Flag for Tauwall at point i
+   * \param[in] val_tauwallflag_j - Flag for Tauwall at point j
+   */
+  inline void SetTauWall_Flag(bool val_tauwallflag_i, bool val_tauwallflag_j) override {
+    TauWallFlag_i = val_tauwallflag_i;
+    TauWallFlag_j = val_tauwallflag_j;
+  }
+
 
   /*!
    * \brief Calculate the viscous + turbulent stress tensor
