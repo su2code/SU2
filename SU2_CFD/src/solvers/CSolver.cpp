@@ -5238,6 +5238,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
                 +varFlo->GetHessian(iPoint, iVar, yyi))*varAdjFlo->GetSolution(iPoint, iVar);
     }
   }
+  factor *= kappa_2*sensor;
   
   for (iDim = 0; iDim < nDim; ++iDim) {
     TmpWeights[iDim+1] += -u[iDim]*(1./(r*sqrt(v2)) - 1./r*sqrt(g*R/(cv*(4*e-2*v2))))*factor;
