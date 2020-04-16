@@ -5249,7 +5249,8 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   factor *= kappa_2*sensor;
   
   for (iDim = 0; iDim < nDim; ++iDim) {
-    TmpWeights[iDim+1] += -u[iDim]/r*(1./sqrt(v2) - sqrt(g*R/(cv*(4*e-2*v2))))*factor;
+    TmpWeights[iDim+1] += u[iDim]/r*sqrt(g*R/(cv*(4*e-2*v2)))*factor;
+    if (sqrt(v2) > 1.0e-10) TmpWeights[iDim+1] += -u[iDim]/(r*sqrt(v2))*factor;
     TmpWeights[0]      += -u[iDim]*TmpWeights[iDim+1];
   }
   TmpWeights[nVarFlo-1] += -1./r*sqrt(g*R/(cv*(4*e-2*v2)))*factor;
