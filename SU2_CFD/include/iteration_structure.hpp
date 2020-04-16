@@ -296,12 +296,6 @@ public:
                                  unsigned short iZone,
                                  unsigned short iInst){}
 
-  virtual void InitializeAdjoint_CrossTerm(CSolver *****solver,
-                                 CGeometry ****geometry,
-                                 CConfig **config,
-                                 unsigned short iZone,
-                                 unsigned short iInst){}
-
   virtual void RegisterInput(CSolver *****solver,
                              CGeometry ****geometry,
                              CConfig** config,
@@ -1220,16 +1214,6 @@ public:
                       unsigned short iInst);
 
   /*!
-   * \brief Initializes the adjoints of the output variables of the meanflow iteration - without the contribution of the objective function
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] iInst - Index of the instance.
-   */
-  void InitializeAdjoint_CrossTerm(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst);
-
-  /*!
    * \brief Record a single iteration of the direct mean flow system.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration - Container vector with all the integration methods.
@@ -1498,16 +1482,6 @@ public:
    * \param[in] iInst - Index of the zone.
    */
   void InitializeAdjoint(CSolver *****solver, CGeometry ****geometry, CConfig** config, unsigned short iZone, unsigned short iInst);
-
-  /*!
-   * \brief Initializes the adjoints of the output variables of the FEM iteration - without the contribution of the objective function
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] iInst - Index of the zone.
-   */
-  void InitializeAdjoint_CrossTerm(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short iInst);
 
   /*!
    * \brief Record a single iteration of the direct FEM system.
