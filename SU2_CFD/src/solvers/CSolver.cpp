@@ -5340,7 +5340,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   TmpWeights[nVarFlo-1] += 1./r*sqrt(g*R/(cv*(4*e-2*v2)));
   TmpWeights[0]         += -e*TmpWeights[nVarFlo-1];
   
-  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[1][iVar] += TmpWeights[iVar]*factor;
+  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[1][iVar] -= TmpWeights[iVar]*factor;
   
   //--- Second-order terms (errors due to eigenvalue)
   if (eps_4 > 1.0e-10) {
@@ -5379,9 +5379,9 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
                *(varAdjFlo->GetHessian(iPoint, (nVarFlo-1), xxi)
                 +varAdjFlo->GetHessian(iPoint, (nVarFlo-1), yyi));
     }
-    factor *= eps_4*pow(vol/area,2.);
+    factor *= eps_4*pow(vol/area,3.);
     
-    for (iVar = 0; iVar < nVarFlo; ++iVar) weights[2][iVar] += TmpWeights[iVar]*factor;
+    for (iVar = 0; iVar < nVarFlo; ++iVar) weights[2][iVar] -= TmpWeights[iVar]*factor;
   }
   
 //  //--- Second-order terms (errors due to second-order JST dissipation)
