@@ -5329,7 +5329,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   TmpWeights[nVarFlo-1] += 1./r*sqrt(g*R/(cv*(4*e-2*v2)))*factor;
   TmpWeights[0]         += -e*TmpWeights[nVarFlo-1];
   
-  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[0][iVar] += TmpWeights[iVar];
+  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[0][iVar] -= TmpWeights[iVar];
   fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
   
   //--- Second-order terms (errors due to eigenvalue)
@@ -5379,7 +5379,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
     TmpWeights[nVarFlo-1] += 1./r*sqrt(g*R/(cv*(4*e-2*v2)))*factor;
     TmpWeights[0]         += -e*TmpWeights[nVarFlo-1];
     
-    for (iVar = 0; iVar < nVarFlo; ++iVar) weights[2][iVar] += TmpWeights[iVar];
+    for (iVar = 0; iVar < nVarFlo; ++iVar) weights[2][iVar] -= TmpWeights[iVar];
     fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
   }
   
