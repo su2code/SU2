@@ -108,7 +108,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Root-mean square residual of the adjoint Velocity z-component.
   AddHistoryOutput("RMS_ADJ_VELOCITY-Z", "rms[A_W]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint Velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  AddHistoryOutput("RMS_ADJ_TEMPERATURE", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", " Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("RMS_ADJ_TEMPERATURE", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
   if (!config->GetFrozen_Visc_Disc() || !config->GetFrozen_Visc_Cont()){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:

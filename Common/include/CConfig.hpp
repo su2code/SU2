@@ -61,6 +61,7 @@ using namespace std;
 
 class CConfig {
 private:
+  bool DirectRunActive = false; /*!< \brief Indicates whether currently the primal is taped during discrete adjoint run.*/
   SU2_MPI::Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
   int rank, size;                 /*!< \brief MPI rank and size.*/
   bool base_config;
@@ -9473,5 +9474,8 @@ public:
    * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
    */
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
+
+  void SetDirectRunActive() { DirectRunActive = true; }
+  bool GetDirectRunActive() const { return DirectRunActive; }
 
 };

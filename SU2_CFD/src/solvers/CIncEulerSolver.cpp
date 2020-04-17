@@ -18,7 +18,7 @@
  *
  * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
@@ -6021,7 +6021,8 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
           fully neglected if the pressure drop is converged. And for all other cases it should be minor difference at 
           best ---*/
     if((nZone==1 && InnerIter > 0) ||
-       (nZone>1  && OuterIter > 0))
+       (nZone>1  && OuterIter > 0) ||
+       (config->GetDirectRunActive())) // Otherwise this is not done during the adjoint run.
       config->SetStreamwise_Periodic_PressureDrop(Pressure_Drop_new);
     
     /*--- Output the new value of Delta P and ddp ---*/

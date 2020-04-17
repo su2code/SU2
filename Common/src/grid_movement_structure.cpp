@@ -1632,9 +1632,10 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
    plane, internal and periodic bc the receive boundaries and periodic boundaries. ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
+    if ((//(config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-         (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY))) {
+         (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -1671,7 +1672,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   /*--- Set to zero displacements of the normal component for the symmetry plane condition ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) && false ) {
       
       su2double *Coord_0 = NULL;
       for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;

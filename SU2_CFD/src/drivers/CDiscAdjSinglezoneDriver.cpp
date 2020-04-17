@@ -400,6 +400,8 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
 void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
+  config->SetDirectRunActive();
+
   /*--- Mesh movement ---*/
 
   direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);
@@ -426,7 +428,7 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
 
   /*--- Print the residuals of the direct iteration that we just recorded ---*/
   /*--- This routine should be moved to the output, once the new structure is in place ---*/
-  if ((rank == MASTER_NODE) && (kind_recording == MainVariables)){
+  if ((rank == MASTER_NODE)){ //&& (kind_recording == MainVariables)){
 
     switch (config->GetKind_Solver()) {
 

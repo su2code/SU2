@@ -579,7 +579,7 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
     Streamwise_Coord_Vector[iDim] = config->GetPeriodicTranslation(0)[iDim];
 
   /*--- Compute square of the distance between the 2 periodic surfaces via inner product with itself:
-        dot_prod(t*t) = (|t|_2)^2 ---*/
+        dot_prod(t*t) = (|t|_2)^2  ---*/
   norm2_translation = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     norm2_translation += Streamwise_Coord_Vector[iDim] * Streamwise_Coord_Vector[iDim];
@@ -595,7 +595,7 @@ void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual,
   delta_p             = config->GetStreamwise_Periodic_PressureDrop();
   massflow            = config->GetStreamwise_Periodic_MassFlow();
   integrated_heatflow = config->GetStreamwise_Periodic_IntegratedHeatFlow();
-
+  //cout << "Delta p: " << delta_p << endl;
   /*--- Initialize the Jacobian contribution to zero ---*/
   if (implicit) {
     for (iVar=0; iVar < nVar; iVar++)
