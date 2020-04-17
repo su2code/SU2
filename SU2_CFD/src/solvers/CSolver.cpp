@@ -5320,27 +5320,27 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   eps_2 = kappa_2*sensor;
   eps_4 = max(0., kappa_4-eps_2);
   
-  //--- First-order terms (errors due to eigenvalue)
-  vector<su2double> TmpWeights(nVarFlo, 0.0);
-  su2double factor = 0.;
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    for (iVar = 0; iVar < nVarFlo-1; ++iVar) {
-      factor += varFlo->GetGradient_Adaptation(iPoint, iVar, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, iVar, iDim);
-    }
-    //--- Energy dissipation uses enthalpy
-    factor += varFlo->GetGradientAuxVar_Adaptation(iPoint, 0, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
-  }
-  factor *= eps_2*vol/area;
-  
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    TmpWeights[iDim+1] += -u[iDim]/r*sqrt(g*R/(cv*(4*e-2*v2)));
-    if (sqrt(v2) > 1.0e-10) TmpWeights[iDim+1] += u[iDim]/(r*sqrt(v2));
-    TmpWeights[0]      += -u[iDim]*TmpWeights[iDim+1];
-  }
-  TmpWeights[nVarFlo-1] += 1./r*sqrt(g*R/(cv*(4*e-2*v2)));
-  TmpWeights[0]         += -e*TmpWeights[nVarFlo-1];
-  
-  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[1][iVar] -= TmpWeights[iVar]*factor;
+//  //--- First-order terms (errors due to eigenvalue)
+//  vector<su2double> TmpWeights(nVarFlo, 0.0);
+//  su2double factor = 0.;
+//  for (iDim = 0; iDim < nDim; ++iDim) {
+//    for (iVar = 0; iVar < nVarFlo-1; ++iVar) {
+//      factor += varFlo->GetGradient_Adaptation(iPoint, iVar, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, iVar, iDim);
+//    }
+//    //--- Energy dissipation uses enthalpy
+//    factor += varFlo->GetGradientAuxVar_Adaptation(iPoint, 0, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
+//  }
+//  factor *= eps_2*vol/area;
+//
+//  for (iDim = 0; iDim < nDim; ++iDim) {
+//    TmpWeights[iDim+1] += -u[iDim]/r*sqrt(g*R/(cv*(4*e-2*v2)));
+//    if (sqrt(v2) > 1.0e-10) TmpWeights[iDim+1] += u[iDim]/(r*sqrt(v2));
+//    TmpWeights[0]      += -u[iDim]*TmpWeights[iDim+1];
+//  }
+//  TmpWeights[nVarFlo-1] += 1./r*sqrt(g*R/(cv*(4*e-2*v2)));
+//  TmpWeights[0]         += -e*TmpWeights[nVarFlo-1];
+//
+//  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[1][iVar] += TmpWeights[iVar]*factor;
   
 //  //--- Second-order terms (errors due to eigenvalue)
 //  if (eps_4 > 1.0e-10) {
@@ -5389,50 +5389,50 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   if(nDim == 3) {
     const unsigned short ri = 0, rui = 1, rvi = 2, rwi = 3, rei = 4,
                          xxi = 0, yyi = 3, zzi = 5;
-    weights[2][0] -= -eps_2*(varAdjFlo->GetHessian(iPoint, ri, xxi)
+    weights[2][0] += -eps_2*(varAdjFlo->GetHessian(iPoint, ri, xxi)
                             +varAdjFlo->GetHessian(iPoint, ri, yyi)
                             +varAdjFlo->GetHessian(iPoint, ri, zzi))
                      -eps_2*(g-1)*v2/2.*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                         +varAdjFlo->GetHessian(iPoint, rei, yyi)
                                         +varAdjFlo->GetHessian(iPoint, rei, zzi));
-    weights[2][1] -= -eps_2*(varAdjFlo->GetHessian(iPoint, rui, xxi)
+    weights[2][1] += -eps_2*(varAdjFlo->GetHessian(iPoint, rui, xxi)
                             +varAdjFlo->GetHessian(iPoint, rui, yyi)
                             +varAdjFlo->GetHessian(iPoint, rui, zzi))
                      +eps_2*(g-1)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                        +varAdjFlo->GetHessian(iPoint, rei, yyi)
                                        +varAdjFlo->GetHessian(iPoint, rei, zzi));
-    weights[2][2] -= -eps_2*(varAdjFlo->GetHessian(iPoint, rvi, xxi)
+    weights[2][2] += -eps_2*(varAdjFlo->GetHessian(iPoint, rvi, xxi)
                             +varAdjFlo->GetHessian(iPoint, rvi, yyi)
                             +varAdjFlo->GetHessian(iPoint, rvi, zzi))
                      +eps_2*(g-1)*u[1]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                        +varAdjFlo->GetHessian(iPoint, rei, yyi)
                                        +varAdjFlo->GetHessian(iPoint, rei, zzi));
-    weights[2][3] -= -eps_2*(varAdjFlo->GetHessian(iPoint, rwi, xxi)
+    weights[2][3] += -eps_2*(varAdjFlo->GetHessian(iPoint, rwi, xxi)
                             +varAdjFlo->GetHessian(iPoint, rwi, yyi)
                             +varAdjFlo->GetHessian(iPoint, rwi, zzi))
                      +eps_2*(g-1)*u[2]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                        +varAdjFlo->GetHessian(iPoint, rei, yyi)
                                        +varAdjFlo->GetHessian(iPoint, rei, zzi));
-    weights[2][4] -= -eps_2*g*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+    weights[2][4] += -eps_2*g*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                               +varAdjFlo->GetHessian(iPoint, rei, yyi)
                               +varAdjFlo->GetHessian(iPoint, rei, zzi));
   }
   else {
     const unsigned short ri = 0, rui = 1, rvi = 2, rei = 3,
                          xxi = 0, yyi = 2;
-    weights[2][0] -= -eps_2*(varAdjFlo->GetHessian(iPoint, ri, xxi)
+    weights[2][0] += -eps_2*(varAdjFlo->GetHessian(iPoint, ri, xxi)
                             +varAdjFlo->GetHessian(iPoint, ri, yyi))
                      -eps_2*(g-1)*v2/2.*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                         +varAdjFlo->GetHessian(iPoint, rei, yyi));
-    weights[2][1] -= -eps_2*(varAdjFlo->GetHessian(iPoint, rui, xxi)
+    weights[2][1] += -eps_2*(varAdjFlo->GetHessian(iPoint, rui, xxi)
                             +varAdjFlo->GetHessian(iPoint, rui, yyi))
                      +eps_2*(g-1)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                        +varAdjFlo->GetHessian(iPoint, rei, yyi));
-    weights[2][2] -= -eps_2*(varAdjFlo->GetHessian(iPoint, rvi, xxi)
+    weights[2][2] += -eps_2*(varAdjFlo->GetHessian(iPoint, rvi, xxi)
                             +varAdjFlo->GetHessian(iPoint, rvi, yyi))
                      +eps_2*(g-1)*u[1]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                        +varAdjFlo->GetHessian(iPoint, rei, yyi));
-    weights[2][3] -= -eps_2*g*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+    weights[2][3] += -eps_2*g*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                               +varAdjFlo->GetHessian(iPoint, rei, yyi));
   }
 
