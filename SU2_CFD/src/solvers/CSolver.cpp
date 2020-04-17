@@ -5264,7 +5264,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   //--- Flow variables and JST coefficients
   su2double r, u[3], e, c, v2,
             R, cv, cp, g,
-  kappa_2, kappa_4, sensor, lambda, eps_2, eps_4;// area, vol;
+  kappa_2, kappa_4, sensor, lambda, eps_2, eps_4, vol;
 
   r = varFlo->GetDensity(iPoint);
   u[0] = varFlo->GetVelocity(iPoint, 0);
@@ -5295,7 +5295,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
 //    for (iDim = 0; iDim < nDim; ++iDim) sum += normal[iDim]*normal[iDim];
 //    area += sqrt(sum);
 //  }
-//  vol = geometry->node[iPoint]->GetVolume();
+  vol = geometry->node[iPoint]->GetVolume();
   
 //  eps_2 = kappa_2*sensor*lambda*vol/area;
   eps_2 = kappa_2*sensor;
@@ -5331,20 +5331,21 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   
   //--- Second-order terms (errors due to eigenvalue)
   if (eps_4 > 1.0e-10) {
+    factor = 0.;
     for (iVar = 0; iVar < nVarFlo; ++iVar) {
       if (nDim == 3) {
         const unsigned short xxi = 0, yyi = 3, zzi = 5;
         factor += varFlo->GetUndivided_Laplacian(iPoint,iVar)*(varAdjFlo->GetHessian(iPoint, iVar, xxi)
-                                                               +varAdjFlo->GetHessian(iPoint, iVar, yyi)
-                                                               +varAdjFlo->GetHessian(iPoint, iVar, zzi));
+                                                              +varAdjFlo->GetHessian(iPoint, iVar, yyi)
+                                                              +varAdjFlo->GetHessian(iPoint, iVar, zzi));
       }
       else {
         const unsigned short xxi = 0, yyi = 2;
         factor += varFlo->GetUndivided_Laplacian(iPoint,iVar)*(varAdjFlo->GetHessian(iPoint, iVar, xxi)
-                                                               +varAdjFlo->GetHessian(iPoint, iVar, yyi));
+                                                              +varAdjFlo->GetHessian(iPoint, iVar, yyi));
       }
     }
-    factor *= eps_4;
+    factor *= eps_4*vol;
     
     for (iDim = 0; iDim < nDim; ++iDim) {
       TmpWeights[iDim+1] += -u[iDim]/r*sqrt(g*R/(cv*(4*e-2*v2)))*factor;
