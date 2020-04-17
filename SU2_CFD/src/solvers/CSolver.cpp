@@ -3133,8 +3133,8 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config) {
   computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
                             *config, gradient, 0, nVar, hessian);
   
-//  //--- compute boundary Hessians from volume Hessians
-//  CorrectBoundHessian(geometry, config);
+  //--- compute boundary Hessians from volume Hessians
+  CorrectBoundHessian(geometry, config);
 }
 
 void CSolver::SetAuxVar_Hessian_GG(CGeometry *geometry, CConfig *config) {
@@ -4999,7 +4999,8 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
           
           //--- Correct if any of the neighbors belong to the volume
           unsigned short iNeigh, counter = 0;
-          su2double hess[nMetr*nVar], dist = 0., distsum = 0.;
+          su2double hess[nMetr*nVar];
+//          su2double dist = 0., distsum = 0.;
           for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             if(!geometry->node[jPoint]->GetBoundary()) {
@@ -5012,18 +5013,18 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
                     hess[i+iMetr] = 0.;
                   }// iMetr
                 }// if counter
-                dist = 0.;
-                for(iDim = 0; iDim < nDim; iDim++) {
-                  const su2double coord0 = geometry->node[iPoint]->GetCoord(iDim);
-                  const su2double coord1 = geometry->node[jPoint]->GetCoord(iDim);
-                  dist += (coord1-coord0)*(coord1-coord0);
-                }// iDim
+//                dist = 0.;
+//                for(iDim = 0; iDim < nDim; iDim++) {
+//                  const su2double coord0 = geometry->node[iPoint]->GetCoord(iDim);
+//                  const su2double coord1 = geometry->node[jPoint]->GetCoord(iDim);
+//                  dist += (coord1-coord0)*(coord1-coord0);
+//                }// iDim
                 for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                  // hess[i+iMetr] += base_nodes->GetHessian(jPoint, i+iMetr);
-                  hess[i+iMetr] += base_nodes->GetHessian(jPoint, iVar, iMetr)/max(dist,1e-10);
+                   hess[i+iMetr] += base_nodes->GetHessian(jPoint, iVar, iMetr);
+//                  hess[i+iMetr] += base_nodes->GetHessian(jPoint, iVar, iMetr)/max(dist,1e-10);
                 }// iMetr
               }// iVar
-              distsum += 1./max(dist,1e-10);
+//              distsum += 1./max(dist,1e-10);
               counter ++;
             }// if boundary
           }// iNeigh
@@ -5031,8 +5032,8 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
             for(iVar = 0; iVar < nVar; iVar++){
               const unsigned short i = iVar*nMetr;
               for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                // base_nodes->SetHessian(iPoint, i+iMetr, hess[i+iMetr]/su2double(counter));
-                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/distsum);
+                 base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter));
+//                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/distsum);
               }// iMetr
             }// iVar
           }// if counter
