@@ -5259,7 +5259,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
   
-  unsigned short iVar, iDim, iNeigh;
+  unsigned short iVar, iDim, iNeigh, iMarker;
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   //--- Flow variables and JST coefficients
@@ -5288,15 +5288,32 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   sensor  = varFlo->GetSensor(iPoint);
   lambda  = sqrt(v2)+c;
   
-    area = 0.;
-    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
-      const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-      const unsigned long iEdge = geometry->FindEdge(iPoint, jPoint);
-      su2double *normal = geometry->edge[iEdge]->GetNormal();
-      su2double sum = 0.;
-      for (iDim = 0; iDim < nDim; ++iDim) sum += normal[iDim]*normal[iDim];
-      area += sqrt(sum);
+  area = 0.;
+  for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
+    const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+    const unsigned long iEdge = geometry->FindEdge(iPoint, jPoint);
+    su2double *normal = geometry->edge[iEdge]->GetNormal();
+    su2double sum = 0.;
+    for (iDim = 0; iDim < nDim; ++iDim) sum += normal[iDim]*normal[iDim];
+    area += sqrt(sum);
+  }
+  if (geometry->node[iPoint]->GetPhysicalBoundary()) {
+    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      if ((iVertex != -1) &&
+          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+           config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+           config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+           config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+           config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)){
+        su2double *normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        su2double sum = 0.;
+        for (iDim = 0; iDim < nDim; ++iDim) sum += normal[iDim]*normal[iDim];
+        area += sqrt(sum);
+        break;
+      }
     }
+  }
   
   vol = geometry->node[iPoint]->GetVolume();
   
