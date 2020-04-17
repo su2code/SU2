@@ -284,11 +284,9 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
 
 void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
-  unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID, iElem;
-  unsigned short iNodes, nNodes = 0;
+  unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID;
   unsigned short iMarker, iDim;
   su2double dist, MaxDistance_Local, MinDistance_Local;
-  su2double nodeDist, ElemDist;
   int rankID;
 
   /*--- Initialize min and max distance ---*/
@@ -345,8 +343,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
     /*--- No solid wall boundary nodes in the entire mesh.
      Set the wall distance to zero for all nodes. ---*/
 
-    for (iPoint=0; iPoint<geometry->GetnPoint(); ++iPoint)
-      geometry->node[iPoint]->SetWall_Distance(0.0);
+    geometry->SetWallDistance(0.0);
   }
   else {
 
@@ -375,29 +372,34 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
   }
 
+  SU2_OMP_PARALLEL
+  {
   /*--- Normalize distance from 0 to 1 ---*/
-  for (iPoint=0; iPoint < nPoint; ++iPoint) {
-    nodeDist = nodes->GetWallDistance(iPoint)/MaxDistance;
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+    su2double nodeDist = nodes->GetWallDistance(iPoint)/MaxDistance;
     nodes->SetWallDistance(iPoint,nodeDist);
   }
 
   /*--- Compute the element distances ---*/
-  for (iElem = 0; iElem < nElement; iElem++) {
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iElem = 0ul; iElem < nElement; iElem++) {
 
     int EL_KIND;
+    unsigned short nNodes = 0;
     GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
     /*--- Average the distance of the nodes in the element ---*/
 
-    ElemDist = 0.0;
-    for (iNodes = 0; iNodes < nNodes; iNodes++){
-      iPoint = geometry->elem[iElem]->GetNode(iNodes);
+    su2double ElemDist = 0.0;
+    for (auto iNode = 0u; iNode < nNodes; iNode++) {
+      auto iPoint = geometry->elem[iElem]->GetNode(iNode);
       ElemDist += nodes->GetWallDistance(iPoint);
     }
     ElemDist = ElemDist/su2double(nNodes);
 
     element[iElem].SetWallDistance(ElemDist);
-
+  }
   }
 
 }
@@ -461,28 +463,30 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   if (multizone) nodes->Set_BGSSolution_k();
 
-  /*--- Compute the stiffness matrix. ---*/
-  Compute_StiffMatrix(geometry[MESH_0], numerics, config);
-
-  /*--- Clean residual, we do not want an incremental solution. ---*/
-  SU2_OMP_PARALLEL
-  {
-    LinSysRes.SetValZero();
-  }
-
-  /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
-   Hence we still need a communication of the transformed coordinates, otherwise periodicity
-   is not maintained. ---*/
+  /*--- Capture a few MPI dependencies for AD. ---*/
   geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
   geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
 
-  /*--- In the same way, communicate the displacements in the solver to make sure the halo
-   nodes receive the correct value of the displacement. ---*/
   InitiateComms(geometry[MESH_0], config, SOLUTION);
   CompleteComms(geometry[MESH_0], config, SOLUTION);
 
   InitiateComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
   CompleteComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
+
+  /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
+
+  const bool ActiveTape = AD::TapeActive();
+  AD::StopRecording();
+
+  Compute_StiffMatrix(geometry[MESH_0], numerics, config);
+
+  if (ActiveTape) AD::StartRecording();
+
+  /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
+  SU2_OMP_PARALLEL
+  {
+    LinSysRes.SetValZero();
+  }
 
   /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
   SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
@@ -498,8 +502,10 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   UpdateDualGrid(geometry[MESH_0], config);
 
   /*--- Check for failed deformation (negative volumes). ---*/
-  /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh using the current coordinates. ---*/
+  /*--- This is not recorded as it does not influence the solution. ---*/
+  AD::StopRecording();
   SetMinMaxVolume(geometry[MESH_0], config, true);
+  if (ActiveTape) AD::StartRecording();
 
   /*--- The Grid Velocity is only computed if the problem is time domain ---*/
   if (time_domain) ComputeGridVelocity(geometry[MESH_0], config);
@@ -515,11 +521,10 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
 
   /*--- LinSysSol contains the absolute x, y, z displacements. ---*/
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      auto total_index = iPoint*nDim + iDim;
       /*--- Retrieve the displacement from the solution of the linear system ---*/
-      su2double val_disp = LinSysSol[total_index];
+      su2double val_disp = LinSysSol(iPoint, iDim);
       /*--- Store the displacement of the mesh node ---*/
       nodes->SetSolution(iPoint, iDim, val_disp);
       /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
@@ -529,14 +534,10 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
-   Hence we still need a communication of the transformed coordinates, otherwise periodicity
-   is not maintained. ---*/
+  /*--- Communicate the updated displacements and mesh coordinates. ---*/
   geometry->InitiateComms(geometry, config, COORDINATES);
   geometry->CompleteComms(geometry, config, COORDINATES);
 
-  /*--- In the same way, communicate the displacements in the solver to make sure the halo
-   nodes receive the correct value of the displacement. ---*/
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
 
@@ -665,6 +666,22 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
         (config->GetMarker_All_Moving(iMarker) == YES)) {
 
       BC_Deforming(geometry, numerics, config, iMarker);
+    }
+  }
+
+  /*--- Clamp far away nodes according to deform limit. ---*/
+  if ((config->GetDeform_Stiffness_Type() == SOLID_WALL_DISTANCE) &&
+      (config->GetDeform_Limit() < MaxDistance)) {
+
+    const su2double limit = config->GetDeform_Limit() / MaxDistance;
+
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      if (nodes->GetWallDistance(iPoint) <= limit) continue;
+
+      su2double zeros[MAXNVAR] = {0.0};
+      nodes->SetSolution(iPoint, zeros);
+      LinSysSol.SetBlock(iPoint, zeros);
+      Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
     }
   }
 
