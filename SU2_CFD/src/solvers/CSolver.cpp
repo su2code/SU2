@@ -3133,8 +3133,8 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config) {
   computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
                             *config, gradient, 0, nVar, hessian);
   
-//  //--- compute boundary Hessians from volume Hessians
-//  CorrectBoundHessian(geometry, config);
+  //--- compute boundary Hessians from volume Hessians
+  CorrectBoundHessian(geometry, config);
 }
 
 void CSolver::SetAuxVar_Hessian_GG(CGeometry *geometry, CConfig *config) {
@@ -5132,7 +5132,7 @@ void CSolver::ComputeMetric(CSolver   **solver,
     ConvectiveMetric(solver, geometry, config, iPoint, HessianWeights);
     
     //--- Scalar dissipation terms
-    if (cjst) DissipativeMetric(solver, geometry, config, iPoint, HessianWeights);
+//    if (cjst) DissipativeMetric(solver, geometry, config, iPoint, HessianWeights);
 
     //--- Viscous terms
     if (visc) ViscousMetric(solver, geometry, config, iPoint, HessianWeights);
