@@ -5259,13 +5259,14 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
   
-  unsigned short iVar, iDim;
+  unsigned short iVar, iDim, iNeigh;
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   //--- Flow variables and JST coefficients
   su2double r, u[3], e, c, v2,
             R, cv, cp, g,
-  kappa_2, kappa_4, sensor, lambda, eps_2, eps_4, vol;
+            kappa_2, kappa_4, sensor, lambda, eps_2, eps_4,
+            area, vol;
 
   r = varFlo->GetDensity(iPoint);
   u[0] = varFlo->GetVelocity(iPoint, 0);
@@ -5287,6 +5288,16 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   sensor  = varFlo->GetSensor(iPoint);
   lambda  = sqrt(v2)+c;
   
+    area = 0.;
+    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
+      const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      const unsigned long iEdge = geometry->FindEdge(iPoint, jPoint);
+      su2double *normal = geometry->edge[iEdge]->GetNormal();
+      su2double sum = 0.;
+      for (iDim = 0; iDim < nDim; ++iDim) sum += normal[iDim]*normal[iDim];
+      area += sqrt(sum);
+    }
+  
   vol = geometry->node[iPoint]->GetVolume();
   
   eps_2 = kappa_2*sensor;
@@ -5302,7 +5313,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
     //--- Energy dissipation uses enthalpy
     factor += varFlo->GetGradientAuxVar_Adaptation(iPoint, 0, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
   }
-  factor *= eps_2*vol;
+  factor *= eps_2*vol/area;
   
   for (iDim = 0; iDim < nDim; ++iDim) {
     TmpWeights[iDim+1] += -u[iDim]/r*sqrt(g*R/(cv*(4*e-2*v2)));
@@ -5351,7 +5362,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
                *(varAdjFlo->GetHessian(iPoint, (nVarFlo-1), xxi)
                 +varAdjFlo->GetHessian(iPoint, (nVarFlo-1), yyi));
     }
-    factor *= eps_4*vol;
+    factor *= eps_4*pow(vol/area,3.);
     
     for (iVar = 0; iVar < nVarFlo; ++iVar) weights[2][iVar] += TmpWeights[iVar]*factor;
   }
