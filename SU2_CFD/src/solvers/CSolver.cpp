@@ -5264,7 +5264,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   //--- Flow variables and JST coefficients
   su2double r, u[3], e, c, v2,
             R, cv, cp, g,
-  kappa_2, sensor, lambda, eps_2;// area, vol;
+  kappa_2, kappa_4, sensor, lambda, eps_2, eps_4;// area, vol;
 
   r = varFlo->GetDensity(iPoint);
   u[0] = varFlo->GetVelocity(iPoint, 0);
@@ -5282,6 +5282,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   cv = cp/g;
   
   kappa_2 = config->GetKappa_2nd_Flow();
+  kappa_4 = config->GetKappa_4th_Flow();
   sensor  = varFlo->GetSensor(iPoint);
   lambda  = sqrt(v2)+c;
   
@@ -5297,8 +5298,10 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
 //  vol = geometry->node[iPoint]->GetVolume();
   
 //  eps_2 = kappa_2*sensor*lambda*vol/area;
+  eps_2 = kappa_2*sensor;
+  eps_4 = max(0., kappa_4-eps_2);
   
-  //--- Zeroth-order terms (errors due to gradients of eigenvalue)
+  //--- Zeroth-order terms (errors due to eigenvalue)
   vector<su2double> TmpWeights(nVarFlo, 0.0);
   su2double factor = 0.;
 //  for (iDim = 0; iDim < nDim; iDim++) {
@@ -5313,7 +5316,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   for (iVar = 0; iVar < nVarFlo; ++iVar) {
     factor += -varFlo->GetUndivided_Laplacian(iPoint,iVar)*varAdjFlo->GetSolution(iPoint, iVar);
   }
-  factor *= kappa_2*sensor;
+  factor *= eps_2;
   
   for (iDim = 0; iDim < nDim; ++iDim) {
     TmpWeights[iDim+1] += -u[iDim]/r*sqrt(g*R/(cv*(4*e-2*v2)))*factor;
@@ -5325,6 +5328,35 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   
   for (iVar = 0; iVar < nVarFlo; ++iVar) weights[0][iVar] += TmpWeights[iVar];
   fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
+  
+  //--- Second-order terms (errors due to eigenvalue)
+  if (eps_4 > 1.0e-10) {
+    for (iVar = 0; iVar < nVarFlo; ++iVar) {
+      if (nDim == 3) {
+        const unsigned short xxi = 0, yyi = 3, zzi = 5;
+        factor += varFlo->GetUndivided_Laplacian(iPoint,iVar)*(varAdjFlo->GetHessian(iPoint, iVar, xxi)
+                                                               +varAdjFlo->GetHessian(iPoint, iVar, yyi)
+                                                               +varAdjFlo->GetHessian(iPoint, iVar, zzi));
+      }
+      else {
+        const unsigned short xxi = 0, yyi = 2;
+        factor += varFlo->GetUndivided_Laplacian(iPoint,iVar)*(varAdjFlo->GetHessian(iPoint, iVar, xxi)
+                                                               +varAdjFlo->GetHessian(iPoint, iVar, yyi));
+      }
+    }
+    factor *= eps_4;
+    
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      TmpWeights[iDim+1] += -u[iDim]/r*sqrt(g*R/(cv*(4*e-2*v2)))*factor;
+      if (sqrt(v2) > 1.0e-10) TmpWeights[iDim+1] += u[iDim]/(r*sqrt(v2))*factor;
+      TmpWeights[0]      += -u[iDim]*TmpWeights[iDim+1];
+    }
+    TmpWeights[nVarFlo-1] += 1./r*sqrt(g*R/(cv*(4*e-2*v2)))*factor;
+    TmpWeights[0]         += -e*TmpWeights[nVarFlo-1];
+    
+    for (iVar = 0; iVar < nVarFlo; ++iVar) weights[2][iVar] += TmpWeights[iVar];
+    fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
+  }
   
 //  //--- Second-order terms (errors due to second-order JST dissipation)
 //  if(nDim == 3) {
