@@ -5301,11 +5301,11 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if ((iVertex != -1) &&
-          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-           config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
-           config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
-           config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
-           config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)){
+          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+          (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)){
         su2double *normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         su2double sum = 0.;
         for (iDim = 0; iDim < nDim; ++iDim) sum += normal[iDim]*normal[iDim];
@@ -5379,7 +5379,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
                *(varAdjFlo->GetHessian(iPoint, (nVarFlo-1), xxi)
                 +varAdjFlo->GetHessian(iPoint, (nVarFlo-1), yyi));
     }
-    factor *= eps_4*pow(vol/area,3.);
+    factor *= eps_4*pow(vol/area,2.);
     
     for (iVar = 0; iVar < nVarFlo; ++iVar) weights[2][iVar] += TmpWeights[iVar]*factor;
   }
