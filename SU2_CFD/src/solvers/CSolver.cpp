@@ -5273,7 +5273,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   else           u[2] = 0.;
   e = varFlo->GetEnergy(iPoint);
   
-  c  = varFlo->GetSoundSpeed(iPoint);
+  c  = varFlo-> (iPoint);
   v2 = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
   
   g  = config->GetGamma();
@@ -5308,7 +5308,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
       factor += -varFlo->GetGradient_Adaptation(iPoint, iVar, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, iVar, iDim);
     }
     //--- Energy dissipation uses enthalpy
-    factor += -varFlo->GetGradientAuxVar_Adaptation(iPoint, iVar, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, iVar, iDim);
+    factor += -varFlo->GetGradientAuxVar_Adaptation(iPoint, 0, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
   }
   
   //--- Energy dissipation uses enthalpy
