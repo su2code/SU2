@@ -602,7 +602,7 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
 
   } else if (true) {
 
-    solver[GRADIENT_SMOOTHING]->SmoothCompleteSystem(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, param_jacobi);
+    solver[GRADIENT_SMOOTHING]->SmoothCompleteSystem(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, grid_movement[ZONE_0][INST_0], param_jacobi);
 
   } else {
 

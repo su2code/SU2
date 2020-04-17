@@ -809,7 +809,7 @@ void CGradientSmoothingSolver::MultiplyByVolumeDeformationStiffness(CGeometry *g
   // perform the matrix vector product
   (*mat_vec)(LinSysRes, LinSysSol);
 
-  CSysMatrix<su2double>& StiffMatrix = grid_movement->GetStiffnessMatrix(geometry, config);
+  CSysMatrix<su2double>& StiffMatrix = grid_movement->GetStiffnessMatrix(geometry, config, true);
   ofstream matrix ("stiffness.dat");
   StiffMatrix.printMat(matrix);
   matrix.close();
@@ -1063,7 +1063,7 @@ void CGradientSmoothingSolver::SmoothConsecutive(CGeometry *geometry, CSolver *s
     cout << endl << "Smooth the system on the surface level. " << endl;
 
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ( config->GetMarker_All_SobolevBC(iMarker) == YES ) {
+      if ( config->GetMarker_All_DV(iMarker) == YES ) {
         ApplyGradientSmoothingOnSurface(geometry, solver, numerics, config, iMarker);
       }
     }
@@ -1082,7 +1082,28 @@ void CGradientSmoothingSolver::SmoothConsecutive(CGeometry *geometry, CSolver *s
 }
 
 
-MatrixType CGradientSmoothingSolver::GetSurfaceStiffnessMatrix(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker) {
+MatrixType CGradientSmoothingSolver::GetStiffnessMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
+
+  Compute_StiffMatrix(geometry, numerics, config);
+
+  if (config->GetSepDim()) {
+    MatrixType largeMat = MatrixType::Zero(nDim*nPoint, nDim*nPoint);
+    for (auto i=0; i<nPoint; i++) {
+      for (auto j=0; j<nPoint; j++) {
+        for (auto iDim=0; iDim<nDim; iDim++) {
+          largeMat(nDim*i+iDim, nDim*j+iDim) = Jacobian.GetBlock(i,j,0,0);
+        }
+      }
+    }
+    return largeMat;
+  } else {
+    return (Jacobian.ConvertToEigen()).cast<su2double>();
+  }
+}
+
+
+
+MatrixType CGradientSmoothingSolver::GetSurfaceStiffnessMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config, unsigned long val_marker) {
 
   /*--- Initialize the sparse matrix ---*/
   Jacobian.InitOwnConnectivity(geometry->nVertex[val_marker], 1, 1, val_marker, geometry, config);
@@ -1103,49 +1124,74 @@ MatrixType CGradientSmoothingSolver::GetSurfaceStiffnessMatrix(CGeometry *geomet
 }
 
 
-void CGradientSmoothingSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi) {
+void CGradientSmoothingSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, CVolumetricMovement *grid_movement, su2double *param_jacobi) {
 
   cout << endl << "Applying Sobolev Smoothing by assembling the whole system matrix." << endl;
 
+  bool twoD = config->GetSmoothOnSurface();
+
   unsigned short nDV_Total= config->GetnDV_Total(), nVertex, nDim = geometry->GetnDim();
   unsigned long nPoint  = geometry->GetnPoint();
+  MatrixType SysMat, stiffness, surf2vol, param_jacobi_eigen;
 
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ( config->GetMarker_All_SobolevBC(iMarker) == YES ) {
+  if (twoD) {
 
-      nVertex = geometry->nVertex[iMarker];
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ( config->GetMarker_All_DV(iMarker) == YES ) {
 
-      // get the reduced parameterization jacobian
-      MatrixType param_jacobi_eigen(nDV_Total, nVertex*nDim);
-      for (auto iDVindex=0; iDVindex<nDV_Total; iDVindex++) {
-        for (auto iVertex = 0; iVertex <nVertex; iVertex++) {
-          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          for (auto iDim = 0; iDim < nDim; iDim++){
-            auto total_index = iPoint*nDim+iDim;
-            param_jacobi_eigen(iDVindex, iVertex*nDim+iDim) = param_jacobi[iDVindex*nPoint*nDim + total_index];
+        nVertex = geometry->nVertex[iMarker];
+
+        // get the reduced parameterization jacobian
+        for (auto iDVindex=0; iDVindex<nDV_Total; iDVindex++) {
+          for (auto iVertex = 0; iVertex <nVertex; iVertex++) {
+            auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            for (auto iDim = 0; iDim < nDim; iDim++){
+              auto total_index = iPoint*nDim+iDim;
+              param_jacobi_eigen(iDVindex, iVertex*nDim+iDim) = param_jacobi[iDVindex*nPoint*nDim + total_index];
+            }
           }
         }
+
+        // get the stiffness matrix for the 2D case
+        stiffness = GetSurfaceStiffnessMatrix(geometry, numerics, config, iMarker);
+
       }
-
-      // get the stiffness matrix
-      MatrixType stiffness = GetSurfaceStiffnessMatrix(geometry, solver, numerics, config, iMarker);
-
-      // calculate the overall system
-      MatrixType SysMat = param_jacobi_eigen * stiffness * param_jacobi_eigen.transpose();
-
-      ofstream SysMatrix("SysMatrix.dat");
-      SysMatrix << SysMat;
-      SysMatrix.close();
-
-      // solve the system
-      QRdecomposition QR(SysMat);
-      VectorType b = Eigen::Map<VectorType, Eigen::Unaligned>(deltaP.data(), deltaP.size());
-      VectorType x = QR.solve(b);
-
-      deltaP = std::vector<su2double>(x.data(), x.data() + x.size());
-
     }
+
+  } else {
+
+    // get the parameterization jacobian
+    for (auto iDVindex=0; iDVindex<nDV_Total; iDVindex++) {
+      for (auto iPoint = 0; iPoint <nPoint; iPoint++) {
+        for (auto iDim = 0; iDim < nDim; iDim++){
+          param_jacobi_eigen(iDVindex, iPoint*nDim+iDim) = param_jacobi[iDVindex*nPoint*nDim + iPoint*nDim + iDim];
+        }
+      }
+    }
+
+    // get the inverse stiffness matrix for the mesh movement
+    CSysMatrix<su2double>& linear_elasticity_stiffness = grid_movement->GetStiffnessMatrix(geometry, config, true);
+    auto surf2vol = (linear_elasticity_stiffness.ConvertToEigen()).inverse();
+
+    // get the inner stiffness matrix
+    stiffness = GetStiffnessMatrix(geometry, numerics, config);
+
+    stiffness = surf2vol.transpose() * stiffness * surf2vol;
   }
+
+  // calculate the overall system
+  SysMat = param_jacobi_eigen * stiffness * param_jacobi_eigen.transpose();
+
+  ofstream SysMatrix("SysMatrix.dat");
+  SysMatrix << SysMat;
+  SysMatrix.close();
+
+  // solve the system
+  QRdecomposition QR(SysMat);
+  VectorType b = Eigen::Map<VectorType, Eigen::Unaligned>(deltaP.data(), deltaP.size());
+  VectorType x = QR.solve(b);
+
+  deltaP = std::vector<su2double>(x.data(), x.data() + x.size());
 
   OutputDVGradient();
 

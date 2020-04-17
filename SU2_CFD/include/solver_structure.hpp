@@ -4561,7 +4561,7 @@ public:
   /*!
    * \brief Smooth the system by multiplying out the whole system matrix and solving it
    */
-  virtual void SmoothCompleteSystem(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi);
+  virtual void SmoothCompleteSystem(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, CVolumetricMovement* grid_movement, su2double *param_jacobi);
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
@@ -12531,12 +12531,17 @@ public:
   /*!
    * \brief Return the stiffness matrix
    */
-  MatrixType GetSurfaceStiffnessMatrix(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker);
+  MatrixType GetStiffnessMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief Return the stiffness matrix
+   */
+  MatrixType GetSurfaceStiffnessMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config, unsigned long val_marker);
 
   /*!
    * \brief Smooth the system by multiplying out the whole system matrix and solving it
    */
-  void SmoothCompleteSystem(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi);
+  void SmoothCompleteSystem(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, CVolumetricMovement* grid_movement, su2double *param_jacobi);
 
 };
 

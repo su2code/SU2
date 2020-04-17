@@ -359,7 +359,9 @@ CMatrixVectorProduct<su2double>* CVolumetricMovement::GetStiffnessMatrixVectorPr
 
 }
 
-CSysMatrix<su2double>& CVolumetricMovement::GetStiffnessMatrix(CGeometry *geometry, CConfig *config) {
+CSysMatrix<su2double>& CVolumetricMovement::GetStiffnessMatrix(CGeometry *geometry, CConfig *config, bool Derivative) {
+
+  /*--- Take the first initializing function calls from the SetVolumeDeformation function ---*/
 
   su2double MinVolume;
 
@@ -370,6 +372,20 @@ CSysMatrix<su2double>& CVolumetricMovement::GetStiffnessMatrix(CGeometry *geomet
         mesh. FEA uses a finite element method discretization of the linear
         elasticity equations (transfers element stiffnesses to point-to-point). ---*/
   MinVolume = SetFEAMethodContributions_Elem(geometry, config);
+
+  /*--- Set the boundary and volume displacements (as prescribed by the
+   design variable perturbations controlling the surface shape)
+   as a Dirichlet BC. ---*/
+
+  SetBoundaryDisplacements(geometry, config);
+
+  /*--- Fix the location of any points in the domain, if requested. ---*/
+
+  SetDomainDisplacements(geometry, config);
+
+  /*--- Set the boundary derivatives (overrides the actual displacements) ---*/
+
+  if (Derivative) { SetBoundaryDerivatives(geometry, config); }
 
   /*--- return a pointer to the matrix ---*/
   return StiffMatrix;

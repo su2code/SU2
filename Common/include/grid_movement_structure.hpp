@@ -1242,8 +1242,9 @@ public:
    * \brief Get the stiffness matrix of the volume deformation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  CSysMatrix<su2double> &GetStiffnessMatrix(CGeometry *geometry, CConfig *config);
+  CSysMatrix<su2double> &GetStiffnessMatrix(CGeometry *geometry, CConfig *config, bool Derivative);
 
   /*!
    * \brief Grid deformation using the spring analogy method.

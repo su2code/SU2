@@ -1166,7 +1166,7 @@ inline void CSolver::CalculateOriginalGradient(CGeometry *geometry, CConfig *con
 
 inline void CSolver::SmoothConsecutive(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi) { }
 
-inline void CSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, su2double *param_jacobi) { }
+inline void CSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, CVolumetricMovement* grid_movement,  su2double *param_jacobi) { }
 
 inline void CSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }
 
