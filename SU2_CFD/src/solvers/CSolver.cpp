@@ -5258,7 +5258,7 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
   
-  unsigned short iVar, iDim, iNeigh;
+  unsigned short iVar, iDim;
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   //--- Flow variables and JST coefficients
@@ -5286,37 +5286,40 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   sensor  = varFlo->GetSensor(iPoint);
   lambda  = sqrt(v2)+c;
   
-//  area = 0.;
-//  for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
-//    const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-//    const unsigned long iEdge = geometry->FindEdge(iPoint, jPoint);
-//    su2double *normal = geometry->edge[iEdge]->GetNormal();
-//    su2double sum = 0.;
-//    for (iDim = 0; iDim < nDim; ++iDim) sum += normal[iDim]*normal[iDim];
-//    area += sqrt(sum);
-//  }
   vol = geometry->node[iPoint]->GetVolume();
   
-//  eps_2 = kappa_2*sensor*lambda*vol/area;
   eps_2 = kappa_2*sensor;
   eps_4 = max(0., kappa_4-eps_2);
   
   //--- Zeroth-order terms (errors due to eigenvalue)
   vector<su2double> TmpWeights(nVarFlo, 0.0);
   su2double factor = 0.;
-//  for (iDim = 0; iDim < nDim; iDim++) {
-//    for (iVar = 0; iVar < nVarFlo-1; ++iVar) {
-//      factor += varFlo->GetGradient_Adaptation(iPoint, iVar, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, iVar, iDim);
-//    }
-//    //--- Energy dissipation uses enthalpy
-//    factor += varFlo->GetGradientAuxVar_Adaptation(iPoint, 0, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
-//  }
-//  factor *= kappa_2*sensor*vol/area;
-  
-  for (iVar = 0; iVar < nVarFlo; ++iVar) {
-    factor += -varFlo->GetUndivided_Laplacian(iPoint,iVar)*varAdjFlo->GetSolution(iPoint, iVar);
+  for (iVar = 0; iVar < nVarFlo-1; ++iVar) {
+    if (nDim == 3) {
+      const unsigned short xxi = 0, yyi = 3, zzi = 5;
+      factor += -varAdjFlo->GetSolution(iPoint, iVar)*(varFlo->GetHessian(iPoint, iVar, xxi)
+                                                      +varFlo->GetHessian(iPoint, iVar, yyi)
+                                                      +varFlo->GetHessian(iPoint, iVar, zzi));
+    }
+    else {
+      const unsigned short xxi = 0, yyi = 2;
+      factor += -varAdjFlo->GetSolution(iPoint, iVar)*(varFlo->GetHessian(iPoint, iVar, xxi)
+                                                      +varFlo->GetHessian(iPoint, iVar, yyi));
+    }
   }
-  factor *= eps_2;
+  //--- Energy dissipation uses enthalpy
+  if (nDim == 3) {
+    const unsigned short xxi = 0, yyi = 3, zzi = 5;
+    factor += -varAdjFlo->GetSolution(iPoint, (nVarFlo-1))*(varFlo->GetHessianAuxVar(iPoint, 0, xxi)
+                                                           +varFlo->GetHessianAuxVar(iPoint, 0, yyi)
+                                                           +varFlo->GetHessianAuxVar(iPoint, 0, zzi));
+  }
+  else {
+    const unsigned short xxi = 0, yyi = 2;
+    factor += -varAdjFlo->GetSolution(iPoint, (nVarFlo-1))*(varFlo->GetHessianAuxVar(iPoint, 0, xxi)
+                                                           +varFlo->GetHessianAuxVar(iPoint, 0, yyi));
+  }
+  factor *= eps_2*vol;
   
   for (iDim = 0; iDim < nDim; ++iDim) {
     TmpWeights[iDim+1] += -u[iDim]/r*sqrt(g*R/(cv*(4*e-2*v2)))*factor;
@@ -5332,18 +5335,39 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   //--- Second-order terms (errors due to eigenvalue)
   if (eps_4 > 1.0e-10) {
     factor = 0.;
-    for (iVar = 0; iVar < nVarFlo; ++iVar) {
+    for (iVar = 0; iVar < nVarFlo-1; ++iVar) {
       if (nDim == 3) {
         const unsigned short xxi = 0, yyi = 3, zzi = 5;
-        factor += varFlo->GetUndivided_Laplacian(iPoint,iVar)*(varAdjFlo->GetHessian(iPoint, iVar, xxi)
-                                                              +varAdjFlo->GetHessian(iPoint, iVar, yyi)
-                                                              +varAdjFlo->GetHessian(iPoint, iVar, zzi));
+        factor += (varFlo->GetHessian(iPoint, iVar, xxi)
+                  +varFlo->GetHessian(iPoint, iVar, yyi)
+                  +varFlo->GetHessian(iPoint, iVar, zzi))
+                 *(varAdjFlo->GetHessian(iPoint, iVar, xxi)
+                  +varAdjFlo->GetHessian(iPoint, iVar, yyi)
+                  +varAdjFlo->GetHessian(iPoint, iVar, zzi));
       }
       else {
         const unsigned short xxi = 0, yyi = 2;
-        factor += varFlo->GetUndivided_Laplacian(iPoint,iVar)*(varAdjFlo->GetHessian(iPoint, iVar, xxi)
-                                                              +varAdjFlo->GetHessian(iPoint, iVar, yyi));
+        factor += (varFlo->GetHessian(iPoint, iVar, xxi)
+                  +varFlo->GetHessian(iPoint, iVar, yyi))
+                 *(varAdjFlo->GetHessian(iPoint, iVar, xxi)
+                 +varAdjFlo->GetHessian(iPoint, iVar, yyi));
       }
+    }
+    if (nDim == 3) {
+      const unsigned short xxi = 0, yyi = 3, zzi = 5;
+      factor += (varFlo->GetHessianAuxVar(iPoint, 0, xxi)
+                +varFlo->GetHessianAuxVar(iPoint, 0, yyi)
+                +varFlo->GetHessianAuxVar(iPoint, 0, zzi))
+               *(varAdjFlo->GetHessian(iPoint, (nVarFlo-1), xxi)
+                +varAdjFlo->GetHessian(iPoint, (nVarFlo-1), yyi)
+                +varAdjFlo->GetHessian(iPoint, (nVarFlo-1), zzi));
+    }
+    else {
+      const unsigned short xxi = 0, yyi = 2;
+      factor += (varFlo->GetHessianAuxVar(iPoint, 0, xxi)
+                +varFlo->GetHessianAuxVar(iPoint, 0, yyi))
+               *(varAdjFlo->GetHessian(iPoint, (nVarFlo-1), xxi)
+                +varAdjFlo->GetHessian(iPoint, (nVarFlo-1), yyi));
     }
     factor *= eps_4*vol;
     
