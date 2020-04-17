@@ -394,6 +394,8 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   /*--- Register variables as output of the solver iteration ---*/
 
   direct_solver->GetNodes()->RegisterSolution(input, push_index);
+
+  Output_SWPressureDrop = config->GetStreamwise_Periodic_PressureDrop();
 }
 
 void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
@@ -721,7 +723,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     }
   }
 
-  SU2_TYPE::SetDerivative(SWPressureDrop, SU2_TYPE::GetValue(Local_Sens_SWPressureDrop));
+  SU2_TYPE::SetDerivative(Output_SWPressureDrop, SU2_TYPE::GetValue(Local_Sens_SWPressureDrop));
 }
 
 void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config){
