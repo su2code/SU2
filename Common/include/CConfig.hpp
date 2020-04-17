@@ -992,7 +992,6 @@ private:
   su2double RefGeom_Penalty,        /*!< \brief Penalty weight value for the reference geometry objective function. */
   RefNode_Penalty,                  /*!< \brief Penalty weight value for the reference node objective function. */
   DV_Penalty;                       /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
-  bool addCrossTerm;                /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
   unsigned long Nonphys_Points,     /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;                 /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;                    /*!< \brief Boolean for activating ParMETIS mode (while testing). */
@@ -2085,7 +2084,7 @@ public:
    */
   unsigned short GetRefGeom_FileFormat(void) const { return RefGeom_FileFormat; }
 
-    /*!
+  /*!
    * \brief Formulation for 2D elasticity (plane stress - strain)
    * \return Flag to 2D elasticity model.
    */
@@ -2098,26 +2097,15 @@ public:
   bool GetPrestretch(void) const { return Prestretch; }
 
   /*!
-    * \brief Decide whether it's necessary to add the cross term for adjoint FSI.
-    * \return <code>TRUE</code> if it's necessary to add the cross term, <code>FALSE</code> otherwise.
-    */
-  bool Add_CrossTerm(void) const { return addCrossTerm; }
-
-  /*!
-    * \brief Set the boolean addCrossTerm to true or false.
-    */
-  void Set_CrossTerm(bool needCrossTerm) { addCrossTerm = needCrossTerm; }
-
-  /*!
    * \brief Get the name of the file with the element properties for structural problems.
    * \return Name of the file with the element properties of the structural problem.
    */
   string GetFEA_FileName(void) const { return FEA_FileName; }
 
   /*!
-    * \brief Determine if advanced features are used from the element-based FEA analysis (experimental feature).
-    * \return <code>TRUE</code> is experimental, <code>FALSE</code> is the default behaviour.
-    */
+   * \brief Determine if advanced features are used from the element-based FEA analysis (experimental feature).
+   * \return <code>TRUE</code> is experimental, <code>FALSE</code> is the default behaviour.
+   */
   inline bool GetAdvanced_FEAElementBased(void) const { return FEAAdvancedMode; }
 
   /*!
@@ -8627,7 +8615,7 @@ public:
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The pointer to the sine load values.
    */
-  su2double* GetLoad_Sine(void) { return SineLoad_Coeff; }
+  const su2double* GetLoad_Sine(void) const { return SineLoad_Coeff; }
 
   /*!
    * \brief Get the kind of load transfer method we want to use for dynamic problems

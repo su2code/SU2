@@ -254,13 +254,10 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
     /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
     /*--- For FSI, this is set after the mesh has been moved. --------------------------------------*/
-    if ((config_container[iZone]->GetKind_Solver() ==  EULER) ||
-        (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
-        (config_container[iZone]->GetKind_Solver() ==  RANS) ||
-        (config_container[iZone]->GetKind_Solver() ==  INC_EULER) ||
-        (config_container[iZone]->GetKind_Solver() ==  INC_NAVIER_STOKES) ||
-        (config_container[iZone]->GetKind_Solver() ==  INC_RANS) ) {
-        if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
+    if (!fsi && !config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetFluidProblem()) {
+      solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0],
+                                                                             solver_container[iZone][INST_0],
+                                                                             config_container[iZone], TimeIter);
     }
 
   }
@@ -270,10 +267,11 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 #endif
 
   /*--- Run a predictor step ---*/
-  for (iZone = 0; iZone < nZone; iZone++){
+  for (iZone = 0; iZone < nZone; iZone++) {
     if (config_container[iZone]->GetPredictor())
-      iteration_container[iZone][INST_0]->Predictor(output_container[iZone], integration_container, geometry_container, solver_container,
-          numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+      iteration_container[iZone][INST_0]->Predictor(output_container[iZone], integration_container, geometry_container,
+                                                    solver_container, numerics_container, config_container, surface_movement,
+                                                    grid_movement, FFDBox, iZone, INST_0);
   }
 
   /*--- Perform a dynamic mesh update if required. ---*/
