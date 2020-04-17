@@ -339,6 +339,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     ModVel    = config->GetIncInlet_BC();
     BPressure = config->GetIncPressureOut_BC();
     Temperature = config->GetIncTemperature_BC();
+    SWPressureDrop = config->GetStreamwise_Periodic_PressureDrop();
 
     /*--- Register the variables for AD. ---*/
 
@@ -346,6 +347,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
       AD::RegisterInput(ModVel);
       AD::RegisterInput(BPressure);
       AD::RegisterInput(Temperature);
+      AD::RegisterInput(SWPressureDrop);
     }
 
     /*--- Set the BC values in the config class. ---*/
@@ -353,6 +355,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     config->SetIncInlet_BC(ModVel);
     config->SetIncPressureOut_BC(BPressure);
     config->SetIncTemperature_BC(Temperature);
+    config->SetStreamwise_Periodic_PressureDrop(SWPressureDrop);
 
   }
 
@@ -591,6 +594,9 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     Local_Sens_BPress = SU2_TYPE::GetDerivative(BPressure);
     Local_Sens_Temp   = SU2_TYPE::GetDerivative(Temperature);
 
+    Local_Sens_SWPressureDrop = SU2_TYPE::GetDerivative(SWPressureDrop);
+    cout << "Local_Sens_SWPressureDrop: " << Local_Sens_SWPressureDrop << endl;
+
     SU2_MPI::Allreduce(&Local_Sens_ModVel, &Total_Sens_ModVel, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&Local_Sens_BPress, &Total_Sens_BPress, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&Local_Sens_Temp,   &Total_Sens_Temp,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -714,6 +720,8 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
       direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
     }
   }
+
+  SU2_TYPE::SetDerivative(SWPressureDrop, SU2_TYPE::GetValue(Local_Sens_SWPressureDrop));
 }
 
 void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config){
