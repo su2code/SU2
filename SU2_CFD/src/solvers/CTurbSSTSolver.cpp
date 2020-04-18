@@ -598,7 +598,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   }
   
-  delete [] NormalSum;
+//  delete [] NormalSum;
 
 }
 
