@@ -426,12 +426,6 @@ public:
                         CConfig   *config);
 
   /*!
-   * \brief Get the maximum wall spacing based on y-plus.
-   * \param[in] config - Definition of the particular problem.
-   */
-  su2double GetYPlusHmax(CConfig *config);
-
-  /*!
    * \brief Set the solver nondimensionalization.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.

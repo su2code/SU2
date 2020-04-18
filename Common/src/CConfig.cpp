@@ -2808,9 +2808,6 @@ void CConfig::SetConfig_Options() {
    *  \n DESCRIPTION: Numerical method for Hessian computation \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: GREEN_GAUSS. \ingroup Config*/
   addEnumOption("NUM_METHOD_HESS", Kind_Hessian_Method, Gradient_Map, GREEN_GAUSS);
 
-  /* DESCRIPTION: Whether to shift the normal neighbor (RANS adaptation). */
-  addBoolOption("ADAP_SHIFT_NORMAL_NEIGHBOR", Bool_Adap_Normal_Neighbor, false);
-
   /* DESCRIPTION: Sensor used to determine anisotropy */
   addEnumOption("ANISO_SENSOR", Kind_Aniso_Sensor, Aniso_Sensor_Map, ANISO_GOAL);
 
@@ -2825,9 +2822,6 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Constraint minimum cell size */
   addDoubleOption("ADAP_HMIN", Adap_Hmin, 1.0E-8);
-
-  /* DESCRIPTION: Maximum y-plus for RANS mesh adaptation */
-  addDoubleOption("ADAP_MAX_YPLUS", Adap_Max_Yplus, 100.0);
 
   /* DESCRIPTION: Constraint mesh complexity */
   addUnsignedLongOption("ADAP_COMPLEXITY", Adap_Complexity, 10000);

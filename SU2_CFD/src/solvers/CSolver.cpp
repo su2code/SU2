@@ -5000,7 +5000,6 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
           //--- Correct if any of the neighbors belong to the volume
           unsigned short iNeigh, counter = 0;
           su2double hess[nMetr*nVar];
-//          su2double dist = 0., distsum = 0.;
           for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             if(!geometry->node[jPoint]->GetBoundary()) {
@@ -5013,18 +5012,10 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
                     hess[i+iMetr] = 0.;
                   }// iMetr
                 }// if counter
-//                dist = 0.;
-//                for(iDim = 0; iDim < nDim; iDim++) {
-//                  const su2double coord0 = geometry->node[iPoint]->GetCoord(iDim);
-//                  const su2double coord1 = geometry->node[jPoint]->GetCoord(iDim);
-//                  dist += (coord1-coord0)*(coord1-coord0);
-//                }// iDim
                 for(iMetr = 0; iMetr < nMetr; iMetr++) {
                    hess[i+iMetr] += base_nodes->GetHessian(jPoint, iVar, iMetr);
-//                  hess[i+iMetr] += base_nodes->GetHessian(jPoint, iVar, iMetr)/max(dist,1e-10);
                 }// iMetr
               }// iVar
-//              distsum += 1./max(dist,1e-10);
               counter ++;
             }// if boundary
           }// iNeigh
@@ -5033,7 +5024,6 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
               const unsigned short i = iVar*nMetr;
               for(iMetr = 0; iMetr < nMetr; iMetr++) {
                  base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter));
-//                base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/distsum);
               }// iMetr
             }// iVar
           }// if counter
@@ -5924,15 +5914,3 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
   delete [] EigVal;
 }
 
-su2double CSolver::GetYPlusHmax(CConfig *config) {
-  const su2double Re    = config->GetReynolds();
-  const su2double Cf    = 0.026/pow(Re,1./7.);
-  const su2double rho   = config->GetDensity_FreeStreamND();
-  const su2double U2    = config->GetModVel_FreeStreamND();
-  const su2double tauw  = Cf*rho*U2/2.;
-  const su2double Uf    = sqrt(tauw/rho);
-  const su2double mu    = config->GetViscosity_FreeStreamND();
-  const su2double yplus = config->GetAdap_Max_Yplus();
-  const su2double ds    = yplus*mu/(Uf*rho);
-  return ds;
-}

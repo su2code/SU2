@@ -1122,16 +1122,14 @@ private:
   unsigned short pastix_verb_lvl;  /*!< \brief Verbosity level for PaStiX */
   unsigned short pastix_fill_lvl;  /*!< \brief Fill level for PaStiX ILU */
 
-  bool Bool_Compute_Metric,            /*!< \brief Determines if error estimation is taking place */
-       Bool_Adap_Normal_Neighbor;      /*!< \brief Determines if normal neighbors should be shifted */
+  bool Bool_Compute_Metric;            /*!< \brief Determines if error estimation is taking place */
   unsigned short Kind_Aniso_Sensor;    /*!< \brief Sensor used for anistropy */
   unsigned short Kind_Hessian_Method;  /*!< \brief Numerical method for computation of Hessians. */
   bool Wrt_Aniso_Sensor;               /*!< \brief Whether or not to write sensor files */
   bool Wrt_InriaMesh;                  /*!< \brief Whether or not to write meshb files */
   su2double Adap_Norm,                 /*!< \brief Lp-norm for mesh adaptation */
             Adap_Hmax,                 /*!< \brief Maximum cell size */
-            Adap_Hmin,                 /*!< \brief Minimum cell size */
-            Adap_Max_Yplus;            /*!< \brief Maximum y-plus for RANS mesh adaptation */
+            Adap_Hmin;                 /*!< \brief Minimum cell size */
   unsigned long  Adap_Complexity;      /*!< \brief Constraint mesh complexity */
 
   string caseName;                 /*!< \brief Name of the current case */
@@ -9260,12 +9258,6 @@ public:
   bool GetBool_Compute_Metric(void) const { return Bool_Compute_Metric; }
 
   /*!
-   * \brief Check if normal neighbors should be shifted
-   * \return <code>TRUE<\code> if normal neighbors should be shifted
-  */
-  bool GetBool_Adap_Normal_Neighbor(void) const { return Bool_Adap_Normal_Neighbor; }
-
-  /*!
    * \brief Check if Inria format sensor files should be written
    * \return <code>TRUE<\code> if sensor files requested
    */
@@ -9299,12 +9291,6 @@ public:
    * \return Minimum cell size
    */
   su2double GetAdap_Hmin(void) const { return Adap_Hmin; }
-
-  /*!
-   * \brief Get minimum cell size
-   * \return Minimum cell size
-   */
-  su2double GetAdap_Max_Yplus(void) const { return Adap_Max_Yplus; }
 
   /*!
    * \brief Get constraint complexity
