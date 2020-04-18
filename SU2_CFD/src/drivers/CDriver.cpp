@@ -1313,9 +1313,11 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
 
   if (restart || restart_flow) {
     if (euler || ns) {
+      SU2_OMP_PARALLEL_(if(solver[MESH_0][FLOW_SOL]->GetHasHybridParallel()))
       solver[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (turbulent) {
+      SU2_OMP_PARALLEL_(if(solver[MESH_0][TURB_SOL]->GetHasHybridParallel()))
       solver[MESH_0][TURB_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (config->AddRadiation()) {

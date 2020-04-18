@@ -880,6 +880,11 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   su2double Area_Children, Area_Parent, *Solution_Fine;
 
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+
+  /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
+  SU2_OMP_MASTER
+  {
+
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
@@ -950,12 +955,16 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_EDDY);
   solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_EDDY);
 
+  } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
+  SU2_OMP_BARRIER
+
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
@@ -969,15 +978,28 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       }
       solver[iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint,Solution);
     }
-    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION_EDDY);
-    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION_EDDY);
+
+    SU2_OMP_MASTER
+    {
+      solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION_EDDY);
+      solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION_EDDY);
+    }
+    SU2_OMP_BARRIER
+
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
   }
+
+  /*--- Go back to single threaded execution. ---*/
+  SU2_OMP_MASTER
+  {
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
   delete [] Restart_Vars; Restart_Vars = nullptr;
   delete [] Restart_Data; Restart_Data = nullptr;
+
+  } // end SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
 }

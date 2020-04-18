@@ -2491,17 +2491,13 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
     if (restart && (TimeIter == config->GetRestart_Iter()) && (config->GetTime_Marching() == DT_STEPPING_2ND)) {
 
-      SU2_OMP_MASTER
-      {
-        /*--- Load an additional restart file for a 2nd-order restart ---*/
+      /*--- Load an additional restart file for a 2nd-order restart ---*/
 
-        solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, true);
+      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, true);
 
-        /*--- Load an additional restart file for the turbulence model ---*/
-        if (rans)
-          solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, false);
-      }
-      SU2_OMP_BARRIER
+      /*--- Load an additional restart file for the turbulence model ---*/
+      if (rans)
+        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter()-1, false);
 
       /*--- Push back this new solution to time level N. ---*/
 
@@ -11480,6 +11476,7 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
 void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Restart the solution from file information ---*/
+
   unsigned short iDim, iVar, iMesh, iMeshFine;
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
@@ -11491,6 +11488,10 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   bool turbulent = (config->GetKind_Turb_Model() != NONE);
 
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+
+  /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
+  SU2_OMP_MASTER
+  {
 
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
@@ -11596,11 +11597,15 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
+  } // end SU2_OMP_MASTER, preprocessing is thread-safe.
+  SU2_OMP_BARRIER
+
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
@@ -11615,11 +11620,19 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       solver[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution);
     }
 
-    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    SU2_OMP_MASTER
+    {
+      solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+      solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    }
+    SU2_OMP_BARRIER
 
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   }
+
+  /*--- Go back to single threaded execution. ---*/
+  SU2_OMP_MASTER
+  {
 
   /*--- Update the geometry for flows on dynamic meshes ---*/
 
@@ -11651,8 +11664,8 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       geometry[iMesh]->SetCoord(geometry[iMeshFine]);
       geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
       geometry[iMesh]->SetMaxLength(config);
-      }
     }
+  }
 
   /*--- Update the geometry for flows on static FSI problems with moving meshes ---*/
 
@@ -11683,7 +11696,6 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     }
   }
 
-
   /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy. ---*/
   if (dual_time && config->GetGrid_Movement() && (config->GetKind_GridMovement() != RIGID_MOTION)) {
     if (!config->GetDeform_Mesh()) {
@@ -11695,6 +11707,9 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
   delete [] Restart_Vars; Restart_Vars = nullptr;
   delete [] Restart_Data; Restart_Data = nullptr;
+
+  } // end SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
 }
 
