@@ -2722,16 +2722,6 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        Coord = geometry->node[iPoint]->GetCoord();
        Coord_Normal = geometry->node[Point_Normal]->GetCoord();
 
-       /*--- Compute normal distance of the interior point from the wall ---*/
-
-       for (iDim = 0; iDim < nDim; iDim++)
-         WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
-
-       WallDistMod = 0.0;
-       for (iDim = 0; iDim < nDim; iDim++)
-         WallDistMod += WallDist[iDim]*WallDist[iDim];
-       WallDistMod = sqrt(WallDistMod);
-
        /*--- Compute dual-grid area and boundary normal ---*/
 
        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -2744,16 +2734,62 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        for (iDim = 0; iDim < nDim; iDim++)
          UnitNormal[iDim] = -Normal[iDim]/Area;
 
-       /*--- Get the velocity, pressure, and temperature at the nearest
-        (normal) interior point. ---*/
+       /*--- If an exchange location was found (donor element) use this information as the input
+       for the wall model. Otherwise, the information of the 1st point off the wall is used. ---*/
 
-       for (iDim = 0; iDim < nDim; iDim++)
-         Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
-       P_Normal  = nodes->GetPressure(Point_Normal);
-       T_Normal  = nodes->GetTemperature(Point_Normal);
-       mu_Normal = nodes->GetLaminarViscosity(Point_Normal);
+       if (geometry->vertex[iMarker][iVertex]->GetDonorFound()){
 
-       /*--- Filter the input LES velocity (implement here)---*/
+         const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+         WallDistMod = doubleInfo[0];
+
+         /*--- Load the coefficients and interpolate---*/
+         unsigned short nDonors = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
+         su2double rho_Normal = 0.0, e_Normal   = 0.0;
+
+         for (iDim = 0; iDim < nDim; iDim++ ) Vel[iDim] = 0.0;
+
+         for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+           unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
+           su2double donnorCoeff    = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
+
+           rho_Normal += donnorCoeff*nodes->GetSolution(donorPoint,0);
+           e_Normal   += donnorCoeff*nodes->GetSolution(donorPoint,nVar-1)/nodes->GetSolution(donorPoint,0);
+
+           for (iDim = 0; iDim < nDim; iDim++ ){
+             Vel[iDim] += donnorCoeff*nodes->GetSolution(donorPoint,iDim+1)/nodes->GetSolution(donorPoint,0);
+           }
+         }
+
+         /*--- Load the fluid model to have pressure and temperature at exchange location---*/
+         GetFluidModel()->SetTDState_rhoe(rho_Normal, e_Normal);
+         P_Normal = GetFluidModel()->GetPressure();
+         T_Normal = GetFluidModel()->GetTemperature();
+         mu_Normal= GetFluidModel()->GetLaminarViscosity();
+
+       }
+       else{
+
+         /*--- Compute normal distance of the interior point from the wall ---*/
+
+         for (iDim = 0; iDim < nDim; iDim++)
+           WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+
+         WallDistMod = 0.0;
+         for (iDim = 0; iDim < nDim; iDim++)
+           WallDistMod += WallDist[iDim]*WallDist[iDim];
+         WallDistMod = sqrt(WallDistMod);
+
+         /*--- Get the velocity, pressure, and temperature at the nearest
+          (normal) interior point. ---*/
+
+         for (iDim = 0; iDim < nDim; iDim++)
+           Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
+         P_Normal  = nodes->GetPressure(Point_Normal);
+         T_Normal  = nodes->GetTemperature(Point_Normal);
+         mu_Normal = nodes->GetLaminarViscosity(Point_Normal);
+       }
+
+       /*--- Filter the input LES velocity ---*/
 
        long curAbsTimeIter = (config->GetTimeIter() - config->GetRestart_Iter());
        if (curAbsTimeIter > 0){

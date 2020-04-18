@@ -422,7 +422,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   // Wall functions
   if(config->GetWall_Functions()||config->GetWall_Models()){
-    AddVolumeOutput("TAU_WALL", "Tau_wall", "WALL_FUNCTION", "Shear stress at the wall as predicted by the wall function");
+    AddVolumeOutput("TAU_WALL", "Tau_Wall", "WALL_FUNCTION", "Shear stress at the wall as predicted by the wall function");
   }
 
   if (config->GetTime_Domain()){

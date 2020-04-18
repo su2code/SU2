@@ -52,6 +52,9 @@ protected:
   su2double Basis_Function[3];   /*!< \brief Basis function values for interpolation across zones. */
   su2double *Donor_Coeff;        /*!< \brief Store a list of coefficients corresponding to the donor points. */
   unsigned short nDonor_Points;  /*!< \brief Number of points in Donor_Coeff. */
+  unsigned long Donor_Elem;      /*!< \brief Store the donor element for interpolation across zones. Also used for
+                                             the interpolation for wall model data. */
+  bool Donor_Found;              /*!< \brief Flag nodes that the donor element was found (WMLES) */
 
 public:
   /*!
@@ -337,8 +340,38 @@ public:
   inline unsigned long GetNormal_Neighbor(void) const { return Normal_Neighbor; }
 
   /*!
+	 * \brief Set the donor element of a vertex for interpolation across zones.
+	 * \param[in] val_donorelem - donor element index.
+	 */
+  inline void SetDonorElem(long val_donorelem) { Donor_Elem = val_donorelem; }
+
+  /*!
+	 * \brief Get the donor element of a vertex for interpolation across zones.
+	 * \return Donor_Elem - Value of the donor element of a vertex.
+	 */
+  inline long GetDonorElem(void) const { return Donor_Elem; }
+
+  /*!
+	 * \brief Set flag if the donor element of a vertex was found
+	 * \param[in] val_donorfound - Flag if donor element was found
+	 */
+  inline void SetDonorFound(bool val_donorfound) { Donor_Found = val_donorfound; }
+
+  /*!
+	 * \brief Get flag if the donor element of a vertex was found
+	 * \return  Donor_Found - Flag if donor element was found
+	 */
+  inline bool GetDonorFound(void) const { return Donor_Found; }
+
+  /*!
+   * \brief Set the value of nDonor_Points
+   * \param[in] val_nDonor_Points - the number of donor points
+   */
+  inline void SetnDonorPoints(unsigned short val_nDonor_Points) { nDonor_Points = val_nDonor_Points;}
+
+  /*!
    * \brief Return the value of nDonor_Points
-   * \return nDonor - the number of donor points
+   * \return nDonor_Points - the number of donor points
    */
   inline unsigned short GetnDonorPoints(void) const { return nDonor_Points;}
 

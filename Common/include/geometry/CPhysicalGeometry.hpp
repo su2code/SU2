@@ -381,6 +381,29 @@ public:
   bool FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem,
                 unsigned short &face_second_elem) override;
 
+#ifdef HAVE_MPI
+  /*!
+   * \brief Function which determines the additional halo elements needed for
+            the interpolation of the data at the exchange points for the wall
+            model treatment. Only needed in parallel model.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AddWallModelDonorHalos(CConfig *config) override;
+#endif
+
+  /*!
+   * \brief Function that computes the interpolation information for the exchange
+            location for the wall model treatment.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void WallModelPreprocessing(CConfig *config) override;
+
+  /*!
+   * \brief Function, which builds the ADT of the locally stored volume elements.
+   * \param[out] localVolumeADT - Pointer to the ADT to be built.
+   */
+  void BuildLocalVolumeADT(CADTElemClass *&localVolumeADT) override;
+
   /*!
    * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
    * \param[in] config - Definition of the particular problem.

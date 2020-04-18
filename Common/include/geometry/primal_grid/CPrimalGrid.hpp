@@ -64,6 +64,12 @@ protected:
   bool *ElementOwnsFace;    /*!< \brief Whether or not the element owns the face. */
   su2double LenScale;       /*!< \brief Length scale of the element. */
   unsigned short TimeLevel; /*!< \brief Time level of the element for time accurate local time stepping. */
+
+  unsigned short nProcElemIsOnlyInterpolDonor;  /*!< \brief Number of processors on which this element is
+                                                          only an interpolation donor. */
+  unsigned long  *ProcElemIsOnlyInterpolDonor;  /*!< \brief The processors on which this element is
+                                                          only an interpolation donor. */
+
 public:
 
   /*!
@@ -223,6 +229,13 @@ public:
   * \param[in] val_nFaces - Number of faces for which Jacobians must be initialized.
   */
   void InitializeJacobianConstantFaces(unsigned short val_nFaces);
+
+  /*!
+   * \brief Add the given processor to the list of processor on which
+            this cell is only used as interpolation donor.
+   * \param[in] procInterpol - Processor to be added to the list.
+   */
+  void AddProcElemIsOnlyInterpolDonor(unsigned long procInterpol);
 
   /*!
   * \brief Initialize the information about the neighboring elements.
