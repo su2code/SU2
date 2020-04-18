@@ -322,12 +322,6 @@ public:
   void SetPositiveDefiniteHessian(CGeometry     *geometry,
                                   CConfig       *config,
                                   unsigned long iPoint);
-  
-  /*!
-   * \brief Apply a correction to the boundary Hessian using the volume Hessian.
-   */
-  void CorrectBoundHessian(CGeometry *geometry,
-                           CConfig   *config);
 
   /*!
    * \brief Compute the goal-oriented metric.

@@ -3133,8 +3133,6 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config) {
   computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
                             *config, gradient, 0, nVar, hessian);
   
-//  //--- compute boundary Hessians from volume Hessians
-//  CorrectBoundHessian(geometry, config);
 }
 
 void CSolver::SetAuxVar_Hessian_GG(CGeometry *geometry, CConfig *config) {
@@ -3157,8 +3155,6 @@ void CSolver::SetAuxVar_Hessian_GG(CGeometry *geometry, CConfig *config) {
   computeHessiansGreenGauss(this, AUX_HESSIAN, PERIODIC_SOL_GG, *geometry,
                             *config, gradient, 0, 1, hessian);
   
-//  //--- compute boundary Hessians from volume Hessians
-//  CorrectBoundHessian(geometry, config);
 }
 
 void CSolver::SetHessian_LS(CGeometry *geometry, CConfig *config) {
@@ -4978,59 +4974,6 @@ void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 
   /*--- To nPoint: The solution must be communicated beforehand ---*/
   base_nodes->Set_BGSSolution_k();
-}
-
-void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config) {
-  unsigned short iDim, iVar, iMetr, iMarker;
-  unsigned short nMetr = 3*(nDim-1);
-  unsigned long iVertex;
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY ) {
-      
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        
-        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        if (geometry->node[iPoint]->GetDomain()) {
-          
-          //--- Correct if any of the neighbors belong to the volume
-          unsigned short iNeigh, counter = 0;
-          su2double hess[nMetr*nVar];
-          for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-            const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-            if(!geometry->node[jPoint]->GetBoundary()) {
-              for(iVar = 0; iVar < nVar; iVar++){
-                const unsigned short i = iVar*nMetr;
-
-                //--- Reset hessian if first volume node detected
-                if(counter == 0) {
-                  for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                    hess[i+iMetr] = 0.;
-                  }// iMetr
-                }// if counter
-                for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                   hess[i+iMetr] += base_nodes->GetHessian(jPoint, iVar, iMetr);
-                }// iMetr
-              }// iVar
-              counter ++;
-            }// if boundary
-          }// iNeigh
-          if(counter > 0) {
-            for(iVar = 0; iVar < nVar; iVar++){
-              const unsigned short i = iVar*nMetr;
-              for(iMetr = 0; iMetr < nMetr; iMetr++) {
-                 base_nodes->SetHessian(iPoint, iVar, iMetr, hess[i+iMetr]/su2double(counter));
-              }// iMetr
-            }// iVar
-          }// if counter
-        }// if domain
-      }// iVertex
-    }// if KindBC
-  }// iMarker
 }
 
 void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config, unsigned long iPoint) {
