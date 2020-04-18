@@ -3140,7 +3140,7 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config) {
 void CSolver::SetAuxVar_Hessian_GG(CGeometry *geometry, CConfig *config) {
   
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
-    base_nodes->SetAuxVar_Adaptation(iPoint,0,base_nodes->GetEnthalpy(iPoint));
+    base_nodes->SetAuxVar_Adaptation(iPoint,0,base_nodes->GetDensity(iPoint)*base_nodes->GetEnthalpy(iPoint));
   
   //--- communicate the solution values via MPI
   InitiateComms(geometry, config, ANISO_AUX_VAR);
@@ -5122,7 +5122,7 @@ void CSolver::ComputeMetric(CSolver   **solver,
     ConvectiveMetric(solver, geometry, config, iPoint, HessianWeights);
     
     //--- Scalar dissipation terms
-//    if (cjst) DissipativeMetric(solver, geometry, config, iPoint, HessianWeights);
+    if (cjst) DissipativeMetric(solver, geometry, config, iPoint, HessianWeights);
 
     //--- Viscous terms
     if (visc) ViscousMetric(solver, geometry, config, iPoint, HessianWeights);
@@ -5310,27 +5310,27 @@ void CSolver::DissipativeMetric(CSolver                    **solver,
   eps_2 = kappa_2*sensor;
   eps_4 = max(0., kappa_4-eps_2);
   
-//  //--- First-order terms (errors due to eigenvalue)
-//  vector<su2double> TmpWeights(nVarFlo, 0.0);
-//  su2double factor = 0.;
-//  for (iDim = 0; iDim < nDim; ++iDim) {
-//    for (iVar = 0; iVar < nVarFlo-1; ++iVar) {
-//      factor += varFlo->GetGradient_Adaptation(iPoint, iVar, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, iVar, iDim);
-//    }
-//    //--- Energy dissipation uses enthalpy
-//    factor += varFlo->GetGradientAuxVar_Adaptation(iPoint, 0, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
-//  }
-//  factor *= eps_2*vol/area;
-//
-//  for (iDim = 0; iDim < nDim; ++iDim) {
-//    TmpWeights[iDim+1] += -u[iDim]/r*sqrt(g*R/(cv*(4*e-2*v2)));
-//    if (sqrt(v2) > 1.0e-10) TmpWeights[iDim+1] += u[iDim]/(r*sqrt(v2));
-//    TmpWeights[0]      += -u[iDim]*TmpWeights[iDim+1];
-//  }
-//  TmpWeights[nVarFlo-1] += 1./r*sqrt(g*R/(cv*(4*e-2*v2)));
-//  TmpWeights[0]         += -e*TmpWeights[nVarFlo-1];
-//
-//  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[1][iVar] += TmpWeights[iVar]*factor;
+  //--- First-order terms (errors due to eigenvalue)
+  vector<su2double> TmpWeights(nVarFlo, 0.0);
+  su2double factor = 0.;
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (iVar = 0; iVar < nVarFlo-1; ++iVar) {
+      factor += varFlo->GetGradient_Adaptation(iPoint, iVar, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, iVar, iDim);
+    }
+    //--- Energy dissipation uses enthalpy
+    factor += varFlo->GetGradientAuxVar_Adaptation(iPoint, 0, iDim)*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
+  }
+  factor *= eps_2*vol/area;
+
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    TmpWeights[iDim+1] += -u[iDim]/r*sqrt(g*R/(cv*(4*e-2*v2)));
+    if (sqrt(v2) > 1.0e-10) TmpWeights[iDim+1] += u[iDim]/(r*sqrt(v2));
+    TmpWeights[0]      += -u[iDim]*TmpWeights[iDim+1];
+  }
+  TmpWeights[nVarFlo-1] += 1./r*sqrt(g*R/(cv*(4*e-2*v2)));
+  TmpWeights[0]         += -e*TmpWeights[nVarFlo-1];
+
+  for (iVar = 0; iVar < nVarFlo; ++iVar) weights[1][iVar] += TmpWeights[iVar]*factor;
   
 //  //--- Second-order terms (errors due to eigenvalue)
 //  if (eps_4 > 1.0e-10) {
