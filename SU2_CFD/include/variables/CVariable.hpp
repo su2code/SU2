@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -129,10 +129,10 @@ protected:
   unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
   unsigned long nSecondaryVarGrad = 0;   /*!< \brief Number of secondaries for which a gradient is computed. */
 
+  /*--- Only allow default construction by derived classes. ---*/
+  CVariable() = default;
 public:
-
-  /*--- Disable default construction copy and assignment. ---*/
-  CVariable() = delete;
+  /*--- Disable copy and assignment. ---*/
   CVariable(const CVariable&) = delete;
   CVariable(CVariable&&) = delete;
   CVariable& operator= (const CVariable&) = delete;
@@ -2099,32 +2099,6 @@ public:
   inline virtual void SetSolution_Geometry(unsigned long iPoint, unsigned long iVar, su2double solution_geometry) {}
 
   /*!
-   * \brief A virtual member. Get the geometry solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline virtual su2double GetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member. Set the value of the mesh solution (adjoint).
-   * \param[in] solution - Solution of the problem (acceleration).
-   */
-  inline virtual void SetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iDim, su2double der) {}
-
-  /*!
-   * \brief A virtual member. Get the geometry solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline virtual su2double GetGeometry_CrossTerm_Derivative_Flow(unsigned long iPoint, unsigned long iVar) const { return 0.0;}
-
-  /*!
-   * \brief A virtual member. Set the value of the mesh solution (adjoint).
-   * \param[in] solution - Solution of the problem (acceleration).
-   */
-  inline virtual void SetGeometry_CrossTerm_Derivative_Flow(unsigned long iPoint, unsigned long iDim, su2double der) {}
-
-  /*!
    * \brief A virtual member. Set the value of the old geometry solution (adjoint).
    */
   inline virtual void Set_OldSolution_Geometry() {}
@@ -2136,9 +2110,13 @@ public:
   inline virtual su2double Get_OldSolution_Geometry(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
-   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   * \brief Get BGS solution to compute the BGS residual (difference between BGS and BGS_k).
+   * \note This is virtual because for some classes the result of a BGS iteration is not "Solution".
+   *       If this method is overriden, the BGSSolution_k ones proabably have to be too.
    */
-  inline virtual void Set_BGSSolution(unsigned long iPoint, unsigned long iDim, su2double solution) {}
+  inline virtual su2double Get_BGSSolution(unsigned long iPoint, unsigned long iVar) const {
+    return Solution(iPoint, iVar);
+  }
 
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
@@ -2148,12 +2126,12 @@ public:
   /*!
    * \brief Restore the previous BGS subiteration to solution.
    */
-  void Restore_BGSSolution_k();
+  virtual void Restore_BGSSolution_k();
 
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
-  inline void Set_BGSSolution_k(unsigned long iPoint, unsigned long iVar, su2double val_var) {
+  inline virtual void Set_BGSSolution_k(unsigned long iPoint, unsigned long iVar, su2double val_var) {
     Solution_BGS_k(iPoint,iVar) = val_var;
   }
 
@@ -2164,23 +2142,6 @@ public:
   inline virtual su2double Get_BGSSolution_k(unsigned long iPoint, unsigned long iVar) const {
     return Solution_BGS_k(iPoint,iVar);
   }
-
-  /*!
-   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
-   * \param[out] val_solution - old adjoint solution for coordinate iDim
-   */
-  inline virtual su2double Get_BGSSolution(unsigned long iPoint, unsigned long iDim) const {return 0.0;}
-
-  /*!
-   * \brief  A virtual member. Set the contribution of crossed terms into the derivative.
-   */
-  inline virtual void SetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) {}
-
-  /*!
-   * \brief  A virtual member. Get the contribution of crossed terms into the derivative.
-   * \return The contribution of crossed terms into the derivative.
-   */
-  inline virtual su2double GetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Set the direct velocity solution for the adjoint solver.
@@ -2423,7 +2384,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double *GetPrestretch(unsigned long iPoint) {return nullptr; }
+  inline virtual const su2double *GetPrestretch(unsigned long iPoint) const {return nullptr; }
 
   /*!
    * \brief A virtual member.

@@ -2,7 +2,7 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2686,7 +2686,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
 
   geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
   geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
-  if (config->GetGrid_Movement()){
+  if (config->GetGrid_Movement() || config->GetDynamic_Grid()){
     geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, GRID_VELOCITY);
     geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
   }
@@ -2704,9 +2704,6 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
     geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
 
   }
-
-  if (config->GetKind_Solver() == DISC_ADJ_RANS || config->GetKind_Solver() == DISC_ADJ_INC_RANS)
-  geometry_container[MESH_0]->ComputeWall_Distance(config);
 
 }
 
@@ -3738,42 +3735,6 @@ void CGeometry::SetElemVolume(CConfig *config)
   } // end SU2_OMP_PARALLEL
 }
 
-void CGeometry::UpdateBoundaries(CConfig *config){
-
-  unsigned short iMarker;
-  unsigned long iElem_Surface, iNode_Surface, Point_Surface;
-
-  for (iMarker = 0; iMarker <config->GetnMarker_All(); iMarker++){
-    for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
-      for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
-
-        Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
-
-        node[Point_Surface]->SetPhysicalBoundary(false);
-        node[Point_Surface]->SetSolidBoundary(false);
-
-        if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-            config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
-            config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
-            config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
-          node[Point_Surface]->SetPhysicalBoundary(true);
-
-        if (config->GetSolid_Wall(iMarker))
-          node[Point_Surface]->SetSolidBoundary(true);
-      }
-    }
-  }
-
-  /*--- Update the normal neighbors ---*/
-
-  FindNormal_Neighbor(config);
-
-  /*--- Compute wall distance ---- */
-
-  ComputeWall_Distance(config);
-
-}
-
 void CGeometry::SetGeometryPlanes(CConfig *config) {
 
   bool loop_on;
@@ -3884,7 +3845,7 @@ void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
 
   /*--- Center of rotation & angular velocity vector from config ---*/
 
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < 3; iDim++) {
     Center[iDim] = config->GetMotion_Origin(iDim);
     Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
   }
@@ -4149,3 +4110,58 @@ void CGeometry::SetNaturalElementColoring()
   /*--- In parallel, set the group size to nElem to protect client code. ---*/
   if (omp_get_max_threads() > 1) elemColorGroupSize = nElem;
 }
+
+void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry ****geometry_container){
+
+  int nZone = config_container[ZONE_0]->GetnZone();
+  bool allEmpty = true;
+  vector<bool> wallDistanceNeeded(nZone, false);
+
+  for (int iInst = 0; iInst < config_container[ZONE_0]->GetnTimeInstances(); iInst++){
+    for (int iZone = 0; iZone < nZone; iZone++){
+
+      /*--- Check if a zone needs the wall distance and store a boolean ---*/
+
+      ENUM_MAIN_SOLVER kindSolver = static_cast<ENUM_MAIN_SOLVER>(config_container[iZone]->GetKind_Solver());
+      if (kindSolver == RANS ||
+          kindSolver == INC_RANS ||
+          kindSolver == DISC_ADJ_RANS ||
+          kindSolver == DISC_ADJ_INC_RANS ||
+          kindSolver == FEM_LES ||
+          kindSolver == FEM_RANS){
+        wallDistanceNeeded[iZone] = true;
+      }
+
+      /*--- Set the wall distances in all zones to the numerical limit.
+     * This is necessary, because before a computed distance is set, it will be checked
+     * whether the new distance is smaller than the currently stored one. ---*/
+      CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
+      if (wallDistanceNeeded[iZone])
+        geometry->SetWallDistance(numeric_limits<su2double>::max());
+    }
+
+    /*--- Loop over all zones and compute the ADT based on the viscous walls in that zone ---*/
+    for (int iZone = 0; iZone < nZone; iZone++){
+      CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
+      unique_ptr<CADTElemClass> WallADT = geometry->ComputeViscousWallADT(config_container[iZone]);
+      if (WallADT && !WallADT->IsEmpty()){
+        allEmpty = false;
+        /*--- Inner loop over all zones to update the wall distances.
+       * It might happen that there is a closer viscous wall in zone iZone for points in zone jZone. ---*/
+        for (int jZone = 0; jZone < nZone; jZone++){
+          if (wallDistanceNeeded[jZone])
+            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(config_container[jZone], WallADT.get());
+        }
+      }
+    }
+
+    /*--- If there are no viscous walls in the entire domain, set distances to zero ---*/
+    if (allEmpty){
+      for (int iZone = 0; iZone < nZone; iZone++){
+        CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
+        geometry->SetWallDistance(0.0);
+      }
+    }
+  }
+}
+

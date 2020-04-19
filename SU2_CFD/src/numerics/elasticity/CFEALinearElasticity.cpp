@@ -2,7 +2,7 @@
  * \file CFEALinearElasticity.cpp
  * \brief Classes for linear elasticity problems.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -366,7 +366,6 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
   case INVERSE_VOLUME:
   case SOLID_WALL_DISTANCE:
     element_based = true;
-    Nu = config->GetDeform_Coeff();
     break;
   case CONSTANT_STIFFNESS:
     element_based = false;

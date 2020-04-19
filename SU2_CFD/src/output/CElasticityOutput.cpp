@@ -2,7 +2,7 @@
  * \file output_elasticity.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -115,10 +115,9 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
       SetHistoryOutputValue("RMS_DISP_Z", log10(fea_solver->GetRes_RMS(2)));
     }
   } else if (nonlinear_analysis){
-    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->LinSysSol.norm()));
-    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->LinSysRes.norm()));
-    SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->LinSysSol.dot(fea_solver->LinSysRes)));
-
+    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->GetRes_FEM(0)));
+    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->GetRes_FEM(1)));
+    SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->GetRes_FEM(2)));
   }
 
   if (multiZone){
@@ -133,6 +132,8 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
 
   SetHistoryOutputValue("LINSOL_ITER", fea_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(fea_solver->GetResLinSolver()));
+
+  SetHistoryOutputValue("COMBO", fea_solver->GetTotal_ComboObj());
 
 }
 
@@ -158,6 +159,8 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("VMS",            "VonMises", ScreenOutputFormat::SCIENTIFIC, "", "VMS");
   AddHistoryOutput("LOAD_INCREMENT", "Load[%]",  ScreenOutputFormat::PERCENT, "", "LOAD_INCREMENT");
   AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       ScreenOutputFormat::FIXED, "", "LOAD_RAMP");
+
+  AddHistoryOutput("COMBO", "ObjFun", ScreenOutputFormat::SCIENTIFIC, "COMBO", "", HistoryFieldType::COEFFICIENT);
 
 }
 
@@ -237,5 +240,3 @@ bool CElasticityOutput::SetInit_Residuals(CConfig *config){
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
 
 }
-
-

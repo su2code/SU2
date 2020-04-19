@@ -2,7 +2,7 @@
  * \file fem_geometry_structure.inl
  * \brief In-Line subroutines of the <i>fem_geometry_structure.hpp</i> file.
  * \author E. van der Weide
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
