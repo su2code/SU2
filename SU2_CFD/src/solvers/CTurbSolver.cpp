@@ -930,7 +930,8 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
        offset in the buffer of data from the restart file and load it. ---*/
 
       index = counter*Restart_Vars[1] + skipVars;
-      nodes->SetSolution(iPoint_Local, &Restart_Data[index]);
+      for (iVar = 0; iVar < nVar; ++iVar)
+        nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
       counter++;
