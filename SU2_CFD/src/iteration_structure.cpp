@@ -561,11 +561,8 @@ bool CFluidIteration::Monitor(COutput *output,
 
   bool StopCalc = false;
 
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+  StopTime = SU2_MPI::Wtime();
+
   UsedTime = StopTime - StartTime;
 
 
@@ -653,11 +650,7 @@ void CFluidIteration::Solve(COutput *output,
   /*--- Synchronization point before a single solver iteration.
         Compute the wall clock time required. ---*/
 
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+  StartTime = SU2_MPI::Wtime();
 
   /*--- Preprocess the solver ---*/
   Preprocess(output, integration, geometry, solver, numerics, config,
@@ -1122,11 +1115,7 @@ void CHeatIteration::Solve(COutput *output,
   /*--- Synchronization point before a single solver iteration.
         Compute the wall clock time required. ---*/
 
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+  StartTime = SU2_MPI::Wtime();
 
   /*--- Preprocess the solver ---*/
 
@@ -1484,11 +1473,8 @@ bool CFEAIteration::Monitor(COutput *output,
                             unsigned short val_iZone,
                             unsigned short val_iInst) {
 
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+  StopTime = SU2_MPI::Wtime();
+
   UsedTime = StopTime - StartTime;
 
   if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()){
@@ -1747,12 +1733,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
                                            CFreeFormDefBox*** FFDBox,
                                            unsigned short val_iZone,
                                            unsigned short val_iInst) {
-
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+  StartTime = SU2_MPI::Wtime();
 
   unsigned long iPoint;
   unsigned short TimeIter = config[val_iZone]->GetTimeIter();
@@ -2295,11 +2276,8 @@ bool CDiscAdjFluidIteration::Monitor(COutput *output,
     unsigned short val_iZone,
     unsigned short val_iInst)     {
 
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+  StopTime = SU2_MPI::Wtime();
+
   UsedTime = StopTime - StartTime;
 
   /*--- Write the convergence history for the fluid (only screen output) ---*/

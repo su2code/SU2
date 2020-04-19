@@ -28,8 +28,6 @@
 
 #pragma once
 
-#include <ctime>
-
 #include "../../Common/include/mpi_structure.hpp"
 #include "../../Common/include/geometry/CGeometry.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
