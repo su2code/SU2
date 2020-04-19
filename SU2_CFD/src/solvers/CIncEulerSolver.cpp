@@ -5992,7 +5992,11 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
-  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  /*--- For turbulent simulations the flow preprocessing is done by the turbulence solver
+   *    after it loads its variables (they are needed to compute flow primitives). ---*/
+  if (!turbulent) {
+    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  }
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
@@ -6012,7 +6016,10 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     }
     solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+
+    if (!turbulent) {
+      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
   }
 
   /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy ---*/
