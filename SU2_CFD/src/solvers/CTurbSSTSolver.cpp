@@ -316,9 +316,10 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long iPoint, ErrorCounter = 0;
-  unsigned short iVar;
 
   bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
+  bool disc_adjoint = config->GetDiscrete_Adjoint();
+  bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Set the primitive variables ---*/
 
@@ -334,7 +335,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Initialize the Jacobian matrices ---*/
 
-  Jacobian.SetValZero();
+  if (implicit && !disc_adjoint) Jacobian.SetValZero();
 
   /*--- Upwind second order reconstruction and gradients ---*/
 
