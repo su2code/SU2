@@ -5947,6 +5947,43 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
+  /*--- Update the geometry for flows on deforming meshes ---*/
+
+  if ((dynamic_grid || static_fsi) && val_update_geo) {
+
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+
+    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+
+    if (dynamic_grid) {
+      geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
+      geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
+    }
+
+    /*--- Recompute the edges and  dual mesh control volumes in the
+     domain and on the boundaries. ---*/
+
+    geometry[MESH_0]->SetCoord_CG();
+    geometry[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetMaxLength(config);
+
+    /*--- Update the multigrid structure after setting up the finest grid,
+     including computing the grid velocities on the coarser levels. ---*/
+
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+      iMeshFine = iMesh-1;
+      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
+      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
+      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
+      if (dynamic_grid) {
+        geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
+      }
+      geometry[iMesh]->SetMaxLength(config);
+    }
+  }
+
   /*--- Communicate the loaded solution on the fine grid before we transfer
    it down to the coarse levels. We alo call the preprocessing routine
    on the fine level in order to have all necessary quantities updated,
@@ -5978,78 +6015,16 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   }
 
-  /*--- Update the geometry for flows on dynamic meshes ---*/
-
-  if (dynamic_grid && val_update_geo) {
-
-    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-
-    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
-    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
-
-    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
-    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
-
-    /*--- Recompute the edges and  dual mesh control volumes in the
-     domain and on the boundaries. ---*/
-
-    geometry[MESH_0]->SetCoord_CG();
-    geometry[MESH_0]->SetControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-
-    /*--- Update the multigrid structure after setting up the finest grid,
-     including computing the grid velocities on the coarser levels. ---*/
-
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-      iMeshFine = iMesh-1;
-      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
-      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
-      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
-      geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
-    }
-  }
-
-  /*--- Update the geometry for flows on static FSI problems with moving meshes ---*/
-
-  if (static_fsi && val_update_geo) {
-
-    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-
-    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
-    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
-
-    /*--- Recompute the edges and  dual mesh control volumes in the
-     domain and on the boundaries. ---*/
-
-    geometry[MESH_0]->SetCoord_CG();
-    geometry[MESH_0]->SetControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetMaxLength(config);
-
-    /*--- Update the multigrid structure after setting up the finest grid,
-     including computing the grid velocities on the coarser levels. ---*/
-
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-      iMeshFine = iMesh-1;
-      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
-      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
-      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
-      geometry[iMesh]->SetMaxLength(config);
-    }
-  }
-
   /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy ---*/
-  if (dual_time && config->GetGrid_Movement() && (config->GetKind_GridMovement() != RIGID_MOTION)) {
-    if (!config->GetDeform_Mesh()) {
-      Restart_OldGeometry(geometry[MESH_0], config);
-    }
+  if (dual_time && config->GetGrid_Movement() && !config->GetDeform_Mesh() &&
+      (config->GetKind_GridMovement() != RIGID_MOTION)) {
+    Restart_OldGeometry(geometry[MESH_0], config);
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
+  delete [] Restart_Vars; Restart_Vars = nullptr;
+  delete [] Restart_Data; Restart_Data = nullptr;
 
 }
 
