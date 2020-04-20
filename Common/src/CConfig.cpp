@@ -9142,12 +9142,7 @@ su2double CConfig::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<
 void CConfig::Tick(double *val_start_time) {
 
 #ifdef PROFILE
-#ifndef HAVE_MPI
-  *val_start_time = double(clock())/double(CLOCKS_PER_SEC);
-#else
-  *val_start_time = MPI_Wtime();
-#endif
-
+  *val_start_time = SU2_MPI::Wtime();
 #endif
 
 }
@@ -9158,11 +9153,7 @@ void CConfig::Tock(double val_start_time, string val_function_name, int val_grou
 
   double val_stop_time = 0.0, val_elapsed_time = 0.0;
 
-#ifndef HAVE_MPI
-  val_stop_time = double(clock())/double(CLOCKS_PER_SEC);
-#else
-  val_stop_time = MPI_Wtime();
-#endif
+  val_stop_time = SU2_MPI::Wtime();
 
   /*--- Compute the elapsed time for this subroutine ---*/
   val_elapsed_time = val_stop_time - val_start_time;
@@ -9344,10 +9335,8 @@ void CConfig::GEMM_Tick(double *val_start_time) {
 
 #ifdef HAVE_MKL
   *val_start_time = dsecnd();
-#elif HAVE_MPI
-  *val_start_time = MPI_Wtime();
 #else
-  *val_start_time = double(clock())/double(CLOCKS_PER_SEC);
+  *val_start_time = SU2_MPI::Wtime();
 #endif
 
 #endif
@@ -9364,10 +9353,8 @@ void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) {
 
 #ifdef HAVE_MKL
   val_stop_time = dsecnd();
-#elif HAVE_MPI
-  val_stop_time = MPI_Wtime();
 #else
-  val_stop_time = double(clock())/double(CLOCKS_PER_SEC);
+  val_stop_time = SU2_MPI::Wtime();
 #endif
 
   /* Compute the elapsed time. */
