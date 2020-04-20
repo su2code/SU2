@@ -42,6 +42,7 @@
 import numpy as np
 import shutil
 import os
+import scipy.io
 # ----------------------------------------------------------------------
 #  FSI Interface Class
 # ----------------------------------------------------------------------
@@ -371,13 +372,13 @@ class Interface:
         localFluidInterface_array_X_init = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
         localFluidInterface_array_Y_init = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
         localFluidInterface_array_Z_init = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
+        localGlobalIndex_array           = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
 
         for iVertex in range(self.nLocalFluidInterfaceNodes):
             GlobalIndex = FluidSolver.GetVertexGlobalIndex(self.fluidInterfaceIdentifier, iVertex)
             posx, posy, posz = FluidSolver.GetVertex_UndeformedCoord(self.fluidInterfaceIdentifier, iVertex)
-            print("Global index = {}".format(GlobalIndex))
-            print("Undeformed coordinates = {} {} {} ".format(posx, posy, posz))
-
+            #print("Global index = {}".format(GlobalIndex))
+            #print("Undeformed coordinates = {} {} {} ".format(posx, posy, posz))
 
             if GlobalIndex in self.FluidHaloNodeList[myid].keys():
                 self.haloNodesPositionsInit[GlobalIndex] = (posx, posy, posz)
@@ -386,6 +387,7 @@ class Interface:
                 localFluidInterface_array_X_init[localIndex] = posx
                 localFluidInterface_array_Y_init[localIndex] = posy
                 localFluidInterface_array_Z_init[localIndex] = posz
+                localGlobalIndex_array[localIndex] = GlobalIndex
                 self.localFluidInterface_vertex_indices[localIndex] = int(iVertex)
                 localIndex += 1
 
@@ -401,6 +403,7 @@ class Interface:
             bufXCoor = np.array(localFluidInterface_array_X_init)
             bufYCoor = np.array(localFluidInterface_array_Y_init)
             bufZCoor = np.array(localFluidInterface_array_Z_init)
+            bufGlobalIndex = np.array(localGlobalIndex_array)
             self.sendCounts = np.array(self.comm.gather(self.nLocalFluidInterfacePhysicalNodes, 0))
 
             if myid == self.rootProcess:
@@ -408,10 +411,11 @@ class Interface:
                 self.globalFluidInterfaceXcoor = np.empty(sum(self.sendCounts))
                 self.globalFluidInterfaceYcoor = np.empty(sum(self.sendCounts))
                 self.globalFluidInterfaceZcoor = np.empty(sum(self.sendCounts))
-
+                self.globalFluidIndex          = np.empty(sum(self.sendCounts))
             self.comm.Gatherv(sendbuf=bufXCoor, recvbuf=(self.globalFluidInterfaceXcoor, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufYCoor, recvbuf=(self.globalFluidInterfaceYcoor, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufZCoor, recvbuf=(self.globalFluidInterfaceZcoor, self.sendCounts), root=0)
+            self.comm.Gatherv(sendbuf=bufZCoor, recvbuf=(self.globalFluidIndex, self.sendCounts), root=0)
             #if myid == 0:
                 #print("Gathered array X: {}".format(self.globalFluidInterfaceXcoor))
                 #print("Gathered array Y: {}".format(self.globalFluidInterfaceYcoor))
@@ -422,6 +426,7 @@ class Interface:
             self.globalFluidInterfaceXcoor = localFluidInterface_array_X_init.copy()
             self.globalFluidInterfaceYcoor = localFluidInterface_array_Y_init.copy()
             self.globalFluidInterfaceZcoor = localFluidInterface_array_Z_init.copy()
+            self.globalFluidIndex          = localGlobalIndex_array.copy()
 
         # Store the global fluid coordinates
         if myid == self.rootProcess:
@@ -455,6 +460,10 @@ class Interface:
             self.globalSolidDispX = np.zeros(self.nSolidInterfaceNodes)
             self.globalSolidDispY = np.zeros(self.nSolidInterfaceNodes)
             self.globalSolidDispZ = np.zeros(self.nSolidInterfaceNodes)
+
+        if self.haveSolidSolver:
+            scipy.io.savemat( './globalFluidIndex.mat', mdict={'globalFluidIndex': self.globalFluidIndex }) 
+            scipy.io.savemat( './globalFluidCoordinates.mat', mdict={'globalFluidCoordinates': self.globalFluidCoordinates })
 
     def transferFluidTractions(self, FluidSolver, SolidSolver, MLSSolver):
         """
