@@ -935,7 +935,7 @@ void CConfig::SetPointersNull(void) {
   Kind_SurfaceMovement = NULL;
   LocationStations   = NULL;
   Motion_Origin     = NULL;
-  Translation_Rate       = NULL;
+  Translation_Rate  = NULL;
   Rotation_Rate     = NULL;
   Pitching_Omega    = NULL;
   Pitching_Ampl     = NULL;
@@ -943,7 +943,7 @@ void CConfig::SetPointersNull(void) {
   Plunging_Omega    = NULL;
   Plunging_Ampl     = NULL;
   MarkerMotion_Origin     = NULL;
-  MarkerTranslation_Rate       = NULL;
+  MarkerTranslation_Rate  = NULL;
   MarkerRotation_Rate     = NULL;
   MarkerPitching_Omega    = NULL;
   MarkerPitching_Ampl     = NULL;
@@ -1117,8 +1117,6 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief WEAKLY_COUPLED_HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
-
-  addBoolOption("ADJ_FSI", FSI_Problem, NO);
 
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
@@ -1701,9 +1699,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Preconditioner for the discrete adjoint Krylov linear solvers */
   addEnumOption("DISCADJ_LIN_PREC", Kind_DiscAdj_Linear_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Linear solver for the discete adjoint systems */
-  addEnumOption("FSI_DISCADJ_LIN_SOLVER_STRUC", Kind_DiscAdj_Linear_Solver_FSI_Struc, Linear_Solver_Map, CONJUGATE_GRADIENT);
-  /* DESCRIPTION: Preconditioner for the discrete adjoint Krylov linear solvers */
-  addEnumOption("FSI_DISCADJ_LIN_PREC_STRUC", Kind_DiscAdj_Linear_Prec_FSI_Struc, Linear_Solver_Prec_Map, JACOBI);
 
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
@@ -2221,11 +2216,13 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Deform limit in m or inches */
   addDoubleOption("DEFORM_LIMIT", Deform_Limit, 1E6);
   /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
-  addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, SOLID_WALL_DISTANCE);
-  /* DESCRIPTION: Poisson's ratio for constant stiffness FEA method of grid deformation*/
+  addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_StiffnessType, Deform_Stiffness_Map, SOLID_WALL_DISTANCE);
+  /* DESCRIPTION: Poisson's ratio for constant stiffness FEA method of grid deformation */
   addDoubleOption("DEFORM_ELASTICITY_MODULUS", Deform_ElasticityMod, 2E11);
-  /* DESCRIPTION: Young's modulus and Poisson's ratio for constant stiffness FEA method of grid deformation*/
+  /* DESCRIPTION: Young's modulus and Poisson's ratio for constant stiffness FEA method of grid deformation */
   addDoubleOption("DEFORM_POISSONS_RATIO", Deform_PoissonRatio, 0.3);
+  /* DESCRIPTION: Size of the layer of highest stiffness for wall distance-based mesh stiffness */
+  addDoubleOption("DEFORM_STIFF_LAYER_SIZE", Deform_StiffLayerSize, 0.0);
   /*  DESCRIPTION: Linear solver for the mesh deformation\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
   addEnumOption("DEFORM_LINEAR_SOLVER", Kind_Deform_Linear_Solver, Linear_Solver_Map, FGMRES);
   /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
@@ -2394,27 +2391,6 @@ void CConfig::SetConfig_Options() {
   /* CONFIG_CATEGORY: FSI solver */
   /*--- Options related to the FSI solver ---*/
 
-  /*!\brief PHYSICAL_PROBLEM_FLUID_FSI
-   *  DESCRIPTION: Physical governing equations \n
-   *  Options: NONE (default),EULER, NAVIER_STOKES, RANS,
-   *  \ingroup Config*/
-  addEnumOption("FSI_FLUID_PROBLEM", Kind_Solver_Fluid_FSI, FSI_Fluid_Solver_Map, NO_SOLVER_FFSI);
-
-  /*!\brief PHYSICAL_PROBLEM_STRUCTURAL_FSI
-   *  DESCRIPTION: Physical governing equations \n
-   *  Options: NONE (default), FEM_ELASTICITY
-   *  \ingroup Config*/
-  addEnumOption("FSI_STRUCTURAL_PROBLEM", Kind_Solver_Struc_FSI, FSI_Struc_Solver_Map, NO_SOLVER_SFSI);
-
-  /* DESCRIPTION: Linear solver for the structural side on FSI problems */
-  addEnumOption("FSI_LINEAR_SOLVER_STRUC", Kind_Linear_Solver_FSI_Struc, Linear_Solver_Map, FGMRES);
-  /* DESCRIPTION: Preconditioner for the Krylov linear solvers */
-  addEnumOption("FSI_LINEAR_SOLVER_PREC_STRUC", Kind_Linear_Solver_Prec_FSI_Struc, Linear_Solver_Prec_Map, ILU);
-  /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
-  addUnsignedLongOption("FSI_LINEAR_SOLVER_ITER_STRUC", Linear_Solver_Iter_FSI_Struc, 500);
-  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
-  addDoubleOption("FSI_LINEAR_SOLVER_ERROR_STRUC", Linear_Solver_Error_FSI_Struc, 1E-6);
-
   /* DESCRIPTION: ID of the region we want to compute the sensitivities using direct differentiation */
   addUnsignedShortOption("FEA_ID_DIRECTDIFF", nID_DV, 0);
 
@@ -2457,16 +2433,16 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_FORCES_BREAKDOWN", Wrt_ForcesBreakdown, false);
 
 
-
-  /*  DESCRIPTION: Use conservative approach for interpolating between meshes.
-  *  Options: NO, YES \ingroup Config */
-  addBoolOption("CONSERVATIVE_INTERPOLATION", ConservativeInterpolation, true);
-
   /*!\par KIND_INTERPOLATION \n
    * DESCRIPTION: Type of interpolation to use for multi-zone problems. \n OPTIONS: see \link Interpolator_Map \endlink
    * Sets Kind_Interpolation \ingroup Config
    */
   addEnumOption("KIND_INTERPOLATION", Kind_Interpolation, Interpolator_Map, NEAREST_NEIGHBOR);
+
+  /*  DESCRIPTION: Use conservative approach for interpolating between meshes. */
+  addBoolOption("CONSERVATIVE_INTERPOLATION", ConservativeInterpolation, true);
+
+  addUnsignedShortOption("NUM_NEAREST_NEIGHBORS", NumNearestNeighbors, 1);
 
   /*!\par KIND_INTERPOLATION \n
    * DESCRIPTION: Type of radial basis function to use for radial basis function interpolation. \n OPTIONS: see \link RadialBasis_Map \endlink
@@ -2478,8 +2454,11 @@ void CConfig::SetConfig_Options() {
   *  Options: NO, YES \ingroup Config */
   addBoolOption("RADIAL_BASIS_FUNCTION_POLYNOMIAL_TERM", RadialBasisFunction_PolynomialOption, true);
 
-  /* DESCRIPTION: Radius for radial basis function */
-  addDoubleOption("RADIAL_BASIS_FUNCTION_PARAMETER", RadialBasisFunction_Parameter, 1);
+  /* DESCRIPTION: Radius for radial basis function. */
+  addDoubleOption("RADIAL_BASIS_FUNCTION_PARAMETER", RadialBasisFunction_Parameter, 1.0);
+
+  /* DESCRIPTION: Tolerance to prune small coefficients from the RBF interpolation matrix. */
+  addDoubleOption("RADIAL_BASIS_FUNCTION_PRUNE_TOLERANCE", RadialBasisFunction_PruneTol, 1e-6);
 
    /*!\par INLETINTERPOLATION \n
    * DESCRIPTION: Type of spanwise interpolation to use for the inlet face. \n OPTIONS: see \link Inlet_SpanwiseInterpolation_Map \endlink
@@ -2495,8 +2474,6 @@ void CConfig::SetConfig_Options() {
 
   addBoolOption("PRINT_INLET_INTERPOLATED_DATA", PrintInlet_InterpolatedData, false);
 
-  /* DESCRIPTION: Maximum number of FSI iterations */
-  addUnsignedShortOption("FSI_ITER", nIterFSI, 1);
   /* DESCRIPTION: Number of FSI iterations during which a ramp is applied */
   addUnsignedShortOption("RAMP_FSI_ITER", nIterFSI_Ramp, 2);
   /* DESCRIPTION: Aitken's static relaxation factor */
@@ -3569,11 +3546,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  if (nKind_SurfaceMovement > 1 && (GetSurface_Movement(FLUID_STRUCTURE) || GetSurface_Movement(FLUID_STRUCTURE_STATIC))){
+  if ((nKind_SurfaceMovement > 1) && GetSurface_Movement(FLUID_STRUCTURE)) {
     SU2_MPI::Error("FSI in combination with moving surfaces is currently not supported.", CURRENT_FUNCTION);
   }
 
-  if (nKind_SurfaceMovement != nMarker_Moving && !(GetSurface_Movement(FLUID_STRUCTURE) || GetSurface_Movement(FLUID_STRUCTURE_STATIC))){
+  if ((nKind_SurfaceMovement != nMarker_Moving) && !GetSurface_Movement(FLUID_STRUCTURE)) {
     SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
   }
 
@@ -3824,11 +3801,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Set number of TurboPerformance markers ---*/
   if(GetGrid_Movement() && RampRotatingFrame && !DiscreteAdjoint){
-      FinalRotation_Rate_Z = Rotation_Rate[2];
-      if(abs(FinalRotation_Rate_Z) > 0.0){
-        Rotation_Rate[2] = RampRotatingFrame_Coeff[0];
-      }
-
+    FinalRotation_Rate_Z = Rotation_Rate[2];
+    if(abs(FinalRotation_Rate_Z) > 0.0){
+      Rotation_Rate[2] = RampRotatingFrame_Coeff[0];
+    }
   }
 
   if(RampOutletPressure && !DiscreteAdjoint){
@@ -4923,6 +4899,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- 0 in the config file means "disable" which can be done using a very large group. ---*/
   if (edgeColorGroupSize==0) edgeColorGroupSize = 1<<30;
 
+  /*--- Specifying a deforming surface requires a mesh deformation solver. ---*/
+  if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
+
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -4970,126 +4949,72 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Allocate the memory (markers in each domain) ---*/
 
   Marker_All_TagBound       = new string[nMarker_All];    // Store the tag that correspond with each marker.
-  Marker_All_SendRecv       = new short[nMarker_All];   // +#domain (send), -#domain (receive).
-  Marker_All_KindBC         = new unsigned short[nMarker_All];  // Store the kind of boundary condition.
-  Marker_All_Monitoring     = new unsigned short[nMarker_All];  // Store whether the boundary should be monitored.
-  Marker_All_Designing      = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
-  Marker_All_Plotting       = new unsigned short[nMarker_All];  // Store whether the boundary should be plotted.
-  Marker_All_Analyze  = new unsigned short[nMarker_All];  // Store whether the boundary should be plotted.
-  Marker_All_ZoneInterface   = new unsigned short[nMarker_All]; // Store whether the boundary is in the FSI interface.
-  Marker_All_GeoEval        = new unsigned short[nMarker_All];  // Store whether the boundary should be geometry evaluation.
-  Marker_All_DV             = new unsigned short[nMarker_All];  // Store whether the boundary should be affected by design variables.
-  Marker_All_Moving         = new unsigned short[nMarker_All];  // Store whether the boundary should be in motion.
-  Marker_All_Deform_Mesh    = new unsigned short[nMarker_All];  // Store whether the boundary is deformable.
-  Marker_All_Fluid_Load     = new unsigned short[nMarker_All];  // Store whether the boundary computes/applies fluid loads.
-  Marker_All_PyCustom       = new unsigned short[nMarker_All];  // Store whether the boundary is Python customizable.
-  Marker_All_PerBound       = new short[nMarker_All];   // Store whether the boundary belongs to a periodic boundary.
-  Marker_All_Turbomachinery       = new unsigned short[nMarker_All];  // Store whether the boundary is in needed for Turbomachinery computations.
-  Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All];  // Store whether the boundary has a flag for Turbomachinery computations.
-  Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All];  // Store whether the boundary has a in the MixingPlane interface.
-
+  Marker_All_SendRecv       = new short[nMarker_All] ();   // +#domain (send), -#domain (receive).
+  Marker_All_KindBC         = new unsigned short[nMarker_All] (); // Store the kind of boundary condition.
+  Marker_All_Monitoring     = new unsigned short[nMarker_All] (); // Store whether the boundary should be monitored.
+  Marker_All_Designing      = new unsigned short[nMarker_All] (); // Store whether the boundary should be designed.
+  Marker_All_Plotting       = new unsigned short[nMarker_All] (); // Store whether the boundary should be plotted.
+  Marker_All_Analyze        = new unsigned short[nMarker_All] (); // Store whether the boundary should be plotted.
+  Marker_All_ZoneInterface  = new unsigned short[nMarker_All] (); // Store whether the boundary is in the FSI interface.
+  Marker_All_GeoEval        = new unsigned short[nMarker_All] (); // Store whether the boundary should be geometry evaluation.
+  Marker_All_DV             = new unsigned short[nMarker_All] (); // Store whether the boundary should be affected by design variables.
+  Marker_All_Moving         = new unsigned short[nMarker_All] (); // Store whether the boundary should be in motion.
+  Marker_All_Deform_Mesh    = new unsigned short[nMarker_All] (); // Store whether the boundary is deformable.
+  Marker_All_Fluid_Load     = new unsigned short[nMarker_All] (); // Store whether the boundary computes/applies fluid loads.
+  Marker_All_PyCustom       = new unsigned short[nMarker_All] (); // Store whether the boundary is Python customizable.
+  Marker_All_PerBound       = new short[nMarker_All] ();          // Store whether the boundary belongs to a periodic boundary.
+  Marker_All_Turbomachinery       = new unsigned short[nMarker_All] (); // Store whether the boundary is in needed for Turbomachinery computations.
+  Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All] (); // Store whether the boundary has a flag for Turbomachinery computations.
+  Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All] (); // Store whether the boundary has a in the MixingPlane interface.
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
-    Marker_All_TagBound[iMarker_All]             = "SEND_RECEIVE";
-    Marker_All_SendRecv[iMarker_All]             = 0;
-    Marker_All_KindBC[iMarker_All]               = 0;
-    Marker_All_Monitoring[iMarker_All]           = 0;
-    Marker_All_GeoEval[iMarker_All]              = 0;
-    Marker_All_Designing[iMarker_All]            = 0;
-    Marker_All_Plotting[iMarker_All]             = 0;
-    Marker_All_Analyze[iMarker_All]              = 0;
-    Marker_All_ZoneInterface[iMarker_All]        = 0;
-    Marker_All_DV[iMarker_All]                   = 0;
-    Marker_All_Moving[iMarker_All]               = 0;
-    Marker_All_Deform_Mesh[iMarker_All]          = 0;
-    Marker_All_Fluid_Load[iMarker_All]           = 0;
-    Marker_All_PerBound[iMarker_All]             = 0;
-    Marker_All_Turbomachinery[iMarker_All]       = 0;
-    Marker_All_TurbomachineryFlag[iMarker_All]   = 0;
-    Marker_All_MixingPlaneInterface[iMarker_All] = 0;
-    Marker_All_PyCustom[iMarker_All]             = 0;
+    Marker_All_TagBound[iMarker_All] = "SEND_RECEIVE";
   }
 
   /*--- Allocate the memory (markers in the config file) ---*/
 
   Marker_CfgFile_TagBound             = new string[nMarker_CfgFile];
-  Marker_CfgFile_KindBC               = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Monitoring           = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Designing            = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Plotting             = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Analyze              = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_GeoEval              = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_ZoneInterface        = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_DV                   = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Moving               = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Deform_Mesh          = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Fluid_Load           = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_PerBound             = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_PyCustom             = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_KindBC               = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Monitoring           = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Designing            = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Plotting             = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Analyze              = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_GeoEval              = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_ZoneInterface        = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_DV                   = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Moving               = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Deform_Mesh          = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Fluid_Load           = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_PerBound             = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_PyCustom             = new unsigned short[nMarker_CfgFile] ();
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile]             = "SEND_RECEIVE";
-    Marker_CfgFile_KindBC[iMarker_CfgFile]               = 0;
-    Marker_CfgFile_Monitoring[iMarker_CfgFile]           = 0;
-    Marker_CfgFile_GeoEval[iMarker_CfgFile]              = 0;
-    Marker_CfgFile_Designing[iMarker_CfgFile]            = 0;
-    Marker_CfgFile_Plotting[iMarker_CfgFile]             = 0;
-    Marker_CfgFile_Analyze[iMarker_CfgFile]              = 0;
-    Marker_CfgFile_ZoneInterface[iMarker_CfgFile]        = 0;
-    Marker_CfgFile_DV[iMarker_CfgFile]                   = 0;
-    Marker_CfgFile_Moving[iMarker_CfgFile]               = 0;
-    Marker_CfgFile_Deform_Mesh[iMarker_CfgFile]          = 0;
-    Marker_CfgFile_Fluid_Load[iMarker_CfgFile]           = 0;
-    Marker_CfgFile_PerBound[iMarker_CfgFile]             = 0;
-    Marker_CfgFile_Turbomachinery[iMarker_CfgFile]       = 0;
-    Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile]   = 0;
-    Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = 0;
-    Marker_CfgFile_PyCustom[iMarker_CfgFile]             = 0;
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = "SEND_RECEIVE";
   }
 
   /*--- Allocate memory to store surface information (Analyze BC) ---*/
 
-  Surface_MassFlow = new su2double[nMarker_Analyze];
-  Surface_Mach = new su2double[nMarker_Analyze];
-  Surface_Temperature = new su2double[nMarker_Analyze];
-  Surface_Pressure = new su2double[nMarker_Analyze];
-  Surface_Density = new su2double[nMarker_Analyze];
-  Surface_Enthalpy = new su2double[nMarker_Analyze];
-  Surface_NormalVelocity = new su2double[nMarker_Analyze];
-  Surface_Uniformity = new su2double[nMarker_Analyze];
-  Surface_SecondaryStrength = new su2double[nMarker_Analyze];
-  Surface_SecondOverUniform = new su2double[nMarker_Analyze];
-  Surface_MomentumDistortion = new su2double[nMarker_Analyze];
-  Surface_TotalTemperature = new su2double[nMarker_Analyze];
-  Surface_TotalPressure = new su2double[nMarker_Analyze];
-  Surface_PressureDrop = new su2double[nMarker_Analyze];
-  Surface_DC60 = new su2double[nMarker_Analyze];
-  Surface_IDC = new su2double[nMarker_Analyze];
-  Surface_IDC_Mach = new su2double[nMarker_Analyze];
-  Surface_IDR = new su2double[nMarker_Analyze];
-  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    Surface_MassFlow[iMarker_Analyze] = 0.0;
-    Surface_Mach[iMarker_Analyze] = 0.0;
-    Surface_Temperature[iMarker_Analyze] = 0.0;
-    Surface_Pressure[iMarker_Analyze] = 0.0;
-    Surface_Density[iMarker_Analyze] = 0.0;
-    Surface_Enthalpy[iMarker_Analyze] = 0.0;
-    Surface_NormalVelocity[iMarker_Analyze] = 0.0;
-    Surface_Uniformity[iMarker_Analyze] = 0.0;
-    Surface_SecondaryStrength[iMarker_Analyze] = 0.0;
-    Surface_SecondOverUniform[iMarker_Analyze] = 0.0;
-    Surface_MomentumDistortion[iMarker_Analyze] = 0.0;
-    Surface_TotalTemperature[iMarker_Analyze] = 0.0;
-    Surface_TotalPressure[iMarker_Analyze] = 0.0;
-    Surface_PressureDrop[iMarker_Analyze] = 0.0;
-    Surface_DC60[iMarker_Analyze] = 0.0;
-    Surface_IDC[iMarker_Analyze] = 0.0;
-    Surface_IDC_Mach[iMarker_Analyze] = 0.0;
-    Surface_IDR[iMarker_Analyze] = 0.0;
-  }
+  Surface_MassFlow = new su2double[nMarker_Analyze] ();
+  Surface_Mach = new su2double[nMarker_Analyze] ();
+  Surface_Temperature = new su2double[nMarker_Analyze] ();
+  Surface_Pressure = new su2double[nMarker_Analyze] ();
+  Surface_Density = new su2double[nMarker_Analyze] ();
+  Surface_Enthalpy = new su2double[nMarker_Analyze] ();
+  Surface_NormalVelocity = new su2double[nMarker_Analyze] ();
+  Surface_Uniformity = new su2double[nMarker_Analyze] ();
+  Surface_SecondaryStrength = new su2double[nMarker_Analyze] ();
+  Surface_SecondOverUniform = new su2double[nMarker_Analyze] ();
+  Surface_MomentumDistortion = new su2double[nMarker_Analyze] ();
+  Surface_TotalTemperature = new su2double[nMarker_Analyze] ();
+  Surface_TotalPressure = new su2double[nMarker_Analyze] ();
+  Surface_PressureDrop = new su2double[nMarker_Analyze] ();
+  Surface_DC60 = new su2double[nMarker_Analyze] ();
+  Surface_IDC = new su2double[nMarker_Analyze] ();
+  Surface_IDC_Mach = new su2double[nMarker_Analyze] ();
+  Surface_IDR = new su2double[nMarker_Analyze] ();
 
   /*--- Populate the marker information in the config file (all domains) ---*/
 
@@ -5119,97 +5044,56 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  ActDisk_DeltaPress = new su2double[nMarker_ActDiskInlet];
-  ActDisk_DeltaTemp = new su2double[nMarker_ActDiskInlet];
-  ActDisk_TotalPressRatio = new su2double[nMarker_ActDiskInlet];
-  ActDisk_TotalTempRatio = new su2double[nMarker_ActDiskInlet];
-  ActDisk_StaticPressRatio = new su2double[nMarker_ActDiskInlet];
-  ActDisk_StaticTempRatio = new su2double[nMarker_ActDiskInlet];
-  ActDisk_Power = new su2double[nMarker_ActDiskInlet];
-  ActDisk_MassFlow = new su2double[nMarker_ActDiskInlet];
-  ActDisk_Mach = new su2double[nMarker_ActDiskInlet];
-  ActDisk_Force = new su2double[nMarker_ActDiskInlet];
-  ActDisk_NetThrust = new su2double[nMarker_ActDiskInlet];
-  ActDisk_BCThrust = new su2double[nMarker_ActDiskInlet];
-  ActDisk_BCThrust_Old = new su2double[nMarker_ActDiskInlet];
-  ActDisk_GrossThrust = new su2double[nMarker_ActDiskInlet];
-  ActDisk_Area = new su2double[nMarker_ActDiskInlet];
-  ActDisk_ReverseMassFlow = new su2double[nMarker_ActDiskInlet];
+  ActDisk_DeltaPress = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_DeltaTemp = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_TotalPressRatio = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_TotalTempRatio = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_StaticPressRatio = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_StaticTempRatio = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_Power = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_MassFlow = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_Mach = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_Force = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_NetThrust = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_BCThrust = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_BCThrust_Old = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_GrossThrust = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_Area = new su2double[nMarker_ActDiskInlet] ();
+  ActDisk_ReverseMassFlow = new su2double[nMarker_ActDiskInlet] ();
 
-  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
-    ActDisk_DeltaPress[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_DeltaTemp[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_TotalPressRatio[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_TotalTempRatio[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_StaticPressRatio[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_StaticTempRatio[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_Power[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_MassFlow[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_Mach[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_Force[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_NetThrust[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_BCThrust[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_BCThrust_Old[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_GrossThrust[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_Area[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_ReverseMassFlow[iMarker_ActDiskInlet] = 0.0;
-  }
-
-
-  ActDiskInlet_MassFlow = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_Temperature = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_TotalTemperature = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_Pressure = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_TotalPressure = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_RamDrag = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_Force = new su2double[nMarker_ActDiskInlet];
-  ActDiskInlet_Power = new su2double[nMarker_ActDiskInlet];
+  ActDiskInlet_MassFlow = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_Temperature = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_TotalTemperature = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_Pressure = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_TotalPressure = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_RamDrag = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_Force = new su2double[nMarker_ActDiskInlet] ();
+  ActDiskInlet_Power = new su2double[nMarker_ActDiskInlet] ();
 
   for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDiskInlet[iMarker_ActDiskInlet];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ACTDISK_INLET;
-    ActDiskInlet_MassFlow[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_Temperature[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_TotalTemperature[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_Pressure[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_TotalPressure[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_RamDrag[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_Force[iMarker_ActDiskInlet] = 0.0;
-    ActDiskInlet_Power[iMarker_ActDiskInlet] = 0.0;
     iMarker_CfgFile++;
   }
 
-  ActDiskOutlet_MassFlow = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_Temperature = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_TotalTemperature = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_Pressure = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_TotalPressure = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_GrossThrust = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_Force = new su2double[nMarker_ActDiskOutlet];
-  ActDiskOutlet_Power = new su2double[nMarker_ActDiskOutlet];
+  ActDiskOutlet_MassFlow = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_Temperature = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_TotalTemperature = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_Pressure = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_TotalPressure = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_GrossThrust = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_Force = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_Power = new su2double[nMarker_ActDiskOutlet] ();
 
   for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ACTDISK_OUTLET;
-    ActDiskOutlet_MassFlow[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_Temperature[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_TotalTemperature[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_Pressure[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_TotalPressure[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_GrossThrust[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_Force[iMarker_ActDiskOutlet] = 0.0;
-    ActDiskOutlet_Power[iMarker_ActDiskOutlet] = 0.0;
     iMarker_CfgFile++;
   }
 
-  Outlet_MassFlow = new su2double[nMarker_Outlet];
-  Outlet_Density  = new su2double[nMarker_Outlet];
-  Outlet_Area     = new su2double[nMarker_Outlet];
-  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-    Outlet_MassFlow[iMarker_Outlet] = 0.0;
-    Outlet_Density[iMarker_Outlet]  = 0.0;
-    Outlet_Area[iMarker_Outlet]     = 0.0;
-  }
+  Outlet_MassFlow = new su2double[nMarker_Outlet] ();
+  Outlet_Density  = new su2double[nMarker_Outlet] ();
+  Outlet_Area     = new su2double[nMarker_Outlet] ();
 
   for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_NearFieldBound[iMarker_NearFieldBound];
@@ -5247,69 +5131,42 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  Engine_Power       = new su2double[nMarker_EngineInflow];
-  Engine_Mach        = new su2double[nMarker_EngineInflow];
-  Engine_Force       = new su2double[nMarker_EngineInflow];
-  Engine_NetThrust   = new su2double[nMarker_EngineInflow];
-  Engine_GrossThrust = new su2double[nMarker_EngineInflow];
-  Engine_Area        = new su2double[nMarker_EngineInflow];
+  Engine_Power       = new su2double[nMarker_EngineInflow] ();
+  Engine_Mach        = new su2double[nMarker_EngineInflow] ();
+  Engine_Force       = new su2double[nMarker_EngineInflow] ();
+  Engine_NetThrust   = new su2double[nMarker_EngineInflow] ();
+  Engine_GrossThrust = new su2double[nMarker_EngineInflow] ();
+  Engine_Area        = new su2double[nMarker_EngineInflow] ();
 
-  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
-    Engine_Power[iMarker_EngineInflow] = 0.0;
-    Engine_Mach[iMarker_EngineInflow] = 0.0;
-    Engine_Force[iMarker_EngineInflow] = 0.0;
-    Engine_NetThrust[iMarker_EngineInflow] = 0.0;
-    Engine_GrossThrust[iMarker_EngineInflow] = 0.0;
-    Engine_Area[iMarker_EngineInflow] = 0.0;
-  }
-
-  Inflow_Mach = new su2double[nMarker_EngineInflow];
-  Inflow_Pressure = new su2double[nMarker_EngineInflow];
-  Inflow_MassFlow = new su2double[nMarker_EngineInflow];
-  Inflow_ReverseMassFlow = new su2double[nMarker_EngineInflow];
-  Inflow_TotalPressure = new su2double[nMarker_EngineInflow];
-  Inflow_Temperature = new su2double[nMarker_EngineInflow];
-  Inflow_TotalTemperature = new su2double[nMarker_EngineInflow];
-  Inflow_RamDrag = new su2double[nMarker_EngineInflow];
-  Inflow_Force = new su2double[nMarker_EngineInflow];
-  Inflow_Power = new su2double[nMarker_EngineInflow];
+  Inflow_Mach = new su2double[nMarker_EngineInflow] ();
+  Inflow_Pressure = new su2double[nMarker_EngineInflow] ();
+  Inflow_MassFlow = new su2double[nMarker_EngineInflow] ();
+  Inflow_ReverseMassFlow = new su2double[nMarker_EngineInflow] ();
+  Inflow_TotalPressure = new su2double[nMarker_EngineInflow] ();
+  Inflow_Temperature = new su2double[nMarker_EngineInflow] ();
+  Inflow_TotalTemperature = new su2double[nMarker_EngineInflow] ();
+  Inflow_RamDrag = new su2double[nMarker_EngineInflow] ();
+  Inflow_Force = new su2double[nMarker_EngineInflow] ();
+  Inflow_Power = new su2double[nMarker_EngineInflow] ();
 
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_EngineInflow[iMarker_EngineInflow];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ENGINE_INFLOW;
-    Inflow_Mach[iMarker_EngineInflow] = 0.0;
-    Inflow_Pressure[iMarker_EngineInflow] = 0.0;
-    Inflow_MassFlow[iMarker_EngineInflow] = 0.0;
-    Inflow_ReverseMassFlow[iMarker_EngineInflow] = 0.0;
-    Inflow_TotalPressure[iMarker_EngineInflow] = 0.0;
-    Inflow_Temperature[iMarker_EngineInflow] = 0.0;
-    Inflow_TotalTemperature[iMarker_EngineInflow] = 0.0;
-    Inflow_RamDrag[iMarker_EngineInflow] = 0.0;
-    Inflow_Force[iMarker_EngineInflow] = 0.0;
-    Inflow_Power[iMarker_EngineInflow] = 0.0;
     iMarker_CfgFile++;
   }
 
-  Exhaust_Pressure = new su2double[nMarker_EngineExhaust];
-  Exhaust_Temperature = new su2double[nMarker_EngineExhaust];
-  Exhaust_MassFlow = new su2double[nMarker_EngineExhaust];
-  Exhaust_TotalPressure = new su2double[nMarker_EngineExhaust];
-  Exhaust_TotalTemperature = new su2double[nMarker_EngineExhaust];
-  Exhaust_GrossThrust = new su2double[nMarker_EngineExhaust];
-  Exhaust_Force = new su2double[nMarker_EngineExhaust];
-  Exhaust_Power = new su2double[nMarker_EngineExhaust];
+  Exhaust_Pressure = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_Temperature = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_MassFlow = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_TotalPressure = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_TotalTemperature = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_GrossThrust = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_Force = new su2double[nMarker_EngineExhaust] ();
+  Exhaust_Power = new su2double[nMarker_EngineExhaust] ();
 
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_EngineExhaust[iMarker_EngineExhaust];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ENGINE_EXHAUST;
-    Exhaust_Pressure[iMarker_EngineExhaust] = 0.0;
-    Exhaust_Temperature[iMarker_EngineExhaust] = 0.0;
-    Exhaust_MassFlow[iMarker_EngineExhaust] = 0.0;
-    Exhaust_TotalPressure[iMarker_EngineExhaust] = 0.0;
-    Exhaust_TotalTemperature[iMarker_EngineExhaust] = 0.0;
-    Exhaust_GrossThrust[iMarker_EngineExhaust] = 0.0;
-    Exhaust_Force[iMarker_EngineExhaust] = 0.0;
-    Exhaust_Power[iMarker_EngineExhaust] = 0.0;
     iMarker_CfgFile++;
   }
 
@@ -5557,14 +5414,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"----------------- Physical Case Definition ( Zone "  << iZone << " ) -------------------" << endl;
   if (val_software == SU2_CFD) {
-  if (FSI_Problem) {
+    if (FSI_Problem)
      cout << "Fluid-Structure Interaction." << endl;
-  }
 
-  if (DiscreteAdjoint) {
-     cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
+    if (DiscreteAdjoint) {
+     cout <<"Discrete Adjoint equations using Algorithmic Differentiation\n";
      cout <<"based on the physical case: ";
-  }
+    }
     switch (Kind_Solver) {
       case EULER:     case DISC_ADJ_EULER:
       case INC_EULER: case DISC_ADJ_INC_EULER:
@@ -6620,7 +6476,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if(Cauchy_Elems <1){
       SU2_MPI::Error(to_string(Cauchy_Elems) + string(" Cauchy elements are no viable input. Please check your configuration file."), CURRENT_FUNCTION);
     }
-    cout << "Begin windowed time average at iteration " << Wnd_StartConv_Iter << "." << endl;
+    cout << "Begin windowed time average at iteration " << StartWindowIteration << "." << endl;
 
     if(Wnd_Cauchy_Crit){
       cout << "Begin time convergence monitoring at iteration " << Wnd_StartConv_Iter + StartWindowIteration << "." << endl;
@@ -7348,7 +7204,7 @@ int CConfig::GetMarker_ZoneInterface(string val_marker) {
 }
 
 
-bool CConfig::GetSolid_Wall(unsigned short iMarker){
+bool CConfig::GetSolid_Wall(unsigned short iMarker) const{
 
   if (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
       Marker_All_KindBC[iMarker] == ISOTHERMAL ||
@@ -7360,7 +7216,7 @@ bool CConfig::GetSolid_Wall(unsigned short iMarker){
   return false;
 }
 
-bool CConfig::GetViscous_Wall(unsigned short iMarker){
+bool CConfig::GetViscous_Wall(unsigned short iMarker) const{
 
   if (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
       Marker_All_KindBC[iMarker] == ISOTHERMAL ||
@@ -8228,7 +8084,7 @@ su2double* CConfig::GetPeriodicTranslation(string val_marker) {
   return Periodic_Translation[iMarker_PerBound];
 }
 
-unsigned short CConfig::GetMarker_Periodic_Donor(string val_marker) {
+unsigned short CConfig::GetMarker_Periodic_Donor(string val_marker) const {
   unsigned short iMarker_PerBound, jMarker_PerBound, kMarker_All;
 
   /*--- Find the marker for this periodic boundary. ---*/
@@ -8246,7 +8102,7 @@ unsigned short CConfig::GetMarker_Periodic_Donor(string val_marker) {
   return kMarker_All;
 }
 
-su2double CConfig::GetActDisk_NetThrust(string val_marker) {
+su2double CConfig::GetActDisk_NetThrust(string val_marker) const {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
@@ -8254,7 +8110,7 @@ su2double CConfig::GetActDisk_NetThrust(string val_marker) {
   return ActDisk_NetThrust[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_Power(string val_marker) {
+su2double CConfig::GetActDisk_Power(string val_marker) const {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
@@ -8262,7 +8118,7 @@ su2double CConfig::GetActDisk_Power(string val_marker) {
   return ActDisk_Power[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_MassFlow(string val_marker) {
+su2double CConfig::GetActDisk_MassFlow(string val_marker) const {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
@@ -8270,7 +8126,7 @@ su2double CConfig::GetActDisk_MassFlow(string val_marker) {
   return ActDisk_MassFlow[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_Mach(string val_marker) {
+su2double CConfig::GetActDisk_Mach(string val_marker) const {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
@@ -8278,7 +8134,7 @@ su2double CConfig::GetActDisk_Mach(string val_marker) {
   return ActDisk_Mach[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_Force(string val_marker) {
+su2double CConfig::GetActDisk_Force(string val_marker) const {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
@@ -8286,7 +8142,7 @@ su2double CConfig::GetActDisk_Force(string val_marker) {
   return ActDisk_Force[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_BCThrust(string val_marker) {
+su2double CConfig::GetActDisk_BCThrust(string val_marker) const {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
@@ -8294,7 +8150,7 @@ su2double CConfig::GetActDisk_BCThrust(string val_marker) {
   return ActDisk_BCThrust[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_BCThrust_Old(string val_marker) {
+su2double CConfig::GetActDisk_BCThrust_Old(string val_marker) const {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
@@ -8318,7 +8174,7 @@ void CConfig::SetActDisk_BCThrust_Old(string val_marker, su2double val_actdisk_b
   ActDisk_BCThrust_Old[iMarker_ActDisk] = val_actdisk_bcthrust_old;
 }
 
-su2double CConfig::GetActDisk_Area(string val_marker) {
+su2double CConfig::GetActDisk_Area(string val_marker) const {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
@@ -8326,7 +8182,7 @@ su2double CConfig::GetActDisk_Area(string val_marker) {
   return ActDisk_Area[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_ReverseMassFlow(string val_marker) {
+su2double CConfig::GetActDisk_ReverseMassFlow(string val_marker) const {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
@@ -8334,7 +8190,7 @@ su2double CConfig::GetActDisk_ReverseMassFlow(string val_marker) {
   return ActDisk_ReverseMassFlow[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_PressJump(string val_marker, unsigned short val_value) {
+su2double CConfig::GetActDisk_PressJump(string val_marker, unsigned short val_value) const {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
@@ -8342,7 +8198,7 @@ su2double CConfig::GetActDisk_PressJump(string val_marker, unsigned short val_va
   return ActDisk_PressJump[iMarker_ActDisk][val_value];
 }
 
-su2double CConfig::GetActDisk_TempJump(string val_marker, unsigned short val_value) {
+su2double CConfig::GetActDisk_TempJump(string val_marker, unsigned short val_value) const {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
@@ -8350,7 +8206,7 @@ su2double CConfig::GetActDisk_TempJump(string val_marker, unsigned short val_val
   return ActDisk_TempJump[iMarker_ActDisk][val_value];;
 }
 
-su2double CConfig::GetActDisk_Omega(string val_marker, unsigned short val_value) {
+su2double CConfig::GetActDisk_Omega(string val_marker, unsigned short val_value) const {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
@@ -8358,28 +8214,28 @@ su2double CConfig::GetActDisk_Omega(string val_marker, unsigned short val_value)
   return ActDisk_Omega[iMarker_ActDisk][val_value];;
 }
 
-su2double CConfig::GetOutlet_MassFlow(string val_marker) {
+su2double CConfig::GetOutlet_MassFlow(string val_marker) const {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if ((Marker_Outlet[iMarker_Outlet] == val_marker)) break;
   return Outlet_MassFlow[iMarker_Outlet];
 }
 
-su2double CConfig::GetOutlet_Density(string val_marker) {
+su2double CConfig::GetOutlet_Density(string val_marker) const {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if ((Marker_Outlet[iMarker_Outlet] == val_marker)) break;
   return Outlet_Density[iMarker_Outlet];
 }
 
-su2double CConfig::GetOutlet_Area(string val_marker) {
+su2double CConfig::GetOutlet_Area(string val_marker) const {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if ((Marker_Outlet[iMarker_Outlet] == val_marker)) break;
   return Outlet_Area[iMarker_Outlet];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_ActDiskOutlet(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_ActDiskOutlet(string val_marker) const {
   unsigned short iMarker_ActDisk, kMarker_All;
 
   /*--- Find the marker for this actuator disk inlet. ---*/
@@ -8395,7 +8251,7 @@ unsigned short CConfig::GetMarker_CfgFile_ActDiskOutlet(string val_marker) {
   return kMarker_All;
 }
 
-unsigned short CConfig::GetMarker_CfgFile_EngineExhaust(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_EngineExhaust(string val_marker) const {
   unsigned short iMarker_Engine, kMarker_All;
 
   /*--- Find the marker for this engine inflow. ---*/
@@ -8411,14 +8267,12 @@ unsigned short CConfig::GetMarker_CfgFile_EngineExhaust(string val_marker) {
   return kMarker_All;
 }
 
-bool CConfig::GetVolumetric_Movement(){
+bool CConfig::GetVolumetric_Movement() const {
   bool volumetric_movement = false;
 
   if (GetSurface_Movement(AEROELASTIC) ||
-      GetSurface_Movement(DEFORMING) ||
       GetSurface_Movement(AEROELASTIC_RIGID_MOTION)||
       GetSurface_Movement(FLUID_STRUCTURE) ||
-      GetSurface_Movement(FLUID_STRUCTURE_STATIC) ||
       GetSurface_Movement(EXTERNAL) ||
       GetSurface_Movement(EXTERNAL_ROTATION)){
     volumetric_movement = true;
@@ -8440,7 +8294,7 @@ bool CConfig::GetSurface_Movement(unsigned short kind_movement) const {
   return false;
 }
 
-unsigned short CConfig::GetMarker_Moving(string val_marker) {
+unsigned short CConfig::GetMarker_Moving(string val_marker) const {
   unsigned short iMarker_Moving;
 
   /*--- Find the marker for this moving boundary. ---*/
@@ -8450,7 +8304,7 @@ unsigned short CConfig::GetMarker_Moving(string val_marker) {
   return iMarker_Moving;
 }
 
-bool CConfig::GetMarker_Moving_Bool(string val_marker) {
+bool CConfig::GetMarker_Moving_Bool(string val_marker) const {
   unsigned short iMarker_Moving;
 
   /*--- Find the marker for this moving boundary, if it exists. ---*/
@@ -8460,7 +8314,7 @@ bool CConfig::GetMarker_Moving_Bool(string val_marker) {
   return false;
 }
 
-unsigned short CConfig::GetMarker_Deform_Mesh(string val_marker) {
+unsigned short CConfig::GetMarker_Deform_Mesh(string val_marker) const {
   unsigned short iMarker_Deform_Mesh;
 
   /*--- Find the marker for this interface boundary. ---*/
@@ -8470,7 +8324,7 @@ unsigned short CConfig::GetMarker_Deform_Mesh(string val_marker) {
   return iMarker_Deform_Mesh;
 }
 
-unsigned short CConfig::GetMarker_Fluid_Load(string val_marker) {
+unsigned short CConfig::GetMarker_Fluid_Load(string val_marker) const {
   unsigned short iMarker_Fluid_Load;
 
   /*--- Find the marker for this interface boundary. ---*/
@@ -8480,42 +8334,42 @@ unsigned short CConfig::GetMarker_Fluid_Load(string val_marker) {
   return iMarker_Fluid_Load;
 }
 
-su2double CConfig::GetExhaust_Temperature_Target(string val_marker) {
+su2double CConfig::GetExhaust_Temperature_Target(string val_marker) const {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Temperature_Target[iMarker_EngineExhaust];
 }
 
-su2double CConfig::GetExhaust_Pressure_Target(string val_marker) {
+su2double CConfig::GetExhaust_Pressure_Target(string val_marker) const {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Pressure_Target[iMarker_EngineExhaust];
 }
 
-unsigned short CConfig::GetKind_Inc_Inlet(string val_marker) {
+unsigned short CConfig::GetKind_Inc_Inlet(string val_marker) const {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Kind_Inc_Inlet[iMarker_Inlet];
 }
 
-unsigned short CConfig::GetKind_Inc_Outlet(string val_marker) {
+unsigned short CConfig::GetKind_Inc_Outlet(string val_marker) const {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if (Marker_Outlet[iMarker_Outlet] == val_marker) break;
   return Kind_Inc_Outlet[iMarker_Outlet];
 }
 
-su2double CConfig::GetInlet_Ttotal(string val_marker) {
+su2double CConfig::GetInlet_Ttotal(string val_marker) const {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Inlet_Ttotal[iMarker_Inlet];
 }
 
-su2double CConfig::GetInlet_Ptotal(string val_marker) {
+su2double CConfig::GetInlet_Ptotal(string val_marker) const {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
@@ -8536,14 +8390,14 @@ su2double* CConfig::GetInlet_FlowDir(string val_marker) {
   return Inlet_FlowDir[iMarker_Inlet];
 }
 
-su2double CConfig::GetInlet_Temperature(string val_marker) {
+su2double CConfig::GetInlet_Temperature(string val_marker) const {
   unsigned short iMarker_Supersonic_Inlet;
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
     if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
   return Inlet_Temperature[iMarker_Supersonic_Inlet];
 }
 
-su2double CConfig::GetInlet_Pressure(string val_marker) {
+su2double CConfig::GetInlet_Pressure(string val_marker) const {
   unsigned short iMarker_Supersonic_Inlet;
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
     if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
@@ -8557,7 +8411,7 @@ su2double* CConfig::GetInlet_Velocity(string val_marker) {
   return Inlet_Velocity[iMarker_Supersonic_Inlet];
 }
 
-su2double CConfig::GetOutlet_Pressure(string val_marker) {
+su2double CConfig::GetOutlet_Pressure(string val_marker) const {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if (Marker_Outlet[iMarker_Outlet] == val_marker) break;
@@ -8571,14 +8425,14 @@ void CConfig::SetOutlet_Pressure(su2double val_pressure, string val_marker) {
       Outlet_Pressure[iMarker_Outlet] = val_pressure;
 }
 
-su2double CConfig::GetRiemann_Var1(string val_marker) {
+su2double CConfig::GetRiemann_Var1(string val_marker) const {
   unsigned short iMarker_Riemann;
   for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++)
     if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
   return Riemann_Var1[iMarker_Riemann];
 }
 
-su2double CConfig::GetRiemann_Var2(string val_marker) {
+su2double CConfig::GetRiemann_Var2(string val_marker) const {
   unsigned short iMarker_Riemann;
   for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++)
     if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
@@ -8592,7 +8446,7 @@ su2double* CConfig::GetRiemann_FlowDir(string val_marker) {
   return Riemann_FlowDir[iMarker_Riemann];
 }
 
-unsigned short CConfig::GetKind_Data_Riemann(string val_marker) {
+unsigned short CConfig::GetKind_Data_Riemann(string val_marker) const {
   unsigned short iMarker_Riemann;
   for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++)
     if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
@@ -8600,7 +8454,7 @@ unsigned short CConfig::GetKind_Data_Riemann(string val_marker) {
 }
 
 
-su2double CConfig::GetGiles_Var1(string val_marker) {
+su2double CConfig::GetGiles_Var1(string val_marker) const {
   unsigned short iMarker_Giles;
   for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++)
     if (Marker_Giles[iMarker_Giles] == val_marker) break;
@@ -8614,21 +8468,21 @@ void CConfig::SetGiles_Var1(su2double newVar1, string val_marker) {
   Giles_Var1[iMarker_Giles] = newVar1;
 }
 
-su2double CConfig::GetGiles_Var2(string val_marker) {
+su2double CConfig::GetGiles_Var2(string val_marker) const {
   unsigned short iMarker_Giles;
   for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++)
     if (Marker_Giles[iMarker_Giles] == val_marker) break;
   return Giles_Var2[iMarker_Giles];
 }
 
-su2double CConfig::GetGiles_RelaxFactorAverage(string val_marker) {
+su2double CConfig::GetGiles_RelaxFactorAverage(string val_marker) const {
   unsigned short iMarker_Giles;
   for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++)
     if (Marker_Giles[iMarker_Giles] == val_marker) break;
   return RelaxFactorAverage[iMarker_Giles];
 }
 
-su2double CConfig::GetGiles_RelaxFactorFourier(string val_marker) {
+su2double CConfig::GetGiles_RelaxFactorFourier(string val_marker) const {
   unsigned short iMarker_Giles;
   for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++)
     if (Marker_Giles[iMarker_Giles] == val_marker) break;
@@ -8642,15 +8496,14 @@ su2double* CConfig::GetGiles_FlowDir(string val_marker) {
   return Giles_FlowDir[iMarker_Giles];
 }
 
-unsigned short CConfig::GetKind_Data_Giles(string val_marker) {
+unsigned short CConfig::GetKind_Data_Giles(string val_marker) const {
   unsigned short iMarker_Giles;
   for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++)
     if (Marker_Giles[iMarker_Giles] == val_marker) break;
   return Kind_Data_Giles[iMarker_Giles];
 }
 
-
-su2double CConfig::GetPressureOut_BC() {
+su2double CConfig::GetPressureOut_BC() const {
   unsigned short iMarker_BC;
   su2double pres_out = 0.0;
   for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
@@ -8666,7 +8519,6 @@ su2double CConfig::GetPressureOut_BC() {
   return pres_out/Pressure_Ref;
 }
 
-
 void CConfig::SetPressureOut_BC(su2double val_press) {
   unsigned short iMarker_BC;
   for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
@@ -8681,7 +8533,7 @@ void CConfig::SetPressureOut_BC(su2double val_press) {
   }
 }
 
-su2double CConfig::GetTotalPressureIn_BC() {
+su2double CConfig::GetTotalPressureIn_BC() const {
   unsigned short iMarker_BC;
   su2double tot_pres_in = 0.0;
   for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
@@ -8700,7 +8552,7 @@ su2double CConfig::GetTotalPressureIn_BC() {
   return tot_pres_in/Pressure_Ref;
 }
 
-su2double CConfig::GetTotalTemperatureIn_BC() {
+su2double CConfig::GetTotalTemperatureIn_BC() const {
   unsigned short iMarker_BC;
   su2double tot_temp_in = 0.0;
   for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
@@ -8738,7 +8590,7 @@ void CConfig::SetTotalTemperatureIn_BC(su2double val_temp) {
   }
 }
 
-su2double CConfig::GetFlowAngleIn_BC() {
+su2double CConfig::GetFlowAngleIn_BC() const {
   unsigned short iMarker_BC;
   su2double alpha_in = 0.0;
   for (iMarker_BC = 0; iMarker_BC < nMarker_Giles; iMarker_BC++){
@@ -8759,7 +8611,7 @@ su2double CConfig::GetFlowAngleIn_BC() {
   return alpha_in;
 }
 
-su2double CConfig::GetIncInlet_BC() {
+su2double CConfig::GetIncInlet_BC() const {
 
   su2double val_out = 0.0;
 
@@ -8781,29 +8633,24 @@ void CConfig::SetIncInlet_BC(su2double val_in) {
     else if (Kind_Inc_Inlet[0] == PRESSURE_INLET)
       Inlet_Ptotal[0] = val_in*Pressure_Ref;
   }
-
 }
 
-su2double CConfig::GetIncTemperature_BC() {
+su2double CConfig::GetIncTemperature_BC() const {
 
   su2double val_out = 0.0;
 
-  if (nMarker_Inlet > 0) {
-      val_out = Inlet_Ttotal[0]/Temperature_Ref;
-  }
+  if (nMarker_Inlet > 0)
+    val_out = Inlet_Ttotal[0]/Temperature_Ref;
 
   return val_out;
 }
 
 void CConfig::SetIncTemperature_BC(su2double val_temperature) {
-
-  if (nMarker_Inlet > 0) {
-      Inlet_Ttotal[0] = val_temperature*Temperature_Ref;
-  }
-
+  if (nMarker_Inlet > 0)
+    Inlet_Ttotal[0] = val_temperature*Temperature_Ref;
 }
 
-su2double CConfig::GetIncPressureOut_BC() {
+su2double CConfig::GetIncPressureOut_BC() const {
 
   su2double pressure_out = 0.0;
 
@@ -8826,7 +8673,7 @@ void CConfig::SetIncPressureOut_BC(su2double val_pressure) {
 
 }
 
-su2double CConfig::GetIsothermal_Temperature(string val_marker) {
+su2double CConfig::GetIsothermal_Temperature(string val_marker) const {
 
   unsigned short iMarker_Isothermal = 0;
 
@@ -8838,7 +8685,7 @@ su2double CConfig::GetIsothermal_Temperature(string val_marker) {
   return Isothermal_Temperature[iMarker_Isothermal];
 }
 
-su2double CConfig::GetWall_HeatFlux(string val_marker) {
+su2double CConfig::GetWall_HeatFlux(string val_marker) const {
   unsigned short iMarker_HeatFlux = 0;
 
   if (nMarker_HeatFlux > 0) {
@@ -8849,7 +8696,7 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) {
   return Heat_Flux[iMarker_HeatFlux];
 }
 
-unsigned short CConfig::GetWallFunction_Treatment(string val_marker) {
+unsigned short CConfig::GetWallFunction_Treatment(string val_marker) const {
   unsigned short WallFunction = NO_WALL_FUNCTION;
 
   for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
@@ -8888,329 +8735,329 @@ su2double* CConfig::GetWallFunction_DoubleInfo(string val_marker) {
   return doubleInfo;
 }
 
-su2double CConfig::GetEngineInflow_Target(string val_marker) {
+su2double CConfig::GetEngineInflow_Target(string val_marker) const {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return EngineInflow_Target[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetInflow_Pressure(string val_marker) {
+su2double CConfig::GetInflow_Pressure(string val_marker) const {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return Inflow_Pressure[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetInflow_MassFlow(string val_marker) {
+su2double CConfig::GetInflow_MassFlow(string val_marker) const {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return Inflow_MassFlow[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetInflow_ReverseMassFlow(string val_marker) {
+su2double CConfig::GetInflow_ReverseMassFlow(string val_marker) const {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return Inflow_ReverseMassFlow[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetInflow_TotalPressure(string val_marker) {
+su2double CConfig::GetInflow_TotalPressure(string val_marker) const {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return Inflow_TotalPressure[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetInflow_Temperature(string val_marker) {
+su2double CConfig::GetInflow_Temperature(string val_marker) const {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return Inflow_Temperature[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetInflow_TotalTemperature(string val_marker) {
+su2double CConfig::GetInflow_TotalTemperature(string val_marker) const {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return Inflow_TotalTemperature[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetInflow_RamDrag(string val_marker) {
+su2double CConfig::GetInflow_RamDrag(string val_marker) const {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return Inflow_RamDrag[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetInflow_Force(string val_marker) {
+su2double CConfig::GetInflow_Force(string val_marker) const {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return Inflow_Force[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetInflow_Power(string val_marker) {
+su2double CConfig::GetInflow_Power(string val_marker) const {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return Inflow_Power[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetInflow_Mach(string val_marker) {
+su2double CConfig::GetInflow_Mach(string val_marker) const {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
   return Inflow_Mach[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetExhaust_Pressure(string val_marker) {
+su2double CConfig::GetExhaust_Pressure(string val_marker) const {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Pressure[iMarker_EngineExhaust];
 }
 
-su2double CConfig::GetExhaust_Temperature(string val_marker) {
+su2double CConfig::GetExhaust_Temperature(string val_marker) const {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Temperature[iMarker_EngineExhaust];
 }
 
-su2double CConfig::GetExhaust_MassFlow(string val_marker) {
+su2double CConfig::GetExhaust_MassFlow(string val_marker) const {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_MassFlow[iMarker_EngineExhaust];
 }
 
-su2double CConfig::GetExhaust_TotalPressure(string val_marker) {
+su2double CConfig::GetExhaust_TotalPressure(string val_marker) const {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_TotalPressure[iMarker_EngineExhaust];
 }
 
-su2double CConfig::GetExhaust_TotalTemperature(string val_marker) {
+su2double CConfig::GetExhaust_TotalTemperature(string val_marker) const {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_TotalTemperature[iMarker_EngineExhaust];
 }
 
-su2double CConfig::GetExhaust_GrossThrust(string val_marker) {
+su2double CConfig::GetExhaust_GrossThrust(string val_marker) const {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_GrossThrust[iMarker_EngineExhaust];
 }
 
-su2double CConfig::GetExhaust_Force(string val_marker) {
+su2double CConfig::GetExhaust_Force(string val_marker) const {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Force[iMarker_EngineExhaust];
 }
 
-su2double CConfig::GetExhaust_Power(string val_marker) {
+su2double CConfig::GetExhaust_Power(string val_marker) const {
   unsigned short iMarker_EngineExhaust;
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Power[iMarker_EngineExhaust];
 }
 
-su2double CConfig::GetActDiskInlet_Pressure(string val_marker) {
+su2double CConfig::GetActDiskInlet_Pressure(string val_marker) const {
   unsigned short iMarker_ActDiskInlet;
   for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
     if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
   return ActDiskInlet_Pressure[iMarker_ActDiskInlet];
 }
 
-su2double CConfig::GetActDiskInlet_TotalPressure(string val_marker) {
+su2double CConfig::GetActDiskInlet_TotalPressure(string val_marker) const {
   unsigned short iMarker_ActDiskInlet;
   for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
     if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
   return ActDiskInlet_TotalPressure[iMarker_ActDiskInlet];
 }
 
-su2double CConfig::GetActDiskInlet_RamDrag(string val_marker) {
+su2double CConfig::GetActDiskInlet_RamDrag(string val_marker) const {
   unsigned short iMarker_ActDiskInlet;
   for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
     if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
   return ActDiskInlet_RamDrag[iMarker_ActDiskInlet];
 }
 
-su2double CConfig::GetActDiskInlet_Force(string val_marker) {
+su2double CConfig::GetActDiskInlet_Force(string val_marker) const {
   unsigned short iMarker_ActDiskInlet;
   for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
     if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
   return ActDiskInlet_Force[iMarker_ActDiskInlet];
 }
 
-su2double CConfig::GetActDiskInlet_Power(string val_marker) {
+su2double CConfig::GetActDiskInlet_Power(string val_marker) const {
   unsigned short iMarker_ActDiskInlet;
   for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
     if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
   return ActDiskInlet_Power[iMarker_ActDiskInlet];
 }
 
-su2double CConfig::GetActDiskOutlet_Pressure(string val_marker) {
+su2double CConfig::GetActDiskOutlet_Pressure(string val_marker) const {
   unsigned short iMarker_ActDiskOutlet;
   for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
     if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
   return ActDiskOutlet_Pressure[iMarker_ActDiskOutlet];
 }
 
-su2double CConfig::GetActDiskOutlet_TotalPressure(string val_marker) {
+su2double CConfig::GetActDiskOutlet_TotalPressure(string val_marker) const {
   unsigned short iMarker_ActDiskOutlet;
   for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
     if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
   return ActDiskOutlet_TotalPressure[iMarker_ActDiskOutlet];
 }
 
-su2double CConfig::GetActDiskOutlet_GrossThrust(string val_marker) {
+su2double CConfig::GetActDiskOutlet_GrossThrust(string val_marker) const {
   unsigned short iMarker_ActDiskOutlet;
   for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
     if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
   return ActDiskOutlet_GrossThrust[iMarker_ActDiskOutlet];
 }
 
-su2double CConfig::GetActDiskOutlet_Force(string val_marker) {
+su2double CConfig::GetActDiskOutlet_Force(string val_marker) const {
   unsigned short iMarker_ActDiskOutlet;
   for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
     if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
   return ActDiskOutlet_Force[iMarker_ActDiskOutlet];
 }
 
-su2double CConfig::GetActDiskOutlet_Power(string val_marker) {
+su2double CConfig::GetActDiskOutlet_Power(string val_marker) const {
   unsigned short iMarker_ActDiskOutlet;
   for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
     if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
   return ActDiskOutlet_Power[iMarker_ActDiskOutlet];
 }
 
-su2double CConfig::GetActDiskInlet_Temperature(string val_marker) {
+su2double CConfig::GetActDiskInlet_Temperature(string val_marker) const {
   unsigned short iMarker_ActDiskInlet;
   for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
     if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
   return ActDiskInlet_Temperature[iMarker_ActDiskInlet];
 }
 
-su2double CConfig::GetActDiskInlet_TotalTemperature(string val_marker) {
+su2double CConfig::GetActDiskInlet_TotalTemperature(string val_marker) const {
   unsigned short iMarker_ActDiskInlet;
   for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
     if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
   return ActDiskInlet_TotalTemperature[iMarker_ActDiskInlet];
 }
 
-su2double CConfig::GetActDiskOutlet_Temperature(string val_marker) {
+su2double CConfig::GetActDiskOutlet_Temperature(string val_marker) const {
   unsigned short iMarker_ActDiskOutlet;
   for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
     if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
   return ActDiskOutlet_Temperature[iMarker_ActDiskOutlet];
 }
 
-su2double CConfig::GetActDiskOutlet_TotalTemperature(string val_marker) {
+su2double CConfig::GetActDiskOutlet_TotalTemperature(string val_marker) const {
   unsigned short iMarker_ActDiskOutlet;
   for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
     if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
   return ActDiskOutlet_TotalTemperature[iMarker_ActDiskOutlet];
 }
 
-su2double CConfig::GetActDiskInlet_MassFlow(string val_marker) {
+su2double CConfig::GetActDiskInlet_MassFlow(string val_marker) const {
   unsigned short iMarker_ActDiskInlet;
   for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
     if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
   return ActDiskInlet_MassFlow[iMarker_ActDiskInlet];
 }
 
-su2double CConfig::GetActDiskOutlet_MassFlow(string val_marker) {
+su2double CConfig::GetActDiskOutlet_MassFlow(string val_marker) const {
   unsigned short iMarker_ActDiskOutlet;
   for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
     if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
   return ActDiskOutlet_MassFlow[iMarker_ActDiskOutlet];
 }
 
-su2double CConfig::GetDispl_Value(string val_marker) {
+su2double CConfig::GetDispl_Value(string val_marker) const {
   unsigned short iMarker_Displacement;
   for (iMarker_Displacement = 0; iMarker_Displacement < nMarker_Displacement; iMarker_Displacement++)
     if (Marker_Displacement[iMarker_Displacement] == val_marker) break;
   return Displ_Value[iMarker_Displacement];
 }
 
-su2double CConfig::GetLoad_Value(string val_marker) {
+su2double CConfig::GetLoad_Value(string val_marker) const {
   unsigned short iMarker_Load;
   for (iMarker_Load = 0; iMarker_Load < nMarker_Load; iMarker_Load++)
     if (Marker_Load[iMarker_Load] == val_marker) break;
   return Load_Value[iMarker_Load];
 }
 
-su2double CConfig::GetDamper_Constant(string val_marker) {
+su2double CConfig::GetDamper_Constant(string val_marker) const {
   unsigned short iMarker_Damper;
   for (iMarker_Damper = 0; iMarker_Damper < nMarker_Damper; iMarker_Damper++)
     if (Marker_Damper[iMarker_Damper] == val_marker) break;
   return Damper_Constant[iMarker_Damper];
 }
 
-su2double CConfig::GetLoad_Dir_Value(string val_marker) {
+su2double CConfig::GetLoad_Dir_Value(string val_marker) const {
   unsigned short iMarker_Load_Dir;
   for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++)
     if (Marker_Load_Dir[iMarker_Load_Dir] == val_marker) break;
   return Load_Dir_Value[iMarker_Load_Dir];
 }
 
-su2double CConfig::GetLoad_Dir_Multiplier(string val_marker) {
+su2double CConfig::GetLoad_Dir_Multiplier(string val_marker) const {
   unsigned short iMarker_Load_Dir;
   for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++)
     if (Marker_Load_Dir[iMarker_Load_Dir] == val_marker) break;
   return Load_Dir_Multiplier[iMarker_Load_Dir];
 }
 
-su2double CConfig::GetDisp_Dir_Value(string val_marker) {
+su2double CConfig::GetDisp_Dir_Value(string val_marker) const {
   unsigned short iMarker_Disp_Dir;
   for (iMarker_Disp_Dir = 0; iMarker_Disp_Dir < nMarker_Disp_Dir; iMarker_Disp_Dir++)
     if (Marker_Disp_Dir[iMarker_Disp_Dir] == val_marker) break;
   return Disp_Dir_Value[iMarker_Disp_Dir];
 }
 
-su2double CConfig::GetDisp_Dir_Multiplier(string val_marker) {
+su2double CConfig::GetDisp_Dir_Multiplier(string val_marker) const {
   unsigned short iMarker_Disp_Dir;
   for (iMarker_Disp_Dir = 0; iMarker_Disp_Dir < nMarker_Disp_Dir; iMarker_Disp_Dir++)
     if (Marker_Disp_Dir[iMarker_Disp_Dir] == val_marker) break;
   return Disp_Dir_Multiplier[iMarker_Disp_Dir];
 }
 
-su2double* CConfig::GetLoad_Dir(string val_marker) {
+const su2double* CConfig::GetLoad_Dir(string val_marker) const {
   unsigned short iMarker_Load_Dir;
   for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++)
     if (Marker_Load_Dir[iMarker_Load_Dir] == val_marker) break;
   return Load_Dir[iMarker_Load_Dir];
 }
 
-su2double* CConfig::GetDisp_Dir(string val_marker) {
+const su2double* CConfig::GetDisp_Dir(string val_marker) const {
   unsigned short iMarker_Disp_Dir;
   for (iMarker_Disp_Dir = 0; iMarker_Disp_Dir < nMarker_Disp_Dir; iMarker_Disp_Dir++)
     if (Marker_Disp_Dir[iMarker_Disp_Dir] == val_marker) break;
   return Disp_Dir[iMarker_Disp_Dir];
 }
 
-su2double CConfig::GetLoad_Sine_Amplitude(string val_marker) {
+su2double CConfig::GetLoad_Sine_Amplitude(string val_marker) const {
   unsigned short iMarker_Load_Sine;
   for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
     if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
   return Load_Sine_Amplitude[iMarker_Load_Sine];
 }
 
-su2double CConfig::GetLoad_Sine_Frequency(string val_marker) {
+su2double CConfig::GetLoad_Sine_Frequency(string val_marker) const {
   unsigned short iMarker_Load_Sine;
   for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
     if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
   return Load_Sine_Frequency[iMarker_Load_Sine];
 }
 
-su2double* CConfig::GetLoad_Sine_Dir(string val_marker) {
+const su2double* CConfig::GetLoad_Sine_Dir(string val_marker) const {
   unsigned short iMarker_Load_Sine;
   for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++)
     if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
@@ -9230,7 +9077,7 @@ su2double CConfig::GetWall_Emissivity(string val_marker) const {
 }
 
 
-su2double CConfig::GetFlowLoad_Value(string val_marker) {
+su2double CConfig::GetFlowLoad_Value(string val_marker) const {
   unsigned short iMarker_FlowLoad;
   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++)
     if (Marker_FlowLoad[iMarker_FlowLoad] == val_marker) break;
@@ -9295,12 +9142,7 @@ su2double CConfig::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<
 void CConfig::Tick(double *val_start_time) {
 
 #ifdef PROFILE
-#ifndef HAVE_MPI
-  *val_start_time = double(clock())/double(CLOCKS_PER_SEC);
-#else
-  *val_start_time = MPI_Wtime();
-#endif
-
+  *val_start_time = SU2_MPI::Wtime();
 #endif
 
 }
@@ -9311,11 +9153,7 @@ void CConfig::Tock(double val_start_time, string val_function_name, int val_grou
 
   double val_stop_time = 0.0, val_elapsed_time = 0.0;
 
-#ifndef HAVE_MPI
-  val_stop_time = double(clock())/double(CLOCKS_PER_SEC);
-#else
-  val_stop_time = MPI_Wtime();
-#endif
+  val_stop_time = SU2_MPI::Wtime();
 
   /*--- Compute the elapsed time for this subroutine ---*/
   val_elapsed_time = val_stop_time - val_start_time;
@@ -9497,10 +9335,8 @@ void CConfig::GEMM_Tick(double *val_start_time) {
 
 #ifdef HAVE_MKL
   *val_start_time = dsecnd();
-#elif HAVE_MPI
-  *val_start_time = MPI_Wtime();
 #else
-  *val_start_time = double(clock())/double(CLOCKS_PER_SEC);
+  *val_start_time = SU2_MPI::Wtime();
 #endif
 
 #endif
@@ -9517,10 +9353,8 @@ void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) {
 
 #ifdef HAVE_MKL
   val_stop_time = dsecnd();
-#elif HAVE_MPI
-  val_stop_time = MPI_Wtime();
 #else
-  val_stop_time = double(clock())/double(CLOCKS_PER_SEC);
+  val_stop_time = SU2_MPI::Wtime();
 #endif
 
   /* Compute the elapsed time. */
@@ -9822,7 +9656,7 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
   }
 
   /*--- If the problem has FSI properties ---*/
-  if (fluid_zone && structural_zone) FSI_Problem = true;
+  FSI_Problem = fluid_zone && structural_zone;
 
   Multizone_Residual = true;
 
