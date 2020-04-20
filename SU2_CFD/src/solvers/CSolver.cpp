@@ -5064,8 +5064,10 @@ void CSolver::ComputeMetric(CSolver   **solver,
     //--- Convective terms
     ConvectiveMetric(solver, geometry, config, iPoint, HessianWeights);
     
+    /*
     //--- Scalar dissipation terms
     if (cjst) DissipativeMetric(solver, geometry, config, iPoint, HessianWeights);
+     */
 
     //--- Viscous terms
     if (visc) ViscousMetric(solver, geometry, config, iPoint, HessianWeights);
