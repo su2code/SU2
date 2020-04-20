@@ -172,6 +172,10 @@ public:
   */
   inline void SetJacobianConstantFace(bool val_JacFaceIsConstant, unsigned short val_face) {JacobianFaceIsConstant[val_face] = val_JacFaceIsConstant; }
 
+  inline unsigned short GetNProcElemIsOnlyInterpolDonor(void) { return nProcElemIsOnlyInterpolDonor; }
+
+  inline unsigned long GetProcElemIsOnlyInterpolDonor(unsigned short val_iProc) { return ProcElemIsOnlyInterpolDonor[val_iProc]; }
+
   /*!
    * \brief Set the center of gravity of an element (including edges).
    * \param[in] val_coord - Coordinates of the element.

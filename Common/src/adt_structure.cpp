@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -29,7 +29,7 @@
 #include "../include/adt_structure.hpp"
 
 /* Define the tolerance to decide whether or not a point is inside an element. */
-const su2double tolInsideElem   =  1.e-10;
+const su2double tolInsideElem   =  1.e-7;
 const su2double paramLowerBound = -1.0 - tolInsideElem;
 const su2double paramUpperBound =  1.0 + tolInsideElem;
 

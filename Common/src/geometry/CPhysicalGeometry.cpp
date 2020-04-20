@@ -3431,7 +3431,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   unsigned short nMarker_Max = config->GetnMarker_Max();
   unsigned long  iPoint, jPoint, iElem, nDomain, iDomain, jDomain;
   unsigned long *nVertexDomain = new unsigned long[nMarker_Max];
-  unsigned short iNode, jNode;
+  unsigned short iNode, jNode, iProc;
   vector<unsigned long>::iterator it;
 
   vector<vector<unsigned long> > SendTransfLocal;       /*!< \brief Vector to store the type of transformation for this send point. */
@@ -3498,6 +3498,42 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
             ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
 
           }
+        }
+      }
+    }
+  }
+
+  /*--- The points of the elements that are only used as donors for interpolation
+        must be added to the communication pattern. ---*/
+
+  for (iElem = 0; iElem < nElem; iElem++) {
+    for (iProc = 0; iProc < elem[iElem]->GetNProcElemIsOnlyInterpolDonor(); iProc++) {
+      iDomain = elem[iElem]->GetProcElemIsOnlyInterpolDonor(iProc);
+
+      if(iDomain == (unsigned long) rank) {
+
+        /*--- This is a halo element that only serves as a donor for interpolation
+              on this processor. This means that all its points are halo points as
+              well and must be added to the receive pattern. ---*/
+        for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
+
+          jPoint  = elem[iElem]->GetNode(jNode);
+          jDomain = node[jPoint]->GetColor();
+
+          ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
+        }
+      }
+      else {
+
+        /*--- This element is only an interpolation donor on rank iDomain.
+              Add the owned points of this element to the send pattern. ---*/
+        for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
+
+          jPoint  = elem[iElem]->GetNode(jNode);
+          jDomain = node[jPoint]->GetColor();
+
+          if(jDomain == (unsigned long) rank)
+            SendDomainLocal[iDomain].push_back(Local_to_Global_Point[jPoint]);
         }
       }
     }
@@ -5114,8 +5150,6 @@ void CPhysicalGeometry::BuildLocalVolumeADT(CADTElemClass *&localVolumeADT) {
 
 void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 
-  /* Boolen for output.*/
-  bool output_cout = false;
   unsigned short nDonorNoFound = 0;
 
   /* Build the local ADT of the volume elements, including halo elements. */
@@ -5159,9 +5193,10 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
             unsigned long  donorElem;
             int            rankElem;
             su2double      parCoor[3], weightsInterpol[8];
-            if( localVolumeADT->DetermineContainingElement(coorExchange, dummy,
+            bool ContainingElem = localVolumeADT->DetermineContainingElement(coorExchange, dummy,
                                                            donorElem, rankElem, parCoor,
-                                                           weightsInterpol) ) {
+                                                           weightsInterpol);
+            if( ContainingElem ) {
 
               /*--- Donor element found. If this element is a prism, swap some
                     of the weights. This is due to difference in connectivity
@@ -5190,19 +5225,16 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 
               nDonorNoFound += 1;
               vertex[iMarker][iVertex]->SetDonorFound(false);
-              
-              if(output_cout){
-                /* Donor element not found in the local ADT. This should not happen,
-                   because all halo donors should have been added in the function
-                   CPhysicalGeometry::AddWallModelDonorHalos. */
-                std::cout << "Marker tag    " << Marker_Tag << std::endl;
-                std::cout << "iMarker:      " << iMarker << ", iVertex: " << iVertex << std::endl;
-                std::cout << "Coord:        " << Coord[0] << " " << Coord[1] << " " << Coord[2] << std::endl;
-                std::cout << "normals:      " << normals[0] << " " << normals[1] << " " << normals[2] << std::endl;
-                std::cout << "coorExchange: " << coorExchange[0] << " " << coorExchange[1] << " " << coorExchange[2] << std::endl << std::endl;
-                //SU2_MPI::Error("Donor element not found. This should not happen",
-                //               CURRENT_FUNCTION);
-              }
+              /* Donor element not found in the local ADT. This should not happen,
+                 because all halo donors should have been added in the function
+                 CPhysicalGeometry::AddWallModelDonorHalos. */
+              std::cout << "Marker tag    " << Marker_Tag << std::endl;
+              std::cout << "iMarker:      " << iMarker << ", iVertex: " << iVertex << std::endl;
+              std::cout << "Coord:        " << Coord[0] << " " << Coord[1] << " " << Coord[2] << std::endl;
+              std::cout << "normals:      " << normals[0] << " " << normals[1] << " " << normals[2] << std::endl;
+              std::cout << "coorExchange: " << coorExchange[0] << " " << coorExchange[1] << " " << coorExchange[2] << std::endl << std::endl;
+              SU2_MPI::Error("Donor element not found. This should not happen", CURRENT_FUNCTION);
+
             }
           }
         }
