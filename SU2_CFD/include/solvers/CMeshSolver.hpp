@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to compute the deformation of
  *        the volumetric numerical grid using the linear elasticity solver.
  * \author Ruben Sanchez, based on CVolumetricMovement developments (F. Palacios, A. Bueno, T. Economon, S. Padron)
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,12 +47,6 @@ protected:
 
   su2double MinDistance;
   su2double MaxDistance;
-
-  su2double E;                  /*!< \brief Young's modulus of elasticity. */
-  su2double Nu;                 /*!< \brief Poisson's ratio. */
-
-  su2double Mu;                 /*!< \brief Lame's coeficient. */
-  su2double Lambda;             /*!< \brief Lame's coeficient. */
 
   vector<CMeshElement> element; /*!< \brief Vector which stores element information for each problem. */
 
@@ -136,7 +130,7 @@ public:
    * \param[in] indexNode - Index of the node.
    * \param[in] iDim - Dimension required.
    */
-  inline su2double Get_ValCoord(CGeometry*,
+  inline su2double Get_ValCoord(const CGeometry*,
                                 unsigned long indexNode,
                                 unsigned short iDim) const override {
     return nodes->GetMesh_Coord(indexNode,iDim);
@@ -177,18 +171,38 @@ public:
    * \brief Get maximum volume in the mesh
    * \return
    */
-  su2double GetMaximum_Volume(){return MaxVolume_Curr;}
-  
-  void Surface_Pitching(CGeometry *geometry, CConfig *config,
-                             unsigned long iter, unsigned short iZone);
+  inline su2double GetMaximum_Volume() const override {return MaxVolume_Curr;}
 
-  void Surface_Rotating(CGeometry *geometry, CConfig *config,
-                             unsigned long iter, unsigned short iZone);
+  /*!
+   * \brief Pitching definition for deforming mesh
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current time iteration number
+   */
+  void Surface_Pitching(CGeometry *geometry, CConfig *config, unsigned long iter);
 
-  void Surface_Plunging(CGeometry *geometry, CConfig *config,
-                             unsigned long iter, unsigned short iZone);
+  /*!
+   * \brief Rotating definition for deforming mesh
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current time iteration number
+   */
+  void Surface_Rotating(CGeometry *geometry, CConfig *config, unsigned long iter);
 
-  void Surface_Translating(CGeometry *geometry, CConfig *config,
-                             unsigned long iter, unsigned short iZone);
+  /*!
+   * \brief Plunging definition for deforming mesh
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current time iteration number
+   */
+  void Surface_Plunging(CGeometry *geometry, CConfig *config, unsigned long iter);
+
+  /*!
+   * \brief Translating definition for deforming mesh
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current time iteration number
+   */
+  void Surface_Translating(CGeometry *geometry, CConfig *config, unsigned long iter);
 
 };

@@ -2,14 +2,14 @@
  * \file graph_toolbox.hpp
  * \brief Functions and classes to build/represent sparse graphs or sparse patterns.
  * \author P. Gomes
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,12 +28,14 @@
 #pragma once
 
 #include "C2DContainer.hpp"
+#include "../omp_structure.hpp"
 
 #include <set>
 #include <vector>
 #include <limits>
 #include <cassert>
 #include <algorithm>
+#include <numeric>
 
 /*!
  * \enum ConnectivityType
@@ -58,6 +60,7 @@ private:
   su2vector<Index_t> m_outerPtr; /*!< \brief Start positions of the inner indices for each outer index. */
   su2vector<Index_t> m_innerIdx; /*!< \brief Inner indices of the non zero entries. */
   su2vector<Index_t> m_diagPtr;  /*!< \brief Position of the diagonal entry. */
+  su2vector<Index_t> m_innerIdxTransp; /*!< \brief Position of the transpose non zero entries, requires symmetry. */
 
 public:
   using IndexType = Index_t;
@@ -106,8 +109,28 @@ public:
     if(!m_diagPtr.empty()) return;
 
     m_diagPtr.resize(getOuterSize());
+
+    SU2_OMP_PARALLEL_(for schedule(static,roundUpDiv(getOuterSize(),omp_get_max_threads())))
     for(Index_t k = 0; k < getOuterSize(); ++k)
       m_diagPtr(k) = findInnerIdx(k,k);
+  }
+
+  /*!
+   * \brief Build a list of pointers to the transpose entries of the pattern, requires symmetry.
+   */
+  void buildTransposePtr() {
+    if(!m_innerIdxTransp.empty()) return;
+
+    m_innerIdxTransp.resize(getNumNonZeros());
+
+    SU2_OMP_PARALLEL_(for schedule(static,roundUpDiv(getOuterSize(),omp_get_max_threads())))
+    for(Index_t i = 0; i < getOuterSize(); ++i) {
+      for(Index_t k = m_outerPtr(i); k < m_outerPtr(i+1); ++k) {
+        auto j = m_innerIdx(k);
+        m_innerIdxTransp(k) = findInnerIdx(j,i);
+        assert(m_innerIdxTransp(k) != m_innerIdx.size() && "The pattern is not symmetric.");
+      }
+    }
   }
 
   /*!
@@ -221,6 +244,14 @@ public:
   inline const Index_t* diagPtr() const {
     assert(!m_diagPtr.empty() && "Diagonal map has not been built.");
     return m_diagPtr.data();
+  }
+
+  /*!
+   * \return Raw pointer to the transpose pointer vector.
+   */
+  inline const su2vector<Index_t>& transposePtr() const {
+    assert(!m_innerIdxTransp.empty() && "Transpose map has not been built.");
+    return m_innerIdxTransp;
   }
 
   /*!
@@ -384,6 +415,30 @@ CEdgeToNonZeroMap<Index_t> mapEdgesToSparsePattern(Geometry_t& geometry,
 
 
 /*!
+ * \brief Create the natural coloring (equivalent to the normal sequential loop
+ *        order) for a given number of inner indexes.
+ * \note This is to reduce overhead in "OpenMP-ready" code when only 1 thread is used.
+ * \param[in] numInnerIndexes - Number of indexes that are to be colored.
+ * \return Natural (sequential) coloring of the inner indices.
+ */
+template<class T = CCompressedSparsePatternUL,
+         class Index_t = typename T::IndexType>
+T createNaturalColoring(Index_t numInnerIndexes)
+{
+  /*--- One color. ---*/
+  su2vector<Index_t> outerPtr(2);
+  outerPtr(0) = 0;
+  outerPtr(1) = numInnerIndexes;
+
+  /*--- Containing all indexes in ascending order. ---*/
+  su2vector<Index_t> innerIdx(numInnerIndexes);
+  std::iota(innerIdx.data(), innerIdx.data()+numInnerIndexes, 0);
+
+  return T(std::move(outerPtr), std::move(innerIdx));
+}
+
+
+/*!
  * \brief Color contiguous groups of outer indices of a sparse pattern such that
  *        within each color, any two groups do not have inner indices in common.
  * \note  Within a group, two outer indices will generally have common inner indices.
@@ -398,11 +453,13 @@ CEdgeToNonZeroMap<Index_t> mapEdgesToSparsePattern(Geometry_t& geometry,
  *        pattern is returned.
  * \param[in] pattern - Sparse pattern to be colored.
  * \param[in] groupSize - Size of the outer index groups, default 1.
+ * \param[in] balanceColors - Try to balance number of indexes per color,
+ *            tends to result in worse locality (thus false by default).
  * \param[out] indexColor - Optional, vector with colors given to the outer indices.
  * \return Coloring in the same type of the input pattern.
  */
-template<class T, typename Color_t = char, size_t MaxColors = 64, size_t MaxMB = 128>
-T colorSparsePattern(const T& pattern, size_t groupSize = 1,
+template<class T, typename Color_t = char, size_t MaxColors = 32, size_t MaxMB = 128>
+T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool balanceColors = false,
                      std::vector<Color_t>* indexColor = nullptr)
 {
   static_assert(std::is_integral<Color_t>::value,"");
@@ -412,6 +469,10 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1,
 
   const Index_t grpSz = groupSize;
   const Index_t nOuter = pattern.getOuterSize();
+
+  /*--- Trivial case. ---*/
+  if(groupSize >= nOuter) return createNaturalColoring(nOuter);
+
   const Index_t minIdx = pattern.getMinInnerIdx();
   const Index_t nInner = pattern.getMaxInnerIdx()+1-minIdx;
 
@@ -423,12 +484,15 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1,
 
   /*--- Start with one color, with no indices assigned. ---*/
   std::vector<Index_t> colorSize(1,0);
-  Color_t color, nColor = 1;
+  Color_t nColor = 1;
 
   {
   /*--- For each color keep track of the inner indices that are in it. ---*/
   std::vector<std::vector<bool> > innerInColor;
   innerInColor.emplace_back(nInner, false);
+
+  /*--- Order in which we look for space in the colors to insert a new group. ---*/
+  std::vector<Color_t> searchOrder(MaxColors);
 
   auto outerPtr = pattern.outerPtr();
   auto innerIdx = pattern.innerIdx();
@@ -437,23 +501,40 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1,
   {
     Index_t grpEnd = std::min(iOuter+grpSz, nOuter);
 
-    for(color = 0; color < nColor; ++color)
+    searchOrder.resize(nColor);
+    std::iota(searchOrder.begin(), searchOrder.end(), 0);
+
+    /*--- Balance sizes by looking for space in smaller colors first. ---*/
+    if(balanceColors) {
+      std::sort(searchOrder.begin(), searchOrder.end(),
+        [&colorSize](Color_t a, Color_t b){return colorSize[a] < colorSize[b];});
+    }
+
+    auto it = searchOrder.begin();
+
+    for(; it != searchOrder.end(); ++it)
     {
       bool free = true;
       /*--- Traverse entire group as a large outer index. ---*/
       for(Index_t k = outerPtr[iOuter]; k < outerPtr[grpEnd] && free; ++k)
       {
-        free = !innerInColor[color][innerIdx[k]-minIdx];
+        free = !innerInColor[*it][innerIdx[k]-minIdx];
       }
       /*--- If none of the inner indices in the group appears in
        *    this color yet, it is assigned to the group. ---*/
       if(free) break;
     }
 
-    /*--- No color was free, make space for a new one. ---*/
-    if(color == nColor)
+    Color_t color;
+
+    if(it != searchOrder.end())
     {
-      ++nColor;
+      /*--- Found a free color. ---*/
+      color = *it;
+    }
+    else {
+      /*--- No color was free, make space for a new one. ---*/
+      color = nColor++;
       if(nColor == MaxColors) return T();
       colorSize.push_back(0);
       innerInColor.emplace_back(nInner, false);
@@ -480,7 +561,7 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1,
   su2vector<Index_t> outerIdx(nOuter);
 
   Index_t k = 0;
-  for(color = 0; color < nColor; ++color)
+  for(Color_t color = 0; color < nColor; ++color)
   {
     colorPtr(color+1) = colorPtr(color)+colorSize[color];
 
@@ -494,4 +575,76 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1,
 
   /*--- Move compressed coloring into result pattern instance. ---*/
   return T(std::move(colorPtr), std::move(outerIdx));
+}
+
+
+/*!
+ * \brief A way to represent one grid color that allows range-for syntax.
+ */
+template<typename T = unsigned long>
+struct GridColor
+{
+  static_assert(std::is_integral<T>::value,"");
+
+  const T size;
+  T groupSize;
+  const T* const indices;
+
+  GridColor(const T* idx = nullptr, T sz = 0, T grp = 0) :
+    size(sz), groupSize(grp), indices(idx) { }
+
+  inline const T* begin() const {return indices;}
+  inline const T* end() const {return indices+size;}
+};
+
+
+/*!
+ * \brief A way to represent natural coloring {0,1,2,...,size-1} with zero
+ * overhead (behaves like looping with an integer index, after optimization...).
+ */
+template<typename T = unsigned long>
+struct DummyGridColor
+{
+  static_assert(std::is_integral<T>::value,"");
+
+  T size;
+  struct {
+    inline T operator[] (T i) const {return i;}
+  }
+  indices;
+
+  DummyGridColor(T sz = 0) : size(sz) { }
+
+  struct IteratorLikeInt {
+    T i;
+    inline IteratorLikeInt(T pos = 0) : i(pos) {}
+    inline IteratorLikeInt& operator++ () {++i; return *this;}
+    inline IteratorLikeInt operator++ (int) {auto j=i++; return IteratorLikeInt(j);}
+    inline T operator* () const {return i;}
+    inline T operator-> () const {return i;}
+    inline bool operator==(const IteratorLikeInt& other) const {return i==other.i;}
+    inline bool operator!=(const IteratorLikeInt& other) const {return i!=other.i;}
+  };
+  inline IteratorLikeInt begin() const {return IteratorLikeInt(0);}
+  inline IteratorLikeInt end() const {return IteratorLikeInt(size);}
+};
+
+
+/*!
+ * \brief Computes the efficiency of a grid coloring for given number of threads and chunk size.
+ */
+template<class SparsePattern>
+su2double coloringEfficiency(const SparsePattern& coloring, int numThreads, int chunkSize)
+{
+  using Index_t = typename SparsePattern::IndexType;
+
+  /*--- Ideally compute time is proportional to total work over number of threads. ---*/
+  su2double ideal = coloring.getNumNonZeros() / su2double(numThreads);
+
+  /*--- In practice the total work is quantized first by colors and then by chunks. ---*/
+  Index_t real = 0;
+  for(Index_t color = 0; color < coloring.getOuterSize(); ++color)
+    real += chunkSize * roundUpDiv(roundUpDiv(coloring.getNumNonZeros(color), chunkSize), numThreads);
+
+  return ideal / real;
 }

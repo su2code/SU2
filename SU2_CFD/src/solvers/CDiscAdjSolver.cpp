@@ -2,14 +2,14 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -132,6 +132,9 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     break;
   case RUNTIME_TURB_SYS:
     SolverName = "ADJ.TURB";
+    break;
+  case RUNTIME_RADIATION_SYS:
+    SolverName = "ADJ.RAD";
     break;
   default:
     SolverName = "ADJ.SOL";
@@ -353,6 +356,28 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   }
 
+  /*--- Register incompressible radiation values as input ---*/
+
+  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+      ((KindDirect_Solver == RUNTIME_RADIATION_SYS &&
+        (!config->GetBoolTurbomachinery())))) {
+
+    /*--- Access the nondimensional freestream temperature. ---*/
+
+    TemperatureRad = config->GetTemperature_FreeStreamND();
+
+    /*--- Register the variables for AD. ---*/
+
+    if (!reset) {
+      AD::RegisterInput(TemperatureRad);
+    }
+
+    /*--- Set the temperature at infinity in the direct solver class. ---*/
+
+    direct_solver->SetTemperature_Inf(TemperatureRad);
+
+  }
+
   /*--- Here it is possible to register other variables as input that influence the flow solution
    * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
    * extracted in the ExtractAdjointVariables routine. ---*/
@@ -401,6 +426,9 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
       break;
     case BUFFET_SENSOR:
       ObjFunc_Value = direct_solver->GetTotal_Buffet_Metric();
+      break;
+    case TOTAL_HEATFLUX:
+      ObjFunc_Value = direct_solver->GetTotal_HeatFlux();
       break;
     }
 
@@ -590,6 +618,20 @@ if (rank == MASTER_NODE) cout << "CVC: Debug: Local_Sens_Press = " << Local_Sens
     SU2_MPI::Allreduce(&Local_Sens_Temp,   &Total_Sens_Temp,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   }
 
+  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+      (KindDirect_Solver == RUNTIME_RADIATION_SYS &&
+       (!config->GetBoolTurbomachinery()))) {
+
+    su2double Local_Sens_Temp_Rad;
+    Local_Sens_Temp_Rad   = SU2_TYPE::GetDerivative(TemperatureRad);
+
+    SU2_MPI::Allreduce(&Local_Sens_Temp_Rad, &Total_Sens_Temp_Rad, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    /*--- Store it in the Total_Sens_Temp container so it's accessible without the need of a new method ---*/
+    Total_Sens_Temp = Total_Sens_Temp_Rad;
+
+  }
+
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
 
 }
@@ -670,75 +712,10 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 //  SetResidual_RMS(geometry, config);
 }
 
-void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *config) {
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  bool multizone = config->GetMultizone_Problem();
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    /*--- Extract the adjoint solution ---*/
-
-    if (multizone)
-    direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
-    else
-      direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
-
-    for (iVar = 0; iVar < nVar; iVar++) nodes->SetCross_Term_Derivative(iPoint,iVar, Solution[iVar]);
-
-  }
-
-}
-
-void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config) {
-
-  unsigned short iDim;
-  unsigned long iPoint;
-  bool multizone = config->GetMultizone_Problem();
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    /*--- Extract the adjoint solution ---*/
-
-    if (multizone)
-      geometry->node[iPoint]->GetAdjointCoord_LocalIndex(Solution_Geometry);
-    else
-      geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
-
-    for (iDim = 0; iDim < nDim; iDim++) nodes->SetGeometry_CrossTerm_Derivative(iPoint,iDim, Solution_Geometry[iDim]);
-
-  }
-
-}
-
-void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry, CConfig *config){
-
-  unsigned short iDim;
-  unsigned long iPoint;
-  bool multizone = config->GetMultizone_Problem();
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    /*--- Extract the adjoint solution ---*/
-
-    if (multizone)
-      geometry->node[iPoint]->GetAdjointCoord_LocalIndex(Solution_Geometry);
-    else
-      geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
-
-    for (iDim = 0; iDim < nDim; iDim++) nodes->SetGeometry_CrossTerm_Derivative_Flow(iPoint,iDim, Solution_Geometry[iDim]);
-
-  }
-
-}
-
-
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST ||
                     config->GetTime_Marching() == DT_STEPPING_2ND);
-  bool fsi = config->GetFSI_Simulation();
   bool multizone = config->GetMultizone_Problem();
   unsigned short iVar;
   unsigned long iPoint;
@@ -746,11 +723,6 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
-    }
-    if (fsi) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Solution[iVar] += nodes->GetCross_Term_Derivative(iPoint,iVar);
-      }
     }
     if (dual_time) {
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -771,22 +743,12 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
 //  bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
 //      config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
-  bool fsi = config->GetFSI_Simulation();
-
   unsigned short iDim;
   unsigned long iPoint;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iDim = 0; iDim < nDim; iDim++){
       Solution_Geometry[iDim] = 0.0;
-    }
-    if (fsi){
-      for (iDim = 0; iDim < nDim; iDim++){
-        Solution_Geometry[iDim] += nodes->GetGeometry_CrossTerm_Derivative(iPoint,iDim);
-      }
-      for (iDim = 0; iDim < nDim; iDim++){
-        Solution_Geometry[iDim] += nodes->GetGeometry_CrossTerm_Derivative_Flow(iPoint,iDim);
-      }
     }
 //    if (dual_time){
 //      for (iDim = 0; iDim < nVar; iDim++){
@@ -957,6 +919,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool rans = ((config->GetKind_Solver() == DISC_ADJ_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS)) ;
 
   /*--- Restart the solution from file information ---*/
 
@@ -994,6 +957,13 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
     if (incompressible) {
       skipVars += nDim + 2;
     }
+  }
+
+  /*--- Skip flow adjoint and turbulent variables ---*/
+  if (KindDirect_Solver == RUNTIME_RADIATION_SYS) {
+    if (compressible) skipVars += nDim + 2;
+    if (incompressible) skipVars += nDim + 2;
+    if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
   }
 
   /*--- Load data from the restart into correct containers. ---*/
@@ -1054,48 +1024,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
-
-}
-
-void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) {
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  su2double residual, bgs_sol;
-
-  /*--- Set Residuals to zero ---*/
-
-  for (iVar = 0; iVar < nVar; iVar++){
-      SetRes_BGS(iVar,0.0);
-      SetRes_Max_BGS(iVar,0.0,0);
-  }
-
-  /*--- Compute the BGS solution (adding the cross term) ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++){
-      if(config->GetMultizone_Problem() && !config->GetFSI_Simulation()) {
-        bgs_sol = nodes->GetSolution(iPoint,iVar);
-      }
-      else {
-        bgs_sol = nodes->GetSolution(iPoint,iVar) + nodes->GetCross_Term_Derivative(iPoint,iVar);
-      }
-      nodes->Set_BGSSolution(iPoint, iVar, bgs_sol);
-    }
-  }
-
-  /*--- Set the residuals ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++){
-      residual = nodes->Get_BGSSolution(iPoint,iVar) - nodes->Get_BGSSolution_k(iPoint,iVar);
-      AddRes_BGS(iVar,residual*residual);
-      AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-    }
-  }
-
-  SetResidual_BGS(geometry, config);
+  delete [] Restart_Vars;  Restart_Vars = nullptr;
+  delete [] Restart_Data;  Restart_Data = nullptr;
 
 }

@@ -2,14 +2,14 @@
  * \file CParaviewXMLFileWriter.cpp
  * \brief Filewriter class for Paraview binary format.
  * \author T. Albring
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -333,7 +333,7 @@ void CParaviewXMLFileWriter::WriteDataArray(void* data, VTKDatatype type, unsign
   int totalByteSize, byteSize;
 
   std::string typeStr;
-  unsigned long typeSize;
+  unsigned long typeSize = 0;
 
   GetTypeInfo(type, typeStr, typeSize);
 
@@ -375,13 +375,9 @@ void CParaviewXMLFileWriter::AddDataArray(VTKDatatype type, string name,
   string offsetStr = ss.str();
 
   std::string typeStr;
-  unsigned long typeSize, byteSize, totalByteSize;
+  unsigned long typeSize = 0, totalByteSize;
 
   GetTypeInfo(type, typeStr, typeSize);
-
-  /*--- Compute the size of the data to write in bytes ---*/
-
-  byteSize = arraySize*typeSize;
 
   /*--- Total data size ---*/
 
