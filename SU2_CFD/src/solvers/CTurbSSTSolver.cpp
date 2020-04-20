@@ -321,10 +321,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   bool disc_adjoint = config->GetDiscrete_Adjoint();
   bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  /*--- Set the primitive variables ---*/
-
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
-
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Initialize the residual vector ---*/
