@@ -415,7 +415,7 @@ class Interface:
             self.comm.Gatherv(sendbuf=bufXCoor, recvbuf=(self.globalFluidInterfaceXcoor, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufYCoor, recvbuf=(self.globalFluidInterfaceYcoor, self.sendCounts), root=0)
             self.comm.Gatherv(sendbuf=bufZCoor, recvbuf=(self.globalFluidInterfaceZcoor, self.sendCounts), root=0)
-            self.comm.Gatherv(sendbuf=bufZCoor, recvbuf=(self.globalFluidIndex, self.sendCounts), root=0)
+            self.comm.Gatherv(sendbuf=bufGlobalIndex, recvbuf=(self.globalFluidIndex, self.sendCounts), root=0)
             #if myid == 0:
                 #print("Gathered array X: {}".format(self.globalFluidInterfaceXcoor))
                 #print("Gathered array Y: {}".format(self.globalFluidInterfaceYcoor))
