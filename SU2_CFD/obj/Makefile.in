@@ -124,6 +124,7 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/solver_structure.hpp \
 	../include/solver_structure.inl ../include/SU2_CFD.hpp \
 	../include/transport_model.hpp ../include/transport_model.inl \
@@ -270,6 +271,7 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/solver_structure.hpp \
 	../include/solver_structure.inl ../include/transport_model.hpp \
 	../include/transport_model.inl \
@@ -407,6 +409,7 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/solver_structure.hpp \
 	../include/solver_structure.inl ../include/transport_model.hpp \
 	../include/transport_model.inl \
@@ -742,6 +745,7 @@ libSU2Core_sources = \
   ../include/numerics_structure.hpp \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
+  ../include/output_structure.inl \
   ../include/solver_structure.hpp \
   ../include/solver_structure.inl \
   ../include/SU2_CFD.hpp \

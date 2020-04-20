@@ -1451,7 +1451,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Value to move motion origins (1 or 0) */
   addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
   /* DESCRIPTION:  */
-  addStringOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
+  addStringListOption("MOTION_FILENAME", nZone, Motion_Filename);
 
   /*!\par CONFIG_CATEGORY: Grid adaptation \ingroup Config*/
   /*--- Options related to grid adaptation ---*/

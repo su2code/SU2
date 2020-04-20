@@ -752,7 +752,7 @@ private:
   su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
   su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
-  string Motion_Filename;			/*!< \brief Arbitrary mesh motion input base filename. */
+  string *Motion_Filename;			/*!< \brief Arbitrary mesh motion input base filename. */
   su2double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
   su2double *Motion_Origin_X, /*!< \brief X-coordinate of the mesh motion origin. */
   *Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
@@ -6861,7 +6861,7 @@ public:
    * \brief Get name of the arbitrary mesh motion input file.
    * \return File name of the arbitrary mesh motion input file.
    */
-  string GetMotion_FileName(void);
+  string GetMotion_FileName(unsigned short val_iZone);
   
   /*!
    * \brief Set the config options.
