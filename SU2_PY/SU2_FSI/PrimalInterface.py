@@ -113,6 +113,8 @@ class Interface:
 
         self.globalFluidCoordinates = None
         self.globalSolidCoordinates = None
+        
+        self.globalFluidIndex = None
 
         self.sendCounts = None
         self.globalFluidDispX = None
@@ -373,6 +375,9 @@ class Interface:
         for iVertex in range(self.nLocalFluidInterfaceNodes):
             GlobalIndex = FluidSolver.GetVertexGlobalIndex(self.fluidInterfaceIdentifier, iVertex)
             posx, posy, posz = FluidSolver.GetVertex_UndeformedCoord(self.fluidInterfaceIdentifier, iVertex)
+            print("Global index = {}".format(GlobalIndex))
+            print("Undeformed coordinates = {} {} {} ".format(posx, posy, posz))
+
 
             if GlobalIndex in self.FluidHaloNodeList[myid].keys():
                 self.haloNodesPositionsInit[GlobalIndex] = (posx, posy, posz)
