@@ -405,7 +405,7 @@ class Interface:
             bufZCoor = np.array(localFluidInterface_array_Z_init)
             bufGlobalIndex = np.array(localGlobalIndex_array)
             self.sendCounts = np.array(self.comm.gather(self.nLocalFluidInterfacePhysicalNodes, 0))
-
+            print("sendCounts: {}, total: {}".format(self.sendCounts, sum(self.sendCounts)))
             if myid == self.rootProcess:
                 print("sendCounts: {}, total: {}".format(self.sendCounts, sum(self.sendCounts)))
                 self.globalFluidInterfaceXcoor = np.empty(sum(self.sendCounts))
@@ -432,9 +432,10 @@ class Interface:
         if myid == self.rootProcess:
             self.globalFluidCoordinates = np.zeros((self.nFluidInterfacePhysicalNodes, 3))
             for i in range(0, self.nFluidInterfacePhysicalNodes):
-                self.globalFluidCoordinates[i][0] = self.globalFluidInterfaceXcoor[i]
-                self.globalFluidCoordinates[i][1] = self.globalFluidInterfaceYcoor[i]
-                self.globalFluidCoordinates[i][2] = self.globalFluidInterfaceZcoor[i]
+                GlobalIndex = self.globalFluidIndex[i]
+                self.globalFluidCoordinates[GlobalIndex][0] = self.globalFluidInterfaceXcoor[i]
+                self.globalFluidCoordinates[GlobalIndex][1] = self.globalFluidInterfaceYcoor[i]
+                self.globalFluidCoordinates[GlobalIndex][2] = self.globalFluidInterfaceZcoor[i]
 
             print(self.globalFluidCoordinates.shape)
             print(self.globalSolidCoordinates.shape)
@@ -509,19 +510,24 @@ class Interface:
             # Initialize the global load array
             if myid == self.rootProcess:
                 print("sendCounts: {}, total: {}".format(self.sendCounts, sum(self.sendCounts)))
+                # Not ordered
+                self.globalFluidLoadX_nord = np.empty(sum(self.sendCounts))
+                self.globalFluidLoadY_nord = np.empty(sum(self.sendCounts))
+                self.globalFluidLoadZ_nord = np.empty(sum(self.sendCounts))
+                # Ordered
                 self.globalFluidLoadX = np.empty(sum(self.sendCounts))
                 self.globalFluidLoadY = np.empty(sum(self.sendCounts))
-                self.globalFluidLoadZ = np.empty(sum(self.sendCounts))
-
+                self.globalFluidLoadZ = np.empty(sum(self.sendCounts))                
+                             
             # Gatherv using self.sendCounts maintains the ordering of the coordinates
-            self.comm.Gatherv(sendbuf=bufXLoad, recvbuf=(self.globalFluidLoadX, self.sendCounts), root=0)
-            self.comm.Gatherv(sendbuf=bufYLoad, recvbuf=(self.globalFluidLoadY, self.sendCounts), root=0)
-            self.comm.Gatherv(sendbuf=bufZLoad, recvbuf=(self.globalFluidLoadZ, self.sendCounts), root=0)
+            self.comm.Gatherv(sendbuf=bufXLoad, recvbuf=(self.globalFluidLoadX_nord, self.sendCounts), root=0)
+            self.comm.Gatherv(sendbuf=bufYLoad, recvbuf=(self.globalFluidLoadY_nord, self.sendCounts), root=0)
+            self.comm.Gatherv(sendbuf=bufZLoad, recvbuf=(self.globalFluidLoadZ_nord, self.sendCounts), root=0)
 
         else:
-            self.globalFluidLoadX = localFluidLoadX.copy()
-            self.globalFluidLoadY = localFluidLoadY.copy()
-            self.globalFluidLoadZ = localFluidLoadZ.copy()
+            self.globalFluidLoadX_nord = localFluidLoadX.copy()
+            self.globalFluidLoadY_nord = localFluidLoadY.copy()
+            self.globalFluidLoadZ_nord = localFluidLoadZ.copy()
 
         # Delete local variables
         del localFluidLoadX, localFluidLoadY, localFluidLoadZ
@@ -533,6 +539,14 @@ class Interface:
         # ---> Input: self.globalFluidLoadX, self.globalFluidLoadY, self.globalFluidLoadZ
 
         if myid == self.rootProcess:
+            
+            # ordering forces according to the global index           
+            for i in range(0, self.nFluidInterfacePhysicalNodes):
+                GlobalIndex = self.globalFluidIndex[i]
+                self.globalFluidLoadX[GlobalIndex] = self.globalFluidLoadX_nord[i]
+                self.globalFluidLoadY[GlobalIndex] = self.globalFluidLoadY_nord[i]
+                self.globalFluidLoadZ[GlobalIndex] = self.globalFluidLoadZ_nord[i]
+                
             self.globalSolidLoadX = MLSSolver.interpolation_matrix.transpose().dot(self.globalFluidLoadX)
             self.globalSolidLoadY = MLSSolver.interpolation_matrix.transpose().dot(self.globalFluidLoadY)
             self.globalSolidLoadZ = MLSSolver.interpolation_matrix.transpose().dot(self.globalFluidLoadZ)
