@@ -331,7 +331,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Initialize the Jacobian matrices ---*/
 
-  if (implicit && !disc_adjoint) Jacobian.SetValZero();
+  Jacobian.SetValZero();
 
   /*--- Upwind second order reconstruction and gradients ---*/
 
