@@ -282,7 +282,7 @@ void CAvgGrad_TurbSST::CorrectJacobian(su2double **Jacobian_i,
     su2double jac_i[2] = {Jacobian_i[0][0], Jacobian_i[1][1]},
               jac_j[2] = {Jacobian_j[0][0], Jacobian_j[1][1]};
     
-    for (iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       const su2double weight_i = Normal[iDim]*halfOnVol_i;
       const su2double weight_j = Normal[iDim]*halfOnVol_j;
       
