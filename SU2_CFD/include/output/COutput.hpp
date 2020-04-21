@@ -168,6 +168,9 @@ protected:
   su2double WndCauchy_Value;      /*!< \brief Summed value of the convergence indicator. */
   bool TimeConvergence;   /*!< \brief To indicate, if the windowed time average of the time loop has converged*/
 
+  std::vector<interpreter::UserFunction*> historyUserFunctions;
+  std::vector<interpreter::UserFunction*> volumeUserFunctions;
+
 public:
 
   /*----------------------------- Public member functions ----------------------------*/
@@ -198,6 +201,12 @@ public:
    * \param[in] wrt - If <TRUE> prepares history file for writing.
    */
   void PreprocessHistoryOutput(CConfig *config, bool wrt = true);
+
+  /*!
+   * \brief SetUserDefinedHistoryFields
+   * \param config
+   */
+  void SetUserDefinedHistoryFields(CConfig* config);
 
   /*!
    * \brief Preprocess the history output by setting the history fields and opening the history file.
@@ -364,25 +373,16 @@ public:
    */
   void WriteToFile(CConfig *config, CGeometry *geomery, unsigned short format, string fileName = "");
 
-  inline void AddCustomHistoryOutput(string name){
+  inline void AddCustomHistoryOutput(string name, interpreter::UserFunction* userFunction, FieldType type = FieldType::CUSTOM_EVAL){
 
-    HistoryOutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", FieldType::CUSTOM, "");
-
-    string rawName = name;
-    rawName.pop_back();
-    rawName.erase(0,1);
-
-    string funcName = rawName;
-    replace_if(funcName.begin(),funcName.end(),::ispunct,'_');
-
-    funcName += to_string(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}).size());
-    std::string func = "function " + funcName + "(){"
-                       " return " + rawName + "; }";
-
-    customField.expParser = CExpressionParser(&historyFieldsAll.GetScope());
-    customField.expParser.CompileAndExec(func, funcName);
-
+    HistoryOutputField customField(name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", type, "");
+    string tokenName = name;
+    replace_if(tokenName.begin(),tokenName.end(),::ispunct,'_');
+    replace_if(tokenName.begin(),tokenName.end(),::isblank,'_');
+    customField.tokenRef = &historyFieldsAll.GetScope()[tokenName];
+    customField.userFunction = userFunction;
     historyFieldsAll.AddItem(name, customField);
+
   }
 
 protected:
@@ -462,29 +462,40 @@ protected:
     }
   }
 
-
-
-  inline void AddCustomVolumeOutput(string name){
-
-    VolumeOutputField customField (name, -1, "CUSTOM", "");
-
+  inline interpreter::UserFunction* CreateInlineUserFunction(string name){
+    interpreter::BlockStatement body;
     string rawName = name;
     rawName.pop_back();
     rawName.erase(0,1);
 
     string funcName = rawName;
     replace_if(funcName.begin(),funcName.end(),::ispunct,'_');
+    replace_if(funcName.begin(),funcName.end(),::isblank,'_');
+    std::string func = "{"
+                       " var = " + rawName + ";"
+                       " return var; }";
 
-    funcName += to_string(volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM}).size());
-    std::string func = "function " + funcName + "(){"
-                       " return " + rawName + "; }";
+    body.compile(func.c_str());
 
-    customField.fieldType = FieldType::CUSTOM;
-    customField.expParser = CExpressionParser(&volumeFieldsAll.GetScope());
-    customField.expParser.CompileAndExec(func, funcName);
+    return new interpreter::UserFunction({},body, funcName, interpreter::FunctionType::HISTFIELD);
+
+  }
+
+
+  inline void AddCustomVolumeOutput(string name, interpreter::UserFunction* userFunction, FieldType type = FieldType::CUSTOM_EVAL){
+
+    VolumeOutputField customField(name, -1, "CUSTOM", "");
+    string tokenName = name;
+    replace_if(tokenName.begin(),tokenName.end(),::ispunct,'_');
+    replace_if(tokenName.begin(),tokenName.end(),::isblank,'_');
+    customField.tokenRef = &volumeFieldsAll.GetScope()[tokenName];
+    customField.userFunction = userFunction;
+    customField.fieldType = type;
     volumeFieldsAll.AddItem(name, customField);
 
   }
+
+  void CustomIntegration(CGeometry *geometry, unsigned long iPoint);
 
   /*!
    * \brief Set the value of a history output field for a specific surface marker
@@ -503,9 +514,10 @@ protected:
    * \param[in] groupname - The name of the group this field belongs to.
    * \param[in] description - Description of the volume field.
    */
-  inline void AddVolumeOutput(string name, string field_name, string groupname, string description){
+  inline void AddVolumeOutput(string name, string field_name, string groupname, string description, FieldType type = FieldType::DEFAULT){
     VolumeOutputField newField(field_name, -1, groupname, description);
     newField.tokenRef = &volumeFieldsAll.GetScope()[name];
+    newField.fieldType = type;
     volumeFieldsAll.AddItem(name, newField);
   }
 
@@ -535,7 +547,7 @@ protected:
   /*!
    * \brief CheckHistoryOutput
    */
-  void CheckHistoryOutput();
+  void CheckHistoryOutput(CConfig *config);
 
   /*!
    * \brief Open the history file and write the header.

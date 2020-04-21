@@ -2962,10 +2962,10 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
 
     output[iZone] = COutputFactory::createOutput(kindSolver, config[iZone], nDim);
 
+    output[iZone]->PreprocessVolumeOutput(config[iZone]);
+
     /*--- If dry-run is used, do not open/overwrite history file. ---*/
     output[iZone]->PreprocessHistoryOutput(config[iZone], !dry_run);
-
-    output[iZone]->PreprocessVolumeOutput(config[iZone]);
 
   }
 

@@ -1,8 +1,5 @@
 #pragma once
 
-#include "../../../Common/include/toolboxes/CExpressionParser.hpp"
-
-
 /** \brief Enum to identify the screen output format. */
 enum class ScreenOutputFormat {
   INTEGER,         /*!< \brief Integer format. Example: 34 */
@@ -17,7 +14,10 @@ enum class FieldType {
   AUTO_RESIDUAL,    /*!< \brief An automatically generated residual field type */
   COEFFICIENT,      /*!< \brief User defined coefficient field type  */
   AUTO_COEFFICIENT, /*!< \brief Automatically generated coefficient field type  */
-  CUSTOM,           /*!< \brief Custom field */
+  CUSTOM_EVAL,      /*!< \brief Custom evaluation field */
+  CUSTOM_INTEGRATE, /*!< \brief Custom integration field */
+  CUSTOM_SURFACE_INTEGRATE,
+  SURFACE_INTEGRATE,
   DEFAULT           /*!< \brief Default field type */
 };
 
@@ -35,9 +35,9 @@ public:
   /*! \brief The value of the field. */
   su2double           value = 0.0;
 
-  CExpressionParser expParser;
-
   packToken* tokenRef = nullptr;
+
+  interpreter::UserFunction* userFunction = nullptr;
 
   COutputField() = default;
 

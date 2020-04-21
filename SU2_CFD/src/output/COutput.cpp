@@ -172,21 +172,16 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
 
   headerNeeded = false;
 
-  /*--- Make functions defined in file available ---*/
 
-  std::string UserDefinedCode = config->GetUserFunctionCode();
+  historyFieldsAll.SetScope(config->GetGlobalScope());
+  volumeFieldsAll.SetScope(config->GetGlobalScope());
 
-  if (!UserDefinedCode.empty()){
+  historyUserFunctions = config->GetUserFunctions({interpreter::FunctionType::HISTFIELD});
+  volumeUserFunctions  = config->GetUserFunctions({interpreter::FunctionType::VOLUMEFIELD,
+                                                   interpreter::FunctionType::VOLUMEINTEGRAL,
+                                                   interpreter::FunctionType::SURFACEINTEGRAL});
 
-    /*--- Compile and exec code for history and volume exression scope ---*/
 
-    CExpressionParser parserHistExp(&historyFieldsAll.GetScope());
-    parserHistExp.Compile(UserDefinedCode);
-    parserHistExp.ExecCode();
-    CExpressionParser parserVolExp = CExpressionParser(&volumeFieldsAll.GetScope());
-    parserVolExp.Compile(UserDefinedCode);
-    parserVolExp.ExecCode();
-  }
 }
 
 COutput::~COutput(void) {
@@ -1128,6 +1123,10 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
     SetHistoryOutputFields(config);
 
+    /*--- Set any user defined output fields --- */
+
+    SetUserDefinedHistoryFields(config);
+
     /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
 
     Postprocess_HistoryFields(config);
@@ -1141,7 +1140,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
     /*--- Check for consistency and remove fields that are requested but not available --- */
 
-    CheckHistoryOutput();
+    CheckHistoryOutput(config);
 
     if (rank == MASTER_NODE && !noWriting){
 
@@ -1175,6 +1174,10 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   SetMultizoneHistoryOutputFields(output, config);
 
+  /*--- Set any user defined output fields --- */
+
+  SetUserDefinedHistoryFields(driver_config);
+
   /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
 
   Postprocess_HistoryFields(driver_config);
@@ -1188,7 +1191,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   /*--- Check for consistency and remove fields that are requested but not available --- */
 
-  CheckHistoryOutput();
+  CheckHistoryOutput(driver_config);
 
   if (rank == MASTER_NODE && !noWriting){
 
@@ -1230,7 +1233,59 @@ void COutput::PrepareHistoryFile(CConfig *config){
 
 }
 
-void COutput::CheckHistoryOutput(){
+packToken getSurfaceValue(TokenMap scope, const std::string &name){
+
+  std::string markerName = scope["markerName"].asString();
+
+  su2double val = 0.0;
+  packToken* token = scope.find(name + "@" + markerName);
+
+  if (token != nullptr){
+    val = token->asDouble();
+  } else {
+    throw(msg_exception("Unkown marker name " + markerName));
+  }
+
+  return val;
+
+}
+
+void COutput::SetUserDefinedHistoryFields(CConfig *config){
+
+  regex exp("\\{\\S*\\}");
+
+  /*--- Add inline defined output fields ---*/
+
+  for (const auto& reqField : requestedScreenFields){
+    if (regex_match(reqField, exp)){
+      AddCustomHistoryOutput(reqField, CreateInlineUserFunction(reqField), FieldType::CUSTOM_EVAL);
+    }
+  }
+
+  /*--- Add output fields defined in function file ---*/
+
+  for (const auto function : historyUserFunctions){
+    if (function->getType() == interpreter::FunctionType::HISTFIELD){
+      AddCustomHistoryOutput(function->name(), function, FieldType::CUSTOM_EVAL);
+    }
+  }
+
+  std::vector<std::string> markerNames;
+  for (int iMarker_CfgFile = 0; iMarker_CfgFile < config->GetnMarker_CfgFile(); iMarker_CfgFile++){
+    markerNames.push_back(config->GetMarker_CfgFile_TagBound(iMarker_CfgFile));
+    /*--- Make marker names available as string variables ---*/
+
+    historyFieldsAll.GetScope()[markerNames[iMarker_CfgFile]] = markerNames[iMarker_CfgFile];
+  }
+  for (const auto& volField : volumeFieldsAll.GetFieldsByType({FieldType::SURFACE_INTEGRATE,
+                                                               FieldType::CUSTOM_SURFACE_INTEGRATE})){
+    AddHistoryOutputPerSurface(volField->first, volField->first, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", markerNames, "");
+
+    historyFieldsAll.GetScope()[volField->first] = CppFunction(&getSurfaceValue, {"markerName"}, volField->first);
+  }
+}
+
+void COutput::CheckHistoryOutput(CConfig* config){
 
   auto printInfo = [&](const std::vector<string>& fields, const std::string& info){
     if (rank == MASTER_NODE){
@@ -1253,21 +1308,6 @@ void COutput::CheckHistoryOutput(){
   string requestedField;
   vector<string> FieldsToRemove;
   vector<bool> FoundField(nRequestedHistoryFields, false);
-  regex exp("\\{\\S*\\}");
-
-  auto addCustomFields = [&](std::vector<string>& fields){
-    /*--- Check if any of the fields is a expression ---*/
-    for (const auto& field : fields){
-      if (regex_match(field, exp)){
-        /*--- Make sure that the expression is not already there ---*/
-        if (!historyFieldsAll.CheckKey(field))
-          AddCustomHistoryOutput(field);
-      }
-    }
-  };
-
-  addCustomFields(requestedScreenFields);
-  addCustomFields(requestedHistoryFields);
 
   const auto& screenFields = GetHistoryFieldsAll().GetFieldsByKey(requestedScreenFields, FieldsToRemove);
 
@@ -1307,8 +1347,7 @@ void COutput::CheckHistoryOutput(){
   printInfo(FieldsToRemove, "Fields ignored: ");
 
   historyFieldsAll.UpdateTokens();
-  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
-
+  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL}));
 }
 
 void COutput::PreprocessVolumeOutput(CConfig *config){
@@ -1340,13 +1379,51 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   vector<string> FieldsToRemove;
 
   regex exp("\\{\\S*\\}");
+  regex integrateExp("integrate\\{\\S*\\}");
 
-  /*--- Check if any of the fields is a expression ---*/
-  for (auto& field : requestedVolumeFields){
-    if (regex_match(field, exp)){
-      AddCustomVolumeOutput(field);
+  /*--- Add inline defined output fields ---*/
+
+  for (const auto& reqField : requestedVolumeFields){
+    if (regex_match(reqField, exp)){
+      AddCustomVolumeOutput(reqField, CreateInlineUserFunction(reqField), FieldType::CUSTOM_EVAL);
     }
   }
+
+  /*--- Add output fields defined in function file ---*/
+
+  for (const auto function : volumeUserFunctions){
+    if (function->getType() == interpreter::FunctionType::VOLUMEFIELD){
+      AddCustomVolumeOutput(function->name(), function, FieldType::CUSTOM_EVAL);
+
+    }
+    if (function->getType() == interpreter::FunctionType::SURFACEINTEGRAL){
+      AddCustomVolumeOutput(function->name(), function, FieldType::CUSTOM_SURFACE_INTEGRATE);
+    }
+  }
+//  for (const auto& field : requestedHistoryFields){
+//    if (regex_match(field, integrateExp)){
+//      string customField = field;
+//      customField.erase(0, 9);
+//      cout << "Adding " + customField << endl;
+//      if (!volumeFieldsAll.CheckKey(customField))
+//        AddCustomVolumeOutput(customField, FieldType::CUSTOM_INTEGRATE);
+//    }
+//  }
+
+//  for (const auto& field : requestedScreenFields){
+//    if (regex_match(field, integrateExp)){
+//      string customField = field;
+//      customField.erase(0, 9);
+//      cout << "Adding " + customField << endl;
+//      AddCustomVolumeOutput(customField, FieldType::CUSTOM_INTEGRATE);
+//    }
+//  }
+
+//  for (const auto function : userFunctions){
+//    if (function->getType() == interpreter::FunctionType::SURFACEINTEGRAL){
+//      AddCustomVolumeOutput("{" + function->name() + "()}", FieldType::CUSTOM_SURFACE_INTEGRATE);
+//    }
+//  }
 
   /*--- Loop through all fields defined in the corresponding SetVolumeOutputFields().
  * If it is also defined in the config (either as part of a group or a single field), the field
@@ -1405,7 +1482,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   }
 
   volumeFieldsAll.UpdateTokens();
-  volumeFieldsAll.EvalCustomFields(volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
+  volumeFieldsAll.EvalCustomFields(volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL, FieldType::CUSTOM_SURFACE_INTEGRATE}));
 
 }
 
@@ -1421,7 +1498,9 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
   curGetFieldIndex = 0;
   fieldGetIndexCache.clear();
 
-  const auto& customFieldRef = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM});
+  const auto& userDefinedFields      = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL});
+  const auto& userDefinedIntegration = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_SURFACE_INTEGRATE});
+  const auto& integrationFields      = volumeFieldsAll.GetFieldsByType({FieldType::CUSTOM_SURFACE_INTEGRATE, FieldType::SURFACE_INTEGRATE});
 
   if (femOutput){
 
@@ -1444,11 +1523,11 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
         LoadVolumeDataFEM(config, geometry, solver, l, jPoint, j);
 
-        if (!customFieldRef.empty()){
+        if (!userDefinedFields.empty()){
 
           volumeFieldsAll.UpdateTokens();
 
-          volumeFieldsAll.EvalCustomFields(customFieldRef);
+          volumeFieldsAll.EvalCustomFields(userDefinedFields);
 
         }
 
@@ -1469,11 +1548,11 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
       LoadVolumeData(config, geometry, solver, iPoint);
 
-      if (!customFieldRef.empty()){
+      if (!userDefinedFields.empty() || !userDefinedIntegration.empty()){
 
         volumeFieldsAll.UpdateTokens();
 
-        volumeFieldsAll.EvalCustomFields(customFieldRef);
+        volumeFieldsAll.EvalCustomFields(userDefinedFields);
 
       }
 
@@ -1487,39 +1566,67 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
     curGetFieldIndex = 0;
     fieldGetIndexCache.clear();
 
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (int iMarker_CfgFile = 0; iMarker_CfgFile < config->GetnMarker_CfgFile(); iMarker_CfgFile++){
 
-      /*--- We only want to have surface values on solid walls ---*/
+      const string markerNameCfg =  config->GetMarker_CfgFile_TagBound(iMarker_CfgFile);
 
-      if (config->GetSolid_Wall(iMarker)){
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        const string markerName = config->GetMarker_All_TagBound(iMarker);
 
-          /*--- Load the surface data into the data sorter. --- */
+        /*--- We only want to have surface values on solid walls ---*/
 
-          if(geometry->node[iPoint]->GetDomain()){
+        if (markerName == markerNameCfg){
 
-            buildFieldIndexCache = fieldIndexCache.empty();
+          for (const auto& field : integrationFields){
+            field->second.value = 0.0;
+          }
 
-            LoadVolumeData(config, geometry, solver, iPoint);
+          for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
 
-            LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-            if (!customFieldRef.empty()){
+            /*--- Load the surface data into the data sorter. --- */
 
-              volumeFieldsAll.UpdateTokens();
+            if(geometry->node[iPoint]->GetDomain()){
 
-              volumeFieldsAll.EvalCustomFields(customFieldRef);
+              buildFieldIndexCache = fieldIndexCache.empty();
 
+              LoadVolumeData(config, geometry, solver, iPoint);
+
+              LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
+
+              if (!userDefinedFields.empty() || !userDefinedIntegration.empty()){
+                volumeFieldsAll.UpdateTokens();
+                volumeFieldsAll.EvalCustomFields(userDefinedFields);
+                volumeFieldsAll.EvalCustomFields(userDefinedIntegration, true);
+              }
+              WriteToDataSorter(iPoint);
             }
-            WriteToDataSorter(iPoint);
           }
         }
+      }
+
+      std::vector<su2double> sendBuffer(integrationFields.size());
+      std::vector<su2double> recvBuffer(integrationFields.size());
+
+      for (unsigned int iField = 0; iField < integrationFields.size(); iField++){
+        sendBuffer[iField] = integrationFields[iField]->second.value;
+      }
+
+      SU2_MPI::Allreduce(sendBuffer.data(), recvBuffer.data(), integrationFields.size(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+      for (unsigned int iField = 0; iField < integrationFields.size(); iField++){
+        integrationFields[iField]->second.value = recvBuffer[iField];
+      }
+
+      for (const auto& field : integrationFields){
+        historyFieldsAll.SetValueByKey(field->first + "@" + markerNameCfg, field->second.value);
       }
     }
   }
 }
+
 
  void COutput::WriteToDataSorter(unsigned long iPoint){
   for (const auto& field : volumeFieldsAll.GetReferencesAll()){
@@ -1538,8 +1645,15 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
      * the same for every value of iPoint --- */
 
     if (volumeFieldsAll.CheckKey(name)){
-      fieldIndexCache.push_back(volumeFieldsAll.GetIndex(name));
-      volumeFieldsAll.SetValueByIndex(fieldIndexCache.back(), value);
+      const int index = volumeFieldsAll.GetIndex(name);
+      fieldIndexCache.push_back(index);
+      const VolumeOutputField& field = volumeFieldsAll.GetItemByIndex(index);
+
+      if (field.fieldType == FieldType::DEFAULT){
+        volumeFieldsAll.SetValueByIndex(index, value);
+      } else if (field.fieldType == FieldType::SURFACE_INTEGRATE){
+        volumeFieldsAll.SetValueByIndex(index, field.value + value);
+      }
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
     }
@@ -1548,7 +1662,13 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
     /*--- Use the offset cache for the access ---*/
 
     const int index = fieldIndexCache[cachePosition++];
-    volumeFieldsAll.SetValueByIndex(index, value);
+    const VolumeOutputField& field = volumeFieldsAll.GetItemByIndex(index);
+
+    if (field.fieldType == FieldType::DEFAULT){
+      volumeFieldsAll.SetValueByIndex(index, value);
+    } else if (field.fieldType == FieldType::SURFACE_INTEGRATE){
+      volumeFieldsAll.SetValueByIndex(index, field.value + value);
+    }
     if (cachePosition == fieldIndexCache.size()){
       cachePosition = 0;
     }
@@ -1665,7 +1785,8 @@ void COutput::Postprocess_HistoryData(CConfig *config){
   }
 
   historyFieldsAll.UpdateTokens();
-  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM}));
+  historyFieldsAll.EvalCustomFields(historyFieldsAll.GetFieldsByType({FieldType::CUSTOM_EVAL}));
+
 }
 
 void COutput::Postprocess_HistoryFields(CConfig *config){

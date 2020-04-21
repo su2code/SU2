@@ -45,7 +45,7 @@
 
 #include "./option_structure.hpp"
 #include "./datatype_structure.hpp"
-
+#include "toolboxes/interpreter/FunctionStatement.hpp"
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
 #endif
@@ -9353,5 +9353,24 @@ public:
    */
   string GetUserFunctionCode(){
     return UserFunctionCode;
+  }
+
+  TokenMap& GetGlobalScope(){
+    return globalScope;
+  }
+
+  std::vector<interpreter::UserFunction*> GetUserFunctions(std::list<interpreter::FunctionType> functionType) const {
+    std::vector<interpreter::UserFunction*> userFunctions;
+    for (auto iter = globalScope.map().begin();
+         iter != globalScope.map().end(); iter++){
+      interpreter::UserFunction* function = dynamic_cast<interpreter::UserFunction*>(iter->second.token());
+      if (function != NULL){
+        if (std::any_of(functionType.begin(), functionType.end(),
+                        [&](const interpreter::FunctionType& item){return item == function->getType();})){
+          userFunctions.push_back(function);
+        }
+      }
+    }
+    return userFunctions;
   }
 };

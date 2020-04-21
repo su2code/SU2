@@ -3,7 +3,7 @@
 #include "../../../Common/include/toolboxes/CIndexedMap.hpp"
 #include "../../../Common/include/datatype_structure.hpp"
 #include "../../../Common/include/mpi_structure.hpp"
-#include "../../../Common/include/toolboxes/CExpressionParser.hpp"
+#include "../../../Common/include/toolboxes/interpreter/FunctionStatement.hpp"
 #include "COutField.hpp"
 
 template <class Field>
@@ -18,7 +18,7 @@ public:
   using Map             = typename CurrentType::Map;
 
 protected:
-  GlobalScope outFieldScope;
+  TokenMap outFieldScope;
   using CurrentType::insertionVector;
   using CurrentType::map;
 
@@ -61,6 +61,10 @@ public:
    * \return Reference to the expression scope
    */
   TokenMap& GetScope() { return outFieldScope; }
+
+  void SetScope(TokenMap& newScope){
+    outFieldScope = newScope.getChild();
+  }
 
   /*!
    * \brief Get fields by using a list of keys
@@ -183,7 +187,9 @@ public:
    */
   void UpdateTokens(){
     for (const auto& field : insertionVector){
-      if (field->second.fieldType != FieldType::CUSTOM){
+      if (field->second.fieldType != FieldType::CUSTOM_EVAL &&
+          field->second.fieldType != FieldType::CUSTOM_INTEGRATE &&
+          field->second.fieldType != FieldType::CUSTOM_SURFACE_INTEGRATE){
         (*field->second.tokenRef) = field->second.value;
       }
     }
@@ -193,10 +199,13 @@ public:
    * \brief Evaluate the custom fields by evaluating the corresponding expression.
    * \param customFields - References to the custom fields
    */
-  void EvalCustomFields(const InsertionVector& customFields){
+  void EvalCustomFields(const InsertionVector& customFields, bool accumulate = false){
     for (const auto& field : customFields){
       try {
-        field->second.value = field->second.expParser.Eval();
+        if (accumulate)
+          field->second.value += field->second.userFunction->exec(&outFieldScope).asDouble();
+        else
+          field->second.value = field->second.userFunction->exec(&outFieldScope).asDouble();
       }  catch (msg_exception err) {
         SU2_MPI::Error(std::string("In expression ") + field->first
                        + std::string(": ") + std::string(err.what()), CURRENT_FUNCTION);
