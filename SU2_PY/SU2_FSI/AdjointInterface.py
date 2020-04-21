@@ -706,9 +706,9 @@ class AdjointInterface:
             # ordering displacements adjoint according to the global index 
             for i in range(0, self.nFluidInterfacePhysicalNodes):
                 GlobalIndex = int(self.globalFluidIndex[i])
-                self.globalDispSolidAdjointX[GlobalIndex] = self.globalDispFlowAdjointX_nord[i]
-                self.globalDispSolidAdjointY[GlobalIndex] = self.globalDispFlowAdjointY_nord[i]
-                self.globalDispSolidAdjointZ[GlobalIndex] = self.globalDispFlowAdjointZ_nord[i]
+                self.globalDispFlowAdjointX[GlobalIndex] = self.globalDispFlowAdjointX_nord[i]
+                self.globalDispFlowAdjointY[GlobalIndex] = self.globalDispFlowAdjointY_nord[i]
+                self.globalDispFlowAdjointZ[GlobalIndex] = self.globalDispFlowAdjointZ_nord[i]
             
             self.globalDispSolidAdjointX = MLSSolver.interpolation_matrix.transpose().dot(self.globalDispFlowAdjointX)
             self.globalDispSolidAdjointY = MLSSolver.interpolation_matrix.transpose().dot(self.globalDispFlowAdjointY)
