@@ -4,7 +4,7 @@ if get_option('enable-normal')
                                         'solvers/CBaselineSolver.cpp',
                                         'solvers/CBaselineSolver_FEM.cpp',
                                         'CMarkerProfileReaderFVM.cpp',
-                                        'numerics/CNumerics.cpp'
+                                        'numerics/CNumerics.cpp',
                                         'output/COutput.cpp',
                                         'output/output_structure_legacy.cpp',
                                         'output/tools/CWindowingTools.cpp',

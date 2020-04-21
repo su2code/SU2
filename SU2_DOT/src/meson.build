@@ -3,7 +3,7 @@ if get_option('enable-normal')
   su2_cfd_obj = su2_cfd.extract_objects(['solvers/CSolver.cpp',
                                          'solvers/CBaselineSolver.cpp',
                                          'CMarkerProfileReaderFVM.cpp',
-                                         'numerics/CNumerics.cpp'
+                                         'numerics/CNumerics.cpp',
                                          'output/COutput.cpp',
                                          'output/tools/CWindowingTools.cpp',
                                          'output/output_structure_legacy.cpp',
@@ -44,7 +44,7 @@ if get_option('enable-autodiff')
   su2_cfd_obj_ad = su2_cfd_ad.extract_objects(['solvers/CSolver.cpp',
                                                'solvers/CBaselineSolver.cpp',
                                                'CMarkerProfileReaderFVM.cpp',
-                                               'numerics/CNumerics.cpp'
+                                               'numerics/CNumerics.cpp',
                                                'output/COutput.cpp',
                                                'output/tools/CWindowingTools.cpp',
                                                'output/output_structure_legacy.cpp',
