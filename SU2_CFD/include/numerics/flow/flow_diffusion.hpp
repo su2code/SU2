@@ -161,7 +161,7 @@ protected:
                           const su2double *val_Proj_Visc_Flux,
                           su2double **val_Proj_Jac_Tensor_i,
                           su2double **val_Proj_Jac_Tensor_j,
-                          CConfig *config);
+                          const CConfig *config);
 
   /*!
    * \brief Include gradient terms in Jacobian
