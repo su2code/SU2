@@ -265,7 +265,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     Jacobian_j[0][0] = diff_kine*proj_on_rho;   Jacobian_j[0][1] = 0.0;
     Jacobian_j[1][0] = 0.0;                     Jacobian_j[1][1] = diff_omega*proj_on_rho;
 
-    // if (correct_gradient) CorrectJacobian(config);
+    if (correct_gradient) CorrectJacobian(config);
   }
 
 }
