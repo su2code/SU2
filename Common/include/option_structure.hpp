@@ -372,9 +372,7 @@ enum ENUM_TRANSFER {
   NO_COMMON_INTERFACE               = 1,    /*!< \brief No common interface between the zones (geometrical). */
   NO_TRANSFER                       = 2,    /*!< \brief Zones may share a boundary, but still no coupling desired. */
   FLOW_TRACTION                     = 10,   /*!< \brief Flow traction coupling (between fluids and solids). */
-  STRUCTURAL_DISPLACEMENTS_LEGACY   = 11,   /*!< \brief Structural displacements (between fluids and solids) - legacy version (to be removed). */
   BOUNDARY_DISPLACEMENTS            = 21,   /*!< \brief Boundary displacements (between fluids and solids) */
-  STRUCTURAL_DISPLACEMENTS_DISC_ADJ = 12,   /*!< \brief Adjoints of structural displacements (between fluids and solids). */
   SLIDING_INTERFACE                 = 13,   /*!< \brief Sliding interface (between fluids). */
   CONSERVATIVE_VARIABLES            = 14,   /*!< \brief General coupling that simply transfers the conservative variables (between same solvers). */
   MIXING_PLANE                      = 15,   /*!< \brief Mixing plane between fluids. */
@@ -650,14 +648,12 @@ enum ENUM_SURFACEMOVEMENT {
   FLUID_STRUCTURE = 5,           /*!< \brief Fluid structure deformation. */
   EXTERNAL = 6,                  /*!< \brief Simulation with external motion. */
   EXTERNAL_ROTATION = 7,         /*!< \brief Simulation with external rotation motion. */
-  FLUID_STRUCTURE_STATIC = 8     /*!< \brief Fluid structure deformation with no grid velocity. */
 };
 static const MapType<string, ENUM_SURFACEMOVEMENT> SurfaceMovement_Map = {
   MakePair("DEFORMING", DEFORMING)
   MakePair("MOVING_WALL", MOVING_WALL)
   MakePair("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
   MakePair("AEROELASTIC", AEROELASTIC)
-  MakePair("FLUID_STRUCTURE_STATIC", FLUID_STRUCTURE_STATIC)
   MakePair("FLUID_STRUCTURE", FLUID_STRUCTURE)
   MakePair("EXTERNAL", EXTERNAL)
   MakePair("EXTERNAL_ROTATION", EXTERNAL_ROTATION)
@@ -2024,15 +2020,10 @@ static const MapType<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = {
 
 
 enum ENUM_RECORDING {
-  FLOW_CONS_VARS   = 1,
+  SOLUTION_VARIABLES = 1,
   MESH_COORDS = 2,
-  COMBINED    = 3,
-  FEA_DISP_VARS = 4,
-  FLOW_CROSS_TERM = 5,
-  FEM_CROSS_TERM_GEOMETRY = 6,
-  GEOMETRY_CROSS_TERM = 7,
-  ALL_VARIABLES = 8,
-  MESH_DEFORM = 9
+  MESH_DEFORM = 3,
+  SOLUTION_AND_MESH = 4
 };
 
 /*!
@@ -2091,7 +2082,6 @@ enum MPI_QUANTITIES {
   SOLUTION_OLD         =  1,  /*!< \brief Conservative solution old communication. */
   SOLUTION_GRADIENT    =  2,  /*!< \brief Conservative solution gradient communication. */
   SOLUTION_LIMITER     =  3,  /*!< \brief Conservative solution limiter communication. */
-  SOLUTION_DISPONLY    =  4,  /*!< \brief Solution displacement only communication. */
   SOLUTION_PRED        =  5,  /*!< \brief Solution predicted communication. */
   SOLUTION_PRED_OLD    =  6,  /*!< \brief Solution predicted old communication. */
   SOLUTION_GEOMETRY    =  7,  /*!< \brief Geometry solution communication. */

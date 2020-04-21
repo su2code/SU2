@@ -14,7 +14,6 @@ common_src =files(['geometry_structure_fem_part.cpp',
            'fem_gauss_jacobi_quadrature.cpp',
            'wall_model.cpp',
            'adt_structure.cpp',
-           'interpolation_structure.cpp',
            'mpi_structure.cpp',
            'fem_cgns_elements.cpp',
            'CMultiGridQueue.cpp'])
@@ -26,6 +25,7 @@ subdir('geometry/elements')
 subdir('geometry/dual_grid')
 subdir('geometry/primal_grid')
 subdir('geometry/meshreader')
+subdir('interface_interpolation')
 
 if get_option('enable-normal')
   common = static_library('SU2Common', 

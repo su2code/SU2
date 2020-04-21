@@ -1312,6 +1312,45 @@ void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, c
 }
 
 template<class ScalarType>
+template<class OtherType>
+void CSysMatrix<ScalarType>::EnforceSolutionAtDOF(unsigned long node_i, unsigned long iVar,
+                                                  OtherType x_i, CSysVector<OtherType> & b) {
+
+  for (auto index = row_ptr[node_i]; index < row_ptr[node_i+1]; ++index) {
+
+    const auto node_j = col_ind[index];
+
+    /*--- Delete row iVar of block j on row i (bij) and ATTEMPT
+     *    to delete column iVar block i on row j (bji). ---*/
+
+    auto bij = &matrix[index*nVar*nVar];
+    auto bji = GetBlock(node_j, node_i);
+
+    /*--- The "attempt" part. ---*/
+    if (bji != nullptr) {
+      for(auto jVar = 0ul; jVar < nVar; ++jVar) {
+        /*--- Column product. ---*/
+        b[node_j*nVar+jVar] -= bji[jVar*nVar+iVar] * x_i;
+        /*--- Delete entries. ---*/
+        bji[jVar*nVar+iVar] = 0.0;
+      }
+    }
+
+    /*--- Delete row. ---*/
+    for(auto jVar = 0ul; jVar < nVar; ++jVar)
+      bij[iVar*nVar+jVar] = 0.0;
+
+    /*--- Set the diagonal entry of the block to 1. ---*/
+    if (node_j == node_i)
+      bij[iVar*(nVar+1)] = 1.0;
+  }
+
+  /*--- Set know solution in rhs vector. ---*/
+  b(node_i, iVar) = x_i;
+
+}
+
+template<class ScalarType>
 void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
 
   SU2_OMP_FOR_DYN(omp_heavy_size)
@@ -1329,8 +1368,7 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
 }
 
 template<class ScalarType>
-template<class OtherType>
-void CSysMatrix<ScalarType>::MatrixMatrixAddition(OtherType alpha, const CSysMatrix<OtherType>& B) {
+void CSysMatrix<ScalarType>::MatrixMatrixAddition(ScalarType alpha, const CSysMatrix<ScalarType>& B) {
 
   /*--- Check that the sparse structure is shared between the two matrices,
    *    comparing pointers is ok as they are obtained from CGeometry. ---*/
@@ -1344,7 +1382,7 @@ void CSysMatrix<ScalarType>::MatrixMatrixAddition(OtherType alpha, const CSysMat
 
   SU2_OMP_FOR_STAT(omp_light_size)
   for (auto i = 0ul; i < nnz*nVar*nEqn; ++i)
-    matrix[i] += PassiveAssign<ScalarType,OtherType>(alpha*B.matrix[i]);
+    matrix[i] += alpha*B.matrix[i];
 
 }
 
@@ -1383,7 +1421,7 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 #endif
 }
 
-#ifdef CODI_REVERSE_TYPE
+#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
 template<>
 void CSysMatrix<su2double>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config,
                                                       unsigned short kind_fact, bool transposed) {
@@ -1403,7 +1441,7 @@ template class CSysMatrix<su2double>;
 template void  CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-template void  CSysMatrix<su2double>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
+template void  CSysMatrix<su2double>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysMatrix<passivedouble>;
@@ -1413,6 +1451,6 @@ template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<passivedouble
 template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short) const;
 template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const passivedouble*, CSysVector<passivedouble>&);
 template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-template void  CSysMatrix<passivedouble>::MatrixMatrixAddition(passivedouble, const CSysMatrix<passivedouble>&);
-template void  CSysMatrix<passivedouble>::MatrixMatrixAddition(su2double, const CSysMatrix<su2double>&);
+template void  CSysMatrix<passivedouble>::EnforceSolutionAtDOF(unsigned long, unsigned long, passivedouble, CSysVector<passivedouble>&);
+template void  CSysMatrix<passivedouble>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
 #endif

@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -28,17 +28,10 @@
 
 #include "../../../include/interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
 
-CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(void) : CFlowTractionInterface() {
-
-}
 
 CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                                             CConfig *config) :
-  CFlowTractionInterface(val_nVar, val_nConst, config) {
-
-}
-
-CDiscAdjFlowTractionInterface::~CDiscAdjFlowTractionInterface(void) {
+                                                             CConfig *config, bool integrate_tractions_) :
+  CFlowTractionInterface(val_nVar, val_nConst, config, integrate_tractions_) {
 
 }
 
