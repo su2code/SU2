@@ -53,7 +53,7 @@ File:	ADF.h
 
 /***********************************************************************
 	Defines:  These defines are used within the ADF core routines
-	to specify the size in bytes of varoius items.
+	to specify the size in bytes of various items.
    Caution:  Simply changing a define here may not correctly adjust the
 	ADF core code.  These sizes are provided for reference only!
 ***********************************************************************/

@@ -2,14 +2,14 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -72,13 +72,6 @@ CGeometry::CGeometry(void) {
   newBound            = NULL;
   nNewElem_Bound      = NULL;
   Marker_All_SendRecv = NULL;
-
-  XCoordList.clear();
-  Xcoord_plane.clear();
-  Ycoord_plane.clear();
-  Zcoord_plane.clear();
-  FaceArea_plane.clear();
-  Plane_points.clear();
 
   /*--- Arrays for defining the linear partitioning ---*/
 
@@ -2693,7 +2686,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
 
   geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
   geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
-  if (config->GetGrid_Movement()){
+  if (config->GetGrid_Movement() || config->GetDynamic_Grid()){
     geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, GRID_VELOCITY);
     geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
   }
@@ -2711,9 +2704,6 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
     geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
 
   }
-
-  if (config->GetKind_Solver() == DISC_ADJ_RANS || config->GetKind_Solver() == DISC_ADJ_INC_RANS)
-  geometry_container[MESH_0]->ComputeWall_Distance(config);
 
 }
 
@@ -3360,7 +3350,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
   the recursion limit is reached and the full neighborhood is not considered. ---*/
   unsigned long limited_searches = 0;
 
-  SU2_OMP(parallel reduction(+:limited_searches))
+  SU2_OMP_PARALLEL_(reduction(+:limited_searches))
   {
 
   /*--- Initialize ---*/
@@ -3745,42 +3735,6 @@ void CGeometry::SetElemVolume(CConfig *config)
   } // end SU2_OMP_PARALLEL
 }
 
-void CGeometry::UpdateBoundaries(CConfig *config){
-
-  unsigned short iMarker;
-  unsigned long iElem_Surface, iNode_Surface, Point_Surface;
-
-  for (iMarker = 0; iMarker <config->GetnMarker_All(); iMarker++){
-    for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
-      for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
-
-        Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
-
-        node[Point_Surface]->SetPhysicalBoundary(false);
-        node[Point_Surface]->SetSolidBoundary(false);
-
-        if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-            config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
-            config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
-            config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
-          node[Point_Surface]->SetPhysicalBoundary(true);
-
-        if (config->GetSolid_Wall(iMarker))
-          node[Point_Surface]->SetSolidBoundary(true);
-      }
-    }
-  }
-
-  /*--- Update the normal neighbors ---*/
-
-  FindNormal_Neighbor(config);
-
-  /*--- Compute wall distance ---- */
-
-  ComputeWall_Distance(config);
-
-}
-
 void CGeometry::SetGeometryPlanes(CConfig *config) {
 
   bool loop_on;
@@ -3891,7 +3845,7 @@ void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
 
   /*--- Center of rotation & angular velocity vector from config ---*/
 
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < 3; iDim++) {
     Center[iDim] = config->GetMotion_Origin(iDim);
     Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
   }
@@ -4043,15 +3997,35 @@ const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(void)
   return edgeToCSRMap;
 }
 
-const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
+const su2vector<unsigned long>& CGeometry::GetTransposeSparsePatternMap(ConnectivityType type)
 {
+  /*--- Yes the const cast is weird but it is still better than repeating code. ---*/
+  auto& pattern = const_cast<CCompressedSparsePatternUL&>(GetSparsePattern(type));
+  pattern.buildTransposePtr();
+  return pattern.transposePtr();
+}
+
+const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficiency)
+{
+  /*--- Check for dry run mode with dummy geometry. ---*/
+  if (nEdge==0) return edgeColoring;
+
+  /*--- Build if required. ---*/
   if (edgeColoring.empty()) {
+
+    /*--- When not using threading use the natural coloring to reduce overhead. ---*/
+    if (omp_get_max_threads() == 1) {
+      SetNaturalEdgeColoring();
+      if (efficiency != nullptr) *efficiency = 1.0; // by definition
+      return edgeColoring;
+    }
+
     /*--- Create a temporary sparse pattern from the edges. ---*/
     /// TODO: Try to avoid temporary once grid information is made contiguous.
     su2vector<unsigned long> outerPtr(nEdge+1);
     su2vector<unsigned long> innerIdx(nEdge*2);
 
-    for(unsigned long iEdge = 0; iEdge < nEdge; ++iEdge) {
+    for (unsigned long iEdge = 0; iEdge < nEdge; ++iEdge) {
       outerPtr(iEdge) = 2*iEdge;
       innerIdx(iEdge*2+0) = edge[iEdge]->GetNode(0);
       innerIdx(iEdge*2+1) = edge[iEdge]->GetNode(1);
@@ -4061,26 +4035,53 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(void)
     CCompressedSparsePatternUL pattern(move(outerPtr), move(innerIdx));
 
     /*--- Color the edges. ---*/
-    edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize);
+    constexpr bool balanceColors = true;
+    edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
 
-    if(edgeColoring.empty())
-      SU2_MPI::Error("Edge coloring failed.", CURRENT_FUNCTION);
+    /*--- If the coloring fails use the natural coloring. This is a
+     *    "soft" failure as this "bad" coloring should be detected
+     *    downstream and a fallback strategy put in place. ---*/
+    if (edgeColoring.empty()) SetNaturalEdgeColoring();
+  }
+
+  if (efficiency != nullptr) {
+    *efficiency = coloringEfficiency(edgeColoring, omp_get_max_threads(), edgeColorGroupSize);
   }
   return edgeColoring;
 }
 
-const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
+void CGeometry::SetNaturalEdgeColoring()
 {
+  if (nEdge == 0) return;
+  edgeColoring = createNaturalColoring(nEdge);
+  /*--- In parallel, set the group size to nEdge to protect client code. ---*/
+  if (omp_get_max_threads() > 1) edgeColorGroupSize = nEdge;
+}
+
+const CCompressedSparsePatternUL& CGeometry::GetElementColoring(su2double* efficiency)
+{
+  /*--- Check for dry run mode with dummy geometry. ---*/
+  if (nElem==0) return elemColoring;
+
+  /*--- Build if required. ---*/
   if (elemColoring.empty()) {
+
+    /*--- When not using threading use the natural coloring. ---*/
+    if (omp_get_max_threads() == 1) {
+      SetNaturalElementColoring();
+      if (efficiency != nullptr) *efficiency = 1.0; // by definition
+      return elemColoring;
+    }
+
     /*--- Create a temporary sparse pattern from the elements. ---*/
     /// TODO: Try to avoid temporary once grid information is made contiguous.
     vector<unsigned long> outerPtr(nElem+1);
     vector<unsigned long> innerIdx; innerIdx.reserve(nElem);
 
-    for(unsigned long iElem = 0; iElem < nElem; ++iElem) {
+    for (unsigned long iElem = 0; iElem < nElem; ++iElem) {
       outerPtr[iElem] = innerIdx.size();
 
-      for(unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); ++iNode) {
+      for (unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); ++iNode) {
         innerIdx.push_back(elem[iElem]->GetNode(iNode));
       }
     }
@@ -4089,10 +4090,78 @@ const CCompressedSparsePatternUL& CGeometry::GetElementColoring(void)
     CCompressedSparsePatternUL pattern(outerPtr, innerIdx);
 
     /*--- Color the elements. ---*/
-    elemColoring = colorSparsePattern(pattern, elemColorGroupSize);
+    constexpr bool balanceColors = true;
+    elemColoring = colorSparsePattern(pattern, elemColorGroupSize, balanceColors);
 
-    if(elemColoring.empty())
-      SU2_MPI::Error("Element coloring failed.", CURRENT_FUNCTION);
+    /*--- Same as for the edge coloring. ---*/
+    if (elemColoring.empty()) SetNaturalElementColoring();
+  }
+
+  if (efficiency != nullptr) {
+    *efficiency = coloringEfficiency(elemColoring, omp_get_max_threads(), elemColorGroupSize);
   }
   return elemColoring;
 }
+
+void CGeometry::SetNaturalElementColoring()
+{
+  if (nElem == 0) return;
+  elemColoring = createNaturalColoring(nElem);
+  /*--- In parallel, set the group size to nElem to protect client code. ---*/
+  if (omp_get_max_threads() > 1) elemColorGroupSize = nElem;
+}
+
+void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry ****geometry_container){
+
+  int nZone = config_container[ZONE_0]->GetnZone();
+  bool allEmpty = true;
+  vector<bool> wallDistanceNeeded(nZone, false);
+
+  for (int iInst = 0; iInst < config_container[ZONE_0]->GetnTimeInstances(); iInst++){
+    for (int iZone = 0; iZone < nZone; iZone++){
+
+      /*--- Check if a zone needs the wall distance and store a boolean ---*/
+
+      ENUM_MAIN_SOLVER kindSolver = static_cast<ENUM_MAIN_SOLVER>(config_container[iZone]->GetKind_Solver());
+      if (kindSolver == RANS ||
+          kindSolver == INC_RANS ||
+          kindSolver == DISC_ADJ_RANS ||
+          kindSolver == DISC_ADJ_INC_RANS ||
+          kindSolver == FEM_LES ||
+          kindSolver == FEM_RANS){
+        wallDistanceNeeded[iZone] = true;
+      }
+
+      /*--- Set the wall distances in all zones to the numerical limit.
+     * This is necessary, because before a computed distance is set, it will be checked
+     * whether the new distance is smaller than the currently stored one. ---*/
+      CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
+      if (wallDistanceNeeded[iZone])
+        geometry->SetWallDistance(numeric_limits<su2double>::max());
+    }
+
+    /*--- Loop over all zones and compute the ADT based on the viscous walls in that zone ---*/
+    for (int iZone = 0; iZone < nZone; iZone++){
+      CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
+      unique_ptr<CADTElemClass> WallADT = geometry->ComputeViscousWallADT(config_container[iZone]);
+      if (WallADT && !WallADT->IsEmpty()){
+        allEmpty = false;
+        /*--- Inner loop over all zones to update the wall distances.
+       * It might happen that there is a closer viscous wall in zone iZone for points in zone jZone. ---*/
+        for (int jZone = 0; jZone < nZone; jZone++){
+          if (wallDistanceNeeded[jZone])
+            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(config_container[jZone], WallADT.get());
+        }
+      }
+    }
+
+    /*--- If there are no viscous walls in the entire domain, set distances to zero ---*/
+    if (allEmpty){
+      for (int iZone = 0; iZone < nZone; iZone++){
+        CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
+        geometry->SetWallDistance(0.0);
+      }
+    }
+  }
+}
+

@@ -11,7 +11,7 @@
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,6 @@ threads="1"
 %{
 
 #include "../../SU2_CFD/include/drivers/CDriver.hpp"
-#include "../../SU2_CFD/include/drivers/CDummyDriver.hpp"
 #include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
 #include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
 #include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
@@ -62,10 +61,7 @@ threads="1"
 
 namespace std {
    %template() vector<int>;
-   %template() vector<unsigned long>;
-   %template() vector<vector<unsigned long> >;
    %template() vector<double>;
-   %template() vector<vector<double> >;
    %template() vector<string>;
    %template() map<string, int>;
    %template() map<string, string>;
@@ -83,7 +79,7 @@ enum SU2_COMPONENT {
   SU2_DOT = 3,	/*!< \brief Running the SU2_DOT software. */
   SU2_MSH = 4,	/*!< \brief Running the SU2_MSH software. */
   SU2_GEO = 5,	/*!< \brief Running the SU2_GEO software. */
-  SU2_SOL = 6   /*!< \brief Running the SU2_SOL software. */
+  SU2_SOL = 6 	/*!< \brief Running the SU2_SOL software. */
 };
 
 const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */
@@ -93,7 +89,6 @@ const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. 
 
 // CDriver class
 %include "../../SU2_CFD/include/drivers/CDriver.hpp"
-%include "../../SU2_CFD/include/drivers/CDummyDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"

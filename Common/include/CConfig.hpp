@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -475,15 +475,11 @@ private:
   Kind_Deform_Linear_Solver,             /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver. */
   Kind_Linear_Solver,                    /*!< \brief Numerical solver for the implicit scheme. */
-  Kind_Linear_Solver_FSI_Struc,          /*!< \brief Numerical solver for the structural part in FSI problems. */
   Kind_Linear_Solver_Prec,               /*!< \brief Preconditioner of the linear solver. */
-  Kind_Linear_Solver_Prec_FSI_Struc,     /*!< \brief Preconditioner of the linear solver for the structural part in FSI problems. */
   Kind_AdjTurb_Linear_Solver,            /*!< \brief Numerical solver for the turbulent adjoint implicit scheme. */
   Kind_AdjTurb_Linear_Prec,              /*!< \brief Preconditioner of the turbulent adjoint linear solver. */
   Kind_DiscAdj_Linear_Solver,            /*!< \brief Linear solver for the discrete adjoint system. */
   Kind_DiscAdj_Linear_Prec,              /*!< \brief Preconditioner of the discrete adjoint linear solver. */
-  Kind_DiscAdj_Linear_Solver_FSI_Struc,  /*!< \brief Linear solver for the discrete adjoint system in the structural side of FSI problems. */
-  Kind_DiscAdj_Linear_Prec_FSI_Struc,    /*!< \brief Preconditioner of the discrete adjoint linear solver in the structural side of FSI problems. */
   Kind_SlopeLimit,              /*!< \brief Global slope limiter. */
   Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
@@ -500,6 +496,7 @@ private:
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
   Kind_TimeIntScheme_FEA,       /*!< \brief Time integration for the FEA equations. */
   Kind_SpaceIteScheme_FEA,      /*!< \brief Iterative scheme for nonlinear structural analysis. */
+  Kind_TimeIntScheme_Radiation, /*!< \brief Time integration for the Radiation equations. */
   Kind_ConvNumScheme,           /*!< \brief Global definition of the convective term. */
   Kind_ConvNumScheme_Flow,      /*!< \brief Centered or upwind scheme for the flow equations. */
   Kind_ConvNumScheme_FEM_Flow,  /*!< \brief Finite element scheme for the flow equations. */
@@ -524,8 +521,6 @@ private:
   Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_DG_Shock,            /*!< \brief Shock capturing method for the FEM DG solver. */
   Kind_Matrix_Coloring,         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
-  Kind_Solver_Fluid_FSI,        /*!< \brief Kind of solver for the fluid in FSI applications. */
-  Kind_Solver_Struc_FSI,        /*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,         /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   Kind_CHT_Coupling;            /*!< \brief Kind of coupling method used at CHT interfaces. */
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
@@ -540,7 +535,7 @@ private:
   MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
   Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
-  bool FSI_Problem,        /*!< \brief Boolean to determine whether the simulation is FSI or not. */
+  bool FSI_Problem = false,/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   Multizone_Problem;       /*!< \brief Boolean to determine whether we are solving a multizone problem. */
   unsigned short nID_DV;   /*!< \brief ID for the region of FEM when computed using direct differentiation. */
 
@@ -567,11 +562,9 @@ private:
   bool Inc_Inlet_UseNormal;        /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
   su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
-  su2double Linear_Solver_Error_FSI_Struc;       /*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
   su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;       /*!< \brief Max iterations of the linear solver for the implicit formulation. */
-  unsigned long Linear_Solver_Iter_FSI_Struc;    /*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
   unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
@@ -604,7 +597,7 @@ private:
   su2double Min_Beta_RoeTurkel,     /*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
   Max_Beta_RoeTurkel;               /*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
   unsigned long GridDef_Nonlinear_Iter;  /*!< \brief Number of nonlinear increments for grid deformation. */
-  unsigned short Deform_Stiffness_Type;  /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
+  unsigned short Deform_StiffnessType;   /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Mesh;                      /*!< \brief Determines whether the mesh will be deformed. */
   bool Deform_Output;                    /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor;       /*!< \brief Factor to multiply smallest volume for deform tolerance (0.001 default) */
@@ -612,8 +605,9 @@ private:
   su2double Deform_Limit;            /*!< \brief Deform limit */
   unsigned short FFD_Continuity;     /*!< \brief Surface continuity at the intersection with the FFD */
   unsigned short FFD_CoordSystem;    /*!< \brief Define the coordinates system */
-  su2double Deform_ElasticityMod,
-  Deform_PoissonRatio;               /*!< \brief Young's Modulus and poisson ratio for volume deformation stiffness model */
+  su2double Deform_ElasticityMod,    /*!< \brief Young's modulus for volume deformation stiffness model */
+  Deform_PoissonRatio,               /*!< \brief Poisson's ratio for volume deformation stiffness model */
+  Deform_StiffLayerSize;             /*!< \brief Size of the layer of highest stiffness for wall distance-based mesh stiffness */
   bool Visualize_Surface_Def;        /*!< \brief Flag to visualize the surface deformacion in SU2_DEF. */
   bool Visualize_Volume_Def;         /*!< \brief Flag to visualize the volume deformation in SU2_DEF. */
   bool FFD_Symmetry_Plane;           /*!< \brief FFD symmetry plane. */
@@ -889,7 +883,6 @@ private:
   string RefGeom_FEMFileName;           /*!< \brief File name for reference geometry. */
   unsigned short RefGeom_FileFormat;    /*!< \brief Mesh input format. */
   unsigned short Kind_2DElasForm;       /*!< \brief Kind of bidimensional elasticity solver. */
-  unsigned short nIterFSI;              /*!< \brief Number of maximum number of subiterations in a FSI problem. */
   unsigned short nIterFSI_Ramp;         /*!< \brief Number of FSI subiterations during which a ramp is applied. */
   unsigned short iInst;                 /*!< \brief Current instance value */
   su2double AitkenStatRelax;      /*!< \brief Aitken's relaxation factor (if set as static) */
@@ -987,16 +980,18 @@ private:
   unsigned short Pred_Order;              /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation;         /*!< \brief type of interpolation to use for FSI applications. */
   bool ConservativeInterpolation;            /*!< \brief Conservative approach for non matching mesh interpolation. */
+  unsigned short NumNearestNeighbors;        /*!< \brief Number of neighbors used for Nearest Neighbor interpolation. */
   unsigned short Kind_RadialBasisFunction;   /*!< \brief type of radial basis function to use for radial basis FSI. */
   bool RadialBasisFunction_PolynomialOption; /*!< \brief Option of whether to include polynomial terms in Radial Basis Function Interpolation or not. */
-  su2double RadialBasisFunction_Parameter;   /*!< \brief Radial basis function parameter. */
+  su2double RadialBasisFunction_Parameter;   /*!< \brief Radial basis function parameter (radius). */
+  su2double RadialBasisFunction_PruneTol;    /*!< \brief Tolerance to prune the RBF interpolation matrix. */
   bool Prestretch;                           /*!< \brief Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;             /*!< \brief File name for reference geometry. */
   string FEA_FileName;              /*!< \brief File name for element-based properties. */
+  bool FEAAdvancedMode;             /*!< \brief Determine if advanced features are used from the element-based FEA analysis (experimental). */
   su2double RefGeom_Penalty,        /*!< \brief Penalty weight value for the reference geometry objective function. */
   RefNode_Penalty,                  /*!< \brief Penalty weight value for the reference node objective function. */
   DV_Penalty;                       /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
-  bool addCrossTerm;                /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
   unsigned long Nonphys_Points,     /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;                 /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;                    /*!< \brief Boolean for activating ParMETIS mode (while testing). */
@@ -1009,27 +1004,6 @@ private:
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   bool QCR;                    /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
-  su2double *default_vel_inf,  /*!< \brief Default freestream velocity array for the COption class. */
-  *default_eng_cyl,            /*!< \brief Default engine box array for the COption class. */
-  *default_eng_val,            /*!< \brief Default engine box array values for the COption class. */
-  *default_cfl_adapt,          /*!< \brief Default CFL adapt param array for the COption class. */
-  *default_jst_coeff,          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
-  *default_ffd_coeff,          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
-  *default_mixedout_coeff,     /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
-  *default_rampRotFrame_coeff, /*!< \brief Default ramp rotating frame coefficients for the COption class. */
-  *default_rampOutPres_coeff,  /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
-  *default_jst_adj_coeff,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
-  *default_ad_coeff_heat,      /*!< \brief Default artificial dissipation (heat) array for the COption class. */
-  *default_obj_coeff,          /*!< \brief Default objective array for the COption class. */
-  *default_geo_loc,            /*!< \brief Default SU2_GEO section locations array for the COption class. */
-  *default_distortion,         /*!< \brief Default SU2_GEO section locations array for the COption class. */
-  *default_ea_lim,             /*!< \brief Default equivalent area limit array for the COption class. */
-  *default_grid_fix,           /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
-  *default_htp_axis,           /*!< \brief Default HTP axis for the COption class. */
-  *default_ffd_axis,           /*!< \brief Default FFD axis for the COption class. */
-  *default_inc_crit,           /*!< \brief Default incremental criteria array for the COption class. */
-  *default_extrarelfac,        /*!< \brief Default extra relaxation factor for Giles BC in the COption class. */
-  *default_sineload_coeff;     /*!< \brief Default values for a sine load. */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones;  /*!< \brief number of maximum span-wise sections for all zones */
@@ -1045,8 +1019,6 @@ private:
   su2double FinalRotation_Rate_Z;       /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalOutletPressure;        /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure;      /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
-  su2double *default_body_force;        /*!< \brief Default body force vector for the COption class. */
-  su2double *default_nacelle_location;  /*!< \brief Location of the nacelle. */
   su2double *default_cp_polycoeffs;     /*!< \brief Array for specific heat polynomial coefficients. */
   su2double *default_mu_polycoeffs;     /*!< \brief Array for viscosity polynomial coefficients. */
   su2double *default_kt_polycoeffs;     /*!< \brief Array for thermal conductivity polynomial coefficients. */
@@ -1069,6 +1041,46 @@ private:
             *top_optim_filter_radius;  /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
   unsigned short top_optim_proj_type;  /*!< \brief The projection function used in topology optimization. */
   su2double top_optim_proj_param;      /*!< \brief The value of the parameter for the projection function. */
+  bool HeatSource;              /*!< \brief Flag to know if there is a volumetric heat source on the flow. */
+  su2double ValHeatSource;      /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
+  su2double Heat_Source_Rot_Z;    /*!< \brief Rotation of the volumetric heat source on the Z axis. */
+  su2double *Heat_Source_Center,  /*!< \brief Position of the center of the heat source. */
+            *Heat_Source_Axes;  /*!< \brief Principal axes (x, y, z) of the ellipsoid containing the heat source. */
+  unsigned short Kind_Radiation;       /*!< \brief Kind of radiation model used. */
+  unsigned short Kind_P1_Init;         /*!< \brief Kind of initialization used in the P1 model. */
+  su2double Absorption_Coeff,          /*!< \brief Absorption coefficient of the medium (radiation). */
+  Scattering_Coeff;                    /*!< \brief Scattering coefficient of the medium (radiation). */
+  unsigned short nMarker_Emissivity;   /*!< \brief Number of markers for which the emissivity is defined. */
+  string *Marker_Emissivity;           /*!< \brief Wall markers with defined emissivity. */
+  su2double *Wall_Emissivity;          /*!< \brief Emissivity of the wall. */
+  bool Radiation;                      /*!< \brief Determines if a radiation model is incorporated. */
+  su2double CFL_Rad;                   /*!< \brief CFL Number for the radiation solver. */
+
+  su2double default_vel_inf[3],  /*!< \brief Default freestream velocity array for the COption class. */
+  default_eng_cyl[7],            /*!< \brief Default engine box array for the COption class. */
+  default_eng_val[5],            /*!< \brief Default engine box array values for the COption class. */
+  default_cfl_adapt[4],          /*!< \brief Default CFL adapt param array for the COption class. */
+  default_jst_coeff[2],          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  default_ffd_coeff[3],          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  default_mixedout_coeff[3],     /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
+  default_rampRotFrame_coeff[3], /*!< \brief Default ramp rotating frame coefficients for the COption class. */
+  default_rampOutPres_coeff[3],  /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
+  default_jst_adj_coeff[2],      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+  default_ad_coeff_heat[2],      /*!< \brief Default artificial dissipation (heat) array for the COption class. */
+  default_obj_coeff[5],          /*!< \brief Default objective array for the COption class. */
+  default_geo_loc[2],            /*!< \brief Default SU2_GEO section locations array for the COption class. */
+  default_distortion[2],         /*!< \brief Default SU2_GEO section locations array for the COption class. */
+  default_ea_lim[3],             /*!< \brief Default equivalent area limit array for the COption class. */
+  default_grid_fix[6],           /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
+  default_htp_axis[2],           /*!< \brief Default HTP axis for the COption class. */
+  default_ffd_axis[3],           /*!< \brief Default FFD axis for the COption class. */
+  default_inc_crit[3],           /*!< \brief Default incremental criteria array for the COption class. */
+  default_extrarelfac[2],        /*!< \brief Default extra relaxation factor for Giles BC in the COption class. */
+  default_sineload_coeff[3],     /*!< \brief Default values for a sine load. */
+  default_body_force[3],         /*!< \brief Default body force vector for the COption class. */
+  default_nacelle_location[5],   /*!< \brief Location of the nacelle. */
+  default_hs_axes[3],            /*!< \brief Default principal axes (x, y, z) of the ellipsoid containing the heat source. */
+  default_hs_center[3];          /*!< \brief Default position of the center of the heat source. */
 
   unsigned short Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
   su2double Quadrature_Factor_Straight;      /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
@@ -1093,7 +1105,7 @@ private:
   Restart_Iter;                  /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;           /*!< \brief Determines the time step for the multizone problem */
   su2double Max_Time;            /*!< \brief Determines the maximum time for the time-domain problems */
-  su2double *default_wrt_freq;
+
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
   unsigned long VolumeWrtFreq;        /*!< \brief Writing frequency for solution files. */
@@ -1133,6 +1145,12 @@ private:
   unsigned long  Adap_Complexity;      /*!< \brief Constraint mesh complexity */
 
   string caseName;                 /*!< \brief Name of the current case */
+
+  unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
+
+  unsigned short Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
+  unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
+  bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -2076,7 +2094,7 @@ public:
    */
   unsigned short GetRefGeom_FileFormat(void) const { return RefGeom_FileFormat; }
 
-    /*!
+  /*!
    * \brief Formulation for 2D elasticity (plane stress - strain)
    * \return Flag to 2D elasticity model.
    */
@@ -2089,21 +2107,16 @@ public:
   bool GetPrestretch(void) const { return Prestretch; }
 
   /*!
-    * \brief Decide whether it's necessary to add the cross term for adjoint FSI.
-    * \return <code>TRUE</code> if it's necessary to add the cross term, <code>FALSE</code> otherwise.
-    */
-  bool Add_CrossTerm(void) const { return addCrossTerm; }
-
-  /*!
-    * \brief Set the boolean addCrossTerm to true or false.
-    */
-  void Set_CrossTerm(bool needCrossTerm) { addCrossTerm = needCrossTerm; }
-
-  /*!
    * \brief Get the name of the file with the element properties for structural problems.
    * \return Name of the file with the element properties of the structural problem.
    */
   string GetFEA_FileName(void) const { return FEA_FileName; }
+
+  /*!
+   * \brief Determine if advanced features are used from the element-based FEA analysis (experimental feature).
+   * \return <code>TRUE</code> is experimental, <code>FALSE</code> is the default behaviour.
+   */
+  inline bool GetAdvanced_FEAElementBased(void) const { return FEAAdvancedMode; }
 
   /*!
    * \brief Get the name of the file with the reference geometry of the structural problem.
@@ -3450,27 +3463,27 @@ public:
   unsigned short GetMarker_All_ZoneInterface(unsigned short val_marker) const { return Marker_All_ZoneInterface[val_marker]; }
 
   /*!
-     * \brief Get the MixingPlane interface information for a marker <i>val_marker</i>.
-     * \param[in] val_marker value of the marker on the grid.
-     * \return 0 if is not part of the MixingPlane Interface and greater than 1 if it is part.
-     */
+   * \brief Get the MixingPlane interface information for a marker <i>val_marker</i>.
+   * \param[in] val_marker value of the marker on the grid.
+   * \return 0 if is not part of the MixingPlane Interface and greater than 1 if it is part.
+   */
   unsigned short GetMarker_All_MixingPlaneInterface(unsigned short val_marker) const { return Marker_All_MixingPlaneInterface[val_marker]; }
 
-    /*!
-     * \brief Get the Turbomachinery information for a marker <i>val_marker</i>.
-     * \param[in] val_marker value of the marker on the grid.
-     * \return 0 if is not part of the Turbomachinery and greater than 1 if it is part.
-     */
+  /*!
+   * \brief Get the Turbomachinery information for a marker <i>val_marker</i>.
+   * \param[in] val_marker value of the marker on the grid.
+   * \return 0 if is not part of the Turbomachinery and greater than 1 if it is part.
+   */
   unsigned short GetMarker_All_Turbomachinery(unsigned short val_marker) const { return Marker_All_Turbomachinery[val_marker]; }
 
-    /*!
-     * \brief Get the Turbomachinery flag information for a marker <i>val_marker</i>.
-     * \param[in] val_marker value of the marker on the grid.
-     * \return 0 if is not part of the Turbomachinery, flag INFLOW or OUTFLOW if it is part.
-     */
+  /*!
+   * \brief Get the Turbomachinery flag information for a marker <i>val_marker</i>.
+   * \param[in] val_marker value of the marker on the grid.
+   * \return 0 if is not part of the Turbomachinery, flag INFLOW or OUTFLOW if it is part.
+   */
   unsigned short GetMarker_All_TurbomachineryFlag(unsigned short val_marker) const { return Marker_All_TurbomachineryFlag[val_marker]; }
 
-    /*!
+  /*!
    * \brief Get the number of FSI interface markers <i>val_marker</i>.
    * \param[in] void.
    * \return Number of markers belonging to the FSI interface.
@@ -3610,11 +3623,52 @@ public:
   void SetKind_Solver(unsigned short val_solver) { Kind_Solver = val_solver; }
 
   /*!
+   * \brief Return true if a fluid solver is in use.
+   */
+  bool GetFluidProblem(void) const {
+    switch (Kind_Solver) {
+      case EULER : case NAVIER_STOKES: case RANS:
+      case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /*!
+   * \brief Return true if a structural solver is in use.
+   */
+  bool GetStructuralProblem(void) const {
+    return (Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM);
+  }
+
+  /*!
+   * \brief Return true if a heat solver is in use.
+   */
+  bool GetHeatProblem(void) const {
+    return (Kind_Solver == HEAT_EQUATION) || (Kind_Solver == DISC_ADJ_HEAT);
+  }
+
+  /*!
+   * \brief Return true if a high order FEM solver is in use.
+   */
+  bool GetFEMSolver(void) const {
+    switch (Kind_Solver) {
+      case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
+      case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /*!
    * \brief Kind of Multizone Solver.
    * \return Governing equation that we are solving.
    */
   unsigned short GetKind_MZSolver(void) const { return Kind_MZSolver; }
-
 
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
@@ -4093,7 +4147,12 @@ public:
    * \brief Get the type of stiffness to impose for FEA mesh deformation.
    * \return type of stiffness to impose for FEA mesh deformation.
    */
-  unsigned short GetDeform_Stiffness_Type(void) const { return Deform_Stiffness_Type; }
+  unsigned short GetDeform_Stiffness_Type(void) const { return Deform_StiffnessType; }
+
+  /*!
+   * \brief Get the size of the layer of highest stiffness for wall distance-based mesh stiffness.
+   */
+  su2double GetDeform_StiffLayerSize(void) const { return Deform_StiffLayerSize; }
 
   /*!
    * \brief Creates a tecplot file to visualize the volume deformation deformation made by the DEF software.
@@ -4261,7 +4320,7 @@ public:
    * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).
    * \return yes/no.
    */
-  bool GetUse_Accurate_Jacobians(void) { return Use_Accurate_Jacobians; }
+  bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4305,6 +4364,15 @@ public:
    * \return Kind of integration scheme for the plasma equations.
    */
   unsigned short GetKind_TimeIntScheme_FEA(void) const { return Kind_TimeIntScheme_FEA; }
+
+  /*!
+   * \brief Get the kind of integration scheme (explicit or implicit)
+   *        for the radiation equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of integration scheme for the radiation equations.
+   */
+  unsigned short GetKind_TimeIntScheme_Radiation(void) const { return Kind_TimeIntScheme_Radiation; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4464,7 +4532,7 @@ public:
    * \brief Factor by which to multiply the dissipation contribution to Jacobians of central schemes.
    * \return The factor.
    */
-  su2double GetCent_Jac_Fix_Factor(void) { return Cent_Jac_Fix_Factor; }
+  su2double GetCent_Jac_Fix_Factor(void) const { return Cent_Jac_Fix_Factor; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4655,7 +4723,7 @@ public:
    * \brief Get the type of incompressible inlet from the list.
    * \return Kind of the incompressible inlet.
    */
-  unsigned short GetKind_Inc_Inlet(string val_marker);
+  unsigned short GetKind_Inc_Inlet(string val_marker) const;
 
   /*!
    * \brief Get the total number of types in Kind_Inc_Inlet list
@@ -4673,7 +4741,7 @@ public:
    * \brief Get the type of incompressible outlet from the list.
    * \return Kind of the incompressible outlet.
    */
-  unsigned short GetKind_Inc_Outlet(string val_marker);
+  unsigned short GetKind_Inc_Outlet(string val_marker) const;
 
   /*!
    * \brief Get the damping factor applied to velocity updates at incompressible pressure inlets.
@@ -5584,7 +5652,7 @@ public:
    * \return <code>TRUE</code> if there is a grid movement; otherwise <code>FALSE</code>.
    */
   bool GetGrid_Movement(void) const {
-    return (Kind_GridMovement != NO_MOVEMENT) || ((nKind_SurfaceMovement > 0) && !GetSurface_Movement(FLUID_STRUCTURE_STATIC));
+    return (Kind_GridMovement != NO_MOVEMENT) || (nKind_SurfaceMovement > 0);
   }
 
   /*!
@@ -5597,7 +5665,7 @@ public:
    * \brief Get information about the volumetric movement.
    * \return <code>TRUE</code> if there is a volumetric movement is required; otherwise <code>FALSE</code>.
    */
-  bool GetVolumetric_Movement(void);
+  bool GetVolumetric_Movement(void) const;
 
   /*!
    * \brief Get information about deforming markers.
@@ -5874,7 +5942,53 @@ public:
    * \brief Get a pointer to the body force vector.
    * \return A pointer to the body force vector.
    */
-  su2double* GetBody_Force_Vector(void) { return Body_Force_Vector; }
+  const su2double* GetBody_Force_Vector(void) const { return Body_Force_Vector; }
+
+  /*!
+   * \brief Get information about the volumetric heat source.
+   * \return <code>TRUE</code> if it uses a volumetric heat source; otherwise <code>FALSE</code>.
+   */
+  inline bool GetHeatSource(void) const { return HeatSource; }
+
+  /*!
+   * \brief Get information about the volumetric heat source.
+   * \return Value of the volumetric heat source
+   */
+  inline su2double GetHeatSource_Val(void) const {return ValHeatSource;}
+
+  /*!
+   * \brief Get the rotation angle of the volumetric heat source in axis Z.
+   * \return Rotation (Z) of the volumetric heat source
+   */
+  inline su2double GetHeatSource_Rot_Z(void) const {return Heat_Source_Rot_Z;}
+
+  /*!
+   * \brief Set the rotation angle of the volumetric heat source in axis Z.
+   * \param[in] val_rot - Rotation (Z) of the volumetric heat source
+   */
+  inline void SetHeatSource_Rot_Z(su2double val_rot) {Heat_Source_Rot_Z = val_rot;}
+
+  /*!
+   * \brief Get the position of the center of the volumetric heat source.
+   * \return Pointer to the center of the ellipsoid that introduces a volumetric heat source.
+   */
+  inline const su2double* GetHeatSource_Center(void) const {return Heat_Source_Center;}
+
+  /*!
+   * \brief Set the position of the center of the volumetric heat source.
+   * \param[in] x_cent = X position of the center of the volumetric heat source.
+   * \param[in] y_cent = Y position of the center of the volumetric heat source.
+   * \param[in] z_cent = Z position of the center of the volumetric heat source.
+   */
+  inline void SetHeatSource_Center(su2double x_cent, su2double y_cent, su2double z_cent) {
+    Heat_Source_Center[0] = x_cent; Heat_Source_Center[1] = y_cent; Heat_Source_Center[2] = z_cent;
+  }
+
+  /*!
+   * \brief Get the radius of the ellipsoid that introduces a volumetric heat source.
+   * \return Pointer to the radii (x, y, z) of the ellipsoid that introduces a volumetric heat source.
+   */
+  inline const su2double* GetHeatSource_Axes(void) const {return Heat_Source_Axes;}
 
   /*!
    * \brief Get information about the rotational frame.
@@ -6083,14 +6197,14 @@ public:
    * \param iMarker
    * \return <TRUE> it marker with index iMarker is a solid boundary.
    */
-  bool GetSolid_Wall(unsigned short iMarker);
+  bool GetSolid_Wall(unsigned short iMarker) const;
 
   /*!
    * \brief Determines whether a marker with index iMarker is a viscous no-slip boundary.
    * \param iMarker
    * \return <TRUE> it marker with index iMarker is a viscous no-slip boundary.
    */
-  bool GetViscous_Wall(unsigned short iMarker);
+  bool GetViscous_Wall(unsigned short iMarker) const;
 
   /*!
    * \brief Determines if problem is adjoint
@@ -6275,102 +6389,104 @@ public:
    * \brief Get the rotationally periodic donor marker for boundary <i>val_marker</i>.
    * \return Periodic donor marker from the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_Periodic_Donor(string val_marker);
+  unsigned short GetMarker_Periodic_Donor(string val_marker) const;
 
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_NetThrust(string val_marker);
+  su2double GetActDisk_NetThrust(string val_marker) const;
 
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_Power(string val_marker);
+  su2double GetActDisk_Power(string val_marker) const;
 
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_MassFlow(string val_marker);
-  /*!
-   * \brief Get the origin of the actuator disk.
-   */
-  su2double GetActDisk_Mach(string val_marker);
-  /*!
-   * \brief Get the origin of the actuator disk.
-   */
-  su2double GetActDisk_Force(string val_marker);
+  su2double GetActDisk_MassFlow(string val_marker) const;
 
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_BCThrust(string val_marker);
+  su2double GetActDisk_Mach(string val_marker) const;
 
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double GetActDisk_BCThrust_Old(string val_marker);
+  su2double GetActDisk_Force(string val_marker) const;
+
+  /*!
+   * \brief Get the origin of the actuator disk.
+   */
+  su2double GetActDisk_BCThrust(string val_marker) const;
+
+  /*!
+   * \brief Get the origin of the actuator disk.
+   */
+  su2double GetActDisk_BCThrust_Old(string val_marker) const;
 
   /*!
    * \brief Get the tip radius of th actuator disk.
    */
-  su2double GetActDisk_Area(string val_marker);
+  su2double GetActDisk_Area(string val_marker) const;
 
   /*!
    * \brief Get the tip radius of th actuator disk.
    */
-  su2double GetActDisk_ReverseMassFlow(string val_marker);
+  su2double GetActDisk_ReverseMassFlow(string val_marker) const;
 
   /*!
    * \brief Get the thrust corffient of the actuator disk.
    */
-  su2double GetActDisk_PressJump(string val_marker, unsigned short val_index);
+  su2double GetActDisk_PressJump(string val_marker, unsigned short val_index) const;
 
   /*!
    * \brief Get the thrust corffient of the actuator disk.
    */
-  su2double GetActDisk_TempJump(string val_marker, unsigned short val_index);
+  su2double GetActDisk_TempJump(string val_marker, unsigned short val_index) const;
 
   /*!
    * \brief Get the rev / min of the actuator disk.
    */
-  su2double GetActDisk_Omega(string val_marker, unsigned short val_index);
+  su2double GetActDisk_Omega(string val_marker, unsigned short val_index) const;
 
   /*!
    * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
    * \return Actuator Disk Outlet from the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_ActDiskOutlet(string val_marker);
+  unsigned short GetMarker_CfgFile_ActDiskOutlet(string val_marker) const;
 
   /*!
    * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
    * \return Actuator Disk Outlet from the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_EngineExhaust(string val_marker);
+  unsigned short GetMarker_CfgFile_EngineExhaust(string val_marker) const;
 
   /*!
    * \brief Get the internal index for a moving boundary <i>val_marker</i>.
    * \return Internal index for a moving boundary <i>val_marker</i>.
    */
-  unsigned short GetMarker_Moving(string val_marker);
+  unsigned short GetMarker_Moving(string val_marker) const;
 
   /*!
    * \brief Get bool if marker is moving. <i>val_marker</i>.
    * \param[in] val_marker - String of the marker to test.
    * \return Bool if the marker is a moving boundary <i>val_marker</i>.
    */
-  bool GetMarker_Moving_Bool(string val_marker);
+  bool GetMarker_Moving_Bool(string val_marker) const;
 
   /*!
    * \brief Get the internal index for a DEFORM_MESH boundary <i>val_marker</i>.
    * \return Internal index for a DEFORM_MESH boundary <i>val_marker</i>.
    */
-  unsigned short GetMarker_Deform_Mesh(string val_marker);
+  unsigned short GetMarker_Deform_Mesh(string val_marker) const;
 
   /*!
    * \brief Get the internal index for a Fluid_Load boundary <i>val_marker</i>.
    * \return Internal index for a Fluid_Load boundary <i>val_marker</i>.
    */
-  unsigned short GetMarker_Fluid_Load(string val_marker);
+  unsigned short GetMarker_Fluid_Load(string val_marker) const;
 
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -6417,28 +6533,28 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total temperature.
    */
-  su2double GetExhaust_Temperature_Target(string val_index);
+  su2double GetExhaust_Temperature_Target(string val_index) const;
 
   /*!
    * \brief Get the total temperature at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total temperature.
    */
-  su2double GetInlet_Ttotal(string val_index);
+  su2double GetInlet_Ttotal(string val_index) const;
 
   /*!
    * \brief Get the temperature at a supersonic inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet density.
    */
-  su2double GetInlet_Temperature(string val_index);
+  su2double GetInlet_Temperature(string val_index) const;
 
   /*!
    * \brief Get the pressure at a supersonic inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet pressure.
    */
-  su2double GetInlet_Pressure(string val_index);
+  su2double GetInlet_Pressure(string val_index) const;
 
   /*!
    * \brief Get the velocity vector at a supersonic inlet boundary.
@@ -6452,7 +6568,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
    */
-  su2double GetInlet_Ptotal(string val_index);
+  su2double GetInlet_Ptotal(string val_index) const;
 
   /*!
    * \brief Set the total pressure at an inlet boundary.
@@ -6466,7 +6582,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
    */
-  su2double GetExhaust_Pressure_Target(string val_index);
+  su2double GetExhaust_Pressure_Target(string val_index) const;
 
   /*!
    * \brief Value of the CFL reduction in LevelSet problems.
@@ -6486,7 +6602,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetOutlet_Pressure(string val_index);
+  su2double GetOutlet_Pressure(string val_index) const;
 
   /*!
    * \brief Set the back pressure (static) at an outlet boundary.
@@ -6500,14 +6616,14 @@ public:
    * \param[in] val_marker - Index corresponding to the Riemann boundary.
    * \return The var1
    */
-  su2double GetRiemann_Var1(string val_marker);
+  su2double GetRiemann_Var1(string val_marker) const;
 
   /*!
    * \brief Get the var 2 at Riemann boundary.
    * \param[in] val_marker - Index corresponding to the Riemann boundary.
    * \return The var2
    */
-  su2double GetRiemann_Var2(string val_marker);
+  su2double GetRiemann_Var2(string val_marker) const;
 
   /*!
    * \brief Get the Flowdir at Riemann boundary.
@@ -6521,21 +6637,21 @@ public:
    * \param[in] val_marker - Index corresponding to the Riemann boundary.
    * \return Kind data
    */
-  unsigned short GetKind_Data_Riemann(string val_marker);
+  unsigned short GetKind_Data_Riemann(string val_marker) const;
 
   /*!
    * \brief Get the var 1 for the Giels BC.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The var1
    */
-  su2double GetGiles_Var1(string val_marker);
+  su2double GetGiles_Var1(string val_marker) const;
 
   /*!
    * \brief Get the var 2 for the Giles boundary.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The var2
    */
-  su2double GetGiles_Var2(string val_marker);
+  su2double GetGiles_Var2(string val_marker) const;
 
   /*!
    * \brief Get the Flowdir for the Giles BC.
@@ -6549,7 +6665,7 @@ public:
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return Kind data
    */
-  unsigned short GetKind_Data_Giles(string val_marker);
+  unsigned short GetKind_Data_Giles(string val_marker) const;
 
   /*!
    * \brief Set the var 1 for Giles BC.
@@ -6562,20 +6678,20 @@ public:
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The relax factor for the average component
    */
-  su2double GetGiles_RelaxFactorAverage(string val_marker);
+  su2double GetGiles_RelaxFactorAverage(string val_marker) const;
 
   /*!
    * \brief Get the relax factor for the fourier component for the Giles BC.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The relax factor for the fourier component
    */
-  su2double GetGiles_RelaxFactorFourier(string val_marker);
+  su2double GetGiles_RelaxFactorFourier(string val_marker) const;
 
   /*!
    * \brief Get the outlet pressure imposed as BC for internal flow.
    * \return outlet pressure
    */
-  su2double GetPressureOut_BC();
+  su2double GetPressureOut_BC() const;
 
   /*!
    * \brief Set the outlet pressure imposed as BC for internal flow.
@@ -6587,7 +6703,7 @@ public:
    * \brief Get the inlet velocity or pressure imposed for incompressible flow.
    * \return inlet velocity or pressure
    */
-  su2double GetIncInlet_BC();
+  su2double GetIncInlet_BC() const;
 
   /*!
    * \brief Set the inlet velocity or pressure imposed as BC for incompressible flow.
@@ -6599,7 +6715,7 @@ public:
    * \brief Get the inlet temperature imposed as BC for incompressible flow.
    * \return inlet temperature
    */
-  su2double GetIncTemperature_BC();
+  su2double GetIncTemperature_BC() const;
 
   /*!
    * \brief Set the inlet temperature imposed as BC for incompressible flow.
@@ -6611,7 +6727,7 @@ public:
    * \brief Get the outlet pressure imposed as BC for incompressible flow.
    * \return outlet pressure
    */
-  su2double GetIncPressureOut_BC();
+  su2double GetIncPressureOut_BC() const;
 
   /*!
    * \brief Set the outlet pressure imposed as BC for incompressible flow.
@@ -6623,13 +6739,13 @@ public:
    * \brief Get the inlet total pressure imposed as BC for internal flow.
    * \return inlet total pressure
    */
-  su2double GetTotalPressureIn_BC();
+  su2double GetTotalPressureIn_BC() const;
 
   /*!
    * \brief Get the inlet total temperature imposed as BC for internal flow.
    * \return inlet total temperature
    */
-  su2double GetTotalTemperatureIn_BC();
+  su2double GetTotalTemperatureIn_BC() const;
 
   /*!
    * \brief Set the inlet total temperature imposed as BC for internal flow.
@@ -6641,28 +6757,28 @@ public:
    * \brief Get the inlet flow angle imposed as BC for internal flow.
    * \return inlet flow angle
    */
-  su2double GetFlowAngleIn_BC();
+  su2double GetFlowAngleIn_BC() const;
 
   /*!
    * \brief Get the wall temperature (static) at an isothermal boundary.
    * \param[in] val_index - Index corresponding to the isothermal boundary.
    * \return The wall temperature.
    */
-  su2double GetIsothermal_Temperature(string val_index);
+  su2double GetIsothermal_Temperature(string val_index) const;
 
   /*!
    * \brief Get the wall heat flux on a constant heat flux boundary.
    * \param[in] val_index - Index corresponding to the constant heat flux boundary.
    * \return The heat flux.
    */
-  su2double GetWall_HeatFlux(string val_index);
+  su2double GetWall_HeatFlux(string val_index) const;
 
   /*!
    * \brief Get the wall function treatment for the given boundary marker.
    * \param[in] val_marker - String of the viscous wall marker.
    * \return The type of wall function treatment.
    */
-  unsigned short GetWallFunction_Treatment(string val_marker);
+  unsigned short GetWallFunction_Treatment(string val_marker) const;
 
   /*!
    * \brief Get the additional integer info for the wall function treatment
@@ -6685,35 +6801,35 @@ public:
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
    * \return Target (pressure, massflow, etc) .
    */
-  su2double GetEngineInflow_Target(string val_marker);
+  su2double GetEngineInflow_Target(string val_marker) const;
 
   /*!
    * \brief Get the fan face Mach number at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The fan face Mach number.
    */
-  su2double GetInflow_Mach(string val_marker);
+  su2double GetInflow_Mach(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow pressure.
    */
-  su2double GetInflow_Pressure(string val_marker);
+  su2double GetInflow_Pressure(string val_marker) const;
 
   /*!
    * \brief Get the mass flow rate at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine mass flow rate.
    */
-  su2double GetInflow_MassFlow(string val_marker);
+  su2double GetInflow_MassFlow(string val_marker) const;
 
   /*!
    * \brief Get the percentage of reverse flow at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The percentage of reverse flow.
    */
-  su2double GetInflow_ReverseMassFlow(string val_marker);
+  su2double GetInflow_ReverseMassFlow(string val_marker) const;
 
   /*!
    * \brief Get the percentage of reverse flow at an engine inflow boundary.
@@ -6727,98 +6843,98 @@ public:
    * \param[in] val_marker - Name of the boundary.
    * \return The total pressure.
    */
-  su2double GetInflow_TotalPressure(string val_marker);
+  su2double GetInflow_TotalPressure(string val_marker) const;
 
   /*!
    * \brief Get the temperature (static) at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow temperature.
    */
-  su2double GetInflow_Temperature(string val_marker);
+  su2double GetInflow_Temperature(string val_marker) const;
 
   /*!
    * \brief Get the total temperature at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow total temperature.
    */
-  su2double GetInflow_TotalTemperature(string val_marker);
+  su2double GetInflow_TotalTemperature(string val_marker) const;
 
   /*!
    * \brief Get the ram drag at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow ram drag.
    */
-  su2double GetInflow_RamDrag(string val_marker);
+  su2double GetInflow_RamDrag(string val_marker) const;
 
   /*!
    * \brief Get the force balance at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow force balance.
    */
-  su2double GetInflow_Force(string val_marker);
+  su2double GetInflow_Force(string val_marker) const;
 
   /*!
    * \brief Get the power at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine inflow power.
    */
-  su2double GetInflow_Power(string val_marker);
+  su2double GetInflow_Power(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine exhaust pressure.
    */
-  su2double GetExhaust_Pressure(string val_marker);
+  su2double GetExhaust_Pressure(string val_marker) const;
 
   /*!
    * \brief Get the temperature (static) at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine exhaust temperature.
    */
-  su2double GetExhaust_Temperature(string val_marker);
+  su2double GetExhaust_Temperature(string val_marker) const;
 
   /*!
    * \brief Get the massflow at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine exhaust massflow.
    */
-  su2double GetExhaust_MassFlow(string val_marker);
+  su2double GetExhaust_MassFlow(string val_marker) const;
 
   /*!
    * \brief Get the total pressure at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The engine exhaust total pressure.
    */
-  su2double GetExhaust_TotalPressure(string val_marker);
+  su2double GetExhaust_TotalPressure(string val_marker) const;
 
   /*!
    * \brief Get the total temperature at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return The total temperature.
    */
-  su2double GetExhaust_TotalTemperature(string val_marker);
+  su2double GetExhaust_TotalTemperature(string val_marker) const;
 
   /*!
    * \brief Get the gross thrust at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return Gross thrust.
    */
-  su2double GetExhaust_GrossThrust(string val_marker);
+  su2double GetExhaust_GrossThrust(string val_marker) const;
 
   /*!
    * \brief Get the force balance at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return Force balance.
    */
-  su2double GetExhaust_Force(string val_marker);
+  su2double GetExhaust_Force(string val_marker) const;
 
   /*!
    * \brief Get the power at an engine exhaust boundary.
    * \param[in] val_marker - Name of the boundary.
    * \return Power.
    */
-  su2double GetExhaust_Power(string val_marker);
+  su2double GetExhaust_Power(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7050,14 +7166,14 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_Temperature(string val_marker);
+  su2double GetActDiskInlet_Temperature(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_TotalTemperature(string val_marker);
+  su2double GetActDiskInlet_TotalTemperature(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7078,21 +7194,21 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_Temperature(string val_marker);
+  su2double GetActDiskOutlet_Temperature(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_TotalTemperature(string val_marker);
+  su2double GetActDiskOutlet_TotalTemperature(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_MassFlow(string val_marker);
+  su2double GetActDiskInlet_MassFlow(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7106,7 +7222,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_MassFlow(string val_marker);
+  su2double GetActDiskOutlet_MassFlow(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7120,14 +7236,14 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_Pressure(string val_marker);
+  su2double GetActDiskInlet_Pressure(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_TotalPressure(string val_marker);
+  su2double GetActDiskInlet_TotalPressure(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7218,21 +7334,21 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_RamDrag(string val_marker);
+  su2double GetActDiskInlet_RamDrag(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_Force(string val_marker);
+  su2double GetActDiskInlet_Force(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskInlet_Power(string val_marker);
+  su2double GetActDiskInlet_Power(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7288,7 +7404,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetOutlet_MassFlow(string val_marker);
+  su2double GetOutlet_MassFlow(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7302,7 +7418,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetOutlet_Density(string val_marker);
+  su2double GetOutlet_Density(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7316,7 +7432,7 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetOutlet_Area(string val_marker);
+  su2double GetOutlet_Area(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7722,35 +7838,35 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_Pressure(string val_marker);
+  su2double GetActDiskOutlet_Pressure(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_TotalPressure(string val_marker);
+  su2double GetActDiskOutlet_TotalPressure(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_GrossThrust(string val_marker);
+  su2double GetActDiskOutlet_GrossThrust(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_Force(string val_marker);
+  su2double GetActDiskOutlet_Force(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDiskOutlet_Power(string val_marker);
+  su2double GetActDiskOutlet_Power(string val_marker) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -7792,91 +7908,91 @@ public:
    * \param[in] val_index - Index corresponding to the displacement boundary.
    * \return The displacement value.
    */
-  su2double GetDispl_Value(string val_index);
+  su2double GetDispl_Value(string val_index) const;
 
   /*!
    * \brief Get the force value at an load boundary.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load value.
    */
-  su2double GetLoad_Value(string val_index);
+  su2double GetLoad_Value(string val_index) const;
 
   /*!
    * \brief Get the constant value at a damper boundary.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The damper constant.
    */
-  su2double GetDamper_Constant(string val_index);
+  su2double GetDamper_Constant(string val_index) const;
 
   /*!
    * \brief Get the force value at a load boundary defined in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load value.
    */
-  su2double GetLoad_Dir_Value(string val_index);
+  su2double GetLoad_Dir_Value(string val_index) const;
 
   /*!
    * \brief Get the force multiplier at a load boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load multiplier.
    */
-  su2double GetLoad_Dir_Multiplier(string val_index);
+  su2double GetLoad_Dir_Multiplier(string val_index) const;
 
   /*!
    * \brief Get the force value at a load boundary defined in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load value.
    */
-  su2double GetDisp_Dir_Value(string val_index);
+  su2double GetDisp_Dir_Value(string val_index) const;
 
   /*!
    * \brief Get the force multiplier at a load boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load multiplier.
    */
-  su2double GetDisp_Dir_Multiplier(string val_index);
+  su2double GetDisp_Dir_Multiplier(string val_index) const;
 
   /*!
    * \brief Get the force direction at a loaded boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load direction.
    */
-  su2double* GetLoad_Dir(string val_index);
+  const su2double* GetLoad_Dir(string val_index) const;
 
   /*!
    * \brief Get the force direction at a loaded boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load direction.
    */
-  su2double* GetDisp_Dir(string val_index);
+  const su2double* GetDisp_Dir(string val_index) const;
 
   /*!
    * \brief Get the amplitude of the sine-wave at a load boundary defined in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load value.
    */
-  su2double GetLoad_Sine_Amplitude(string val_index);
+  su2double GetLoad_Sine_Amplitude(string val_index) const;
 
   /*!
    * \brief Get the frequency of the sine-wave at a load boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load frequency.
    */
-  su2double GetLoad_Sine_Frequency(string val_index);
+  su2double GetLoad_Sine_Frequency(string val_index) const;
 
   /*!
    * \brief Get the force direction at a sine-wave loaded boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load direction.
    */
-  su2double* GetLoad_Sine_Dir(string val_index);
+  const su2double* GetLoad_Sine_Dir(string val_index) const;
 
   /*!
    * \brief Get the force value at an load boundary.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load value.
    */
-  su2double GetFlowLoad_Value(string val_index);
+  su2double GetFlowLoad_Value(string val_index) const;
 
   /*!
    * \brief Cyclic pitch amplitude for rotor blades.
@@ -8364,18 +8480,6 @@ public:
   bool GetFull_Tape(void) const { return FullTape; }
 
   /*!
-   * \brief Get the indicator whether we want to benchmark the MPI performance of FSI problems
-   * \return The value for checking
-   */
-  bool CheckFSI_MPI(void);
-
-  /*!
-   * \brief Get the number of fluid subiterations roblems.
-   * \return Number of FSI subiters.
-   */
-  unsigned short GetnIterFSI(void) const { return nIterFSI; }
-
-  /*!
    * \brief Get the number of subiterations while a ramp is applied.
    * \return Number of FSI subiters.
    */
@@ -8537,7 +8641,7 @@ public:
    * \param[in] val_coeff - Index of the coefficient.
    * \return Alpha coefficient for the Runge-Kutta integration scheme.
    */
-  su2double* Get_Electric_Field_Dir(void) { return Electric_Field_Dir; }
+  const su2double* Get_Electric_Field_Dir(void) const { return Electric_Field_Dir; }
 
   /*!
    * \brief Check if the user wants to apply the load as a ramp.
@@ -8568,7 +8672,7 @@ public:
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The pointer to the sine load values.
    */
-  su2double* GetLoad_Sine(void) { return SineLoad_Coeff; }
+  const su2double* GetLoad_Sine(void) const { return SineLoad_Coeff; }
 
   /*!
    * \brief Get the kind of load transfer method we want to use for dynamic problems
@@ -8627,12 +8731,6 @@ public:
   bool GetFSI_Simulation(void) const { return FSI_Problem || (nMarker_Fluid_Load > 0); }
 
   /*!
-   * \brief Set that the simulation we are running is a FSI simulation
-   * \param[in] FSI_sim - boolean that determines is FSI_Problem is true/false.
-   */
-  void SetFSI_Simulation(bool FSI_sim) { FSI_Problem = FSI_sim; }
-
-  /*!
    * \brief Set that the simulation we are running is a multizone simulation
    * \param[in] MZ_problem - boolean that determines is Multizone_Problem is true/false.
    */
@@ -8644,10 +8742,10 @@ public:
    */
   bool GetMultizone_Problem(void) const { return Multizone_Problem; }
 
-   /*!
-    * \brief Get the ID for the FEA region that we want to compute the gradient for using direct differentiation
-    * \return ID
-    */
+  /*!
+   * \brief Get the ID for the FEA region that we want to compute the gradient for using direct differentiation
+   * \return ID
+   */
   unsigned short GetnID_DV(void) const { return nID_DV; }
 
   /*!
@@ -8701,7 +8799,7 @@ public:
 
   /*!
    * \brief Function to make available the multiplication factor theta of the
-            symmetrizing terms in the DG discretization of the viscous terms.
+   *        symmetrizing terms in the DG discretization of the viscous terms.
    * \return The specified factor for the DG discretization.
    */
   su2double GetTheta_Interior_Penalty_DGFEM(void) const { return Theta_Interior_Penalty_DGFEM; }
@@ -8728,7 +8826,7 @@ public:
 
   /*!
    * \brief Function to make available whether or not only the exact Jacobian
-            of the spatial discretization must be computed.
+   *        of the spatial discretization must be computed.
    * \return The boolean whether or not the Jacobian must be computed.
    */
   bool GetJacobian_Spatial_Discretization_Only(void) const { return Jacobian_Spatial_Discretization_Only; }
@@ -8741,7 +8839,7 @@ public:
   /*!
    * \brief Get option of whether to use conservative interpolation between zones.
    */
-  bool GetConservativeInterpolation(void) const { return ConservativeInterpolation; }
+  bool GetConservativeInterpolation(void) const { return ConservativeInterpolation && GetStructuralProblem(); }
 
   /*!
    * \brief Get the basis function to use for radial basis function interpolation for FSI.
@@ -8757,6 +8855,31 @@ public:
    * \brief Get the basis function radius to use for radial basis function interpolation for FSI.
    */
   su2double GetRadialBasisFunctionParameter(void) const { return RadialBasisFunction_Parameter; }
+
+  /*!
+   * \brief Get the tolerance used to prune the interpolation matrix (making it sparser).
+   */
+  su2double GetRadialBasisFunctionPruneTol(void) const { return RadialBasisFunction_PruneTol; }
+
+  /*!
+   * \brief Get the number of donor points to use in Nearest Neighbor interpolation.
+   */
+  unsigned short GetNumNearestNeighbors(void) const { return NumNearestNeighbors; }
+
+  /*!
+   * \brief Get the kind of inlet face interpolation function to use.
+   */
+  inline unsigned short GetKindInletInterpolationFunction(void) const { return Kind_InletInterpolationFunction; }
+
+  /*!
+   * \brief Get the kind of inlet face interpolation data type.
+   */
+  inline unsigned short GetKindInletInterpolationType (void) const  { return Kind_Inlet_InterpolationType; }
+
+  /*!
+   * \brief Get whether to print inlet interpolated data or not.
+   */
+  bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData; }
 
   /*!
    * \brief Get information about using UQ methodology
@@ -9035,6 +9158,49 @@ public:
   bool GetSinglezone_Driver(void) const { return SinglezoneDriver; }
 
   /*!
+   * \brief Get the Kind of Radiation model applied.
+   * \return Kind of radiation model used.
+   */
+  unsigned short GetKind_RadiationModel(void) const { return Kind_Radiation; }
+
+  /*!
+   * \brief Get the Kind of P1 initialization method applied.
+   * \return Kind of P1 initialization method used.
+   */
+  unsigned short GetKind_P1_Init(void) const { return Kind_P1_Init; }
+
+  /*!
+   * \brief Get the value of the absorption coefficient of the medium.
+   * \return Value of the absorption coefficient of the medium.
+   */
+  su2double GetAbsorption_Coeff(void) const { return Absorption_Coeff; }
+
+  /*!
+   * \brief Get the value of the scattering coefficient of the medium.
+   * \return Value of the scattering coefficient of the medium.
+   */
+  su2double GetScattering_Coeff(void) const { return Scattering_Coeff; }
+
+  /*!
+   * \brief Get the wall emissivity at a boundary.
+   * \param[in] val_index - Index corresponding to the boundary.
+   * \return The wall emissivity.
+   */
+  su2double GetWall_Emissivity(string val_index) const;
+
+  /*!
+   * \brief Get the value of the CFL condition for radiation solvers.
+   * \return Value of the CFL condition for radiation solvers.
+   */
+  su2double GetCFL_Rad(void) const { return CFL_Rad; }
+
+  /*!
+   * \brief Determines if radiation needs to be incorporated to the analysis.
+   * \return Radiation boolean
+   */
+  bool AddRadiation(void) const { return Radiation; }
+
+  /*!
    * \brief Check if the convergence history of each individual zone is written to screen
    * \return YES if the zone convergence history of each individual zone must be written to screen
    */
@@ -9297,5 +9463,10 @@ public:
    * \return Mesh complexity
    */
   unsigned long GetAdap_Complexity(void) const { return Adap_Complexity; }
+
+  /*!
+   * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
+   */
+  unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
 
 };

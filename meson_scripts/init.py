@@ -4,14 +4,14 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring
-#  \version 7.0.1 "Blackbird"
+#  \version 7.0.3 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -230,7 +230,6 @@ def install_pyamg(log, err):
 
   pyamg_whl = 'externals/AMGIO/pyamg/Python3/' + pyamg_whl
   try:
-    # subprocess.check_call('pip3 install --user externals/AMGIO/pyamg/Python3/' + pyamg_whl, stdout = log, stderr = err, shell = True)
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', pyamg_whl], stdout=log, stderr = err)
     log.close()
     err.close()

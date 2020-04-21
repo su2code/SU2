@@ -2,14 +2,14 @@
  * \file CAdjTurbVariable.cpp
  * \brief Main subrotuines for solving turbulent adjoint problems.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -264,7 +264,7 @@ void CAdjTurbSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
     /*--- Add Residuals and Jacobians ---*/
     conv_numerics->ComputeResidual(Residual, Jacobian_ii, NULL, config);
     LinSysRes.AddBlock(iPoint, Residual);
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+    Jacobian.AddBlock2Diag(iPoint, Jacobian_ii);
 
   }
 
@@ -294,7 +294,10 @@ void CAdjTurbSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 }
 
-void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
+                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  CNumerics* numerics = numerics_container[CONV_TERM];
 
   unsigned long iEdge, iPoint, jPoint;
   su2double *U_i, *U_j, *TurbPsi_i, *TurbPsi_j, **TurbVar_Grad_i, **TurbVar_Grad_j;
@@ -331,17 +334,20 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Add and Subtract Residual ---*/
     LinSysRes.AddBlock(iPoint, Residual_i);
     LinSysRes.AddBlock(jPoint, Residual_j);
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+    Jacobian.AddBlock2Diag(iPoint, Jacobian_ii);
     Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
+    Jacobian.AddBlock2Diag(jPoint, Jacobian_jj);
 
   }
 
 }
 
-void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                      unsigned short iMesh, unsigned short iRKStep) {
+void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  CNumerics* numerics = numerics_container[VISC_TERM];
+
   unsigned long iEdge, iPoint, jPoint;
   su2double *Coord_i, *Coord_j;
 
@@ -377,16 +383,21 @@ void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     LinSysRes.AddBlock(iPoint, Residual_i);
     LinSysRes.AddBlock(jPoint, Residual_j);
 
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+    Jacobian.AddBlock2Diag(iPoint, Jacobian_ii);
     Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
+    Jacobian.AddBlock2Diag(jPoint, Jacobian_jj);
 
   }
 
 }
 
-void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
+void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
+  //CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
+
   unsigned long iPoint;
   su2double *U_i, **GradPrimVar_i, *TurbVar_i;
   su2double **TurbVar_Grad_i, *TurbPsi_i, **PsiVar_Grad_i; // Gradients
@@ -429,7 +440,7 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Add and Subtract Residual ---*/
     numerics->ComputeResidual(Residual, Jacobian_ii, NULL, config);
     LinSysRes.AddBlock(iPoint, Residual);
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+    Jacobian.AddBlock2Diag(iPoint, Jacobian_ii);
 
   }
 
@@ -460,10 +471,10 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //    second_numerics->ComputeResidual(Residual, Jacobian_ii, Jacobian_jj, config);
 //    LinSysRes.AddBlock(iPoint, Residual);
 //    LinSysRes.SubtractBlock(jPoint, Residual);
-//    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+//    Jacobian.AddBlock2Diag(iPoint, Jacobian_ii);
 //    Jacobian.AddBlock(iPoint, jPoint, Jacobian_jj);
 //    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_ii);
-//    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_jj);
+//    Jacobian.SubtractBlock2Diag(jPoint, Jacobian_jj);
 //
 //  }
 

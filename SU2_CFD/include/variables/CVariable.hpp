@@ -4,14 +4,14 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.0.1 "Blackbird"
+ * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -130,18 +130,18 @@ protected:
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
-  unsigned long nPoint = {0};  /*!< \brief Number of points in the domain. */
-  unsigned long nDim = {0};      /*!< \brief Number of dimension of the problem. */
-  unsigned long nVar = {0};        /*!< \brief Number of variables of the problem. */
-  unsigned long nPrimVar = {0};      /*!< \brief Number of primitive variables. */
-  unsigned long nPrimVarGrad = {0};    /*!< \brief Number of primitives for which a gradient is computed. */
-  unsigned long nSecondaryVar = {0};     /*!< \brief Number of secondary variables. */
-  unsigned long nSecondaryVarGrad = {0};   /*!< \brief Number of secondaries for which a gradient is computed. */
+  unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
+  unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
+  unsigned long nVar = 0;        /*!< \brief Number of variables of the problem. */
+  unsigned long nPrimVar = 0;      /*!< \brief Number of primitive variables. */
+  unsigned long nPrimVarGrad = 0;    /*!< \brief Number of primitives for which a gradient is computed. */
+  unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
+  unsigned long nSecondaryVarGrad = 0;   /*!< \brief Number of secondaries for which a gradient is computed. */
 
+  /*--- Only allow default construction by derived classes. ---*/
+  CVariable() = default;
 public:
-
-  /*--- Disable default construction copy and assignment. ---*/
-  CVariable() = delete;
+  /*--- Disable copy and assignment. ---*/
   CVariable(const CVariable&) = delete;
   CVariable(CVariable&&) = delete;
   CVariable& operator= (const CVariable&) = delete;
@@ -233,7 +233,7 @@ public:
     } else {
       Non_Physical_Counter(iPoint)++;
       if (Non_Physical_Counter(iPoint) > 20) {
-        Non_Physical(iPoint) = val_value;
+        Non_Physical(iPoint) = false;
       }
     }
   }
@@ -595,7 +595,9 @@ public:
   /*!
    * \brief Set summed residual vector to zero value.
    */
-  void SetResidualSumZero();
+  inline void SetResidualSumZero(unsigned long iPoint) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Residual_Sum(iPoint,iVar) = 0.0;
+  }
 
   /*!
    * \brief Set the velocity of the truncation error to zero.
@@ -1278,16 +1280,6 @@ public:
   inline virtual su2double GetSensor(unsigned long iPoint, unsigned long iSpecies) const { return 0.0; }
 
   /*!
-   * \brief Set the value of the undivided laplacian of the solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_undivided_laplacian - Value of the undivided solution for the index <i>iVar</i>.
-   */
-  inline void SetUndivided_Laplacian(unsigned long iPoint, unsigned long iVar, su2double val_undivided_laplacian) {
-    Undivided_Laplacian(iPoint,iVar) = val_undivided_laplacian;
-  }
-
-  /*!
    * \brief Add the value of the undivided laplacian of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] val_und_lapl - Value of the undivided solution.
@@ -1308,13 +1300,13 @@ public:
   }
 
   /*!
-   * \brief Subtract the value of the undivided laplacian of the solution.
+   * \brief Increment the value of the undivided laplacian of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Variable of the undivided laplacian.
    * \param[in] val_und_lapl - Value of the undivided solution.
    */
-  inline void SubtractUnd_Lapl(unsigned long iPoint, unsigned long iVar, su2double val_und_lapl) {
-    Undivided_Laplacian(iPoint, iVar) -= val_und_lapl;
+  inline void AddUnd_Lapl(unsigned long iPoint, unsigned long iVar, su2double val_und_lapl) {
+    Undivided_Laplacian(iPoint, iVar) += val_und_lapl;
   }
 
   /*!
@@ -1977,11 +1969,6 @@ public:
   inline virtual void Add_SurfaceLoad_Res(unsigned long iPoint, const su2double *val_surfForce) {}
 
   /*!
-   * \brief  A virtual member.
-   */
-  inline virtual void Set_SurfaceLoad_Res(unsigned long iPoint, unsigned long iVar, su2double val_surfForce) {}
-
-  /*!
    * \brief A virtual member.
    */
   inline virtual su2double Get_SurfaceLoad_Res(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
@@ -1989,7 +1976,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Clear_SurfaceLoad_Res(unsigned long iPoint) {}
+  inline virtual void Clear_SurfaceLoad_Res() {}
 
   /*!
    * \brief A virtual member.
@@ -2315,32 +2302,6 @@ public:
   inline virtual void SetSolution_Geometry(unsigned long iPoint, unsigned long iVar, su2double solution_geometry) {}
 
   /*!
-   * \brief A virtual member. Get the geometry solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline virtual su2double GetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member. Set the value of the mesh solution (adjoint).
-   * \param[in] solution - Solution of the problem (acceleration).
-   */
-  inline virtual void SetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iDim, su2double der) {}
-
-  /*!
-   * \brief A virtual member. Get the geometry solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline virtual su2double GetGeometry_CrossTerm_Derivative_Flow(unsigned long iPoint, unsigned long iVar) const { return 0.0;}
-
-  /*!
-   * \brief A virtual member. Set the value of the mesh solution (adjoint).
-   * \param[in] solution - Solution of the problem (acceleration).
-   */
-  inline virtual void SetGeometry_CrossTerm_Derivative_Flow(unsigned long iPoint, unsigned long iDim, su2double der) {}
-
-  /*!
    * \brief A virtual member. Set the value of the old geometry solution (adjoint).
    */
   inline virtual void Set_OldSolution_Geometry() {}
@@ -2352,9 +2313,13 @@ public:
   inline virtual su2double Get_OldSolution_Geometry(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
-   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   * \brief Get BGS solution to compute the BGS residual (difference between BGS and BGS_k).
+   * \note This is virtual because for some classes the result of a BGS iteration is not "Solution".
+   *       If this method is overriden, the BGSSolution_k ones proabably have to be too.
    */
-  inline virtual void Set_BGSSolution(unsigned long iPoint, unsigned long iDim, su2double solution) {}
+  inline virtual su2double Get_BGSSolution(unsigned long iPoint, unsigned long iVar) const {
+    return Solution(iPoint, iVar);
+  }
 
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
@@ -2364,12 +2329,12 @@ public:
   /*!
    * \brief Restore the previous BGS subiteration to solution.
    */
-  void Restore_BGSSolution_k();
+  virtual void Restore_BGSSolution_k();
 
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
-  inline void Set_BGSSolution_k(unsigned long iPoint, unsigned long iVar, su2double val_var) {
+  inline virtual void Set_BGSSolution_k(unsigned long iPoint, unsigned long iVar, su2double val_var) {
     Solution_BGS_k(iPoint,iVar) = val_var;
   }
 
@@ -2380,23 +2345,6 @@ public:
   inline virtual su2double Get_BGSSolution_k(unsigned long iPoint, unsigned long iVar) const {
     return Solution_BGS_k(iPoint,iVar);
   }
-
-  /*!
-   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
-   * \param[out] val_solution - old adjoint solution for coordinate iDim
-   */
-  inline virtual su2double Get_BGSSolution(unsigned long iPoint, unsigned long iDim) const {return 0.0;}
-
-  /*!
-   * \brief  A virtual member. Set the contribution of crossed terms into the derivative.
-   */
-  inline virtual void SetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) {}
-
-  /*!
-   * \brief  A virtual member. Get the contribution of crossed terms into the derivative.
-   * \return The contribution of crossed terms into the derivative.
-   */
-  inline virtual su2double GetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Set the direct velocity solution for the adjoint solver.
@@ -2639,7 +2587,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double *GetPrestretch(unsigned long iPoint) {return nullptr; }
+  inline virtual const su2double *GetPrestretch(unsigned long iPoint) const {return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -2941,7 +2889,8 @@ public:
 
   inline virtual su2double GetTauWall(unsigned long iPoint) const { return 0.0; }
 
-  inline virtual void SetVortex_Tilting(unsigned long iPoint, su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity) {}
+  inline virtual void SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
+                                        const su2double* Vorticity, su2double LaminarViscosity) {}
 
   inline virtual su2double GetVortex_Tilting(unsigned long iPoint) const { return 0.0; }
 
@@ -2972,6 +2921,24 @@ public:
   inline virtual su2double GetSolution_Old_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   inline virtual su2double GetSolution_Old_Accel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+
+  /*!
+   * \brief Virtual member: Set the Radiative source term at the node
+   * \return value of the radiative source term
+   */
+  inline virtual const su2double *GetRadiative_SourceTerm(unsigned long iPoint) const { return nullptr;}
+
+  /*!
+   * \brief  Virtual member: Set the Radiative source term at the node
+   * \param[in] val_RadSourceTerm - value of the radiative source term
+   */
+  inline virtual void SetRadiative_SourceTerm(unsigned long iPoint, unsigned long iVar, su2double val_RadSourceTerm) { }
+
+  /*!
+   * \brief Get whether a volumetric heat source is to be introduced in point iPoint
+   * \return Bool, determines if this point introduces volumetric heat
+   */
+  inline virtual bool GetVol_HeatSource(unsigned long iPoint) const { return false; }
 
   /*!
    * \brief Set the FSI force sensitivity at the node
