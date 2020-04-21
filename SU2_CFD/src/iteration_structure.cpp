@@ -2413,7 +2413,7 @@ void CDiscAdjFluidIteration::SetRecording(CSolver *****solver,
 
   /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
 
-  if (solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]) {
+  if (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM) {
     solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetRecording(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
   }
 
