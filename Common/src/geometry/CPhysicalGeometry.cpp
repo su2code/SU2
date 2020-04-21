@@ -3507,6 +3507,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
         must be added to the communication pattern. ---*/
 
   for (iElem = 0; iElem < nElem; iElem++) {
+
     for (iProc = 0; iProc < elem[iElem]->GetNProcElemIsOnlyInterpolDonor(); iProc++) {
       iDomain = elem[iElem]->GetProcElemIsOnlyInterpolDonor(iProc);
 
@@ -3519,7 +3520,6 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
 
           jPoint  = elem[iElem]->GetNode(jNode);
           jDomain = node[jPoint]->GetColor();
-
           ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
         }
       }
@@ -5150,7 +5150,7 @@ void CPhysicalGeometry::BuildLocalVolumeADT(CADTElemClass *&localVolumeADT) {
 
 void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 
-  unsigned short nDonorNoFound = 0;
+  int nDonorNoFound = 0;
 
   /* Build the local ADT of the volume elements, including halo elements. */
   CADTElemClass *localVolumeADT;
@@ -5228,6 +5228,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
               /* Donor element not found in the local ADT. This should not happen,
                  because all halo donors should have been added in the function
                  CPhysicalGeometry::AddWallModelDonorHalos. */
+              std::cout << "Rank          " << rank << std::endl;
               std::cout << "Marker tag    " << Marker_Tag << std::endl;
               std::cout << "iMarker:      " << iMarker << ", iVertex: " << iVertex << std::endl;
               std::cout << "Coord:        " << Coord[0] << " " << Coord[1] << " " << Coord[2] << std::endl;
@@ -5288,6 +5289,12 @@ void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
   SetCoord_CG();
   SetControlVolume(config, ALLOCATE);
   SetBoundControlVolume(config, ALLOCATE);
+
+  /*--- Update config information storing the boundary information in the right place ---*/
+  for (unsigned short iMarker = 0 ; iMarker < nMarker; iMarker++) {
+    string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
+  }
 
   /* Build the local ADT of the volume elements, including halo elements. */
   CADTElemClass *localVolumeADT;
