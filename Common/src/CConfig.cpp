@@ -34,6 +34,8 @@
 
 #include "../include/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
+#define STATIC_CPARSE_STARTUP
+#include "./builtin-features.inc"
 
 using namespace PrintingToolbox;
 
@@ -286,6 +288,11 @@ void CConfig::addDoubleOption(const string name, su2double & option_field, su2do
   // During configuration, the parsing script will get the option name, and use this map
   // to find how to parse that option.
   option_map.insert(pair<string, COptionBase *>(name, val));
+
+  /* --- Add it to the global scope for usage in user defined functions ---*/
+
+  configTokens[name] = option_field;
+
 }
 
 void CConfig::addStringOption(const string name, string & option_field, string default_value) {
@@ -1060,6 +1067,7 @@ void CConfig::SetRunTime_Options(void) {
 
 void CConfig::SetConfig_Options() {
 
+  configTokens = TokenMap();
 
   /*--- Allocate some default arrays needed for lists of doubles. ---*/
 
@@ -4958,6 +4966,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     functionFile.close();
   }
+  globalScope["config"] = configTokens;
+  interpreter::BlockStatement code;
+
+  string blockAsString = "{" + UserFunctionCode + "}";
+
+  try{
+    code.compile(blockAsString.c_str(), nullptr, globalScope);
+  } catch (syntax_error e){
+    SU2_MPI::Error(std::string("Error in functions.su2x: ") + e.what(), CURRENT_FUNCTION);
+  }
+
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {

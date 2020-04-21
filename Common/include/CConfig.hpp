@@ -1151,6 +1151,8 @@ private:
 
   string UserFunctionCode; /*!< \brief String containing the user defined function code. */
 
+  GlobalScope globalScope;
+  TokenMap configTokens;
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
