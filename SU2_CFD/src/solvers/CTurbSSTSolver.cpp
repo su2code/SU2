@@ -315,11 +315,9 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
 
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long iPoint, ErrorCounter = 0;
+  unsigned long iPoint;
 
-  bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
-  bool disc_adjoint = config->GetDiscrete_Adjoint();
-  bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+//  bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
@@ -335,18 +333,18 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Upwind second order reconstruction and gradients ---*/
 
-  if (config->GetReconstructionGradientRequired()) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetPrimitive_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
-  }
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
-
-  if (limiter_turb) SetPrimitive_Limiter(geometry, config);
+//  if (config->GetReconstructionGradientRequired()) {
+//    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+//      SetPrimitive_Gradient_GG(geometry, config, true);
+//    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+//      SetPrimitive_Gradient_LS(geometry, config, true);
+//    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+//      SetPrimitive_Gradient_LS(geometry, config, true);
+//  }
+//  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
+//  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
+//
+//  if (limiter_turb) SetPrimitive_Limiter(geometry, config);
 
 }
 
@@ -354,6 +352,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   su2double rho = 0.0, mu = 0.0, dist, omega, kine, F2, muT, zeta;
   su2double a1 = constants[7];
   unsigned long iPoint;
+  
+  bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
 
   /*--- Set the primitive variables ---*/
 
@@ -378,12 +378,18 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Compute mean flow and turbulence gradients ---*/
 
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    SetPrimitive_Gradient_GG(geometry, config);
+  if (config->GetReconstructionGradientRequired()) {
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+      SetPrimitive_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
   }
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    SetPrimitive_Gradient_LS(geometry, config);
-  }
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
+
+  if (limiter_turb) SetPrimitive_Limiter(geometry, config);
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
