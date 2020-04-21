@@ -4,7 +4,7 @@ namespace builtin_typeSpecificFunctions {
 /* * * * * MAP Type built-in functions * * * * */
 
 const args_t map_pop_args = {"key", "default"};
-packToken map_pop(TokenMap scope) {
+packToken map_pop(TokenMap scope, const std::string& name) {
   TokenMap map = scope["this"].asMap();
   std::string key = scope["key"].asString();
 
@@ -24,12 +24,12 @@ packToken map_pop(TokenMap scope) {
   }
 }
 
-packToken map_len(TokenMap scope) {
+packToken map_len(TokenMap scope, const std::string& name) {
   TokenMap map = scope.find("this")->asMap();
   return map.map().size();
 }
 
-packToken default_instanceof(TokenMap scope) {
+packToken default_instanceof(TokenMap scope, const std::string& name) {
   TokenMap _super = scope["value"].asMap();
   TokenMap* _this = scope["this"].asMap().parent();
 
@@ -48,7 +48,7 @@ packToken default_instanceof(TokenMap scope) {
 /* * * * * LIST Type built-in functions * * * * */
 
 const args_t push_args = {"item"};
-packToken list_push(TokenMap scope) {
+packToken list_push(TokenMap scope, const std::string& name) {
   packToken* list = scope.find("this");
   packToken* token = scope.find("item");
 
@@ -59,7 +59,7 @@ packToken list_push(TokenMap scope) {
 }
 
 const args_t list_pop_args = {"pos"};
-packToken list_pop(TokenMap scope) {
+packToken list_pop(TokenMap scope, const std::string& name) {
   TokenList list = scope.find("this")->asList();
   packToken* token = scope.find("pos");
 
@@ -83,12 +83,12 @@ packToken list_pop(TokenMap scope) {
   return result;
 }
 
-packToken list_len(TokenMap scope) {
+packToken list_len(TokenMap scope, const std::string& name) {
   TokenList list = scope.find("this")->asList();
   return list.list().size();
 }
 
-packToken list_join(TokenMap scope) {
+packToken list_join(TokenMap scope, const std::string& name) {
   TokenList list = scope["this"].asList();
   std::string chars = scope["chars"].asString();
   std::stringstream result;
@@ -104,12 +104,12 @@ packToken list_join(TokenMap scope) {
 
 /* * * * * STR Type built-in functions * * * * */
 
-packToken string_len(TokenMap scope) {
+packToken string_len(TokenMap scope, const std::string& name) {
   std::string str = scope["this"].asString();
   return static_cast<int64_t>(str.size());
 }
 
-packToken string_lower(TokenMap scope) {
+packToken string_lower(TokenMap scope, const std::string& name) {
   std::string str = scope["this"].asString();
   std::string out;
   for (char c : str) {
@@ -118,7 +118,7 @@ packToken string_lower(TokenMap scope) {
   return out;
 }
 
-packToken string_upper(TokenMap scope) {
+packToken string_upper(TokenMap scope, const std::string& name) {
   std::string str = scope["this"].asString();
   std::string out;
   for (char c : str) {
@@ -127,7 +127,7 @@ packToken string_upper(TokenMap scope) {
   return out;
 }
 
-packToken string_strip(TokenMap scope) {
+packToken string_strip(TokenMap scope, const std::string& name) {
   std::string str = scope["this"].asString();
 
   std::string::const_iterator it = str.begin();
@@ -139,7 +139,7 @@ packToken string_strip(TokenMap scope) {
   return std::string(it, rit.base());
 }
 
-packToken string_split(TokenMap scope) {
+packToken string_split(TokenMap scope, const std::string& name) {
   TokenList list;
   std::string str = scope["this"].asString();
   std::string split_chars = scope["chars"].asString();

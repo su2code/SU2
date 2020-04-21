@@ -23,19 +23,19 @@ class Function : public TokenBase {
 
 class CppFunction : public Function {
  public:
-  packToken (*func)(TokenMap);
+  packToken (*func)(TokenMap, const std::string&);
   args_t _args;
   std::string _name;
 
-  CppFunction(packToken (*func)(TokenMap), const args_t args,
+  CppFunction(packToken (*func)(TokenMap, const std::string&), const args_t args,
               std::string name = "");
-  CppFunction(packToken (*func)(TokenMap), unsigned int nargs,
+  CppFunction(packToken (*func)(TokenMap, const std::string&), unsigned int nargs,
               const char** args, std::string name = "");
-  CppFunction(packToken (*func)(TokenMap), std::string name = "");
+  CppFunction(packToken (*func)(TokenMap, const std::string&), std::string name = "");
 
   virtual const std::string name() const { return _name; }
   virtual const args_t args() const { return _args; }
-  virtual packToken exec(TokenMap scope) const { return func(scope); }
+  virtual packToken exec(TokenMap scope) const { return func(scope, _name); }
 
   virtual TokenBase* clone() const {
     return new CppFunction(static_cast<const CppFunction&>(*this));

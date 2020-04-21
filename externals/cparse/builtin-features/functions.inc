@@ -4,7 +4,7 @@ namespace builtin_functions {
 
 /* * * * * Built-in Functions: * * * * */
 
-packToken default_print(TokenMap scope) {
+packToken default_print(TokenMap scope, const std::string& name) {
   // Get the argument list:
   TokenList list = scope["args"].asList();
 
@@ -28,7 +28,7 @@ packToken default_print(TokenMap scope) {
   return packToken::None();
 }
 
-packToken default_sum(TokenMap scope) {
+packToken default_sum(TokenMap scope, const std::string& name) {
   // Get the arguments:
   TokenList list = scope["args"].asList();
 
@@ -44,13 +44,13 @@ packToken default_sum(TokenMap scope) {
   return sum;
 }
 
-packToken default_eval(TokenMap scope) {
+packToken default_eval(TokenMap scope, const std::string& name) {
   std::string code = scope["value"].asString();
   // Evaluate it as a calculator expression:
   return calculator::calculate(code.c_str(), scope);
 }
 
-packToken default_float(TokenMap scope) {
+packToken default_float(TokenMap scope, const std::string& name) {
   packToken tok = scope["value"];
   if (tok->type & NUM) return tok.asDouble();
 
@@ -68,7 +68,7 @@ packToken default_float(TokenMap scope) {
   return ret;
 }
 
-packToken default_int(TokenMap scope) {
+packToken default_int(TokenMap scope, const std::string& name) {
   packToken tok = scope["value"];
   if (tok->type & NUM) return tok.asInt();
 
@@ -86,14 +86,14 @@ packToken default_int(TokenMap scope) {
   return ret;
 }
 
-packToken default_str(TokenMap scope) {
+packToken default_str(TokenMap scope, const std::string& name) {
   // Return its string representation:
   packToken tok = scope["value"];
   if (tok->type == STR) return tok;
   return tok.str();
 }
 
-packToken default_type(TokenMap scope) {
+packToken default_type(TokenMap scope, const std::string& name) {
   packToken tok = scope["value"];
   packToken* p_type;
 
@@ -120,31 +120,31 @@ packToken default_type(TokenMap scope) {
   }
 }
 
-packToken default_sqrt(TokenMap scope) {
+packToken default_sqrt(TokenMap scope, const std::string& name) {
   // Get a single argument:
   doubleType number = sqrt(scope["num"].asDouble());
 
   return number;
 }
-packToken default_sin(TokenMap scope) {
+packToken default_sin(TokenMap scope, const std::string& name) {
   // Get a single argument:
   doubleType number = sin(scope["num"].asDouble());
 
   return number;
 }
-packToken default_cos(TokenMap scope) {
+packToken default_cos(TokenMap scope, const std::string& name) {
   // Get a single argument:
   doubleType number = cos(scope["num"].asDouble());
 
   return number;
 }
-packToken default_tan(TokenMap scope) {
+packToken default_tan(TokenMap scope, const std::string& name) {
   // Get a single argument:
   doubleType number = tan(scope["num"].asDouble());
 
   return number;
 }
-packToken default_abs(TokenMap scope) {
+packToken default_abs(TokenMap scope, const std::string& name) {
   // Get a single argument:
   doubleType number =  abs(scope["num"].asDouble());
 
@@ -152,7 +152,7 @@ packToken default_abs(TokenMap scope) {
 }
 
 const args_t pow_args = {"number", "exp"};
-packToken default_pow(TokenMap scope) {
+packToken default_pow(TokenMap scope, const std::string& name) {
   // Get two arguments:
   doubleType number = scope["number"].asDouble();
   doubleType exp = pow(number, scope["exp"].asDouble());
@@ -162,7 +162,7 @@ packToken default_pow(TokenMap scope) {
 
 /* * * * * default constructor functions * * * * */
 
-packToken default_list(TokenMap scope) {
+packToken default_list(TokenMap scope, const std::string& name) {
   // Get the arguments:
   TokenList list = scope["args"].asList();
 
@@ -184,13 +184,13 @@ packToken default_list(TokenMap scope) {
   }
 }
 
-packToken default_map(TokenMap scope) {
+packToken default_map(TokenMap scope, const std::string& name) {
   return scope["kwargs"];
 }
 
 /* * * * * Object inheritance tools: * * * * */
 
-packToken default_extend(TokenMap scope) {
+packToken default_extend(TokenMap scope, const std::string& name) {
   packToken tok = scope["value"];
 
   if (tok->type == MAP) {

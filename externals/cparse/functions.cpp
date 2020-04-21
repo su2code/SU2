@@ -88,13 +88,13 @@ packToken Function::call(packToken _this, const Function* func,
 
 /* * * * * class CppFunction * * * * */
 
-CppFunction::CppFunction(packToken (*func)(TokenMap), const args_t args,
+CppFunction::CppFunction(packToken (*func)(TokenMap, const std::string&), const args_t args,
                          std::string name)
                          : func(func), _args(args) {
   this->_name = name;
 }
 
-CppFunction::CppFunction(packToken (*func)(TokenMap), unsigned int nargs,
+CppFunction::CppFunction(packToken (*func)(TokenMap, const std::string&), unsigned int nargs,
                          const char** args, std::string name)
                          : func(func) {
   this->_name = name;
@@ -105,7 +105,7 @@ CppFunction::CppFunction(packToken (*func)(TokenMap), unsigned int nargs,
 }
 
 // Build a function with no named args:
-CppFunction::CppFunction(packToken (*func)(TokenMap), std::string name)
+CppFunction::CppFunction(packToken (*func)(TokenMap, const std::string&), std::string name)
                          : func(func) {
   this->_name = name;
 }

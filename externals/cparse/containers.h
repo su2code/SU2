@@ -65,7 +65,7 @@ struct TokenMap : public Container<MapData_t>, public Iterable {
   static TokenMap empty;
   static TokenMap& base_map();
   static TokenMap& default_global();
-  static packToken default_constructor(TokenMap scope);
+  static packToken default_constructor(TokenMap scope, const std::string &name);
 
  public:
   // Attribute getters for the `MapData_t` content:
@@ -133,7 +133,7 @@ struct GlobalScope : public TokenMap {
 typedef std::vector<packToken> TokenList_t;
 
 struct TokenList : public Container<TokenList_t>, public Iterable {
-  static packToken default_constructor(TokenMap scope);
+  static packToken default_constructor(TokenMap scope, const std::string& name);
 
  public:
   // Attribute getter for the `TokenList_t` content:

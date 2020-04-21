@@ -23,7 +23,7 @@ TokenMap& TokenMap::default_global() {
   return global_map;
 }
 
-packToken TokenMap::default_constructor(TokenMap scope) {
+packToken TokenMap::default_constructor(TokenMap scope, const std::string& name) {
   return scope["kwargs"];
 }
 
@@ -53,7 +53,7 @@ void TokenMap::MapIterator::reset() { it = map.begin(); }
 
 /* * * * * TokenList functions: * * * * */
 
-packToken TokenList::default_constructor(TokenMap scope) {
+packToken TokenList::default_constructor(TokenMap scope, const std::string& name) {
   // Get the arguments:
   TokenList list = scope["args"].asList();
 
