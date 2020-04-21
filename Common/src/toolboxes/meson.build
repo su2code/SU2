@@ -3,3 +3,4 @@ common_src += files(['CLinearPartitioner.cpp',
                      'C1DInterpolation.cpp'])
 
 subdir('MMS')
+subdir('interpreter')
