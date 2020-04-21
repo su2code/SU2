@@ -297,20 +297,20 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     Jacobian.SetValZero();
   }
 
-  /*--- Upwind second order reconstruction and gradients ---*/
+ //  /*--- Upwind second order reconstruction and gradients ---*/
 
- if (config->GetReconstructionGradientRequired()) {
-   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-     SetPrimitive_Gradient_GG(geometry, config, true);
-   if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-     SetPrimitive_Gradient_LS(geometry, config, true);
-   if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-     SetPrimitive_Gradient_LS(geometry, config, true);
- }
- if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
- if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
+ // if (config->GetReconstructionGradientRequired()) {
+ //   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+ //     SetPrimitive_Gradient_GG(geometry, config, true);
+ //   if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+ //     SetPrimitive_Gradient_LS(geometry, config, true);
+ //   if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+ //     SetPrimitive_Gradient_LS(geometry, config, true);
+ // }
+ // if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
+ // if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
 
- if (limiter_turb) SetPrimitive_Limiter(geometry, config);
+ // if (limiter_turb) SetPrimitive_Limiter(geometry, config);
 
 }
 
