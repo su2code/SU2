@@ -179,7 +179,7 @@ protected:
                        su2double val_dS,
                        su2double **val_Proj_Jac_Tensor_i,
                        su2double **val_Proj_Jac_Tensor_j,
-                       CConfig *config);
+                       const CConfig *config);
 
   /*!
    * \brief Apply a correction to the gradient to reduce the truncation error

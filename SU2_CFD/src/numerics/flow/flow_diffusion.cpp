@@ -585,7 +585,7 @@ void CAvgGrad_Base::CorrectJacobian(const su2double val_proj_vector,
                                     const su2double val_dS,
                                     su2double **val_Proj_Jac_Tensor_i,
                                     su2double **val_Proj_Jac_Tensor_j,
-                                    CConfig *config) {
+                                    const CConfig *config) {
 
   /*--- Add contributions of GG gradients ---*/
   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) {

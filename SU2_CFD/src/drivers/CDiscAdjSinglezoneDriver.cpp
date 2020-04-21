@@ -630,7 +630,3 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
   if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
   solver_flow->ComputeMetric(solver, geometry, config);
 }
-
-bool CDiscAdjSinglezoneDriver::GetTimeConvergence() const{
-  return false;
-}
