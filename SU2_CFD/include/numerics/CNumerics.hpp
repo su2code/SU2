@@ -716,7 +716,7 @@ public:
    * \param[in] val_volume_i Volume of the control volume for node i.
    * \param[in] val_volume_j Volume of the control volume for node j.
    */
-  inline void CNumerics::SetVolume(su2double val_volume_i, su2double val_volume_j) {
+  inline void SetVolume(su2double val_volume_i, su2double val_volume_j) {
     Volume_i = val_volume_i;
     Volume_j = val_volume_j;
   }
