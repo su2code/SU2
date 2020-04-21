@@ -189,9 +189,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Initialize lower and upper limits---*/
   const su2double kine_Inf_Dim  = config->GetTke_FreeStream();
   const su2double omega_Inf_Dim = config->GetOmega_FreeStream();
-      
-  lowerlimit = new su2double[nVar];
-  upperlimit = new su2double[nVar];
 
   lowerlimit[0] = 1.0e-10*kine_Inf/kine_Inf_Dim;
   upperlimit[0] = 1.0e15*kine_Inf/kine_Inf_Dim;
