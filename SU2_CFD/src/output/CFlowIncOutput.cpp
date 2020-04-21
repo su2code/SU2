@@ -334,11 +334,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
 void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
-  // Grid coordinates
-  AddVolumeOutput("COORD_X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD_Y", "y", "COORDINATES", "y-component of the coordinate vector");
-  if (nDim == 3)
-    AddVolumeOutput("COORD_Z", "z", "COORDINATES", "z-component of the coordinate vector");
+  CFlowOutput::SetVolumeOutputFields(config);
 
   // SOLUTION variables
   AddVolumeOutput("PRESSURE",   "Pressure",   "SOLUTION", "Pressure");
@@ -388,8 +384,13 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
     AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
     AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
+    AddVolumeOutput("ENTHALPY", "Enthalpy", "PRIMITIVE", "Enthalpy");
 
   }
+
+  AddVolumeOutput("TOTAL_PRESSURE", "Total Pressure", "TOTAL_QUANTITIES", "Total pressure");
+  AddVolumeOutput("TOTAL_TEMPERATURE", "Total Temperature", "TOTAL_QUANTITIES", "Total temperature");
+
 
   if (config->GetKind_Solver() == INC_RANS) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
@@ -464,6 +465,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
 void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
+  CFlowOutput::LoadVolumeData(config, geometry, solver, iPoint);
+
   CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
   CVariable* Node_Heat = NULL;
   CVariable* Node_Turb = NULL;
@@ -477,11 +480,6 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
 
   CPoint*    Node_Geo  = geometry->node[iPoint];
-
-  SetVolumeOutputValue("COORD_X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD_Y", iPoint,  Node_Geo->GetCoord(1));
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD_Z", iPoint, Node_Geo->GetCoord(2));
 
   SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
   SetVolumeOutputValue("VELOCITY_X", iPoint, Node_Flow->GetSolution(iPoint, 1));
@@ -530,7 +528,14 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   if (config->GetKind_Solver() == INC_RANS || config->GetKind_Solver() == INC_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
+    SetVolumeOutputValue("ENTHALPY", iPoint, Node_Flow->GetSpecificHeatCp(iPoint)*Node_Flow->GetTemperature(iPoint));
   }
+
+  SetVolumeOutputValue("TOTAL_PRESSURE", iPoint, (Node_Flow->GetPressure(iPoint)+
+                       0.5*Node_Flow->GetVelocity2(iPoint)*Node_Flow->GetDensity(iPoint))*config->GetPressure_Ref());
+
+  SetVolumeOutputValue("TOTAL_TEMPERATURE", iPoint, (Node_Flow->GetTemperature(iPoint) +
+                       0.5*Node_Flow->GetVelocity2(iPoint)/Node_Flow->GetSpecificHeatCp(iPoint))*config->GetTemperature_Ref());
 
   if (config->GetKind_Solver() == INC_RANS) {
     SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
@@ -606,6 +611,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 }
 
 void CFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
+
+  CFlowOutput::LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
 
   if ((config->GetKind_Solver() == INC_NAVIER_STOKES) || (config->GetKind_Solver()  == INC_RANS)) {
     SetVolumeOutputValue("SKIN_FRICTION_X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));

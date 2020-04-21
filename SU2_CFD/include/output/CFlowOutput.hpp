@@ -44,6 +44,14 @@ public:
   ~CFlowOutput(void) override;
 
 protected:
+
+  void SetVolumeOutputFields(CConfig *config) override;
+
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override;
+
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver,
+                       unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) override;
+
   /*!
    * \brief Add flow surface output fields
    * \param[in] config - Definition of the particular problem.

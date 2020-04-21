@@ -36,7 +36,60 @@ CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) 
 
 CFlowOutput::~CFlowOutput(void){}
 
+void CFlowOutput::SetVolumeOutputFields(CConfig *config){
+
+  // Grid coordinates
+  AddVolumeOutput("COORD_X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD_Y", "y", "COORDINATES", "y-component of the coordinate vector");
+  if (nDim == 3)
+    AddVolumeOutput("COORD_Z", "z", "COORDINATES", "z-component of the coordinate vector");
+
+  AddVolumeOutput("NORMAL_X", "n_x", "NORMALS", "x-component of the normal vector");
+  AddVolumeOutput("NORMAL_Y", "n_y", "NORMALS", "y-component of the normal vector");
+  if (nDim == 3)
+    AddVolumeOutput("NORMAL_Z", "n_z", "NORMALS", "z-component of the normal vector");
+
+  AddVolumeOutput("MASSFLOW", "Mass Flow", "SURFACE_QUANTITIES", "Mass flow rate per unit area");
+  AddVolumeOutput("AREA", "Area", "SURFACE_QUANTITIES", "Area");
+  AddVolumeOutput("NORMAL_VELOCITY", "Normal velocity", "SURFACE_QUANTITIES", "Velocity component normal to the surface");
+  AddVolumeOutput("TANGENTIAL_VELOCITY", "Tangential velocity", "SURFACE_QUANTITIES", "Velocity component tangential to the surface");
+
+}
+
+void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+
+  SetVolumeOutputValue("COORD_X", iPoint, geometry->node[iPoint]->GetCoord(0));
+  SetVolumeOutputValue("COORD_Y", iPoint, geometry->node[iPoint]->GetCoord(1));
+  if (nDim == 3)
+    SetVolumeOutputValue("COORD_Z", iPoint, geometry->node[iPoint]->GetCoord(2));
+
+}
+
+void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
+
+  su2double Area = 0.0;
+  const su2double* Vector = geometry->vertex[iMarker][iVertex]->GetNormal();
+  su2double MassFlux = 0.0;
+  su2double Vn = 0.0, Vt = 0.0;
+  for (int iDim = 0; iDim < nDim; iDim++){
+    Area += Vector[iDim]*Vector[iDim];
+    MassFlux += Vector[iDim]*solver[FLOW_SOL]->GetNodes()->GetDensity(iPoint)*
+        solver[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim)*config->GetDensity_Ref()*config->GetVelocity_Ref();
+    Vn += solver[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim) * Vector[iDim];
+  }
+  Area = sqrt(Area);
+  for (int iDim = 0; iDim < nDim; iDim++){
+    Vt += solver[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim) - Vn*Vector[iDim]/Area;
+  }
+
+  SetVolumeOutputValue("MASSFLOW", iPoint, MassFlux);
+  SetVolumeOutputValue("AREA", iPoint, Area);
+  SetVolumeOutputValue("NORMAL_VELOCITY", iPoint, Vn);
+  SetVolumeOutputValue("TANGENTIAL_VELOCITY", iPoint, Vt);
+}
+
 void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
+
 
 
   /// DESCRIPTION: Average mass flow
