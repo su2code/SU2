@@ -2,13 +2,8 @@ cparse_include = include_directories('./')
 
 lib_cparse_src = files(['shunting-yard.cpp',
                         'packToken.cpp',
-                        'functions.cpp',
-                        'containers.cpp',
-                        'statement.cpp',
-                        'expression.cpp',
-                        'block.cpp',
-                        'funcdecl.cpp',
-                        'range.cpp'])
+			'functions.cpp',
+                        'containers.cpp'])
 
 if get_option('enable-normal')
 
